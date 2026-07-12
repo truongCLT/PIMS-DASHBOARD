@@ -1,5 +1,5 @@
 import React from "react";
-import daewooLogo from "../assets/daewoo-logo.png";
+import daewooLogo from "../assets/daewoo-logo-transparent.png";
 
 const NAV_TABS = [
   { label: "Standard", active: true },

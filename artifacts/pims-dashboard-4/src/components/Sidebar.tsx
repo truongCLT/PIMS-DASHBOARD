@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import pimsBranding from "../assets/pims-branding.png";
+import pimsBranding from "../assets/pims-branding-transparent.png";
 import { Pin, FolderClosed } from "lucide-react";
 import { PROJECT_GROUPS } from "../data/projects";
 
