@@ -79,15 +79,13 @@ export function ProfitChart() {
 
               {/* 판관비 bracket (orange) */}
               <path d={`M ${brX} ${yTotal} h 7 V ${yNon} h -7`} fill="none" stroke={ORANGE} strokeWidth="2" />
-              <text x={brX + 13} y={(yTotal + yNon) / 2 - 12} fontSize="15" fill={ORANGE}>판관비</text>
-              <text x={brX + 13} y={(yTotal + yNon) / 2 + 5} fontSize="15" fill={ORANGE}>{d.sga}</text>
-              <text x={brX + 13} y={(yTotal + yNon) / 2 + 22} fontSize="15" fill={ORANGE}>({d.sgaPct})</text>
+              <text x={brX + 13} y={(yTotal + yNon) / 2 - 4} fontSize="14" fill={ORANGE}>판관비</text>
+              <text x={brX + 13} y={(yTotal + yNon) / 2 + 13} fontSize="14" fill={ORANGE}>{d.sga}({d.sgaPct})</text>
 
               {/* 경상이익 (green dot + dashed leader + label) */}
               <line x1={bx - 26} y1={yOrd} x2={bx} y2={yOrd} stroke={GREEN} strokeWidth="1.5" strokeDasharray="4 3" />
               <circle cx={bx - 3} cy={yOrd} r="4" fill={GREEN} />
-              <text x={bx - 30} y={yOrd - 2} textAnchor="end" fontSize="15" fill={GREEN}>{d.ord}</text>
-              <text x={bx - 30} y={yOrd + 14} textAnchor="end" fontSize="15" fill={GREEN}>({d.ordPct})</text>
+              <text x={bx - 2} y={yOrd + 19} textAnchor="end" fontSize="14" fill={GREEN}>{d.ord}({d.ordPct})</text>
 
               {/* Month label */}
               <text x={cx} y={Y0 + 32} textAnchor="middle" fontSize="24" fontWeight="600" fill="#333">{d.m}</text>
