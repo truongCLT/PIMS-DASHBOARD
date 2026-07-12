@@ -19,7 +19,7 @@ const TREE_DATA: TreeItem[] = PROJECT_GROUPS.map((group, gi) => ({
 }));
 
 function TreeNode({ item, depth = 0 }: { item: TreeItem; depth?: number }) {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   const hasChildren = item.children && item.children.length > 0;
   const isTopLevel = depth === 0;
   const isSubGroup = depth === 1;
