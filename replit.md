@@ -34,7 +34,9 @@ _Describe the high-level user-facing capabilities of this app once they exist._
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- Respond to the user in Korean (pims-dashboard-2 work).
+- pims-dashboard-2 Excel download must be a styled "경영실적보고" report sheet (title, embedded chart images, merged/bordered table, 실적 분석/전망 sections) — not plain data sheets. Raw data sheets follow the report sheet.
+- pims-dashboard-2 PDF download must always capture at fixed desktop width (1720px) regardless of window size.
 
 ## Gotchas
 

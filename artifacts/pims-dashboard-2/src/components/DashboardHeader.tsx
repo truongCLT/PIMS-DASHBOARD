@@ -24,9 +24,14 @@ export function DashboardHeader() {
     return () => document.removeEventListener("mousedown", onClickOutside);
   }, [downloadOpen]);
 
-  const handleExcel = () => {
+  const handleExcel = async () => {
     setDownloadOpen(false);
-    exportDashboardExcel();
+    try {
+      await exportDashboardExcel();
+    } catch (err) {
+      console.error("Excel export failed", err);
+      alert("엑셀 다운로드 중 오류가 발생했습니다.");
+    }
   };
 
   const handlePdf = async () => {
