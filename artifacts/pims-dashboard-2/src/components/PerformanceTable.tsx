@@ -1,6 +1,6 @@
 import React from "react";
 
-const rows = [
+export const PERFORMANCE_ROWS = [
   {
     label: "수주",
     planM: "139,957", actualM: "139,957", achM: "100%",
@@ -71,7 +71,7 @@ export function PerformanceTable() {
             </tr>
           </thead>
           <tbody>
-            {rows.map((row, i) => (
+            {PERFORMANCE_ROWS.map((row, i) => (
               <React.Fragment key={row.label}>
                 <tr style={{ borderBottom: row.sub ? "none" : "1px solid #e8f0f8", backgroundColor: i % 2 === 0 ? "#fff" : "#f8fbff" }}>
                   <td style={{ padding: "4px 6px", color: "#333", fontWeight: "500" }}>{row.label}</td>

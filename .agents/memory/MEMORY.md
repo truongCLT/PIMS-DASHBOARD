@@ -1,0 +1,1 @@
+- [Multi-artifact testing trap](multi-artifact-testing.md) — test subagents can land on the wrong app when similar artifacts exist; add a content guard step before feature assertions.

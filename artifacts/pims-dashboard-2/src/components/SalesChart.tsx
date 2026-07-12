@@ -12,7 +12,7 @@ import {
   LabelList,
 } from "recharts";
 
-const data = [
+export const SALES_DATA = [
   { month: "4월", net: 90, report: null, plan: 101, actual: 98 },
   { month: "5월", net: 98, report: null, plan: 98, actual: 99 },
   { month: "6월", net: 99, report: null, plan: 110, actual: 100 },
@@ -54,7 +54,7 @@ export function SalesChart() {
       {/* Chart */}
       <div style={{ height: "160px" }}>
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={data} margin={{ top: 15, right: 10, left: -20, bottom: 0 }}>
+          <ComposedChart data={SALES_DATA} margin={{ top: 15, right: 10, left: -20, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e8f0f8" vertical={false} />
             <XAxis dataKey="month" tick={{ fontSize: 10, fill: "#666" }} axisLine={false} tickLine={false} />
             <YAxis domain={[60, 140]} tick={{ fontSize: 10, fill: "#666" }} axisLine={false} tickLine={false} />

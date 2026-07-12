@@ -1,9 +1,13 @@
 import React from "react";
 
+export const ORDER_STATUS = {
+  planTotal: 2000,
+  ordered: 1250,
+  remaining: 750,
+};
+
 export function OrderStatus() {
-  const planTotal = 2000;
-  const ordered = 1250;
-  const remaining = 750;
+  const { planTotal, ordered, remaining } = ORDER_STATUS;
   const pct = Math.round((ordered / planTotal) * 100);
 
   return (

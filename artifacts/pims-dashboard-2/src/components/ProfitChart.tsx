@@ -1,6 +1,6 @@
 import React from "react";
 
-const data = [
+export const PROFIT_DATA = [
   { m: "1월", op: 320, opPct: "9%", non: 40, total: 500, totalPct: "10%", sga: "-180", sgaPct: "6%", ord: 360, ordPct: "9%", con: "80%", svc: "20%" },
   { m: "2월", op: 350, opPct: "9%", non: 30, total: 540, totalPct: "11%", sga: "-190", sgaPct: "7%", ord: 380, ordPct: "9%", con: "81%", svc: "19%" },
   { m: "3월", op: 370, opPct: "10%", non: 25, total: 580, totalPct: "12%", sga: "-210", sgaPct: "8%", ord: 395, ordPct: "11%", con: "85%", svc: "15%" },
@@ -22,7 +22,7 @@ const y = (v: number) => Y0 - v * SCALE;
 export function ProfitChart() {
   const plotLeft = 80;
   const plotRight = 950;
-  const slot = (plotRight - plotLeft) / data.length;
+  const slot = (plotRight - plotLeft) / PROFIT_DATA.length;
   const barW = 58;
 
   return (
@@ -48,7 +48,7 @@ export function ProfitChart() {
           </g>
         ))}
 
-        {data.map((d, i) => {
+        {PROFIT_DATA.map((d, i) => {
           const cx = plotLeft + slot * (i + 0.5);
           const bx = cx - barW / 2;
           const yOp = y(d.op);

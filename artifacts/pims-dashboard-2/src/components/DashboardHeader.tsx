@@ -1,6 +1,7 @@
-import React, { useState } from "react";
-import { ChevronsUp, Download } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import { ChevronsUp, Download, FileSpreadsheet, FileText } from "lucide-react";
 import { PROJECT_GROUPS } from "../data/projects";
+import { exportDashboardExcel, exportDashboardPdf } from "../lib/exportDashboard";
 
 export function DashboardHeader() {
   const [startDate, setStartDate] = useState("");
@@ -8,6 +9,38 @@ export function DashboardHeader() {
   const [period, setPeriod] = useState("Month");
   const [currency, setCurrency] = useState("USD");
   const [project, setProject] = useState("All");
+  const [downloadOpen, setDownloadOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const downloadRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!downloadOpen) return;
+    const onClickOutside = (e: MouseEvent) => {
+      if (downloadRef.current && !downloadRef.current.contains(e.target as Node)) {
+        setDownloadOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, [downloadOpen]);
+
+  const handleExcel = () => {
+    setDownloadOpen(false);
+    exportDashboardExcel();
+  };
+
+  const handlePdf = async () => {
+    setDownloadOpen(false);
+    setExporting(true);
+    try {
+      await exportDashboardPdf();
+    } catch (err) {
+      console.error("PDF export failed", err);
+      alert("PDF 다운로드 중 오류가 발생했습니다.");
+    } finally {
+      setExporting(false);
+    }
+  };
 
   return (
     <div style={{
@@ -216,24 +249,90 @@ export function DashboardHeader() {
           <span style={{ fontSize: "12px", color: "#333", fontWeight: "600" }}>1K USD</span>
         </div>
 
-        {/* Download button */}
-        <button style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "6px",
-          backgroundColor: "#2e4568",
-          color: "#fff",
-          border: "none",
-          borderRadius: "6px",
-          padding: "7px 14px",
-          fontSize: "12px",
-          cursor: "pointer",
-          fontWeight: "500",
-        }}>
-          <Download size={13} />
-          다운로드
-          <span style={{ fontSize: "10px", opacity: 0.8 }}>▼</span>
-        </button>
+        {/* Download button + dropdown */}
+        <div ref={downloadRef} style={{ position: "relative" }}>
+          <button
+            onClick={() => setDownloadOpen((v) => !v)}
+            disabled={exporting}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              backgroundColor: "#2e4568",
+              color: "#fff",
+              border: "none",
+              borderRadius: "6px",
+              padding: "7px 14px",
+              fontSize: "12px",
+              cursor: exporting ? "wait" : "pointer",
+              fontWeight: "500",
+              opacity: exporting ? 0.7 : 1,
+            }}
+          >
+            <Download size={13} />
+            {exporting ? "생성 중..." : "다운로드"}
+            <span style={{ fontSize: "10px", opacity: 0.8 }}>▼</span>
+          </button>
+
+          {downloadOpen && (
+            <div style={{
+              position: "absolute",
+              top: "calc(100% + 4px)",
+              right: 0,
+              backgroundColor: "#fff",
+              border: "1px solid #ccd4dd",
+              borderRadius: "6px",
+              boxShadow: "0 4px 12px rgba(20,40,80,0.15)",
+              zIndex: 50,
+              minWidth: "170px",
+              overflow: "hidden",
+            }}>
+              <button
+                onClick={handleExcel}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  width: "100%",
+                  padding: "9px 14px",
+                  fontSize: "12px",
+                  color: "#1a2d4d",
+                  backgroundColor: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                  textAlign: "left",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#eef3f9")}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+              >
+                <FileSpreadsheet size={14} color="#1e7145" />
+                엑셀 다운로드 (.xlsx)
+              </button>
+              <button
+                onClick={handlePdf}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  width: "100%",
+                  padding: "9px 14px",
+                  fontSize: "12px",
+                  color: "#1a2d4d",
+                  backgroundColor: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                  textAlign: "left",
+                  borderTop: "1px solid #eef1f5",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#eef3f9")}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+              >
+                <FileText size={14} color="#c0392b" />
+                PDF 다운로드 (.pdf)
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

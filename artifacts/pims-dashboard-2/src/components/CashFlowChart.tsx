@@ -12,7 +12,7 @@ import {
   ReferenceLine,
 } from "recharts";
 
-const data = [
+export const CASHFLOW_DATA = [
   { month: "1월", inflow: 20, outflow: -20, loan: 10, net: -5 },
   { month: "2월", inflow: 40, outflow: -10, loan: 15, net: 8 },
   { month: "3월", inflow: 20, outflow: -20, loan: 10, net: -5 },
@@ -67,7 +67,7 @@ export function CashFlowChart() {
 
       <div style={{ height: "160px" }}>
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={data} margin={{ top: 20, right: 30, left: -20, bottom: 0 }}>
+          <ComposedChart data={CASHFLOW_DATA} margin={{ top: 20, right: 30, left: -20, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e8f0f8" vertical={false} />
             <XAxis dataKey="month" tick={{ fontSize: 10, fill: "#666" }} axisLine={false} tickLine={false} />
             <YAxis tick={{ fontSize: 10, fill: "#666" }} axisLine={false} tickLine={false} />

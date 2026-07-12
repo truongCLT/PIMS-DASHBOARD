@@ -21,33 +21,36 @@ export function Dashboard() {
         <DashboardHeader />
       </div>
 
-      {/* KPI Cards */}
-      <div style={{ padding: "8px 10px 4px" }}>
-        <KPICards />
-      </div>
+      {/* Capture area: everything below the filter box */}
+      <div id="dashboard-capture" style={{ backgroundColor: "#e8edf3" }}>
+        {/* KPI Cards */}
+        <div style={{ padding: "8px 10px 4px" }}>
+          <KPICards />
+        </div>
 
-      {/* Row 2: 3 widgets */}
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: "1fr 1fr 220px",
-        gap: "6px",
-        padding: "4px 10px",
-      }}>
-        <SalesChart />
-        <ProfitChart />
-        <OrderStatus />
-      </div>
+        {/* Row 2: 3 widgets */}
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr 220px",
+          gap: "6px",
+          padding: "4px 10px",
+        }}>
+          <SalesChart />
+          <ProfitChart />
+          <OrderStatus />
+        </div>
 
-      {/* Row 3: 3 widgets */}
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: "1fr 1fr 220px",
-        gap: "6px",
-        padding: "4px 10px 10px",
-      }}>
-        <CashFlowChart />
-        <PerformanceTable />
-        <CommentPanel />
+        {/* Row 3: 3 widgets */}
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr 220px",
+          gap: "6px",
+          padding: "4px 10px 10px",
+        }}>
+          <CashFlowChart />
+          <PerformanceTable />
+          <CommentPanel />
+        </div>
       </div>
     </div>
   );
