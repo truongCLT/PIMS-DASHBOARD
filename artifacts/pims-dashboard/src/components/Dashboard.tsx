@@ -17,7 +17,9 @@ export function Dashboard() {
       display: "flex",
       flexDirection: "column",
     }}>
-      <DashboardHeader />
+      <div style={{ padding: "10px 10px 0" }}>
+        <DashboardHeader />
+      </div>
 
       {/* KPI Cards */}
       <div style={{ padding: "8px 10px 4px" }}>

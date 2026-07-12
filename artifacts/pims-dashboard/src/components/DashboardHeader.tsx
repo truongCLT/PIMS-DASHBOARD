@@ -9,7 +9,8 @@ export function DashboardHeader() {
       position: "relative",
       overflow: "hidden",
       flexShrink: 0,
-      borderBottom: "1px solid #c5d5e5",
+      borderRadius: "10px",
+      boxShadow: "0 1px 4px rgba(30,60,110,0.08)",
     }}>
       {/* Background building image overlay */}
       <div style={{
