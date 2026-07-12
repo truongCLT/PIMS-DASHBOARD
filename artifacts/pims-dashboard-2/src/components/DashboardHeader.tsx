@@ -47,7 +47,6 @@ export function DashboardHeader() {
       background: "linear-gradient(120deg, #dce9f5 0%, #e8f1f9 25%, #c9dcee 50%, #b3cde3 75%, #9dbdd8 100%)",
       padding: "14px 16px 14px",
       position: "relative",
-      overflow: "hidden",
       flexShrink: 0,
       borderRadius: "10px",
       boxShadow: "0 1px 4px rgba(30,60,110,0.08)",
@@ -60,6 +59,8 @@ export function DashboardHeader() {
         bottom: 0,
         width: "70%",
         opacity: 0.35,
+        borderRadius: "0 10px 10px 0",
+        overflow: "hidden",
         backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 200'%3E%3Cg stroke='%23ffffff' stroke-width='2' opacity='0.6'%3E%3Cline x1='100' y1='0' x2='300' y2='200'/%3E%3Cline x1='150' y1='0' x2='350' y2='200'/%3E%3Cline x1='200' y1='0' x2='400' y2='200'/%3E%3Cline x1='250' y1='0' x2='450' y2='200'/%3E%3Cline x1='300' y1='0' x2='500' y2='200'/%3E%3Cline x1='350' y1='0' x2='550' y2='200'/%3E%3Cline x1='400' y1='0' x2='600' y2='200'/%3E%3C/g%3E%3Cg stroke='%237da7cc' stroke-width='1' opacity='0.5'%3E%3Cline x1='0' y1='50' x2='600' y2='20'/%3E%3Cline x1='0' y1='100' x2='600' y2='70'/%3E%3Cline x1='0' y1='150' x2='600' y2='120'/%3E%3C/g%3E%3C/svg%3E\")",
         backgroundSize: "cover",
       }} />
@@ -283,7 +284,7 @@ export function DashboardHeader() {
               border: "1px solid #ccd4dd",
               borderRadius: "6px",
               boxShadow: "0 4px 12px rgba(20,40,80,0.15)",
-              zIndex: 50,
+              zIndex: 1000,
               minWidth: "170px",
               overflow: "hidden",
             }}>

@@ -17,7 +17,7 @@ export function Dashboard() {
       display: "flex",
       flexDirection: "column",
     }}>
-      <div style={{ padding: "10px 10px 0" }}>
+      <div style={{ padding: "10px 10px 0", position: "relative", zIndex: 100 }}>
         <DashboardHeader />
       </div>
 
