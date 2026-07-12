@@ -49,43 +49,59 @@ export function DashboardHeader() {
 
   return (
     <div style={{
-      display: "flex",
-      flexDirection: "column",
-      gap: "12px",
+      background: "linear-gradient(120deg, #e3ebf8 0%, #edf2fb 25%, #d3e0f4 50%, #bfd2ee 75%, #abc4e8 100%)",
+      padding: "14px 16px 14px",
+      position: "relative",
+      flexShrink: 0,
+      borderRadius: "14px",
+      boxShadow: "0 2px 12px rgba(26,39,68,0.08)",
     }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      {/* Background building image overlay */}
+      <div style={{
+        position: "absolute",
+        right: 0,
+        top: 0,
+        bottom: 0,
+        width: "70%",
+        opacity: 0.35,
+        borderRadius: "0 14px 14px 0",
+        overflow: "hidden",
+        backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 200'%3E%3Cg stroke='%23ffffff' stroke-width='2' opacity='0.6'%3E%3Cline x1='100' y1='0' x2='300' y2='200'/%3E%3Cline x1='150' y1='0' x2='350' y2='200'/%3E%3Cline x1='200' y1='0' x2='400' y2='200'/%3E%3Cline x1='250' y1='0' x2='450' y2='200'/%3E%3Cline x1='300' y1='0' x2='500' y2='200'/%3E%3Cline x1='350' y1='0' x2='550' y2='200'/%3E%3Cline x1='400' y1='0' x2='600' y2='200'/%3E%3C/g%3E%3Cg stroke='%237da7cc' stroke-width='1' opacity='0.5'%3E%3Cline x1='0' y1='50' x2='600' y2='20'/%3E%3Cline x1='0' y1='100' x2='600' y2='70'/%3E%3Cline x1='0' y1='150' x2='600' y2='120'/%3E%3C/g%3E%3C/svg%3E\")",
+        backgroundSize: "cover",
+      }} />
+
+      <div style={{ position: "relative", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <h1 style={{
           color: "var(--color-text-primary)",
-          fontSize: "24px",
+          fontSize: "22px",
           fontWeight: "700",
-          margin: "0",
+          margin: "0 0 12px",
         }}>대시보드</h1>
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <button style={{
-            backgroundColor: "var(--color-card-bg)",
-            border: "1px solid var(--color-border)",
-            borderRadius: "8px",
-            padding: "8px 10px",
-            cursor: "pointer",
-            color: "var(--color-primary-blue)",
-            boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
-            display: "flex",
-            alignItems: "center",
-          }}>
-            <ChevronsUp size={16} />
-          </button>
-        </div>
+        <button style={{
+          backgroundColor: "var(--color-card-bg)",
+          border: "1px solid var(--color-border)",
+          borderRadius: "8px",
+          padding: "6px 8px",
+          cursor: "pointer",
+          color: "var(--color-primary-blue)",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+          display: "flex",
+          alignItems: "center",
+        }}>
+          <ChevronsUp size={16} />
+        </button>
       </div>
 
       {/* Filter bar — white rounded box */}
       <div style={{
+        position: "relative",
         backgroundColor: "var(--color-card-bg)",
-        borderRadius: "14px",
-        boxShadow: "0 2px 12px rgba(0,0,0,0.02)",
-        padding: "16px 20px",
+        borderRadius: "10px",
+        boxShadow: "0 2px 8px rgba(26,39,68,0.10)",
+        padding: "12px 14px",
         display: "flex",
         alignItems: "center",
-        gap: "24px",
+        gap: "16px",
         flexWrap: "wrap",
       }}>
         {/* Project filter */}
