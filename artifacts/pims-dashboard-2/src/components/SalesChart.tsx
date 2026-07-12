@@ -1,12 +1,15 @@
 import React, { useState } from "react";
 import {
   ComposedChart,
-  Area,
+  Bar,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
+  Legend,
   ResponsiveContainer,
+  LabelList,
 } from "recharts";
 
 export const SALES_DATA = [
@@ -18,45 +21,13 @@ export const SALES_DATA = [
   { month: "9월", net: null, report: null, plan: 109, actual: null },
 ];
 
-const PEAK_PLAN = SALES_DATA.reduce(
-  (best, d) => (d.plan !== null && d.plan > (best.plan ?? -Infinity) ? d : best),
-  SALES_DATA[0],
-);
-const LAST_ACTUAL = [...SALES_DATA].reverse().find((d) => d.actual !== null);
-
-function CalloutBadge({
-  value,
-  label,
-  style,
-}: {
-  value: string;
-  label: string;
-  style: React.CSSProperties;
-}) {
+const CustomBar = (props: any) => {
+  const { x, y, width, height, value } = props;
+  if (!value) return null;
   return (
-    <div
-      style={{
-        position: "absolute",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        padding: "5px 14px",
-        backgroundColor: "rgba(255,255,255,0.88)",
-        border: "1.5px solid #a9bbdc",
-        borderRadius: "12px",
-        boxShadow: "0 2px 8px rgba(90,110,160,0.18)",
-        pointerEvents: "none",
-        zIndex: 2,
-        ...style,
-      }}
-    >
-      <span style={{ fontSize: "14px", fontWeight: 700, color: "#3f5788", lineHeight: 1.2 }}>
-        {value}
-      </span>
-      <span style={{ fontSize: "8px", color: "#7d8cab", whiteSpace: "nowrap" }}>{label}</span>
-    </div>
+    <rect x={x} y={y} width={width} height={height} fill="#1565c0" rx={2} />
   );
-}
+};
 
 export function SalesChart() {
   const [viewType, setViewType] = useState<"net" | "report">("net");
@@ -71,87 +42,49 @@ export function SalesChart() {
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
         <span style={{ fontSize: "12px", fontWeight: "600", color: "#1a3a5c" }}>매출 실적 및 전망</span>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <span style={{ fontSize: "9px", color: "#8b9ab5" }}>단위: 1K USD</span>
-          <button style={{
-            fontSize: "11px",
-            color: "#1e6fdd",
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-          }}>상세보기</button>
-        </div>
+        <button style={{
+          fontSize: "11px",
+          color: "#1e6fdd",
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+        }}>상세보기</button>
       </div>
 
       {/* Chart */}
-      <div style={{ height: "160px", position: "relative" }}>
-        <CalloutBadge
-          value={String(PEAK_PLAN.plan)}
-          label={`${PEAK_PLAN.month} 매출(계획) 최고`}
-          style={{ left: "26%", top: "6%" }}
-        />
-        {LAST_ACTUAL && (
-          <CalloutBadge
-            value={String(LAST_ACTUAL.actual)}
-            label={`${LAST_ACTUAL.month} 매출(실적 및 전망)`}
-            style={{ right: "3%", top: "2%" }}
-          />
-        )}
+      <div style={{ height: "160px" }}>
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={SALES_DATA} margin={{ top: 15, right: 10, left: -20, bottom: 0 }}>
-            <defs>
-              <linearGradient id="salesNetGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#8ea9d8" stopOpacity={0.85} />
-                <stop offset="70%" stopColor="#b9c8e6" stopOpacity={0.45} />
-                <stop offset="100%" stopColor="#dfe6f4" stopOpacity={0.25} />
-              </linearGradient>
-              <linearGradient id="salesPlanGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#e2836b" stopOpacity={0.75} />
-                <stop offset="100%" stopColor="#f0b3a2" stopOpacity={0.12} />
-              </linearGradient>
-              <linearGradient id="salesActualGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#5b7fc7" stopOpacity={0.5} />
-                <stop offset="100%" stopColor="#8ea9d8" stopOpacity={0.06} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid stroke="#e3e9f4" strokeWidth={1} />
-            <XAxis dataKey="month" tick={{ fontSize: 10, fill: "#8b9ab5" }} axisLine={false} tickLine={false} />
-            <YAxis domain={[60, 140]} tick={{ fontSize: 10, fill: "#8b9ab5" }} axisLine={false} tickLine={false} />
-            <Tooltip contentStyle={{ fontSize: "11px", borderRadius: "8px", border: "1px solid #c4d0e6" }} />
-            <Area
+            <CartesianGrid strokeDasharray="3 3" stroke="#e8f0f8" vertical={false} />
+            <XAxis dataKey="month" tick={{ fontSize: 10, fill: "#666" }} axisLine={false} tickLine={false} />
+            <YAxis domain={[60, 140]} tick={{ fontSize: 10, fill: "#666" }} axisLine={false} tickLine={false} />
+            <Tooltip contentStyle={{ fontSize: "11px" }} />
+            <Bar dataKey="net" name="넷" fill="#1565c0" barSize={20} radius={[2, 2, 0, 0]}>
+              <LabelList dataKey="net" position="top" style={{ fontSize: "9px", fill: "#333", fontWeight: "600" }} />
+            </Bar>
+            <Line
               type="monotone"
               dataKey="plan"
               name="매출(계획)"
-              stroke="#e2836b"
-              strokeWidth={2}
-              fill="url(#salesPlanGrad)"
-              dot={false}
-              activeDot={{ r: 4, fill: "#e2836b" }}
+              stroke="#1e90ff"
+              strokeWidth={1.5}
+              dot={{ r: 3, fill: "#1e90ff" }}
               connectNulls
-            />
-            <Area
-              type="monotone"
-              dataKey="net"
-              name="넷"
-              stroke="#7f9cd0"
-              strokeWidth={2}
-              fill="url(#salesNetGrad)"
-              dot={false}
-              activeDot={{ r: 4, fill: "#7f9cd0" }}
-              connectNulls
-            />
-            <Area
+            >
+              <LabelList dataKey="plan" position="top" style={{ fontSize: "9px", fill: "#1e90ff" }} />
+            </Line>
+            <Line
               type="monotone"
               dataKey="actual"
               name="매출(실적 및 전망)"
-              stroke="#5b7fc7"
-              strokeWidth={2}
-              strokeDasharray="5 3"
-              fill="url(#salesActualGrad)"
-              dot={false}
-              activeDot={{ r: 4, fill: "#5b7fc7" }}
+              stroke="#4caf50"
+              strokeWidth={1.5}
+              dot={{ r: 3, fill: "#4caf50" }}
+              strokeDasharray="4 2"
               connectNulls
-            />
+            >
+              <LabelList dataKey="actual" position="top" style={{ fontSize: "9px", fill: "#4caf50" }} />
+            </Line>
           </ComposedChart>
         </ResponsiveContainer>
       </div>
@@ -180,15 +113,11 @@ export function SalesChart() {
         </label>
         <div style={{ display: "flex", alignItems: "center", gap: "12px", marginLeft: "8px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-            <div style={{ width: "20px", height: "8px", borderRadius: "2px", background: "linear-gradient(180deg, #8ea9d8, #dfe6f4)" }} />
-            <span style={{ fontSize: "9px", color: "#555" }}>넷</span>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-            <div style={{ width: "20px", height: "2px", backgroundColor: "#e2836b" }} />
+            <div style={{ width: "20px", height: "2px", backgroundColor: "#1e90ff" }} />
             <span style={{ fontSize: "9px", color: "#555" }}>매출(계획)</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-            <div style={{ width: "20px", borderTop: "2px dashed #5b7fc7" }} />
+            <div style={{ width: "20px", borderTop: "2px dashed #4caf50" }} />
             <span style={{ fontSize: "9px", color: "#555" }}>매출(실적 및 전망)</span>
           </div>
         </div>
