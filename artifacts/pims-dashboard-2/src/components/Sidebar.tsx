@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import pimsBranding from "../assets/pims-branding.png";
 import { Pin, FolderClosed } from "lucide-react";
+import { PROJECT_GROUPS } from "../data/projects";
 
 interface TreeItem {
   label: string;
@@ -8,93 +9,14 @@ interface TreeItem {
   active?: boolean;
 }
 
-const TREE_DATA: TreeItem[] = [
-  {
-    label: "DECV",
-    children: [
-      {
-        label: "도급사업",
-        active: true,
-        children: [
-          { label: "NHON TRACH NEW TOWN SPC(2024)" },
-          { label: "NHON TRACH NEW TOWN SPC(2025)" },
-          { label: "THAI BINH NEW TOWN SPC(2024)" },
-          { label: "THAI BINH NEW TOWN SPC(2025)" },
-          { label: "THUONG CAT NEW TOWN SPC(2024)" },
-          { label: "NHON TRACH INFRA SITE" },
-          { label: "THT PHASE 1 VILLA&INFRA SITE" },
-          { label: "THT PHASE 1 H9 APTMENT SITE" },
-          { label: "THT GALLERY HOUSING SITE" },
-          { label: "THT PHASE 2 INFRA SITE" },
-          { label: "THT PHASE 2 K3 VILLA SITE" },
-          { label: "THT PHASE 2 K5&K7 VILLA SITE" },
-          { label: "THT K8HH1 COMPLEX SITE" },
-          { label: "THT K8CT1 APTMENT SITE" },
-          { label: "THT MODEL HOUSE SITE (PHASE 1)" },
-          { label: "THT MODEL HOUSE SITE (PHASE 2)" },
-        ],
-      },
-      {
-        label: "서비스사업",
-        children: [
-          { label: "THAI BINH NEW TOWN SPC(OPEX)" },
-          { label: "S 28 TEST" },
-          { label: "Test11" },
-          { label: "THT INFRA O&M SITE" },
-          { label: "THT PHASE 1 VILLA O&M" },
-          { label: "THT PHASE 1 H9 APTMENT A/S CENTER" },
-          { label: "THT PHASE 1 H9 APTMENT O&M" },
-          { label: "THT PHASE 1 H9 APARTMENT 5TH-YEAR MAINTENANCE SERVICE" },
-          { label: "THT PHASE 2 K3 VILLA O&M" },
-          { label: "THT PHASE 2 K5&K7 VILLA A/S CENTER" },
-          { label: "THT B1CC4 TEST PILE SITE" },
-          { label: "K8HH1 BROKERAGE" },
-          { label: "THT K8HH1 TEST PILE SITE" },
-          { label: "THT K8CT1 PRECON SERVICE" },
-          { label: "THT K8CT1 TEST PILE SITE" },
-          { label: "THT K2CT1 TEST PILE SITE" },
-          { label: "THT PHASE 1&2 VILLA O&M" },
-        ],
-      },
-    ],
-  },
-  {
-    label: "TCC",
-    children: [
-      {
-        label: "서비스사업",
-        children: [
-          { label: "THT B3CC1 DESIGN&APPROVAL CONSULTING SERVICE" },
-          { label: "THT PJ DESIGN&APPROVAL CONSULTING SERVICE" },
-          { label: "THT B1CC4 DESIGN&APPROVAL CONSULTING SERVICE" },
-          { label: "THT B1CC4 DESIGN&APPROVAL CONSULTING SERVICE" },
-          { label: "THT K8HH1 PRECON SERVICE" },
-          { label: "THT K8CT1 CONSTRUCTION INVESTMENT MANAGING SERVICE" },
-          { label: "THT H1HH1 DESIGN&APPROVAL CONSULTING SERVICE" },
-          { label: "THT K2CT1 PRECON SERVICE" },
-          { label: "THT PHASE 2 K2 BLOCK CONSTRUCTION COST CONSULTING SERVICE" },
-          { label: "THT PHASE 2 CIP REPORT CONSULTING SERVICE" },
-          { label: "THT K2HH1 PRECON SERVICE" },
-        ],
-      },
-    ],
-  },
-  {
-    label: "DEHEIM",
-    children: [
-      {
-        label: "서비스사업",
-        children: [
-          { label: "HEAD OFFICE(2024)" },
-          { label: "HEAD OFFICE(2025)" },
-          { label: "HEAD OFFICE(2026)" },
-          { label: "Head Office Expenses" },
-          { label: "Business Expenses" },
-        ],
-      },
-    ],
-  },
-];
+const TREE_DATA: TreeItem[] = PROJECT_GROUPS.map((group, gi) => ({
+  label: group.label,
+  children: group.divisions.map((division, di) => ({
+    label: division.label,
+    active: gi === 0 && di === 0,
+    children: division.projects.map((project) => ({ label: project.name })),
+  })),
+}));
 
 function TreeNode({ item, depth = 0 }: { item: TreeItem; depth?: number }) {
   const [open, setOpen] = useState(true);

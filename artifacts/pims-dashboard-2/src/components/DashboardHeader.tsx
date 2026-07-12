@@ -1,11 +1,13 @@
 import React, { useState } from "react";
 import { ChevronsUp, Download } from "lucide-react";
+import { PROJECT_GROUPS } from "../data/projects";
 
 export function DashboardHeader() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [period, setPeriod] = useState("Month");
   const [currency, setCurrency] = useState("USD");
+  const [project, setProject] = useState("All");
 
   return (
     <div style={{
@@ -66,17 +68,36 @@ export function DashboardHeader() {
         {/* Project filter */}
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <span style={{ fontSize: "12px", color: "#333", fontWeight: "600" }}>프로젝트:</span>
-          <select style={{
-            border: "1px solid #ccd4dd",
-            borderRadius: "6px",
-            padding: "5px 26px 5px 10px",
-            fontSize: "12px",
-            color: "#333",
-            backgroundColor: "#fff",
-            cursor: "pointer",
-            minWidth: "70px",
-          }}>
-            <option>All</option>
+          <select
+            value={project}
+            onChange={(e) => setProject(e.target.value)}
+            style={{
+              border: "1px solid #ccd4dd",
+              borderRadius: "6px",
+              padding: "5px 26px 5px 10px",
+              fontSize: "12px",
+              color: "#333",
+              backgroundColor: "#fff",
+              cursor: "pointer",
+              minWidth: "70px",
+              maxWidth: "260px",
+            }}
+          >
+            <option value="All">All</option>
+            {PROJECT_GROUPS.flatMap((group) =>
+              group.divisions.map((division) => (
+                <optgroup
+                  key={`${group.label}-${division.label}`}
+                  label={`${group.label} · ${division.label}`}
+                >
+                  {division.projects.map((p) => (
+                    <option key={p.code} value={p.code}>
+                      {p.name}
+                    </option>
+                  ))}
+                </optgroup>
+              )),
+            )}
           </select>
         </div>
 
