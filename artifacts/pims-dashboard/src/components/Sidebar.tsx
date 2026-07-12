@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ChevronUp, ChevronDown, Pin } from "lucide-react";
+import { Pin, FolderClosed } from "lucide-react";
 
 interface TreeItem {
   label: string;
@@ -9,13 +9,11 @@ interface TreeItem {
 
 const TREE_DATA: TreeItem[] = [
   {
-    label: "DECV TOTAL",
-  },
-  {
     label: "DECV",
     children: [
       {
         label: "도급사업",
+        active: true,
         children: [
           { label: "진행중" },
           { label: "프로젝트 1" },
@@ -51,14 +49,11 @@ function TreeNode({ item, depth = 0 }: { item: TreeItem; depth?: number }) {
   const isTopLevel = depth === 0;
   const isSubGroup = depth === 1;
 
-  const bg = isTopLevel && item.label === "DECV TOTAL"
-    ? "#1c3a5c"
-    : "transparent";
-
-  const color = isTopLevel ? "#cfe2f7" : isSubGroup ? "#b8d4ed" : "#96b8d8";
-  const fontSize = isTopLevel ? "12px" : isSubGroup ? "11px" : "11px";
-  const fontWeight = isTopLevel ? "600" : isSubGroup ? "500" : "400";
-  const paddingLeft = depth === 0 ? "10px" : depth === 1 ? "18px" : "28px";
+  const color = isTopLevel ? "#1a2d4d" : isSubGroup ? "#2a3d55" : "#44546a";
+  const fontSize = isTopLevel ? "12px" : "11px";
+  const fontWeight = isTopLevel ? "700" : isSubGroup ? "600" : "400";
+  const paddingLeft = depth === 0 ? "12px" : depth === 1 ? "20px" : "32px";
+  const bg = item.active ? "#e8ecf5" : "transparent";
 
   return (
     <div>
@@ -68,29 +63,22 @@ function TreeNode({ item, depth = 0 }: { item: TreeItem; depth?: number }) {
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          padding: `5px 8px 5px ${paddingLeft}`,
+          padding: `6px 10px 6px ${paddingLeft}`,
           cursor: hasChildren ? "pointer" : "default",
           backgroundColor: bg,
           color,
           fontSize,
           fontWeight,
-          borderBottom: isTopLevel && item.label === "DECV TOTAL" ? "1px solid #1a3a5c" : undefined,
           userSelect: "none",
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-          {depth === 1 && (
-            <span style={{ fontSize: "10px", opacity: 0.6 }}>▪</span>
-          )}
           {item.label}
         </div>
-        {hasChildren && (
-          <span style={{ fontSize: "10px", color: "#6b9ab8" }}>
-            {open ? "∧" : "∨"}
+        {(hasChildren || (item.children && item.children.length === 0)) && (
+          <span style={{ fontSize: "10px", color: "#44546a" }}>
+            {hasChildren && !open ? "∨" : "∧"}
           </span>
-        )}
-        {!hasChildren && item.children && item.children.length === 0 && (
-          <span style={{ fontSize: "10px", color: "#6b9ab8" }}>∧</span>
         )}
       </div>
       {open && item.children && (
@@ -109,43 +97,61 @@ export function Sidebar() {
     <div style={{
       width: "170px",
       minWidth: "170px",
-      backgroundColor: "#142840",
+      backgroundColor: "#ffffff",
       display: "flex",
       flexDirection: "column",
       overflow: "hidden",
-      borderRight: "1px solid #0e2030",
+      borderRight: "1px solid #d5dce6",
     }}>
       {/* Tabs */}
       <div style={{
         display: "flex",
-        alignItems: "center",
-        backgroundColor: "#0e2030",
-        padding: "6px 8px",
-        gap: "6px",
-        borderBottom: "1px solid #0a1a28",
+        alignItems: "flex-end",
+        backgroundColor: "#f2f4f7",
+        padding: "8px 8px 0",
+        gap: "4px",
+        borderBottom: "1px solid #d5dce6",
       }}>
         <button style={{
-          padding: "3px 10px",
-          backgroundColor: "#1e6fdd",
-          color: "#fff",
-          border: "none",
-          borderRadius: "3px",
+          padding: "5px 12px",
+          backgroundColor: "#e8eaee",
+          color: "#1a2d4d",
+          border: "1px solid #c8d0da",
+          borderBottom: "none",
+          borderRadius: "4px 4px 0 0",
           fontSize: "11px",
           cursor: "pointer",
-          fontWeight: "500",
+          fontWeight: "600",
         }}>내 메뉴</button>
         <button style={{
-          padding: "3px 10px",
-          backgroundColor: "transparent",
-          color: "#7aafd4",
-          border: "1px solid #2a4a6a",
-          borderRadius: "3px",
+          padding: "5px 12px",
+          backgroundColor: "#ffffff",
+          color: "#1e6fdd",
+          border: "1px solid #c8d0da",
+          borderBottom: "none",
+          borderRadius: "4px 4px 0 0",
           fontSize: "11px",
           cursor: "pointer",
+          fontWeight: "600",
         }}>메뉴</button>
-        <div style={{ marginLeft: "auto" }}>
-          <Pin size={12} color="#7aafd4" />
+        <div style={{ marginLeft: "auto", paddingBottom: "6px" }}>
+          <Pin size={13} color="#2e4568" fill="#2e4568" />
         </div>
+      </div>
+
+      {/* DECV TOTAL */}
+      <div style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "8px",
+        padding: "10px 12px",
+        color: "#1a2d4d",
+        fontSize: "12px",
+        fontWeight: "700",
+        borderBottom: "1px solid #eef1f5",
+      }}>
+        <FolderClosed size={14} color="#1a2d4d" fill="#1a2d4d" />
+        DECV TOTAL
       </div>
 
       {/* Tree */}
@@ -157,12 +163,11 @@ export function Sidebar() {
 
       {/* Bottom branding */}
       <div style={{
-        backgroundColor: "#0e2030",
         padding: "12px 10px",
-        borderTop: "1px solid #1a3a5c",
+        borderTop: "1px solid #e5eaf0",
       }}>
         <div style={{
-          backgroundColor: "#1e3a5a",
+          backgroundColor: "#2e4568",
           borderRadius: "6px",
           padding: "10px",
           display: "flex",
@@ -178,27 +183,12 @@ export function Sidebar() {
           }}>
             PIMS System
           </div>
-          <div style={{ color: "#7aafd4", fontSize: "9px" }}>For</div>
-          <div style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "4px",
-          }}>
-            <div style={{
-              width: "14px",
-              height: "14px",
-              backgroundColor: "#1e90ff",
-              borderRadius: "2px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}>
-              <span style={{ color: "#fff", fontSize: "8px", fontWeight: "700" }}>D</span>
-            </div>
-            <span style={{ color: "#cfe2f7", fontSize: "10px", fontWeight: "600" }}>
-              DAEWOO E&amp;C VINA
-            </span>
-          </div>
+          <div style={{ color: "#9cb8d8", fontSize: "9px" }}>For</div>
+          <img
+            src="/daewoo-logo.png"
+            alt="DAEWOO E&C VINA"
+            style={{ height: "14px", objectFit: "contain" }}
+          />
         </div>
       </div>
     </div>

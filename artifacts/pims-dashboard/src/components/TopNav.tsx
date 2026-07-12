@@ -16,56 +16,77 @@ const NAV_TABS = [
 export function TopNav() {
   return (
     <div style={{
-      backgroundColor: "#0e2a47",
+      backgroundColor: "#2e4568",
       display: "flex",
       alignItems: "center",
-      height: "40px",
-      padding: "0 8px",
+      height: "44px",
       flexShrink: 0,
-      borderBottom: "1px solid #0a1f35",
     }}>
       {/* Logo */}
       <div style={{
         display: "flex",
         alignItems: "center",
-        padding: "0 10px",
+        padding: "0 14px",
         minWidth: "170px",
-        borderRight: "1px solid #1a3a5c",
         height: "100%",
+        backgroundColor: "#2e4568",
       }}>
         <img
           src="/daewoo-logo.png"
           alt="DAEWOO E&C VINA"
-          style={{ height: "22px", objectFit: "contain" }}
+          style={{ height: "24px", objectFit: "contain" }}
         />
       </div>
 
       {/* Nav Tabs */}
-      <div style={{ display: "flex", alignItems: "center", flex: 1, height: "100%" }}>
+      <div style={{ display: "flex", alignItems: "center", flex: 1, height: "100%", gap: "2px", padding: "0 8px" }}>
         {NAV_TABS.map((tab) => (
           <button
             key={tab.label}
             style={{
+              position: "relative",
               height: "100%",
               padding: "0 14px",
-              backgroundColor: tab.active ? "#1e6fdd" : "transparent",
-              color: tab.active ? "#ffffff" : "#a8c4e0",
+              backgroundColor: "transparent",
               border: "none",
               cursor: "pointer",
               fontSize: "12px",
-              fontWeight: tab.active ? "600" : "400",
-              borderRight: "1px solid #1a3a5c",
               whiteSpace: "nowrap",
+              display: "flex",
+              alignItems: "center",
             }}
           >
-            {tab.label}
+            {tab.active ? (
+              <>
+                <span style={{
+                  backgroundColor: "#cfe2f0",
+                  color: "#2e4568",
+                  fontWeight: "600",
+                  padding: "5px 12px",
+                  borderRadius: "5px",
+                }}>
+                  {tab.label}
+                </span>
+                <span style={{
+                  position: "absolute",
+                  left: "8px",
+                  right: "8px",
+                  bottom: "0",
+                  height: "3px",
+                  backgroundColor: "#1e6fdd",
+                  borderRadius: "2px 2px 0 0",
+                }} />
+              </>
+            ) : (
+              <span style={{ color: "#ffffff", fontWeight: "400" }}>{tab.label}</span>
+            )}
           </button>
         ))}
         <button style={{
           height: "100%",
           padding: "0 14px",
           backgroundColor: "transparent",
-          color: "#a8c4e0",
+          color: "#ffffff",
           border: "none",
           cursor: "pointer",
           fontSize: "12px",
