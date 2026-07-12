@@ -49,77 +49,68 @@ export function DashboardHeader() {
 
   return (
     <div style={{
-      background: "linear-gradient(120deg, #dce9f5 0%, #e8f1f9 25%, #c9dcee 50%, #b3cde3 75%, #9dbdd8 100%)",
-      padding: "14px 16px 14px",
-      position: "relative",
-      flexShrink: 0,
-      borderRadius: "10px",
-      boxShadow: "0 1px 4px rgba(30,60,110,0.08)",
+      display: "flex",
+      flexDirection: "column",
+      gap: "12px",
     }}>
-      {/* Background building image overlay */}
-      <div style={{
-        position: "absolute",
-        right: 0,
-        top: 0,
-        bottom: 0,
-        width: "70%",
-        opacity: 0.35,
-        borderRadius: "0 10px 10px 0",
-        overflow: "hidden",
-        backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 200'%3E%3Cg stroke='%23ffffff' stroke-width='2' opacity='0.6'%3E%3Cline x1='100' y1='0' x2='300' y2='200'/%3E%3Cline x1='150' y1='0' x2='350' y2='200'/%3E%3Cline x1='200' y1='0' x2='400' y2='200'/%3E%3Cline x1='250' y1='0' x2='450' y2='200'/%3E%3Cline x1='300' y1='0' x2='500' y2='200'/%3E%3Cline x1='350' y1='0' x2='550' y2='200'/%3E%3Cline x1='400' y1='0' x2='600' y2='200'/%3E%3C/g%3E%3Cg stroke='%237da7cc' stroke-width='1' opacity='0.5'%3E%3Cline x1='0' y1='50' x2='600' y2='20'/%3E%3Cline x1='0' y1='100' x2='600' y2='70'/%3E%3Cline x1='0' y1='150' x2='600' y2='120'/%3E%3C/g%3E%3C/svg%3E\")",
-        backgroundSize: "cover",
-      }} />
-
-      <div style={{ position: "relative", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <h1 style={{
-          color: "#2e4568",
-          fontSize: "22px",
+          color: "var(--color-text-primary)",
+          fontSize: "24px",
           fontWeight: "700",
-          margin: "0 0 12px",
+          margin: "0",
         }}>대시보드</h1>
-        <button style={{
-          backgroundColor: "#ffffff",
-          border: "1px solid #d5dfe9",
-          borderRadius: "8px",
-          padding: "6px 8px",
-          cursor: "pointer",
-          color: "#1e6fdd",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
-          display: "flex",
-          alignItems: "center",
-        }}>
-          <ChevronsUp size={16} />
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <button style={{
+            backgroundColor: "var(--color-card-bg)",
+            border: "1px solid var(--color-border)",
+            borderRadius: "8px",
+            padding: "8px 10px",
+            cursor: "pointer",
+            color: "var(--color-primary-blue)",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
+            display: "flex",
+            alignItems: "center",
+          }}>
+            <ChevronsUp size={16} />
+          </button>
+        </div>
       </div>
 
       {/* Filter bar — white rounded box */}
       <div style={{
-        position: "relative",
-        backgroundColor: "#ffffff",
-        borderRadius: "10px",
-        boxShadow: "0 2px 8px rgba(30,60,110,0.10)",
-        padding: "12px 14px",
+        backgroundColor: "var(--color-card-bg)",
+        borderRadius: "14px",
+        boxShadow: "0 2px 12px rgba(0,0,0,0.02)",
+        padding: "16px 20px",
         display: "flex",
         alignItems: "center",
-        gap: "10px",
+        gap: "24px",
         flexWrap: "wrap",
       }}>
         {/* Project filter */}
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span style={{ fontSize: "12px", color: "#333", fontWeight: "600" }}>프로젝트:</span>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <span style={{ fontSize: "13px", color: "var(--color-text-secondary)", fontWeight: "500" }}>프로젝트:</span>
           <select
             value={project}
             onChange={(e) => setProject(e.target.value)}
             style={{
-              border: "1px solid #ccd4dd",
-              borderRadius: "6px",
-              padding: "5px 26px 5px 10px",
-              fontSize: "12px",
-              color: "#333",
-              backgroundColor: "#fff",
+              border: "1px solid var(--color-border)",
+              borderRadius: "8px",
+              padding: "6px 32px 6px 12px",
+              fontSize: "13px",
+              color: "var(--color-text-primary)",
+              fontWeight: "500",
+              backgroundColor: "var(--color-background)",
               cursor: "pointer",
-              minWidth: "70px",
+              minWidth: "120px",
               maxWidth: "260px",
+              outline: "none",
+              appearance: "none",
+              backgroundImage: `url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%238b96ab%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E")`,
+              backgroundRepeat: "no-repeat",
+              backgroundPosition: "right 10px top 50%",
+              backgroundSize: "10px auto",
             }}
           >
             <option value="All">All</option>
@@ -141,16 +132,16 @@ export function DashboardHeader() {
         </div>
 
         {/* Date filter */}
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span style={{ fontSize: "12px", color: "#333", fontWeight: "600" }}>조회 기간:</span>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <span style={{ fontSize: "13px", color: "var(--color-text-secondary)", fontWeight: "500" }}>조회 기간:</span>
           <div style={{
             display: "flex",
             alignItems: "center",
-            border: "1px solid #ccd4dd",
-            borderRadius: "6px",
-            padding: "2px 8px",
-            backgroundColor: "#fff",
-            gap: "6px",
+            border: "1px solid var(--color-border)",
+            borderRadius: "8px",
+            padding: "4px 12px",
+            backgroundColor: "var(--color-background)",
+            gap: "8px",
           }}>
             <input
               type="date"
@@ -159,15 +150,16 @@ export function DashboardHeader() {
               style={{
                 border: "none",
                 outline: "none",
-                fontSize: "12px",
-                color: startDate ? "#333" : "#aab2bc",
+                fontSize: "13px",
+                color: startDate ? "var(--color-text-primary)" : "var(--color-text-secondary)",
+                fontWeight: "500",
                 backgroundColor: "transparent",
                 cursor: "pointer",
-                width: "104px",
-                padding: "3px 0",
+                width: "110px",
+                padding: "2px 0",
               }}
             />
-            <span style={{ fontSize: "12px", color: "#aab2bc" }}>→</span>
+            <span style={{ fontSize: "12px", color: "var(--color-text-secondary)" }}>→</span>
             <input
               type="date"
               value={endDate}
@@ -176,31 +168,39 @@ export function DashboardHeader() {
               style={{
                 border: "none",
                 outline: "none",
-                fontSize: "12px",
-                color: endDate ? "#333" : "#aab2bc",
+                fontSize: "13px",
+                color: endDate ? "var(--color-text-primary)" : "var(--color-text-secondary)",
+                fontWeight: "500",
                 backgroundColor: "transparent",
                 cursor: "pointer",
-                width: "104px",
-                padding: "3px 0",
+                width: "110px",
+                padding: "2px 0",
               }}
             />
           </div>
         </div>
 
         {/* View period */}
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span style={{ fontSize: "12px", color: "#333", fontWeight: "600" }}>조회 기준:</span>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <span style={{ fontSize: "13px", color: "var(--color-text-secondary)", fontWeight: "500" }}>조회 기준:</span>
           <select
             value={period}
             onChange={(e) => setPeriod(e.target.value)}
             style={{
-              border: "1px solid #ccd4dd",
-              borderRadius: "6px",
-              padding: "5px 26px 5px 10px",
-              fontSize: "12px",
-              color: "#333",
-              backgroundColor: "#fff",
+              border: "1px solid var(--color-border)",
+              borderRadius: "8px",
+              padding: "6px 32px 6px 12px",
+              fontSize: "13px",
+              color: "var(--color-text-primary)",
+              fontWeight: "500",
+              backgroundColor: "var(--color-background)",
               cursor: "pointer",
+              outline: "none",
+              appearance: "none",
+              backgroundImage: `url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%238b96ab%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E")`,
+              backgroundRepeat: "no-repeat",
+              backgroundPosition: "right 10px top 50%",
+              backgroundSize: "10px auto",
             }}
           >
             <option value="Month">Month</option>
@@ -210,19 +210,26 @@ export function DashboardHeader() {
         </div>
 
         {/* Currency */}
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span style={{ fontSize: "12px", color: "#333", fontWeight: "600" }}>통화:</span>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <span style={{ fontSize: "13px", color: "var(--color-text-secondary)", fontWeight: "500" }}>통화:</span>
           <select
             value={currency}
             onChange={(e) => setCurrency(e.target.value)}
             style={{
-              border: "1px solid #ccd4dd",
-              borderRadius: "6px",
-              padding: "5px 26px 5px 10px",
-              fontSize: "12px",
-              color: "#333",
-              backgroundColor: "#fff",
+              border: "1px solid var(--color-border)",
+              borderRadius: "8px",
+              padding: "6px 32px 6px 12px",
+              fontSize: "13px",
+              color: "var(--color-text-primary)",
+              fontWeight: "500",
+              backgroundColor: "var(--color-background)",
               cursor: "pointer",
+              outline: "none",
+              appearance: "none",
+              backgroundImage: `url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%238b96ab%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E")`,
+              backgroundRepeat: "no-repeat",
+              backgroundPosition: "right 10px top 50%",
+              backgroundSize: "10px auto",
             }}
           >
             <option value="USD">USD</option>
@@ -231,13 +238,13 @@ export function DashboardHeader() {
         </div>
 
         {/* Unit toggle */}
-        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginLeft: "auto" }}>
-          <span style={{ fontSize: "12px", color: "#333", fontWeight: "600" }}>단위:</span>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", marginLeft: "auto" }}>
+          <span style={{ fontSize: "13px", color: "var(--color-text-secondary)", fontWeight: "500" }}>단위:</span>
           <div style={{
-            width: "36px",
-            height: "20px",
-            backgroundColor: "#5b5fc7",
-            borderRadius: "10px",
+            width: "40px",
+            height: "22px",
+            backgroundColor: "var(--color-primary-blue)",
+            borderRadius: "12px",
             position: "relative",
             cursor: "pointer",
           }}>
@@ -245,14 +252,14 @@ export function DashboardHeader() {
               position: "absolute",
               right: "2px",
               top: "2px",
-              width: "16px",
-              height: "16px",
+              width: "18px",
+              height: "18px",
               backgroundColor: "#ffffff",
               borderRadius: "50%",
-              boxShadow: "0 1px 2px rgba(0,0,0,0.2)",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
             }} />
           </div>
-          <span style={{ fontSize: "12px", color: "#333", fontWeight: "600" }}>1K USD</span>
+          <span style={{ fontSize: "13px", color: "var(--color-text-primary)", fontWeight: "600" }}>1K USD</span>
         </div>
 
         {/* Download button + dropdown */}
@@ -263,21 +270,21 @@ export function DashboardHeader() {
             style={{
               display: "flex",
               alignItems: "center",
-              gap: "6px",
-              backgroundColor: "#2e4568",
+              gap: "8px",
+              backgroundColor: "var(--color-primary-blue)",
               color: "#fff",
               border: "none",
-              borderRadius: "6px",
-              padding: "7px 14px",
-              fontSize: "12px",
+              borderRadius: "8px",
+              padding: "8px 16px",
+              fontSize: "13px",
               cursor: exporting ? "wait" : "pointer",
-              fontWeight: "500",
+              fontWeight: "600",
               opacity: exporting ? 0.7 : 1,
+              boxShadow: "0 2px 6px rgba(74, 127, 212, 0.2)",
             }}
           >
-            <Download size={13} />
+            <Download size={14} />
             {exporting ? "생성 중..." : "다운로드"}
-            <span style={{ fontSize: "10px", opacity: 0.8 }}>▼</span>
           </button>
 
           {downloadOpen && (
@@ -285,12 +292,12 @@ export function DashboardHeader() {
               position: "absolute",
               top: "calc(100% + 4px)",
               right: 0,
-              backgroundColor: "#fff",
-              border: "1px solid #ccd4dd",
-              borderRadius: "6px",
-              boxShadow: "0 4px 12px rgba(20,40,80,0.15)",
+              backgroundColor: "var(--color-card-bg)",
+              border: "1px solid var(--color-border)",
+              borderRadius: "8px",
+              boxShadow: "0 4px 16px rgba(0,0,0,0.08)",
               zIndex: 1000,
-              minWidth: "170px",
+              minWidth: "180px",
               overflow: "hidden",
             }}>
               <button
@@ -298,20 +305,21 @@ export function DashboardHeader() {
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: "8px",
+                  gap: "10px",
                   width: "100%",
-                  padding: "9px 14px",
-                  fontSize: "12px",
-                  color: "#1a2d4d",
+                  padding: "10px 16px",
+                  fontSize: "13px",
+                  color: "var(--color-text-primary)",
                   backgroundColor: "transparent",
                   border: "none",
                   cursor: "pointer",
                   textAlign: "left",
+                  fontWeight: "500",
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#eef3f9")}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--color-background)")}
                 onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
               >
-                <FileSpreadsheet size={14} color="#1e7145" />
+                <FileSpreadsheet size={16} color="var(--color-success-green)" />
                 엑셀 다운로드 (.xlsx)
               </button>
               <button
@@ -319,21 +327,22 @@ export function DashboardHeader() {
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: "8px",
+                  gap: "10px",
                   width: "100%",
-                  padding: "9px 14px",
-                  fontSize: "12px",
-                  color: "#1a2d4d",
+                  padding: "10px 16px",
+                  fontSize: "13px",
+                  color: "var(--color-text-primary)",
                   backgroundColor: "transparent",
                   border: "none",
                   cursor: "pointer",
                   textAlign: "left",
-                  borderTop: "1px solid #eef1f5",
+                  fontWeight: "500",
+                  borderTop: "1px solid var(--color-border)",
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#eef3f9")}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--color-background)")}
                 onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
               >
-                <FileText size={14} color="#c0392b" />
+                <FileText size={16} color="var(--color-accent-coral)" />
                 PDF 다운로드 (.pdf)
               </button>
             </div>

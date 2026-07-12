@@ -40,61 +40,67 @@ export const PERFORMANCE_ROWS = [
 export function PerformanceTable() {
   return (
     <div style={{
-      backgroundColor: "#fff",
-      border: "1px solid #d0dce8",
-      borderRadius: "6px",
-      padding: "10px 12px",
+      backgroundColor: "var(--color-card-bg)",
+      borderRadius: "14px",
+      boxShadow: "0 2px 12px rgba(0,0,0,0.05)",
+      padding: "20px 24px",
       overflow: "hidden",
+      display: "flex",
+      flexDirection: "column",
     }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-        <span style={{ fontSize: "12px", fontWeight: "600", color: "#1a3a5c" }}>경영실적 현황</span>
-        <button style={{ fontSize: "11px", color: "#1e6fdd", background: "none", border: "none", cursor: "pointer" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+        <span style={{ fontSize: "14px", fontWeight: "600", color: "var(--color-text-primary)" }}>경영실적 현황</span>
+        <button style={{ fontSize: "12px", color: "var(--color-primary-blue)", background: "none", border: "none", cursor: "pointer", fontWeight: "500" }}>
           상세보기
         </button>
       </div>
 
-      <div style={{ overflowX: "auto" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "10px" }}>
+      <div style={{ overflowX: "auto", flex: 1 }}>
+        <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: 0, fontSize: "11px" }}>
           <thead>
-            <tr style={{ backgroundColor: "#e8f0f8" }}>
-              <th style={{ padding: "4px 6px", textAlign: "left", color: "#555", fontWeight: "600", borderBottom: "1px solid #d0dce8" }} rowSpan={2}>구분</th>
-              <th style={{ padding: "4px 6px", textAlign: "center", color: "#555", fontWeight: "600", borderBottom: "1px solid #d0dce8", borderLeft: "1px solid #d0dce8" }} colSpan={3}>당월 누적</th>
-              <th style={{ padding: "4px 6px", textAlign: "center", color: "#555", fontWeight: "600", borderBottom: "1px solid #d0dce8", borderLeft: "1px solid #d0dce8" }} colSpan={3}>연간</th>
+            <tr>
+              <th style={{ backgroundColor: "rgba(74, 127, 212, 0.05)", padding: "8px 12px", textAlign: "left", color: "var(--color-text-primary)", fontWeight: "600", borderBottom: "1px solid var(--color-border)", borderRadius: "8px 0 0 0" }} rowSpan={2}>구분</th>
+              <th style={{ backgroundColor: "rgba(74, 127, 212, 0.05)", padding: "8px 12px", textAlign: "center", color: "var(--color-text-primary)", fontWeight: "600", borderBottom: "1px solid var(--color-border)", borderLeft: "1px solid #fff" }} colSpan={3}>당월 누적</th>
+              <th style={{ backgroundColor: "rgba(74, 127, 212, 0.05)", padding: "8px 12px", textAlign: "center", color: "var(--color-text-primary)", fontWeight: "600", borderBottom: "1px solid var(--color-border)", borderLeft: "1px solid #fff", borderRadius: "0 8px 0 0" }} colSpan={3}>연간</th>
             </tr>
-            <tr style={{ backgroundColor: "#eef4fa" }}>
+            <tr>
               {["계획", "실적", "달성률"].map((h) => (
-                <th key={h} style={{ padding: "3px 6px", textAlign: "right", color: "#666", fontWeight: "500", borderBottom: "1px solid #d0dce8", borderLeft: "1px solid #d0dce8" }}>{h}</th>
+                <th key={h} style={{ backgroundColor: "rgba(74, 127, 212, 0.03)", padding: "6px 12px", textAlign: "right", color: "var(--color-text-secondary)", fontWeight: "500", borderBottom: "1px solid var(--color-border)", borderLeft: "1px solid #fff" }}>{h}</th>
               ))}
               {["계획", "전망", "달성률"].map((h) => (
-                <th key={h} style={{ padding: "3px 6px", textAlign: "right", color: "#666", fontWeight: "500", borderBottom: "1px solid #d0dce8", borderLeft: "1px solid #d0dce8" }}>{h}</th>
+                <th key={h} style={{ backgroundColor: "rgba(74, 127, 212, 0.03)", padding: "6px 12px", textAlign: "right", color: "var(--color-text-secondary)", fontWeight: "500", borderBottom: "1px solid var(--color-border)", borderLeft: "1px solid #fff" }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {PERFORMANCE_ROWS.map((row, i) => (
-              <React.Fragment key={row.label}>
-                <tr style={{ borderBottom: row.sub ? "none" : "1px solid #e8f0f8", backgroundColor: i % 2 === 0 ? "#fff" : "#f8fbff" }}>
-                  <td style={{ padding: "4px 6px", color: "#333", fontWeight: "500" }}>{row.label}</td>
-                  <td style={{ padding: "4px 6px", textAlign: "right", color: "#333", borderLeft: "1px solid #e8f0f8" }}>{row.planM}</td>
-                  <td style={{ padding: "4px 6px", textAlign: "right", color: "#333", borderLeft: "1px solid #e8f0f8" }}>{row.actualM}</td>
-                  <td style={{ padding: "4px 6px", textAlign: "right", color: "#1565c0", fontWeight: "600", borderLeft: "1px solid #e8f0f8" }}>{row.achM}</td>
-                  <td style={{ padding: "4px 6px", textAlign: "right", color: "#333", borderLeft: "1px solid #e8f0f8" }}>{row.planY}</td>
-                  <td style={{ padding: "4px 6px", textAlign: "right", color: "#333", borderLeft: "1px solid #e8f0f8" }}>{row.forecastY}</td>
-                  <td style={{ padding: "4px 6px", textAlign: "right", color: "#1565c0", fontWeight: "600", borderLeft: "1px solid #e8f0f8" }}>{row.achY}</td>
-                </tr>
-                {row.sub && (
-                  <tr style={{ borderBottom: "1px solid #e8f0f8", backgroundColor: i % 2 === 0 ? "#fff" : "#f8fbff" }}>
-                    <td style={{ padding: "2px 6px 4px 12px", color: "#888", fontSize: "9px" }}>%</td>
-                    <td style={{ padding: "2px 6px 4px", textAlign: "right", color: "#888", fontSize: "9px", borderLeft: "1px solid #e8f0f8" }}>{row.sub}</td>
-                    <td style={{ padding: "2px 6px 4px", textAlign: "right", color: "#888", fontSize: "9px", borderLeft: "1px solid #e8f0f8" }}>{row.subActual}</td>
-                    <td style={{ padding: "2px 6px 4px", textAlign: "right", color: "#888", fontSize: "9px", borderLeft: "1px solid #e8f0f8" }}></td>
-                    <td style={{ padding: "2px 6px 4px", textAlign: "right", color: "#888", fontSize: "9px", borderLeft: "1px solid #e8f0f8" }}>{row.subForecast}</td>
-                    <td style={{ padding: "2px 6px 4px", textAlign: "right", color: "#888", fontSize: "9px", borderLeft: "1px solid #e8f0f8" }}>{row.subAch}</td>
-                    <td style={{ padding: "2px 6px 4px", borderLeft: "1px solid #e8f0f8" }}></td>
+            {PERFORMANCE_ROWS.map((row, i) => {
+              const isLast = i === PERFORMANCE_ROWS.length - 1;
+              const hasSub = !!row.sub;
+              return (
+                <React.Fragment key={row.label}>
+                  <tr style={{ backgroundColor: i % 2 === 0 ? "transparent" : "var(--color-background)" }}>
+                    <td style={{ padding: "8px 12px", color: "var(--color-text-primary)", fontWeight: "600", borderBottom: hasSub ? "none" : (isLast ? "none" : "1px solid var(--color-border)") }}>{row.label}</td>
+                    <td style={{ padding: "8px 12px", textAlign: "right", color: "var(--color-text-primary)", borderLeft: "1px solid var(--color-border)", borderBottom: hasSub ? "none" : (isLast ? "none" : "1px solid var(--color-border)") }}>{row.planM}</td>
+                    <td style={{ padding: "8px 12px", textAlign: "right", color: "var(--color-text-primary)", borderLeft: "1px solid var(--color-border)", borderBottom: hasSub ? "none" : (isLast ? "none" : "1px solid var(--color-border)") }}>{row.actualM}</td>
+                    <td style={{ padding: "8px 12px", textAlign: "right", color: "var(--color-primary-blue)", fontWeight: "700", borderLeft: "1px solid var(--color-border)", borderBottom: hasSub ? "none" : (isLast ? "none" : "1px solid var(--color-border)") }}>{row.achM}</td>
+                    <td style={{ padding: "8px 12px", textAlign: "right", color: "var(--color-text-primary)", borderLeft: "1px solid var(--color-border)", borderBottom: hasSub ? "none" : (isLast ? "none" : "1px solid var(--color-border)") }}>{row.planY}</td>
+                    <td style={{ padding: "8px 12px", textAlign: "right", color: "var(--color-text-primary)", borderLeft: "1px solid var(--color-border)", borderBottom: hasSub ? "none" : (isLast ? "none" : "1px solid var(--color-border)") }}>{row.forecastY}</td>
+                    <td style={{ padding: "8px 12px", textAlign: "right", color: "var(--color-primary-blue)", fontWeight: "700", borderLeft: "1px solid var(--color-border)", borderBottom: hasSub ? "none" : (isLast ? "none" : "1px solid var(--color-border)") }}>{row.achY}</td>
                   </tr>
-                )}
-              </React.Fragment>
-            ))}
+                  {hasSub && (
+                    <tr style={{ backgroundColor: i % 2 === 0 ? "transparent" : "var(--color-background)" }}>
+                      <td style={{ padding: "0 12px 8px 16px", color: "var(--color-text-secondary)", fontSize: "10px", borderBottom: isLast ? "none" : "1px solid var(--color-border)" }}>%</td>
+                      <td style={{ padding: "0 12px 8px", textAlign: "right", color: "var(--color-text-secondary)", fontSize: "10px", borderLeft: "1px solid var(--color-border)", borderBottom: isLast ? "none" : "1px solid var(--color-border)" }}>{row.sub}</td>
+                      <td style={{ padding: "0 12px 8px", textAlign: "right", color: "var(--color-text-secondary)", fontSize: "10px", borderLeft: "1px solid var(--color-border)", borderBottom: isLast ? "none" : "1px solid var(--color-border)" }}>{row.subActual}</td>
+                      <td style={{ padding: "0 12px 8px", textAlign: "right", color: "var(--color-text-secondary)", fontSize: "10px", borderLeft: "1px solid var(--color-border)", borderBottom: isLast ? "none" : "1px solid var(--color-border)" }}></td>
+                      <td style={{ padding: "0 12px 8px", textAlign: "right", color: "var(--color-text-secondary)", fontSize: "10px", borderLeft: "1px solid var(--color-border)", borderBottom: isLast ? "none" : "1px solid var(--color-border)" }}>{row.subForecast}</td>
+                      <td style={{ padding: "0 12px 8px", textAlign: "right", color: "var(--color-text-secondary)", fontSize: "10px", borderLeft: "1px solid var(--color-border)", borderBottom: isLast ? "none" : "1px solid var(--color-border)" }}>{row.subAch}</td>
+                      <td style={{ padding: "0 12px 8px", borderLeft: "1px solid var(--color-border)", borderBottom: isLast ? "none" : "1px solid var(--color-border)" }}></td>
+                    </tr>
+                  )}
+                </React.Fragment>
+              );
+            })}
           </tbody>
         </table>
       </div>

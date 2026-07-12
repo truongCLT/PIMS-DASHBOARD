@@ -13,27 +13,27 @@ export function Dashboard() {
     <div style={{
       flex: 1,
       overflowY: "auto",
-      backgroundColor: "#e8edf3",
+      backgroundColor: "var(--color-background)",
       display: "flex",
       flexDirection: "column",
     }}>
-      <div style={{ padding: "10px 10px 0", position: "relative", zIndex: 100 }}>
+      <div style={{ padding: "12px 12px 0", position: "relative", zIndex: 100 }}>
         <DashboardHeader />
       </div>
 
       {/* Capture area: everything below the filter box */}
-      <div id="dashboard-capture" style={{ backgroundColor: "#e8edf3" }}>
+      <div id="dashboard-capture" style={{ backgroundColor: "var(--color-background)" }}>
         {/* KPI Cards */}
-        <div style={{ padding: "8px 10px 4px" }}>
+        <div style={{ padding: "12px" }}>
           <KPICards />
         </div>
 
         {/* Row 2: 3 widgets */}
         <div style={{
           display: "grid",
-          gridTemplateColumns: "1fr 1fr 220px",
-          gap: "6px",
-          padding: "4px 10px",
+          gridTemplateColumns: "1fr 1fr 280px",
+          gap: "12px",
+          padding: "0 12px 12px",
         }}>
           <SalesChart />
           <ProfitChart />
@@ -43,9 +43,9 @@ export function Dashboard() {
         {/* Row 3: 3 widgets */}
         <div style={{
           display: "grid",
-          gridTemplateColumns: "1fr 1fr 220px",
-          gap: "6px",
-          padding: "4px 10px 10px",
+          gridTemplateColumns: "1fr 1fr 280px",
+          gap: "12px",
+          padding: "0 12px 12px",
         }}>
           <CashFlowChart />
           <PerformanceTable />

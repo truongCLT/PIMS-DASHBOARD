@@ -31,6 +31,16 @@
 }
 
 :root {
+  --color-primary-navy: #1a2744;
+  --color-primary-blue: #4a7fd4;
+  --color-accent-coral: #f0876b;
+  --color-success-green: #4caf82;
+  --color-background: #f4f6fa;
+  --color-card-bg: #ffffff;
+  --color-text-primary: #1a2744;
+  --color-text-secondary: #8b96ab;
+  --color-border: rgba(0,0,0,0.04);
+
   --background: 210 20% 95%;
   --foreground: 215 30% 15%;
   --border: 214 20% 85%;

@@ -17,20 +17,21 @@ const NAV_TABS = [
 export function TopNav() {
   return (
     <div style={{
-      backgroundColor: "#2e4568",
+      backgroundColor: "var(--color-primary-navy)",
       display: "flex",
       alignItems: "center",
-      height: "44px",
+      height: "56px",
       flexShrink: 0,
+      boxShadow: "0 1px 2px rgba(0,0,0,0.1)",
+      zIndex: 1000,
     }}>
       {/* Logo */}
       <div style={{
         display: "flex",
         alignItems: "center",
-        padding: "0 14px",
+        padding: "0 24px",
         minWidth: "170px",
         height: "100%",
-        backgroundColor: "#2e4568",
       }}>
         <img
           src={daewooLogo}
@@ -40,18 +41,18 @@ export function TopNav() {
       </div>
 
       {/* Nav Tabs */}
-      <div style={{ display: "flex", alignItems: "center", flex: 1, height: "100%", gap: "2px", padding: "0 8px" }}>
+      <div style={{ display: "flex", alignItems: "center", flex: 1, height: "100%", gap: "8px", padding: "0 16px" }}>
         {NAV_TABS.map((tab) => (
           <button
             key={tab.label}
             style={{
               position: "relative",
               height: "100%",
-              padding: "0 14px",
+              padding: "0 16px",
               backgroundColor: "transparent",
               border: "none",
               cursor: "pointer",
-              fontSize: "12px",
+              fontSize: "13px",
               whiteSpace: "nowrap",
               display: "flex",
               alignItems: "center",
@@ -60,39 +61,54 @@ export function TopNav() {
             {tab.active ? (
               <>
                 <span style={{
-                  backgroundColor: "#cfe2f0",
-                  color: "#2e4568",
+                  backgroundColor: "rgba(255,255,255,0.1)",
+                  color: "#ffffff",
                   fontWeight: "600",
-                  padding: "5px 12px",
-                  borderRadius: "5px",
+                  padding: "6px 14px",
+                  borderRadius: "20px",
                 }}>
                   {tab.label}
                 </span>
                 <span style={{
                   position: "absolute",
-                  left: "8px",
-                  right: "8px",
+                  left: "50%",
+                  transform: "translateX(-50%)",
                   bottom: "0",
                   height: "3px",
-                  backgroundColor: "#1e6fdd",
+                  width: "24px",
+                  backgroundColor: "var(--color-primary-blue)",
                   borderRadius: "2px 2px 0 0",
                 }} />
               </>
             ) : (
-              <span style={{ color: "#ffffff", fontWeight: "400" }}>{tab.label}</span>
+              <span style={{ 
+                color: "rgba(255,255,255,0.7)", 
+                fontWeight: "500",
+                transition: "color 0.2s",
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.color = "#ffffff"}
+              onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.7)"}
+              >
+                {tab.label}
+              </span>
             )}
           </button>
         ))}
         <button style={{
           height: "100%",
-          padding: "0 14px",
+          padding: "0 16px",
           backgroundColor: "transparent",
-          color: "#ffffff",
+          color: "rgba(255,255,255,0.7)",
           border: "none",
           cursor: "pointer",
-          fontSize: "12px",
+          fontSize: "13px",
           marginLeft: "auto",
-        }}>
+          fontWeight: "500",
+          transition: "color 0.2s",
+        }}
+        onMouseEnter={(e) => e.currentTarget.style.color = "#ffffff"}
+        onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.7)"}
+        >
           More
         </button>
       </div>
