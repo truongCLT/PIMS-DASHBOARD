@@ -19,32 +19,32 @@ function KPICard({ title, plan, actual, achievement, achievementColor = "#00bcd4
       boxShadow: "0 1px 4px rgba(20,35,70,0.15)",
     }}>
       <div style={{
-        fontSize: "12px",
+        fontSize: "clamp(12px, 0.95vw, 16px)",
         fontWeight: "600",
         color: "#ffffff",
         marginBottom: "10px",
       }}>
         {title}
       </div>
-      <div style={{ display: "flex", gap: "24px", alignItems: "flex-end" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
         {/* Plan */}
         <div>
-          <div style={{ fontSize: "10px", color: "#9fb0cc", marginBottom: "4px" }}>계획</div>
-          <div style={{ fontSize: "18px", fontWeight: "700", color: "#ffffff" }}>
+          <div style={{ fontSize: "clamp(10px, 0.8vw, 13px)", color: "#9fb0cc", marginBottom: "4px" }}>계획</div>
+          <div style={{ fontSize: "clamp(18px, 1.7vw, 30px)", fontWeight: "700", color: "#ffffff" }}>
             {plan.toLocaleString()}
           </div>
         </div>
         {/* Actual */}
         <div>
-          <div style={{ fontSize: "10px", color: "#9fb0cc", marginBottom: "4px" }}>실적</div>
-          <div style={{ fontSize: "18px", fontWeight: "700", color: "#ffffff" }}>
+          <div style={{ fontSize: "clamp(10px, 0.8vw, 13px)", color: "#9fb0cc", marginBottom: "4px" }}>실적</div>
+          <div style={{ fontSize: "clamp(18px, 1.7vw, 30px)", fontWeight: "700", color: "#ffffff" }}>
             {actual.toLocaleString()}
           </div>
         </div>
         {/* Achievement */}
         <div>
-          <div style={{ fontSize: "10px", color: "#9fb0cc", marginBottom: "4px" }}>달성률</div>
-          <div style={{ fontSize: "18px", fontWeight: "700", color: achievementColor }}>
+          <div style={{ fontSize: "clamp(10px, 0.8vw, 13px)", color: "#9fb0cc", marginBottom: "4px" }}>달성률</div>
+          <div style={{ fontSize: "clamp(18px, 1.7vw, 30px)", fontWeight: "700", color: achievementColor }}>
             {achievement}
           </div>
         </div>
