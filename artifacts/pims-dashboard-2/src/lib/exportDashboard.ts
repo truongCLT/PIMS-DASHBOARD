@@ -113,18 +113,33 @@ export async function exportDashboardPdf(): Promise<void> {
     throw new Error("대시보드 영역을 찾을 수 없습니다.");
   }
 
-  const fullWidth = target.scrollWidth;
-  const fullHeight = target.scrollHeight;
+  // Always capture at a fixed desktop width so the PDF layout matches the
+  // web layout regardless of the user's current window size.
+  const CAPTURE_WIDTH = 1720;
+  const prevWidth = target.style.width;
+  const prevMinWidth = target.style.minWidth;
+  target.style.width = `${CAPTURE_WIDTH}px`;
+  target.style.minWidth = `${CAPTURE_WIDTH}px`;
 
-  const canvas = await html2canvas(target, {
-    scale: 2,
-    useCORS: true,
-    backgroundColor: "#e8edf3",
-    width: fullWidth,
-    height: fullHeight,
-    windowWidth: fullWidth,
-    windowHeight: fullHeight,
-  });
+  let canvas: HTMLCanvasElement;
+  try {
+    // Give responsive charts time to re-render at the new width
+    await new Promise((resolve) => setTimeout(resolve, 600));
+    const fullHeight = target.scrollHeight;
+
+    canvas = await html2canvas(target, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: "#e8edf3",
+      width: CAPTURE_WIDTH,
+      height: fullHeight,
+      windowWidth: CAPTURE_WIDTH + 200,
+      windowHeight: fullHeight,
+    });
+  } finally {
+    target.style.width = prevWidth;
+    target.style.minWidth = prevMinWidth;
+  }
 
   const imgWidth = canvas.width;
   const imgHeight = canvas.height;
