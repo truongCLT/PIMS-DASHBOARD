@@ -166,30 +166,15 @@ export function Sidebar() {
         padding: "12px 10px",
         borderTop: "1px solid #e5eaf0",
       }}>
-        <div style={{
-          backgroundColor: "#2e4568",
-          borderRadius: "6px",
-          padding: "10px",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: "4px",
-        }}>
-          <div style={{
-            color: "#ffffff",
-            fontSize: "13px",
-            fontWeight: "700",
-            letterSpacing: "0.5px",
-          }}>
-            PIMS System
-          </div>
-          <div style={{ color: "#9cb8d8", fontSize: "9px" }}>For</div>
-          <img
-            src="/daewoo-logo.png"
-            alt="DAEWOO E&C VINA"
-            style={{ height: "14px", objectFit: "contain" }}
-          />
-        </div>
+        <img
+          src="/pims-branding.png"
+          alt="PIMS System For DAEWOO E&C VINA"
+          style={{
+            width: "100%",
+            borderRadius: "8px",
+            display: "block",
+          }}
+        />
       </div>
     </div>
   );
