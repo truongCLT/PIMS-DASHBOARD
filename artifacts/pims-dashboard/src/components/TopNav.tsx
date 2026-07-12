@@ -28,50 +28,16 @@ export function TopNav() {
       <div style={{
         display: "flex",
         alignItems: "center",
-        gap: "6px",
         padding: "0 10px",
         minWidth: "170px",
         borderRight: "1px solid #1a3a5c",
+        height: "100%",
       }}>
-        <div style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "4px",
-        }}>
-          <div style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "3px",
-          }}>
-            <span style={{
-              color: "#ffffff",
-              fontWeight: "700",
-              fontSize: "13px",
-              letterSpacing: "0.5px",
-            }}>
-              D
-            </span>
-            <div style={{
-              width: "16px",
-              height: "16px",
-              backgroundColor: "#1e90ff",
-              borderRadius: "2px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}>
-              <span style={{ color: "#fff", fontSize: "9px", fontWeight: "700" }}>D</span>
-            </div>
-          </div>
-          <span style={{
-            color: "#ffffff",
-            fontWeight: "700",
-            fontSize: "12px",
-            letterSpacing: "0.5px",
-          }}>
-            DAEWOO E&amp;C VINA
-          </span>
-        </div>
+        <img
+          src="/daewoo-logo.png"
+          alt="DAEWOO E&C VINA"
+          style={{ height: "22px", objectFit: "contain" }}
+        />
       </div>
 
       {/* Nav Tabs */}
