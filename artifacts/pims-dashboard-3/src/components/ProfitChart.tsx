@@ -46,7 +46,7 @@ export function ProfitChart() {
         {/* Grid lines + y labels */}
         {[0, 200, 400, 600, 800].map((v) => (
           <g key={v}>
-            <line x1={plotLeft} y1={y(v)} x2={plotRight} y2={y(v)} stroke={v === 0 ? "var(--color-border)" : "var(--color-border)"} strokeWidth={v === 0 ? 2 : 1} />
+            <line x1={plotLeft} y1={y(v)} x2={plotRight} y2={y(v)} stroke={v === 0 ? "var(--color-chart-baseline)" : "var(--color-chart-grid)"} strokeWidth={1} />
             <text x={plotLeft - 12} y={y(v) + 7} textAnchor="end" fontSize="20" fill="var(--color-text-secondary)">{v}</text>
           </g>
         ))}
@@ -101,30 +101,24 @@ export function ProfitChart() {
       {/* Legend */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: "16px", marginTop: "16px", justifyContent: "center" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-          <div style={{ width: "12px", height: "12px", backgroundColor: LIGHT_BLUE, border: `2px solid ${PRIMARY}`, borderRadius: "3px" }} />
-          <span style={{ fontSize: "11px", color: "var(--color-text-secondary)", fontWeight: "500" }}>매출이익</span>
+          <span style={{ width: "10px", height: "10px", borderRadius: "50%", backgroundColor: LIGHT_BLUE, border: `2px solid ${PRIMARY}`, flexShrink: 0, boxSizing: "border-box" }} />
+          <span style={{ fontSize: "12px", color: "var(--color-text-secondary)", fontWeight: "500" }}>매출이익</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-          <div style={{ width: "12px", height: "12px", backgroundColor: PRIMARY, borderRadius: "3px" }} />
-          <span style={{ fontSize: "11px", color: "var(--color-text-secondary)", fontWeight: "500" }}>영업이익</span>
+          <span style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: PRIMARY, flexShrink: 0 }} />
+          <span style={{ fontSize: "12px", color: "var(--color-text-secondary)", fontWeight: "500" }}>영업이익</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-          <div style={{ width: "12px", height: "12px", backgroundColor: NAVY, borderRadius: "3px" }} />
-          <span style={{ fontSize: "11px", color: "var(--color-text-secondary)", fontWeight: "500" }}>영업외수익</span>
+          <span style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: NAVY, flexShrink: 0 }} />
+          <span style={{ fontSize: "12px", color: "var(--color-text-secondary)", fontWeight: "500" }}>영업외수익</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-          <svg width="10" height="14" viewBox="0 0 10 14">
-            <path d="M 2 1 h 6 V 13 h -6" fill="none" stroke={CORAL} strokeWidth="2" />
-          </svg>
-          <span style={{ fontSize: "11px", color: "var(--color-text-secondary)", fontWeight: "500" }}>판관비</span>
+          <span style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: CORAL, flexShrink: 0 }} />
+          <span style={{ fontSize: "12px", color: "var(--color-text-secondary)", fontWeight: "500" }}>판관비</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-          <svg width="24" height="8" viewBox="0 0 24 8">
-            <line x1="4" y1="4" x2="20" y2="4" stroke={NAVY} strokeWidth="2" strokeDasharray="3 3" />
-            <circle cx="4" cy="4" r="3" fill={NAVY} />
-            <circle cx="20" cy="4" r="3" fill={NAVY} />
-          </svg>
-          <span style={{ fontSize: "11px", color: "var(--color-text-secondary)", fontWeight: "500" }}>경상이익</span>
+          <span style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: NAVY, flexShrink: 0 }} />
+          <span style={{ fontSize: "12px", color: "var(--color-text-secondary)", fontWeight: "500" }}>경상이익</span>
         </div>
       </div>
     </div>

@@ -80,15 +80,15 @@ export function SalesChart() {
           <ComposedChart data={SALES_DATA} margin={{ top: 12, right: 18, left: -20, bottom: 0 }}>
             <defs>
               <linearGradient id="colorActual" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={ACTUAL_COLOR} stopOpacity={0.2}/>
-                <stop offset="95%" stopColor={ACTUAL_COLOR} stopOpacity={0}/>
+                <stop offset="0%" stopColor={ACTUAL_COLOR} stopOpacity={0.25}/>
+                <stop offset="100%" stopColor={ACTUAL_COLOR} stopOpacity={0}/>
               </linearGradient>
               <linearGradient id="colorPlan" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={PLAN_COLOR} stopOpacity={0.2}/>
-                <stop offset="95%" stopColor={PLAN_COLOR} stopOpacity={0}/>
+                <stop offset="0%" stopColor={PLAN_COLOR} stopOpacity={0.25}/>
+                <stop offset="100%" stopColor={PLAN_COLOR} stopOpacity={0}/>
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
+            <CartesianGrid stroke="var(--color-chart-grid)" vertical={false} />
             <XAxis
               dataKey="month"
               tick={{ fontSize: 11, fill: "var(--color-text-secondary)" }}
@@ -103,17 +103,17 @@ export function SalesChart() {
               axisLine={false}
               tickLine={false}
             />
-            <Tooltip contentStyle={{ fontSize: "12px", borderRadius: "8px", border: "none", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }} />
-            <Area type="monotone" dataKey="actual" stroke="none" fillOpacity={1} fill="url(#colorActual)" />
-            <Area type="monotone" dataKey="plan" stroke="none" fillOpacity={1} fill="url(#colorPlan)" />
+            <Tooltip contentStyle={{ fontSize: "12px", borderRadius: "8px", border: "none", backgroundColor: "#fff", color: "var(--color-text-primary)", boxShadow: "0 4px 16px rgba(0,0,0,0.1)" }} />
+            <Area type="monotone" dataKey="actual" stroke="none" fillOpacity={1} fill="url(#colorActual)" isAnimationActive animationDuration={500} animationEasing="ease-out" />
+            <Area type="monotone" dataKey="plan" stroke="none" fillOpacity={1} fill="url(#colorPlan)" isAnimationActive animationDuration={500} animationEasing="ease-out" />
             <Line
               type="monotone"
               dataKey="actual"
               name="매출(실적 및 전망)"
               stroke={ACTUAL_COLOR}
-              strokeWidth={2}
-              dot={{ r: 3, fill: "#fff", stroke: ACTUAL_COLOR, strokeWidth: 2 }}
-              activeDot={{ r: 5 }}
+              strokeWidth={2.5}
+              dot={false}
+              activeDot={{ r: 5, fill: ACTUAL_COLOR, stroke: "#fff", strokeWidth: 2 }}
               connectNulls
               isAnimationActive={false}
             >
@@ -124,9 +124,9 @@ export function SalesChart() {
               dataKey="plan"
               name="매출(계획)"
               stroke={PLAN_COLOR}
-              strokeWidth={2}
-              dot={{ r: 3, fill: "#fff", stroke: PLAN_COLOR, strokeWidth: 2 }}
-              activeDot={{ r: 5 }}
+              strokeWidth={2.5}
+              dot={false}
+              activeDot={{ r: 5, fill: PLAN_COLOR, stroke: "#fff", strokeWidth: 2 }}
               connectNulls
               isAnimationActive={false}
             >
@@ -162,18 +162,12 @@ export function SalesChart() {
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            <svg width="26" height="8">
-              <line x1="0" y1="4" x2="26" y2="4" stroke={PLAN_COLOR} strokeWidth="2" />
-              <circle cx="13" cy="4" r="3" fill="#fff" stroke={PLAN_COLOR} strokeWidth="1.5" />
-            </svg>
-            <span style={{ fontSize: "11px", color: "var(--color-text-secondary)", whiteSpace: "nowrap" }}>매출(계획)</span>
+            <span style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: PLAN_COLOR, flexShrink: 0 }} />
+            <span style={{ fontSize: "12px", color: "var(--color-text-secondary)", whiteSpace: "nowrap" }}>매출(계획)</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            <svg width="26" height="8">
-              <line x1="0" y1="4" x2="26" y2="4" stroke={ACTUAL_COLOR} strokeWidth="2" />
-              <circle cx="13" cy="4" r="3" fill="#fff" stroke={ACTUAL_COLOR} strokeWidth="1.5" />
-            </svg>
-            <span style={{ fontSize: "11px", color: "var(--color-text-secondary)", whiteSpace: "nowrap" }}>매출(실적 및 전망)</span>
+            <span style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: ACTUAL_COLOR, flexShrink: 0 }} />
+            <span style={{ fontSize: "12px", color: "var(--color-text-secondary)", whiteSpace: "nowrap" }}>매출(실적 및 전망)</span>
           </div>
         </div>
       </div>

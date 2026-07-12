@@ -24,13 +24,13 @@ export const CASHFLOW_DATA = [
 const PRIMARY_COLOR = "var(--color-primary-blue)";
 const CORAL_COLOR = "var(--color-accent-coral)";
 const NAVY_COLOR = "var(--color-primary-navy)";
-const LIGHT_BLUE_COLOR = "#8fb3e8";
+const LIGHT_BLUE_COLOR = "var(--color-chart-light-blue)";
 
 const CustomInflowLabel = (props: any) => {
   const { x, y, width, value } = props;
   if (!value) return null;
   return (
-    <text x={x + width / 2} y={y - 6} fill={PRIMARY_COLOR} textAnchor="middle" fontSize={10} fontWeight="700">
+    <text x={x + width / 2} y={y - 6} fill="var(--color-text-primary)" textAnchor="middle" fontSize={11} fontWeight="700">
       +{value}
     </text>
   );
@@ -40,7 +40,7 @@ const CustomOutflowLabel = (props: any) => {
   const { x, y, width, height, value } = props;
   if (!value) return null;
   return (
-    <text x={x + width / 2} y={y + height + 14} fill={CORAL_COLOR} textAnchor="middle" fontSize={10} fontWeight="700">
+    <text x={x + width / 2} y={y + height + 14} fill="var(--color-text-primary)" textAnchor="middle" fontSize={11} fontWeight="700">
       {value}
     </text>
   );
@@ -66,15 +66,18 @@ export function CashFlowChart() {
       <div style={{ height: "200px", flex: 1 }}>
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={CASHFLOW_DATA} margin={{ top: 20, right: 30, left: -20, bottom: 10 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
+            <CartesianGrid stroke="var(--color-chart-grid)" vertical={false} />
             <XAxis dataKey="month" tick={{ fontSize: 11, fill: "var(--color-text-secondary)" }} axisLine={false} tickLine={false} />
             <YAxis tick={{ fontSize: 11, fill: "var(--color-text-secondary)" }} axisLine={false} tickLine={false} />
-            <Tooltip contentStyle={{ fontSize: "12px", borderRadius: "8px", border: "none", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }} />
-            <ReferenceLine y={0} stroke="var(--color-border)" strokeWidth={2} />
-            <Bar dataKey="inflow" name="자금 유입" fill={PRIMARY_COLOR} barSize={24} radius={[6, 6, 0, 0]}>
+            <Tooltip
+              cursor={{ fill: "rgba(74, 127, 212, 0.08)" }}
+              contentStyle={{ fontSize: "12px", borderRadius: "8px", border: "none", backgroundColor: "#fff", color: "var(--color-text-primary)", boxShadow: "0 4px 16px rgba(0,0,0,0.1)" }}
+            />
+            <ReferenceLine y={0} stroke="var(--color-chart-baseline)" strokeWidth={1} />
+            <Bar dataKey="inflow" name="자금 유입" fill={PRIMARY_COLOR} barSize={24} radius={[5, 5, 0, 0]} isAnimationActive={false}>
               <LabelList dataKey="inflow" content={CustomInflowLabel} />
             </Bar>
-            <Bar dataKey="outflow" name="자금 유출" fill={CORAL_COLOR} barSize={24} radius={[0, 0, 6, 6]}>
+            <Bar dataKey="outflow" name="자금 유출" fill={CORAL_COLOR} barSize={24} radius={[0, 0, 5, 5]} isAnimationActive={false}>
               <LabelList dataKey="outflow" content={CustomOutflowLabel} />
             </Bar>
             <Line
@@ -82,18 +85,24 @@ export function CashFlowChart() {
               dataKey="loan"
               name="차액"
               stroke={NAVY_COLOR}
-              strokeWidth={2}
-              dot={{ r: 4, fill: "#fff", stroke: NAVY_COLOR, strokeWidth: 2 }}
-              activeDot={{ r: 6 }}
+              strokeWidth={2.5}
+              dot={false}
+              activeDot={{ r: 5, fill: NAVY_COLOR, stroke: "#fff", strokeWidth: 2 }}
+              isAnimationActive
+              animationDuration={500}
+              animationEasing="ease-out"
             />
             <Line
               type="monotone"
               dataKey="net"
               name="자금 잔액"
               stroke={LIGHT_BLUE_COLOR}
-              strokeWidth={2}
-              dot={{ r: 4, fill: "#fff", stroke: LIGHT_BLUE_COLOR, strokeWidth: 2 }}
-              activeDot={{ r: 6 }}
+              strokeWidth={2.5}
+              dot={false}
+              activeDot={{ r: 5, fill: LIGHT_BLUE_COLOR, stroke: "#fff", strokeWidth: 2 }}
+              isAnimationActive
+              animationDuration={500}
+              animationEasing="ease-out"
             />
           </ComposedChart>
         </ResponsiveContainer>
@@ -108,15 +117,8 @@ export function CashFlowChart() {
           { color: LIGHT_BLUE_COLOR, label: "자금 잔액", type: "line" },
         ].map((item) => (
           <div key={item.label} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            {item.type === "rect" ? (
-              <div style={{ width: "12px", height: "12px", backgroundColor: item.color, borderRadius: "3px" }} />
-            ) : (
-              <svg width="24" height="8" viewBox="0 0 24 8">
-                <line x1="0" y1="4" x2="24" y2="4" stroke={item.color} strokeWidth="2" />
-                <circle cx="12" cy="4" r="3" fill="#fff" stroke={item.color} strokeWidth="1.5" />
-              </svg>
-            )}
-            <span style={{ fontSize: "11px", color: "var(--color-text-secondary)", fontWeight: "500" }}>{item.label}</span>
+            <span style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: item.color, flexShrink: 0 }} />
+            <span style={{ fontSize: "12px", color: "var(--color-text-secondary)", fontWeight: "500" }}>{item.label}</span>
           </div>
         ))}
       </div>
