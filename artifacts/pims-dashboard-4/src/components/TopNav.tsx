@@ -17,7 +17,7 @@ const NAV_TABS = [
 export function TopNav() {
   return (
     <div style={{
-      backgroundColor: "#2e4568",
+      backgroundColor: "var(--color-navy-dark)",
       display: "flex",
       alignItems: "center",
       height: "44px",
@@ -30,7 +30,7 @@ export function TopNav() {
         padding: "0 14px",
         minWidth: "170px",
         height: "100%",
-        backgroundColor: "#2e4568",
+        backgroundColor: "var(--color-navy-dark)",
       }}>
         <img
           src={daewooLogo}
@@ -60,11 +60,11 @@ export function TopNav() {
             {tab.active ? (
               <>
                 <span style={{
-                  backgroundColor: "#cfe2f0",
-                  color: "#2e4568",
+                  backgroundColor: "var(--color-primary-blue)",
+                  color: "#ffffff",
                   fontWeight: "600",
                   padding: "5px 12px",
-                  borderRadius: "5px",
+                  borderRadius: "8px",
                 }}>
                   {tab.label}
                 </span>
@@ -74,12 +74,12 @@ export function TopNav() {
                   right: "8px",
                   bottom: "0",
                   height: "3px",
-                  backgroundColor: "#1e6fdd",
+                  backgroundColor: "var(--color-sky-light)",
                   borderRadius: "2px 2px 0 0",
                 }} />
               </>
             ) : (
-              <span style={{ color: "#ffffff", fontWeight: "400" }}>{tab.label}</span>
+              <span style={{ color: "var(--color-sidebar-text)", fontWeight: "400" }}>{tab.label}</span>
             )}
           </button>
         ))}
@@ -87,7 +87,7 @@ export function TopNav() {
           height: "100%",
           padding: "0 14px",
           backgroundColor: "transparent",
-          color: "#ffffff",
+          color: "var(--color-sidebar-text)",
           border: "none",
           cursor: "pointer",
           fontSize: "12px",

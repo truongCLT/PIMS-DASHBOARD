@@ -22,19 +22,19 @@ export const CASHFLOW_DATA = [
 ];
 
 const COLORS: Record<string, string> = {
-  "1월": "#1565c0",
-  "2월": "#1e88e5",
-  "3월": "#1565c0",
-  "4월": "#1565c0",
-  "5월": "#1565c0",
-  "6월": "#1565c0",
+  "1월": "var(--color-primary-blue)",
+  "2월": "var(--color-blue-bright)",
+  "3월": "var(--color-primary-blue)",
+  "4월": "var(--color-primary-blue)",
+  "5월": "var(--color-primary-blue)",
+  "6월": "var(--color-primary-blue)",
 };
 
 const CustomInflowLabel = (props: any) => {
   const { x, y, width, value } = props;
   if (!value) return null;
   return (
-    <text x={x + width / 2} y={y - 3} fill="#1565c0" textAnchor="middle" fontSize={8} fontWeight="600">
+    <text x={x + width / 2} y={y - 3} fill="var(--color-primary-blue)" textAnchor="middle" fontSize={8} fontWeight="600">
       +{value}
     </text>
   );
@@ -44,7 +44,7 @@ const CustomOutflowLabel = (props: any) => {
   const { x, y, width, height, value } = props;
   if (!value) return null;
   return (
-    <text x={x + width / 2} y={y + height + 10} fill="#e53935" textAnchor="middle" fontSize={8} fontWeight="600">
+    <text x={x + width / 2} y={y + height + 10} fill="var(--color-danger)" textAnchor="middle" fontSize={8} fontWeight="600">
       {value}
     </text>
   );
@@ -53,14 +53,15 @@ const CustomOutflowLabel = (props: any) => {
 export function CashFlowChart() {
   return (
     <div style={{
-      backgroundColor: "#fff",
-      border: "1px solid #d0dce8",
-      borderRadius: "6px",
-      padding: "10px 12px",
+      backgroundColor: "var(--color-card-bg)",
+      border: "1px solid var(--color-card-border)",
+      borderRadius: "14px",
+      padding: "16px 20px",
+      boxShadow: "var(--shadow-card)",
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-        <span style={{ fontSize: "12px", fontWeight: "600", color: "#1a3a5c" }}>자금수지</span>
-        <button style={{ fontSize: "11px", color: "#1e6fdd", background: "none", border: "none", cursor: "pointer" }}>
+        <span style={{ fontSize: "14px", fontWeight: "600", color: "var(--color-text-strong)" }}>자금수지</span>
+        <button style={{ fontSize: "11px", color: "var(--color-primary-blue)", background: "none", border: "none", cursor: "pointer" }}>
           상세보기
         </button>
       </div>
@@ -68,32 +69,32 @@ export function CashFlowChart() {
       <div style={{ height: "160px" }}>
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={CASHFLOW_DATA} margin={{ top: 20, right: 30, left: -20, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e8f0f8" vertical={false} />
-            <XAxis dataKey="month" tick={{ fontSize: 10, fill: "#666" }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 10, fill: "#666" }} axisLine={false} tickLine={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--color-divider)" vertical={false} />
+            <XAxis dataKey="month" tick={{ fontSize: 10, fill: "var(--color-text-muted)" }} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fontSize: 10, fill: "var(--color-text-muted)" }} axisLine={false} tickLine={false} />
             <Tooltip contentStyle={{ fontSize: "11px" }} />
-            <ReferenceLine y={0} stroke="#ccc" />
-            <Bar dataKey="inflow" name="자금 유입" fill="#1565c0" barSize={18} radius={[2, 2, 0, 0]}>
+            <ReferenceLine y={0} stroke="var(--color-divider)" />
+            <Bar dataKey="inflow" name="자금 유입" fill="var(--color-primary-blue)" barSize={18} radius={[2, 2, 0, 0]}>
               <LabelList dataKey="inflow" content={CustomInflowLabel} />
             </Bar>
-            <Bar dataKey="outflow" name="자금 유출" fill="#e53935" barSize={18} radius={[0, 0, 2, 2]}>
+            <Bar dataKey="outflow" name="자금 유출" fill="var(--color-danger)" barSize={18} radius={[0, 0, 2, 2]}>
               <LabelList dataKey="outflow" content={CustomOutflowLabel} />
             </Bar>
             <Line
               type="monotone"
               dataKey="loan"
               name="차액"
-              stroke="#ff9800"
+              stroke="var(--color-sky-light)"
               strokeWidth={1.5}
-              dot={{ r: 3, fill: "#ff9800" }}
+              dot={{ r: 3, fill: "var(--color-sky-light)" }}
             />
             <Line
               type="monotone"
               dataKey="net"
               name="자금 잔액"
-              stroke="#4caf50"
+              stroke="var(--color-navy-mid)"
               strokeWidth={1.5}
-              dot={{ r: 3, fill: "#4caf50" }}
+              dot={{ r: 3, fill: "var(--color-navy-mid)" }}
             />
           </ComposedChart>
         </ResponsiveContainer>
@@ -102,10 +103,10 @@ export function CashFlowChart() {
       {/* Legend */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginTop: "4px" }}>
         {[
-          { color: "#1565c0", label: "자금 유입", type: "rect" },
-          { color: "#e53935", label: "자금 유출", type: "rect" },
-          { color: "#ff9800", label: "차액", type: "line" },
-          { color: "#4caf50", label: "자금 잔액", type: "line" },
+          { color: "var(--color-primary-blue)", label: "자금 유입", type: "rect" },
+          { color: "var(--color-danger)", label: "자금 유출", type: "rect" },
+          { color: "var(--color-sky-light)", label: "차액", type: "line" },
+          { color: "var(--color-navy-mid)", label: "자금 잔액", type: "line" },
         ].map((item) => (
           <div key={item.label} style={{ display: "flex", alignItems: "center", gap: "3px" }}>
             {item.type === "rect" ? (
@@ -113,7 +114,7 @@ export function CashFlowChart() {
             ) : (
               <div style={{ width: "16px", height: "2px", backgroundColor: item.color }} />
             )}
-            <span style={{ fontSize: "9px", color: "#555" }}>{item.label}</span>
+            <span style={{ fontSize: "9px", color: "var(--color-text-muted)" }}>{item.label}</span>
           </div>
         ))}
       </div>

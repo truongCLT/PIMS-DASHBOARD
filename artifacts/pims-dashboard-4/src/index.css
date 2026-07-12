@@ -52,6 +52,43 @@
   --sidebar-foreground: 210 20% 88%;
   --app-font-sans: 'Noto Sans KR', 'Inter', sans-serif;
   --radius: 0.375rem;
+
+  /* ===== Dashboard 4 skin palette ===== */
+  /* Core blues */
+  --color-navy-dark: #0b1437;
+  --color-navy-deep: #131c46;
+  --color-navy-mid: #1b2a63;
+  --color-primary-blue: #2f6fed;
+  --color-blue-bright: #4e7fff;
+  --color-blue-mid: #5b8def;
+  --color-sky-light: #8fc1ff;
+  --color-blue-tint: #eaf1fe;
+
+  /* Surfaces */
+  --color-bg-main: #f5f6fa;
+  --color-card-bg: #ffffff;
+  --color-card-border: #e9edf5;
+  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.05);
+
+  /* Text */
+  --color-text-strong: #1b2559;
+  --color-text-body: #3d4667;
+  --color-text-muted: #8a92ab;
+  --color-divider: #eef0f6;
+
+  /* Semantic */
+  --color-success: #22a06b;
+  --color-success-tint: #e6f6ee;
+  --color-danger: #e5484d;
+  --color-danger-tint: #fdecec;
+
+  /* Sidebar / top nav (dark navy shell) */
+  --color-sidebar-bg: #0b1437;
+  --color-sidebar-text: #aeb9d9;
+  --color-sidebar-text-dim: #7c88ad;
+  --color-sidebar-text-active: #ffffff;
+  --color-sidebar-active-bg: rgba(79, 127, 255, 0.18);
+  --color-sidebar-divider: rgba(255, 255, 255, 0.08);
 }
 
 @layer base {

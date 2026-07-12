@@ -9,10 +9,10 @@ export const PROFIT_DATA = [
   { m: "6월", op: 450, opPct: "13%", non: 40, total: 700, totalPct: "14%", sga: "-250", sgaPct: "10%", ord: 490, ordPct: "13%", con: "80%", svc: "20%" },
 ];
 
-const NAVY = "#3d5a8f";
-const GREEN = "#3e7d4c";
-const LIGHT = "#eef4fb";
-const ORANGE = "#e07b28";
+const NAVY = "var(--color-navy-mid)";
+const GREEN = "var(--color-blue-bright)";
+const LIGHT = "var(--color-blue-tint)";
+const ORANGE = "var(--color-blue-mid)";
 
 const Y0 = 400;
 const YTOP = 20;
@@ -27,14 +27,15 @@ export function ProfitChart() {
 
   return (
     <div style={{
-      backgroundColor: "#fff",
-      border: "1px solid #d0dce8",
-      borderRadius: "6px",
-      padding: "10px 12px",
+      backgroundColor: "var(--color-card-bg)",
+      border: "1px solid var(--color-card-border)",
+      borderRadius: "14px",
+      padding: "16px 20px",
+      boxShadow: "var(--shadow-card)",
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
-        <span style={{ fontSize: "12px", fontWeight: "600", color: "#1a3a5c" }}>손익현황</span>
-        <button style={{ fontSize: "11px", color: "#1e6fdd", background: "none", border: "none", cursor: "pointer" }}>
+        <span style={{ fontSize: "14px", fontWeight: "600", color: "var(--color-text-strong)" }}>손익현황</span>
+        <button style={{ fontSize: "11px", color: "var(--color-primary-blue)", background: "none", border: "none", cursor: "pointer" }}>
           상세보기
         </button>
       </div>
@@ -43,8 +44,8 @@ export function ProfitChart() {
         {/* Grid lines + y labels */}
         {[0, 200, 400, 600, 800].map((v) => (
           <g key={v}>
-            <line x1={plotLeft} y1={y(v)} x2={plotRight} y2={y(v)} stroke={v === 0 ? "#9aa8ba" : "#e6edf5"} strokeWidth={v === 0 ? 1.5 : 1} />
-            <text x={plotLeft - 12} y={y(v) + 7} textAnchor="end" fontSize="22" fill="#333">{v}</text>
+            <line x1={plotLeft} y1={y(v)} x2={plotRight} y2={y(v)} stroke={v === 0 ? "var(--color-text-muted)" : "var(--color-divider)"} strokeWidth={v === 0 ? 1.5 : 1} />
+            <text x={plotLeft - 12} y={y(v) + 7} textAnchor="end" fontSize="22" fill="var(--color-text-body)">{v}</text>
           </g>
         ))}
 
@@ -70,8 +71,8 @@ export function ProfitChart() {
 
               {/* 매출이익 (light, navy border) */}
               <rect x={bx} y={yTotal} width={barW} height={yNon - yTotal} fill={LIGHT} stroke={NAVY} strokeWidth="1.5" />
-              <text x={cx} y={(yTotal + yNon) / 2 - 2} textAnchor="middle" fontSize="14" fill="#1a2d4d">건설: {d.con}</text>
-              <text x={cx} y={(yTotal + yNon) / 2 + 15} textAnchor="middle" fontSize="14" fill="#1a2d4d">용역: {d.svc}</text>
+              <text x={cx} y={(yTotal + yNon) / 2 - 2} textAnchor="middle" fontSize="14" fill="var(--color-text-strong)">건설: {d.con}</text>
+              <text x={cx} y={(yTotal + yNon) / 2 + 15} textAnchor="middle" fontSize="14" fill="var(--color-text-strong)">용역: {d.svc}</text>
 
               {/* Total above bar */}
               <text x={cx} y={yTotal - 32} textAnchor="middle" fontSize="26" fontWeight="700" fill={NAVY}>{d.total}</text>
@@ -88,7 +89,7 @@ export function ProfitChart() {
               <text x={bx - 2} y={yOrd + 19} textAnchor="end" fontSize="14" fill={GREEN}>{d.ord}({d.ordPct})</text>
 
               {/* Month label */}
-              <text x={cx} y={Y0 + 32} textAnchor="middle" fontSize="24" fontWeight="600" fill="#333">{d.m}</text>
+              <text x={cx} y={Y0 + 32} textAnchor="middle" fontSize="24" fontWeight="600" fill="var(--color-text-body)">{d.m}</text>
             </g>
           );
         })}
@@ -98,21 +99,21 @@ export function ProfitChart() {
       <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginTop: "6px", justifyContent: "center" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
           <div style={{ width: "12px", height: "10px", backgroundColor: LIGHT, border: `1.5px solid ${NAVY}`, borderRadius: "2px" }} />
-          <span style={{ fontSize: "9px", color: "#333" }}>매출이익</span>
+          <span style={{ fontSize: "9px", color: "var(--color-text-body)" }}>매출이익</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
           <div style={{ width: "12px", height: "10px", backgroundColor: NAVY, borderRadius: "2px" }} />
-          <span style={{ fontSize: "9px", color: "#333" }}>영업이익</span>
+          <span style={{ fontSize: "9px", color: "var(--color-text-body)" }}>영업이익</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
           <div style={{ width: "12px", height: "10px", backgroundColor: GREEN, borderRadius: "2px" }} />
-          <span style={{ fontSize: "9px", color: "#333" }}>영업외수익</span>
+          <span style={{ fontSize: "9px", color: "var(--color-text-body)" }}>영업외수익</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
           <svg width="10" height="14" viewBox="0 0 10 14">
             <path d="M 2 1 h 6 V 13 h -6" fill="none" stroke={ORANGE} strokeWidth="2" />
           </svg>
-          <span style={{ fontSize: "9px", color: "#333" }}>판관비</span>
+          <span style={{ fontSize: "9px", color: "var(--color-text-body)" }}>판관비</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
           <svg width="24" height="8" viewBox="0 0 24 8">
@@ -120,7 +121,7 @@ export function ProfitChart() {
             <circle cx="4" cy="4" r="3" fill={GREEN} />
             <circle cx="20" cy="4" r="3" fill={GREEN} />
           </svg>
-          <span style={{ fontSize: "9px", color: "#333" }}>경상이익</span>
+          <span style={{ fontSize: "9px", color: "var(--color-text-body)" }}>경상이익</span>
         </div>
       </div>
     </div>

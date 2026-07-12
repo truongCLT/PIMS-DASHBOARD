@@ -12,13 +12,14 @@ export function OrderStatus() {
 
   return (
     <div style={{
-      backgroundColor: "#fff",
-      border: "1px solid #d0dce8",
-      borderRadius: "6px",
-      padding: "10px 12px",
+      backgroundColor: "var(--color-card-bg)",
+      border: "1px solid var(--color-card-border)",
+      borderRadius: "14px",
+      padding: "16px 20px",
+      boxShadow: "var(--shadow-card)",
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
-        <span style={{ fontSize: "12px", fontWeight: "600", color: "#1a3a5c" }}>수주 실적 현황</span>
+        <span style={{ fontSize: "14px", fontWeight: "600", color: "var(--color-text-strong)" }}>수주 실적 현황</span>
       </div>
 
       {/* Progress bar with label */}
@@ -29,20 +30,20 @@ export function OrderStatus() {
           alignItems: "center",
           marginBottom: "4px",
         }}>
-          <span style={{ fontSize: "10px", color: "#555" }}>계획 대비 {pct}%</span>
+          <span style={{ fontSize: "10px", color: "var(--color-text-muted)" }}>계획 대비 {pct}%</span>
         </div>
         <div style={{
           height: "22px",
-          backgroundColor: "#e0e8f0",
-          borderRadius: "3px",
+          backgroundColor: "var(--color-blue-tint)",
+          borderRadius: "999px",
           overflow: "hidden",
           position: "relative",
         }}>
           <div style={{
             height: "100%",
             width: `${pct}%`,
-            backgroundColor: "#1565c0",
-            borderRadius: "3px",
+            background: "linear-gradient(90deg, var(--color-primary-blue), var(--color-blue-bright))",
+            borderRadius: "999px",
             display: "flex",
             alignItems: "center",
             paddingLeft: "8px",
@@ -54,21 +55,21 @@ export function OrderStatus() {
 
       {/* Stats row */}
       <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
-        <div style={{ flex: 1, textAlign: "center", borderRight: "1px solid #e8f0f8" }}>
-          <div style={{ fontSize: "10px", color: "#888", marginBottom: "2px" }}>계획</div>
-          <div style={{ fontSize: "18px", fontWeight: "700", color: "#1a3a5c" }}>
+        <div style={{ flex: 1, textAlign: "center", borderRight: "1px solid var(--color-divider)" }}>
+          <div style={{ fontSize: "10px", color: "var(--color-text-muted)", marginBottom: "2px" }}>계획</div>
+          <div style={{ fontSize: "18px", fontWeight: "700", color: "var(--color-text-strong)" }}>
             {planTotal.toLocaleString()}
           </div>
         </div>
-        <div style={{ flex: 1, textAlign: "center", borderRight: "1px solid #e8f0f8" }}>
-          <div style={{ fontSize: "10px", color: "#888", marginBottom: "2px" }}>수주</div>
-          <div style={{ fontSize: "18px", fontWeight: "700", color: "#1565c0" }}>
+        <div style={{ flex: 1, textAlign: "center", borderRight: "1px solid var(--color-divider)" }}>
+          <div style={{ fontSize: "10px", color: "var(--color-text-muted)", marginBottom: "2px" }}>수주</div>
+          <div style={{ fontSize: "18px", fontWeight: "700", color: "var(--color-primary-blue)" }}>
             {ordered.toLocaleString()}
           </div>
         </div>
         <div style={{ flex: 1, textAlign: "center" }}>
-          <div style={{ fontSize: "10px", color: "#888", marginBottom: "2px" }}>잔여</div>
-          <div style={{ fontSize: "18px", fontWeight: "700", color: "#ff7043" }}>
+          <div style={{ fontSize: "10px", color: "var(--color-text-muted)", marginBottom: "2px" }}>잔여</div>
+          <div style={{ fontSize: "18px", fontWeight: "700", color: "var(--color-danger)" }}>
             {remaining.toLocaleString()}
           </div>
         </div>
@@ -78,7 +79,7 @@ export function OrderStatus() {
         width: "100%",
         textAlign: "right",
         fontSize: "11px",
-        color: "#1e6fdd",
+        color: "var(--color-primary-blue)",
         background: "none",
         border: "none",
         cursor: "pointer",

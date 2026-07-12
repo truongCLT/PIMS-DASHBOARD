@@ -8,20 +8,22 @@ interface KPICardProps {
   achievementColor?: string;
 }
 
-function KPICard({ title, plan, actual, achievement, achievementColor = "#00bcd4" }: KPICardProps) {
+function KPICard({ title, plan, actual, achievement }: KPICardProps) {
+  const positive = parseFloat(achievement) >= 100;
+
   return (
     <div style={{
-      backgroundColor: "#33415f",
-      borderRadius: "8px",
-      padding: "12px 16px",
+      backgroundColor: "var(--color-card-bg)",
+      borderRadius: "14px",
+      padding: "16px 20px",
       flex: 1,
       minWidth: 0,
-      boxShadow: "0 1px 4px rgba(20,35,70,0.15)",
+      boxShadow: "var(--shadow-card)",
     }}>
       <div style={{
         fontSize: "clamp(12px, 0.95vw, 16px)",
         fontWeight: "600",
-        color: "#ffffff",
+        color: "var(--color-text-strong)",
         marginBottom: "10px",
       }}>
         {title}
@@ -29,22 +31,33 @@ function KPICard({ title, plan, actual, achievement, achievementColor = "#00bcd4
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
         {/* Plan */}
         <div>
-          <div style={{ fontSize: "clamp(10px, 0.8vw, 13px)", color: "#9fb0cc", marginBottom: "4px" }}>계획</div>
-          <div style={{ fontSize: "clamp(18px, 1.7vw, 30px)", fontWeight: "700", color: "#ffffff" }}>
+          <div style={{ fontSize: "clamp(10px, 0.8vw, 13px)", color: "var(--color-text-muted)", marginBottom: "4px" }}>계획</div>
+          <div style={{ fontSize: "clamp(18px, 1.7vw, 30px)", fontWeight: "700", color: "var(--color-text-strong)" }}>
             {plan.toLocaleString()}
           </div>
         </div>
         {/* Actual */}
         <div>
-          <div style={{ fontSize: "clamp(10px, 0.8vw, 13px)", color: "#9fb0cc", marginBottom: "4px" }}>실적</div>
-          <div style={{ fontSize: "clamp(18px, 1.7vw, 30px)", fontWeight: "700", color: "#ffffff" }}>
+          <div style={{ fontSize: "clamp(10px, 0.8vw, 13px)", color: "var(--color-text-muted)", marginBottom: "4px" }}>실적</div>
+          <div style={{ fontSize: "clamp(18px, 1.7vw, 30px)", fontWeight: "700", color: "var(--color-primary-blue)" }}>
             {actual.toLocaleString()}
           </div>
         </div>
         {/* Achievement */}
         <div>
-          <div style={{ fontSize: "clamp(10px, 0.8vw, 13px)", color: "#9fb0cc", marginBottom: "4px" }}>달성률</div>
-          <div style={{ fontSize: "clamp(18px, 1.7vw, 30px)", fontWeight: "700", color: achievementColor }}>
+          <div style={{ fontSize: "clamp(10px, 0.8vw, 13px)", color: "var(--color-text-muted)", marginBottom: "4px" }}>달성률</div>
+          <div style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "3px",
+            fontSize: "clamp(13px, 1.1vw, 18px)",
+            fontWeight: "700",
+            color: positive ? "var(--color-success)" : "var(--color-danger)",
+            backgroundColor: positive ? "var(--color-success-tint)" : "var(--color-danger-tint)",
+            borderRadius: "999px",
+            padding: "4px 10px",
+          }}>
+            <span style={{ fontSize: "0.85em" }}>{positive ? "▲" : "▼"}</span>
             {achievement}
           </div>
         </div>
@@ -62,7 +75,7 @@ export const KPI_DATA = [
 
 export function KPICards() {
   return (
-    <div style={{ display: "flex", gap: "8px" }}>
+    <div style={{ display: "flex", gap: "12px" }}>
       {KPI_DATA.map((kpi) => (
         <KPICard
           key={kpi.title}

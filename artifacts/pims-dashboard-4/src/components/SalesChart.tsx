@@ -45,25 +45,26 @@ const BadgeLabel = (fill: string) => (props: any) => {
   );
 };
 
-const PLAN_COLOR = "#2b5cad";
-const ACTUAL_COLOR = "#2e8b3d";
+const PLAN_COLOR = "var(--color-navy-mid)";
+const ACTUAL_COLOR = "var(--color-primary-blue)";
 
 export function SalesChart() {
   const [viewType, setViewType] = useState<"net" | "report">("net");
 
   return (
     <div style={{
-      backgroundColor: "#fff",
-      border: "1px solid #d0dce8",
-      borderRadius: "6px",
-      padding: "10px 12px",
+      backgroundColor: "var(--color-card-bg)",
+      border: "1px solid var(--color-card-border)",
+      borderRadius: "14px",
+      padding: "16px 20px",
+      boxShadow: "var(--shadow-card)",
     }}>
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-        <span style={{ fontSize: "12px", fontWeight: "600", color: "#1a3a5c" }}>매출 실적 및 전망</span>
+        <span style={{ fontSize: "14px", fontWeight: "600", color: "var(--color-text-strong)" }}>매출 실적 및 전망</span>
         <button style={{
           fontSize: "11px",
-          color: "#1e6fdd",
+          color: "var(--color-primary-blue)",
           background: "none",
           border: "none",
           cursor: "pointer",
@@ -74,10 +75,10 @@ export function SalesChart() {
       <div style={{ height: "160px" }}>
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={SALES_DATA} margin={{ top: 8, right: 18, left: -20, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e8f0f8" vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--color-divider)" vertical={false} />
             <XAxis
               dataKey="month"
-              tick={{ fontSize: 10, fill: "#666" }}
+              tick={{ fontSize: 10, fill: "var(--color-text-muted)" }}
               axisLine={false}
               tickLine={false}
               padding={{ left: 18, right: 6 }}
@@ -85,7 +86,7 @@ export function SalesChart() {
             <YAxis
               domain={[60, 130]}
               ticks={[60, 70, 80, 90, 100, 110, 120, 130]}
-              tick={{ fontSize: 10, fill: "#666" }}
+              tick={{ fontSize: 10, fill: "var(--color-text-muted)" }}
               axisLine={false}
               tickLine={false}
             />
@@ -121,23 +122,23 @@ export function SalesChart() {
       {/* Legend + Toggle */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "4px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <label style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "10px", color: "#555", cursor: "pointer" }}>
+          <label style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "10px", color: "var(--color-text-muted)", cursor: "pointer" }}>
             <input
               type="radio"
               name="viewType"
               checked={viewType === "net"}
               onChange={() => setViewType("net")}
-              style={{ accentColor: "#1565c0" }}
+              style={{ accentColor: "var(--color-primary-blue)" }}
             />
             넷
           </label>
-          <label style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "10px", color: "#555", cursor: "pointer" }}>
+          <label style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "10px", color: "var(--color-text-muted)", cursor: "pointer" }}>
             <input
               type="radio"
               name="viewType"
               checked={viewType === "report"}
               onChange={() => setViewType("report")}
-              style={{ accentColor: "#1565c0" }}
+              style={{ accentColor: "var(--color-primary-blue)" }}
             />
             리포트
           </label>
@@ -149,7 +150,7 @@ export function SalesChart() {
               <circle cx="6" cy="4" r="2.5" fill={PLAN_COLOR} />
               <circle cx="20" cy="4" r="2.5" fill={PLAN_COLOR} />
             </svg>
-            <span style={{ fontSize: "9px", color: "#555" }}>매출(계획)</span>
+            <span style={{ fontSize: "9px", color: "var(--color-text-muted)" }}>매출(계획)</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
             <svg width="26" height="8">
@@ -157,7 +158,7 @@ export function SalesChart() {
               <circle cx="6" cy="4" r="2.5" fill={ACTUAL_COLOR} />
               <circle cx="20" cy="4" r="2.5" fill={ACTUAL_COLOR} />
             </svg>
-            <span style={{ fontSize: "9px", color: "#555" }}>매출(실적 및 전망)</span>
+            <span style={{ fontSize: "9px", color: "var(--color-text-muted)" }}>매출(실적 및 전망)</span>
           </div>
         </div>
       </div>

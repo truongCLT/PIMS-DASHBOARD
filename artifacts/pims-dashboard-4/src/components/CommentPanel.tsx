@@ -13,30 +13,31 @@ export function CommentPanel() {
 
   return (
     <div style={{
-      backgroundColor: "#fff",
-      border: "1px solid #d0dce8",
-      borderRadius: "6px",
-      padding: "10px 12px",
+      backgroundColor: "var(--color-card-bg)",
+      border: "1px solid var(--color-card-border)",
+      borderRadius: "14px",
+      padding: "16px 20px",
+      boxShadow: "var(--shadow-card)",
       display: "flex",
       flexDirection: "column",
       gap: "8px",
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-        <span style={{ fontSize: "12px", color: "#555" }}>💬</span>
-        <span style={{ fontSize: "12px", fontWeight: "600", color: "#1a3a5c" }}>코멘트</span>
+        <span style={{ fontSize: "12px", color: "var(--color-text-muted)" }}>💬</span>
+        <span style={{ fontSize: "14px", fontWeight: "600", color: "var(--color-text-strong)" }}>코멘트</span>
       </div>
 
       {/* Chart selector */}
       <div>
-        <div style={{ fontSize: "10px", color: "#888", marginBottom: "3px" }}>차트:</div>
+        <div style={{ fontSize: "10px", color: "var(--color-text-muted)", marginBottom: "3px" }}>차트:</div>
         <select style={{
           width: "100%",
-          border: "1px solid #ccc",
-          borderRadius: "4px",
+          border: "1px solid var(--color-card-border)",
+          borderRadius: "8px",
           padding: "4px 8px",
           fontSize: "11px",
-          color: "#333",
-          backgroundColor: "#fff",
+          color: "var(--color-text-body)",
+          backgroundColor: "var(--color-card-bg)",
           cursor: "pointer",
         }}>
           <option>매출 실적 및 전망</option>
@@ -47,15 +48,15 @@ export function CommentPanel() {
 
       {/* Month selector */}
       <div>
-        <div style={{ fontSize: "10px", color: "#888", marginBottom: "3px" }}>월:</div>
+        <div style={{ fontSize: "10px", color: "var(--color-text-muted)", marginBottom: "3px" }}>월:</div>
         <select style={{
           width: "100%",
-          border: "1px solid #ccc",
-          borderRadius: "4px",
+          border: "1px solid var(--color-card-border)",
+          borderRadius: "8px",
           padding: "4px 8px",
           fontSize: "11px",
-          color: "#333",
-          backgroundColor: "#fff",
+          color: "var(--color-text-body)",
+          backgroundColor: "var(--color-card-bg)",
           cursor: "pointer",
         }}>
           <option>6월</option>
@@ -75,11 +76,11 @@ export function CommentPanel() {
           placeholder="Write a comment..."
           style={{
             width: "100%",
-            border: "1px solid #ccc",
-            borderRadius: "4px",
+            border: "1px solid var(--color-card-border)",
+            borderRadius: "8px",
             padding: "6px 30px 6px 8px",
             fontSize: "11px",
-            color: "#333",
+            color: "var(--color-text-body)",
             resize: "none",
             height: "50px",
             fontFamily: "inherit",
@@ -93,7 +94,7 @@ export function CommentPanel() {
           background: "none",
           border: "none",
           cursor: "pointer",
-          color: "#1e6fdd",
+          color: "var(--color-primary-blue)",
           padding: "0",
         }}>
           <Send size={14} />
@@ -101,17 +102,17 @@ export function CommentPanel() {
       </div>
 
       {/* Separator */}
-      <div style={{ height: "1px", backgroundColor: "#e8f0f8" }} />
+      <div style={{ height: "1px", backgroundColor: "var(--color-divider)" }} />
 
       {/* Comment list */}
       <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
         {comments.map((c, i) => (
           <div key={i} style={{
-            backgroundColor: "#f0f5fa",
-            borderRadius: "4px",
+            backgroundColor: "var(--color-blue-tint)",
+            borderRadius: "8px",
             padding: "8px",
             fontSize: "11px",
-            color: "#333",
+            color: "var(--color-text-body)",
             lineHeight: "1.5",
           }}>
             <p style={{ margin: "0 0 4px" }}>{c.text}</p>
@@ -119,7 +120,7 @@ export function CommentPanel() {
               href={c.link}
               target="_blank"
               rel="noopener noreferrer"
-              style={{ color: "#1e6fdd", fontSize: "10px", textDecoration: "underline" }}
+              style={{ color: "var(--color-primary-blue)", fontSize: "10px", textDecoration: "underline" }}
             >
               {c.link}
             </a>
