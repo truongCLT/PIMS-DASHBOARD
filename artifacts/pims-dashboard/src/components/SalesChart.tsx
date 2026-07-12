@@ -117,7 +117,7 @@ export function SalesChart() {
             <span style={{ fontSize: "9px", color: "#555" }}>매출(계획)</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-            <div style={{ width: "20px", height: "2px", backgroundColor: "#4caf50", borderTop: "2px dashed #4caf50", borderBottom: "none", height: "0" }} />
+            <div style={{ width: "20px", borderTop: "2px dashed #4caf50" }} />
             <span style={{ fontSize: "9px", color: "#555" }}>매출(실적 및 전망)</span>
           </div>
         </div>
