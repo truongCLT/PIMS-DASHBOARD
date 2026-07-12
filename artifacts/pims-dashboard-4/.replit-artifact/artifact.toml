@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/pims-dashboard-4/"
+title = "PIMS Dashboard 4"
+version = "1.0.0"
+id = "artifacts/pims-dashboard-4"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/pims-dashboard-4/" ]
+localPort = 21379
+
+[services.development]
+run = "pnpm --filter @workspace/pims-dashboard-4 run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/pims-dashboard-4", "run", "build" ]
+publicDir = "artifacts/pims-dashboard-4/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21379"
+BASE_PATH = "/pims-dashboard-4/"
