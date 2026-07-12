@@ -11,41 +11,39 @@ interface KPICardProps {
 function KPICard({ title, plan, actual, achievement, achievementColor = "#00bcd4" }: KPICardProps) {
   return (
     <div style={{
-      backgroundColor: "#ffffff",
-      border: "1px solid #d0dce8",
-      borderRadius: "6px",
-      padding: "10px 14px",
+      backgroundColor: "#33415f",
+      borderRadius: "8px",
+      padding: "12px 16px",
       flex: 1,
       minWidth: 0,
+      boxShadow: "0 1px 4px rgba(20,35,70,0.15)",
     }}>
       <div style={{
         fontSize: "12px",
         fontWeight: "600",
-        color: "#1a3a5c",
-        marginBottom: "8px",
-        borderBottom: "1px solid #e8f0f8",
-        paddingBottom: "6px",
+        color: "#ffffff",
+        marginBottom: "10px",
       }}>
         {title}
       </div>
-      <div style={{ display: "flex", gap: "20px", alignItems: "flex-end" }}>
+      <div style={{ display: "flex", gap: "24px", alignItems: "flex-end" }}>
         {/* Plan */}
         <div>
-          <div style={{ fontSize: "10px", color: "#888", marginBottom: "3px" }}>계획</div>
-          <div style={{ fontSize: "18px", fontWeight: "700", color: "#1a3a5c" }}>
+          <div style={{ fontSize: "10px", color: "#9fb0cc", marginBottom: "4px" }}>계획</div>
+          <div style={{ fontSize: "18px", fontWeight: "700", color: "#ffffff" }}>
             {plan.toLocaleString()}
           </div>
         </div>
         {/* Actual */}
         <div>
-          <div style={{ fontSize: "10px", color: "#888", marginBottom: "3px" }}>실적</div>
-          <div style={{ fontSize: "18px", fontWeight: "700", color: "#1a3a5c" }}>
+          <div style={{ fontSize: "10px", color: "#9fb0cc", marginBottom: "4px" }}>실적</div>
+          <div style={{ fontSize: "18px", fontWeight: "700", color: "#ffffff" }}>
             {actual.toLocaleString()}
           </div>
         </div>
         {/* Achievement */}
         <div>
-          <div style={{ fontSize: "10px", color: "#888", marginBottom: "3px" }}>달성률</div>
+          <div style={{ fontSize: "10px", color: "#9fb0cc", marginBottom: "4px" }}>달성률</div>
           <div style={{ fontSize: "18px", fontWeight: "700", color: achievementColor }}>
             {achievement}
           </div>
