@@ -113,46 +113,38 @@ export async function exportDashboardPdf(): Promise<void> {
     throw new Error("대시보드 영역을 찾을 수 없습니다.");
   }
 
+  const fullWidth = target.scrollWidth;
+  const fullHeight = target.scrollHeight;
+
   const canvas = await html2canvas(target, {
     scale: 2,
     useCORS: true,
     backgroundColor: "#e8edf3",
-    windowWidth: target.scrollWidth,
+    width: fullWidth,
+    height: fullHeight,
+    windowWidth: fullWidth,
+    windowHeight: fullHeight,
   });
 
   const imgWidth = canvas.width;
   const imgHeight = canvas.height;
-  const orientation = imgWidth >= imgHeight ? "landscape" : "portrait";
-  const pdf = new jsPDF({ orientation, unit: "pt", format: "a4" });
 
-  const pageWidth = pdf.internal.pageSize.getWidth();
-  const pageHeight = pdf.internal.pageSize.getHeight();
+  // Single page sized to the full dashboard so nothing gets cut off
   const margin = 16;
-  const renderWidth = pageWidth - margin * 2;
-  const renderHeight = (imgHeight * renderWidth) / imgWidth;
-  const usableHeight = pageHeight - margin * 2;
+  const renderWidth = imgWidth / 2;
+  const renderHeight = imgHeight / 2;
+  const pageWidth = renderWidth + margin * 2;
+  const pageHeight = renderHeight + margin * 2;
+  const orientation = pageWidth >= pageHeight ? "landscape" : "portrait";
+
+  const pdf = new jsPDF({
+    orientation,
+    unit: "pt",
+    format: [pageWidth, pageHeight],
+  });
 
   const imgData = canvas.toDataURL("image/png");
-
-  if (renderHeight <= usableHeight) {
-    pdf.addImage(imgData, "PNG", margin, margin, renderWidth, renderHeight);
-  } else {
-    let remaining = renderHeight;
-    let offset = 0;
-    while (remaining > 0) {
-      pdf.addImage(
-        imgData,
-        "PNG",
-        margin,
-        margin - offset,
-        renderWidth,
-        renderHeight,
-      );
-      remaining -= usableHeight;
-      offset += usableHeight;
-      if (remaining > 0) pdf.addPage();
-    }
-  }
+  pdf.addImage(imgData, "PNG", margin, margin, renderWidth, renderHeight);
 
   pdf.save(`PIMS_대시보드_${todayStamp()}.pdf`);
 }
