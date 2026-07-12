@@ -1,7 +1,12 @@
-import React from "react";
+import React, { useState } from "react";
 import { ChevronsUp, Download } from "lucide-react";
 
 export function DashboardHeader() {
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [period, setPeriod] = useState("Month");
+  const [currency, setCurrency] = useState("USD");
+
   return (
     <div style={{
       background: "linear-gradient(120deg, #dce9f5 0%, #e8f1f9 25%, #c9dcee 50%, #b3cde3 75%, #9dbdd8 100%)",
@@ -52,10 +57,10 @@ export function DashboardHeader() {
         backgroundColor: "#ffffff",
         borderRadius: "10px",
         boxShadow: "0 2px 8px rgba(30,60,110,0.10)",
-        padding: "12px 16px",
+        padding: "12px 14px",
         display: "flex",
         alignItems: "center",
-        gap: "14px",
+        gap: "10px",
         flexWrap: "wrap",
       }}>
         {/* Project filter */}
@@ -69,7 +74,7 @@ export function DashboardHeader() {
             color: "#333",
             backgroundColor: "#fff",
             cursor: "pointer",
-            minWidth: "90px",
+            minWidth: "70px",
           }}>
             <option>All</option>
           </select>
@@ -83,46 +88,85 @@ export function DashboardHeader() {
             alignItems: "center",
             border: "1px solid #ccd4dd",
             borderRadius: "6px",
-            padding: "5px 10px",
+            padding: "2px 8px",
             backgroundColor: "#fff",
-            gap: "8px",
+            gap: "6px",
           }}>
-            <span style={{ fontSize: "12px", color: "#aab2bc" }}>Start</span>
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              style={{
+                border: "none",
+                outline: "none",
+                fontSize: "12px",
+                color: startDate ? "#333" : "#aab2bc",
+                backgroundColor: "transparent",
+                cursor: "pointer",
+                width: "104px",
+                padding: "3px 0",
+              }}
+            />
             <span style={{ fontSize: "12px", color: "#aab2bc" }}>→</span>
-            <span style={{ fontSize: "12px", color: "#aab2bc" }}>End</span>
-            <span style={{ fontSize: "12px", color: "#aab2bc" }}>📅</span>
+            <input
+              type="date"
+              value={endDate}
+              min={startDate || undefined}
+              onChange={(e) => setEndDate(e.target.value)}
+              style={{
+                border: "none",
+                outline: "none",
+                fontSize: "12px",
+                color: endDate ? "#333" : "#aab2bc",
+                backgroundColor: "transparent",
+                cursor: "pointer",
+                width: "104px",
+                padding: "3px 0",
+              }}
+            />
           </div>
         </div>
 
         {/* View period */}
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <span style={{ fontSize: "12px", color: "#333", fontWeight: "600" }}>조회 기준:</span>
-          <select style={{
-            border: "1px solid #ccd4dd",
-            borderRadius: "6px",
-            padding: "5px 26px 5px 10px",
-            fontSize: "12px",
-            color: "#333",
-            backgroundColor: "#fff",
-            cursor: "pointer",
-          }}>
-            <option>Month</option>
+          <select
+            value={period}
+            onChange={(e) => setPeriod(e.target.value)}
+            style={{
+              border: "1px solid #ccd4dd",
+              borderRadius: "6px",
+              padding: "5px 26px 5px 10px",
+              fontSize: "12px",
+              color: "#333",
+              backgroundColor: "#fff",
+              cursor: "pointer",
+            }}
+          >
+            <option value="Month">Month</option>
+            <option value="Quarter">Quarter</option>
+            <option value="Year">Year</option>
           </select>
         </div>
 
         {/* Currency */}
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <span style={{ fontSize: "12px", color: "#333", fontWeight: "600" }}>통화:</span>
-          <select style={{
-            border: "1px solid #ccd4dd",
-            borderRadius: "6px",
-            padding: "5px 26px 5px 10px",
-            fontSize: "12px",
-            color: "#333",
-            backgroundColor: "#fff",
-            cursor: "pointer",
-          }}>
-            <option>USD</option>
+          <select
+            value={currency}
+            onChange={(e) => setCurrency(e.target.value)}
+            style={{
+              border: "1px solid #ccd4dd",
+              borderRadius: "6px",
+              padding: "5px 26px 5px 10px",
+              fontSize: "12px",
+              color: "#333",
+              backgroundColor: "#fff",
+              cursor: "pointer",
+            }}
+          >
+            <option value="USD">USD</option>
+            <option value="VND">VND</option>
           </select>
         </div>
 
