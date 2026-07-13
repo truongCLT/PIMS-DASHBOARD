@@ -6,6 +6,7 @@ import { ProfitChart } from "./ProfitChart";
 import { OrderStatus } from "./OrderStatus";
 import { CashFlowChart } from "./CashFlowChart";
 import { CashFlowChartVariants } from "./CashFlowChartVariants";
+import { OrderStatusChartVariants } from "./OrderStatusChartVariants";
 import { PerformanceTable } from "./PerformanceTable";
 import { CommentPanel } from "./CommentPanel";
 
@@ -56,6 +57,9 @@ export function Dashboard() {
 
       {/* CashFlow chart alternatives (outside capture area so exports stay unchanged) */}
       <CashFlowChartVariants />
+
+      {/* Order status chart alternatives */}
+      <OrderStatusChartVariants />
     </div>
   );
 }
