@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "jK273Ubz5Pc23BLg85e_j"
+uri = "file://exports/PIMS_대시보드2_데이터_업로드양식.xlsx"
+type = "table"
+title = "PIMS 대시보드2 데이터 업로드 양식"
