@@ -23,6 +23,8 @@ function TreeNode({ item, depth = 0 }: { item: TreeItem; depth?: number }) {
   const hasChildren = item.children && item.children.length > 0;
   const isTopLevel = depth === 0;
   const isSubGroup = depth === 1;
+  const collapsible = hasChildren && !isTopLevel;
+  const expanded = isTopLevel || open;
 
   const color = isTopLevel ? "#1a2d4d" : isSubGroup ? "#2a3d55" : "#44546a";
   const fontSize = isTopLevel ? "12px" : "11px";
@@ -33,13 +35,13 @@ function TreeNode({ item, depth = 0 }: { item: TreeItem; depth?: number }) {
   return (
     <div>
       <div
-        onClick={() => hasChildren && setOpen(!open)}
+        onClick={() => collapsible && setOpen(!open)}
         style={{
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
           padding: `6px 10px 6px ${paddingLeft}`,
-          cursor: hasChildren ? "pointer" : "default",
+          cursor: collapsible ? "pointer" : "default",
           backgroundColor: bg,
           color,
           fontSize,
@@ -59,13 +61,13 @@ function TreeNode({ item, depth = 0 }: { item: TreeItem; depth?: number }) {
         >
           {item.label}
         </div>
-        {hasChildren && (
+        {collapsible && (
           <span style={{ fontSize: "10px", color: "#44546a" }}>
-            {hasChildren && !open ? "∨" : "∧"}
+            {!open ? "∨" : "∧"}
           </span>
         )}
       </div>
-      {open && item.children && (
+      {expanded && item.children && (
         <div>
           {item.children.map((child, i) => (
             <TreeNode key={i} item={child} depth={depth + 1} />
