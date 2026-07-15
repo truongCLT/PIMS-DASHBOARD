@@ -59,7 +59,7 @@ function TreeNode({ item, depth = 0 }: { item: TreeItem; depth?: number }) {
         >
           {item.label}
         </div>
-        {(hasChildren || (item.children && item.children.length === 0)) && (
+        {hasChildren && (
           <span style={{ fontSize: "10px", color: "#44546a" }}>
             {hasChildren && !open ? "∨" : "∧"}
           </span>

@@ -81,6 +81,10 @@ export const PROJECT_GROUPS: ProjectGroup[] = [
           { code: "VH19CT2", name: "THT K2HH1 PRECON SERVICE" },
         ],
       },
+      {
+        label: "용지매각",
+        projects: [],
+      },
     ],
   },
   {
@@ -95,6 +99,10 @@ export const PROJECT_GROUPS: ProjectGroup[] = [
           { code: "XEXP100", name: "Head Office Expenses" },
           { code: "XEXP200", name: "Business Expenses" },
         ],
+      },
+      {
+        label: "용지매각",
+        projects: [],
       },
     ],
   },
