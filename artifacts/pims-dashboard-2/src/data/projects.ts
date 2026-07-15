@@ -18,7 +18,7 @@ export const PROJECT_GROUPS: ProjectGroup[] = [
     label: "DECV",
     divisions: [
       {
-        label: "도급사업",
+        label: "용역",
         projects: [
           { code: "2VDNS0124", name: "NHON TRACH NEW TOWN SPC(2024)" },
           { code: "2VDNS0125", name: "NHON TRACH NEW TOWN SPC(2025)" },
@@ -39,7 +39,7 @@ export const PROJECT_GROUPS: ProjectGroup[] = [
         ],
       },
       {
-        label: "서비스사업",
+        label: "시공",
         projects: [
           { code: "2VHT01BD", name: "THAI BINH NEW TOWN SPC(OPEX)" },
           { code: "SITE28", name: "S 28 TEST" },
@@ -66,7 +66,7 @@ export const PROJECT_GROUPS: ProjectGroup[] = [
     label: "TCC",
     divisions: [
       {
-        label: "서비스사업",
+        label: "자체개발",
         projects: [
           { code: "VH06TC3", name: "THT B3CC1 DESIGN&APPROVAL CONSULTING SERVICE" },
           { code: "VH08TC3", name: "THT PJ DESIGN&APPROVAL CONSULTING SERVICE" },
@@ -84,10 +84,10 @@ export const PROJECT_GROUPS: ProjectGroup[] = [
     ],
   },
   {
-    label: "DEHEIM",
+    label: "DEHEM",
     divisions: [
       {
-        label: "서비스사업",
+        label: "자체개발",
         projects: [
           { code: "1VHGD24", name: "HEAD OFFICE(2024)" },
           { code: "1VHGD25", name: "HEAD OFFICE(2025)" },
