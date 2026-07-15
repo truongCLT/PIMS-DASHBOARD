@@ -5,7 +5,6 @@ interface KPICardProps {
   plan: string | number;
   actual: string | number;
   achievement: string;
-  achievementColor?: string;
 }
 
 function KPICard({ title, plan, actual, achievement }: KPICardProps) {
@@ -67,10 +66,10 @@ function KPICard({ title, plan, actual, achievement }: KPICardProps) {
 }
 
 export const KPI_DATA = [
-  { title: "당월 매출", plan: 1297, actual: 2360, achievement: "313%", achievementColor: "#00bcd4" },
-  { title: "당월 영업이익", plan: 395, actual: 127, achievement: "31%", achievementColor: "#ff5722" },
-  { title: "누적 매출", plan: 1297, actual: 2360, achievement: "182%", achievementColor: "#00bcd4" },
-  { title: "누적 영업이익", plan: 1297, actual: 2360, achievement: "182%", achievementColor: "#00bcd4" },
+  { title: "당월 매출", plan: 1297, actual: 2360, achievement: "313%" },
+  { title: "당월 영업이익", plan: 395, actual: 127, achievement: "31%" },
+  { title: "누적 매출", plan: 1297, actual: 2360, achievement: "182%" },
+  { title: "누적 영업이익", plan: 1297, actual: 2360, achievement: "182%" },
 ];
 
 export function KPICards() {
@@ -83,7 +82,6 @@ export function KPICards() {
           plan={kpi.plan}
           actual={kpi.actual}
           achievement={kpi.achievement}
-          achievementColor={kpi.achievementColor}
         />
       ))}
     </div>
