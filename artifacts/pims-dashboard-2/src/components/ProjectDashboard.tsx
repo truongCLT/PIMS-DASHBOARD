@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Download } from "lucide-react";
 import projectPhoto from "../assets/project-photo.png";
 import { ConstructionProgressTab } from "./ConstructionProgressTab";
+import { CostingTab } from "./CostingTab";
 
 /* ---------- small SVG donut ---------- */
 function Donut({
@@ -252,6 +253,10 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
         {activeTab === "Construction progress" ? (
           <div style={{ flex: 1, minWidth: 0 }}>
             <ConstructionProgressTab projectName={projectName} />
+          </div>
+        ) : activeTab === "Costing" ? (
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <CostingTab />
           </div>
         ) : (
         <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: "8px" }}>
