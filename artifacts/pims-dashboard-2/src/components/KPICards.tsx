@@ -62,7 +62,7 @@ export const KPI_DATA = [
 
 export function KPICards() {
   return (
-    <div style={{ display: "flex", gap: "8px" }}>
+    <div style={{ display: "flex", gap: "8px", flex: 4, minWidth: 0 }}>
       {KPI_DATA.map((kpi) => (
         <KPICard
           key={kpi.title}

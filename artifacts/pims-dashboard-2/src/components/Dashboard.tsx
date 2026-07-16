@@ -25,20 +25,20 @@ export function Dashboard() {
       {/* Capture area: everything below the filter box */}
       <div id="dashboard-capture" style={{ backgroundColor: "#e8edf3" }}>
         {/* KPI Cards */}
-        <div style={{ padding: "8px 10px 4px" }}>
+        <div style={{ padding: "8px 10px 4px", display: "flex", gap: "8px" }}>
           <KPICards />
+          <OrderStatus />
         </div>
 
-        {/* Row 2: 3 widgets */}
+        {/* Row 2: 2 widgets */}
         <div style={{
           display: "grid",
-          gridTemplateColumns: "1fr 1fr 220px",
+          gridTemplateColumns: "1fr 1fr",
           gap: "6px",
           padding: "4px 10px",
         }}>
           <SalesChart />
           <ProfitChart />
-          <OrderStatus />
         </div>
 
         {/* Row 3: 3 widgets */}
