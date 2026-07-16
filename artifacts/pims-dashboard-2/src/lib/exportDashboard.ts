@@ -510,6 +510,11 @@ export async function exportDashboardPdf(): Promise<void> {
   target.style.width = `${CAPTURE_WIDTH}px`;
   target.style.minWidth = `${CAPTURE_WIDTH}px`;
 
+  // Exclude the comment cards (매출 실적 / 매출 전망) from the PDF
+  const commentRow = document.getElementById("comment-cards-row");
+  const prevCommentDisplay = commentRow?.style.display ?? "";
+  if (commentRow) commentRow.style.display = "none";
+
   let canvas: HTMLCanvasElement;
   try {
     // Give responsive charts time to re-render at the new width
@@ -528,6 +533,7 @@ export async function exportDashboardPdf(): Promise<void> {
   } finally {
     target.style.width = prevWidth;
     target.style.minWidth = prevMinWidth;
+    if (commentRow) commentRow.style.display = prevCommentDisplay;
   }
 
   // Compose a titled canvas: report title on top, dashboard capture below.

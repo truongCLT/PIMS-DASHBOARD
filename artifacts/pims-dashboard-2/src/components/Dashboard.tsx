@@ -52,7 +52,7 @@ export function Dashboard() {
         </div>
 
         {/* Row 4: comment cards */}
-        <div style={{
+        <div id="comment-cards-row" style={{
           display: "grid",
           gridTemplateColumns: "1fr 1fr",
           gap: "6px",
