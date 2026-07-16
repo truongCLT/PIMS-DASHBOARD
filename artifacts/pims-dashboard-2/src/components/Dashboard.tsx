@@ -41,16 +41,26 @@ export function Dashboard() {
           <ProfitChart />
         </div>
 
-        {/* Row 3: 3 widgets */}
+        {/* Row 3: 2 widgets */}
         <div style={{
           display: "grid",
-          gridTemplateColumns: "1fr 1fr 220px",
+          gridTemplateColumns: "1fr 1fr",
           gap: "6px",
-          padding: "4px 10px 10px",
+          padding: "4px 10px",
         }}>
           <CashFlowChart />
           <PerformanceTable />
-          <CommentPanel />
+        </div>
+
+        {/* Row 4: comment cards */}
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: "6px",
+          padding: "4px 10px 10px",
+        }}>
+          <CommentPanel title="매출 실적" />
+          <CommentPanel title="매출 전망" />
         </div>
       </div>
 

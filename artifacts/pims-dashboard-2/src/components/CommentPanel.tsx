@@ -8,7 +8,7 @@ const comments = [
   },
 ];
 
-export function CommentPanel() {
+export function CommentPanel({ title }: { title: string }) {
   const [inputText, setInputText] = useState("");
 
   return (
@@ -23,26 +23,7 @@ export function CommentPanel() {
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
         <span style={{ fontSize: "12px", color: "#555" }}>💬</span>
-        <span style={{ fontSize: "12px", fontWeight: "600", color: "#1a3a5c" }}>코멘트</span>
-      </div>
-
-      {/* Chart selector */}
-      <div>
-        <div style={{ fontSize: "10px", color: "#888", marginBottom: "3px" }}>차트:</div>
-        <select style={{
-          width: "100%",
-          border: "1px solid #ccc",
-          borderRadius: "4px",
-          padding: "4px 8px",
-          fontSize: "11px",
-          color: "#333",
-          backgroundColor: "#fff",
-          cursor: "pointer",
-        }}>
-          <option>매출 실적 및 전망</option>
-          <option>손익현황</option>
-          <option>자금수지</option>
-        </select>
+        <span style={{ fontSize: "12px", fontWeight: "600", color: "#1a3a5c" }}>{title}</span>
       </div>
 
       {/* Month selector */}
