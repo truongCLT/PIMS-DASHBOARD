@@ -1,12 +1,7 @@
 import React, { useState } from "react";
 import { Send } from "lucide-react";
 
-const comments = [
-  {
-    text: "Revenue did not achieve plans because customers are experiencing financial difficulties",
-    link: "https://boardsale.com/",
-  },
-];
+const comments: { text: string; link: string }[] = [];
 
 export function CommentPanel({ title }: { title: string }) {
   const [inputText, setInputText] = useState("");
