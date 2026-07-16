@@ -4,6 +4,7 @@ import projectPhoto from "../assets/project-photo.png";
 import { ConstructionProgressTab } from "./ConstructionProgressTab";
 import { CostingTab } from "./CostingTab";
 import { OutsourcingTab } from "./OutsourcingTab";
+import { CashflowTab } from "./CashflowTab";
 
 /* ---------- small SVG donut ---------- */
 function Donut({
@@ -262,6 +263,10 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
         ) : activeTab === "Outsourcing" ? (
           <div style={{ flex: 1, minWidth: 0 }}>
             <OutsourcingTab />
+          </div>
+        ) : activeTab === "Cashflow" ? (
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <CashflowTab />
           </div>
         ) : (
         <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: "8px" }}>
