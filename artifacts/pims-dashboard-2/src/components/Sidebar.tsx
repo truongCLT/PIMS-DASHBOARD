@@ -7,6 +7,7 @@ interface TreeItem {
   label: string;
   children?: TreeItem[];
   active?: boolean;
+  isProject?: boolean;
 }
 
 const TREE_DATA: TreeItem[] = PROJECT_GROUPS.map((group, gi) => ({
@@ -19,38 +20,55 @@ const TREE_DATA: TreeItem[] = PROJECT_GROUPS.map((group, gi) => ({
         ? [
             {
               label: "진행중",
-              children: division.projects.map((project) => ({ label: project.name })),
+              children: division.projects.map((project) => ({ label: project.name, isProject: true })),
             },
             { label: "종료", children: [] },
           ]
-        : division.projects.map((project) => ({ label: project.name })),
+        : division.projects.map((project) => ({ label: project.name, isProject: true })),
   })),
 }));
 
-function TreeNode({ item, depth = 0 }: { item: TreeItem; depth?: number }) {
+function TreeNode({
+  item,
+  depth = 0,
+  selectedProject,
+  onSelectProject,
+}: {
+  item: TreeItem;
+  depth?: number;
+  selectedProject: string | null;
+  onSelectProject: (name: string) => void;
+}) {
   const [open, setOpen] = useState(true);
   const hasChildren = item.children && item.children.length > 0;
   const isTopLevel = depth === 0;
   const isSubGroup = depth === 1;
   const collapsible = hasChildren && !isTopLevel;
   const expanded = isTopLevel || open;
+  const isSelected = item.isProject && item.label === selectedProject;
 
   const color = isTopLevel ? "#1a2d4d" : isSubGroup ? "#2a3d55" : "#44546a";
   const fontSize = isTopLevel ? "12px" : "11px";
-  const fontWeight = isTopLevel ? "700" : isSubGroup ? "600" : "400";
+  const fontWeight = isTopLevel ? "700" : isSubGroup ? "600" : isSelected ? "600" : "400";
   const paddingLeft = depth === 0 ? "12px" : depth === 1 ? "20px" : depth === 2 ? "32px" : "44px";
-  const bg = item.active ? "#e8ecf5" : "transparent";
+  const bg = isSelected ? "#dbe6f5" : item.active ? "#e8ecf5" : "transparent";
 
   return (
     <div>
       <div
-        onClick={() => collapsible && setOpen(!open)}
+        onClick={() => {
+          if (item.isProject) {
+            onSelectProject(item.label);
+          } else if (collapsible) {
+            setOpen(!open);
+          }
+        }}
         style={{
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
           padding: `6px 10px 6px ${paddingLeft}`,
-          cursor: collapsible ? "pointer" : "default",
+          cursor: collapsible || item.isProject ? "pointer" : "default",
           backgroundColor: bg,
           color,
           fontSize,
@@ -79,7 +97,13 @@ function TreeNode({ item, depth = 0 }: { item: TreeItem; depth?: number }) {
       {expanded && item.children && (
         <div>
           {item.children.map((child, i) => (
-            <TreeNode key={i} item={child} depth={depth + 1} />
+            <TreeNode
+              key={i}
+              item={child}
+              depth={depth + 1}
+              selectedProject={selectedProject}
+              onSelectProject={onSelectProject}
+            />
           ))}
         </div>
       )}
@@ -87,7 +111,15 @@ function TreeNode({ item, depth = 0 }: { item: TreeItem; depth?: number }) {
   );
 }
 
-export function Sidebar() {
+export function Sidebar({
+  selectedProject,
+  onSelectProject,
+  onSelectTotal,
+}: {
+  selectedProject: string | null;
+  onSelectProject: (name: string) => void;
+  onSelectTotal: () => void;
+}) {
   return (
     <div style={{
       width: "170px",
@@ -99,7 +131,9 @@ export function Sidebar() {
       borderRight: "1px solid #d5dce6",
     }}>
       {/* DECV TOTAL */}
-      <div style={{
+      <div
+        onClick={onSelectTotal}
+        style={{
         display: "flex",
         alignItems: "center",
         gap: "8px",
@@ -108,6 +142,8 @@ export function Sidebar() {
         fontSize: "12px",
         fontWeight: "700",
         borderBottom: "1px solid #eef1f5",
+        cursor: "pointer",
+        backgroundColor: selectedProject == null ? "#e8ecf5" : "transparent",
       }}>
         <FolderClosed size={14} color="#1a2d4d" fill="#1a2d4d" />
         DECV TOTAL
@@ -116,7 +152,13 @@ export function Sidebar() {
       {/* Tree */}
       <div style={{ flex: 1, overflowY: "auto" }}>
         {TREE_DATA.map((item, i) => (
-          <TreeNode key={i} item={item} depth={0} />
+          <TreeNode
+            key={i}
+            item={item}
+            depth={0}
+            selectedProject={selectedProject}
+            onSelectProject={onSelectProject}
+          />
         ))}
       </div>
 
