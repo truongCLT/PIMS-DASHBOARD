@@ -5,7 +5,6 @@ import { SalesChart } from "./SalesChart";
 import { ProfitChart } from "./ProfitChart";
 import { OrderStatus } from "./OrderStatus";
 import { CashFlowChart } from "./CashFlowChart";
-import { CashFlowChartVariants } from "./CashFlowChartVariants";
 import { PerformanceTable } from "./PerformanceTable";
 import { CommentPanel } from "./CommentPanel";
 
@@ -63,9 +62,6 @@ export function Dashboard() {
           <CommentPanel title="매출 전망" />
         </div>
       </div>
-
-      {/* CashFlow chart alternatives (outside capture area so exports stay unchanged) */}
-      <CashFlowChartVariants />
     </div>
   );
 }
