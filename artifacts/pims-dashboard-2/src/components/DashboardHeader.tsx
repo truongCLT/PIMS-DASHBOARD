@@ -8,6 +8,14 @@ export function DashboardHeader() {
   const [endDate, setEndDate] = useState("");
   const [period, setPeriod] = useState("Month");
   const [currency, setCurrency] = useState("USD");
+  const [unitIndex, setUnitIndex] = useState(0);
+
+  const UNIT_OPTIONS: Record<string, [string, string]> = {
+    USD: ["1K USD", "1 USD"],
+    VND: ["1M VND", "1B VND"],
+    KRW: ["1M KRW", "1B KRW"],
+  };
+  const unitOptions = UNIT_OPTIONS[currency] ?? UNIT_OPTIONS.USD;
   const [project, setProject] = useState("All");
   const [downloadOpen, setDownloadOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -214,7 +222,10 @@ export function DashboardHeader() {
           <span style={{ fontSize: "12px", color: "#333", fontWeight: "600" }}>통화:</span>
           <select
             value={currency}
-            onChange={(e) => setCurrency(e.target.value)}
+            onChange={(e) => {
+              setCurrency(e.target.value);
+              setUnitIndex(0);
+            }}
             style={{
               border: "1px solid #ccd4dd",
               borderRadius: "6px",
@@ -227,32 +238,42 @@ export function DashboardHeader() {
           >
             <option value="USD">USD</option>
             <option value="VND">VND</option>
+            <option value="KRW">KRW</option>
           </select>
         </div>
 
         {/* Unit toggle */}
         <div style={{ display: "flex", alignItems: "center", gap: "8px", marginLeft: "auto" }}>
           <span style={{ fontSize: "12px", color: "#333", fontWeight: "600" }}>단위:</span>
-          <div style={{
-            width: "36px",
-            height: "20px",
-            backgroundColor: "#5b5fc7",
-            borderRadius: "10px",
-            position: "relative",
-            cursor: "pointer",
-          }}>
+          <span style={{ fontSize: "12px", color: unitIndex === 0 ? "#333" : "#999", fontWeight: "600" }}>
+            {unitOptions[0]}
+          </span>
+          <div
+            onClick={() => setUnitIndex(unitIndex === 0 ? 1 : 0)}
+            style={{
+              width: "36px",
+              height: "20px",
+              backgroundColor: "#5b5fc7",
+              borderRadius: "10px",
+              position: "relative",
+              cursor: "pointer",
+            }}
+          >
             <div style={{
               position: "absolute",
-              right: "2px",
+              left: unitIndex === 0 ? "2px" : "18px",
               top: "2px",
               width: "16px",
               height: "16px",
               backgroundColor: "#ffffff",
               borderRadius: "50%",
               boxShadow: "0 1px 2px rgba(0,0,0,0.2)",
+              transition: "left 0.15s ease",
             }} />
           </div>
-          <span style={{ fontSize: "12px", color: "#333", fontWeight: "600" }}>1K USD</span>
+          <span style={{ fontSize: "12px", color: unitIndex === 1 ? "#333" : "#999", fontWeight: "600" }}>
+            {unitOptions[1]}
+          </span>
         </div>
 
         {/* Download button + dropdown */}
