@@ -12,6 +12,9 @@ import {
 import { filterUpToLastMonth } from "../lib/monthRange";
 
 export const SALES_DATA = [
+  { month: "1월", net: 82, report: null, plan: 85, actual: 88 },
+  { month: "2월", net: 86, report: null, plan: 88, actual: 84 },
+  { month: "3월", net: 92, report: null, plan: 92, actual: 95 },
   { month: "4월", net: 90, report: null, plan: 90, actual: 101 },
   { month: "5월", net: 98, report: null, plan: 98, actual: 98 },
   { month: "6월", net: 99, report: null, plan: 110, actual: 99 },
