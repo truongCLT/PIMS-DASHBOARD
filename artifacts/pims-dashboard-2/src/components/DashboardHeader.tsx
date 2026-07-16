@@ -161,7 +161,7 @@ export function DashboardHeader() {
             gap: "6px",
           }}>
             <input
-              type="date"
+              type="month"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
               style={{
@@ -177,7 +177,7 @@ export function DashboardHeader() {
             />
             <span style={{ fontSize: "12px", color: "#aab2bc" }}>→</span>
             <input
-              type="date"
+              type="month"
               value={endDate}
               min={startDate || undefined}
               onChange={(e) => setEndDate(e.target.value)}
