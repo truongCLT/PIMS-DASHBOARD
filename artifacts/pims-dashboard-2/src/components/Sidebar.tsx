@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import pimsBranding from "../assets/pims-branding.png";
-import { Pin, FolderClosed } from "lucide-react";
+import { FolderClosed } from "lucide-react";
 import { PROJECT_GROUPS } from "../data/projects";
 
 interface TreeItem {
@@ -89,42 +89,6 @@ export function Sidebar() {
       overflow: "hidden",
       borderRight: "1px solid #d5dce6",
     }}>
-      {/* Tabs */}
-      <div style={{
-        display: "flex",
-        alignItems: "flex-end",
-        backgroundColor: "#f2f4f7",
-        padding: "8px 8px 0",
-        gap: "4px",
-        borderBottom: "1px solid #d5dce6",
-      }}>
-        <button style={{
-          padding: "5px 12px",
-          backgroundColor: "#e8eaee",
-          color: "#1a2d4d",
-          border: "1px solid #c8d0da",
-          borderBottom: "none",
-          borderRadius: "4px 4px 0 0",
-          fontSize: "11px",
-          cursor: "pointer",
-          fontWeight: "600",
-        }}>내 메뉴</button>
-        <button style={{
-          padding: "5px 12px",
-          backgroundColor: "#ffffff",
-          color: "#1e6fdd",
-          border: "1px solid #c8d0da",
-          borderBottom: "none",
-          borderRadius: "4px 4px 0 0",
-          fontSize: "11px",
-          cursor: "pointer",
-          fontWeight: "600",
-        }}>메뉴</button>
-        <div style={{ marginLeft: "auto", paddingBottom: "6px" }}>
-          <Pin size={13} color="#2e4568" fill="#2e4568" />
-        </div>
-      </div>
-
       {/* DECV TOTAL */}
       <div style={{
         display: "flex",
