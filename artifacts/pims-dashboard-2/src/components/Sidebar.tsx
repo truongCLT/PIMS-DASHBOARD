@@ -39,7 +39,7 @@ function TreeNode({
   selectedProject: string | null;
   onSelectProject: (name: string) => void;
 }) {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   const hasChildren = item.children && item.children.length > 0;
   const isTopLevel = depth === 0;
   const isSubGroup = depth === 1;
