@@ -14,7 +14,16 @@ const TREE_DATA: TreeItem[] = PROJECT_GROUPS.map((group, gi) => ({
   children: group.divisions.map((division, di) => ({
     label: division.label,
     active: gi === 0 && di === 0,
-    children: division.projects.map((project) => ({ label: project.name })),
+    children:
+      division.label === "시공" || division.label === "용역"
+        ? [
+            {
+              label: "진행중",
+              children: division.projects.map((project) => ({ label: project.name })),
+            },
+            { label: "종료", children: [] },
+          ]
+        : division.projects.map((project) => ({ label: project.name })),
   })),
 }));
 
@@ -29,7 +38,7 @@ function TreeNode({ item, depth = 0 }: { item: TreeItem; depth?: number }) {
   const color = isTopLevel ? "#1a2d4d" : isSubGroup ? "#2a3d55" : "#44546a";
   const fontSize = isTopLevel ? "12px" : "11px";
   const fontWeight = isTopLevel ? "700" : isSubGroup ? "600" : "400";
-  const paddingLeft = depth === 0 ? "12px" : depth === 1 ? "20px" : "32px";
+  const paddingLeft = depth === 0 ? "12px" : depth === 1 ? "20px" : depth === 2 ? "32px" : "44px";
   const bg = item.active ? "#e8ecf5" : "transparent";
 
   return (
