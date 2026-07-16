@@ -530,8 +530,30 @@ export async function exportDashboardPdf(): Promise<void> {
     target.style.minWidth = prevMinWidth;
   }
 
-  const imgWidth = canvas.width;
-  const imgHeight = canvas.height;
+  // Compose a titled canvas: report title on top, dashboard capture below.
+  const d = new Date();
+  const dateLabel = `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
+  const title = `DAEWOO E&C 경영현황 보고서 - ${dateLabel}`;
+
+  const TITLE_HEIGHT = 110;
+  const titled = document.createElement("canvas");
+  titled.width = canvas.width;
+  titled.height = canvas.height + TITLE_HEIGHT;
+  const ctx = titled.getContext("2d");
+  if (!ctx) {
+    throw new Error("PDF 생성 중 캔버스를 만들 수 없습니다.");
+  }
+  ctx.fillStyle = "#e8edf3";
+  ctx.fillRect(0, 0, titled.width, TITLE_HEIGHT);
+  ctx.fillStyle = "#1a2d4d";
+  ctx.font = "700 44px 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(title, titled.width / 2, TITLE_HEIGHT / 2 + 6);
+  ctx.drawImage(canvas, 0, TITLE_HEIGHT);
+
+  const imgWidth = titled.width;
+  const imgHeight = titled.height;
 
   // Single page sized to the full dashboard so nothing gets cut off
   const margin = 16;
@@ -547,7 +569,7 @@ export async function exportDashboardPdf(): Promise<void> {
     format: [pageWidth, pageHeight],
   });
 
-  const imgData = canvas.toDataURL("image/png");
+  const imgData = titled.toDataURL("image/png");
   pdf.addImage(imgData, "PNG", margin, margin, renderWidth, renderHeight);
 
   pdf.save(`PIMS_대시보드_${todayStamp()}.pdf`);
