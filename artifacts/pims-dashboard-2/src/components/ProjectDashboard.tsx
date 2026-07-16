@@ -118,6 +118,15 @@ const sectionTitle: React.CSSProperties = {
 
 const SIDE_TABS = ["Overview", "Construction progress", "Sale & Profit", "Costing", "Outsourcing", "Cashflow"];
 
+const SIDE_TAB_LABELS: Record<string, string> = {
+  Overview: "개요",
+  "Construction progress": "공정",
+  "Sale & Profit": "매출",
+  Costing: "원가",
+  Outsourcing: "외주",
+  Cashflow: "자금",
+};
+
 export function ProjectDashboard({ projectName }: { projectName: string }) {
   const [currency, setCurrency] = useState("USD");
   const [unitOn, setUnitOn] = useState(true);
@@ -567,7 +576,7 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
                   textAlign: "center",
                 }}
               >
-                {tab}
+                {SIDE_TAB_LABELS[tab] ?? tab}
               </button>
             );
           })}
