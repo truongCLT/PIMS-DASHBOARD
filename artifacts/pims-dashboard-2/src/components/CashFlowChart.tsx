@@ -11,6 +11,7 @@ import {
   LabelList,
   ReferenceLine,
 } from "recharts";
+import { filterUpToLastMonth } from "../lib/monthRange";
 
 export const CASHFLOW_DATA = [
   { month: "1월", inflow: 20, outflow: -20, loan: 10, net: -5 },
@@ -25,10 +26,11 @@ const START_BALANCE = 30;
 
 const COMBO_DATA = (() => {
   let cum = START_BALANCE;
-  return CASHFLOW_DATA.map((r) => {
+  const rows = CASHFLOW_DATA.map((r) => {
     cum += r.net;
     return { month: r.month, inflow: r.inflow, outflow: r.outflow, balance: cum };
   });
+  return filterUpToLastMonth(rows, (r) => r.month);
 })();
 
 const InflowLabel = (props: any) => {

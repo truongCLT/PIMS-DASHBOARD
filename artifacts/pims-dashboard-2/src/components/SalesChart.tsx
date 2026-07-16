@@ -9,6 +9,7 @@ import {
   ResponsiveContainer,
   LabelList,
 } from "recharts";
+import { filterUpToLastMonth } from "../lib/monthRange";
 
 export const SALES_DATA = [
   { month: "4월", net: 90, report: null, plan: 90, actual: 101 },
@@ -18,6 +19,8 @@ export const SALES_DATA = [
   { month: "8월", net: 103, report: null, plan: 102, actual: 91 },
   { month: "9월", net: null, report: null, plan: 109, actual: 85 },
 ];
+
+const VISIBLE_SALES_DATA = filterUpToLastMonth(SALES_DATA, (r) => r.month);
 
 const BadgeLabel = (fill: string) => (props: any) => {
   const { x, y, value } = props;
@@ -73,7 +76,7 @@ export function SalesChart() {
       {/* Chart */}
       <div style={{ height: "160px" }}>
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={SALES_DATA} margin={{ top: 8, right: 18, left: -20, bottom: 0 }}>
+          <ComposedChart data={VISIBLE_SALES_DATA} margin={{ top: 8, right: 18, left: -20, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e8f0f8" vertical={false} />
             <XAxis
               dataKey="month"

@@ -1,4 +1,5 @@
 import React from "react";
+import { filterUpToLastMonth } from "../lib/monthRange";
 
 export const PROFIT_DATA = [
   { m: "1월", op: 320, opPct: "9%", non: 40, total: 500, totalPct: "10%", sga: "-180", sgaPct: "6%", ord: 360, ordPct: "9%", con: "80%", svc: "20%" },
@@ -8,6 +9,8 @@ export const PROFIT_DATA = [
   { m: "5월", op: 420, opPct: "12%", non: 30, total: 660, totalPct: "13%", sga: "-240", sgaPct: "9%", ord: 450, ordPct: "12%", con: "78%", svc: "22%" },
   { m: "6월", op: 450, opPct: "13%", non: 40, total: 700, totalPct: "14%", sga: "-250", sgaPct: "10%", ord: 490, ordPct: "13%", con: "80%", svc: "20%" },
 ];
+
+const VISIBLE_PROFIT_DATA = filterUpToLastMonth(PROFIT_DATA, (r) => r.m);
 
 const NAVY = "#3d5a8f";
 const GREEN = "#3e7d4c";
@@ -22,7 +25,7 @@ const y = (v: number) => Y0 - v * SCALE;
 export function ProfitChart() {
   const plotLeft = 80;
   const plotRight = 950;
-  const slot = (plotRight - plotLeft) / PROFIT_DATA.length;
+  const slot = (plotRight - plotLeft) / VISIBLE_PROFIT_DATA.length;
   const barW = 58;
 
   return (
@@ -48,7 +51,7 @@ export function ProfitChart() {
           </g>
         ))}
 
-        {PROFIT_DATA.map((d, i) => {
+        {VISIBLE_PROFIT_DATA.map((d, i) => {
           const cx = plotLeft + slot * (i + 0.5);
           const bx = cx - barW / 2;
           const yOp = y(d.op);
