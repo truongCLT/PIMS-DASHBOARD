@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Download } from "lucide-react";
 import projectPhoto from "../assets/project-photo.png";
+import { ConstructionProgressTab } from "./ConstructionProgressTab";
 
 /* ---------- small SVG donut ---------- */
 function Donut({
@@ -248,6 +249,11 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
       {/* Body: content + side tabs */}
       <div style={{ display: "flex", gap: "8px", padding: "10px" }}>
         {/* Main content */}
+        {activeTab === "Construction progress" ? (
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <ConstructionProgressTab projectName={projectName} />
+          </div>
+        ) : (
         <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: "8px" }}>
           {/* Project info bar */}
           <div style={{ ...cardStyle, display: "flex", gap: "10px", alignItems: "stretch" }}>
@@ -524,6 +530,7 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
             </div>
           </div>
         </div>
+        )}
 
         {/* Side tabs */}
         <div style={{ width: "150px", minWidth: "150px", display: "flex", flexDirection: "column", gap: "6px" }}>
