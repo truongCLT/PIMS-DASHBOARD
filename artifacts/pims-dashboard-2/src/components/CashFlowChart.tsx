@@ -44,8 +44,9 @@ const InflowLabel = (props: any) => {
 const OutflowLabel = (props: any) => {
   const { x, y, width, height, value } = props;
   if (!value) return null;
+  const bottom = Math.max(y, y + height);
   return (
-    <text x={x + width / 2} y={y + height + 10} fill="#e53935" textAnchor="middle" fontSize={8} fontWeight="600">
+    <text x={x + width / 2} y={bottom + 9} fill="#e53935" textAnchor="middle" fontSize={8} fontWeight="600">
       {value}
     </text>
   );
@@ -71,7 +72,12 @@ export function CashFlowChart() {
           <ComposedChart data={COMBO_DATA} margin={{ top: 20, right: 10, left: -20, bottom: 12 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e8f0f8" vertical={false} />
             <XAxis dataKey="month" tick={{ fontSize: 10, fill: "#666" }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 10, fill: "#666" }} axisLine={false} tickLine={false} />
+            <YAxis
+              tick={{ fontSize: 10, fill: "#666" }}
+              axisLine={false}
+              tickLine={false}
+              domain={[(dataMin: number) => Math.floor(dataMin - 12), (dataMax: number) => Math.ceil(dataMax + 5)]}
+            />
             <Tooltip contentStyle={{ fontSize: "11px" }} />
             <ReferenceLine y={0} stroke="#ccc" />
             <Bar isAnimationActive={false} dataKey="inflow" name="자금 유입" fill="#1565c0" barSize={16} radius={[2, 2, 0, 0]}>
