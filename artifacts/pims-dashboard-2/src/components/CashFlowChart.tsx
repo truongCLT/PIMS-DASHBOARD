@@ -61,6 +61,10 @@ export function CashFlowChart() {
       border: "1px solid #d0dce8",
       borderRadius: "6px",
       padding: "10px 12px",
+      height: "100%",
+      boxSizing: "border-box",
+      display: "flex",
+      flexDirection: "column",
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
         <span style={{ fontSize: "12px", fontWeight: "600", color: "#1a3a5c" }}>자금수지</span>
@@ -69,7 +73,7 @@ export function CashFlowChart() {
         </button>
       </div>
 
-      <div style={{ height: "160px" }}>
+      <div style={{ flex: 1, minHeight: "160px" }}>
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={COMBO_DATA} margin={{ top: 20, right: 10, left: -20, bottom: 12 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e8f0f8" vertical={false} />

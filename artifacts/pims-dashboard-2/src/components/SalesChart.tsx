@@ -63,6 +63,10 @@ export function SalesChart() {
       border: "1px solid #d0dce8",
       borderRadius: "6px",
       padding: "10px 12px",
+      height: "100%",
+      boxSizing: "border-box",
+      display: "flex",
+      flexDirection: "column",
     }}>
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
@@ -77,7 +81,7 @@ export function SalesChart() {
       </div>
 
       {/* Chart */}
-      <div style={{ height: "160px" }}>
+      <div style={{ flex: 1, minHeight: "160px" }}>
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={VISIBLE_SALES_DATA} margin={{ top: 8, right: 18, left: -20, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e8f0f8" vertical={false} />
