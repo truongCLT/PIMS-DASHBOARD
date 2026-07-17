@@ -387,7 +387,7 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
                   { label: "실적", value: ACTUAL, color: BAR_COLOR },
                 ];
                 return (
-                  <div style={{ margin: "18px 0 10px", display: "flex", flexDirection: "column", gap: "14px" }}>
+                  <div style={{ margin: "14px 0 8px", display: "flex", flexDirection: "column", gap: "16px" }}>
                     {rows.map((r) => {
                       const pct = (r.value / maxVal) * 100;
                       return (
@@ -401,7 +401,6 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
                                 width: `${pct}%`,
                                 height: "100%",
                                 backgroundColor: r.color,
-                                backgroundImage: "repeating-linear-gradient(90deg, transparent, transparent 5px, rgba(255,255,255,0.25) 5px, rgba(255,255,255,0.25) 6px)",
                                 borderRadius: "2px",
                               }}
                             />
@@ -412,7 +411,7 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
                         </div>
                       );
                     })}
-                    <div style={{ textAlign: "center", fontSize: "11px", color: "#3e7d4c", fontWeight: 700, marginTop: "2px" }}>
+                    <div style={{ textAlign: "center", fontSize: "11px", color: "#3e7d4c", fontWeight: 700 }}>
                       달성률 : {achieveRate}% (실적/계획)
                     </div>
                   </div>
