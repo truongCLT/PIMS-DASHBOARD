@@ -375,23 +375,64 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
                   공사 +0.9%
                 </span>
               </div>
-              <div style={{ fontSize: "10px", color: "#c0392b", marginTop: "4px" }}>
-                Planned Progress (A) <b>32.5%</b>
-              </div>
-              <div style={{ display: "flex", justifyContent: "center", margin: "6px 0 2px" }}>
-                <Donut
-                  percent={36.6}
-                  color="#c0392b"
-                  extraArc={{ percent: 32.5, color: "#2b5cad" }}
-                  size={130}
-                  stroke={16}
-                  label="36.6%"
-                  labelSize={22}
-                />
-              </div>
-              <div style={{ textAlign: "center", fontSize: "10px", color: "#1a2d4d", fontWeight: 600 }}>
-                Actual Progress (B)
-              </div>
+              {/* Bar chart: Plan vs Actual */}
+              {(() => {
+                const PLAN = 32.5;
+                const ACTUAL = 36.6;
+                const MAX_H = 110;
+                const maxVal = Math.max(PLAN, ACTUAL, 1);
+                const planH = Math.round((PLAN / maxVal) * MAX_H);
+                const actualH = Math.round((ACTUAL / maxVal) * MAX_H);
+                const achieveRate = Math.round((ACTUAL / PLAN) * 100);
+                return (
+                  <>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "flex-end",
+                        gap: "28px",
+                        margin: "16px 0 10px",
+                        height: `${MAX_H + 28}px`,
+                      }}
+                    >
+                      {/* Plan */}
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", height: "100%" }}>
+                        <span style={{ fontSize: "11px", fontWeight: 700, color: "#2b5cad", marginBottom: "4px" }}>
+                          {PLAN}%
+                        </span>
+                        <div
+                          style={{
+                            width: "48px",
+                            height: `${planH}px`,
+                            backgroundColor: "#2b5cad",
+                            borderRadius: "3px 3px 0 0",
+                          }}
+                        />
+                        <span style={{ fontSize: "10px", color: "#555", marginTop: "5px", fontWeight: 600 }}>계획 (A)</span>
+                      </div>
+                      {/* Actual */}
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", height: "100%" }}>
+                        <span style={{ fontSize: "11px", fontWeight: 700, color: "#c0392b", marginBottom: "4px" }}>
+                          {ACTUAL}%
+                        </span>
+                        <div
+                          style={{
+                            width: "48px",
+                            height: `${actualH}px`,
+                            backgroundColor: "#c0392b",
+                            borderRadius: "3px 3px 0 0",
+                          }}
+                        />
+                        <span style={{ fontSize: "10px", color: "#555", marginTop: "5px", fontWeight: 600 }}>실적 (B)</span>
+                      </div>
+                    </div>
+                    <div style={{ textAlign: "center", fontSize: "11px", color: "#3e7d4c", fontWeight: 700 }}>
+                      달성률 : {achieveRate}% (B/A)
+                    </div>
+                  </>
+                );
+              })()}
               <div
                 style={{
                   textAlign: "center",
