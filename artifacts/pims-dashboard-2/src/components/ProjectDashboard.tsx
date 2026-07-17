@@ -375,62 +375,47 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
                   공사 +0.9%
                 </span>
               </div>
-              {/* Bar chart: Plan vs Actual */}
+              {/* Horizontal bar chart: Plan vs Actual */}
               {(() => {
                 const PLAN = 32.5;
                 const ACTUAL = 36.6;
-                const MAX_H = 110;
                 const maxVal = Math.max(PLAN, ACTUAL, 1);
-                const planH = Math.round((PLAN / maxVal) * MAX_H);
-                const actualH = Math.round((ACTUAL / maxVal) * MAX_H);
                 const achieveRate = Math.round((ACTUAL / PLAN) * 100);
+                const BAR_COLOR = "#2b5cad";
+                const rows = [
+                  { label: "계획", value: PLAN, color: BAR_COLOR },
+                  { label: "실적", value: ACTUAL, color: BAR_COLOR },
+                ];
                 return (
-                  <>
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "center",
-                        alignItems: "flex-end",
-                        gap: "28px",
-                        margin: "16px 0 10px",
-                        height: `${MAX_H + 28}px`,
-                      }}
-                    >
-                      {/* Plan */}
-                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", height: "100%" }}>
-                        <span style={{ fontSize: "11px", fontWeight: 700, color: "#2b5cad", marginBottom: "4px" }}>
-                          {PLAN}%
-                        </span>
-                        <div
-                          style={{
-                            width: "48px",
-                            height: `${planH}px`,
-                            backgroundColor: "#2b5cad",
-                            borderRadius: "3px 3px 0 0",
-                          }}
-                        />
-                        <span style={{ fontSize: "10px", color: "#555", marginTop: "5px", fontWeight: 600 }}>계획 (A)</span>
-                      </div>
-                      {/* Actual */}
-                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", height: "100%" }}>
-                        <span style={{ fontSize: "11px", fontWeight: 700, color: "#c0392b", marginBottom: "4px" }}>
-                          {ACTUAL}%
-                        </span>
-                        <div
-                          style={{
-                            width: "48px",
-                            height: `${actualH}px`,
-                            backgroundColor: "#c0392b",
-                            borderRadius: "3px 3px 0 0",
-                          }}
-                        />
-                        <span style={{ fontSize: "10px", color: "#555", marginTop: "5px", fontWeight: 600 }}>실적 (B)</span>
-                      </div>
+                  <div style={{ margin: "18px 0 10px", display: "flex", flexDirection: "column", gap: "14px" }}>
+                    {rows.map((r) => {
+                      const pct = (r.value / maxVal) * 100;
+                      return (
+                        <div key={r.label} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                          <span style={{ fontSize: "11px", fontWeight: 700, color: "#1a2d4d", width: "28px", flexShrink: 0, textAlign: "right" }}>
+                            {r.label}
+                          </span>
+                          <div style={{ flex: 1, height: "22px", backgroundColor: "#e8ecf2", borderRadius: "2px", overflow: "hidden" }}>
+                            <div
+                              style={{
+                                width: `${pct}%`,
+                                height: "100%",
+                                backgroundColor: r.color,
+                                backgroundImage: "repeating-linear-gradient(90deg, transparent, transparent 5px, rgba(255,255,255,0.25) 5px, rgba(255,255,255,0.25) 6px)",
+                                borderRadius: "2px",
+                              }}
+                            />
+                          </div>
+                          <span style={{ fontSize: "11px", fontWeight: 700, color: r.color, width: "40px", flexShrink: 0 }}>
+                            {r.value}%
+                          </span>
+                        </div>
+                      );
+                    })}
+                    <div style={{ textAlign: "center", fontSize: "11px", color: "#3e7d4c", fontWeight: 700, marginTop: "2px" }}>
+                      달성률 : {achieveRate}% (실적/계획)
                     </div>
-                    <div style={{ textAlign: "center", fontSize: "11px", color: "#3e7d4c", fontWeight: 700 }}>
-                      달성률 : {achieveRate}% (B/A)
-                    </div>
-                  </>
+                  </div>
                 );
               })()}
               <div
