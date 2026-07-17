@@ -11,7 +11,7 @@ import {
 } from "recharts";
 import { filterUpToLastMonth } from "../lib/monthRange";
 
-export const SALES_DATA = [
+const RAW_SALES_DATA = [
   { month: "1월", net: 82, report: null, plan: 85, actual: 88 },
   { month: "2월", net: 86, report: null, plan: 88, actual: 84 },
   { month: "3월", net: 92, report: null, plan: 92, actual: 95 },
@@ -22,6 +22,11 @@ export const SALES_DATA = [
   { month: "8월", net: 103, report: null, plan: 102, actual: 91 },
   { month: "9월", net: null, report: null, plan: 109, actual: 85 },
 ];
+
+export const SALES_DATA = RAW_SALES_DATA.map((d) => ({
+  ...d,
+  rate: d.plan && d.actual != null ? Math.round((d.actual / d.plan) * 100) : null,
+}));
 
 const VISIBLE_SALES_DATA = filterUpToLastMonth(SALES_DATA, (r) => r.month);
 
@@ -53,6 +58,37 @@ const BadgeLabel = (fill: string) => (props: any) => {
 
 const PLAN_COLOR = "#2b5cad";
 const ACTUAL_COLOR = "#2e8b3d";
+const RATE_COLOR = "#e67e22";
+
+/* Custom Tooltip */
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (!active || !payload || !payload.length) return null;
+  const plan = payload.find((p: any) => p.dataKey === "plan");
+  const actual = payload.find((p: any) => p.dataKey === "actual");
+  const rate = plan?.payload?.rate;
+  return (
+    <div style={{ backgroundColor: "#fff", border: "1px solid #d0dce8", borderRadius: "4px", padding: "8px 10px", fontSize: "11px" }}>
+      <div style={{ fontWeight: 700, marginBottom: "4px", color: "#1a2d4d" }}>{label}</div>
+      {plan && <div style={{ color: PLAN_COLOR }}>매출(계획): {plan.value}</div>}
+      {actual && <div style={{ color: ACTUAL_COLOR }}>매출(실적 및 전망): {actual.value}</div>}
+      {rate != null && (
+        <div style={{ color: RATE_COLOR, fontWeight: 700, marginTop: "4px" }}>달성률: {rate}%</div>
+      )}
+    </div>
+  );
+};
+
+/* Rate label rendered below the X axis via a custom tick */
+const RateTick = (props: any) => {
+  const { x, y, payload, data } = props;
+  const d = data?.find((r: any) => r.month === payload?.value);
+  if (!d || d.rate == null) return null;
+  return (
+    <text x={x} y={y + 14} textAnchor="middle" fill={RATE_COLOR} fontSize={9} fontWeight={700}>
+      {d.rate}%
+    </text>
+  );
+};
 
 export function SalesChart() {
   const [viewType, setViewType] = useState<"net" | "report">("net");
@@ -83,9 +119,19 @@ export function SalesChart() {
       {/* Chart */}
       <div style={{ flex: 1, minHeight: "160px" }}>
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={VISIBLE_SALES_DATA} margin={{ top: 8, right: 18, left: -20, bottom: 0 }}>
+          <ComposedChart data={VISIBLE_SALES_DATA} margin={{ top: 8, right: 18, left: -20, bottom: 20 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e8f0f8" vertical={false} />
             <XAxis
+              dataKey="month"
+              tick={(props) => <RateTick {...props} data={VISIBLE_SALES_DATA} />}
+              axisLine={false}
+              tickLine={false}
+              padding={{ left: 18, right: 6 }}
+              label={undefined}
+            />
+            {/* Invisible second XAxis just for the month labels */}
+            <XAxis
+              xAxisId="months"
               dataKey="month"
               tick={{ fontSize: 10, fill: "#666" }}
               axisLine={false}
@@ -99,8 +145,9 @@ export function SalesChart() {
               axisLine={false}
               tickLine={false}
             />
-            <Tooltip contentStyle={{ fontSize: "11px" }} />
+            <Tooltip content={<CustomTooltip />} />
             <Line
+              xAxisId="months"
               type="linear"
               dataKey="actual"
               name="매출(실적 및 전망)"
@@ -113,6 +160,7 @@ export function SalesChart() {
               <LabelList dataKey="actual" content={BadgeLabel(ACTUAL_COLOR)} />
             </Line>
             <Line
+              xAxisId="months"
               type="linear"
               dataKey="plan"
               name="매출(계획)"
@@ -168,6 +216,10 @@ export function SalesChart() {
               <circle cx="20" cy="4" r="2.5" fill={ACTUAL_COLOR} />
             </svg>
             <span style={{ fontSize: "9px", color: "#555" }}>매출(실적 및 전망)</span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+            <span style={{ fontSize: "9px", fontWeight: 700, color: RATE_COLOR }}>%</span>
+            <span style={{ fontSize: "9px", color: "#555" }}>달성률</span>
           </div>
         </div>
       </div>
