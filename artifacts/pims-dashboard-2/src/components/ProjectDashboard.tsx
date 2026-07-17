@@ -260,9 +260,45 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
         </button>
       </div>
 
-      {/* Body: content + side tabs */}
-      <div style={{ display: "flex", gap: "8px", padding: "10px" }}>
-        {/* Main content */}
+      {/* Horizontal tab bar */}
+      <div
+        style={{
+          display: "flex",
+          gap: "4px",
+          padding: "8px 10px 0",
+          backgroundColor: "#f0f4f9",
+          borderBottom: "2px solid #c8d2de",
+        }}
+      >
+        {SIDE_TABS.map((tab) => {
+          const active = tab === activeTab;
+          return (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              style={{
+                padding: "7px 20px",
+                fontSize: "12px",
+                fontWeight: active ? 700 : 500,
+                color: active ? "#1a3a6b" : "#5a6a7e",
+                backgroundColor: active ? "#fff" : "transparent",
+                border: "1px solid",
+                borderColor: active ? "#c8d2de" : "transparent",
+                borderBottom: active ? "2px solid #fff" : "none",
+                borderRadius: "4px 4px 0 0",
+                cursor: "pointer",
+                marginBottom: active ? "-2px" : "0",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {SIDE_TAB_LABELS[tab] ?? tab}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Body: content */}
+      <div style={{ display: "flex", flexDirection: "column", gap: "8px", padding: "10px" }}>
         {activeTab === "Construction progress" ? (
           <div style={{ flex: 1, minWidth: 0 }}>
             <ConstructionProgressTab projectName={projectName} />
@@ -618,31 +654,6 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
         </div>
         )}
 
-        {/* Side tabs */}
-        <div style={{ width: "150px", minWidth: "150px", display: "flex", flexDirection: "column", gap: "6px" }}>
-          {SIDE_TABS.map((tab) => {
-            const active = tab === activeTab;
-            return (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                style={{
-                  padding: "9px 10px",
-                  fontSize: "11px",
-                  fontWeight: active ? 700 : 500,
-                  color: active ? "#fff" : "#1a2d4d",
-                  backgroundColor: active ? "#1a3a6b" : "#f4f7fb",
-                  border: "1px solid #c8d2de",
-                  borderRadius: "4px",
-                  cursor: "pointer",
-                  textAlign: "center",
-                }}
-              >
-                {SIDE_TAB_LABELS[tab] ?? tab}
-              </button>
-            );
-          })}
-        </div>
       </div>
     </div>
   );
