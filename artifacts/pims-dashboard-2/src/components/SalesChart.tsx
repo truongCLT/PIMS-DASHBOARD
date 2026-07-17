@@ -61,21 +61,35 @@ const BadgeLabel = (fill: string) => (props: any) => {
   );
 };
 
-/* Rate label — rendered below the dot of whichever line is lower */
-const makeRateLabel = (chartData: typeof VISIBLE_SALES_DATA) => (props: any) => {
+/*
+ * Rate labels — one attached to each line.
+ * Only the label on the LOWER value line actually renders for that month.
+ * Lower value = lower on chart = higher SVG y coordinate.
+ *
+ * plan <= actual  →  plan is lower (or equal)  →  PlanRateLabel renders
+ * actual  < plan  →  actual is lower            →  ActualRateLabel renders
+ */
+const makePlanRateLabel = (chartData: typeof VISIBLE_SALES_DATA) => (props: any) => {
   const { x, y, index } = props;
   if (x == null || y == null || index == null) return null;
   const d = chartData[index];
-  if (!d || d.rate == null) return null;
+  if (!d || d.rate == null || d.plan == null || d.actual == null) return null;
+  if (d.plan > d.actual) return null; // actual is lower → its label will render
   return (
-    <text
-      x={x}
-      y={y + 18}
-      textAnchor="middle"
-      fill={RATE_COLOR}
-      fontSize={9}
-      fontWeight={700}
-    >
+    <text x={x} y={y + 18} textAnchor="middle" fill={RATE_COLOR} fontSize={9} fontWeight={700}>
+      {d.rate}%
+    </text>
+  );
+};
+
+const makeActualRateLabel = (chartData: typeof VISIBLE_SALES_DATA) => (props: any) => {
+  const { x, y, index } = props;
+  if (x == null || y == null || index == null) return null;
+  const d = chartData[index];
+  if (!d || d.rate == null || d.plan == null || d.actual == null) return null;
+  if (d.actual >= d.plan) return null; // plan is lower or equal → its label will render
+  return (
+    <text x={x} y={y + 18} textAnchor="middle" fill={RATE_COLOR} fontSize={9} fontWeight={700}>
       {d.rate}%
     </text>
   );
@@ -101,7 +115,8 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 export function SalesChart() {
   const [viewType, setViewType] = useState<"net" | "report">("net");
-  const RateLabel = makeRateLabel(VISIBLE_SALES_DATA);
+  const PlanRateLabel = makePlanRateLabel(VISIBLE_SALES_DATA);
+  const ActualRateLabel = makeActualRateLabel(VISIBLE_SALES_DATA);
 
   return (
     <div style={{
@@ -147,7 +162,7 @@ export function SalesChart() {
             />
             <Tooltip content={<CustomTooltip />} />
 
-            {/* 실적 및 전망 — rate label attaches below this dot */}
+            {/* 실적 및 전망 */}
             <Line
               type="linear"
               dataKey="actual"
@@ -159,7 +174,7 @@ export function SalesChart() {
               isAnimationActive={false}
             >
               <LabelList dataKey="actual" content={BadgeLabel(ACTUAL_COLOR)} />
-              <LabelList dataKey="actual" content={RateLabel} />
+              <LabelList dataKey="actual" content={ActualRateLabel} />
             </Line>
 
             {/* 계획 */}
@@ -174,6 +189,7 @@ export function SalesChart() {
               isAnimationActive={false}
             >
               <LabelList dataKey="plan" content={BadgeLabel(PLAN_COLOR)} />
+              <LabelList dataKey="plan" content={PlanRateLabel} />
             </Line>
           </ComposedChart>
         </ResponsiveContainer>
