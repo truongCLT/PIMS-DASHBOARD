@@ -30,6 +30,11 @@ export const SALES_DATA = RAW_SALES_DATA.map((d) => ({
 
 const VISIBLE_SALES_DATA = filterUpToLastMonth(SALES_DATA, (r) => r.month);
 
+const PLAN_COLOR = "#2b5cad";
+const ACTUAL_COLOR = "#2e8b3d";
+const RATE_COLOR = "#e67e22";
+
+/* Badge label above dot */
 const BadgeLabel = (fill: string) => (props: any) => {
   const { x, y, value } = props;
   if (value == null || x == null || y == null) return null;
@@ -56,9 +61,25 @@ const BadgeLabel = (fill: string) => (props: any) => {
   );
 };
 
-const PLAN_COLOR = "#2b5cad";
-const ACTUAL_COLOR = "#2e8b3d";
-const RATE_COLOR = "#e67e22";
+/* Rate label — rendered below the dot of whichever line is lower */
+const makeRateLabel = (chartData: typeof VISIBLE_SALES_DATA) => (props: any) => {
+  const { x, y, index } = props;
+  if (x == null || y == null || index == null) return null;
+  const d = chartData[index];
+  if (!d || d.rate == null) return null;
+  return (
+    <text
+      x={x}
+      y={y + 18}
+      textAnchor="middle"
+      fill={RATE_COLOR}
+      fontSize={9}
+      fontWeight={700}
+    >
+      {d.rate}%
+    </text>
+  );
+};
 
 /* Custom Tooltip */
 const CustomTooltip = ({ active, payload, label }: any) => {
@@ -78,20 +99,9 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   );
 };
 
-/* Rate label rendered below the X axis via a custom tick */
-const RateTick = (props: any) => {
-  const { x, y, payload, data } = props;
-  const d = data?.find((r: any) => r.month === payload?.value);
-  if (!d || d.rate == null) return null;
-  return (
-    <text x={x} y={y + 14} textAnchor="middle" fill={RATE_COLOR} fontSize={9} fontWeight={700}>
-      {d.rate}%
-    </text>
-  );
-};
-
 export function SalesChart() {
   const [viewType, setViewType] = useState<"net" | "report">("net");
+  const RateLabel = makeRateLabel(VISIBLE_SALES_DATA);
 
   return (
     <div style={{
@@ -119,19 +129,9 @@ export function SalesChart() {
       {/* Chart */}
       <div style={{ flex: 1, minHeight: "160px" }}>
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={VISIBLE_SALES_DATA} margin={{ top: 8, right: 18, left: -20, bottom: 20 }}>
+          <ComposedChart data={VISIBLE_SALES_DATA} margin={{ top: 8, right: 18, left: -20, bottom: 4 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e8f0f8" vertical={false} />
             <XAxis
-              dataKey="month"
-              tick={(props) => <RateTick {...props} data={VISIBLE_SALES_DATA} />}
-              axisLine={false}
-              tickLine={false}
-              padding={{ left: 18, right: 6 }}
-              label={undefined}
-            />
-            {/* Invisible second XAxis just for the month labels */}
-            <XAxis
-              xAxisId="months"
               dataKey="month"
               tick={{ fontSize: 10, fill: "#666" }}
               axisLine={false}
@@ -146,8 +146,9 @@ export function SalesChart() {
               tickLine={false}
             />
             <Tooltip content={<CustomTooltip />} />
+
+            {/* 실적 및 전망 — rate label attaches below this dot */}
             <Line
-              xAxisId="months"
               type="linear"
               dataKey="actual"
               name="매출(실적 및 전망)"
@@ -158,9 +159,11 @@ export function SalesChart() {
               isAnimationActive={false}
             >
               <LabelList dataKey="actual" content={BadgeLabel(ACTUAL_COLOR)} />
+              <LabelList dataKey="actual" content={RateLabel} />
             </Line>
+
+            {/* 계획 */}
             <Line
-              xAxisId="months"
               type="linear"
               dataKey="plan"
               name="매출(계획)"
