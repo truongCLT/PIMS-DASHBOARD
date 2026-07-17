@@ -57,7 +57,7 @@ export function CommentPanel({ title }: { title: string }) {
             fontSize: "11px",
             color: "#333",
             resize: "none",
-            height: "50px",
+            height: "80px",
             fontFamily: "inherit",
             boxSizing: "border-box",
           }}

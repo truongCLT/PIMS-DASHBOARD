@@ -58,8 +58,8 @@ export function Dashboard() {
           gap: "6px",
           padding: "4px 10px 10px",
         }}>
-          <CommentPanel title="매출 실적" />
-          <CommentPanel title="매출 전망" />
+          <CommentPanel title="실적" />
+          <CommentPanel title="전망" />
         </div>
       </div>
     </div>
