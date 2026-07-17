@@ -361,7 +361,7 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
                 ticks={[0, 5, 10, 15, 20]}
               />
               <Tooltip contentStyle={{ fontSize: "11px" }} />
-              <Legend wrapperStyle={{ fontSize: "10px" }} iconSize={10} />
+              <Legend wrapperStyle={{ fontSize: "12px" }} iconSize={12} />
               <Bar yAxisId="left" dataKey="plan" name="Plan Monthly" fill="#2b5cad" barSize={12} isAnimationActive={false} />
               <Bar yAxisId="left" dataKey="actual" name="Actual Monthly" fill="#9dc3e6" barSize={12} isAnimationActive={false} />
               <Line yAxisId="right" dataKey="planAccum" name="Plan Accum" stroke="#3e7d4c" strokeWidth={2} dot={{ r: 2 }} isAnimationActive={false} />

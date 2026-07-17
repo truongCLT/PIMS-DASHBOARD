@@ -226,7 +226,7 @@ export function SalesChart() {
               <circle cx="6" cy="4" r="2.5" fill={PLAN_COLOR} />
               <circle cx="20" cy="4" r="2.5" fill={PLAN_COLOR} />
             </svg>
-            <span style={{ fontSize: "9px", color: "#555" }}>매출(계획)</span>
+            <span style={{ fontSize: "11px", color: "#555" }}>매출(계획)</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
             <svg width="26" height="8">
@@ -234,11 +234,11 @@ export function SalesChart() {
               <circle cx="6" cy="4" r="2.5" fill={ACTUAL_COLOR} />
               <circle cx="20" cy="4" r="2.5" fill={ACTUAL_COLOR} />
             </svg>
-            <span style={{ fontSize: "9px", color: "#555" }}>매출(실적 및 전망)</span>
+            <span style={{ fontSize: "11px", color: "#555" }}>매출(실적 및 전망)</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-            <span style={{ fontSize: "9px", fontWeight: 700, color: RATE_COLOR }}>%</span>
-            <span style={{ fontSize: "9px", color: "#555" }}>달성률</span>
+            <span style={{ fontSize: "11px", fontWeight: 700, color: RATE_COLOR }}>%</span>
+            <span style={{ fontSize: "11px", color: "#555" }}>달성률</span>
           </div>
         </div>
       </div>

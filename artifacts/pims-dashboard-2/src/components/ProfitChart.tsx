@@ -100,22 +100,22 @@ export function ProfitChart() {
       {/* Legend */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginTop: "6px", justifyContent: "center" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-          <div style={{ width: "12px", height: "10px", backgroundColor: LIGHT, border: `1.5px solid ${NAVY}`, borderRadius: "2px" }} />
-          <span style={{ fontSize: "9px", color: "#333" }}>매출이익</span>
+          <div style={{ width: "14px", height: "11px", backgroundColor: LIGHT, border: `1.5px solid ${NAVY}`, borderRadius: "2px" }} />
+          <span style={{ fontSize: "11px", color: "#333" }}>매출이익</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-          <div style={{ width: "12px", height: "10px", backgroundColor: NAVY, borderRadius: "2px" }} />
-          <span style={{ fontSize: "9px", color: "#333" }}>영업이익</span>
+          <div style={{ width: "14px", height: "11px", backgroundColor: NAVY, borderRadius: "2px" }} />
+          <span style={{ fontSize: "11px", color: "#333" }}>영업이익</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-          <div style={{ width: "12px", height: "10px", backgroundColor: GREEN, borderRadius: "2px" }} />
-          <span style={{ fontSize: "9px", color: "#333" }}>영업외수익</span>
+          <div style={{ width: "14px", height: "11px", backgroundColor: GREEN, borderRadius: "2px" }} />
+          <span style={{ fontSize: "11px", color: "#333" }}>영업외수익</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
           <svg width="10" height="14" viewBox="0 0 10 14">
             <path d="M 2 1 h 6 V 13 h -6" fill="none" stroke={ORANGE} strokeWidth="2" />
           </svg>
-          <span style={{ fontSize: "9px", color: "#333" }}>판관비</span>
+          <span style={{ fontSize: "11px", color: "#333" }}>판관비</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
           <svg width="24" height="8" viewBox="0 0 24 8">
@@ -123,7 +123,7 @@ export function ProfitChart() {
             <circle cx="4" cy="4" r="3" fill={GREEN} />
             <circle cx="20" cy="4" r="3" fill={GREEN} />
           </svg>
-          <span style={{ fontSize: "9px", color: "#333" }}>경상이익</span>
+          <span style={{ fontSize: "11px", color: "#333" }}>경상이익</span>
         </div>
       </div>
     </div>

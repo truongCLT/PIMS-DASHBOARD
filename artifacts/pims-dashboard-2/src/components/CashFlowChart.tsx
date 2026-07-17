@@ -112,13 +112,13 @@ export function CashFlowChart() {
           { color: "#e53935", label: "자금 유출", type: "rect" },
           { color: "#1a3a5c", label: "누적 현금 잔액", type: "line" },
         ].map((item) => (
-          <div key={item.label} style={{ display: "flex", alignItems: "center", gap: "3px" }}>
+          <div key={item.label} style={{ display: "flex", alignItems: "center", gap: "4px" }}>
             {item.type === "rect" ? (
-              <div style={{ width: "12px", height: "8px", backgroundColor: item.color, borderRadius: "1px" }} />
+              <div style={{ width: "14px", height: "10px", backgroundColor: item.color, borderRadius: "1px" }} />
             ) : (
-              <div style={{ width: "16px", height: "2px", backgroundColor: item.color }} />
+              <div style={{ width: "18px", height: "2px", backgroundColor: item.color }} />
             )}
-            <span style={{ fontSize: "9px", color: "#555" }}>{item.label}</span>
+            <span style={{ fontSize: "11px", color: "#555" }}>{item.label}</span>
           </div>
         ))}
       </div>

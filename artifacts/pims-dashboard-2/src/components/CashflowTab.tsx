@@ -145,7 +145,7 @@ export function CashflowTab() {
                   ticks={[-30, -20, -10, 0, 10, 20, 30, 40, 50, 60]}
                 />
                 <Tooltip contentStyle={{ fontSize: "11px" }} />
-                <Legend wrapperStyle={{ fontSize: "10px" }} iconSize={10} />
+                <Legend wrapperStyle={{ fontSize: "12px" }} iconSize={12} />
                 <ReferenceLine y={0} stroke="#e0a030" strokeDasharray="3 3" />
                 <Bar dataKey="cashIn" name="Cash in" fill="#2b5cad" barSize={26} stackId="cash" isAnimationActive={false}>
                   <LabelList dataKey="cashIn" position="center" style={{ fontSize: "9px", fill: "#fff", fontWeight: 700 }} formatter={(v: number) => (v > 0 ? `+${v}` : v)} />

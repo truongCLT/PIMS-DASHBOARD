@@ -56,8 +56,8 @@ function KPICard({ title, plan, actual, achievement, achievementColor = "#00bcd4
 export const KPI_DATA = [
   { title: "당월 매출", plan: 1297, actual: 2360, achievement: "313%", achievementColor: "#00bcd4" },
   { title: "당월 영업이익", plan: 395, actual: 127, achievement: "31%", achievementColor: "#ff5722" },
-  { title: "누적 매출", plan: 1297, actual: 2360, achievement: "182%", achievementColor: "#00bcd4" },
-  { title: "누적 영업이익", plan: 1297, actual: 2360, achievement: "182%", achievementColor: "#00bcd4" },
+  { title: "연간 누적 매출", plan: 1297, actual: 2360, achievement: "182%", achievementColor: "#00bcd4" },
+  { title: "연간 누적 영업이익", plan: 1297, actual: 2360, achievement: "182%", achievementColor: "#00bcd4" },
 ];
 
 export function KPICards() {
