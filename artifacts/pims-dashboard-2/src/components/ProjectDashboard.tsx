@@ -267,7 +267,7 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
             style={{
               width: "36px",
               height: "20px",
-              backgroundColor: "#5b5fc7",
+              backgroundColor: unitOn ? "#5b5fc7" : "#b0b8c4",
               borderRadius: "10px",
               position: "relative",
               cursor: "pointer",
