@@ -260,6 +260,40 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
         </button>
       </div>
 
+      {/* Project info bar — always visible */}
+      <div style={{ ...cardStyle, margin: "8px 10px 0", display: "flex", gap: "10px", alignItems: "stretch" }}>
+        <div style={{ flex: 1 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 0", fontSize: "12px", color: "#1a2d4d" }}>
+            <span style={{ fontWeight: 700, paddingRight: "14px" }}>Project : {projectName}</span>
+            <span style={{ borderLeft: "1px solid #d5dce6", padding: "0 14px" }}>발주처 : 000000000000</span>
+            <span style={{ borderLeft: "1px solid #d5dce6", padding: "0 14px" }}>
+              공사기간 : '00.00.00~'00.00.00&nbsp;&nbsp;(00개월)
+            </span>
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 0", fontSize: "12px", color: "#1a2d4d", marginTop: "8px" }}>
+            <span style={{ fontWeight: 700, paddingRight: "14px" }}>도급액 : 0,000,000</span>
+            <span style={{ borderLeft: "1px solid #d5dce6", padding: "0 14px" }}>
+              공사규모 : B2~00F&nbsp;&nbsp;0개동 (오피스 및 아파트)&nbsp;&nbsp;공동주택 000세대
+            </span>
+          </div>
+        </div>
+        <div
+          style={{
+            border: "1px solid #c8d2de",
+            borderRadius: "4px",
+            padding: "8px 14px",
+            fontSize: "13px",
+            fontWeight: 700,
+            color: "#1a2d4d",
+            display: "flex",
+            alignItems: "center",
+            whiteSpace: "nowrap",
+          }}
+        >
+          작성 기준 : 6월 말
+        </div>
+      </div>
+
       {/* Horizontal tab bar */}
       <div
         style={{
@@ -268,6 +302,7 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
           padding: "8px 10px 0",
           backgroundColor: "#f0f4f9",
           borderBottom: "2px solid #c8d2de",
+          marginTop: "8px",
         }}
       >
         {SIDE_TABS.map((tab) => {
@@ -321,49 +356,6 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
           </div>
         ) : (
         <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: "8px" }}>
-          {/* Project info bar */}
-          <div style={{ ...cardStyle, display: "flex", gap: "10px", alignItems: "stretch" }}>
-            <div style={{ flex: 1 }}>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 0", fontSize: "12px", color: "#1a2d4d" }}>
-                <span style={{ fontWeight: 700, paddingRight: "14px" }}>Project : {projectName}</span>
-                <span style={{ borderLeft: "1px solid #d5dce6", padding: "0 14px" }}>발주처 : 000000000000</span>
-                <span style={{ borderLeft: "1px solid #d5dce6", padding: "0 14px" }}>
-                  공사기간 : '00.00.00~'00.00.00&nbsp;&nbsp;(00개월)
-                </span>
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  flexWrap: "wrap",
-                  gap: "6px 0",
-                  fontSize: "12px",
-                  color: "#1a2d4d",
-                  marginTop: "8px",
-                }}
-              >
-                <span style={{ fontWeight: 700, paddingRight: "14px" }}>도급액 : 0,000,000</span>
-                <span style={{ borderLeft: "1px solid #d5dce6", padding: "0 14px" }}>
-                  공사규모 : B2~00F&nbsp;&nbsp;0개동 (오피스 및 아파트)&nbsp;&nbsp;공동주택 000세대
-                </span>
-              </div>
-            </div>
-            <div
-              style={{
-                border: "1px solid #c8d2de",
-                borderRadius: "4px",
-                padding: "8px 14px",
-                fontSize: "13px",
-                fontWeight: 700,
-                color: "#1a2d4d",
-                display: "flex",
-                alignItems: "center",
-                whiteSpace: "nowrap",
-              }}
-            >
-              작성 기준 : 6월 말
-            </div>
-          </div>
-
           {/* Row 1: Progress / Revenue / Cost estimation */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1.6fr 1.6fr", gap: "8px" }}>
             {/* Progress */}
