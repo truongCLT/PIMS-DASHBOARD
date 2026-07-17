@@ -88,7 +88,7 @@ export const PROJECT_GROUPS: ProjectGroup[] = [
     ],
   },
   {
-    label: "DEHEM",
+    label: "DE HEIM",
     divisions: [
       {
         label: "자체개발",
