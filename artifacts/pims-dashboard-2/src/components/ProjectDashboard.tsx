@@ -128,11 +128,30 @@ const SIDE_TAB_LABELS: Record<string, string> = {
   Cashflow: "자금",
 };
 
+const YEARS = Array.from({ length: 21 }, (_, i) => 2015 + i); // 2015 ~ 2035
+const MONTHS = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"];
+
+const selectStyle: React.CSSProperties = {
+  border: "none",
+  outline: "none",
+  fontSize: "12px",
+  color: "#333",
+  backgroundColor: "transparent",
+  cursor: "pointer",
+  appearance: "none" as const,
+  WebkitAppearance: "none" as const,
+  paddingRight: "14px",
+};
+
 export function ProjectDashboard({ projectName }: { projectName: string }) {
   const [currency, setCurrency] = useState("USD");
   const [unitOn, setUnitOn] = useState(true);
   const [activeTab, setActiveTab] = useState("Overview");
   const [overviewComment, setOverviewComment] = useState("");
+  const [fromYear, setFromYear] = useState(2026);
+  const [fromMonth, setFromMonth] = useState("04");
+  const [toYear, setToYear] = useState(2026);
+  const [toMonth, setToMonth] = useState("06");
 
   return (
     <div style={{ flex: 1, overflowY: "auto", backgroundColor: "#e8edf3" }}>
@@ -160,28 +179,60 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
       >
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <span style={{ fontSize: "12px", color: "#333", fontWeight: 600 }}>기간 :</span>
+          {/* From */}
           <div
             style={{
               display: "flex",
               alignItems: "center",
-              gap: "8px",
+              gap: "2px",
               border: "1px solid #ccd4dd",
               borderRadius: "6px",
-              padding: "4px 10px",
+              padding: "4px 8px",
               backgroundColor: "#fff",
             }}
           >
-            <input
-              type="month"
-              defaultValue="2026-04"
-              style={{ border: "none", outline: "none", fontSize: "12px", color: "#333", width: "110px" }}
-            />
-            <span style={{ fontSize: "12px", color: "#aab2bc" }}>→</span>
-            <input
-              type="month"
-              defaultValue="2026-06"
-              style={{ border: "none", outline: "none", fontSize: "12px", color: "#333", width: "110px" }}
-            />
+            <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+              <select value={fromYear} onChange={(e) => setFromYear(Number(e.target.value))} style={selectStyle}>
+                {YEARS.map((y) => <option key={y} value={y}>{y}</option>)}
+              </select>
+              <span style={{ position: "absolute", right: 0, fontSize: "9px", color: "#888", pointerEvents: "none" }}>▼</span>
+            </div>
+            <span style={{ fontSize: "12px", color: "#aab2bc", margin: "0 1px" }}>년</span>
+            <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+              <select value={fromMonth} onChange={(e) => setFromMonth(e.target.value)} style={selectStyle}>
+                {MONTHS.map((m) => <option key={m} value={m}>{m}</option>)}
+              </select>
+              <span style={{ position: "absolute", right: 0, fontSize: "9px", color: "#888", pointerEvents: "none" }}>▼</span>
+            </div>
+            <span style={{ fontSize: "12px", color: "#aab2bc", margin: "0 1px" }}>월</span>
+          </div>
+          <span style={{ fontSize: "12px", color: "#aab2bc" }}>→</span>
+          {/* To */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "2px",
+              border: "1px solid #ccd4dd",
+              borderRadius: "6px",
+              padding: "4px 8px",
+              backgroundColor: "#fff",
+            }}
+          >
+            <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+              <select value={toYear} onChange={(e) => setToYear(Number(e.target.value))} style={selectStyle}>
+                {YEARS.map((y) => <option key={y} value={y}>{y}</option>)}
+              </select>
+              <span style={{ position: "absolute", right: 0, fontSize: "9px", color: "#888", pointerEvents: "none" }}>▼</span>
+            </div>
+            <span style={{ fontSize: "12px", color: "#aab2bc", margin: "0 1px" }}>년</span>
+            <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+              <select value={toMonth} onChange={(e) => setToMonth(e.target.value)} style={selectStyle}>
+                {MONTHS.map((m) => <option key={m} value={m}>{m}</option>)}
+              </select>
+              <span style={{ position: "absolute", right: 0, fontSize: "9px", color: "#888", pointerEvents: "none" }}>▼</span>
+            </div>
+            <span style={{ fontSize: "12px", color: "#aab2bc", margin: "0 1px" }}>월</span>
           </div>
         </div>
 
