@@ -1317,6 +1317,8 @@ components:
       properties:
         year:
           type: integer
+          minimum: 2000
+          maximum: 2100
         month:
           type: integer
           minimum: 1
@@ -1324,15 +1326,23 @@ components:
         planPct:
           type: number
           nullable: true
+          minimum: 0
+          maximum: 100
         actualPct:
           type: number
           nullable: true
+          minimum: 0
+          maximum: 100
         planCumPct:
           type: number
           nullable: true
+          minimum: 0
+          maximum: 100
         actualCumPct:
           type: number
           nullable: true
+          minimum: 0
+          maximum: 100
       required: [year, month]
     ProjectDetailMilestone:
       type: object

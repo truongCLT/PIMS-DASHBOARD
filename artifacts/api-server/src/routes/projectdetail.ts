@@ -142,13 +142,52 @@ router.get("/projectdetail", async (req, res) => {
   }
 });
 
+function validateProgress(progress: { year: number; month: number }[]): string[] {
+  const errors: string[] = [];
+  const seen = new Map<string, number>();
+  progress.forEach((p, i) => {
+    const rowNo = i + 1;
+    if (!Number.isInteger(p.year) || p.year < 2000 || p.year > 2100) {
+      errors.push(`공정률 ${rowNo}번째 행: 연도(${p.year})는 2000~2100 사이여야 합니다.`);
+    }
+    if (!Number.isInteger(p.month) || p.month < 1 || p.month > 12) {
+      errors.push(`공정률 ${rowNo}번째 행: 월(${p.month})은 1~12 사이여야 합니다.`);
+    } else {
+      const key = `${p.year}-${p.month}`;
+      const prev = seen.get(key);
+      if (prev != null) {
+        errors.push(`공정률 ${rowNo}번째 행: ${p.year}년 ${p.month}월이 ${prev}번째 행과 중복됩니다.`);
+      } else {
+        seen.set(key, rowNo);
+      }
+    }
+  });
+  return errors;
+}
+
 router.put("/projectdetail", requireAdmin, async (req, res) => {
   const parsed = PutProjectdetailBody.safeParse(req.body);
   if (!parsed.success || !parsed.data.projectName.trim()) {
-    res.status(400).json({ error: "잘못된 요청 본문입니다." });
+    const detail = parsed.success
+      ? null
+      : parsed.error.issues
+          .slice(0, 5)
+          .map((iss) => `${iss.path.join(".")}: ${iss.message}`)
+          .join(" / ");
+    res.status(400).json({
+      error: detail
+        ? `입력값이 올바르지 않습니다. (${detail})`
+        : "잘못된 요청 본문입니다.",
+    });
     return;
   }
   const body = parsed.data;
+
+  const progressErrors = validateProgress(body.progress);
+  if (progressErrors.length > 0) {
+    res.status(400).json({ error: progressErrors.join(" ") });
+    return;
+  }
   const projectName = body.projectName;
 
   if (body.photos.some((p) => !/^\/objects\/[\w\-./]+$/.test(p.objectPath))) {

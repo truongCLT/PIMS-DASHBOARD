@@ -166,7 +166,22 @@ export const GetProjectdetailQueryParams = zod.object({
   "projectName": zod.coerce.string()
 })
 
+export const getProjectdetailResponseProgressItemYearMin = 2000;
+export const getProjectdetailResponseProgressItemYearMax = 2100;
+
 export const getProjectdetailResponseProgressItemMonthMax = 12;
+
+export const getProjectdetailResponseProgressItemPlanPctMin = 0;
+export const getProjectdetailResponseProgressItemPlanPctMax = 100;
+
+export const getProjectdetailResponseProgressItemActualPctMin = 0;
+export const getProjectdetailResponseProgressItemActualPctMax = 100;
+
+export const getProjectdetailResponseProgressItemPlanCumPctMin = 0;
+export const getProjectdetailResponseProgressItemPlanCumPctMax = 100;
+
+export const getProjectdetailResponseProgressItemActualCumPctMin = 0;
+export const getProjectdetailResponseProgressItemActualCumPctMax = 100;
 
 export const getProjectdetailResponseCashflowItemMonthMax = 12;
 
@@ -183,12 +198,12 @@ export const GetProjectdetailResponse = zod.object({
   "scale": zod.string().nullable().describe('공사규모')
 }),
   "progress": zod.array(zod.object({
-  "year": zod.number(),
+  "year": zod.number().min(getProjectdetailResponseProgressItemYearMin).max(getProjectdetailResponseProgressItemYearMax),
   "month": zod.number().min(1).max(getProjectdetailResponseProgressItemMonthMax),
-  "planPct": zod.number().nullish(),
-  "actualPct": zod.number().nullish(),
-  "planCumPct": zod.number().nullish(),
-  "actualCumPct": zod.number().nullish()
+  "planPct": zod.number().min(getProjectdetailResponseProgressItemPlanPctMin).max(getProjectdetailResponseProgressItemPlanPctMax).nullish(),
+  "actualPct": zod.number().min(getProjectdetailResponseProgressItemActualPctMin).max(getProjectdetailResponseProgressItemActualPctMax).nullish(),
+  "planCumPct": zod.number().min(getProjectdetailResponseProgressItemPlanCumPctMin).max(getProjectdetailResponseProgressItemPlanCumPctMax).nullish(),
+  "actualCumPct": zod.number().min(getProjectdetailResponseProgressItemActualCumPctMin).max(getProjectdetailResponseProgressItemActualCumPctMax).nullish()
 })),
   "milestones": zod.array(zod.object({
   "label": zod.string(),
@@ -236,7 +251,22 @@ export const GetProjectdetailResponse = zod.object({
 /**
  * @summary Replace all project detail data for a project
  */
+export const putProjectdetailBodyProgressItemYearMin = 2000;
+export const putProjectdetailBodyProgressItemYearMax = 2100;
+
 export const putProjectdetailBodyProgressItemMonthMax = 12;
+
+export const putProjectdetailBodyProgressItemPlanPctMin = 0;
+export const putProjectdetailBodyProgressItemPlanPctMax = 100;
+
+export const putProjectdetailBodyProgressItemActualPctMin = 0;
+export const putProjectdetailBodyProgressItemActualPctMax = 100;
+
+export const putProjectdetailBodyProgressItemPlanCumPctMin = 0;
+export const putProjectdetailBodyProgressItemPlanCumPctMax = 100;
+
+export const putProjectdetailBodyProgressItemActualCumPctMin = 0;
+export const putProjectdetailBodyProgressItemActualCumPctMax = 100;
 
 export const putProjectdetailBodyCashflowItemMonthMax = 12;
 
@@ -253,12 +283,12 @@ export const PutProjectdetailBody = zod.object({
   "scale": zod.string().nullable().describe('공사규모')
 }),
   "progress": zod.array(zod.object({
-  "year": zod.number(),
+  "year": zod.number().min(putProjectdetailBodyProgressItemYearMin).max(putProjectdetailBodyProgressItemYearMax),
   "month": zod.number().min(1).max(putProjectdetailBodyProgressItemMonthMax),
-  "planPct": zod.number().nullish(),
-  "actualPct": zod.number().nullish(),
-  "planCumPct": zod.number().nullish(),
-  "actualCumPct": zod.number().nullish()
+  "planPct": zod.number().min(putProjectdetailBodyProgressItemPlanPctMin).max(putProjectdetailBodyProgressItemPlanPctMax).nullish(),
+  "actualPct": zod.number().min(putProjectdetailBodyProgressItemActualPctMin).max(putProjectdetailBodyProgressItemActualPctMax).nullish(),
+  "planCumPct": zod.number().min(putProjectdetailBodyProgressItemPlanCumPctMin).max(putProjectdetailBodyProgressItemPlanCumPctMax).nullish(),
+  "actualCumPct": zod.number().min(putProjectdetailBodyProgressItemActualCumPctMin).max(putProjectdetailBodyProgressItemActualCumPctMax).nullish()
 })),
   "milestones": zod.array(zod.object({
   "label": zod.string(),
@@ -302,7 +332,22 @@ export const PutProjectdetailBody = zod.object({
 }))
 })
 
+export const putProjectdetailResponseProgressItemYearMin = 2000;
+export const putProjectdetailResponseProgressItemYearMax = 2100;
+
 export const putProjectdetailResponseProgressItemMonthMax = 12;
+
+export const putProjectdetailResponseProgressItemPlanPctMin = 0;
+export const putProjectdetailResponseProgressItemPlanPctMax = 100;
+
+export const putProjectdetailResponseProgressItemActualPctMin = 0;
+export const putProjectdetailResponseProgressItemActualPctMax = 100;
+
+export const putProjectdetailResponseProgressItemPlanCumPctMin = 0;
+export const putProjectdetailResponseProgressItemPlanCumPctMax = 100;
+
+export const putProjectdetailResponseProgressItemActualCumPctMin = 0;
+export const putProjectdetailResponseProgressItemActualCumPctMax = 100;
 
 export const putProjectdetailResponseCashflowItemMonthMax = 12;
 
@@ -319,12 +364,12 @@ export const PutProjectdetailResponse = zod.object({
   "scale": zod.string().nullable().describe('공사규모')
 }),
   "progress": zod.array(zod.object({
-  "year": zod.number(),
+  "year": zod.number().min(putProjectdetailResponseProgressItemYearMin).max(putProjectdetailResponseProgressItemYearMax),
   "month": zod.number().min(1).max(putProjectdetailResponseProgressItemMonthMax),
-  "planPct": zod.number().nullish(),
-  "actualPct": zod.number().nullish(),
-  "planCumPct": zod.number().nullish(),
-  "actualCumPct": zod.number().nullish()
+  "planPct": zod.number().min(putProjectdetailResponseProgressItemPlanPctMin).max(putProjectdetailResponseProgressItemPlanPctMax).nullish(),
+  "actualPct": zod.number().min(putProjectdetailResponseProgressItemActualPctMin).max(putProjectdetailResponseProgressItemActualPctMax).nullish(),
+  "planCumPct": zod.number().min(putProjectdetailResponseProgressItemPlanCumPctMin).max(putProjectdetailResponseProgressItemPlanCumPctMax).nullish(),
+  "actualCumPct": zod.number().min(putProjectdetailResponseProgressItemActualCumPctMin).max(putProjectdetailResponseProgressItemActualCumPctMax).nullish()
 })),
   "milestones": zod.array(zod.object({
   "label": zod.string(),

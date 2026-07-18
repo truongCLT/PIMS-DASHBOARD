@@ -7,14 +7,34 @@
  */
 
 export interface ProjectDetailProgressPoint {
+  /**
+     * @minimum 2000
+     * @maximum 2100
+     */
   year: number;
   /**
      * @minimum 1
      * @maximum 12
      */
   month: number;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
   planPct?: number | null;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
   actualPct?: number | null;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
   planCumPct?: number | null;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
   actualCumPct?: number | null;
 }

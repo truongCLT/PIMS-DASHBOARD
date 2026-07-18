@@ -164,13 +164,57 @@ export function ProjectDataEntryTab({ projectName }: { projectName: string }) {
   const removeAt = <T,>(setter: React.Dispatch<React.SetStateAction<T[]>>, i: number) =>
     setter((rows) => rows.filter((_, j) => j !== i));
 
+  const validateProgress = (rows: ProjectDetailProgressPoint[]): string | null => {
+    const errors: string[] = [];
+    const seen = new Map<string, number>();
+    rows.forEach((p, i) => {
+      const rowNo = i + 1;
+      if (!Number.isInteger(p.year) || p.year < 2000 || p.year > 2100) {
+        errors.push(`공정률 ${rowNo}번째 행: 연도(${p.year})는 2000~2100 사이여야 합니다.`);
+      }
+      if (!Number.isInteger(p.month) || p.month < 1 || p.month > 12) {
+        errors.push(`공정률 ${rowNo}번째 행: 월(${p.month})은 1~12 사이여야 합니다.`);
+      } else {
+        const key = `${p.year}-${p.month}`;
+        const prev = seen.get(key);
+        if (prev != null) {
+          errors.push(`공정률 ${rowNo}번째 행: ${p.year}년 ${p.month}월이 ${prev}번째 행과 중복됩니다.`);
+        } else {
+          seen.set(key, rowNo);
+        }
+      }
+      (
+        [
+          ["planPct", "월간 계획"],
+          ["actualPct", "월간 실적"],
+          ["planCumPct", "누계 계획"],
+          ["actualCumPct", "누계 실적"],
+        ] as const
+      ).forEach(([field, label]) => {
+        const v = p[field];
+        if (v != null && (v < 0 || v > 100)) {
+          errors.push(`공정률 ${rowNo}번째 행: ${label}(${v}%)은 0~100 사이여야 합니다.`);
+        }
+      });
+    });
+    return errors.length > 0 ? errors.join(" ") : null;
+  };
+
   const save = () => {
     setSaveMsg(null);
+    const progressRows = progress.filter(
+      (p) => p.year !== 0 || p.month !== 0 || p.planPct != null || p.actualPct != null || p.planCumPct != null || p.actualCumPct != null,
+    );
+    const validationError = validateProgress(progressRows);
+    if (validationError) {
+      setSaveMsg(validationError);
+      return;
+    }
     const body: ProjectDetail = {
       projectName,
       unit: "천 USD",
       overview,
-      progress: progress.filter((p) => p.year > 0 && p.month >= 1 && p.month <= 12),
+      progress: progressRows,
       milestones: milestones.filter((m) => m.label.trim() !== ""),
       costEstimation: costEstimation.filter((e) => e.contractAmount != null || e.costAmount != null),
       costBudget: costBudget.filter((c) => c.item.trim() !== ""),
@@ -185,7 +229,13 @@ export function ProjectDataEntryTab({ projectName }: { projectName: string }) {
           setSaveMsg("저장되었습니다.");
           queryClient.invalidateQueries({ queryKey: getGetProjectdetailQueryKey({ projectName }) });
         },
-        onError: () => setSaveMsg("저장에 실패했습니다. 다시 시도해 주세요."),
+        onError: (err: unknown) => {
+          const serverMsg =
+            typeof err === "object" && err != null && "data" in err
+              ? (err as { data?: { error?: string } | null }).data?.error
+              : undefined;
+          setSaveMsg(serverMsg || "저장에 실패했습니다. 다시 시도해 주세요.");
+        },
       },
     );
   };
