@@ -7,6 +7,7 @@ import { ServiceCashflowTab } from "./ServiceCashflowTab";
 import { ServiceBudgetTab } from "./ServiceBudgetTab";
 import { ProjectDataEntryTab } from "./ProjectDataEntryTab";
 import { useProjectDetail, fmtNum, fmtPct, ratioPct } from "../lib/projectDetailData";
+import { useAdminAuth } from "../lib/adminAuth";
 
 const cardStyle: React.CSSProperties = {
   backgroundColor: "#fff",
@@ -101,6 +102,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
   const [currency, setCurrency] = useState("USD");
   const [unitOn, setUnitOn] = useState(true);
   const [activeTab, setActiveTab] = useState("Overview");
+  const { isAdmin } = useAdminAuth();
   const [comment, setComment] = useState("");
   const [fromYear, setFromYear] = useState(2026);
   const [fromMonth, setFromMonth] = useState("04");
@@ -267,7 +269,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
           marginTop: "8px",
         }}
       >
-        {TABS.map((tab) => {
+        {TABS.filter((tab) => tab !== "Data entry" || isAdmin).map((tab) => {
           const active = tab === activeTab;
           return (
             <button
@@ -455,33 +457,35 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                 <MessageSquare size={13} color="#1a2d4d" />
                 <span style={{ fontSize: "12px", fontWeight: 700, color: "#1a2d4d" }}>Comment</span>
               </div>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "flex-end",
-                  gap: "8px",
-                  border: "1px solid #ccd4dd",
-                  borderRadius: "6px",
-                  padding: "8px 10px",
-                }}
-              >
-                <textarea
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                  placeholder="Write a comment"
-                  rows={2}
+              {isAdmin && (
+                <div
                   style={{
-                    flex: 1,
-                    border: "none",
-                    outline: "none",
-                    resize: "none",
-                    fontSize: "11px",
-                    color: "#333",
-                    fontFamily: "inherit",
+                    display: "flex",
+                    alignItems: "flex-end",
+                    gap: "8px",
+                    border: "1px solid #ccd4dd",
+                    borderRadius: "6px",
+                    padding: "8px 10px",
                   }}
-                />
-                <Send size={14} color="#1e6fdd" style={{ cursor: "pointer", flexShrink: 0 }} />
-              </div>
+                >
+                  <textarea
+                    value={comment}
+                    onChange={(e) => setComment(e.target.value)}
+                    placeholder="Write a comment"
+                    rows={2}
+                    style={{
+                      flex: 1,
+                      border: "none",
+                      outline: "none",
+                      resize: "none",
+                      fontSize: "11px",
+                      color: "#333",
+                      fontFamily: "inherit",
+                    }}
+                  />
+                  <Send size={14} color="#1e6fdd" style={{ cursor: "pointer", flexShrink: 0 }} />
+                </div>
+              )}
             </div>
           </div>
         ) : (

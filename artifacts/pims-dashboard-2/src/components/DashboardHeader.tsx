@@ -3,6 +3,8 @@ import { ChevronsUp, Download, FileSpreadsheet, FileText, Upload } from "lucide-
 import { useListMgmtreportProjects } from "@workspace/api-client-react";
 import { exportDashboardExcel, exportDashboardPdf } from "../lib/exportDashboard";
 import { MgmtReportUploadModal } from "./MgmtReportUploadModal";
+import { FxRateEditor } from "./FxRateEditor";
+import { useAdminAuth } from "../lib/adminAuth";
 import {
   useDashboardFilters,
   UNIT_OPTIONS,
@@ -27,6 +29,7 @@ export function DashboardHeader() {
     setUnitIndex,
   } = useDashboardFilters();
 
+  const { isAdmin } = useAdminAuth();
   const projectsQuery = useListMgmtreportProjects({ year: REPORT_YEAR });
   const projectOptions = (projectsQuery.data?.projects ?? []).filter((p) => !p.isGroup);
 
@@ -279,26 +282,29 @@ export function DashboardHeader() {
           </span>
         </div>
 
-        {/* Excel upload button */}
-        <button
-          onClick={() => setUploadOpen(true)}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "6px",
-            backgroundColor: "#1e7145",
-            color: "#fff",
-            border: "none",
-            borderRadius: "6px",
-            padding: "7px 14px",
-            fontSize: "12px",
-            cursor: "pointer",
-            fontWeight: "500",
-          }}
-        >
-          <Upload size={13} />
-          Excel 업로드
-        </button>
+        {/* 관리자 전용: 환율 설정 + Excel 업로드 */}
+        {isAdmin && <FxRateEditor />}
+        {isAdmin && (
+          <button
+            onClick={() => setUploadOpen(true)}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              backgroundColor: "#1e7145",
+              color: "#fff",
+              border: "none",
+              borderRadius: "6px",
+              padding: "7px 14px",
+              fontSize: "12px",
+              cursor: "pointer",
+              fontWeight: "500",
+            }}
+          >
+            <Upload size={13} />
+            Excel 업로드
+          </button>
+        )}
 
         {/* Download button + dropdown */}
         <div ref={downloadRef} style={{ position: "relative" }}>

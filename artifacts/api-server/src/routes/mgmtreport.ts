@@ -18,6 +18,8 @@ import {
   ListMgmtreportCommentsResponse,
   CreateMgmtreportCommentBody,
   CreateMgmtreportCommentResponse,
+  UpdateMgmtreportCommentBody,
+  UpdateMgmtreportCommentResponse,
 } from "@workspace/api-zod";
 import {
   parseMgmtreportWorkbook,
@@ -25,6 +27,7 @@ import {
   applyMgmtreportImport,
   MgmtreportParseError,
 } from "../lib/mgmtreportImport";
+import { requireAdmin } from "../middlewares/adminAuth";
 
 const router: IRouter = Router();
 
@@ -65,7 +68,7 @@ async function readUpload(req: Request, res: Response) {
   return { file, year } as const;
 }
 
-router.post("/mgmtreport/import/preview", async (req, res) => {
+router.post("/mgmtreport/import/preview", requireAdmin, async (req, res) => {
   const r = await readUpload(req, res);
   if ("error" in r) {
     res.status(400).json({ error: r.error });
@@ -84,7 +87,7 @@ router.post("/mgmtreport/import/preview", async (req, res) => {
   }
 });
 
-router.post("/mgmtreport/import/apply", async (req, res) => {
+router.post("/mgmtreport/import/apply", requireAdmin, async (req, res) => {
   const r = await readUpload(req, res);
   if ("error" in r) {
     res.status(400).json({ error: r.error });
@@ -343,6 +346,58 @@ router.post("/mgmtreport/comments", async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "failed to create mgmtreport comment");
     res.status(500).json({ error: "코멘트 저장에 실패했습니다." });
+  }
+});
+
+router.patch("/mgmtreport/comments/:id", requireAdmin, async (req, res) => {
+  const id = Number(req.params.id);
+  const parsed = UpdateMgmtreportCommentBody.safeParse(req.body);
+  if (!Number.isInteger(id) || !parsed.success || parsed.data.body.trim().length === 0) {
+    res.status(400).json({ error: "코멘트 내용이 올바르지 않습니다." });
+    return;
+  }
+  try {
+    const [row] = await db
+      .update(mrCommentsTable)
+      .set({ body: parsed.data.body.trim() })
+      .where(eq(mrCommentsTable.id, id))
+      .returning();
+    if (!row) {
+      res.status(404).json({ error: "코멘트를 찾을 수 없습니다." });
+      return;
+    }
+    res.json(
+      UpdateMgmtreportCommentResponse.parse({
+        id: row.id,
+        year: row.year,
+        month: row.month,
+        section: row.section,
+        body: row.body,
+        createdAt: row.createdAt.toISOString(),
+      }),
+    );
+  } catch (err) {
+    req.log.error({ err }, "failed to update mgmtreport comment");
+    res.status(500).json({ error: "코멘트 수정에 실패했습니다." });
+  }
+});
+
+router.delete("/mgmtreport/comments/:id", requireAdmin, async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) {
+    res.status(400).json({ error: "잘못된 코멘트 ID입니다." });
+    return;
+  }
+  try {
+    const rows = await db.delete(mrCommentsTable).where(eq(mrCommentsTable.id, id)).returning();
+    if (rows.length === 0) {
+      res.status(404).json({ error: "코멘트를 찾을 수 없습니다." });
+      return;
+    }
+    res.status(204).end();
+  } catch (err) {
+    req.log.error({ err }, "failed to delete mgmtreport comment");
+    res.status(500).json({ error: "코멘트 삭제에 실패했습니다." });
   }
 });
 

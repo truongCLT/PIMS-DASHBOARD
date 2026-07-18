@@ -159,12 +159,14 @@ export function Sidebar({
   onSelectProject,
   onSelectScope,
   onSelectTotal,
+  onLogoClick,
 }: {
   selectedProject: string | null;
   selectedScope: DashboardScope;
   onSelectProject: (name: string) => void;
   onSelectScope: (scope: DashboardScope) => void;
   onSelectTotal: () => void;
+  onLogoClick?: () => void;
 }) {
   const projectsQuery = useListMgmtreportProjects({ year: REPORT_YEAR });
   const treeData = useMemo(() => {
@@ -226,10 +228,13 @@ export function Sidebar({
         <img
           src={pimsBranding}
           alt="PIMS System For DAEWOO E&C VINA"
+          onClick={onLogoClick}
+          title="관리자 모드"
           style={{
             width: "100%",
             borderRadius: "8px",
             display: "block",
+            cursor: onLogoClick ? "pointer" : "default",
           }}
         />
       </div>

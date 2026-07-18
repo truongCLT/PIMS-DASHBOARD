@@ -15,6 +15,7 @@ import {
   PutProjectdetailBody,
   PutProjectdetailResponse,
 } from "@workspace/api-zod";
+import { requireAdmin } from "../middlewares/adminAuth";
 
 const router: IRouter = Router();
 
@@ -119,7 +120,7 @@ router.get("/projectdetail", async (req, res) => {
   }
 });
 
-router.put("/projectdetail", async (req, res) => {
+router.put("/projectdetail", requireAdmin, async (req, res) => {
   const parsed = PutProjectdetailBody.safeParse(req.body);
   if (!parsed.success || !parsed.data.projectName.trim()) {
     res.status(400).json({ error: "잘못된 요청 본문입니다." });

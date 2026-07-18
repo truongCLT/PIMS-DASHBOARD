@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useMemo, useState } from "react";
+import { useGetFxRates } from "@workspace/api-client-react";
 import { lastClosedMonth } from "./monthRange";
 
 export const REPORT_YEAR = new Date().getFullYear();
@@ -6,12 +7,14 @@ export const REPORT_YEAR = new Date().getFullYear();
 export type PeriodMode = "Month" | "Quarter" | "Year";
 export type CurrencyCode = "USD" | "VND" | "KRW";
 
-/* 환율 (표시용 고정 환율, 1 USD 기준) */
+/* 기본 환율 (저장된 환율이 없을 때 사용, 1 USD 기준) */
 export const FX_RATES: Record<CurrencyCode, number> = {
   USD: 1,
   VND: 25450,
   KRW: 1380,
 };
+
+export type FxRateMap = Record<CurrencyCode, number>;
 
 export const UNIT_OPTIONS: Record<CurrencyCode, [string, string]> = {
   USD: ["1K USD", "1 USD"],
@@ -27,8 +30,12 @@ const UNIT_DIVISORS: Record<CurrencyCode, [number, number]> = {
 };
 
 /** 기준 데이터(천 USD) → 선택된 통화·단위 값으로 변환하는 함수를 만든다. */
-export function makeConverter(currency: CurrencyCode, unitIndex: 0 | 1): (v: number) => number {
-  const factor = (1000 * FX_RATES[currency]) / UNIT_DIVISORS[currency][unitIndex];
+export function makeConverter(
+  currency: CurrencyCode,
+  unitIndex: 0 | 1,
+  fxRates: FxRateMap = FX_RATES,
+): (v: number) => number {
+  const factor = (1000 * fxRates[currency]) / UNIT_DIVISORS[currency][unitIndex];
   return (v: number) => v * factor;
 }
 
@@ -54,6 +61,7 @@ export interface DashboardFilterState {
 }
 
 interface DashboardFilterContextValue extends DashboardFilterState {
+  fxRates: FxRateMap;
   setProject: (v: string) => void;
   setStartYm: (v: string) => void;
   setEndYm: (v: string) => void;
@@ -81,9 +89,19 @@ export function DashboardFilterProvider({ children }: { children: React.ReactNod
   const [currency, setCurrencyState] = useState<CurrencyCode>(DEFAULT_FILTERS.currency);
   const [unitIndex, setUnitIndex] = useState<0 | 1>(DEFAULT_FILTERS.unitIndex);
 
+  const fxQuery = useGetFxRates();
+  const fxRates = useMemo<FxRateMap>(
+    () =>
+      fxQuery.data
+        ? { USD: fxQuery.data.usd, KRW: fxQuery.data.krw, VND: fxQuery.data.vnd }
+        : FX_RATES,
+    [fxQuery.data],
+  );
+
   const value = useMemo<DashboardFilterContextValue>(
     () => ({
       project,
+      fxRates,
       startYm,
       endYm,
       period,
@@ -99,7 +117,7 @@ export function DashboardFilterProvider({ children }: { children: React.ReactNod
       },
       setUnitIndex,
     }),
-    [project, startYm, endYm, period, currency, unitIndex],
+    [project, startYm, endYm, period, currency, unitIndex, fxRates],
   );
 
   return <FilterContext.Provider value={value}>{children}</FilterContext.Provider>;
@@ -111,6 +129,7 @@ export function useDashboardFilters(): DashboardFilterContextValue {
   // Provider 밖(다른 화면)에서도 안전하게 기본값으로 동작
   return {
     ...DEFAULT_FILTERS,
+    fxRates: FX_RATES,
     setProject: () => {},
     setStartYm: () => {},
     setEndYm: () => {},

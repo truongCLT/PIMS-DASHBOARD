@@ -116,7 +116,7 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
   const { from, to } = resolveMonthWindow(filters.startYm, filters.endYm);
   const emptyRange = from > to;
   const projectSelected = filters.project !== "All";
-  const convert = makeConverter(filters.currency, filters.unitIndex);
+  const convert = makeConverter(filters.currency, filters.unitIndex, filters.fxRates);
   const unitLabel =
     filters.currency === "USD" && filters.unitIndex === 0
       ? "천 USD"

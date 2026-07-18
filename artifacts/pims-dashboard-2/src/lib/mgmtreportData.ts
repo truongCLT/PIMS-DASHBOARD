@@ -424,7 +424,7 @@ export function useDashboardData() {
     if (projectSelected && !projectsQuery.data) return null;
 
     const { from, to } = resolveMonthWindow(filters.startYm, filters.endYm);
-    const convert = makeConverter(filters.currency, filters.unitIndex);
+    const convert = makeConverter(filters.currency, filters.unitIndex, filters.fxRates);
     const unitLabel =
       filters.currency === "USD" && filters.unitIndex === 0
         ? "천 USD"

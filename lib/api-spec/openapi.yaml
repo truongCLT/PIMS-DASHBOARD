@@ -18,7 +18,149 @@ tags:
     description: Management Report (경영관리보고회) operations
   - name: projectdetail
     description: Project detail (공정/원가/외주) operations
+  - name: admin
+    description: Admin authentication operations
+  - name: fxrates
+    description: FX rate (환율) operations
 paths:
+  /admin/login:
+    post:
+      operationId: adminLogin
+      tags: [admin]
+      summary: Log in with the admin password and receive a bearer token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminLoginBody"
+      responses:
+        "200":
+          description: Login success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminLoginResult"
+        "401":
+          description: Wrong password
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorMessage"
+  /fxrates:
+    get:
+      operationId: getFxRates
+      tags: [fxrates]
+      summary: Current FX rates (1 USD 기준). Falls back to defaults when not set.
+      responses:
+        "200":
+          description: FX rates
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FxRates"
+    put:
+      operationId: putFxRates
+      tags: [fxrates]
+      summary: Save FX rates (admin only)
+      security:
+        - adminBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FxRates"
+      responses:
+        "200":
+          description: Saved FX rates
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FxRates"
+        "400":
+          description: Invalid payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorMessage"
+        "401":
+          description: Admin authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorMessage"
+  /mgmtreport/comments/{id}:
+    patch:
+      operationId: updateMgmtreportComment
+      tags: [mgmtreport]
+      summary: Update a comment body (admin only)
+      security:
+        - adminBearer: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMgmtreportComment"
+      responses:
+        "200":
+          description: Updated comment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MgmtreportComment"
+        "400":
+          description: Invalid body
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorMessage"
+        "401":
+          description: Admin authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorMessage"
+        "404":
+          description: Comment not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorMessage"
+    delete:
+      operationId: deleteMgmtreportComment
+      tags: [mgmtreport]
+      summary: Delete a comment (admin only)
+      security:
+        - adminBearer: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "401":
+          description: Admin authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorMessage"
+        "404":
+          description: Comment not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorMessage"
   /projectdetail:
     get:
       operationId: getProjectdetail
@@ -440,7 +582,49 @@ paths:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
 components:
+  securitySchemes:
+    adminBearer:
+      type: http
+      scheme: bearer
   schemas:
+    AdminLoginBody:
+      type: object
+      properties:
+        password:
+          type: string
+          minLength: 1
+      required: [password]
+    AdminLoginResult:
+      type: object
+      properties:
+        token:
+          type: string
+        expiresAt:
+          type: string
+          description: ISO timestamp when the token expires
+      required: [token, expiresAt]
+    FxRates:
+      type: object
+      description: 환율 (1 USD 기준)
+      properties:
+        usd:
+          type: number
+          exclusiveMinimum: 0
+        krw:
+          type: number
+          exclusiveMinimum: 0
+        vnd:
+          type: number
+          exclusiveMinimum: 0
+      required: [usd, krw, vnd]
+    UpdateMgmtreportComment:
+      type: object
+      properties:
+        body:
+          type: string
+          minLength: 1
+          maxLength: 2000
+      required: [body]
     MgmtreportComment:
       type: object
       properties:

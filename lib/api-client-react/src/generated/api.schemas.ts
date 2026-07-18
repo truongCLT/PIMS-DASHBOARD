@@ -5,6 +5,37 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export interface AdminLoginBody {
+  /** @minLength 1 */
+  password: string;
+}
+
+export interface AdminLoginResult {
+  token: string;
+  /** ISO timestamp when the token expires */
+  expiresAt: string;
+}
+
+/**
+ * 환율 (1 USD 기준)
+ */
+export interface FxRates {
+  /** @exclusiveMinimum 0 */
+  usd: number;
+  /** @exclusiveMinimum 0 */
+  krw: number;
+  /** @exclusiveMinimum 0 */
+  vnd: number;
+}
+
+export interface UpdateMgmtreportComment {
+  /**
+     * @minLength 1
+     * @maxLength 2000
+     */
+  body: string;
+}
+
 export type MgmtreportCommentSection = typeof MgmtreportCommentSection[keyof typeof MgmtreportCommentSection];
 
 

@@ -4,6 +4,8 @@ import cashflowRouter from "./cashflow";
 import salescostRouter from "./salescost";
 import mgmtreportRouter from "./mgmtreport";
 import projectdetailRouter from "./projectdetail";
+import adminRouter from "./admin";
+import fxratesRouter from "./fxrates";
 
 const router: IRouter = Router();
 
@@ -12,5 +14,7 @@ router.use(cashflowRouter);
 router.use(salescostRouter);
 router.use(mgmtreportRouter);
 router.use(projectdetailRouter);
+router.use(adminRouter);
+router.use(fxratesRouter);
 
 export default router;

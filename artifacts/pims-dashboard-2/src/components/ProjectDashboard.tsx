@@ -9,6 +9,7 @@ import { ProjectDataEntryTab } from "./ProjectDataEntryTab";
 import { SaleProfitTab } from "./SaleProfitTab";
 import { OverviewTab } from "./OverviewTab";
 import { useProjectDetail, fmtNum } from "../lib/projectDetailData";
+import { useAdminAuth } from "../lib/adminAuth";
 export { Donut, MiniBar } from "./charts";
 
 
@@ -57,6 +58,7 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
   const [currency, setCurrency] = useState("USD");
   const [unitOn, setUnitOn] = useState(true);
   const [activeTab, setActiveTab] = useState("Overview");
+  const { isAdmin } = useAdminAuth();
   const [overviewComment, setOverviewComment] = useState("");
   const [fromYear, setFromYear] = useState(2026);
   const [fromMonth, setFromMonth] = useState("04");
@@ -283,7 +285,7 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
           marginTop: "8px",
         }}
       >
-        {SIDE_TABS.map((tab) => {
+        {SIDE_TABS.filter((tab) => tab !== "Data entry" || isAdmin).map((tab) => {
           const active = tab === activeTab;
           return (
             <button
@@ -377,33 +379,35 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
                 </select>
               </label>
             </div>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "flex-end",
-                gap: "8px",
-                border: "1px solid #ccd4dd",
-                borderRadius: "6px",
-                padding: "8px 10px",
-              }}
-            >
-              <textarea
-                value={overviewComment}
-                onChange={(e) => setOverviewComment(e.target.value)}
-                placeholder="Write a comment"
-                rows={2}
+            {isAdmin && (
+              <div
                 style={{
-                  flex: 1,
-                  border: "none",
-                  outline: "none",
-                  resize: "none",
-                  fontSize: "11px",
-                  color: "#333",
-                  fontFamily: "inherit",
+                  display: "flex",
+                  alignItems: "flex-end",
+                  gap: "8px",
+                  border: "1px solid #ccd4dd",
+                  borderRadius: "6px",
+                  padding: "8px 10px",
                 }}
-              />
-              <Send size={14} color="#1e6fdd" style={{ cursor: "pointer", flexShrink: 0 }} />
-            </div>
+              >
+                <textarea
+                  value={overviewComment}
+                  onChange={(e) => setOverviewComment(e.target.value)}
+                  placeholder="Write a comment"
+                  rows={2}
+                  style={{
+                    flex: 1,
+                    border: "none",
+                    outline: "none",
+                    resize: "none",
+                    fontSize: "11px",
+                    color: "#333",
+                    fontFamily: "inherit",
+                  }}
+                />
+                <Send size={14} color="#1e6fdd" style={{ cursor: "pointer", flexShrink: 0 }} />
+              </div>
+            )}
           </div>
         </div>
         )}

@@ -1,12 +1,15 @@
 import React, { useState } from "react";
-import { Send } from "lucide-react";
+import { Send, Pencil, Trash2, Check, X } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useListMgmtreportComments,
   useCreateMgmtreportComment,
+  useUpdateMgmtreportComment,
+  useDeleteMgmtreportComment,
   getListMgmtreportCommentsQueryKey,
 } from "@workspace/api-client-react";
 import { useDashboardData, REPORT_YEAR } from "../lib/mgmtreportData";
+import { useAdminAuth } from "../lib/adminAuth";
 
 export type CommentSection = "analysis" | "outlook";
 
@@ -26,16 +29,43 @@ export function CommentPanel({
   // 데이터가 있는 최근 월부터 1월까지 동적 생성
   const monthOptions = Array.from({ length: latestMonth }, (_, i) => latestMonth - i);
 
+  const { isAdmin } = useAdminAuth();
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editText, setEditText] = useState("");
+  const [actionError, setActionError] = useState<string | null>(null);
+
   const queryClient = useQueryClient();
   const listQuery = useListMgmtreportComments({ year: REPORT_YEAR, month, section });
+  const invalidateList = () =>
+    queryClient.invalidateQueries({
+      queryKey: getListMgmtreportCommentsQueryKey({ year: REPORT_YEAR, month, section }),
+    });
   const createMutation = useCreateMgmtreportComment({
     mutation: {
       onSuccess: () => {
         setInputText("");
-        queryClient.invalidateQueries({
-          queryKey: getListMgmtreportCommentsQueryKey({ year: REPORT_YEAR, month, section }),
-        });
+        invalidateList();
       },
+    },
+  });
+  const updateMutation = useUpdateMgmtreportComment({
+    mutation: {
+      onSuccess: () => {
+        setEditingId(null);
+        setEditText("");
+        setActionError(null);
+        invalidateList();
+      },
+      onError: () => setActionError("코멘트 수정에 실패했습니다."),
+    },
+  });
+  const deleteMutation = useDeleteMgmtreportComment({
+    mutation: {
+      onSuccess: () => {
+        setActionError(null);
+        invalidateList();
+      },
+      onError: () => setActionError("코멘트 삭제에 실패했습니다."),
     },
   });
 
@@ -152,12 +182,85 @@ export function CommentPanel({
               color: "#333",
               lineHeight: "1.5",
             }}>
-              <p style={{ margin: "0 0 4px", whiteSpace: "pre-wrap" }}>{c.body}</p>
-              <span style={{ color: "#8aa0b8", fontSize: "10px" }}>
-                {new Date(c.createdAt).toLocaleDateString("ko-KR")}
-              </span>
+              {editingId === c.id ? (
+                <>
+                  <textarea
+                    value={editText}
+                    onChange={(e) => setEditText(e.target.value)}
+                    style={{
+                      width: "100%",
+                      border: "1px solid #ccc",
+                      borderRadius: "4px",
+                      padding: "6px 8px",
+                      fontSize: "11px",
+                      color: "#333",
+                      resize: "none",
+                      height: "60px",
+                      fontFamily: "inherit",
+                      boxSizing: "border-box",
+                      marginBottom: "4px",
+                    }}
+                  />
+                  <div style={{ display: "flex", gap: "6px", justifyContent: "flex-end" }}>
+                    <button
+                      onClick={() => {
+                        const body = editText.trim();
+                        if (!body || updateMutation.isPending) return;
+                        updateMutation.mutate({ id: c.id, data: { body } });
+                      }}
+                      disabled={editText.trim().length === 0 || updateMutation.isPending}
+                      aria-label="수정 저장"
+                      style={{ background: "none", border: "none", cursor: "pointer", color: "#1e7145", padding: 0 }}
+                    >
+                      <Check size={14} />
+                    </button>
+                    <button
+                      onClick={() => { setEditingId(null); setEditText(""); }}
+                      aria-label="수정 취소"
+                      style={{ background: "none", border: "none", cursor: "pointer", color: "#8aa0b8", padding: 0 }}
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p style={{ margin: "0 0 4px", whiteSpace: "pre-wrap" }}>{c.body}</p>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <span style={{ color: "#8aa0b8", fontSize: "10px" }}>
+                      {new Date(c.createdAt).toLocaleDateString("ko-KR")}
+                    </span>
+                    {isAdmin && (
+                      <span style={{ display: "flex", gap: "8px" }}>
+                        <button
+                          onClick={() => { setEditingId(c.id); setEditText(c.body); setActionError(null); }}
+                          aria-label="코멘트 수정"
+                          style={{ background: "none", border: "none", cursor: "pointer", color: "#1e6fdd", padding: 0 }}
+                        >
+                          <Pencil size={12} />
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (deleteMutation.isPending) return;
+                            if (window.confirm("이 코멘트를 삭제하시겠습니까?")) {
+                              deleteMutation.mutate({ id: c.id });
+                            }
+                          }}
+                          aria-label="코멘트 삭제"
+                          style={{ background: "none", border: "none", cursor: "pointer", color: "#c0392b", padding: 0 }}
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </span>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
           ))
+        )}
+        {actionError && (
+          <div style={{ fontSize: "10px", color: "#c0392b" }}>{actionError}</div>
         )}
       </div>
     </div>

@@ -9,6 +9,107 @@ import * as zod from 'zod';
 
 
 /**
+ * @summary Log in with the admin password and receive a bearer token
+ */
+
+
+
+export const AdminLoginBody = zod.object({
+  "password": zod.string().min(1)
+})
+
+export const AdminLoginResponse = zod.object({
+  "token": zod.string(),
+  "expiresAt": zod.string().describe('ISO timestamp when the token expires')
+})
+
+
+/**
+ * @summary Current FX rates (1 USD 기준). Falls back to defaults when not set.
+ */
+export const getFxRatesResponseUsdExclusiveMin = 0;
+
+export const getFxRatesResponseKrwExclusiveMin = 0;
+
+export const getFxRatesResponseVndExclusiveMin = 0;
+
+
+
+export const GetFxRatesResponse = zod.object({
+  "usd": zod.number().gt(getFxRatesResponseUsdExclusiveMin),
+  "krw": zod.number().gt(getFxRatesResponseKrwExclusiveMin),
+  "vnd": zod.number().gt(getFxRatesResponseVndExclusiveMin)
+}).describe('환율 (1 USD 기준)')
+
+
+/**
+ * @summary Save FX rates (admin only)
+ */
+export const putFxRatesBodyUsdExclusiveMin = 0;
+
+export const putFxRatesBodyKrwExclusiveMin = 0;
+
+export const putFxRatesBodyVndExclusiveMin = 0;
+
+
+
+export const PutFxRatesBody = zod.object({
+  "usd": zod.number().gt(putFxRatesBodyUsdExclusiveMin),
+  "krw": zod.number().gt(putFxRatesBodyKrwExclusiveMin),
+  "vnd": zod.number().gt(putFxRatesBodyVndExclusiveMin)
+}).describe('환율 (1 USD 기준)')
+
+export const putFxRatesResponseUsdExclusiveMin = 0;
+
+export const putFxRatesResponseKrwExclusiveMin = 0;
+
+export const putFxRatesResponseVndExclusiveMin = 0;
+
+
+
+export const PutFxRatesResponse = zod.object({
+  "usd": zod.number().gt(putFxRatesResponseUsdExclusiveMin),
+  "krw": zod.number().gt(putFxRatesResponseKrwExclusiveMin),
+  "vnd": zod.number().gt(putFxRatesResponseVndExclusiveMin)
+}).describe('환율 (1 USD 기준)')
+
+
+/**
+ * @summary Update a comment body (admin only)
+ */
+export const UpdateMgmtreportCommentParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const updateMgmtreportCommentBodyBodyMax = 2000;
+
+
+
+export const UpdateMgmtreportCommentBody = zod.object({
+  "body": zod.string().min(1).max(updateMgmtreportCommentBodyBodyMax)
+})
+
+export const UpdateMgmtreportCommentResponse = zod.object({
+  "id": zod.number(),
+  "year": zod.number(),
+  "month": zod.number(),
+  "section": zod.enum(['analysis', 'outlook']),
+  "body": zod.string(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Delete a comment (admin only)
+ */
+export const DeleteMgmtreportCommentParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DeleteMgmtreportCommentResponse = zod.void()
+
+
+/**
  * @summary Project detail data (progress, milestones, cost, outsourcing)
  */
 export const GetProjectdetailQueryParams = zod.object({

@@ -30,11 +30,11 @@ function NumBadge({ n }: { n: number }) {
 
 export function DrilldownCard() {
   const { derived, isError } = useDashboardData();
-  const { currency, unitIndex } = useDashboardFilters();
+  const { currency, unitIndex, fxRates } = useDashboardFilters();
   const projectsQuery = useListMgmtreportProjects({ year: REPORT_YEAR });
 
   const unitLabel = derived?.unitLabel ?? "천 USD";
-  const convert = makeConverter(currency, unitIndex);
+  const convert = makeConverter(currency, unitIndex, fxRates);
   const fmtK = (v: number): string => `${roundSmart(v).toLocaleString("ko-KR")} ${unitLabel}`;
 
   const month = derived?.month ?? Math.max(lastClosedMonth(), 1);

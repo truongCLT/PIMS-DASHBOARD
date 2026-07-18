@@ -20,12 +20,15 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AdminLoginBody,
+  AdminLoginResult,
   ApiErrorMessage,
   ApplyMgmtreportImportBody,
   CashflowAggregateSeries,
   CashflowMonthlySeries,
   CashflowProject,
   CreateMgmtreportComment,
+  FxRates,
   GetCashflowAggregateParams,
   GetCashflowMonthlyParams,
   GetMgmtreportSummaryParams,
@@ -44,7 +47,8 @@ import type {
   PreviewMgmtreportImportBody,
   ProjectDetail,
   SalescostSites,
-  SalescostSummary
+  SalescostSummary,
+  UpdateMgmtreportComment
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -73,6 +77,368 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getAdminLoginUrl = () => {
+
+
+
+
+  return `/api/admin/login`
+}
+
+/**
+ * @summary Log in with the admin password and receive a bearer token
+ */
+export const adminLogin = async (adminLoginBody: AdminLoginBody, options?: RequestInit): Promise<AdminLoginResult> => {
+
+  return customFetch<AdminLoginResult>(getAdminLoginUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(adminLoginBody)
+  }
+);}
+
+
+
+
+
+export const getAdminLoginMutationOptions = <TError = ErrorType<ApiErrorMessage>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminLogin>>, TError,{data: BodyType<AdminLoginBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminLogin>>, TError,{data: BodyType<AdminLoginBody>}, TContext> => {
+
+const mutationKey = ['adminLogin'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminLogin>>, {data: BodyType<AdminLoginBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  adminLogin(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminLoginMutationResult = NonNullable<Awaited<ReturnType<typeof adminLogin>>>
+    export type AdminLoginMutationBody = BodyType<AdminLoginBody>
+    export type AdminLoginMutationError = ErrorType<ApiErrorMessage>
+
+    /**
+ * @summary Log in with the admin password and receive a bearer token
+ */
+export const useAdminLogin = <TError = ErrorType<ApiErrorMessage>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminLogin>>, TError,{data: BodyType<AdminLoginBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminLogin>>,
+        TError,
+        {data: BodyType<AdminLoginBody>},
+        TContext
+      > => {
+      return useMutation(getAdminLoginMutationOptions(options));
+    }
+
+export const getGetFxRatesUrl = () => {
+
+
+
+
+  return `/api/fxrates`
+}
+
+/**
+ * @summary Current FX rates (1 USD 기준). Falls back to defaults when not set.
+ */
+export const getFxRates = async ( options?: RequestInit): Promise<FxRates> => {
+
+  return customFetch<FxRates>(getGetFxRatesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetFxRatesQueryKey = () => {
+    return [
+    `/api/fxrates`
+    ] as const;
+    }
+
+
+export const getGetFxRatesQueryOptions = <TData = Awaited<ReturnType<typeof getFxRates>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFxRates>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFxRatesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFxRates>>> = ({ signal }) => getFxRates({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFxRates>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetFxRatesQueryResult = NonNullable<Awaited<ReturnType<typeof getFxRates>>>
+export type GetFxRatesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Current FX rates (1 USD 기준). Falls back to defaults when not set.
+ */
+
+export function useGetFxRates<TData = Awaited<ReturnType<typeof getFxRates>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFxRates>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetFxRatesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getPutFxRatesUrl = () => {
+
+
+
+
+  return `/api/fxrates`
+}
+
+/**
+ * @summary Save FX rates (admin only)
+ */
+export const putFxRates = async (fxRates: FxRates, options?: RequestInit): Promise<FxRates> => {
+
+  return customFetch<FxRates>(getPutFxRatesUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(fxRates)
+  }
+);}
+
+
+
+
+
+export const getPutFxRatesMutationOptions = <TError = ErrorType<ApiErrorMessage>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putFxRates>>, TError,{data: BodyType<FxRates>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof putFxRates>>, TError,{data: BodyType<FxRates>}, TContext> => {
+
+const mutationKey = ['putFxRates'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof putFxRates>>, {data: BodyType<FxRates>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  putFxRates(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PutFxRatesMutationResult = NonNullable<Awaited<ReturnType<typeof putFxRates>>>
+    export type PutFxRatesMutationBody = BodyType<FxRates>
+    export type PutFxRatesMutationError = ErrorType<ApiErrorMessage>
+
+    /**
+ * @summary Save FX rates (admin only)
+ */
+export const usePutFxRates = <TError = ErrorType<ApiErrorMessage>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putFxRates>>, TError,{data: BodyType<FxRates>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof putFxRates>>,
+        TError,
+        {data: BodyType<FxRates>},
+        TContext
+      > => {
+      return useMutation(getPutFxRatesMutationOptions(options));
+    }
+
+export const getUpdateMgmtreportCommentUrl = (id: number,) => {
+
+
+
+
+  return `/api/mgmtreport/comments/${id}`
+}
+
+/**
+ * @summary Update a comment body (admin only)
+ */
+export const updateMgmtreportComment = async (id: number,
+    updateMgmtreportComment: UpdateMgmtreportComment, options?: RequestInit): Promise<MgmtreportComment> => {
+
+  return customFetch<MgmtreportComment>(getUpdateMgmtreportCommentUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(updateMgmtreportComment)
+  }
+);}
+
+
+
+
+
+export const getUpdateMgmtreportCommentMutationOptions = <TError = ErrorType<ApiErrorMessage>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateMgmtreportComment>>, TError,{id: number;data: BodyType<UpdateMgmtreportComment>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateMgmtreportComment>>, TError,{id: number;data: BodyType<UpdateMgmtreportComment>}, TContext> => {
+
+const mutationKey = ['updateMgmtreportComment'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateMgmtreportComment>>, {id: number;data: BodyType<UpdateMgmtreportComment>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateMgmtreportComment(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateMgmtreportCommentMutationResult = NonNullable<Awaited<ReturnType<typeof updateMgmtreportComment>>>
+    export type UpdateMgmtreportCommentMutationBody = BodyType<UpdateMgmtreportComment>
+    export type UpdateMgmtreportCommentMutationError = ErrorType<ApiErrorMessage>
+
+    /**
+ * @summary Update a comment body (admin only)
+ */
+export const useUpdateMgmtreportComment = <TError = ErrorType<ApiErrorMessage>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateMgmtreportComment>>, TError,{id: number;data: BodyType<UpdateMgmtreportComment>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateMgmtreportComment>>,
+        TError,
+        {id: number;data: BodyType<UpdateMgmtreportComment>},
+        TContext
+      > => {
+      return useMutation(getUpdateMgmtreportCommentMutationOptions(options));
+    }
+
+export const getDeleteMgmtreportCommentUrl = (id: number,) => {
+
+
+
+
+  return `/api/mgmtreport/comments/${id}`
+}
+
+/**
+ * @summary Delete a comment (admin only)
+ */
+export const deleteMgmtreportComment = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteMgmtreportCommentUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteMgmtreportCommentMutationOptions = <TError = ErrorType<ApiErrorMessage>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteMgmtreportComment>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteMgmtreportComment>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteMgmtreportComment'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteMgmtreportComment>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteMgmtreportComment(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteMgmtreportCommentMutationResult = NonNullable<Awaited<ReturnType<typeof deleteMgmtreportComment>>>
+
+    export type DeleteMgmtreportCommentMutationError = ErrorType<ApiErrorMessage>
+
+    /**
+ * @summary Delete a comment (admin only)
+ */
+export const useDeleteMgmtreportComment = <TError = ErrorType<ApiErrorMessage>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteMgmtreportComment>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteMgmtreportComment>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteMgmtreportCommentMutationOptions(options));
+    }
 
 export const getGetProjectdetailUrl = (params: GetProjectdetailParams,) => {
   const normalizedParams = new URLSearchParams();

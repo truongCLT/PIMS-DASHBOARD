@@ -6,6 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './adminLoginBody';
+export * from './adminLoginResult';
 export * from './apiErrorMessage';
 export * from './applyMgmtreportImportBody';
 export * from './cashflowAggregateSeries';
@@ -14,6 +16,7 @@ export * from './cashflowMonthlySeries';
 export * from './cashflowProject';
 export * from './createMgmtreportComment';
 export * from './createMgmtreportCommentSection';
+export * from './fxRates';
 export * from './getCashflowAggregateParams';
 export * from './getCashflowMonthlyParams';
 export * from './getMgmtreportSummaryParams';
@@ -50,3 +53,4 @@ export * from './salescostSites';
 export * from './salescostSiteSeries';
 export * from './salescostSummary';
 export * from './salescostSummaryPoint';
+export * from './updateMgmtreportComment';
