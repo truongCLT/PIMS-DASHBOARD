@@ -379,35 +379,33 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
                 </select>
               </label>
             </div>
-            {isAdmin && (
-              <div
+            <div
+              style={{
+                display: "flex",
+                alignItems: "flex-end",
+                gap: "8px",
+                border: "1px solid #ccd4dd",
+                borderRadius: "6px",
+                padding: "8px 10px",
+              }}
+            >
+              <textarea
+                value={overviewComment}
+                onChange={(e) => setOverviewComment(e.target.value)}
+                placeholder="Write a comment"
+                rows={2}
                 style={{
-                  display: "flex",
-                  alignItems: "flex-end",
-                  gap: "8px",
-                  border: "1px solid #ccd4dd",
-                  borderRadius: "6px",
-                  padding: "8px 10px",
+                  flex: 1,
+                  border: "none",
+                  outline: "none",
+                  resize: "none",
+                  fontSize: "11px",
+                  color: "#333",
+                  fontFamily: "inherit",
                 }}
-              >
-                <textarea
-                  value={overviewComment}
-                  onChange={(e) => setOverviewComment(e.target.value)}
-                  placeholder="Write a comment"
-                  rows={2}
-                  style={{
-                    flex: 1,
-                    border: "none",
-                    outline: "none",
-                    resize: "none",
-                    fontSize: "11px",
-                    color: "#333",
-                    fontFamily: "inherit",
-                  }}
-                />
-                <Send size={14} color="#1e6fdd" style={{ cursor: "pointer", flexShrink: 0 }} />
-              </div>
-            )}
+              />
+              <Send size={14} color="#1e6fdd" style={{ cursor: "pointer", flexShrink: 0 }} />
+            </div>
           </div>
         </div>
         )}
