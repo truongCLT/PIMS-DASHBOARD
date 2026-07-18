@@ -85,6 +85,13 @@ paths:
         - name: division
           in: query
           required: false
+          description: Single division name to aggregate. Mutually exclusive with divisions.
+          schema:
+            type: string
+        - name: divisions
+          in: query
+          required: false
+          description: Comma-separated list of division names to aggregate together. Mutually exclusive with division.
           schema:
             type: string
         - name: names

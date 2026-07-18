@@ -60,7 +60,8 @@ export const getCashflowAggregateQueryMonthsMax = 24;
 
 
 export const GetCashflowAggregateQueryParams = zod.object({
-  "division": zod.coerce.string().optional(),
+  "division": zod.coerce.string().optional().describe('Single division name to aggregate. Mutually exclusive with divisions.'),
+  "divisions": zod.coerce.string().optional().describe('Comma-separated list of division names to aggregate together. Mutually exclusive with division.'),
   "names": zod.coerce.string().optional().describe('Comma-separated cf_projects.name values to restrict the aggregation to'),
   "fromYear": zod.coerce.number(),
   "fromMonth": zod.coerce.number().min(1).max(getCashflowAggregateQueryFromMonthMax),

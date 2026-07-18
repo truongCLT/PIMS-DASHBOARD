@@ -7,7 +7,14 @@
  */
 
 export type GetCashflowAggregateParams = {
+/**
+ * Single division name to aggregate. Mutually exclusive with divisions.
+ */
 division?: string;
+/**
+ * Comma-separated list of division names to aggregate together. Mutually exclusive with division.
+ */
+divisions?: string;
 /**
  * Comma-separated cf_projects.name values to restrict the aggregation to
  */

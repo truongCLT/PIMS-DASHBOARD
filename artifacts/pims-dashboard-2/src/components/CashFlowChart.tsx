@@ -29,10 +29,11 @@ export const CASHFLOW_DATA = [
   { month: "6월", inflow: 30, outflow: -10, loan: 8, net: 10 },
 ];
 
-const BASE_SCOPE_TO_DIVISION: Record<string, string | undefined> = {
-  전체: undefined,
-  시공: "도급 사업",
-  용역: "용역 사업",
+// DECV 전체 = 시공(도급 사업) + 용역(용역 사업) 합산
+const BASE_SCOPE_PARAMS: Record<string, { division?: string; divisions?: string }> = {
+  전체: { divisions: "도급 사업,용역 사업" },
+  시공: { division: "도급 사업" },
+  용역: { division: "용역 사업" },
 };
 
 // 진행중 = 해당 사업부 하위에 나열된 프로젝트들의 자금수지 합산
@@ -49,6 +50,7 @@ interface ScopeQueryConfig {
   label: string;
   enabled: boolean;
   division?: string;
+  divisions?: string;
   names?: string;
   emptyMessage?: string;
 }
@@ -81,7 +83,7 @@ function getScopeConfig(scope: DashboardScope): ScopeQueryConfig {
   return {
     label: scope === "전체" ? "DECV 전체" : scope,
     enabled: true,
-    division: BASE_SCOPE_TO_DIVISION[scope],
+    ...BASE_SCOPE_PARAMS[scope],
   };
 }
 
@@ -115,6 +117,7 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
   const config = getScopeConfig(scope);
   const params = {
     division: config.division,
+    divisions: config.divisions,
     names: config.names,
     fromYear: 2026,
     fromMonth: 1,

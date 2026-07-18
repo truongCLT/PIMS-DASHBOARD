@@ -128,9 +128,13 @@ router.get("/cashflow/aggregate", async (req, res) => {
     res.status(400).json({ error: "잘못된 요청 파라미터입니다." });
     return;
   }
-  const { division, names, fromYear, fromMonth, months = 6 } = parsed.data;
+  const { division, divisions, names, fromYear, fromMonth, months = 6 } = parsed.data;
   if (![fromYear, fromMonth, months].every(Number.isInteger)) {
     res.status(400).json({ error: "잘못된 요청 파라미터입니다." });
+    return;
+  }
+  if (division && divisions) {
+    res.status(400).json({ error: "division과 divisions는 동시에 사용할 수 없습니다." });
     return;
   }
   const nameList = names
@@ -140,10 +144,19 @@ router.get("/cashflow/aggregate", async (req, res) => {
     res.status(400).json({ error: "잘못된 요청 파라미터입니다." });
     return;
   }
+  const divisionList = divisions
+    ? divisions.split(",").map((d) => d.trim()).filter((d) => d.length > 0)
+    : division
+      ? [division]
+      : null;
+  if (divisionList != null && divisionList.length === 0) {
+    res.status(400).json({ error: "잘못된 요청 파라미터입니다." });
+    return;
+  }
 
   try {
     const conditions = [
-      division ? eq(cfProjectsTable.division, division) : undefined,
+      divisionList ? inArray(cfProjectsTable.division, divisionList) : undefined,
       nameList ? inArray(cfProjectsTable.name, nameList) : undefined,
     ].filter((c) => c != null);
     const amounts = await db
@@ -204,7 +217,7 @@ router.get("/cashflow/aggregate", async (req, res) => {
     });
 
     const data = GetCashflowAggregateResponse.parse({
-      scope: division ?? "전체",
+      scope: divisionList ? divisionList.join("+") : "전체",
       unit: "천 USD",
       points,
     });
