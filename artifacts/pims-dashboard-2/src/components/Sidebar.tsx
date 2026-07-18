@@ -26,9 +26,14 @@ const TREE_DATA: TreeItem[] = PROJECT_GROUPS.map((group) => ({
         ? [
             {
               label: "진행중",
+              scope: division.label as DashboardScope,
               children: division.projects.map((project) => ({ label: project.name, isProject: true })),
             },
-            { label: "종료", children: [] },
+            {
+              label: "종료",
+              scope: division.label as DashboardScope,
+              children: [],
+            },
           ]
         : division.projects.map((project) => ({ label: project.name, isProject: true })),
   })),
