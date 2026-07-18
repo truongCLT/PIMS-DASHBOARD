@@ -69,6 +69,7 @@ export interface OrderStatusData {
 export interface DashboardData {
   year: number;
   month: number;
+  orderMonthActual: number;
   kpi: KpiItem[];
   performanceRows: PerformanceRow[];
   salesData: SalesRow[];
@@ -228,7 +229,16 @@ export function deriveDashboardData(
     remaining: Math.max(Math.round(orders.planTotal) - orderedCum, 0),
   };
 
-  return { year: summary.year, month: M, kpi, performanceRows, salesData, profitData, orderStatus };
+  return {
+    year: summary.year,
+    month: M,
+    orderMonthActual: Math.round(orders.actual[M - 1]),
+    kpi,
+    performanceRows,
+    salesData,
+    profitData,
+    orderStatus,
+  };
 }
 
 /* Module-level snapshot for the Excel export (populated by useDashboardData). */
