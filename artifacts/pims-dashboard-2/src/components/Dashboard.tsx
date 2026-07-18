@@ -7,6 +7,7 @@ import { OrderStatus } from "./OrderStatus";
 import { CashFlowChart } from "./CashFlowChart";
 import { PerformanceTable } from "./PerformanceTable";
 import { CommentPanel } from "./CommentPanel";
+import { DrilldownCard } from "./DrilldownCard";
 
 export function Dashboard() {
   return (
@@ -24,20 +25,23 @@ export function Dashboard() {
       {/* Capture area: everything below the filter box */}
       <div id="dashboard-capture" style={{ backgroundColor: "#e8edf3" }}>
         {/* KPI Cards */}
-        <div style={{ padding: "8px 10px 4px", display: "flex", gap: "8px" }}>
+        <div style={{ padding: "8px 10px 4px" }}>
           <KPICards />
-          <OrderStatus />
         </div>
 
-        {/* Row 2: 2 widgets */}
+        {/* Row 2: 2 charts + right column (order status + drilldown) */}
         <div style={{
           display: "grid",
-          gridTemplateColumns: "1fr 1fr",
+          gridTemplateColumns: "1fr 1fr 220px",
           gap: "6px",
           padding: "4px 10px",
         }}>
           <SalesChart />
           <ProfitChart />
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <OrderStatus />
+            <DrilldownCard />
+          </div>
         </div>
 
         {/* Row 3: 2 widgets */}
