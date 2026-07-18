@@ -4,6 +4,7 @@ import { Plus, Trash2, Save } from "lucide-react";
 import { usePutProjectdetail } from "@workspace/api-client-react";
 import type {
   ProjectDetail,
+  ProjectDetailOverview,
   ProjectDetailProgressPoint,
   ProjectDetailMilestone,
   ProjectDetailCostEstimation,
@@ -123,6 +124,7 @@ export function ProjectDataEntryTab({ projectName }: { projectName: string }) {
   const mutation = usePutProjectdetail();
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
 
+  const [overview, setOverview] = useState<ProjectDetailOverview>({ contractAmount: null, startDate: null, endDate: null });
   const [progress, setProgress] = useState<ProjectDetailProgressPoint[]>([]);
   const [milestones, setMilestones] = useState<ProjectDetailMilestone[]>([]);
   const [costEstimation, setCostEstimation] = useState<ProjectDetailCostEstimation[]>([]);
@@ -136,6 +138,7 @@ export function ProjectDataEntryTab({ projectName }: { projectName: string }) {
 
   useEffect(() => {
     if (detail && !loaded) {
+      setOverview(detail.overview ?? { contractAmount: null, startDate: null, endDate: null });
       setProgress(detail.progress);
       setMilestones(detail.milestones);
       setCostEstimation(
@@ -157,6 +160,7 @@ export function ProjectDataEntryTab({ projectName }: { projectName: string }) {
     const body: ProjectDetail = {
       projectName,
       unit: "천 USD",
+      overview,
       progress: progress.filter((p) => p.year > 0 && p.month >= 1 && p.month <= 12),
       milestones: milestones.filter((m) => m.label.trim() !== ""),
       costEstimation: costEstimation.filter((e) => e.contractAmount != null || e.costAmount != null),
@@ -214,6 +218,46 @@ export function ProjectDataEntryTab({ projectName }: { projectName: string }) {
             <Save size={13} />
             {mutation.isPending ? "저장 중…" : "전체 저장"}
           </button>
+        </div>
+      </div>
+
+      {/* 0. 개요 정보 */}
+      <div style={cardStyle}>
+        <span style={sectionTitle}>0. 개요 정보 (개요 탭)</span>
+        <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px" }}>
+          <thead>
+            <tr>
+              <th style={th}>도급액 (천 USD)</th>
+              <th style={th}>공사 시작일</th>
+              <th style={th}>공사 종료일</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style={tdCell}>
+                <NumInput value={overview.contractAmount} onChange={(v) => setOverview((o) => ({ ...o, contractAmount: v }))} />
+              </td>
+              <td style={tdCell}>
+                <input
+                  type="date"
+                  value={overview.startDate ?? ""}
+                  onChange={(e) => setOverview((o) => ({ ...o, startDate: e.target.value === "" ? null : e.target.value }))}
+                  style={inputStyle}
+                />
+              </td>
+              <td style={tdCell}>
+                <input
+                  type="date"
+                  value={overview.endDate ?? ""}
+                  onChange={(e) => setOverview((o) => ({ ...o, endDate: e.target.value === "" ? null : e.target.value }))}
+                  style={inputStyle}
+                />
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <div style={{ fontSize: "10px", color: "#8a97a8", marginTop: "6px" }}>
+          입찰(Bidding)·실행예산 금액은 아래 "3. 원가율" 표에 입력하면 개요 탭에 함께 반영됩니다.
         </div>
       </div>
 

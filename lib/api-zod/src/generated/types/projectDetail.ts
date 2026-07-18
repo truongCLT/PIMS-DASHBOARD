@@ -9,12 +9,14 @@ import type { ProjectDetailCostBudget } from './projectDetailCostBudget';
 import type { ProjectDetailCostEstimation } from './projectDetailCostEstimation';
 import type { ProjectDetailMilestone } from './projectDetailMilestone';
 import type { ProjectDetailOutsourcing } from './projectDetailOutsourcing';
+import type { ProjectDetailOverview } from './projectDetailOverview';
 import type { ProjectDetailProgressPoint } from './projectDetailProgressPoint';
 
 export interface ProjectDetail {
   projectName: string;
   /** Amount unit (천 USD) */
   unit: string;
+  overview: ProjectDetailOverview;
   progress: ProjectDetailProgressPoint[];
   milestones: ProjectDetailMilestone[];
   costEstimation: ProjectDetailCostEstimation[];

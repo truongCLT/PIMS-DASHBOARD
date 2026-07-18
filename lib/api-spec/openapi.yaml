@@ -762,6 +762,22 @@ components:
           items:
             $ref: "#/components/schemas/MgmtreportProject"
       required: [year, unit, projects]
+    ProjectDetailOverview:
+      type: object
+      properties:
+        contractAmount:
+          type: number
+          nullable: true
+          description: 도급액 (천 USD)
+        startDate:
+          type: string
+          nullable: true
+          description: 공사 시작일 YYYY-MM-DD
+        endDate:
+          type: string
+          nullable: true
+          description: 공사 종료일 YYYY-MM-DD
+      required: [contractAmount, startDate, endDate]
     ProjectDetailProgressPoint:
       type: object
       properties:
@@ -869,6 +885,8 @@ components:
         unit:
           type: string
           description: Amount unit (천 USD)
+        overview:
+          $ref: "#/components/schemas/ProjectDetailOverview"
         progress:
           type: array
           items:
@@ -889,7 +907,7 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ProjectDetailOutsourcing"
-      required: [projectName, unit, progress, milestones, costEstimation, costBudget, outsourcing]
+      required: [projectName, unit, overview, progress, milestones, costEstimation, costBudget, outsourcing]
     HealthStatus:
       type: object
       properties:

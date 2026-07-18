@@ -44,6 +44,7 @@ export * from './projectDetailCostEstimation';
 export * from './projectDetailCostEstimationKind';
 export * from './projectDetailMilestone';
 export * from './projectDetailOutsourcing';
+export * from './projectDetailOverview';
 export * from './projectDetailProgressPoint';
 export * from './salescostSites';
 export * from './salescostSiteSeries';

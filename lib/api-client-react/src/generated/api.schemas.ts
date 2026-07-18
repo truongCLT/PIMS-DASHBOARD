@@ -199,6 +199,15 @@ export interface MgmtreportProjects {
   projects: MgmtreportProject[];
 }
 
+export interface ProjectDetailOverview {
+  /** 도급액 (천 USD) */
+  contractAmount: number | null;
+  /** 공사 시작일 YYYY-MM-DD */
+  startDate: string | null;
+  /** 공사 종료일 YYYY-MM-DD */
+  endDate: string | null;
+}
+
 export interface ProjectDetailProgressPoint {
   year: number;
   /**
@@ -259,6 +268,7 @@ export interface ProjectDetail {
   projectName: string;
   /** Amount unit (천 USD) */
   unit: string;
+  overview: ProjectDetailOverview;
   progress: ProjectDetailProgressPoint[];
   milestones: ProjectDetailMilestone[];
   costEstimation: ProjectDetailCostEstimation[];

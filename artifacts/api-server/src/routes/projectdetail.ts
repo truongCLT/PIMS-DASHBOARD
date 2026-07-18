@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { asc, eq } from "drizzle-orm";
 import {
   db,
+  pdOverviewTable,
   pdProgressMonthlyTable,
   pdMilestonesTable,
   pdCostEstimationTable,
@@ -21,7 +22,12 @@ const num = (v: string | null) => (v == null ? null : Number(v));
 const str = (v: number | null | undefined) => (v == null ? null : String(v));
 
 async function loadDetail(projectName: string) {
-  const [progress, milestones, costEstimation, costBudget, outsourcing] = await Promise.all([
+  const [overviewRows, progress, milestones, costEstimation, costBudget, outsourcing] = await Promise.all([
+    db
+      .select()
+      .from(pdOverviewTable)
+      .where(eq(pdOverviewTable.projectName, projectName))
+      .limit(1),
     db
       .select()
       .from(pdProgressMonthlyTable)
@@ -48,9 +54,15 @@ async function loadDetail(projectName: string) {
       .orderBy(asc(pdOutsourcingTable.sortOrder), asc(pdOutsourcingTable.id)),
   ]);
 
+  const ov = overviewRows[0];
   return {
     projectName,
     unit: "천 USD",
+    overview: {
+      contractAmount: ov ? num(ov.contractAmount) : null,
+      startDate: ov?.startDate ?? null,
+      endDate: ov?.endDate ?? null,
+    },
     progress: progress.map((p) => ({
       year: p.year,
       month: p.month,
@@ -117,12 +129,22 @@ router.put("/projectdetail", async (req, res) => {
 
   try {
     await db.transaction(async (tx) => {
+      await tx.delete(pdOverviewTable).where(eq(pdOverviewTable.projectName, projectName));
       await tx.delete(pdProgressMonthlyTable).where(eq(pdProgressMonthlyTable.projectName, projectName));
       await tx.delete(pdMilestonesTable).where(eq(pdMilestonesTable.projectName, projectName));
       await tx.delete(pdCostEstimationTable).where(eq(pdCostEstimationTable.projectName, projectName));
       await tx.delete(pdCostBudgetTable).where(eq(pdCostBudgetTable.projectName, projectName));
       await tx.delete(pdOutsourcingTable).where(eq(pdOutsourcingTable.projectName, projectName));
 
+      const ov = body.overview;
+      if (ov.contractAmount != null || ov.startDate != null || ov.endDate != null) {
+        await tx.insert(pdOverviewTable).values({
+          projectName,
+          contractAmount: str(ov.contractAmount),
+          startDate: ov.startDate ?? null,
+          endDate: ov.endDate ?? null,
+        });
+      }
       if (body.progress.length > 0) {
         await tx.insert(pdProgressMonthlyTable).values(
           body.progress.map((p) => ({

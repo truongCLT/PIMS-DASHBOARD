@@ -14,6 +14,19 @@ import { z } from "zod/v4";
 
 // 프로젝트 상세 (공정/원가/외주) — 프로젝트별 입력 데이터, 단위: 천 USD
 
+// 개요 — 프로젝트 기본 정보 (도급액, 공사 기간)
+export const pdOverviewTable = pgTable(
+  "pd_overview",
+  {
+    id: serial("id").primaryKey(),
+    projectName: text("project_name").notNull(),
+    contractAmount: numeric("contract_amount", { precision: 18, scale: 4 }), // 도급액 (천 USD)
+    startDate: text("start_date"), // 공사 시작일 'YYYY-MM-DD'
+    endDate: text("end_date"), // 공사 종료일 'YYYY-MM-DD'
+  },
+  (t) => [uniqueIndex("pd_overview_uq").on(t.projectName)],
+);
+
 // 공정 — 월별 공정률 (계획/실적 월간, 누계)
 export const pdProgressMonthlyTable = pgTable(
   "pd_progress_monthly",
@@ -99,6 +112,10 @@ export const pdOutsourcingTable = pgTable(
   },
   (t) => [index("pd_outsourcing_project_idx").on(t.projectName)],
 );
+
+export const insertPdOverviewSchema = createInsertSchema(pdOverviewTable).omit({ id: true });
+export type InsertPdOverview = z.infer<typeof insertPdOverviewSchema>;
+export type PdOverview = typeof pdOverviewTable.$inferSelect;
 
 export const insertPdProgressMonthlySchema = createInsertSchema(pdProgressMonthlyTable).omit({ id: true });
 export type InsertPdProgressMonthly = z.infer<typeof insertPdProgressMonthlySchema>;

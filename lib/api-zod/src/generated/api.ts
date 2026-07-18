@@ -22,6 +22,11 @@ export const getProjectdetailResponseProgressItemMonthMax = 12;
 export const GetProjectdetailResponse = zod.object({
   "projectName": zod.string(),
   "unit": zod.string().describe('Amount unit (천 USD)'),
+  "overview": zod.object({
+  "contractAmount": zod.number().nullable().describe('도급액 (천 USD)'),
+  "startDate": zod.string().nullable().describe('공사 시작일 YYYY-MM-DD'),
+  "endDate": zod.string().nullable().describe('공사 종료일 YYYY-MM-DD')
+}),
   "progress": zod.array(zod.object({
   "year": zod.number(),
   "month": zod.number().min(1).max(getProjectdetailResponseProgressItemMonthMax),
@@ -72,6 +77,11 @@ export const putProjectdetailBodyProgressItemMonthMax = 12;
 export const PutProjectdetailBody = zod.object({
   "projectName": zod.string(),
   "unit": zod.string().describe('Amount unit (천 USD)'),
+  "overview": zod.object({
+  "contractAmount": zod.number().nullable().describe('도급액 (천 USD)'),
+  "startDate": zod.string().nullable().describe('공사 시작일 YYYY-MM-DD'),
+  "endDate": zod.string().nullable().describe('공사 종료일 YYYY-MM-DD')
+}),
   "progress": zod.array(zod.object({
   "year": zod.number(),
   "month": zod.number().min(1).max(putProjectdetailBodyProgressItemMonthMax),
@@ -118,6 +128,11 @@ export const putProjectdetailResponseProgressItemMonthMax = 12;
 export const PutProjectdetailResponse = zod.object({
   "projectName": zod.string(),
   "unit": zod.string().describe('Amount unit (천 USD)'),
+  "overview": zod.object({
+  "contractAmount": zod.number().nullable().describe('도급액 (천 USD)'),
+  "startDate": zod.string().nullable().describe('공사 시작일 YYYY-MM-DD'),
+  "endDate": zod.string().nullable().describe('공사 종료일 YYYY-MM-DD')
+}),
   "progress": zod.array(zod.object({
   "year": zod.number(),
   "month": zod.number().min(1).max(putProjectdetailResponseProgressItemMonthMax),
