@@ -8,6 +8,7 @@ import {
   pdCostEstimationTable,
   pdCostBudgetTable,
   pdOutsourcingTable,
+  pdCashflowMonthlyTable,
 } from "@workspace/db";
 import {
   GetProjectdetailQueryParams,
@@ -23,7 +24,7 @@ const num = (v: string | null) => (v == null ? null : Number(v));
 const str = (v: number | null | undefined) => (v == null ? null : String(v));
 
 async function loadDetail(projectName: string) {
-  const [overviewRows, progress, milestones, costEstimation, costBudget, outsourcing] = await Promise.all([
+  const [overviewRows, progress, milestones, costEstimation, costBudget, outsourcing, cashflow] = await Promise.all([
     db
       .select()
       .from(pdOverviewTable)
@@ -53,6 +54,11 @@ async function loadDetail(projectName: string) {
       .from(pdOutsourcingTable)
       .where(eq(pdOutsourcingTable.projectName, projectName))
       .orderBy(asc(pdOutsourcingTable.sortOrder), asc(pdOutsourcingTable.id)),
+    db
+      .select()
+      .from(pdCashflowMonthlyTable)
+      .where(eq(pdCashflowMonthlyTable.projectName, projectName))
+      .orderBy(asc(pdCashflowMonthlyTable.year), asc(pdCashflowMonthlyTable.month)),
   ]);
 
   const ov = overviewRows[0];
@@ -102,6 +108,13 @@ async function loadDetail(projectName: string) {
       thisMonth: num(o.thisMonth),
       accum: num(o.accum),
     })),
+    cashflow: cashflow.map((c) => ({
+      year: c.year,
+      month: c.month,
+      cashIn: num(c.cashIn),
+      cashOut: num(c.cashOut),
+      equivalent: num(c.equivalent),
+    })),
   };
 }
 
@@ -137,6 +150,7 @@ router.put("/projectdetail", requireAdmin, async (req, res) => {
       await tx.delete(pdCostEstimationTable).where(eq(pdCostEstimationTable.projectName, projectName));
       await tx.delete(pdCostBudgetTable).where(eq(pdCostBudgetTable.projectName, projectName));
       await tx.delete(pdOutsourcingTable).where(eq(pdOutsourcingTable.projectName, projectName));
+      await tx.delete(pdCashflowMonthlyTable).where(eq(pdCashflowMonthlyTable.projectName, projectName));
 
       const ov = body.overview;
       if (ov.contractAmount != null || ov.startDate != null || ov.endDate != null) {
@@ -210,6 +224,18 @@ router.put("/projectdetail", requireAdmin, async (req, res) => {
             thisMonth: str(o.thisMonth),
             accum: str(o.accum),
             sortOrder: i,
+          })),
+        );
+      }
+      if (body.cashflow.length > 0) {
+        await tx.insert(pdCashflowMonthlyTable).values(
+          body.cashflow.map((c) => ({
+            projectName,
+            year: c.year,
+            month: c.month,
+            cashIn: str(c.cashIn),
+            cashOut: str(c.cashOut),
+            equivalent: str(c.equivalent),
           })),
         );
       }

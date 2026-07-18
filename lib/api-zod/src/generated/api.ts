@@ -118,6 +118,8 @@ export const GetProjectdetailQueryParams = zod.object({
 
 export const getProjectdetailResponseProgressItemMonthMax = 12;
 
+export const getProjectdetailResponseCashflowItemMonthMax = 12;
+
 
 
 export const GetProjectdetailResponse = zod.object({
@@ -165,6 +167,13 @@ export const GetProjectdetailResponse = zod.object({
   "resolved": zod.number().nullish(),
   "thisMonth": zod.number().nullish(),
   "accum": zod.number().nullish()
+})),
+  "cashflow": zod.array(zod.object({
+  "year": zod.number(),
+  "month": zod.number().min(1).max(getProjectdetailResponseCashflowItemMonthMax),
+  "cashIn": zod.number().nullish().describe('수입 (천 USD)'),
+  "cashOut": zod.number().nullish().describe('지출 (천 USD)'),
+  "equivalent": zod.number().nullish().describe('보유 현금 (천 USD)')
 }))
 })
 
@@ -173,6 +182,8 @@ export const GetProjectdetailResponse = zod.object({
  * @summary Replace all project detail data for a project
  */
 export const putProjectdetailBodyProgressItemMonthMax = 12;
+
+export const putProjectdetailBodyCashflowItemMonthMax = 12;
 
 
 
@@ -221,10 +232,19 @@ export const PutProjectdetailBody = zod.object({
   "resolved": zod.number().nullish(),
   "thisMonth": zod.number().nullish(),
   "accum": zod.number().nullish()
+})),
+  "cashflow": zod.array(zod.object({
+  "year": zod.number(),
+  "month": zod.number().min(1).max(putProjectdetailBodyCashflowItemMonthMax),
+  "cashIn": zod.number().nullish().describe('수입 (천 USD)'),
+  "cashOut": zod.number().nullish().describe('지출 (천 USD)'),
+  "equivalent": zod.number().nullish().describe('보유 현금 (천 USD)')
 }))
 })
 
 export const putProjectdetailResponseProgressItemMonthMax = 12;
+
+export const putProjectdetailResponseCashflowItemMonthMax = 12;
 
 
 
@@ -273,6 +293,13 @@ export const PutProjectdetailResponse = zod.object({
   "resolved": zod.number().nullish(),
   "thisMonth": zod.number().nullish(),
   "accum": zod.number().nullish()
+})),
+  "cashflow": zod.array(zod.object({
+  "year": zod.number(),
+  "month": zod.number().min(1).max(putProjectdetailResponseCashflowItemMonthMax),
+  "cashIn": zod.number().nullish().describe('수입 (천 USD)'),
+  "cashOut": zod.number().nullish().describe('지출 (천 USD)'),
+  "equivalent": zod.number().nullish().describe('보유 현금 (천 USD)')
 }))
 })
 

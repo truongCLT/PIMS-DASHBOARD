@@ -1034,6 +1034,28 @@ components:
           type: number
           nullable: true
       required: [item]
+    ProjectDetailCashflowPoint:
+      type: object
+      properties:
+        year:
+          type: integer
+        month:
+          type: integer
+          minimum: 1
+          maximum: 12
+        cashIn:
+          type: number
+          nullable: true
+          description: 수입 (천 USD)
+        cashOut:
+          type: number
+          nullable: true
+          description: 지출 (천 USD)
+        equivalent:
+          type: number
+          nullable: true
+          description: 보유 현금 (천 USD)
+      required: [year, month]
     ProjectDetailOutsourcing:
       type: object
       properties:
@@ -1094,7 +1116,11 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ProjectDetailOutsourcing"
-      required: [projectName, unit, overview, progress, milestones, costEstimation, costBudget, outsourcing]
+        cashflow:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProjectDetailCashflowPoint"
+      required: [projectName, unit, overview, progress, milestones, costEstimation, costBudget, outsourcing, cashflow]
     HealthStatus:
       type: object
       properties:

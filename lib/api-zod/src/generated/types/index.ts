@@ -42,6 +42,7 @@ export * from './mgmtreportProjects';
 export * from './mgmtreportSummary';
 export * from './previewMgmtreportImportBody';
 export * from './projectDetail';
+export * from './projectDetailCashflowPoint';
 export * from './projectDetailCostBudget';
 export * from './projectDetailCostEstimation';
 export * from './projectDetailCostEstimationKind';

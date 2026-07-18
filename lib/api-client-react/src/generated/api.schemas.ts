@@ -284,6 +284,21 @@ export interface ProjectDetailCostBudget {
   actual?: number | null;
 }
 
+export interface ProjectDetailCashflowPoint {
+  year: number;
+  /**
+     * @minimum 1
+     * @maximum 12
+     */
+  month: number;
+  /** 수입 (천 USD) */
+  cashIn?: number | null;
+  /** 지출 (천 USD) */
+  cashOut?: number | null;
+  /** 보유 현금 (천 USD) */
+  equivalent?: number | null;
+}
+
 export interface ProjectDetailOutsourcing {
   trade: string;
   vendor?: string | null;
@@ -306,6 +321,7 @@ export interface ProjectDetail {
   costEstimation: ProjectDetailCostEstimation[];
   costBudget: ProjectDetailCostBudget[];
   outsourcing: ProjectDetailOutsourcing[];
+  cashflow: ProjectDetailCashflowPoint[];
 }
 
 export interface HealthStatus {

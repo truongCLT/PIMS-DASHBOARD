@@ -13,6 +13,7 @@ import {
 } from "recharts";
 import { useGetCashflowMonthly, getGetCashflowMonthlyQueryKey } from "@workspace/api-client-react";
 import { getCashflowProjectRef } from "../data/cashflowProjectMap";
+import { useProjectDetail } from "../lib/projectDetailData";
 
 const cardStyle: React.CSSProperties = {
   backgroundColor: "#fff",
@@ -51,6 +52,23 @@ export function ServiceCashflowTab({
 }) {
   const [comment, setComment] = useState("");
 
+  // 1순위: 데이터 입력 탭에서 저장한 프로젝트별 자금 데이터 (pd_cashflow_monthly)
+  const { detail, isLoading: pdLoading } = useProjectDetail(projectName);
+  const startIdx = fromYear * 12 + (fromMonth - 1);
+  const pdPoints = (detail?.cashflow ?? [])
+    .filter((c) => {
+      const idx = c.year * 12 + (c.month - 1);
+      return idx >= startIdx && idx < startIdx + months;
+    })
+    .map((c) => ({
+      month: `${c.year}-${String(c.month).padStart(2, "0")}`,
+      cashIn: c.cashIn ?? 0,
+      cashOut: c.cashOut ?? 0,
+      equivalent: c.equivalent ?? 0,
+    }));
+  const hasPdData = pdPoints.some((p) => p.cashIn !== 0 || p.cashOut !== 0 || p.equivalent !== 0);
+
+  // 2순위: 자금수지 Excel(cf_*) 매핑 데이터
   const cfRef = getCashflowProjectRef(projectName);
   const params = {
     projectName: cfRef?.name ?? "",
@@ -61,12 +79,12 @@ export function ServiceCashflowTab({
   };
   const query = useGetCashflowMonthly(params, {
     query: {
-      enabled: cfRef != null,
+      enabled: cfRef != null && !hasPdData,
       queryKey: getGetCashflowMonthlyQueryKey(params),
     },
   });
 
-  const points = query.data?.points ?? [];
+  const points = hasPdData ? pdPoints : (query.data?.points ?? []);
   const chartData = points.map((p) => ({
     month: monthLabel(p.month),
     cashIn: p.cashIn,
@@ -84,32 +102,45 @@ export function ServiceCashflowTab({
 
   const hasData = chartData.some((d) => d.cashIn !== 0 || d.cashOut !== 0 || d.equivalent !== 0);
 
+  const entryGuide = (
+    <div style={{ fontSize: "12px", color: "#8a97a8", marginTop: "8px" }}>
+      관리자 모드로 로그인하면 "데이터 입력" 탭의 "6. 월별 자금" 표에서 자금 데이터를 입력할 수 있습니다.
+    </div>
+  );
+
   let body: React.ReactNode;
-  if (cfRef == null) {
+  if (pdLoading || (!hasPdData && cfRef != null && query.isLoading)) {
     body = (
       <div style={{ padding: "60px 20px", textAlign: "center", fontSize: "13px", color: "#5a6a7e" }}>
-        이 프로젝트에 매핑된 자금수지 데이터가 없습니다.
+        자금 데이터를 불러오는 중입니다…
       </div>
     );
-  } else if (query.isLoading) {
+  } else if (!hasPdData && cfRef == null) {
     body = (
       <div style={{ padding: "60px 20px", textAlign: "center", fontSize: "13px", color: "#5a6a7e" }}>
-        자금수지 데이터를 불러오는 중입니다…
+        아직 입력된 자금 데이터가 없습니다.
+        {entryGuide}
       </div>
     );
-  } else if (query.isError) {
+  } else if (!hasPdData && query.isError) {
     const status = (query.error as { status?: number } | null)?.status;
     body = (
       <div style={{ padding: "60px 20px", textAlign: "center", fontSize: "13px", color: status === 404 ? "#5a6a7e" : "#c0392b" }}>
-        {status === 404
-          ? "해당 프로젝트의 자금수지 데이터가 없습니다."
-          : "자금수지 데이터 조회에 실패했습니다. 잠시 후 다시 시도해 주세요."}
+        {status === 404 ? (
+          <>
+            해당 프로젝트의 자금수지 데이터가 없습니다.
+            {entryGuide}
+          </>
+        ) : (
+          "자금수지 데이터 조회에 실패했습니다. 잠시 후 다시 시도해 주세요."
+        )}
       </div>
     );
   } else if (!hasData) {
     body = (
       <div style={{ padding: "60px 20px", textAlign: "center", fontSize: "13px", color: "#5a6a7e" }}>
-        선택한 기간에 자금수지 데이터가 없습니다.
+        선택한 기간에 자금 데이터가 없습니다.
+        {entryGuide}
       </div>
     );
   } else {
@@ -196,7 +227,11 @@ export function ServiceCashflowTab({
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span style={{ fontSize: "13px", fontWeight: 700, color: "#1a3a6b" }}>Cashflow</span>
           <span style={{ fontSize: "11px", color: "#5a6a7e" }}>
-            {query.data ? `${query.data.projectName} · 단위: ${query.data.unit}` : ""}
+            {hasPdData
+              ? `${projectName} · 단위: 천 USD`
+              : query.data
+                ? `${query.data.projectName} · 단위: ${query.data.unit}`
+                : ""}
           </span>
         </div>
         {body}

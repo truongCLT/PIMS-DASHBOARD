@@ -10,6 +10,7 @@ import type {
   ProjectDetailCostEstimation,
   ProjectDetailCostBudget,
   ProjectDetailOutsourcing,
+  ProjectDetailCashflowPoint,
 } from "@workspace/api-client-react";
 import { useProjectDetail, getGetProjectdetailQueryKey } from "../lib/projectDetailData";
 
@@ -130,6 +131,7 @@ export function ProjectDataEntryTab({ projectName }: { projectName: string }) {
   const [costEstimation, setCostEstimation] = useState<ProjectDetailCostEstimation[]>([]);
   const [costBudget, setCostBudget] = useState<ProjectDetailCostBudget[]>([]);
   const [outsourcing, setOutsourcing] = useState<ProjectDetailOutsourcing[]>([]);
+  const [cashflow, setCashflow] = useState<ProjectDetailCashflowPoint[]>([]);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
@@ -146,6 +148,7 @@ export function ProjectDataEntryTab({ projectName }: { projectName: string }) {
       );
       setCostBudget(detail.costBudget);
       setOutsourcing(detail.outsourcing);
+      setCashflow(detail.cashflow);
       setLoaded(true);
     }
   }, [detail, loaded]);
@@ -166,6 +169,7 @@ export function ProjectDataEntryTab({ projectName }: { projectName: string }) {
       costEstimation: costEstimation.filter((e) => e.contractAmount != null || e.costAmount != null),
       costBudget: costBudget.filter((c) => c.item.trim() !== ""),
       outsourcing: outsourcing.filter((o) => o.trade.trim() !== ""),
+      cashflow: cashflow.filter((c) => c.year > 0 && c.month >= 1 && c.month <= 12),
     };
     mutation.mutate(
       { data: body },
@@ -447,6 +451,52 @@ export function ProjectDataEntryTab({ projectName }: { projectName: string }) {
         >
           <Plus size={12} /> 공종 추가
         </button>
+      </div>
+
+      {/* 6. 월별 자금 */}
+      <div style={cardStyle}>
+        <span style={sectionTitle}>6. 월별 자금 (자금 탭)</span>
+        <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px" }}>
+          <thead>
+            <tr>
+              <th style={th}>연도</th>
+              <th style={th}>월</th>
+              <th style={th}>수입 (Cash in)</th>
+              <th style={th}>지출 (Cash out)</th>
+              <th style={th}>보유 현금 (Cash equivalent)</th>
+              <th style={{ ...th, width: "36px" }}></th>
+            </tr>
+          </thead>
+          <tbody>
+            {cashflow.map((c, i) => (
+              <tr key={i}>
+                <td style={tdCell}><NumInput value={c.year} onChange={(v) => updateAt(setCashflow, i, { year: v ?? 0 })} /></td>
+                <td style={tdCell}><NumInput value={c.month} onChange={(v) => updateAt(setCashflow, i, { month: v ?? 0 })} /></td>
+                <td style={tdCell}><NumInput value={c.cashIn} onChange={(v) => updateAt(setCashflow, i, { cashIn: v })} /></td>
+                <td style={tdCell}><NumInput value={c.cashOut} onChange={(v) => updateAt(setCashflow, i, { cashOut: v })} /></td>
+                <td style={tdCell}><NumInput value={c.equivalent} onChange={(v) => updateAt(setCashflow, i, { equivalent: v })} /></td>
+                <td style={{ ...tdCell, textAlign: "center" }}><DelBtn onClick={() => removeAt(setCashflow, i)} /></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <button
+          style={addBtn}
+          onClick={() => {
+            const last = cashflow[cashflow.length - 1];
+            const next = last
+              ? last.month >= 12
+                ? { year: last.year + 1, month: 1 }
+                : { year: last.year, month: last.month + 1 }
+              : { year: nowYear, month: 1 };
+            setCashflow((rows) => [...rows, { ...next, cashIn: null, cashOut: null, equivalent: null }]);
+          }}
+        >
+          <Plus size={12} /> 월 추가
+        </button>
+        <div style={{ fontSize: "10px", color: "#8a97a8", marginTop: "6px" }}>
+          지출은 양수로 입력하세요(차트에서 자동으로 아래 방향 표시). 금액 단위: 천 USD.
+        </div>
       </div>
     </div>
   );

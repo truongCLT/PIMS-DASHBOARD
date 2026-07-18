@@ -94,6 +94,24 @@ export const pdCostBudgetTable = pgTable(
   (t) => [index("pd_cost_budget_project_idx").on(t.projectName)],
 );
 
+// 자금 — 월별 현금흐름 (Cash in / Cash out / 보유 현금)
+export const pdCashflowMonthlyTable = pgTable(
+  "pd_cashflow_monthly",
+  {
+    id: serial("id").primaryKey(),
+    projectName: text("project_name").notNull(),
+    year: integer("year").notNull(),
+    month: integer("month").notNull(), // 1..12
+    cashIn: numeric("cash_in", { precision: 18, scale: 4 }), // 수입 (천 USD)
+    cashOut: numeric("cash_out", { precision: 18, scale: 4 }), // 지출 (천 USD)
+    equivalent: numeric("equivalent", { precision: 18, scale: 4 }), // 보유 현금 (천 USD)
+  },
+  (t) => [
+    uniqueIndex("pd_cashflow_monthly_uq").on(t.projectName, t.year, t.month),
+    check("pd_cashflow_month_ck", sql`${t.month} BETWEEN 1 AND 12`),
+  ],
+);
+
 // 외주 — 외주/자재 계약 및 기성 현황
 export const pdOutsourcingTable = pgTable(
   "pd_outsourcing",
@@ -133,6 +151,10 @@ export type PdCostEstimation = typeof pdCostEstimationTable.$inferSelect;
 export const insertPdCostBudgetSchema = createInsertSchema(pdCostBudgetTable).omit({ id: true });
 export type InsertPdCostBudget = z.infer<typeof insertPdCostBudgetSchema>;
 export type PdCostBudget = typeof pdCostBudgetTable.$inferSelect;
+
+export const insertPdCashflowMonthlySchema = createInsertSchema(pdCashflowMonthlyTable).omit({ id: true });
+export type InsertPdCashflowMonthly = z.infer<typeof insertPdCashflowMonthlySchema>;
+export type PdCashflowMonthly = typeof pdCashflowMonthlyTable.$inferSelect;
 
 export const insertPdOutsourcingSchema = createInsertSchema(pdOutsourcingTable).omit({ id: true });
 export type InsertPdOutsourcing = z.infer<typeof insertPdOutsourcingSchema>;
