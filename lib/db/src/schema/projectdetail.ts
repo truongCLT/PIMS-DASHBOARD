@@ -102,6 +102,7 @@ export const pdOutsourcingTable = pgTable(
     projectName: text("project_name").notNull(),
     trade: text("trade").notNull(), // 공종
     vendor: text("vendor"), // 업체명
+    category: text("category"), // 구분 (예: 용역/외주)
     contractDate: text("contract_date"), // 최초 계약일 (자유 형식)
     changeNo: text("change_no"), // 변경 계약 차수
     budget: numeric("budget", { precision: 18, scale: 4 }), // 예산 (A)

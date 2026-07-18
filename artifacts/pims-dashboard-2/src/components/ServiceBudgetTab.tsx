@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { MessageSquare, Send } from "lucide-react";
+import { useProjectDetail, fmtNum, fmtPct, ratioPct } from "../lib/projectDetailData";
 
 const cardStyle: React.CSSProperties = {
   backgroundColor: "#fff",
@@ -41,7 +42,6 @@ function HBar({
           color: "#333",
           fontWeight: 600,
           flexShrink: 0,
-          textDecoration: label === "Walfare" ? "underline" : "none",
         }}
       >
         {label}
@@ -51,7 +51,7 @@ function HBar({
           {execRatio > 0 && execColor && (
             <div
               style={{
-                width: `${execRatio * 100}%`,
+                width: `${Math.min(execRatio, 1) * 100}%`,
                 height: "100%",
                 backgroundColor: execColor,
                 display: "flex",
@@ -87,8 +87,17 @@ function HBar({
   );
 }
 
-export function ServiceBudgetTab() {
+export function ServiceBudgetTab({ projectName }: { projectName: string }) {
   const [comment, setComment] = useState("");
+  const { detail, isLoading } = useProjectDetail(projectName);
+
+  const rows = (detail?.costBudget ?? []).filter((c) => c.budget != null || c.actual != null);
+  const totalBudget = rows.some((c) => c.budget != null) ? rows.reduce((a, c) => a + (c.budget ?? 0), 0) : null;
+  const totalActual = rows.some((c) => c.actual != null) ? rows.reduce((a, c) => a + (c.actual ?? 0), 0) : null;
+  const maxBudget = Math.max(rows.reduce((a, c) => Math.max(a, c.budget ?? 0), 0), totalBudget ?? 0);
+
+  const widthPct = (v: number | null | undefined) =>
+    maxBudget > 0 && v != null ? Math.max((v / maxBudget) * 82, 3) : 3;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -98,20 +107,40 @@ export function ServiceBudgetTab() {
           Budget <u>Execution Status</u>
         </span>
 
-        <div style={{ marginTop: "18px", display: "flex", flexDirection: "column", gap: "26px" }}>
-          <HBar label="Direct Cost" totalWidth={50} execRatio={0.303} execLabel="99" pctLabel="30.3%" totalLabel="1,239" execColor="#2b5cad" />
-          <div>
-            <HBar label="Indirect Cost" totalWidth={33} execRatio={0.453} execLabel="99" pctLabel="45.3%" totalLabel="258" execColor="#2b5cad" />
-            <div style={{ marginTop: "18px" }}>
-              <HBar label="Salary" sub totalWidth={19} execRatio={0.808} pctLabel="80.8%" execColor="#f0a875" height={30} trackColor="#d9d9d9" />
-              <HBar label="Walfare" sub totalWidth={11} execRatio={0.121} pctLabel="12.1%" execColor="#f0a875" height={30} trackColor="#d9d9d9" />
-              <HBar label="Service" sub totalWidth={19} execRatio={0.503} pctLabel="50.3%" execColor="#f0a875" height={30} trackColor="#d9d9d9" />
-              <HBar label="Others" sub totalWidth={6} execRatio={0} height={30} trackColor="#d9d9d9" />
-            </div>
+        {isLoading ? (
+          <div style={{ padding: "50px 20px", textAlign: "center", fontSize: "12px", color: "#8a97a8" }}>불러오는 중…</div>
+        ) : rows.length === 0 ? (
+          <div style={{ padding: "50px 20px", textAlign: "center", fontSize: "12px", color: "#8a97a8" }}>
+            예산 집행 데이터가 없습니다. "데이터 입력" 탭에서 예산 집행 현황을 입력해 주세요.
           </div>
-          <HBar label="Contingency" totalWidth={19} execRatio={0} totalLabel="60" />
-          <HBar label="Sum" totalWidth={82} execRatio={0.453} execLabel="977" pctLabel="45.3%" totalLabel="3,980" execColor="#2b5cad" />
-        </div>
+        ) : (
+          <div style={{ marginTop: "18px", display: "flex", flexDirection: "column", gap: "26px" }}>
+            {rows.map((c, i) => {
+              const ratio = c.budget != null && c.budget > 0 && c.actual != null ? c.actual / c.budget : 0;
+              return (
+                <HBar
+                  key={`${c.item}-${i}`}
+                  label={c.category ? `${c.category} · ${c.item}` : c.item}
+                  totalWidth={widthPct(c.budget)}
+                  execRatio={ratio}
+                  execLabel={c.actual != null ? fmtNum(c.actual) : undefined}
+                  pctLabel={fmtPct(ratioPct(c.actual, c.budget)) === "-" ? undefined : fmtPct(ratioPct(c.actual, c.budget))}
+                  totalLabel={fmtNum(c.budget)}
+                  execColor="#2b5cad"
+                />
+              );
+            })}
+            <HBar
+              label="Sum"
+              totalWidth={widthPct(totalBudget)}
+              execRatio={totalBudget != null && totalBudget > 0 && totalActual != null ? totalActual / totalBudget : 0}
+              execLabel={totalActual != null ? fmtNum(totalActual) : undefined}
+              pctLabel={fmtPct(ratioPct(totalActual, totalBudget)) === "-" ? undefined : fmtPct(ratioPct(totalActual, totalBudget))}
+              totalLabel={fmtNum(totalBudget)}
+              execColor="#2b5cad"
+            />
+          </div>
+        )}
       </div>
 
       {/* Comment */}
@@ -119,23 +148,6 @@ export function ServiceBudgetTab() {
         <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "8px" }}>
           <MessageSquare size={13} color="#1a2d4d" />
           <span style={{ fontSize: "12px", fontWeight: 700, color: "#1a2d4d" }}>Comment</span>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "14px", marginBottom: "8px", flexWrap: "wrap" }}>
-          <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", color: "#333" }}>
-            Chart :
-            <select style={{ fontSize: "11px", padding: "4px 6px", border: "1px solid #ccd4dd", borderRadius: "4px" }}>
-              <option>Sale by division</option>
-              <option>Budget Execution Status</option>
-            </select>
-          </label>
-          <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", color: "#333" }}>
-            Month :
-            <select defaultValue="June" style={{ fontSize: "11px", padding: "4px 6px", border: "1px solid #ccd4dd", borderRadius: "4px" }}>
-              {["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"].map((mo) => (
-                <option key={mo}>{mo}</option>
-              ))}
-            </select>
-          </label>
         </div>
         <div
           style={{

@@ -57,6 +57,7 @@ export const GetProjectdetailResponse = zod.object({
   "outsourcing": zod.array(zod.object({
   "trade": zod.string(),
   "vendor": zod.string().nullish(),
+  "category": zod.string().nullish(),
   "contractDate": zod.string().nullish(),
   "changeNo": zod.string().nullish(),
   "budget": zod.number().nullish(),
@@ -112,6 +113,7 @@ export const PutProjectdetailBody = zod.object({
   "outsourcing": zod.array(zod.object({
   "trade": zod.string(),
   "vendor": zod.string().nullish(),
+  "category": zod.string().nullish(),
   "contractDate": zod.string().nullish(),
   "changeNo": zod.string().nullish(),
   "budget": zod.number().nullish(),
@@ -163,6 +165,7 @@ export const PutProjectdetailResponse = zod.object({
   "outsourcing": zod.array(zod.object({
   "trade": zod.string(),
   "vendor": zod.string().nullish(),
+  "category": zod.string().nullish(),
   "contractDate": zod.string().nullish(),
   "changeNo": zod.string().nullish(),
   "budget": zod.number().nullish(),

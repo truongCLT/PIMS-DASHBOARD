@@ -409,6 +409,7 @@ export function ProjectDataEntryTab({ projectName }: { projectName: string }) {
             <tr>
               <th style={th}>공종</th>
               <th style={th}>업체명</th>
+              <th style={th}>구분</th>
               <th style={th}>최초 계약일</th>
               <th style={th}>변경 차수</th>
               <th style={th}>예산(A)</th>
@@ -423,6 +424,7 @@ export function ProjectDataEntryTab({ projectName }: { projectName: string }) {
               <tr key={i}>
                 <td style={tdCell}><TextInput value={o.trade} onChange={(v) => updateAt(setOutsourcing, i, { trade: v ?? "" })} placeholder="예: 토공사" /></td>
                 <td style={tdCell}><TextInput value={o.vendor} onChange={(v) => updateAt(setOutsourcing, i, { vendor: v })} /></td>
+                <td style={tdCell}><TextInput value={o.category} onChange={(v) => updateAt(setOutsourcing, i, { category: v })} placeholder="용역/외주" /></td>
                 <td style={tdCell}><TextInput value={o.contractDate} onChange={(v) => updateAt(setOutsourcing, i, { contractDate: v })} placeholder="'24.12.31" /></td>
                 <td style={tdCell}><TextInput value={o.changeNo} onChange={(v) => updateAt(setOutsourcing, i, { changeNo: v })} /></td>
                 <td style={tdCell}><NumInput value={o.budget} onChange={(v) => updateAt(setOutsourcing, i, { budget: v })} /></td>
@@ -439,7 +441,7 @@ export function ProjectDataEntryTab({ projectName }: { projectName: string }) {
           onClick={() =>
             setOutsourcing((rows) => [
               ...rows,
-              { trade: "", vendor: null, contractDate: null, changeNo: null, budget: null, resolved: null, thisMonth: null, accum: null },
+              { trade: "", vendor: null, category: null, contractDate: null, changeNo: null, budget: null, resolved: null, thisMonth: null, accum: null },
             ])
           }
         >

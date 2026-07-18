@@ -1,10 +1,12 @@
 import React, { useState } from "react";
 import { Download, MessageSquare, Send } from "lucide-react";
-import { Donut, MiniBar } from "./ProjectDashboard";
-import { ServiceSaleTab } from "./ServiceSaleTab";
+import { MiniBar } from "./ProjectDashboard";
+import { SaleProfitTab } from "./SaleProfitTab";
 import { ServiceOutsourcingTab } from "./ServiceOutsourcingTab";
 import { ServiceCashflowTab } from "./ServiceCashflowTab";
 import { ServiceBudgetTab } from "./ServiceBudgetTab";
+import { ProjectDataEntryTab } from "./ProjectDataEntryTab";
+import { useProjectDetail, fmtNum, fmtPct, ratioPct } from "../lib/projectDetailData";
 
 const cardStyle: React.CSSProperties = {
   backgroundColor: "#fff",
@@ -20,7 +22,7 @@ const sectionTitle: React.CSSProperties = {
   marginBottom: "6px",
 };
 
-const TABS = ["Overview", "Sale & Profit", "Budget Execution", "Outsourcing", "Cashflow"];
+const TABS = ["Overview", "Sale & Profit", "Budget Execution", "Outsourcing", "Cashflow", "Data entry"];
 
 const TAB_LABELS: Record<string, string> = {
   Overview: "개요",
@@ -28,6 +30,7 @@ const TAB_LABELS: Record<string, string> = {
   "Budget Execution": "예산집행",
   Outsourcing: "외주",
   Cashflow: "자금",
+  "Data entry": "데이터 입력",
 };
 
 const YEARS = Array.from({ length: 21 }, (_, i) => 2015 + i); // 2015 ~ 2035
@@ -86,6 +89,14 @@ function YearMonthSelect({
   );
 }
 
+function EmptyHint({ label }: { label: string }) {
+  return (
+    <div style={{ padding: "40px 10px", textAlign: "center", fontSize: "11px", color: "#8a97a8" }}>
+      {label} 데이터가 없습니다. "데이터 입력" 탭에서 입력해 주세요.
+    </div>
+  );
+}
+
 export function ServiceProjectDashboard({ projectName }: { projectName: string }) {
   const [currency, setCurrency] = useState("USD");
   const [unitOn, setUnitOn] = useState(true);
@@ -95,6 +106,37 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
   const [fromMonth, setFromMonth] = useState("04");
   const [toYear, setToYear] = useState(2026);
   const [toMonth, setToMonth] = useState("06");
+
+  const { detail, isLoading } = useProjectDetail(projectName);
+
+  const costBudget = detail?.costBudget ?? [];
+  const outsourcing = detail?.outsourcing ?? [];
+
+  // 예산 집행 현황 (Budget Execution) — 항목별 예산 vs 기성 실적
+  const budgetRows = costBudget.filter((c) => c.budget != null || c.actual != null);
+  const totalBudget = budgetRows.some((c) => c.budget != null)
+    ? budgetRows.reduce((a, c) => a + (c.budget ?? 0), 0)
+    : null;
+  const totalActual = budgetRows.some((c) => c.actual != null)
+    ? budgetRows.reduce((a, c) => a + (c.actual ?? 0), 0)
+    : null;
+  const maxBudget = budgetRows.reduce((a, c) => Math.max(a, c.budget ?? 0), 0);
+
+  // 외주 요약 (Cash 카드 대용 — 계약/기성 현황)
+  const outSum = {
+    budget: outsourcing.some((r) => r.budget != null) ? outsourcing.reduce((a, r) => a + (r.budget ?? 0), 0) : null,
+    resolved: outsourcing.some((r) => r.resolved != null) ? outsourcing.reduce((a, r) => a + (r.resolved ?? 0), 0) : null,
+    accum: outsourcing.some((r) => r.accum != null) ? outsourcing.reduce((a, r) => a + (r.accum ?? 0), 0) : null,
+  };
+  const outMax = Math.max(outSum.budget ?? 0, outSum.resolved ?? 0, outSum.accum ?? 0);
+  const outstanding =
+    outSum.resolved != null && outSum.accum != null ? outSum.resolved - outSum.accum : null;
+
+  // 도급액 — 원가율 데이터(execution 우선, 없으면 bidding)의 도급액 사용
+  const contractAmount =
+    detail?.costEstimation.find((e) => e.kind === "execution")?.contractAmount ??
+    detail?.costEstimation.find((e) => e.kind === "bidding")?.contractAmount ??
+    null;
 
   return (
     <div style={{ flex: 1, overflowY: "auto", backgroundColor: "#e8edf3" }}>
@@ -207,32 +249,10 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
         <div style={{ flex: 1 }}>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 0", fontSize: "12px", color: "#1a2d4d" }}>
             <span style={{ fontWeight: 700, paddingRight: "14px" }}>Project : {projectName}</span>
-            <span style={{ borderLeft: "1px solid #d5dce6", padding: "0 14px" }}>발주처 : 0000000</span>
             <span style={{ borderLeft: "1px solid #d5dce6", padding: "0 14px" }}>
-              수행기간 : '00.00.00~'00.00.00&nbsp;&nbsp;(00개월)
+              도급액 : {contractAmount != null ? `${fmtNum(contractAmount)} 천 USD` : "-"}
             </span>
           </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 0", fontSize: "12px", color: "#1a2d4d", marginTop: "8px" }}>
-            <span style={{ fontWeight: 700, paddingRight: "14px" }}>도급액 : 0,000,000</span>
-            <span style={{ borderLeft: "1px solid #d5dce6", padding: "0 14px" }}>
-              수행내용 : 인허가, 프리콘 보고서 제출
-            </span>
-          </div>
-        </div>
-        <div
-          style={{
-            border: "1px solid #c8d2de",
-            borderRadius: "4px",
-            padding: "8px 14px",
-            fontSize: "13px",
-            fontWeight: 700,
-            color: "#1a2d4d",
-            display: "flex",
-            alignItems: "center",
-            whiteSpace: "nowrap",
-          }}
-        >
-          작성 기준 : 6월 말
         </div>
       </div>
 
@@ -277,9 +297,17 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
       {/* Body */}
       <div style={{ display: "flex", flexDirection: "column", gap: "8px", padding: "10px" }}>
         {activeTab === "Sale & Profit" ? (
-          <ServiceSaleTab />
+          <SaleProfitTab
+            projectName={projectName}
+            fromYear={fromYear}
+            fromMonth={Number(fromMonth)}
+            months={Math.min(
+              24,
+              Math.max(1, (toYear - fromYear) * 12 + (Number(toMonth) - Number(fromMonth)) + 1),
+            )}
+          />
         ) : activeTab === "Outsourcing" ? (
-          <ServiceOutsourcingTab />
+          <ServiceOutsourcingTab projectName={projectName} />
         ) : activeTab === "Cashflow" ? (
           <ServiceCashflowTab
             projectName={projectName}
@@ -291,111 +319,133 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
             )}
           />
         ) : activeTab === "Budget Execution" ? (
-          <ServiceBudgetTab />
+          <ServiceBudgetTab projectName={projectName} />
+        ) : activeTab === "Data entry" ? (
+          <ProjectDataEntryTab projectName={projectName} />
         ) : activeTab === "Overview" ? (
           <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: "8px" }}>
-            {/* Row 1: Revenue / Budget Execution Status / Cash */}
-            <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr 1fr", gap: "8px" }}>
-              {/* Revenue */}
-              <div style={cardStyle}>
-                <span style={sectionTitle}>Revenue</span>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-around", marginTop: "10px" }}>
-                  <div style={{ textAlign: "center" }}>
-                    <div style={{ fontSize: "10px", color: "#555", marginBottom: "2px" }}>1,194</div>
-                    <Donut percent={27.6} color="#2b5cad" size={150} stroke={16} label="27.6%" labelSize={24} />
-                    <div style={{ fontSize: "10px", color: "#1a2d4d", fontWeight: 700, marginTop: "4px", textDecoration: "underline" }}>
-                      Achievement Rate
-                    </div>
-                    <div style={{ fontSize: "11px", color: "#1a2d4d", fontWeight: 700, marginTop: "6px", textDecoration: "underline" }}>
-                      Annual Target Achievement
-                    </div>
-                  </div>
-                  <div style={{ textAlign: "center" }}>
-                    <div style={{ fontSize: "10px", color: "#555", marginBottom: "2px" }}>1,194</div>
-                    <Donut percent={27.6} color="#2b5cad" size={150} stroke={16} label="27.6%" labelSize={24} />
-                    <div style={{ fontSize: "10px", color: "#1a2d4d", fontWeight: 700, marginTop: "4px", textDecoration: "underline" }}>
-                      Achievement Rate
-                    </div>
-                    <div style={{ fontSize: "11px", color: "#1a2d4d", fontWeight: 700, marginTop: "6px", textDecoration: "underline" }}>
-                      Total Revenue Achievement
-                    </div>
-                  </div>
-                </div>
-              </div>
-
+            {/* Row 1: Budget Execution Status / Outsourcing */}
+            <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: "8px" }}>
               {/* Budget Execution Status */}
               <div style={cardStyle}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                   <span style={sectionTitle}>
                     Budget <u>Execution Status</u>
                   </span>
-                  <span style={{ fontSize: "10px", color: "#333", fontWeight: 600 }}>Total Execution : 00.0%</span>
+                  <span style={{ fontSize: "10px", color: "#333", fontWeight: 600 }}>
+                    Total Execution : {fmtPct(ratioPct(totalActual, totalBudget))}
+                  </span>
                 </div>
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "flex-end",
-                    justifyContent: "space-around",
-                    marginTop: "10px",
-                    paddingBottom: "4px",
-                  }}
-                >
-                  {[
-                    { label: "Direct Cost", budget: 2477, spent: 977, pct: "35.2%" },
-                    { label: "Expense 2", budget: 258, spent: 99, pct: "45.3%" },
-                    { label: "Contingency", budget: 60, spent: 0, pct: "" },
-                  ].map((g) => {
-                    const H = 150;
-                    const bh = Math.max((Math.log10(g.budget + 1) / Math.log10(2500)) * H, 8);
-                    const sh = g.spent > 0 ? Math.max(bh * (g.spent / g.budget), 6) : 0;
-                    return (
-                      <div key={g.label} style={{ textAlign: "center" }}>
-                        <div style={{ fontSize: "9px", color: "#555", marginBottom: "2px" }}>{g.budget.toLocaleString()}</div>
-                        <div style={{ height: `${H}px`, display: "flex", alignItems: "flex-end", gap: "3px", justifyContent: "center" }}>
-                          <div style={{ width: "24px", height: `${bh}px`, backgroundColor: "#d9dee5" }} />
-                          {sh > 0 && (
-                            <div style={{ width: "24px", height: `${sh}px`, backgroundColor: "#2b5cad", position: "relative" }}>
-                              <span
-                                style={{
-                                  position: "absolute",
-                                  top: "50%",
-                                  left: "50%",
-                                  transform: "translate(-50%, -50%)",
-                                  fontSize: "8px",
-                                  color: "#fff",
-                                  fontWeight: 700,
-                                }}
-                              >
-                                {g.spent}
-                              </span>
-                            </div>
+                {isLoading ? (
+                  <div style={{ padding: "40px 10px", textAlign: "center", fontSize: "11px", color: "#8a97a8" }}>불러오는 중…</div>
+                ) : budgetRows.length === 0 ? (
+                  <EmptyHint label="예산 집행" />
+                ) : (
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "flex-end",
+                      justifyContent: "space-around",
+                      marginTop: "10px",
+                      paddingBottom: "4px",
+                    }}
+                  >
+                    {budgetRows.map((g, gi) => {
+                      const H = 150;
+                      const budget = g.budget ?? 0;
+                      const spent = g.actual ?? 0;
+                      const bh = maxBudget > 0 ? Math.max((budget / maxBudget) * H, 8) : 8;
+                      const sh = budget > 0 && spent > 0 ? Math.max(bh * Math.min(spent / budget, 1), 6) : 0;
+                      const pct = ratioPct(g.actual, g.budget);
+                      return (
+                        <div key={`${g.item}-${gi}`} style={{ textAlign: "center" }}>
+                          <div style={{ fontSize: "9px", color: "#555", marginBottom: "2px" }}>{fmtNum(g.budget)}</div>
+                          <div style={{ height: `${H}px`, display: "flex", alignItems: "flex-end", gap: "3px", justifyContent: "center" }}>
+                            <div style={{ width: "24px", height: `${bh}px`, backgroundColor: "#d9dee5" }} />
+                            {sh > 0 && (
+                              <div style={{ width: "24px", height: `${sh}px`, backgroundColor: "#2b5cad", position: "relative" }}>
+                                <span
+                                  style={{
+                                    position: "absolute",
+                                    top: "50%",
+                                    left: "50%",
+                                    transform: "translate(-50%, -50%)",
+                                    fontSize: "8px",
+                                    color: "#fff",
+                                    fontWeight: 700,
+                                  }}
+                                >
+                                  {fmtNum(g.actual)}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                          {pct != null && (
+                            <div style={{ fontSize: "9px", color: "#4a90d9", fontWeight: 600, marginTop: "2px" }}>{fmtPct(pct)}</div>
                           )}
+                          <div style={{ fontSize: "9px", color: "#333", fontWeight: 600, marginTop: "2px" }}>{g.item}</div>
                         </div>
-                        {g.pct && <div style={{ fontSize: "9px", color: "#4a90d9", fontWeight: 600, marginTop: "2px" }}>{g.pct}</div>}
-                        <div style={{ fontSize: "9px", color: "#333", fontWeight: 600, marginTop: "2px" }}>{g.label}</div>
-                      </div>
-                    );
-                  })}
-                </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
-              {/* Cash */}
+              {/* Outsourcing summary */}
               <div style={cardStyle}>
-                <span style={sectionTitle}>Cash</span>
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "flex-end",
-                    justifyContent: "space-around",
-                    marginTop: "10px",
-                    height: "190px",
-                  }}
-                >
-                  <MiniBar value={80} max={100} color="#c9d2dd" label="Revenue" height={150} valueLabel="00" width={24} />
-                  <MiniBar value={72} max={100} color="#c9d2dd" label="Confirmed (A)" height={150} valueLabel="00" width={24} />
-                  <MiniBar value={70} max={100} color="#2b5cad" label="Collection (B)" height={150} valueLabel="00" width={24} />
-                  <MiniBar value={18} max={100} color="#c0392b" label="Outstanding (A)-(B)" height={150} valueLabel="00" width={24} />
-                </div>
+                <span style={sectionTitle}>Outsourcing</span>
+                {isLoading ? (
+                  <div style={{ padding: "40px 10px", textAlign: "center", fontSize: "11px", color: "#8a97a8" }}>불러오는 중…</div>
+                ) : outsourcing.length === 0 ? (
+                  <EmptyHint label="외주" />
+                ) : (
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "flex-end",
+                      justifyContent: "space-around",
+                      marginTop: "10px",
+                      height: "190px",
+                    }}
+                  >
+                    <MiniBar
+                      value={outSum.budget ?? 0}
+                      max={outMax}
+                      color="#c9d2dd"
+                      label="예산 (A)"
+                      height={150}
+                      valueLabel={fmtNum(outSum.budget)}
+                      width={24}
+                    />
+                    <MiniBar
+                      value={outSum.resolved ?? 0}
+                      max={outMax}
+                      color="#c9d2dd"
+                      label="결의금액 (B)"
+                      height={150}
+                      valueLabel={fmtNum(outSum.resolved)}
+                      width={24}
+                    />
+                    <MiniBar
+                      value={outSum.accum ?? 0}
+                      max={outMax}
+                      color="#2b5cad"
+                      label="기성 누계 (C)"
+                      height={150}
+                      valueLabel={fmtNum(outSum.accum)}
+                      width={24}
+                    />
+                    <MiniBar
+                      value={outstanding ?? 0}
+                      max={outMax}
+                      color="#c0392b"
+                      label="잔여 (B)-(C)"
+                      height={150}
+                      valueLabel={fmtNum(outstanding)}
+                      width={24}
+                    />
+                  </div>
+                )}
               </div>
             </div>
 
@@ -404,25 +454,6 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
               <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "8px" }}>
                 <MessageSquare size={13} color="#1a2d4d" />
                 <span style={{ fontSize: "12px", fontWeight: 700, color: "#1a2d4d" }}>Comment</span>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: "14px", marginBottom: "8px", flexWrap: "wrap" }}>
-                <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", color: "#333" }}>
-                  Chart :
-                  <select style={{ fontSize: "11px", padding: "4px 6px", border: "1px solid #ccd4dd", borderRadius: "4px" }}>
-                    <option>Sale by division</option>
-                    <option>Revenue</option>
-                    <option>Budget Execution Status</option>
-                    <option>Cash</option>
-                  </select>
-                </label>
-                <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", color: "#333" }}>
-                  Month :
-                  <select defaultValue="June" style={{ fontSize: "11px", padding: "4px 6px", border: "1px solid #ccd4dd", borderRadius: "4px" }}>
-                    {["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"].map((mo) => (
-                      <option key={mo}>{mo}</option>
-                    ))}
-                  </select>
-                </label>
               </div>
               <div
                 style={{

@@ -858,6 +858,9 @@ components:
         vendor:
           type: string
           nullable: true
+        category:
+          type: string
+          nullable: true
         contractDate:
           type: string
           nullable: true

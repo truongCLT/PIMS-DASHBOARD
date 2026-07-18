@@ -93,6 +93,7 @@ async function loadDetail(projectName: string) {
     outsourcing: outsourcing.map((o) => ({
       trade: o.trade,
       vendor: o.vendor,
+      category: o.category,
       contractDate: o.contractDate,
       changeNo: o.changeNo,
       budget: num(o.budget),
@@ -200,6 +201,7 @@ router.put("/projectdetail", async (req, res) => {
             projectName,
             trade: o.trade,
             vendor: o.vendor ?? null,
+            category: o.category ?? null,
             contractDate: o.contractDate ?? null,
             changeNo: o.changeNo ?? null,
             budget: str(o.budget),

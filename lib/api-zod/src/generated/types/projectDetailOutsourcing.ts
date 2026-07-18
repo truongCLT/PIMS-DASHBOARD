@@ -9,6 +9,7 @@
 export interface ProjectDetailOutsourcing {
   trade: string;
   vendor?: string | null;
+  category?: string | null;
   contractDate?: string | null;
   changeNo?: string | null;
   budget?: number | null;

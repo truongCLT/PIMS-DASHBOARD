@@ -1,4 +1,5 @@
 import React from "react";
+import { useProjectDetail, fmtNum, fmtPct, ratioPct } from "../lib/projectDetailData";
 
 const HEADER_BG = "#2e3a4f";
 
@@ -24,19 +25,19 @@ const tdStyle: React.CSSProperties = {
 };
 
 const tdCenter: React.CSSProperties = { ...tdStyle, textAlign: "center" };
-const tdRight: React.CSSProperties = { ...tdStyle, textAlign: "left" };
+const tdRight: React.CSSProperties = { ...tdStyle, textAlign: "right" };
 
-const ROWS = [
-  { trade: "Environment Design", vendor: "Sein", type: "용역" },
-  { trade: "Landscpae Design", vendor: "Sein", type: "용역" },
-  { trade: "Interior Design", vendor: "Sein", type: "용역" },
-  { trade: "BIM", vendor: "Sein", type: "외주" },
-  { trade: "QS", vendor: "Sein", type: "외주" },
-  { trade: "Structure", vendor: "Sein", type: "외주" },
-  { trade: "LEED", vendor: "Sein", type: "외주" },
-];
+export function ServiceOutsourcingTab({ projectName }: { projectName: string }) {
+  const { detail, isLoading } = useProjectDetail(projectName);
+  const rows = detail?.outsourcing ?? [];
 
-export function ServiceOutsourcingTab() {
+  const sum = {
+    budget: rows.some((r) => r.budget != null) ? rows.reduce((a, r) => a + (r.budget ?? 0), 0) : null,
+    resolved: rows.some((r) => r.resolved != null) ? rows.reduce((a, r) => a + (r.resolved ?? 0), 0) : null,
+    thisMonth: rows.some((r) => r.thisMonth != null) ? rows.reduce((a, r) => a + (r.thisMonth ?? 0), 0) : null,
+    accum: rows.some((r) => r.accum != null) ? rows.reduce((a, r) => a + (r.accum ?? 0), 0) : null,
+  };
+
   return (
     <div
       style={{
@@ -56,7 +57,7 @@ export function ServiceOutsourcingTab() {
             <th style={thStyle} rowSpan={2}>변경{"\n"}계약{"\n"}차수</th>
             <th style={thStyle} rowSpan={2}>예산{"\n"}(A)</th>
             <th style={{ ...thStyle, width: "12%" }} rowSpan={2}>결의금액{"\n"}(B)</th>
-            <th style={thStyle} rowSpan={2}>결의율{"\n"}(A/B)</th>
+            <th style={thStyle} rowSpan={2}>결의율{"\n"}(B/A)</th>
             <th style={thStyle} colSpan={3}>기성현황</th>
           </tr>
           <tr>
@@ -66,34 +67,52 @@ export function ServiceOutsourcingTab() {
           </tr>
         </thead>
         <tbody>
-          {ROWS.map((r) => (
-            <tr key={r.trade}>
-              <td style={tdStyle}>{r.trade}</td>
-              <td style={tdCenter}>{r.vendor}</td>
-              <td style={{ ...tdCenter, whiteSpace: "pre-line" }}>{r.type.split("").join("\n")}</td>
-              <td style={tdCenter}>'24.12.31</td>
-              <td style={tdCenter}></td>
-              <td style={tdRight}>00,000,000</td>
-              <td style={tdRight}>00,000,000</td>
-              <td style={tdCenter}></td>
-              <td style={tdRight}>00,000</td>
-              <td style={tdRight}>000,000</td>
-              <td style={tdRight}>00.0%</td>
+          {isLoading ? (
+            <tr>
+              <td style={{ ...tdCenter, color: "#8a97a8" }} colSpan={11}>
+                불러오는 중…
+              </td>
             </tr>
-          ))}
-          <tr>
-            <td style={{ ...tdStyle, fontWeight: 600 }}>합계</td>
-            <td style={tdCenter}></td>
-            <td style={tdCenter}></td>
-            <td style={tdCenter}></td>
-            <td style={tdCenter}></td>
-            <td style={tdRight}></td>
-            <td style={tdRight}>000,000,000</td>
-            <td style={tdCenter}></td>
-            <td style={tdRight}>000,000,000</td>
-            <td style={tdRight}>000,0000,000,000</td>
-            <td style={tdRight}>00.0%</td>
-          </tr>
+          ) : rows.length === 0 ? (
+            <tr>
+              <td style={{ ...tdCenter, color: "#8a97a8", padding: "24px 10px" }} colSpan={11}>
+                외주/용역 데이터가 없습니다. 좌측 "데이터 입력" 탭에서 외주 데이터를 입력해 주세요.
+              </td>
+            </tr>
+          ) : (
+            <>
+              {rows.map((r, i) => (
+                <tr key={i}>
+                  <td style={tdStyle}>{r.trade || "-"}</td>
+                  <td style={tdCenter}>{r.vendor ?? "-"}</td>
+                  <td style={{ ...tdCenter, whiteSpace: "pre-line" }}>
+                    {r.category ? r.category.split("").join("\n") : "-"}
+                  </td>
+                  <td style={tdCenter}>{r.contractDate ?? "-"}</td>
+                  <td style={tdCenter}>{r.changeNo ?? "-"}</td>
+                  <td style={tdRight}>{fmtNum(r.budget)}</td>
+                  <td style={tdRight}>{fmtNum(r.resolved)}</td>
+                  <td style={tdCenter}>{fmtPct(ratioPct(r.resolved, r.budget))}</td>
+                  <td style={tdRight}>{fmtNum(r.thisMonth)}</td>
+                  <td style={tdRight}>{fmtNum(r.accum)}</td>
+                  <td style={tdRight}>{fmtPct(ratioPct(r.accum, r.resolved))}</td>
+                </tr>
+              ))}
+              <tr>
+                <td style={{ ...tdStyle, fontWeight: 600 }}>합계</td>
+                <td style={tdCenter}></td>
+                <td style={tdCenter}></td>
+                <td style={tdCenter}></td>
+                <td style={tdCenter}></td>
+                <td style={{ ...tdRight, fontWeight: 600 }}>{fmtNum(sum.budget)}</td>
+                <td style={{ ...tdRight, fontWeight: 600 }}>{fmtNum(sum.resolved)}</td>
+                <td style={{ ...tdCenter, fontWeight: 600 }}>{fmtPct(ratioPct(sum.resolved, sum.budget))}</td>
+                <td style={{ ...tdRight, fontWeight: 600 }}>{fmtNum(sum.thisMonth)}</td>
+                <td style={{ ...tdRight, fontWeight: 600 }}>{fmtNum(sum.accum)}</td>
+                <td style={{ ...tdRight, fontWeight: 600 }}>{fmtPct(ratioPct(sum.accum, sum.resolved))}</td>
+              </tr>
+            </>
+          )}
         </tbody>
       </table>
     </div>
