@@ -76,6 +76,50 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiErrorMessage"
+  /cashflow/aggregate:
+    get:
+      operationId: getCashflowAggregate
+      tags: [cashflow]
+      summary: Aggregated monthly cashflow series across projects (optionally by division)
+      parameters:
+        - name: division
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: fromYear
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: fromMonth
+          in: query
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 12
+        - name: months
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 24
+            default: 6
+      responses:
+        "200":
+          description: Aggregated monthly cashflow series in 천 USD
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CashflowAggregateSeries"
+        "404":
+          description: No data for the requested scope
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorMessage"
   /healthz:
     get:
       operationId: healthCheck
@@ -135,6 +179,20 @@ components:
           items:
             $ref: "#/components/schemas/CashflowMonthlyPoint"
       required: [projectName, unit, points]
+    CashflowAggregateSeries:
+      type: object
+      properties:
+        scope:
+          type: string
+          description: Aggregation scope label (전체 or division name)
+        unit:
+          type: string
+          description: Amount unit (천 USD)
+        points:
+          type: array
+          items:
+            $ref: "#/components/schemas/CashflowMonthlyPoint"
+      required: [scope, unit, points]
     HealthStatus:
       type: object
       properties:

@@ -7,8 +7,10 @@
  */
 
 export * from './apiErrorMessage';
+export * from './cashflowAggregateSeries';
 export * from './cashflowMonthlyPoint';
 export * from './cashflowMonthlySeries';
 export * from './cashflowProject';
+export * from './getCashflowAggregateParams';
 export * from './getCashflowMonthlyParams';
 export * from './healthStatus';

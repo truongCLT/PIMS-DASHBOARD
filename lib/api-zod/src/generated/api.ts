@@ -50,6 +50,35 @@ export const GetCashflowMonthlyResponse = zod.object({
 
 
 /**
+ * @summary Aggregated monthly cashflow series across projects (optionally by division)
+ */
+export const getCashflowAggregateQueryFromMonthMax = 12;
+
+export const getCashflowAggregateQueryMonthsDefault = 6;
+export const getCashflowAggregateQueryMonthsMax = 24;
+
+
+
+export const GetCashflowAggregateQueryParams = zod.object({
+  "division": zod.coerce.string().optional(),
+  "fromYear": zod.coerce.number(),
+  "fromMonth": zod.coerce.number().min(1).max(getCashflowAggregateQueryFromMonthMax),
+  "months": zod.coerce.number().min(1).max(getCashflowAggregateQueryMonthsMax).default(getCashflowAggregateQueryMonthsDefault)
+})
+
+export const GetCashflowAggregateResponse = zod.object({
+  "scope": zod.string().describe('Aggregation scope label (전체 or division name)'),
+  "unit": zod.string().describe('Amount unit (천 USD)'),
+  "points": zod.array(zod.object({
+  "month": zod.string().describe('Month in YYYY-MM format'),
+  "cashIn": zod.number(),
+  "cashOut": zod.number().describe('Positive magnitude of outflow'),
+  "equivalent": zod.number().describe('Cumulative balance (과부족 누계) up to and including this month')
+}))
+})
+
+
+/**
  * Returns server health status
  * @summary Health check
  */

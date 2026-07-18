@@ -8,8 +8,9 @@ import { CashFlowChart } from "./CashFlowChart";
 import { PerformanceTable } from "./PerformanceTable";
 import { CommentPanel } from "./CommentPanel";
 import { DrilldownCard } from "./DrilldownCard";
+import type { DashboardScope } from "./Sidebar";
 
-export function Dashboard() {
+export function Dashboard({ scope = "전체" }: { scope?: DashboardScope }) {
   return (
     <div style={{
       flex: 1,
@@ -51,7 +52,7 @@ export function Dashboard() {
           gap: "6px",
           padding: "4px 10px",
         }}>
-          <CashFlowChart />
+          <CashFlowChart scope={scope} />
           <PerformanceTable />
         </div>
 

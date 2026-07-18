@@ -5,6 +5,8 @@ import {
   ListCashflowProjectsResponseItem,
   GetCashflowMonthlyResponse,
   GetCashflowMonthlyQueryParams,
+  GetCashflowAggregateQueryParams,
+  GetCashflowAggregateResponse,
 } from "@workspace/api-zod";
 
 const router: IRouter = Router();
@@ -117,6 +119,88 @@ router.get("/cashflow/monthly", async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "failed to get cashflow monthly series");
     res.status(500).json({ error: "자금수지 데이터 조회에 실패했습니다." });
+  }
+});
+
+router.get("/cashflow/aggregate", async (req, res) => {
+  const parsed = GetCashflowAggregateQueryParams.safeParse(req.query);
+  if (!parsed.success) {
+    res.status(400).json({ error: "잘못된 요청 파라미터입니다." });
+    return;
+  }
+  const { division, fromYear, fromMonth, months = 6 } = parsed.data;
+  if (![fromYear, fromMonth, months].every(Number.isInteger)) {
+    res.status(400).json({ error: "잘못된 요청 파라미터입니다." });
+    return;
+  }
+
+  try {
+    const amounts = await db
+      .select({
+        flowType: cfMonthlyAmountsTable.flowType,
+        month: cfMonthlyAmountsTable.month,
+        amount: cfMonthlyAmountsTable.amount,
+      })
+      .from(cfMonthlyAmountsTable)
+      .innerJoin(cfProjectsTable, eq(cfMonthlyAmountsTable.projectId, cfProjectsTable.id))
+      .where(division ? eq(cfProjectsTable.division, division) : undefined)
+      .orderBy(asc(cfMonthlyAmountsTable.month));
+
+    if (amounts.length === 0) {
+      res.status(404).json({ error: "해당 범위의 자금수지 데이터가 없습니다." });
+      return;
+    }
+
+    const byMonth = new Map<string, { cashIn: number; cashOut: number }>();
+    for (const a of amounts) {
+      const key = a.month.slice(0, 7);
+      const rec = byMonth.get(key) ?? { cashIn: 0, cashOut: 0 };
+      const n = Number(a.amount);
+      if (a.flowType === "수입") rec.cashIn += n;
+      else if (a.flowType === "지출") rec.cashOut += n;
+      byMonth.set(key, rec);
+    }
+
+    const requested: string[] = [];
+    {
+      let y = fromYear;
+      let m = fromMonth;
+      for (let i = 0; i < months; i++) {
+        requested.push(`${y}-${String(m).padStart(2, "0")}`);
+        m++;
+        if (m > 12) {
+          m = 1;
+          y++;
+        }
+      }
+    }
+
+    const sortedKeys = [...byMonth.keys()].sort();
+    const points = requested.map((key) => {
+      const rec = byMonth.get(key) ?? { cashIn: 0, cashOut: 0 };
+      let cumulative = 0;
+      for (const k of sortedKeys) {
+        if (k > key) break;
+        const r = byMonth.get(k)!;
+        cumulative += r.cashIn - r.cashOut;
+      }
+      return {
+        month: key,
+        cashIn: Math.round(rec.cashIn * 100) / 100,
+        cashOut: Math.round(rec.cashOut * 100) / 100,
+        equivalent: Math.round(cumulative * 100) / 100,
+      };
+    });
+
+    const data = GetCashflowAggregateResponse.parse({
+      scope: division ?? "전체",
+      unit: "천 USD",
+      points,
+    });
+    res.json(data);
+  } catch (err) {
+    req.log.error({ err }, "failed to get cashflow aggregate series");
+    res.status(500).json({ error: "자금수지 집계 조회에 실패했습니다." });
   }
 });
 

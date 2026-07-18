@@ -3,18 +3,24 @@ import pimsBranding from "../assets/pims-branding.png";
 import { FolderClosed } from "lucide-react";
 import { PROJECT_GROUPS } from "../data/projects";
 
+export type DashboardScope = "전체" | "시공" | "용역";
+
 interface TreeItem {
   label: string;
   children?: TreeItem[];
-  active?: boolean;
   isProject?: boolean;
+  scope?: DashboardScope;
 }
 
-const TREE_DATA: TreeItem[] = PROJECT_GROUPS.map((group, gi) => ({
+const TREE_DATA: TreeItem[] = PROJECT_GROUPS.map((group) => ({
   label: group.label,
-  children: group.divisions.map((division, di) => ({
+  scope: group.label === "DECV" ? ("전체" as DashboardScope) : undefined,
+  children: group.divisions.map((division) => ({
     label: division.label,
-    active: gi === 0 && di === 0,
+    scope:
+      group.label === "DECV" && (division.label === "시공" || division.label === "용역")
+        ? (division.label as DashboardScope)
+        : undefined,
     children:
       division.label === "시공" || division.label === "용역"
         ? [
@@ -32,12 +38,16 @@ function TreeNode({
   item,
   depth = 0,
   selectedProject,
+  selectedScope,
   onSelectProject,
+  onSelectScope,
 }: {
   item: TreeItem;
   depth?: number;
   selectedProject: string | null;
+  selectedScope: DashboardScope;
   onSelectProject: (name: string) => void;
+  onSelectScope: (scope: DashboardScope) => void;
 }) {
   const [open, setOpen] = useState(false);
   const hasChildren = item.children && item.children.length > 0;
@@ -46,12 +56,14 @@ function TreeNode({
   const collapsible = hasChildren && !isTopLevel;
   const expanded = isTopLevel || open;
   const isSelected = item.isProject && item.label === selectedProject;
+  const isScopeSelected =
+    item.scope != null && selectedProject == null && selectedScope === item.scope;
 
   const color = isTopLevel ? "#1a2d4d" : isSubGroup ? "#2a3d55" : "#44546a";
   const fontSize = isTopLevel ? "12px" : "11px";
   const fontWeight = isTopLevel ? "700" : isSubGroup ? "600" : isSelected ? "600" : "400";
   const paddingLeft = depth === 0 ? "12px" : depth === 1 ? "20px" : depth === 2 ? "32px" : "44px";
-  const bg = isSelected ? "#dbe6f5" : item.active ? "#e8ecf5" : "transparent";
+  const bg = isSelected || isScopeSelected ? "#dbe6f5" : "transparent";
 
   return (
     <div>
@@ -59,7 +71,12 @@ function TreeNode({
         onClick={() => {
           if (item.isProject) {
             onSelectProject(item.label);
-          } else if (collapsible) {
+            return;
+          }
+          if (item.scope != null) {
+            onSelectScope(item.scope);
+          }
+          if (collapsible) {
             setOpen(!open);
           }
         }}
@@ -68,7 +85,7 @@ function TreeNode({
           alignItems: "center",
           justifyContent: "space-between",
           padding: `6px 10px 6px ${paddingLeft}`,
-          cursor: collapsible || item.isProject ? "pointer" : "default",
+          cursor: collapsible || item.isProject || item.scope != null ? "pointer" : "default",
           backgroundColor: bg,
           color,
           fontSize,
@@ -102,7 +119,9 @@ function TreeNode({
               item={child}
               depth={depth + 1}
               selectedProject={selectedProject}
+              selectedScope={selectedScope}
               onSelectProject={onSelectProject}
+              onSelectScope={onSelectScope}
             />
           ))}
         </div>
@@ -113,11 +132,15 @@ function TreeNode({
 
 export function Sidebar({
   selectedProject,
+  selectedScope,
   onSelectProject,
+  onSelectScope,
   onSelectTotal,
 }: {
   selectedProject: string | null;
+  selectedScope: DashboardScope;
   onSelectProject: (name: string) => void;
+  onSelectScope: (scope: DashboardScope) => void;
   onSelectTotal: () => void;
 }) {
   return (
@@ -143,7 +166,7 @@ export function Sidebar({
         fontWeight: "700",
         borderBottom: "1px solid #eef1f5",
         cursor: "pointer",
-        backgroundColor: selectedProject == null ? "#e8ecf5" : "transparent",
+        backgroundColor: selectedProject == null && selectedScope === "전체" ? "#e8ecf5" : "transparent",
       }}>
         <FolderClosed size={14} color="#1a2d4d" fill="#1a2d4d" />
         DECV TOTAL
@@ -157,7 +180,9 @@ export function Sidebar({
             item={item}
             depth={0}
             selectedProject={selectedProject}
+            selectedScope={selectedScope}
             onSelectProject={onSelectProject}
+            onSelectScope={onSelectScope}
           />
         ))}
       </div>

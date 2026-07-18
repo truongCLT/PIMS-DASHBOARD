@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { TopNav } from "./components/TopNav";
-import { Sidebar } from "./components/Sidebar";
+import { Sidebar, type DashboardScope } from "./components/Sidebar";
 import { Dashboard } from "./components/Dashboard";
 import { ProjectDashboard } from "./components/ProjectDashboard";
 import { ServiceProjectDashboard } from "./components/ServiceProjectDashboard";
@@ -8,6 +8,7 @@ import { getProjectDivision } from "./data/projects";
 
 function App() {
   const [selectedProject, setSelectedProject] = useState<string | null>(null);
+  const [selectedScope, setSelectedScope] = useState<DashboardScope>("전체");
   const division = selectedProject ? getProjectDivision(selectedProject) : null;
 
   return (
@@ -16,8 +17,16 @@ function App() {
       <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
         <Sidebar
           selectedProject={selectedProject}
+          selectedScope={selectedScope}
           onSelectProject={setSelectedProject}
-          onSelectTotal={() => setSelectedProject(null)}
+          onSelectScope={(scope) => {
+            setSelectedScope(scope);
+            setSelectedProject(null);
+          }}
+          onSelectTotal={() => {
+            setSelectedProject(null);
+            setSelectedScope("전체");
+          }}
         />
         {selectedProject ? (
           division === "용역" ? (
@@ -26,7 +35,7 @@ function App() {
             <ProjectDashboard projectName={selectedProject} />
           )
         ) : (
-          <Dashboard />
+          <Dashboard scope={selectedScope} />
         )}
       </div>
     </div>

@@ -32,12 +32,35 @@ export interface CashflowMonthlySeries {
   points: CashflowMonthlyPoint[];
 }
 
+export interface CashflowAggregateSeries {
+  /** Aggregation scope label (전체 or division name) */
+  scope: string;
+  /** Amount unit (천 USD) */
+  unit: string;
+  points: CashflowMonthlyPoint[];
+}
+
 export interface HealthStatus {
   status: string;
 }
 
 export type GetCashflowMonthlyParams = {
 projectName: string;
+division?: string;
+fromYear: number;
+/**
+ * @minimum 1
+ * @maximum 12
+ */
+fromMonth: number;
+/**
+ * @minimum 1
+ * @maximum 24
+ */
+months?: number;
+};
+
+export type GetCashflowAggregateParams = {
 division?: string;
 fromYear: number;
 /**

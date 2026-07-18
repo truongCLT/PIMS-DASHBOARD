@@ -17,8 +17,10 @@ import type {
 
 import type {
   ApiErrorMessage,
+  CashflowAggregateSeries,
   CashflowMonthlySeries,
   CashflowProject,
+  GetCashflowAggregateParams,
   GetCashflowMonthlyParams,
   HealthStatus
 } from './api.schemas';
@@ -199,6 +201,90 @@ export function useGetCashflowMonthly<TData = Awaited<ReturnType<typeof getCashf
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetCashflowMonthlyQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetCashflowAggregateUrl = (params: GetCashflowAggregateParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/cashflow/aggregate?${stringifiedParams}` : `/api/cashflow/aggregate`
+}
+
+/**
+ * @summary Aggregated monthly cashflow series across projects (optionally by division)
+ */
+export const getCashflowAggregate = async (params: GetCashflowAggregateParams, options?: RequestInit): Promise<CashflowAggregateSeries> => {
+
+  return customFetch<CashflowAggregateSeries>(getGetCashflowAggregateUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCashflowAggregateQueryKey = (params?: GetCashflowAggregateParams,) => {
+    return [
+    `/api/cashflow/aggregate`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetCashflowAggregateQueryOptions = <TData = Awaited<ReturnType<typeof getCashflowAggregate>>, TError = ErrorType<ApiErrorMessage>>(params: GetCashflowAggregateParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCashflowAggregate>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCashflowAggregateQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCashflowAggregate>>> = ({ signal }) => getCashflowAggregate(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCashflowAggregate>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCashflowAggregateQueryResult = NonNullable<Awaited<ReturnType<typeof getCashflowAggregate>>>
+export type GetCashflowAggregateQueryError = ErrorType<ApiErrorMessage>
+
+
+/**
+ * @summary Aggregated monthly cashflow series across projects (optionally by division)
+ */
+
+export function useGetCashflowAggregate<TData = Awaited<ReturnType<typeof getCashflowAggregate>>, TError = ErrorType<ApiErrorMessage>>(
+ params: GetCashflowAggregateParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCashflowAggregate>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCashflowAggregateQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
