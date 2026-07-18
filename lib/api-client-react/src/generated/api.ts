@@ -22,7 +22,11 @@ import type {
   CashflowProject,
   GetCashflowAggregateParams,
   GetCashflowMonthlyParams,
-  HealthStatus
+  GetSalescostSummaryParams,
+  HealthStatus,
+  ListSalescostSitesParams,
+  SalescostSites,
+  SalescostSummary
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -285,6 +289,174 @@ export function useGetCashflowAggregate<TData = Awaited<ReturnType<typeof getCas
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetCashflowAggregateQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetSalescostSummaryUrl = (params: GetSalescostSummaryParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/salescost/summary?${stringifiedParams}` : `/api/salescost/summary`
+}
+
+/**
+ * @summary Company-wide monthly sales/costs summary (매출, 원가, 매출이익, 판관비, 영업이익)
+ */
+export const getSalescostSummary = async (params: GetSalescostSummaryParams, options?: RequestInit): Promise<SalescostSummary> => {
+
+  return customFetch<SalescostSummary>(getGetSalescostSummaryUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSalescostSummaryQueryKey = (params?: GetSalescostSummaryParams,) => {
+    return [
+    `/api/salescost/summary`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetSalescostSummaryQueryOptions = <TData = Awaited<ReturnType<typeof getSalescostSummary>>, TError = ErrorType<ApiErrorMessage>>(params: GetSalescostSummaryParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSalescostSummary>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSalescostSummaryQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSalescostSummary>>> = ({ signal }) => getSalescostSummary(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSalescostSummary>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSalescostSummaryQueryResult = NonNullable<Awaited<ReturnType<typeof getSalescostSummary>>>
+export type GetSalescostSummaryQueryError = ErrorType<ApiErrorMessage>
+
+
+/**
+ * @summary Company-wide monthly sales/costs summary (매출, 원가, 매출이익, 판관비, 영업이익)
+ */
+
+export function useGetSalescostSummary<TData = Awaited<ReturnType<typeof getSalescostSummary>>, TError = ErrorType<ApiErrorMessage>>(
+ params: GetSalescostSummaryParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSalescostSummary>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSalescostSummaryQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListSalescostSitesUrl = (params: ListSalescostSitesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/salescost/sites?${stringifiedParams}` : `/api/salescost/sites`
+}
+
+/**
+ * @summary Per-site monthly series for a metric
+ */
+export const listSalescostSites = async (params: ListSalescostSitesParams, options?: RequestInit): Promise<SalescostSites> => {
+
+  return customFetch<SalescostSites>(getListSalescostSitesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListSalescostSitesQueryKey = (params?: ListSalescostSitesParams,) => {
+    return [
+    `/api/salescost/sites`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListSalescostSitesQueryOptions = <TData = Awaited<ReturnType<typeof listSalescostSites>>, TError = ErrorType<ApiErrorMessage>>(params: ListSalescostSitesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSalescostSites>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListSalescostSitesQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSalescostSites>>> = ({ signal }) => listSalescostSites(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listSalescostSites>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListSalescostSitesQueryResult = NonNullable<Awaited<ReturnType<typeof listSalescostSites>>>
+export type ListSalescostSitesQueryError = ErrorType<ApiErrorMessage>
+
+
+/**
+ * @summary Per-site monthly series for a metric
+ */
+
+export function useListSalescostSites<TData = Awaited<ReturnType<typeof listSalescostSites>>, TError = ErrorType<ApiErrorMessage>>(
+ params: ListSalescostSitesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSalescostSites>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListSalescostSitesQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

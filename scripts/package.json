@@ -6,6 +6,7 @@
   "scripts": {
     "hello": "tsx ./src/hello.ts",
     "import-cashflow": "tsx ./src/import-cashflow.ts",
+    "import-salescost": "NODE_OPTIONS=--max-old-space-size=6144 tsx ./src/import-salescost.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {

@@ -81,6 +81,52 @@ export const GetCashflowAggregateResponse = zod.object({
 
 
 /**
+ * @summary Company-wide monthly sales/costs summary (매출, 원가, 매출이익, 판관비, 영업이익)
+ */
+export const GetSalescostSummaryQueryParams = zod.object({
+  "year": zod.coerce.number()
+})
+
+export const GetSalescostSummaryResponse = zod.object({
+  "year": zod.number(),
+  "unit": zod.string().describe('Amount unit (천 USD)'),
+  "points": zod.array(zod.object({
+  "month": zod.number().describe('Month number 1..12'),
+  "revenue": zod.number(),
+  "cogs": zod.number(),
+  "grossProfit": zod.number().describe('revenue - cogs'),
+  "sga": zod.number().describe('판관비 (S&A expenses)'),
+  "operatingProfit": zod.number().describe('grossProfit - sga')
+}))
+})
+
+
+/**
+ * @summary Per-site monthly series for a metric
+ */
+export const listSalescostSitesQueryMetricDefault = `revenue`;
+
+export const ListSalescostSitesQueryParams = zod.object({
+  "year": zod.coerce.number(),
+  "metric": zod.enum(['revenue', 'cogs', 'repair_allowance', 'site_cost', 'hq_transfer', 'sga', 'employees']).default(listSalescostSitesQueryMetricDefault).describe('One of revenue, cogs, repair_allowance, site_cost, hq_transfer, sga, employees')
+})
+
+export const ListSalescostSitesResponse = zod.object({
+  "year": zod.number(),
+  "metric": zod.string(),
+  "unit": zod.string(),
+  "sites": zod.array(zod.object({
+  "code": zod.string(),
+  "name": zod.string(),
+  "category": zod.string().nullish(),
+  "bizType": zod.string().nullish(),
+  "months": zod.array(zod.number()).describe('12 values, index 0 = January'),
+  "total": zod.number()
+}))
+})
+
+
+/**
  * Returns server health status
  * @summary Health check
  */

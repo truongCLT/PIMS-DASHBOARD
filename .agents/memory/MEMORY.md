@@ -1,1 +1,2 @@
 - [Multi-artifact testing trap](multi-artifact-testing.md) — test subagents can land on the wrong app when similar artifacts exist; add a content guard step before feature assertions.
+- [Sales+costs Excel import](salescost-excel-import.md) — this workbook OOMs ExcelJS on default heap; needs NODE_OPTIONS=--max-old-space-size=6144, plus sheet-layout quirks.

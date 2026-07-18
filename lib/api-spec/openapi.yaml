@@ -12,6 +12,8 @@ tags:
     description: Health operations
   - name: cashflow
     description: Cashflow (자금수지) operations
+  - name: salescost
+    description: Sales & Costs (매출/원가) operations
 paths:
   /cashflow/projects:
     get:
@@ -133,6 +135,62 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiErrorMessage"
+  /salescost/summary:
+    get:
+      operationId: getSalescostSummary
+      tags: [salescost]
+      summary: Company-wide monthly sales/costs summary (매출, 원가, 매출이익, 판관비, 영업이익)
+      parameters:
+        - name: year
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Monthly summary in 천 USD
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SalescostSummary"
+        "404":
+          description: No data for the requested year
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorMessage"
+  /salescost/sites:
+    get:
+      operationId: listSalescostSites
+      tags: [salescost]
+      summary: Per-site monthly series for a metric
+      parameters:
+        - name: year
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: metric
+          in: query
+          required: false
+          description: One of revenue, cogs, repair_allowance, site_cost, hq_transfer, sga, employees
+          schema:
+            type: string
+            enum: [revenue, cogs, repair_allowance, site_cost, hq_transfer, sga, employees]
+            default: revenue
+      responses:
+        "200":
+          description: Per-site monthly values in 천 USD
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SalescostSites"
+        "404":
+          description: No data for the requested year/metric
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorMessage"
   /healthz:
     get:
       operationId: healthCheck
@@ -206,6 +264,74 @@ components:
           items:
             $ref: "#/components/schemas/CashflowMonthlyPoint"
       required: [scope, unit, points]
+    SalescostSummaryPoint:
+      type: object
+      properties:
+        month:
+          type: integer
+          description: Month number 1..12
+        revenue:
+          type: number
+        cogs:
+          type: number
+        grossProfit:
+          type: number
+          description: revenue - cogs
+        sga:
+          type: number
+          description: 판관비 (S&A expenses)
+        operatingProfit:
+          type: number
+          description: grossProfit - sga
+      required: [month, revenue, cogs, grossProfit, sga, operatingProfit]
+    SalescostSummary:
+      type: object
+      properties:
+        year:
+          type: integer
+        unit:
+          type: string
+          description: Amount unit (천 USD)
+        points:
+          type: array
+          items:
+            $ref: "#/components/schemas/SalescostSummaryPoint"
+      required: [year, unit, points]
+    SalescostSiteSeries:
+      type: object
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        category:
+          type: string
+          nullable: true
+        bizType:
+          type: string
+          nullable: true
+        months:
+          type: array
+          description: 12 values, index 0 = January
+          items:
+            type: number
+        total:
+          type: number
+      required: [code, name, months, total]
+    SalescostSites:
+      type: object
+      properties:
+        year:
+          type: integer
+        metric:
+          type: string
+        unit:
+          type: string
+        sites:
+          type: array
+          items:
+            $ref: "#/components/schemas/SalescostSiteSeries"
+      required: [year, metric, unit, sites]
     HealthStatus:
       type: object
       properties:

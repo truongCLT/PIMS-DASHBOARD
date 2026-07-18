@@ -40,6 +40,43 @@ export interface CashflowAggregateSeries {
   points: CashflowMonthlyPoint[];
 }
 
+export interface SalescostSummaryPoint {
+  /** Month number 1..12 */
+  month: number;
+  revenue: number;
+  cogs: number;
+  /** revenue - cogs */
+  grossProfit: number;
+  /** 판관비 (S&A expenses) */
+  sga: number;
+  /** grossProfit - sga */
+  operatingProfit: number;
+}
+
+export interface SalescostSummary {
+  year: number;
+  /** Amount unit (천 USD) */
+  unit: string;
+  points: SalescostSummaryPoint[];
+}
+
+export interface SalescostSiteSeries {
+  code: string;
+  name: string;
+  category?: string | null;
+  bizType?: string | null;
+  /** 12 values, index 0 = January */
+  months: number[];
+  total: number;
+}
+
+export interface SalescostSites {
+  year: number;
+  metric: string;
+  unit: string;
+  sites: SalescostSiteSeries[];
+}
+
 export interface HealthStatus {
   status: string;
 }
@@ -85,4 +122,29 @@ fromMonth: number;
  */
 months?: number;
 };
+
+export type GetSalescostSummaryParams = {
+year: number;
+};
+
+export type ListSalescostSitesParams = {
+year: number;
+/**
+ * One of revenue, cogs, repair_allowance, site_cost, hq_transfer, sga, employees
+ */
+metric?: ListSalescostSitesMetric;
+};
+
+export type ListSalescostSitesMetric = typeof ListSalescostSitesMetric[keyof typeof ListSalescostSitesMetric];
+
+
+export const ListSalescostSitesMetric = {
+  revenue: 'revenue',
+  cogs: 'cogs',
+  repair_allowance: 'repair_allowance',
+  site_cost: 'site_cost',
+  hq_transfer: 'hq_transfer',
+  sga: 'sga',
+  employees: 'employees',
+} as const;
 
