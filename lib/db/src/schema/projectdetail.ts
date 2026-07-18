@@ -112,6 +112,18 @@ export const pdCashflowMonthlyTable = pgTable(
   ],
 );
 
+// 사진 — 개요 탭 현장 사진 (object storage objectPath)
+export const pdPhotosTable = pgTable(
+  "pd_photos",
+  {
+    id: serial("id").primaryKey(),
+    projectName: text("project_name").notNull(),
+    objectPath: text("object_path").notNull(), // '/objects/uploads/<uuid>'
+    sortOrder: integer("sort_order").notNull().default(0),
+  },
+  (t) => [index("pd_photos_project_idx").on(t.projectName)],
+);
+
 // 외주 — 외주/자재 계약 및 기성 현황
 export const pdOutsourcingTable = pgTable(
   "pd_outsourcing",
@@ -155,6 +167,10 @@ export type PdCostBudget = typeof pdCostBudgetTable.$inferSelect;
 export const insertPdCashflowMonthlySchema = createInsertSchema(pdCashflowMonthlyTable).omit({ id: true });
 export type InsertPdCashflowMonthly = z.infer<typeof insertPdCashflowMonthlySchema>;
 export type PdCashflowMonthly = typeof pdCashflowMonthlyTable.$inferSelect;
+
+export const insertPdPhotoSchema = createInsertSchema(pdPhotosTable).omit({ id: true });
+export type InsertPdPhoto = z.infer<typeof insertPdPhotoSchema>;
+export type PdPhoto = typeof pdPhotosTable.$inferSelect;
 
 export const insertPdOutsourcingSchema = createInsertSchema(pdOutsourcingTable).omit({ id: true });
 export type InsertPdOutsourcing = z.infer<typeof insertPdOutsourcingSchema>;

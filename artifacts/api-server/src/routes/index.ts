@@ -6,6 +6,7 @@ import mgmtreportRouter from "./mgmtreport";
 import projectdetailRouter from "./projectdetail";
 import adminRouter from "./admin";
 import fxratesRouter from "./fxrates";
+import storageRouter from "./storage";
 
 const router: IRouter = Router();
 
@@ -16,5 +17,6 @@ router.use(mgmtreportRouter);
 router.use(projectdetailRouter);
 router.use(adminRouter);
 router.use(fxratesRouter);
+router.use(storageRouter);
 
 export default router;

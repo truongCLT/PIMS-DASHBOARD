@@ -11,6 +11,7 @@ import type { ProjectDetailCostEstimation } from './projectDetailCostEstimation'
 import type { ProjectDetailMilestone } from './projectDetailMilestone';
 import type { ProjectDetailOutsourcing } from './projectDetailOutsourcing';
 import type { ProjectDetailOverview } from './projectDetailOverview';
+import type { ProjectDetailPhoto } from './projectDetailPhoto';
 import type { ProjectDetailProgressPoint } from './projectDetailProgressPoint';
 
 export interface ProjectDetail {
@@ -24,4 +25,5 @@ export interface ProjectDetail {
   costBudget: ProjectDetailCostBudget[];
   outsourcing: ProjectDetailOutsourcing[];
   cashflow: ProjectDetailCashflowPoint[];
+  photos: ProjectDetailPhoto[];
 }

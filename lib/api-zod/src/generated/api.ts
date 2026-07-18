@@ -9,6 +9,56 @@ import * as zod from 'zod';
 
 
 /**
+ * @summary Request a presigned URL for file upload (admin only)
+ */
+
+
+
+
+
+export const RequestUploadUrlBody = zod.object({
+  "name": zod.string().min(1),
+  "size": zod.number().min(1),
+  "contentType": zod.string().min(1)
+})
+
+
+
+
+
+
+export const RequestUploadUrlResponse = zod.object({
+  "uploadURL": zod.string(),
+  "objectPath": zod.string(),
+  "metadata": zod.object({
+  "name": zod.string().min(1),
+  "size": zod.number().min(1),
+  "contentType": zod.string().min(1)
+}).optional()
+})
+
+
+/**
+ * @summary Serve a public asset from PUBLIC_OBJECT_SEARCH_PATHS
+ */
+export const GetPublicObjectParams = zod.object({
+  "filePath": zod.coerce.string()
+})
+
+export const GetPublicObjectResponse = zod.unknown()
+
+
+/**
+ * @summary Serve an object entity from PRIVATE_OBJECT_DIR
+ */
+export const GetStorageObjectParams = zod.object({
+  "objectPath": zod.coerce.string()
+})
+
+export const GetStorageObjectResponse = zod.unknown()
+
+
+/**
  * @summary Log in with the admin password and receive a bearer token
  */
 
@@ -174,6 +224,9 @@ export const GetProjectdetailResponse = zod.object({
   "cashIn": zod.number().nullish().describe('수입 (천 USD)'),
   "cashOut": zod.number().nullish().describe('지출 (천 USD)'),
   "equivalent": zod.number().nullish().describe('보유 현금 (천 USD)')
+})),
+  "photos": zod.array(zod.object({
+  "objectPath": zod.string().describe('Object storage path (\'\/objects\/uploads\/<uuid>\')')
 }))
 })
 
@@ -239,6 +292,9 @@ export const PutProjectdetailBody = zod.object({
   "cashIn": zod.number().nullish().describe('수입 (천 USD)'),
   "cashOut": zod.number().nullish().describe('지출 (천 USD)'),
   "equivalent": zod.number().nullish().describe('보유 현금 (천 USD)')
+})),
+  "photos": zod.array(zod.object({
+  "objectPath": zod.string().describe('Object storage path (\'\/objects\/uploads\/<uuid>\')')
 }))
 })
 
@@ -300,6 +356,9 @@ export const PutProjectdetailResponse = zod.object({
   "cashIn": zod.number().nullish().describe('수입 (천 USD)'),
   "cashOut": zod.number().nullish().describe('지출 (천 USD)'),
   "equivalent": zod.number().nullish().describe('보유 현금 (천 USD)')
+})),
+  "photos": zod.array(zod.object({
+  "objectPath": zod.string().describe('Object storage path (\'\/objects\/uploads\/<uuid>\')')
 }))
 })
 

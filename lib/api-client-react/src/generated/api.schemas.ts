@@ -311,6 +311,11 @@ export interface ProjectDetailOutsourcing {
   accum?: number | null;
 }
 
+export interface ProjectDetailPhoto {
+  /** Object storage path ('/objects/uploads/<uuid>') */
+  objectPath: string;
+}
+
 export interface ProjectDetail {
   projectName: string;
   /** Amount unit (천 USD) */
@@ -322,6 +327,26 @@ export interface ProjectDetail {
   costBudget: ProjectDetailCostBudget[];
   outsourcing: ProjectDetailOutsourcing[];
   cashflow: ProjectDetailCashflowPoint[];
+  photos: ProjectDetailPhoto[];
+}
+
+export interface UploadUrlRequest {
+  /** @minLength 1 */
+  name: string;
+  /** @minimum 1 */
+  size: number;
+  /** @minLength 1 */
+  contentType: string;
+}
+
+export interface UploadUrlResponse {
+  uploadURL: string;
+  objectPath: string;
+  metadata?: UploadUrlRequest;
+}
+
+export interface ErrorEnvelope {
+  error: string;
 }
 
 export interface HealthStatus {

@@ -9,6 +9,7 @@ import {
   pdCostBudgetTable,
   pdOutsourcingTable,
   pdCashflowMonthlyTable,
+  pdPhotosTable,
 } from "@workspace/db";
 import {
   GetProjectdetailQueryParams,
@@ -24,7 +25,7 @@ const num = (v: string | null) => (v == null ? null : Number(v));
 const str = (v: number | null | undefined) => (v == null ? null : String(v));
 
 async function loadDetail(projectName: string) {
-  const [overviewRows, progress, milestones, costEstimation, costBudget, outsourcing, cashflow] = await Promise.all([
+  const [overviewRows, progress, milestones, costEstimation, costBudget, outsourcing, cashflow, photos] = await Promise.all([
     db
       .select()
       .from(pdOverviewTable)
@@ -59,6 +60,11 @@ async function loadDetail(projectName: string) {
       .from(pdCashflowMonthlyTable)
       .where(eq(pdCashflowMonthlyTable.projectName, projectName))
       .orderBy(asc(pdCashflowMonthlyTable.year), asc(pdCashflowMonthlyTable.month)),
+    db
+      .select()
+      .from(pdPhotosTable)
+      .where(eq(pdPhotosTable.projectName, projectName))
+      .orderBy(asc(pdPhotosTable.sortOrder), asc(pdPhotosTable.id)),
   ]);
 
   const ov = overviewRows[0];
@@ -115,6 +121,7 @@ async function loadDetail(projectName: string) {
       cashOut: num(c.cashOut),
       equivalent: num(c.equivalent),
     })),
+    photos: photos.map((p) => ({ objectPath: p.objectPath })),
   };
 }
 
@@ -142,6 +149,11 @@ router.put("/projectdetail", requireAdmin, async (req, res) => {
   const body = parsed.data;
   const projectName = body.projectName;
 
+  if (body.photos.some((p) => !/^\/objects\/[\w\-./]+$/.test(p.objectPath))) {
+    res.status(400).json({ error: "잘못된 사진 경로입니다." });
+    return;
+  }
+
   try {
     await db.transaction(async (tx) => {
       await tx.delete(pdOverviewTable).where(eq(pdOverviewTable.projectName, projectName));
@@ -151,6 +163,7 @@ router.put("/projectdetail", requireAdmin, async (req, res) => {
       await tx.delete(pdCostBudgetTable).where(eq(pdCostBudgetTable.projectName, projectName));
       await tx.delete(pdOutsourcingTable).where(eq(pdOutsourcingTable.projectName, projectName));
       await tx.delete(pdCashflowMonthlyTable).where(eq(pdCashflowMonthlyTable.projectName, projectName));
+      await tx.delete(pdPhotosTable).where(eq(pdPhotosTable.projectName, projectName));
 
       const ov = body.overview;
       if (ov.contractAmount != null || ov.startDate != null || ov.endDate != null) {
@@ -236,6 +249,15 @@ router.put("/projectdetail", requireAdmin, async (req, res) => {
             cashIn: str(c.cashIn),
             cashOut: str(c.cashOut),
             equivalent: str(c.equivalent),
+          })),
+        );
+      }
+      if (body.photos.length > 0) {
+        await tx.insert(pdPhotosTable).values(
+          body.photos.map((p, i) => ({
+            projectName,
+            objectPath: p.objectPath,
+            sortOrder: i,
           })),
         );
       }
