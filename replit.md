@@ -22,10 +22,11 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
-- DB schema: `lib/db/src/schema/` — `cashflow.ts` (자금수지 cf_projects/cf_monthly_amounts), `salescost.ts` (매출/원가 sc_sites/sc_monthly)
+- DB schema: `lib/db/src/schema/` — `cashflow.ts` (자금수지 cf_projects/cf_monthly_amounts), `salescost.ts` (매출/원가 sc_sites/sc_monthly), `mgmtreport.ts` (경영관리보고회 mr_projects/mr_monthly/mr_annual/mr_pnl)
 - API contract: `lib/api-spec/openapi.yaml` (codegen via Orval → hooks/zod)
-- API routes: `artifacts/api-server/src/routes/` (`cashflow.ts`, `salescost.ts`)
-- Excel importers: `scripts/src/import-cashflow.ts`, `scripts/src/import-salescost.ts` (`pnpm --filter @workspace/scripts run import-salescost [file] [year]`)
+- API routes: `artifacts/api-server/src/routes/` (`cashflow.ts`, `salescost.ts`, `mgmtreport.ts`)
+- Excel importers: `scripts/src/import-cashflow.ts`, `scripts/src/import-salescost.ts`, `scripts/src/import-mgmtreport.ts` (`pnpm --filter @workspace/scripts run import-mgmtreport [file] [year]`)
+- pims-dashboard-2 main dashboard data: `artifacts/pims-dashboard-2/src/lib/mgmtreportData.ts` (useDashboardData hook derives KPI/실적표/차트 data from /mgmtreport/summary; Excel export reads the same snapshot)
 
 ## Architecture decisions
 

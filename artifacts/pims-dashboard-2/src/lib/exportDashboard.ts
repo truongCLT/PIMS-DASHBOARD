@@ -1,12 +1,8 @@
 import type ExcelJS from "exceljs";
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas-pro";
-import { KPI_DATA } from "../components/KPICards";
-import { SALES_DATA } from "../components/SalesChart";
-import { PROFIT_DATA } from "../components/ProfitChart";
-import { ORDER_STATUS } from "../components/OrderStatus";
 import { CASHFLOW_DATA } from "../components/CashFlowChart";
-import { PERFORMANCE_ROWS } from "../components/PerformanceTable";
+import { getDashboardExportData } from "./mgmtreportData";
 
 function todayStamp(): string {
   const d = new Date();
@@ -227,6 +223,13 @@ function styleRange(
 }
 
 export async function exportDashboardExcel(): Promise<void> {
+  const {
+    kpi: KPI_DATA,
+    salesData: SALES_DATA,
+    profitData: PROFIT_DATA,
+    performanceRows: PERFORMANCE_ROWS,
+    orderStatus: ORDER_STATUS,
+  } = getDashboardExportData();
   const { default: ExcelJS } = await import("exceljs");
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet("경영실적보고", {
@@ -460,7 +463,9 @@ export async function exportDashboardExcel(): Promise<void> {
       ORDER_STATUS.planTotal,
       ORDER_STATUS.ordered,
       ORDER_STATUS.remaining,
-      Math.round((ORDER_STATUS.ordered / ORDER_STATUS.planTotal) * 100) + "%",
+      ORDER_STATUS.planTotal
+        ? Math.round((ORDER_STATUS.ordered / ORDER_STATUS.planTotal) * 100) + "%"
+        : "-",
     ]],
   );
   addDataSheet(

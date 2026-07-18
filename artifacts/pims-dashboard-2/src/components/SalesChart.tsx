@@ -9,26 +9,7 @@ import {
   ResponsiveContainer,
   LabelList,
 } from "recharts";
-import { filterUpToLastMonth } from "../lib/monthRange";
-
-const RAW_SALES_DATA = [
-  { month: "1월", net: 82, report: null, plan: 85, actual: 88 },
-  { month: "2월", net: 86, report: null, plan: 88, actual: 84 },
-  { month: "3월", net: 92, report: null, plan: 92, actual: 95 },
-  { month: "4월", net: 90, report: null, plan: 90, actual: 101 },
-  { month: "5월", net: 98, report: null, plan: 98, actual: 98 },
-  { month: "6월", net: 99, report: null, plan: 110, actual: 99 },
-  { month: "7월", net: 100, report: null, plan: 100, actual: 100 },
-  { month: "8월", net: 103, report: null, plan: 102, actual: 91 },
-  { month: "9월", net: null, report: null, plan: 109, actual: 85 },
-];
-
-export const SALES_DATA = RAW_SALES_DATA.map((d) => ({
-  ...d,
-  rate: d.plan && d.actual != null ? Math.round((d.actual / d.plan) * 100) : null,
-}));
-
-const VISIBLE_SALES_DATA = filterUpToLastMonth(SALES_DATA, (r) => r.month);
+import { useDashboardData, type SalesRow } from "../lib/mgmtreportData";
 
 const PLAN_COLOR = "#2b5cad";
 const ACTUAL_COLOR = "#2e8b3d";
@@ -38,7 +19,8 @@ const RATE_COLOR = "#e67e22";
 const BadgeLabel = (fill: string) => (props: any) => {
   const { x, y, value } = props;
   if (value == null || x == null || y == null) return null;
-  const w = 34;
+  const text = Number(value).toLocaleString("ko-KR");
+  const w = Math.max(34, text.length * 7 + 10);
   const h = 21;
   const bx = x - w / 2;
   const by = y - h - 9;
@@ -55,7 +37,7 @@ const BadgeLabel = (fill: string) => (props: any) => {
         fontSize={10.5}
         fontWeight={700}
       >
-        {value}
+        {text}
       </text>
     </g>
   );
@@ -69,7 +51,7 @@ const BadgeLabel = (fill: string) => (props: any) => {
  * plan <= actual  →  plan is lower (or equal)  →  PlanRateLabel renders
  * actual  < plan  →  actual is lower            →  ActualRateLabel renders
  */
-const makePlanRateLabel = (chartData: typeof VISIBLE_SALES_DATA) => (props: any) => {
+const makePlanRateLabel = (chartData: SalesRow[]) => (props: any) => {
   const { x, y, index } = props;
   if (x == null || y == null || index == null) return null;
   const d = chartData[index];
@@ -82,7 +64,7 @@ const makePlanRateLabel = (chartData: typeof VISIBLE_SALES_DATA) => (props: any)
   );
 };
 
-const makeActualRateLabel = (chartData: typeof VISIBLE_SALES_DATA) => (props: any) => {
+const makeActualRateLabel = (chartData: SalesRow[]) => (props: any) => {
   const { x, y, index } = props;
   if (x == null || y == null || index == null) return null;
   const d = chartData[index];
@@ -104,8 +86,8 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return (
     <div style={{ backgroundColor: "#fff", border: "1px solid #d0dce8", borderRadius: "4px", padding: "8px 10px", fontSize: "11px" }}>
       <div style={{ fontWeight: 700, marginBottom: "4px", color: "#1a2d4d" }}>{label}</div>
-      {plan && <div style={{ color: PLAN_COLOR }}>매출(계획): {plan.value}</div>}
-      {actual && <div style={{ color: ACTUAL_COLOR }}>매출(실적 및 전망): {actual.value}</div>}
+      {plan && <div style={{ color: PLAN_COLOR }}>매출(계획): {Number(plan.value).toLocaleString("ko-KR")}</div>}
+      {actual && <div style={{ color: ACTUAL_COLOR }}>매출(실적 및 전망): {Number(actual.value).toLocaleString("ko-KR")}</div>}
       {rate != null && (
         <div style={{ color: RATE_COLOR, fontWeight: 700, marginTop: "4px" }}>달성률: {rate}%</div>
       )}
@@ -115,8 +97,10 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 export function SalesChart() {
   const [viewType, setViewType] = useState<"net" | "report">("net");
-  const PlanRateLabel = makePlanRateLabel(VISIBLE_SALES_DATA);
-  const ActualRateLabel = makeActualRateLabel(VISIBLE_SALES_DATA);
+  const { derived, isError } = useDashboardData();
+  const visibleData = derived ? derived.salesData.slice(0, derived.month) : [];
+  const PlanRateLabel = makePlanRateLabel(visibleData);
+  const ActualRateLabel = makeActualRateLabel(visibleData);
 
   return (
     <div style={{
@@ -143,8 +127,13 @@ export function SalesChart() {
 
       {/* Chart */}
       <div style={{ flex: 1, minHeight: "160px" }}>
+        {visibleData.length === 0 ? (
+          <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", color: "#888" }}>
+            {isError ? "데이터를 불러오지 못했습니다." : "데이터 로딩 중…"}
+          </div>
+        ) : (
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={VISIBLE_SALES_DATA} margin={{ top: 8, right: 18, left: -20, bottom: 4 }}>
+          <ComposedChart data={visibleData} margin={{ top: 36, right: 18, left: -10, bottom: 4 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e8f0f8" vertical={false} />
             <XAxis
               dataKey="month"
@@ -154,9 +143,9 @@ export function SalesChart() {
               padding={{ left: 18, right: 6 }}
             />
             <YAxis
-              domain={[60, 130]}
-              ticks={[60, 70, 80, 90, 100, 110, 120, 130]}
+              domain={["auto", "auto"]}
               tick={{ fontSize: 10, fill: "#666" }}
+              tickFormatter={(v: number) => v.toLocaleString("ko-KR")}
               axisLine={false}
               tickLine={false}
             />
@@ -193,6 +182,7 @@ export function SalesChart() {
             </Line>
           </ComposedChart>
         </ResponsiveContainer>
+        )}
       </div>
 
       {/* Legend + Toggle */}

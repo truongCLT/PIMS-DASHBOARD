@@ -1,15 +1,13 @@
 import React from "react";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
-
-export const ORDER_STATUS = {
-  planTotal: 2000,
-  ordered: 1250,
-  remaining: 750,
-};
+import { useDashboardData } from "../lib/mgmtreportData";
 
 export function OrderStatus() {
-  const { planTotal, ordered, remaining } = ORDER_STATUS;
-  const pct = Math.round((ordered / planTotal) * 100);
+  const { derived } = useDashboardData();
+  const planTotal = derived?.orderStatus.planTotal ?? 0;
+  const ordered = derived?.orderStatus.ordered ?? 0;
+  const remaining = derived?.orderStatus.remaining ?? 0;
+  const pct = planTotal ? Math.round((ordered / planTotal) * 100) : 0;
 
   const donutData = [
     { name: "수주", value: ordered, color: "#1565c0" },

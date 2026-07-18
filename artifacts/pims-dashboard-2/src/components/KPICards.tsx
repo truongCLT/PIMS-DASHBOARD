@@ -1,4 +1,5 @@
 import React from "react";
+import { useDashboardData } from "../lib/mgmtreportData";
 
 interface KPICardProps {
   title: string;
@@ -53,17 +54,22 @@ function KPICard({ title, plan, actual, achievement, achievementColor = "#00bcd4
   );
 }
 
-export const KPI_DATA = [
-  { title: "당월 매출", plan: 1297, actual: 2360, achievement: "313%", achievementColor: "#00bcd4" },
-  { title: "당월 영업이익", plan: 395, actual: 127, achievement: "31%", achievementColor: "#ff5722" },
-  { title: "연간 누적 매출", plan: 1297, actual: 2360, achievement: "182%", achievementColor: "#00bcd4" },
-  { title: "연간 누적 영업이익", plan: 1297, actual: 2360, achievement: "182%", achievementColor: "#00bcd4" },
-];
+const PLACEHOLDER_TITLES = ["당월 매출", "당월 영업이익", "연간 누적 매출", "연간 누적 영업이익"];
 
 export function KPICards() {
+  const { derived, isError } = useDashboardData();
+
+  const cards = derived?.kpi ?? PLACEHOLDER_TITLES.map((title) => ({
+    title,
+    plan: "-" as const,
+    actual: "-" as const,
+    achievement: isError ? "오류" : "…",
+    achievementColor: "#9fb0cc",
+  }));
+
   return (
     <div style={{ display: "flex", gap: "8px", flex: 4, minWidth: 0 }}>
-      {KPI_DATA.map((kpi) => (
+      {cards.map((kpi) => (
         <KPICard
           key={kpi.title}
           title={kpi.title}

@@ -14,6 +14,8 @@ tags:
     description: Cashflow (자금수지) operations
   - name: salescost
     description: Sales & Costs (매출/원가) operations
+  - name: mgmtreport
+    description: Management Report (경영관리보고회) operations
 paths:
   /cashflow/projects:
     get:
@@ -191,6 +193,61 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiErrorMessage"
+  /mgmtreport/summary:
+    get:
+      operationId: getMgmtreportSummary
+      tags: [mgmtreport]
+      summary: Corporate P&L lines (수주~경상이익), plan vs actual monthly series
+      parameters:
+        - name: year
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Corporate P&L lines in 천 USD
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MgmtreportSummary"
+        "404":
+          description: No data for the requested year
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorMessage"
+  /mgmtreport/projects:
+    get:
+      operationId: listMgmtreportProjects
+      tags: [mgmtreport]
+      summary: Per-project plan vs actual monthly revenue/cogs series and annual outlook
+      parameters:
+        - name: year
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: includeGroups
+          in: query
+          required: false
+          description: Include corporate rollup rows (DECV법인 취합본)
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "200":
+          description: Per-project series in 천 USD
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MgmtreportProjects"
+        "404":
+          description: No data for the requested year
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorMessage"
   /healthz:
     get:
       operationId: healthCheck
@@ -332,6 +389,100 @@ components:
           items:
             $ref: "#/components/schemas/SalescostSiteSeries"
       required: [year, metric, unit, sites]
+    MgmtreportLine:
+      type: object
+      properties:
+        code:
+          type: string
+          description: Line code (new_orders, order_profit, revenue, cogs, gross_profit, sga, op_profit1, op_profit2, finance_cost, interest_income, ordinary_profit, ...)
+        label:
+          type: string
+          description: Original Korean label
+        plan:
+          type: array
+          description: 12 monthly plan values, index 0 = January
+          items:
+            type: number
+        actual:
+          type: array
+          description: 12 monthly actual/forecast values, index 0 = January
+          items:
+            type: number
+        planTotal:
+          type: number
+        actualTotal:
+          type: number
+      required: [code, label, plan, actual, planTotal, actualTotal]
+    MgmtreportSummary:
+      type: object
+      properties:
+        year:
+          type: integer
+        unit:
+          type: string
+          description: Amount unit (천 USD)
+        lines:
+          type: array
+          items:
+            $ref: "#/components/schemas/MgmtreportLine"
+      required: [year, unit, lines]
+    MgmtreportAnnualPoint:
+      type: object
+      properties:
+        year:
+          type: integer
+        scenario:
+          type: string
+          description: actual (전년 실적) or forecast (전망)
+        revenue:
+          type: number
+        cogs:
+          type: number
+      required: [year, scenario, revenue, cogs]
+    MgmtreportProject:
+      type: object
+      properties:
+        name:
+          type: string
+        siteCode:
+          type: string
+          nullable: true
+        isGroup:
+          type: boolean
+          description: True for corporate rollup rows (DECV법인 취합본)
+        revenuePlan:
+          type: array
+          items:
+            type: number
+        revenueActual:
+          type: array
+          items:
+            type: number
+        cogsPlan:
+          type: array
+          items:
+            type: number
+        cogsActual:
+          type: array
+          items:
+            type: number
+        annual:
+          type: array
+          items:
+            $ref: "#/components/schemas/MgmtreportAnnualPoint"
+      required: [name, isGroup, revenuePlan, revenueActual, cogsPlan, cogsActual, annual]
+    MgmtreportProjects:
+      type: object
+      properties:
+        year:
+          type: integer
+        unit:
+          type: string
+        projects:
+          type: array
+          items:
+            $ref: "#/components/schemas/MgmtreportProject"
+      required: [year, unit, projects]
     HealthStatus:
       type: object
       properties:

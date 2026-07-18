@@ -22,9 +22,13 @@ import type {
   CashflowProject,
   GetCashflowAggregateParams,
   GetCashflowMonthlyParams,
+  GetMgmtreportSummaryParams,
   GetSalescostSummaryParams,
   HealthStatus,
+  ListMgmtreportProjectsParams,
   ListSalescostSitesParams,
+  MgmtreportProjects,
+  MgmtreportSummary,
   SalescostSites,
   SalescostSummary
 } from './api.schemas';
@@ -457,6 +461,174 @@ export function useListSalescostSites<TData = Awaited<ReturnType<typeof listSale
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getListSalescostSitesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetMgmtreportSummaryUrl = (params: GetMgmtreportSummaryParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/mgmtreport/summary?${stringifiedParams}` : `/api/mgmtreport/summary`
+}
+
+/**
+ * @summary Corporate P&L lines (수주~경상이익), plan vs actual monthly series
+ */
+export const getMgmtreportSummary = async (params: GetMgmtreportSummaryParams, options?: RequestInit): Promise<MgmtreportSummary> => {
+
+  return customFetch<MgmtreportSummary>(getGetMgmtreportSummaryUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMgmtreportSummaryQueryKey = (params?: GetMgmtreportSummaryParams,) => {
+    return [
+    `/api/mgmtreport/summary`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetMgmtreportSummaryQueryOptions = <TData = Awaited<ReturnType<typeof getMgmtreportSummary>>, TError = ErrorType<ApiErrorMessage>>(params: GetMgmtreportSummaryParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMgmtreportSummary>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMgmtreportSummaryQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMgmtreportSummary>>> = ({ signal }) => getMgmtreportSummary(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMgmtreportSummary>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMgmtreportSummaryQueryResult = NonNullable<Awaited<ReturnType<typeof getMgmtreportSummary>>>
+export type GetMgmtreportSummaryQueryError = ErrorType<ApiErrorMessage>
+
+
+/**
+ * @summary Corporate P&L lines (수주~경상이익), plan vs actual monthly series
+ */
+
+export function useGetMgmtreportSummary<TData = Awaited<ReturnType<typeof getMgmtreportSummary>>, TError = ErrorType<ApiErrorMessage>>(
+ params: GetMgmtreportSummaryParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMgmtreportSummary>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMgmtreportSummaryQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListMgmtreportProjectsUrl = (params: ListMgmtreportProjectsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/mgmtreport/projects?${stringifiedParams}` : `/api/mgmtreport/projects`
+}
+
+/**
+ * @summary Per-project plan vs actual monthly revenue/cogs series and annual outlook
+ */
+export const listMgmtreportProjects = async (params: ListMgmtreportProjectsParams, options?: RequestInit): Promise<MgmtreportProjects> => {
+
+  return customFetch<MgmtreportProjects>(getListMgmtreportProjectsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListMgmtreportProjectsQueryKey = (params?: ListMgmtreportProjectsParams,) => {
+    return [
+    `/api/mgmtreport/projects`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListMgmtreportProjectsQueryOptions = <TData = Awaited<ReturnType<typeof listMgmtreportProjects>>, TError = ErrorType<ApiErrorMessage>>(params: ListMgmtreportProjectsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMgmtreportProjects>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListMgmtreportProjectsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listMgmtreportProjects>>> = ({ signal }) => listMgmtreportProjects(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listMgmtreportProjects>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListMgmtreportProjectsQueryResult = NonNullable<Awaited<ReturnType<typeof listMgmtreportProjects>>>
+export type ListMgmtreportProjectsQueryError = ErrorType<ApiErrorMessage>
+
+
+/**
+ * @summary Per-project plan vs actual monthly revenue/cogs series and annual outlook
+ */
+
+export function useListMgmtreportProjects<TData = Awaited<ReturnType<typeof listMgmtreportProjects>>, TError = ErrorType<ApiErrorMessage>>(
+ params: ListMgmtreportProjectsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMgmtreportProjects>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListMgmtreportProjectsQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

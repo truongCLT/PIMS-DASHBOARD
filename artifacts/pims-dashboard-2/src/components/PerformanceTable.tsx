@@ -1,43 +1,10 @@
 import React from "react";
-
-export const PERFORMANCE_ROWS = [
-  {
-    label: "수주",
-    planM: "139,957", actualM: "139,957", achM: "100%",
-    planY: "139,957", forecastY: "139,957", achY: "100%",
-  },
-  {
-    label: "매출",
-    planM: "9,132", actualM: "11,423", achM: "125%",
-    planY: "100,037", forecastY: "101,636", achY: "102%",
-  },
-  {
-    label: "매출이익",
-    planM: "1,350", actualM: "3,456", achM: "256%",
-    planY: "14,631", forecastY: "16,771", achY: "115%",
-    sub: "14.9%", subActual: "30.3%", subForecast: "14.6%", subAch: "16.5%",
-  },
-  {
-    label: "판관비",
-    planM: "684", actualM: "445", achM: "65%",
-    planY: "3,480", forecastY: "3,055", achY: "88%",
-    sub: "7.5%", subActual: "3.9%", subForecast: "3.5%", subAch: "3.0%",
-  },
-  {
-    label: "영업이익",
-    planM: "666", actualM: "3,012", achM: "452%",
-    planY: "11,151", forecastY: "13,717", achY: "123%",
-    sub: "7.3%", subActual: "26.4%", subForecast: "11.1%", subAch: "13.5%",
-  },
-  {
-    label: "경상이익",
-    planM: "1,781", actualM: "3,840", achM: "216%",
-    planY: "13,339", forecastY: "15,430", achY: "116%",
-    sub: "19.5%", subActual: "33.6%", subForecast: "13.3%", subAch: "15.2%",
-  },
-];
+import { useDashboardData } from "../lib/mgmtreportData";
 
 export function PerformanceTable() {
+  const { derived, isError } = useDashboardData();
+  const rows = derived?.performanceRows ?? [];
+
   return (
     <div style={{
       backgroundColor: "#fff",
@@ -71,7 +38,14 @@ export function PerformanceTable() {
             </tr>
           </thead>
           <tbody>
-            {PERFORMANCE_ROWS.map((row, i) => (
+            {rows.length === 0 && (
+              <tr>
+                <td colSpan={7} style={{ padding: "12px 6px", textAlign: "center", color: "#888" }}>
+                  {isError ? "데이터를 불러오지 못했습니다." : "데이터 로딩 중…"}
+                </td>
+              </tr>
+            )}
+            {rows.map((row, i) => (
               <React.Fragment key={row.label}>
                 <tr style={{ borderBottom: row.sub ? "none" : "1px solid #e8f0f8", backgroundColor: i % 2 === 0 ? "#fff" : "#f8fbff" }}>
                   <td style={{ padding: "4px 6px", color: "#333", fontWeight: "500" }}>{row.label}</td>

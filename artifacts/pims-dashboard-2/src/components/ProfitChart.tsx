@@ -1,32 +1,56 @@
 import React from "react";
-import { filterUpToLastMonth } from "../lib/monthRange";
-
-export const PROFIT_DATA = [
-  { m: "1월", op: 320, opPct: "9%", non: 40, total: 500, totalPct: "10%", sga: "-180", sgaPct: "6%", ord: 360, ordPct: "9%", con: "80%", svc: "20%" },
-  { m: "2월", op: 350, opPct: "9%", non: 30, total: 540, totalPct: "11%", sga: "-190", sgaPct: "7%", ord: 380, ordPct: "9%", con: "81%", svc: "19%" },
-  { m: "3월", op: 370, opPct: "10%", non: 25, total: 580, totalPct: "12%", sga: "-210", sgaPct: "8%", ord: 395, ordPct: "11%", con: "85%", svc: "15%" },
-  { m: "4월", op: 390, opPct: "11%", non: 35, total: 620, totalPct: "12%", sga: "-230", sgaPct: "8%", ord: 425, ordPct: "12%", con: "82%", svc: "18%" },
-  { m: "5월", op: 420, opPct: "12%", non: 30, total: 660, totalPct: "13%", sga: "-240", sgaPct: "9%", ord: 450, ordPct: "12%", con: "78%", svc: "22%" },
-  { m: "6월", op: 450, opPct: "13%", non: 40, total: 700, totalPct: "14%", sga: "-250", sgaPct: "10%", ord: 490, ordPct: "13%", con: "80%", svc: "20%" },
-];
-
-const VISIBLE_PROFIT_DATA = filterUpToLastMonth(PROFIT_DATA, (r) => r.m);
+import { useDashboardData } from "../lib/mgmtreportData";
 
 const NAVY = "#3d5a8f";
 const GREEN = "#3e7d4c";
 const LIGHT = "#eef4fb";
 const ORANGE = "#e07b28";
 
-const Y0 = 400;
+const Y0 = 400; // bottom of plot area
 const YTOP = 20;
-const SCALE = (Y0 - YTOP) / 800;
-const y = (v: number) => Y0 - v * SCALE;
+
+function niceStep(raw: number): number {
+  const mag = Math.pow(10, Math.floor(Math.log10(Math.max(raw, 1))));
+  const n = raw / mag;
+  if (n <= 1) return mag;
+  if (n <= 2) return 2 * mag;
+  if (n <= 5) return 5 * mag;
+  return 10 * mag;
+}
 
 export function ProfitChart() {
+  const { derived, isError } = useDashboardData();
+  const data = derived?.profitData ?? [];
+
   const plotLeft = 80;
   const plotRight = 950;
-  const slot = (plotRight - plotLeft) / VISIBLE_PROFIT_DATA.length;
+  const slot = data.length > 0 ? (plotRight - plotLeft) / data.length : 0;
   const barW = 58;
+
+  /*
+   * Consistent accounting identity:
+   *   매출이익(gross) = 영업이익(op) + 판관비(sga)
+   * Stack: navy = op (0..op), light box = sga (op..gross).
+   * 영업외손익(non = 경상이익 - 영업이익②) is a separate green segment
+   * attached above (positive) or below (negative) the gross top.
+   * 경상이익(ord) is the dashed green marker line.
+   */
+  const rawMax = Math.max(
+    1,
+    ...data.map((d) => Math.max(d.total + Math.max(d.non, 0), d.ord, d.op, 0)),
+  );
+  const rawMin = Math.min(
+    0,
+    ...data.map((d) => Math.min(d.op, d.ord, d.total + Math.min(d.non, 0))),
+  );
+  const step = niceStep((rawMax - rawMin) / 4);
+  const maxVal = step * Math.ceil(rawMax / step || 1);
+  const minVal = rawMin < 0 ? -step * Math.ceil(-rawMin / step) : 0;
+  const SCALE = (Y0 - YTOP) / (maxVal - minVal);
+  const y = (v: number) => Y0 - (v - minVal) * SCALE;
+  const gridVals: number[] = [];
+  for (let v = minVal; v <= maxVal + 1e-9; v += step) gridVals.push(v);
+  const yZero = y(0);
 
   return (
     <div style={{
@@ -42,66 +66,83 @@ export function ProfitChart() {
         </button>
       </div>
 
+      {data.length === 0 ? (
+        <div style={{ height: "200px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", color: "#888" }}>
+          {isError ? "데이터를 불러오지 못했습니다." : "데이터 로딩 중…"}
+        </div>
+      ) : (
       <svg viewBox="0 0 1000 445" style={{ width: "100%", display: "block" }}>
         {/* Grid lines + y labels */}
-        {[0, 200, 400, 600, 800].map((v) => (
+        {gridVals.map((v) => (
           <g key={v}>
             <line x1={plotLeft} y1={y(v)} x2={plotRight} y2={y(v)} stroke={v === 0 ? "#9aa8ba" : "#e6edf5"} strokeWidth={v === 0 ? 1.5 : 1} />
-            <text x={plotLeft - 12} y={y(v) + 7} textAnchor="end" fontSize="22" fill="#333">{v}</text>
+            <text x={plotLeft - 12} y={y(v) + 7} textAnchor="end" fontSize="22" fill="#333">{v.toLocaleString("ko-KR")}</text>
           </g>
         ))}
 
-        {VISIBLE_PROFIT_DATA.map((d, i) => {
+        {data.map((d, i) => {
           const cx = plotLeft + slot * (i + 0.5);
           const bx = cx - barW / 2;
-          const yOp = y(d.op);
-          const yNon = y(d.op + d.non);
-          const yTotal = y(d.total);
+          const gross = d.total; // = op + sga
+          const yOpTop = y(Math.max(d.op, 0));
+          const yOpBot = y(Math.min(d.op, 0));
+          const yGross = y(gross);
+          const nonTop = gross + Math.max(d.non, 0);
+          const nonBot = gross + Math.min(d.non, 0);
           const yOrd = y(d.ord);
           const brX = bx + barW + 7;
+          const labelTopY = Math.min(y(nonTop), yGross, yOrd);
 
           return (
             <g key={d.m}>
-              {/* 영업이익 (navy) */}
-              <rect x={bx} y={yOp} width={barW} height={Y0 - yOp} fill={NAVY} />
-              <text x={cx} y={(yOp + Y0) / 2 - 4} textAnchor="middle" fontSize="24" fontWeight="700" fill="#fff">{d.op}</text>
-              <text x={cx} y={(yOp + Y0) / 2 + 20} textAnchor="middle" fontSize="19" fill="#fff">({d.opPct})</text>
+              {/* 영업이익 (navy, from zero line) */}
+              <rect x={bx} y={yOpTop} width={barW} height={Math.max(yOpBot - yOpTop, 0)} fill={NAVY} />
+              {yOpBot - yOpTop > 44 && (
+                <>
+                  <text x={cx} y={(yOpTop + yOpBot) / 2 - 4} textAnchor="middle" fontSize="24" fontWeight="700" fill="#fff">{d.op.toLocaleString("ko-KR")}</text>
+                  <text x={cx} y={(yOpTop + yOpBot) / 2 + 20} textAnchor="middle" fontSize="19" fill="#fff">({d.opPct})</text>
+                </>
+              )}
 
-              {/* 영업외수익 (green) */}
-              <rect x={bx} y={yNon} width={barW} height={yOp - yNon} fill={GREEN} />
-              <text x={cx} y={(yNon + yOp) / 2 + 7} textAnchor="middle" fontSize="19" fontWeight="700" fill="#fff">+{d.non}</text>
+              {/* 판관비 영역 (light, navy border): op → gross */}
+              <rect x={bx} y={Math.min(yGross, yOpTop)} width={barW} height={Math.abs(yOpTop - yGross)} fill={LIGHT} stroke={NAVY} strokeWidth="1.5" />
 
-              {/* 매출이익 (light, navy border) */}
-              <rect x={bx} y={yTotal} width={barW} height={yNon - yTotal} fill={LIGHT} stroke={NAVY} strokeWidth="1.5" />
-              <text x={cx} y={(yTotal + yNon) / 2 - 2} textAnchor="middle" fontSize="14" fill="#1a2d4d">건설: {d.con}</text>
-              <text x={cx} y={(yTotal + yNon) / 2 + 15} textAnchor="middle" fontSize="14" fill="#1a2d4d">용역: {d.svc}</text>
+              {/* 영업외손익 (green segment above/below gross top) */}
+              <rect x={bx} y={y(nonTop)} width={barW} height={Math.max(y(nonBot) - y(nonTop), 0)} fill={GREEN} />
+              {Math.abs(y(nonBot) - y(nonTop)) > 22 && (
+                <text x={cx} y={(y(nonTop) + y(nonBot)) / 2 + 7} textAnchor="middle" fontSize="19" fontWeight="700" fill="#fff">{d.non >= 0 ? "+" : ""}{d.non.toLocaleString("ko-KR")}</text>
+              )}
 
-              {/* Total above bar */}
-              <text x={cx} y={yTotal - 32} textAnchor="middle" fontSize="26" fontWeight="700" fill={NAVY}>{d.total}</text>
-              <text x={cx} y={yTotal - 10} textAnchor="middle" fontSize="20" fontWeight="600" fill={NAVY}>({d.totalPct})</text>
+              {/* 매출이익 label above bar */}
+              <text x={cx} y={labelTopY - 32} textAnchor="middle" fontSize="26" fontWeight="700" fill={NAVY}>{gross.toLocaleString("ko-KR")}</text>
+              <text x={cx} y={labelTopY - 10} textAnchor="middle" fontSize="20" fontWeight="600" fill={NAVY}>({d.totalPct})</text>
 
-              {/* 판관비 bracket (orange) */}
-              <path d={`M ${brX} ${yTotal} h 7 V ${yNon} h -7`} fill="none" stroke={ORANGE} strokeWidth="2" />
-              <text x={brX + 13} y={(yTotal + yNon) / 2 - 4} fontSize="14" fill={ORANGE}>판관비</text>
-              <text x={brX + 13} y={(yTotal + yNon) / 2 + 13} fontSize="14" fill={ORANGE}>{d.sga}({d.sgaPct})</text>
+              {/* 판관비 bracket (orange): op → gross */}
+              <path d={`M ${brX} ${yGross} h 7 V ${yOpTop} h -7`} fill="none" stroke={ORANGE} strokeWidth="2" />
+              <text x={brX + 13} y={(yGross + yOpTop) / 2 - 4} fontSize="14" fill={ORANGE}>판관비</text>
+              <text x={brX + 13} y={(yGross + yOpTop) / 2 + 13} fontSize="14" fill={ORANGE}>{d.sga}({d.sgaPct})</text>
 
               {/* 경상이익 (green dot + dashed leader + label) */}
               <line x1={bx - 26} y1={yOrd} x2={bx} y2={yOrd} stroke={GREEN} strokeWidth="1.5" strokeDasharray="4 3" />
               <circle cx={bx - 3} cy={yOrd} r="4" fill={GREEN} />
-              <text x={bx - 2} y={yOrd + 19} textAnchor="end" fontSize="14" fill={GREEN}>{d.ord}({d.ordPct})</text>
+              <text x={bx - 2} y={yOrd + 19} textAnchor="end" fontSize="14" fill={GREEN}>{d.ord.toLocaleString("ko-KR")}({d.ordPct})</text>
 
               {/* Month label */}
               <text x={cx} y={Y0 + 32} textAnchor="middle" fontSize="24" fontWeight="600" fill="#333">{d.m}</text>
             </g>
           );
         })}
+
+        {/* zero baseline on top of bars */}
+        <line x1={plotLeft} y1={yZero} x2={plotRight} y2={yZero} stroke="#9aa8ba" strokeWidth={1.5} />
       </svg>
+      )}
 
       {/* Legend */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginTop: "6px", justifyContent: "center" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
           <div style={{ width: "14px", height: "11px", backgroundColor: LIGHT, border: `1.5px solid ${NAVY}`, borderRadius: "2px" }} />
-          <span style={{ fontSize: "11px", color: "#333" }}>매출이익</span>
+          <span style={{ fontSize: "11px", color: "#333" }}>판관비 영역</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
           <div style={{ width: "14px", height: "11px", backgroundColor: NAVY, borderRadius: "2px" }} />
@@ -109,7 +150,7 @@ export function ProfitChart() {
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
           <div style={{ width: "14px", height: "11px", backgroundColor: GREEN, borderRadius: "2px" }} />
-          <span style={{ fontSize: "11px", color: "#333" }}>영업외수익</span>
+          <span style={{ fontSize: "11px", color: "#333" }}>영업외손익</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
           <svg width="10" height="14" viewBox="0 0 10 14">

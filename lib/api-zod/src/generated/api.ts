@@ -127,6 +127,58 @@ export const ListSalescostSitesResponse = zod.object({
 
 
 /**
+ * @summary Corporate P&L lines (수주~경상이익), plan vs actual monthly series
+ */
+export const GetMgmtreportSummaryQueryParams = zod.object({
+  "year": zod.coerce.number()
+})
+
+export const GetMgmtreportSummaryResponse = zod.object({
+  "year": zod.number(),
+  "unit": zod.string().describe('Amount unit (천 USD)'),
+  "lines": zod.array(zod.object({
+  "code": zod.string().describe('Line code (new_orders, order_profit, revenue, cogs, gross_profit, sga, op_profit1, op_profit2, finance_cost, interest_income, ordinary_profit, ...)'),
+  "label": zod.string().describe('Original Korean label'),
+  "plan": zod.array(zod.number()).describe('12 monthly plan values, index 0 = January'),
+  "actual": zod.array(zod.number()).describe('12 monthly actual\/forecast values, index 0 = January'),
+  "planTotal": zod.number(),
+  "actualTotal": zod.number()
+}))
+})
+
+
+/**
+ * @summary Per-project plan vs actual monthly revenue/cogs series and annual outlook
+ */
+export const listMgmtreportProjectsQueryIncludeGroupsDefault = false;
+
+export const ListMgmtreportProjectsQueryParams = zod.object({
+  "year": zod.coerce.number(),
+  "includeGroups": zod.coerce.boolean().default(listMgmtreportProjectsQueryIncludeGroupsDefault).describe('Include corporate rollup rows (DECV법인 취합본)')
+})
+
+export const ListMgmtreportProjectsResponse = zod.object({
+  "year": zod.number(),
+  "unit": zod.string(),
+  "projects": zod.array(zod.object({
+  "name": zod.string(),
+  "siteCode": zod.string().nullish(),
+  "isGroup": zod.boolean().describe('True for corporate rollup rows (DECV법인 취합본)'),
+  "revenuePlan": zod.array(zod.number()),
+  "revenueActual": zod.array(zod.number()),
+  "cogsPlan": zod.array(zod.number()),
+  "cogsActual": zod.array(zod.number()),
+  "annual": zod.array(zod.object({
+  "year": zod.number(),
+  "scenario": zod.string().describe('actual (전년 실적) or forecast (전망)'),
+  "revenue": zod.number(),
+  "cogs": zod.number()
+}))
+}))
+})
+
+
+/**
  * Returns server health status
  * @summary Health check
  */

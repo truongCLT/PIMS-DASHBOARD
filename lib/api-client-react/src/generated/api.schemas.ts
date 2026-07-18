@@ -77,6 +77,52 @@ export interface SalescostSites {
   sites: SalescostSiteSeries[];
 }
 
+export interface MgmtreportLine {
+  /** Line code (new_orders, order_profit, revenue, cogs, gross_profit, sga, op_profit1, op_profit2, finance_cost, interest_income, ordinary_profit, ...) */
+  code: string;
+  /** Original Korean label */
+  label: string;
+  /** 12 monthly plan values, index 0 = January */
+  plan: number[];
+  /** 12 monthly actual/forecast values, index 0 = January */
+  actual: number[];
+  planTotal: number;
+  actualTotal: number;
+}
+
+export interface MgmtreportSummary {
+  year: number;
+  /** Amount unit (천 USD) */
+  unit: string;
+  lines: MgmtreportLine[];
+}
+
+export interface MgmtreportAnnualPoint {
+  year: number;
+  /** actual (전년 실적) or forecast (전망) */
+  scenario: string;
+  revenue: number;
+  cogs: number;
+}
+
+export interface MgmtreportProject {
+  name: string;
+  siteCode?: string | null;
+  /** True for corporate rollup rows (DECV법인 취합본) */
+  isGroup: boolean;
+  revenuePlan: number[];
+  revenueActual: number[];
+  cogsPlan: number[];
+  cogsActual: number[];
+  annual: MgmtreportAnnualPoint[];
+}
+
+export interface MgmtreportProjects {
+  year: number;
+  unit: string;
+  projects: MgmtreportProject[];
+}
+
 export interface HealthStatus {
   status: string;
 }
@@ -147,4 +193,16 @@ export const ListSalescostSitesMetric = {
   sga: 'sga',
   employees: 'employees',
 } as const;
+
+export type GetMgmtreportSummaryParams = {
+year: number;
+};
+
+export type ListMgmtreportProjectsParams = {
+year: number;
+/**
+ * Include corporate rollup rows (DECV법인 취합본)
+ */
+includeGroups?: boolean;
+};
 
