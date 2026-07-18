@@ -3,9 +3,12 @@ import { TopNav } from "./components/TopNav";
 import { Sidebar } from "./components/Sidebar";
 import { Dashboard } from "./components/Dashboard";
 import { ProjectDashboard } from "./components/ProjectDashboard";
+import { ServiceProjectDashboard } from "./components/ServiceProjectDashboard";
+import { getProjectDivision } from "./data/projects";
 
 function App() {
   const [selectedProject, setSelectedProject] = useState<string | null>(null);
+  const division = selectedProject ? getProjectDivision(selectedProject) : null;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh", overflow: "hidden", fontFamily: "'Noto Sans KR', 'Inter', sans-serif" }}>
@@ -17,7 +20,11 @@ function App() {
           onSelectTotal={() => setSelectedProject(null)}
         />
         {selectedProject ? (
-          <ProjectDashboard projectName={selectedProject} />
+          division === "용역" ? (
+            <ServiceProjectDashboard projectName={selectedProject} />
+          ) : (
+            <ProjectDashboard projectName={selectedProject} />
+          )
         ) : (
           <Dashboard />
         )}

@@ -8,7 +8,7 @@ import { CashflowTab } from "./CashflowTab";
 import { SaleProfitTab } from "./SaleProfitTab";
 
 /* ---------- small SVG donut ---------- */
-function Donut({
+export function Donut({
   percent,
   size = 110,
   stroke = 14,
@@ -74,7 +74,7 @@ function Donut({
 }
 
 /* ---------- simple vertical bar ---------- */
-function MiniBar({
+export function MiniBar({
   value,
   max,
   color,

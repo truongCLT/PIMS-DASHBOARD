@@ -13,6 +13,17 @@ export interface ProjectGroup {
   divisions: ProjectDivision[];
 }
 
+export function getProjectDivision(projectName: string): string | null {
+  for (const group of PROJECT_GROUPS) {
+    for (const division of group.divisions) {
+      if (division.projects.some((p) => p.name === projectName)) {
+        return division.label;
+      }
+    }
+  }
+  return null;
+}
+
 export const PROJECT_GROUPS: ProjectGroup[] = [
   {
     label: "DECV",
