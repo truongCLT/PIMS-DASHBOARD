@@ -5,6 +5,7 @@ import { ConstructionProgressTab } from "./ConstructionProgressTab";
 import { CostingTab } from "./CostingTab";
 import { OutsourcingTab } from "./OutsourcingTab";
 import { CashflowTab } from "./CashflowTab";
+import { ProjectDataEntryTab } from "./ProjectDataEntryTab";
 import { SaleProfitTab } from "./SaleProfitTab";
 
 /* ---------- small SVG donut ---------- */
@@ -117,7 +118,7 @@ const sectionTitle: React.CSSProperties = {
   marginBottom: "6px",
 };
 
-const SIDE_TABS = ["Overview", "Construction progress", "Sale & Profit", "Costing", "Outsourcing", "Cashflow"];
+const SIDE_TABS = ["Overview", "Construction progress", "Sale & Profit", "Costing", "Outsourcing", "Cashflow", "Data entry"];
 
 const SIDE_TAB_LABELS: Record<string, string> = {
   Overview: "개요",
@@ -126,6 +127,7 @@ const SIDE_TAB_LABELS: Record<string, string> = {
   Costing: "원가",
   Outsourcing: "외주",
   Cashflow: "자금",
+  "Data entry": "데이터 입력",
 };
 
 const YEARS = Array.from({ length: 21 }, (_, i) => 2015 + i); // 2015 ~ 2035
@@ -391,11 +393,15 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
           </div>
         ) : activeTab === "Costing" ? (
           <div style={{ flex: 1, minWidth: 0 }}>
-            <CostingTab />
+            <CostingTab projectName={projectName} />
           </div>
         ) : activeTab === "Outsourcing" ? (
           <div style={{ flex: 1, minWidth: 0 }}>
-            <OutsourcingTab />
+            <OutsourcingTab projectName={projectName} />
+          </div>
+        ) : activeTab === "Data entry" ? (
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <ProjectDataEntryTab projectName={projectName} />
           </div>
         ) : activeTab === "Cashflow" ? (
           <div style={{ flex: 1, minWidth: 0 }}>

@@ -123,9 +123,80 @@ export interface MgmtreportProjects {
   projects: MgmtreportProject[];
 }
 
+export interface ProjectDetailProgressPoint {
+  year: number;
+  /**
+     * @minimum 1
+     * @maximum 12
+     */
+  month: number;
+  planPct?: number | null;
+  actualPct?: number | null;
+  planCumPct?: number | null;
+  actualCumPct?: number | null;
+}
+
+export interface ProjectDetailMilestone {
+  label: string;
+  /** YYYY-MM */
+  planStart?: string | null;
+  planEnd?: string | null;
+  actualStart?: string | null;
+  actualEnd?: string | null;
+}
+
+export type ProjectDetailCostEstimationKind = typeof ProjectDetailCostEstimationKind[keyof typeof ProjectDetailCostEstimationKind];
+
+
+export const ProjectDetailCostEstimationKind = {
+  bidding: 'bidding',
+  execution: 'execution',
+  completion: 'completion',
+} as const;
+
+export interface ProjectDetailCostEstimation {
+  kind: ProjectDetailCostEstimationKind;
+  contractAmount?: number | null;
+  costAmount?: number | null;
+}
+
+export interface ProjectDetailCostBudget {
+  category?: string | null;
+  item: string;
+  budget?: number | null;
+  plan?: number | null;
+  actual?: number | null;
+}
+
+export interface ProjectDetailOutsourcing {
+  trade: string;
+  vendor?: string | null;
+  contractDate?: string | null;
+  changeNo?: string | null;
+  budget?: number | null;
+  resolved?: number | null;
+  thisMonth?: number | null;
+  accum?: number | null;
+}
+
+export interface ProjectDetail {
+  projectName: string;
+  /** Amount unit (천 USD) */
+  unit: string;
+  progress: ProjectDetailProgressPoint[];
+  milestones: ProjectDetailMilestone[];
+  costEstimation: ProjectDetailCostEstimation[];
+  costBudget: ProjectDetailCostBudget[];
+  outsourcing: ProjectDetailOutsourcing[];
+}
+
 export interface HealthStatus {
   status: string;
 }
+
+export type GetProjectdetailParams = {
+projectName: string;
+};
 
 export type GetCashflowMonthlyParams = {
 projectName: string;

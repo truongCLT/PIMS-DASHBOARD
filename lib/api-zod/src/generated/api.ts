@@ -9,6 +9,156 @@ import * as zod from 'zod';
 
 
 /**
+ * @summary Project detail data (progress, milestones, cost, outsourcing)
+ */
+export const GetProjectdetailQueryParams = zod.object({
+  "projectName": zod.coerce.string()
+})
+
+export const getProjectdetailResponseProgressItemMonthMax = 12;
+
+
+
+export const GetProjectdetailResponse = zod.object({
+  "projectName": zod.string(),
+  "unit": zod.string().describe('Amount unit (천 USD)'),
+  "progress": zod.array(zod.object({
+  "year": zod.number(),
+  "month": zod.number().min(1).max(getProjectdetailResponseProgressItemMonthMax),
+  "planPct": zod.number().nullish(),
+  "actualPct": zod.number().nullish(),
+  "planCumPct": zod.number().nullish(),
+  "actualCumPct": zod.number().nullish()
+})),
+  "milestones": zod.array(zod.object({
+  "label": zod.string(),
+  "planStart": zod.string().nullish().describe('YYYY-MM'),
+  "planEnd": zod.string().nullish(),
+  "actualStart": zod.string().nullish(),
+  "actualEnd": zod.string().nullish()
+})),
+  "costEstimation": zod.array(zod.object({
+  "kind": zod.enum(['bidding', 'execution', 'completion']),
+  "contractAmount": zod.number().nullish(),
+  "costAmount": zod.number().nullish()
+})),
+  "costBudget": zod.array(zod.object({
+  "category": zod.string().nullish(),
+  "item": zod.string(),
+  "budget": zod.number().nullish(),
+  "plan": zod.number().nullish(),
+  "actual": zod.number().nullish()
+})),
+  "outsourcing": zod.array(zod.object({
+  "trade": zod.string(),
+  "vendor": zod.string().nullish(),
+  "contractDate": zod.string().nullish(),
+  "changeNo": zod.string().nullish(),
+  "budget": zod.number().nullish(),
+  "resolved": zod.number().nullish(),
+  "thisMonth": zod.number().nullish(),
+  "accum": zod.number().nullish()
+}))
+})
+
+
+/**
+ * @summary Replace all project detail data for a project
+ */
+export const putProjectdetailBodyProgressItemMonthMax = 12;
+
+
+
+export const PutProjectdetailBody = zod.object({
+  "projectName": zod.string(),
+  "unit": zod.string().describe('Amount unit (천 USD)'),
+  "progress": zod.array(zod.object({
+  "year": zod.number(),
+  "month": zod.number().min(1).max(putProjectdetailBodyProgressItemMonthMax),
+  "planPct": zod.number().nullish(),
+  "actualPct": zod.number().nullish(),
+  "planCumPct": zod.number().nullish(),
+  "actualCumPct": zod.number().nullish()
+})),
+  "milestones": zod.array(zod.object({
+  "label": zod.string(),
+  "planStart": zod.string().nullish().describe('YYYY-MM'),
+  "planEnd": zod.string().nullish(),
+  "actualStart": zod.string().nullish(),
+  "actualEnd": zod.string().nullish()
+})),
+  "costEstimation": zod.array(zod.object({
+  "kind": zod.enum(['bidding', 'execution', 'completion']),
+  "contractAmount": zod.number().nullish(),
+  "costAmount": zod.number().nullish()
+})),
+  "costBudget": zod.array(zod.object({
+  "category": zod.string().nullish(),
+  "item": zod.string(),
+  "budget": zod.number().nullish(),
+  "plan": zod.number().nullish(),
+  "actual": zod.number().nullish()
+})),
+  "outsourcing": zod.array(zod.object({
+  "trade": zod.string(),
+  "vendor": zod.string().nullish(),
+  "contractDate": zod.string().nullish(),
+  "changeNo": zod.string().nullish(),
+  "budget": zod.number().nullish(),
+  "resolved": zod.number().nullish(),
+  "thisMonth": zod.number().nullish(),
+  "accum": zod.number().nullish()
+}))
+})
+
+export const putProjectdetailResponseProgressItemMonthMax = 12;
+
+
+
+export const PutProjectdetailResponse = zod.object({
+  "projectName": zod.string(),
+  "unit": zod.string().describe('Amount unit (천 USD)'),
+  "progress": zod.array(zod.object({
+  "year": zod.number(),
+  "month": zod.number().min(1).max(putProjectdetailResponseProgressItemMonthMax),
+  "planPct": zod.number().nullish(),
+  "actualPct": zod.number().nullish(),
+  "planCumPct": zod.number().nullish(),
+  "actualCumPct": zod.number().nullish()
+})),
+  "milestones": zod.array(zod.object({
+  "label": zod.string(),
+  "planStart": zod.string().nullish().describe('YYYY-MM'),
+  "planEnd": zod.string().nullish(),
+  "actualStart": zod.string().nullish(),
+  "actualEnd": zod.string().nullish()
+})),
+  "costEstimation": zod.array(zod.object({
+  "kind": zod.enum(['bidding', 'execution', 'completion']),
+  "contractAmount": zod.number().nullish(),
+  "costAmount": zod.number().nullish()
+})),
+  "costBudget": zod.array(zod.object({
+  "category": zod.string().nullish(),
+  "item": zod.string(),
+  "budget": zod.number().nullish(),
+  "plan": zod.number().nullish(),
+  "actual": zod.number().nullish()
+})),
+  "outsourcing": zod.array(zod.object({
+  "trade": zod.string(),
+  "vendor": zod.string().nullish(),
+  "contractDate": zod.string().nullish(),
+  "changeNo": zod.string().nullish(),
+  "budget": zod.number().nullish(),
+  "resolved": zod.number().nullish(),
+  "thisMonth": zod.number().nullish(),
+  "accum": zod.number().nullish()
+}))
+})
+
+
+/**
  * @summary List cashflow projects
  */
 export const ListCashflowProjectsResponseItem = zod.object({

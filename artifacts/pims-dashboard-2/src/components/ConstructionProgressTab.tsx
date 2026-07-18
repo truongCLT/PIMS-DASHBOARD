@@ -12,6 +12,13 @@ import {
 } from "recharts";
 import { Send, MessageSquare } from "lucide-react";
 import projectPhoto from "../assets/project-photo.png";
+import {
+  useProjectDetail,
+  fmtPct,
+  ymToIndex,
+  indexToYmLabel,
+  type ProjectDetail,
+} from "../lib/projectDetailData";
 
 const cardStyle: React.CSSProperties = {
   backgroundColor: "#fff",
@@ -24,6 +31,13 @@ const sectionTitle: React.CSSProperties = {
   fontSize: "11px",
   fontWeight: 600,
   color: "#4472c4",
+};
+
+const emptyStyle: React.CSSProperties = {
+  padding: "24px 0",
+  textAlign: "center",
+  fontSize: "11px",
+  color: "#8a97a8",
 };
 
 function Donut({
@@ -88,55 +102,41 @@ function Donut({
   );
 }
 
-/* ---------- Project lifecycle data (2025-Jan ~ 2025-Dec) ---------- */
-const LIFECYCLE_DATA = [
-  { month: "2025-Jan", plan: 8, actual: 10, planAccum: 1.0, actualAccum: 1.2 },
-  { month: "2025-Feb", plan: 24, actual: 22, planAccum: 2.5, actualAccum: 2.2 },
-  { month: "2025-Mar", plan: 18, actual: 16, planAccum: 3.2, actualAccum: 2.8 },
-  { month: "2025-Apr", plan: 20, actual: 18, planAccum: 4.0, actualAccum: 3.4 },
-  { month: "2025-May", plan: 28, actual: 24, planAccum: 5.5, actualAccum: 4.6 },
-  { month: "2025-Jun", plan: 10, actual: 9, planAccum: 5.8, actualAccum: 4.9 },
-  { month: "2025-July", plan: 12, actual: 14, planAccum: 6.2, actualAccum: 5.4 },
-  { month: "2025-Aug", plan: 38, actual: 30, planAccum: 7.8, actualAccum: 6.4 },
-  { month: "2025-Sep", plan: 24, actual: 26, planAccum: 8.6, actualAccum: 7.2 },
-  { month: "2025-Oct", plan: 20, actual: 24, planAccum: 9.2, actualAccum: 7.8 },
-  { month: "2025-Nov", plan: 14, actual: 20, planAccum: 9.6, actualAccum: 8.2 },
-  { month: "2025-Dec", plan: 36, actual: 38, planAccum: 10.4, actualAccum: 8.8 },
-];
+const MONTH_ABBR = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-/* ---------- Milestone data ---------- */
-/* Positions are fractions (0~1) across the 26-01 ~ 27-02 axis. */
-const MILESTONE_MONTHS = [
-  "26-01", "26-02", "26-03", "26-04", "26-05", "26-06", "26-07",
-  "26-08", "26-09", "26-10", "26-11", "26-12", "27-01", "27-02",
-];
-const TODAY_POS = 5.4 / 14; // dashed "today" line around 26-06
+function MilestoneChart({ milestones }: { milestones: ProjectDetail["milestones"] }) {
+  // 축 범위 계산 (계획/실적 시작~종료 월 전체)
+  const idxs: number[] = [];
+  for (const m of milestones) {
+    for (const ym of [m.planStart, m.planEnd, m.actualStart, m.actualEnd]) {
+      const i = ymToIndex(ym ?? null);
+      if (i != null) idxs.push(i);
+    }
+  }
+  const hasBars = idxs.length > 0;
+  const minIdx = hasBars ? Math.min(...idxs) : 0;
+  const maxIdx = hasBars ? Math.max(...idxs) : 0;
+  const total = hasBars ? maxIdx - minIdx + 1 : 1;
+  const months = hasBars
+    ? Array.from({ length: total }, (_, i) => indexToYmLabel(minIdx + i))
+    : [];
+  const now = new Date();
+  const todayIdx = now.getFullYear() * 12 + now.getMonth();
+  const todayPos = hasBars && todayIdx >= minIdx && todayIdx <= maxIdx + 1 ? (todayIdx - minIdx + 0.5) / total : null;
 
-type Milestone = {
-  label: string;
-  underline?: boolean;
-  plan?: [number, number];   // [startMonthIdx, endMonthIdx] in 0..14
-  actual?: [number, number];
-};
+  const AXIS_LEFT = 150;
 
-const MILESTONES: Milestone[] = [
-  { label: "Commencement", plan: [0.7, 1.0] },
-  { label: "Completion foundation", underline: true, plan: [1.0, 2.0], actual: [1.2, 2.4] },
-  { label: "Completion Basement", underline: true, plan: [1.8, 3.4], actual: [2.2, 4.4] },
-  { label: "Completion Mock-Up", plan: [3.7, 6.8], actual: [4.2, 5.6] },
-  { label: "Super Structure", plan: [2.6, 9.2], actual: [3.6, 5.4] },
-  { label: "Masonry", underline: true, plan: [4.6, 10.2], actual: [4.2, 5.4] },
-  { label: "Drywall", plan: [5.2, 12.6], actual: [5.2, 5.4] },
-  { label: "Water proofing", plan: [6.0, 12.6] },
-  { label: "Floor Plastering", plan: [7.2, 12.6] },
-  { label: "Furniture", underline: true },
-  { label: "FF approval" },
-  { label: "MC approval" },
-  { label: "Completion (Approval)" },
-];
+  const barPos = (start: string | null | undefined, end: string | null | undefined) => {
+    const s = ymToIndex(start ?? null);
+    const e = ymToIndex(end ?? null);
+    if (s == null && e == null) return null;
+    const s2 = s ?? e!;
+    const e2 = e ?? s!;
+    const left = ((s2 - minIdx) / total) * 100;
+    const width = Math.max(((e2 - s2 + 1) / total) * 100, 100 / total / 2);
+    return { left, width };
+  };
 
-function MilestoneChart() {
-  const AXIS_LEFT = 150; // px reserved for labels
   return (
     <div style={cardStyle}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
@@ -152,80 +152,120 @@ function MilestoneChart() {
           </span>
         </div>
       </div>
-      <div style={{ position: "relative", marginTop: "8px" }}>
-        {/* today dashed line */}
-        <div
-          style={{
-            position: "absolute",
-            top: 0,
-            bottom: "18px",
-            left: `calc(${AXIS_LEFT}px + (100% - ${AXIS_LEFT}px) * ${TODAY_POS})`,
-            borderLeft: "2px dashed #f0b429",
-          }}
-        />
-        {MILESTONES.map((m) => (
-          <div key={m.label} style={{ display: "flex", alignItems: "center", height: "22px" }}>
+      {milestones.length === 0 ? (
+        <div style={emptyStyle}>마일스톤 데이터가 없습니다. ( - )</div>
+      ) : (
+        <div style={{ position: "relative", marginTop: "8px" }}>
+          {todayPos != null && (
             <div
               style={{
-                width: `${AXIS_LEFT}px`,
-                minWidth: `${AXIS_LEFT}px`,
-                fontSize: "9px",
-                color: "#333",
-                textDecoration: m.underline ? "underline" : "none",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-                paddingRight: "8px",
+                position: "absolute",
+                top: 0,
+                bottom: "18px",
+                left: `calc(${AXIS_LEFT}px + (100% - ${AXIS_LEFT}px) * ${todayPos})`,
+                borderLeft: "2px dashed #f0b429",
               }}
-            >
-              {m.label}
-            </div>
-            <div style={{ flex: 1, position: "relative", height: "100%" }}>
-              {m.plan && (
+            />
+          )}
+          {milestones.map((m, mi) => {
+            const plan = barPos(m.planStart, m.planEnd);
+            const actual = barPos(m.actualStart, m.actualEnd);
+            return (
+              <div key={`${m.label}-${mi}`} style={{ display: "flex", alignItems: "center", height: "22px" }}>
                 <div
                   style={{
-                    position: "absolute",
-                    top: "3px",
-                    left: `${(m.plan[0] / 14) * 100}%`,
-                    width: `${((m.plan[1] - m.plan[0]) / 14) * 100}%`,
-                    height: "5px",
-                    backgroundColor: "#e02020",
+                    width: `${AXIS_LEFT}px`,
+                    minWidth: `${AXIS_LEFT}px`,
+                    fontSize: "9px",
+                    color: "#333",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                    paddingRight: "8px",
                   }}
-                />
-              )}
-              {m.actual && (
-                <div
-                  style={{
-                    position: "absolute",
-                    top: "11px",
-                    left: `${(m.actual[0] / 14) * 100}%`,
-                    width: `${((m.actual[1] - m.actual[0]) / 14) * 100}%`,
-                    height: "5px",
-                    backgroundColor: "#1e6fdd",
-                  }}
-                />
-              )}
+                >
+                  {m.label}
+                </div>
+                <div style={{ flex: 1, position: "relative", height: "100%" }}>
+                  {plan && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: "3px",
+                        left: `${plan.left}%`,
+                        width: `${plan.width}%`,
+                        height: "5px",
+                        backgroundColor: "#e02020",
+                      }}
+                    />
+                  )}
+                  {actual && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: "11px",
+                        left: `${actual.left}%`,
+                        width: `${actual.width}%`,
+                        height: "5px",
+                        backgroundColor: "#1e6fdd",
+                      }}
+                    />
+                  )}
+                  {!plan && !actual && (
+                    <span style={{ position: "absolute", top: "4px", fontSize: "9px", color: "#aab2bc" }}>-</span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+          {hasBars && (
+            <div style={{ display: "flex", marginTop: "4px" }}>
+              <div style={{ width: `${AXIS_LEFT}px`, minWidth: `${AXIS_LEFT}px` }} />
+              <div style={{ flex: 1, display: "flex" }}>
+                {months.map((mo, i) => (
+                  <span
+                    key={mo}
+                    style={{
+                      flex: 1,
+                      fontSize: "8px",
+                      color: "#777",
+                      textAlign: "left",
+                      visibility: total > 18 && i % 2 === 1 ? "hidden" : "visible",
+                    }}
+                  >
+                    {mo}
+                  </span>
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
-        {/* month axis */}
-        <div style={{ display: "flex", marginTop: "4px" }}>
-          <div style={{ width: `${AXIS_LEFT}px`, minWidth: `${AXIS_LEFT}px` }} />
-          <div style={{ flex: 1, display: "flex" }}>
-            {MILESTONE_MONTHS.map((mo) => (
-              <span key={mo} style={{ flex: 1, fontSize: "8px", color: "#777", textAlign: "left" }}>
-                {mo}
-              </span>
-            ))}
-          </div>
+          )}
         </div>
-      </div>
+      )}
     </div>
   );
 }
 
 export function ConstructionProgressTab({ projectName }: { projectName: string }) {
   const [comment, setComment] = React.useState("");
+  const { detail, isLoading } = useProjectDetail(projectName);
+
+  const progress = detail?.progress ?? [];
+  const milestones = detail?.milestones ?? [];
+
+  const lifecycleData = progress.map((p) => ({
+    month: `${p.year}-${MONTH_ABBR[p.month - 1]}`,
+    plan: p.planPct,
+    actual: p.actualPct,
+    planAccum: p.planCumPct,
+    actualAccum: p.actualCumPct,
+  }));
+
+  // 최신(마지막) 누계 공정률
+  const latest = [...progress].reverse().find((p) => p.planCumPct != null || p.actualCumPct != null) ?? null;
+  const planCum = latest?.planCumPct ?? null;
+  const actualCum = latest?.actualCumPct ?? null;
+  const diff = planCum != null && actualCum != null ? actualCum - planCum : null;
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
       {/* Row 1: Construction site progress + Progress */}
@@ -234,9 +274,6 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
         <div style={{ ...cardStyle, display: "flex", flexDirection: "column" }}>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
             <span style={{ ...sectionTitle, color: "#1a2d4d" }}>Construction site progress</span>
-            <span style={{ fontSize: "10px", color: "#1e6fdd", textDecoration: "underline", cursor: "pointer" }}>
-              View detail
-            </span>
           </div>
           <div style={{ position: "relative", flex: 1 }}>
             <img
@@ -244,41 +281,6 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
               alt={`${projectName} 공사 현장`}
               style={{ width: "100%", height: "100%", minHeight: "230px", objectFit: "cover", borderRadius: "4px", display: "block" }}
             />
-            {[
-              { text: "E Tower\nRF2 in-progress", left: "18%", top: "8%" },
-              { text: "F Tower\nRF1 in-progress", left: "46%", top: "8%" },
-              { text: "Office Tower\nRF2 complete", left: "72%", top: "12%" },
-            ].map((t) => (
-              <div
-                key={t.text}
-                style={{
-                  position: "absolute",
-                  left: t.left,
-                  top: t.top,
-                  color: "#ffd400",
-                  fontSize: "12px",
-                  fontWeight: 800,
-                  whiteSpace: "pre-line",
-                  textShadow: "0 1px 3px rgba(0,0,0,0.7)",
-                  textAlign: "center",
-                }}
-              >
-                {t.text}
-              </div>
-            ))}
-          </div>
-          <div style={{ display: "flex", justifyContent: "center", gap: "6px", padding: "8px 0 2px" }}>
-            {[0, 1, 2, 3].map((i) => (
-              <div
-                key={i}
-                style={{
-                  width: "6px",
-                  height: "6px",
-                  borderRadius: "50%",
-                  backgroundColor: i === 0 ? "#1e6fdd" : "#c9d2dd",
-                }}
-              />
-            ))}
           </div>
         </div>
 
@@ -289,24 +291,29 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
             <span
               style={{
                 fontSize: "9px",
-                backgroundColor: "#dff2e3",
-                color: "#3e7d4c",
+                backgroundColor: diff != null && diff < 0 ? "#fdecea" : "#dff2e3",
+                color: diff != null && diff < 0 ? "#c0392b" : "#3e7d4c",
                 borderRadius: "3px",
                 padding: "2px 6px",
                 height: "fit-content",
                 fontWeight: 700,
               }}
             >
-              (B-A) +3.9%
+              (B-A) {diff != null ? `${diff >= 0 ? "+" : ""}${diff.toFixed(1)}%` : "-"}
             </span>
           </div>
           <div style={{ textAlign: "center", fontSize: "10px", color: "#333", marginTop: "4px" }}>
-            Planned Progres (A)
+            Planned Progress (A)
           </div>
           <div style={{ display: "flex", justifyContent: "center", margin: "4px 0 2px", position: "relative" }}>
-            <Donut percent={36.6} color="#c0392b" extraArc={{ percent: 32.5, color: "#2b5cad" }} label="36.6%" />
-            <span style={{ position: "absolute", right: "6px", bottom: "10px", fontSize: "10px", color: "#c0392b", fontWeight: 700 }}>
-              32.5%
+            <Donut
+              percent={actualCum ?? 0}
+              color="#c0392b"
+              extraArc={planCum != null ? { percent: planCum, color: "#2b5cad" } : undefined}
+              label={fmtPct(actualCum)}
+            />
+            <span style={{ position: "absolute", right: "6px", bottom: "10px", fontSize: "10px", color: "#2b5cad", fontWeight: 700 }}>
+              {fmtPct(planCum)}
             </span>
           </div>
           <div style={{ textAlign: "center", fontSize: "10px", color: "#1a2d4d", fontWeight: 600 }}>
@@ -323,7 +330,7 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
               paddingTop: "6px",
             }}
           >
-            <u>Time Elapsed Rate</u> (00.0%)
+            기준월 : {latest ? `${latest.year}년 ${latest.month}월` : "-"}
           </div>
         </div>
       </div>
@@ -332,71 +339,52 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
       <div style={cardStyle}>
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
           <span style={{ ...sectionTitle, color: "#1a2d4d" }}>Project lifecycle progress</span>
-          <span style={{ fontSize: "10px", color: "#1e6fdd", textDecoration: "underline", cursor: "pointer" }}>
-            View detail
-          </span>
         </div>
-        <div style={{ width: "100%", height: "240px" }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart data={LIFECYCLE_DATA} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-              <CartesianGrid stroke="#eef1f5" vertical={false} />
-              <XAxis dataKey="month" tick={{ fontSize: 9, fill: "#555" }} tickLine={false} axisLine={{ stroke: "#d5dce6" }} />
-              <YAxis
-                yAxisId="left"
-                tick={{ fontSize: 9, fill: "#555" }}
-                tickLine={false}
-                axisLine={false}
-                tickFormatter={(v) => `${v}%`}
-                domain={[0, 80]}
-                ticks={[0, 20, 40, 60, 80]}
-              />
-              <YAxis
-                yAxisId="right"
-                orientation="right"
-                tick={{ fontSize: 9, fill: "#555" }}
-                tickLine={false}
-                axisLine={false}
-                tickFormatter={(v) => `${v}%`}
-                domain={[0, 20]}
-                ticks={[0, 5, 10, 15, 20]}
-              />
-              <Tooltip contentStyle={{ fontSize: "11px" }} />
-              <Legend wrapperStyle={{ fontSize: "12px" }} iconSize={12} />
-              <Bar yAxisId="left" dataKey="plan" name="Plan Monthly" fill="#2b5cad" barSize={12} isAnimationActive={false} />
-              <Bar yAxisId="left" dataKey="actual" name="Actual Monthly" fill="#9dc3e6" barSize={12} isAnimationActive={false} />
-              <Line yAxisId="right" dataKey="planAccum" name="Plan Accum" stroke="#3e7d4c" strokeWidth={2} dot={{ r: 2 }} isAnimationActive={false} />
-              <Line yAxisId="right" dataKey="actualAccum" name="Actual Accum" stroke="#e08a3c" strokeWidth={2} dot={{ r: 2 }} isAnimationActive={false} />
-            </ComposedChart>
-          </ResponsiveContainer>
-        </div>
+        {isLoading ? (
+          <div style={emptyStyle}>불러오는 중…</div>
+        ) : lifecycleData.length === 0 ? (
+          <div style={emptyStyle}>월별 공정 데이터가 없습니다. ( - )</div>
+        ) : (
+          <div style={{ width: "100%", height: "240px" }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart data={lifecycleData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <CartesianGrid stroke="#eef1f5" vertical={false} />
+                <XAxis dataKey="month" tick={{ fontSize: 9, fill: "#555" }} tickLine={false} axisLine={{ stroke: "#d5dce6" }} />
+                <YAxis
+                  yAxisId="left"
+                  tick={{ fontSize: 9, fill: "#555" }}
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={(v) => `${v}%`}
+                />
+                <YAxis
+                  yAxisId="right"
+                  orientation="right"
+                  tick={{ fontSize: 9, fill: "#555" }}
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={(v) => `${v}%`}
+                />
+                <Tooltip contentStyle={{ fontSize: "11px" }} formatter={(v) => (v == null ? "-" : `${Number(v).toLocaleString()}%`)} />
+                <Legend wrapperStyle={{ fontSize: "12px" }} iconSize={12} />
+                <Bar yAxisId="left" dataKey="plan" name="Plan Monthly" fill="#2b5cad" barSize={12} isAnimationActive={false} />
+                <Bar yAxisId="left" dataKey="actual" name="Actual Monthly" fill="#9dc3e6" barSize={12} isAnimationActive={false} />
+                <Line yAxisId="right" dataKey="planAccum" name="Plan Accum" stroke="#3e7d4c" strokeWidth={2} dot={{ r: 2 }} isAnimationActive={false} connectNulls />
+                <Line yAxisId="right" dataKey="actualAccum" name="Actual Accum" stroke="#e08a3c" strokeWidth={2} dot={{ r: 2 }} isAnimationActive={false} connectNulls />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
+        )}
       </div>
 
       {/* Row 3: Mile Stone */}
-      <MilestoneChart />
+      <MilestoneChart milestones={milestones} />
 
       {/* Row 4: Comment */}
       <div style={cardStyle}>
         <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "8px" }}>
           <MessageSquare size={13} color="#1a2d4d" />
           <span style={{ fontSize: "12px", fontWeight: 700, color: "#1a2d4d" }}>Comment</span>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "14px", marginBottom: "8px", flexWrap: "wrap" }}>
-          <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", color: "#333" }}>
-            Chart :
-            <select style={{ fontSize: "11px", padding: "4px 6px", border: "1px solid #ccd4dd", borderRadius: "4px" }}>
-              <option>Sale by division</option>
-              <option>Construction progress</option>
-              <option>Mile Stone</option>
-            </select>
-          </label>
-          <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", color: "#333" }}>
-            Month :
-            <select defaultValue="June" style={{ fontSize: "11px", padding: "4px 6px", border: "1px solid #ccd4dd", borderRadius: "4px" }}>
-              {["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"].map((mo) => (
-                <option key={mo}>{mo}</option>
-              ))}
-            </select>
-          </label>
         </div>
         <div
           style={{

@@ -1,0 +1,121 @@
+import { sql } from "drizzle-orm";
+import {
+  pgTable,
+  text,
+  serial,
+  integer,
+  numeric,
+  uniqueIndex,
+  index,
+  check,
+} from "drizzle-orm/pg-core";
+import { createInsertSchema } from "drizzle-zod";
+import { z } from "zod/v4";
+
+// 프로젝트 상세 (공정/원가/외주) — 프로젝트별 입력 데이터, 단위: 천 USD
+
+// 공정 — 월별 공정률 (계획/실적 월간, 누계)
+export const pdProgressMonthlyTable = pgTable(
+  "pd_progress_monthly",
+  {
+    id: serial("id").primaryKey(),
+    projectName: text("project_name").notNull(),
+    year: integer("year").notNull(),
+    month: integer("month").notNull(), // 1..12
+    planPct: numeric("plan_pct", { precision: 9, scale: 4 }), // 월간 계획 공정률 (%)
+    actualPct: numeric("actual_pct", { precision: 9, scale: 4 }), // 월간 실적 공정률 (%)
+    planCumPct: numeric("plan_cum_pct", { precision: 9, scale: 4 }), // 누계 계획 (%)
+    actualCumPct: numeric("actual_cum_pct", { precision: 9, scale: 4 }), // 누계 실적 (%)
+  },
+  (t) => [
+    uniqueIndex("pd_progress_monthly_uq").on(t.projectName, t.year, t.month),
+    check("pd_progress_month_ck", sql`${t.month} BETWEEN 1 AND 12`),
+  ],
+);
+
+// 공정 — 마일스톤 (계획/실적 기간, YYYY-MM 문자열)
+export const pdMilestonesTable = pgTable(
+  "pd_milestones",
+  {
+    id: serial("id").primaryKey(),
+    projectName: text("project_name").notNull(),
+    label: text("label").notNull(),
+    planStart: text("plan_start"), // 'YYYY-MM'
+    planEnd: text("plan_end"),
+    actualStart: text("actual_start"),
+    actualEnd: text("actual_end"),
+    sortOrder: integer("sort_order").notNull().default(0),
+  },
+  (t) => [index("pd_milestones_project_idx").on(t.projectName)],
+);
+
+// 원가 — 원가율 요약 (Bidding / Execution Budgeting / Estimated Completion)
+export const pdCostEstimationTable = pgTable(
+  "pd_cost_estimation",
+  {
+    id: serial("id").primaryKey(),
+    projectName: text("project_name").notNull(),
+    kind: text("kind").notNull(), // 'bidding' | 'execution' | 'completion'
+    contractAmount: numeric("contract_amount", { precision: 18, scale: 4 }), // 도급액 기준 (천 USD)
+    costAmount: numeric("cost_amount", { precision: 18, scale: 4 }), // 원가 (천 USD)
+  },
+  (t) => [
+    uniqueIndex("pd_cost_estimation_uq").on(t.projectName, t.kind),
+    check("pd_cost_estimation_kind_ck", sql`${t.kind} IN ('bidding','execution','completion')`),
+  ],
+);
+
+// 원가 — 예산 집행 현황 (항목별 예산/기성계획/기성실적)
+export const pdCostBudgetTable = pgTable(
+  "pd_cost_budget",
+  {
+    id: serial("id").primaryKey(),
+    projectName: text("project_name").notNull(),
+    category: text("category"), // e.g. 'Direct Cost' | 'Indirect Cost' | null
+    item: text("item").notNull(), // e.g. '외주비', '자재비'
+    budget: numeric("budget", { precision: 18, scale: 4 }),
+    plan: numeric("plan", { precision: 18, scale: 4 }),
+    actual: numeric("actual", { precision: 18, scale: 4 }),
+    sortOrder: integer("sort_order").notNull().default(0),
+  },
+  (t) => [index("pd_cost_budget_project_idx").on(t.projectName)],
+);
+
+// 외주 — 외주/자재 계약 및 기성 현황
+export const pdOutsourcingTable = pgTable(
+  "pd_outsourcing",
+  {
+    id: serial("id").primaryKey(),
+    projectName: text("project_name").notNull(),
+    trade: text("trade").notNull(), // 공종
+    vendor: text("vendor"), // 업체명
+    contractDate: text("contract_date"), // 최초 계약일 (자유 형식)
+    changeNo: text("change_no"), // 변경 계약 차수
+    budget: numeric("budget", { precision: 18, scale: 4 }), // 예산 (A)
+    resolved: numeric("resolved", { precision: 18, scale: 4 }), // 결의금액 (B)
+    thisMonth: numeric("this_month", { precision: 18, scale: 4 }), // 기성 이번달
+    accum: numeric("accum", { precision: 18, scale: 4 }), // 기성 누계 (C)
+    sortOrder: integer("sort_order").notNull().default(0),
+  },
+  (t) => [index("pd_outsourcing_project_idx").on(t.projectName)],
+);
+
+export const insertPdProgressMonthlySchema = createInsertSchema(pdProgressMonthlyTable).omit({ id: true });
+export type InsertPdProgressMonthly = z.infer<typeof insertPdProgressMonthlySchema>;
+export type PdProgressMonthly = typeof pdProgressMonthlyTable.$inferSelect;
+
+export const insertPdMilestoneSchema = createInsertSchema(pdMilestonesTable).omit({ id: true });
+export type InsertPdMilestone = z.infer<typeof insertPdMilestoneSchema>;
+export type PdMilestone = typeof pdMilestonesTable.$inferSelect;
+
+export const insertPdCostEstimationSchema = createInsertSchema(pdCostEstimationTable).omit({ id: true });
+export type InsertPdCostEstimation = z.infer<typeof insertPdCostEstimationSchema>;
+export type PdCostEstimation = typeof pdCostEstimationTable.$inferSelect;
+
+export const insertPdCostBudgetSchema = createInsertSchema(pdCostBudgetTable).omit({ id: true });
+export type InsertPdCostBudget = z.infer<typeof insertPdCostBudgetSchema>;
+export type PdCostBudget = typeof pdCostBudgetTable.$inferSelect;
+
+export const insertPdOutsourcingSchema = createInsertSchema(pdOutsourcingTable).omit({ id: true });
+export type InsertPdOutsourcing = z.infer<typeof insertPdOutsourcingSchema>;
+export type PdOutsourcing = typeof pdOutsourcingTable.$inferSelect;

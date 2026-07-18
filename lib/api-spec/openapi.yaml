@@ -16,7 +16,50 @@ tags:
     description: Sales & Costs (매출/원가) operations
   - name: mgmtreport
     description: Management Report (경영관리보고회) operations
+  - name: projectdetail
+    description: Project detail (공정/원가/외주) operations
 paths:
+  /projectdetail:
+    get:
+      operationId: getProjectdetail
+      tags: [projectdetail]
+      summary: Project detail data (progress, milestones, cost, outsourcing)
+      parameters:
+        - name: projectName
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Project detail data (arrays may be empty when no data entered)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectDetail"
+    put:
+      operationId: putProjectdetail
+      tags: [projectdetail]
+      summary: Replace all project detail data for a project
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectDetail"
+      responses:
+        "200":
+          description: Saved project detail data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectDetail"
+        "400":
+          description: Invalid payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorMessage"
   /cashflow/projects:
     get:
       operationId: listCashflowProjects
@@ -483,6 +526,134 @@ components:
           items:
             $ref: "#/components/schemas/MgmtreportProject"
       required: [year, unit, projects]
+    ProjectDetailProgressPoint:
+      type: object
+      properties:
+        year:
+          type: integer
+        month:
+          type: integer
+          minimum: 1
+          maximum: 12
+        planPct:
+          type: number
+          nullable: true
+        actualPct:
+          type: number
+          nullable: true
+        planCumPct:
+          type: number
+          nullable: true
+        actualCumPct:
+          type: number
+          nullable: true
+      required: [year, month]
+    ProjectDetailMilestone:
+      type: object
+      properties:
+        label:
+          type: string
+        planStart:
+          type: string
+          nullable: true
+          description: YYYY-MM
+        planEnd:
+          type: string
+          nullable: true
+        actualStart:
+          type: string
+          nullable: true
+        actualEnd:
+          type: string
+          nullable: true
+      required: [label]
+    ProjectDetailCostEstimation:
+      type: object
+      properties:
+        kind:
+          type: string
+          enum: [bidding, execution, completion]
+        contractAmount:
+          type: number
+          nullable: true
+        costAmount:
+          type: number
+          nullable: true
+      required: [kind]
+    ProjectDetailCostBudget:
+      type: object
+      properties:
+        category:
+          type: string
+          nullable: true
+        item:
+          type: string
+        budget:
+          type: number
+          nullable: true
+        plan:
+          type: number
+          nullable: true
+        actual:
+          type: number
+          nullable: true
+      required: [item]
+    ProjectDetailOutsourcing:
+      type: object
+      properties:
+        trade:
+          type: string
+        vendor:
+          type: string
+          nullable: true
+        contractDate:
+          type: string
+          nullable: true
+        changeNo:
+          type: string
+          nullable: true
+        budget:
+          type: number
+          nullable: true
+        resolved:
+          type: number
+          nullable: true
+        thisMonth:
+          type: number
+          nullable: true
+        accum:
+          type: number
+          nullable: true
+      required: [trade]
+    ProjectDetail:
+      type: object
+      properties:
+        projectName:
+          type: string
+        unit:
+          type: string
+          description: Amount unit (천 USD)
+        progress:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProjectDetailProgressPoint"
+        milestones:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProjectDetailMilestone"
+        costEstimation:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProjectDetailCostEstimation"
+        costBudget:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProjectDetailCostBudget"
+        outsourcing:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProjectDetailOutsourcing"
+      required: [projectName, unit, progress, milestones, costEstimation, costBudget, outsourcing]
     HealthStatus:
       type: object
       properties:

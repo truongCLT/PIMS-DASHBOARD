@@ -6,11 +6,15 @@
  * OpenAPI spec version: 0.1.0
  */
 import {
+  useMutation,
   useQuery
 } from '@tanstack/react-query';
 import type {
+  MutationFunction,
   QueryFunction,
   QueryKey,
+  UseMutationOptions,
+  UseMutationResult,
   UseQueryOptions,
   UseQueryResult
 } from '@tanstack/react-query';
@@ -23,18 +27,20 @@ import type {
   GetCashflowAggregateParams,
   GetCashflowMonthlyParams,
   GetMgmtreportSummaryParams,
+  GetProjectdetailParams,
   GetSalescostSummaryParams,
   HealthStatus,
   ListMgmtreportProjectsParams,
   ListSalescostSitesParams,
   MgmtreportProjects,
   MgmtreportSummary,
+  ProjectDetail,
   SalescostSites,
   SalescostSummary
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
-import type { ErrorType } from '../custom-fetch';
+import type { ErrorType , BodyType } from '../custom-fetch';
 
 type AwaitedInput<T> = PromiseLike<T> | T;
 
@@ -59,6 +65,161 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getGetProjectdetailUrl = (params: GetProjectdetailParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/projectdetail?${stringifiedParams}` : `/api/projectdetail`
+}
+
+/**
+ * @summary Project detail data (progress, milestones, cost, outsourcing)
+ */
+export const getProjectdetail = async (params: GetProjectdetailParams, options?: RequestInit): Promise<ProjectDetail> => {
+
+  return customFetch<ProjectDetail>(getGetProjectdetailUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetProjectdetailQueryKey = (params?: GetProjectdetailParams,) => {
+    return [
+    `/api/projectdetail`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetProjectdetailQueryOptions = <TData = Awaited<ReturnType<typeof getProjectdetail>>, TError = ErrorType<unknown>>(params: GetProjectdetailParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getProjectdetail>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetProjectdetailQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getProjectdetail>>> = ({ signal }) => getProjectdetail(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getProjectdetail>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetProjectdetailQueryResult = NonNullable<Awaited<ReturnType<typeof getProjectdetail>>>
+export type GetProjectdetailQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Project detail data (progress, milestones, cost, outsourcing)
+ */
+
+export function useGetProjectdetail<TData = Awaited<ReturnType<typeof getProjectdetail>>, TError = ErrorType<unknown>>(
+ params: GetProjectdetailParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getProjectdetail>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetProjectdetailQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getPutProjectdetailUrl = () => {
+
+
+
+
+  return `/api/projectdetail`
+}
+
+/**
+ * @summary Replace all project detail data for a project
+ */
+export const putProjectdetail = async (projectDetail: ProjectDetail, options?: RequestInit): Promise<ProjectDetail> => {
+
+  return customFetch<ProjectDetail>(getPutProjectdetailUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(projectDetail)
+  }
+);}
+
+
+
+
+
+export const getPutProjectdetailMutationOptions = <TError = ErrorType<ApiErrorMessage>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putProjectdetail>>, TError,{data: BodyType<ProjectDetail>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof putProjectdetail>>, TError,{data: BodyType<ProjectDetail>}, TContext> => {
+
+const mutationKey = ['putProjectdetail'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof putProjectdetail>>, {data: BodyType<ProjectDetail>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  putProjectdetail(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PutProjectdetailMutationResult = NonNullable<Awaited<ReturnType<typeof putProjectdetail>>>
+    export type PutProjectdetailMutationBody = BodyType<ProjectDetail>
+    export type PutProjectdetailMutationError = ErrorType<ApiErrorMessage>
+
+    /**
+ * @summary Replace all project detail data for a project
+ */
+export const usePutProjectdetail = <TError = ErrorType<ApiErrorMessage>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putProjectdetail>>, TError,{data: BodyType<ProjectDetail>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof putProjectdetail>>,
+        TError,
+        {data: BodyType<ProjectDetail>},
+        TContext
+      > => {
+      return useMutation(getPutProjectdetailMutationOptions(options));
+    }
 
 export const getListCashflowProjectsUrl = () => {
 
