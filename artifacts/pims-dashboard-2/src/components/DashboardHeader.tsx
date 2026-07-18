@@ -13,7 +13,11 @@ import {
   type CurrencyCode,
 } from "../lib/dashboardFilters";
 
-export function DashboardHeader() {
+export function DashboardHeader({
+  onSelectProject,
+}: {
+  onSelectProject?: (name: string) => void;
+}) {
   const {
     project,
     setProject,
@@ -135,7 +139,14 @@ export function DashboardHeader() {
           <span style={{ fontSize: "12px", color: "#333", fontWeight: "600" }}>프로젝트:</span>
           <select
             value={project}
-            onChange={(e) => setProject(e.target.value)}
+            onChange={(e) => {
+              const value = e.target.value;
+              if (value !== "All" && onSelectProject) {
+                onSelectProject(value);
+                return;
+              }
+              setProject(value);
+            }}
             style={{
               border: "1px solid #ccd4dd",
               borderRadius: "6px",

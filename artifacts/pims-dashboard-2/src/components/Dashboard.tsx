@@ -11,7 +11,13 @@ import { DrilldownCard } from "./DrilldownCard";
 import type { DashboardScope } from "./Sidebar";
 import { DashboardFilterProvider } from "../lib/dashboardFilters";
 
-export function Dashboard({ scope = "전체" }: { scope?: DashboardScope }) {
+export function Dashboard({
+  scope = "전체",
+  onSelectProject,
+}: {
+  scope?: DashboardScope;
+  onSelectProject?: (name: string) => void;
+}) {
   return (
     <DashboardFilterProvider>
     <div style={{
@@ -22,7 +28,7 @@ export function Dashboard({ scope = "전체" }: { scope?: DashboardScope }) {
       flexDirection: "column",
     }}>
       <div style={{ padding: "10px 10px 0", position: "relative", zIndex: 100 }}>
-        <DashboardHeader />
+        <DashboardHeader onSelectProject={onSelectProject} />
       </div>
 
       {/* Capture area: everything below the filter box */}

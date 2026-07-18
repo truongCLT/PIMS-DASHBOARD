@@ -47,7 +47,13 @@ function App() {
               <ProjectDashboard projectName={selectedProject} />
             )
           ) : (
-            <Dashboard scope={selectedScope} />
+            <Dashboard
+              scope={selectedScope}
+              onSelectProject={(name) => {
+                setSelectedProject(name);
+                setAdminLoginOpen(false);
+              }}
+            />
           )}
         </div>
       </div>
