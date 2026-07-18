@@ -5,6 +5,50 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export type MgmtreportCommentSection = typeof MgmtreportCommentSection[keyof typeof MgmtreportCommentSection];
+
+
+export const MgmtreportCommentSection = {
+  analysis: 'analysis',
+  outlook: 'outlook',
+} as const;
+
+export interface MgmtreportComment {
+  id: number;
+  year: number;
+  month: number;
+  section: MgmtreportCommentSection;
+  body: string;
+  createdAt: string;
+}
+
+export interface MgmtreportCommentList {
+  comments: MgmtreportComment[];
+}
+
+export type CreateMgmtreportCommentSection = typeof CreateMgmtreportCommentSection[keyof typeof CreateMgmtreportCommentSection];
+
+
+export const CreateMgmtreportCommentSection = {
+  analysis: 'analysis',
+  outlook: 'outlook',
+} as const;
+
+export interface CreateMgmtreportComment {
+  year: number;
+  /**
+     * @minimum 1
+     * @maximum 12
+     */
+  month: number;
+  section: CreateMgmtreportCommentSection;
+  /**
+     * @minLength 1
+     * @maxLength 2000
+     */
+  body: string;
+}
+
 export interface MgmtreportImportProjectPreview {
   name: string;
   /** @nullable */
@@ -318,4 +362,25 @@ export type ApplyMgmtreportImportBody = {
   file: Blob;
   year: number;
 };
+
+export type ListMgmtreportCommentsParams = {
+year: number;
+/**
+ * @minimum 1
+ * @maximum 12
+ */
+month: number;
+/**
+ * Filter by section (analysis=실적, outlook=전망)
+ */
+section?: ListMgmtreportCommentsSection;
+};
+
+export type ListMgmtreportCommentsSection = typeof ListMgmtreportCommentsSection[keyof typeof ListMgmtreportCommentsSection];
+
+
+export const ListMgmtreportCommentsSection = {
+  analysis: 'analysis',
+  outlook: 'outlook',
+} as const;
 

@@ -63,8 +63,8 @@ export function Dashboard({ scope = "전체" }: { scope?: DashboardScope }) {
           gap: "6px",
           padding: "4px 10px 10px",
         }}>
-          <CommentPanel title="실적" />
-          <CommentPanel title="전망" />
+          <CommentPanel title="실적" section="analysis" />
+          <CommentPanel title="전망" section="outlook" />
         </div>
       </div>
     </div>

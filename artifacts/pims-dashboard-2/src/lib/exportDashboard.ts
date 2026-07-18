@@ -1,8 +1,26 @@
 import type ExcelJS from "exceljs";
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas-pro";
-import { getCashflowAggregate } from "@workspace/api-client-react";
+import { getCashflowAggregate, listMgmtreportComments } from "@workspace/api-client-react";
 import { getDashboardExportData } from "./mgmtreportData";
+
+async function fetchSavedComments(
+  year: number,
+  month: number,
+): Promise<{ analysis: string[]; outlook: string[] }> {
+  try {
+    const res = await listMgmtreportComments({ year, month });
+    const analysis: string[] = [];
+    const outlook: string[] = [];
+    // API returns newest first; report shows oldest first
+    for (const c of [...res.comments].reverse()) {
+      (c.section === "analysis" ? analysis : outlook).push(c.body);
+    }
+    return { analysis, outlook };
+  } catch {
+    return { analysis: [], outlook: [] };
+  }
+}
 
 // Same params as the on-screen 자금수지 chart (DECV 전체 scope)
 const CASHFLOW_EXPORT_PARAMS = {
@@ -260,8 +278,13 @@ export async function exportDashboardExcel(): Promise<void> {
     profitData: PROFIT_DATA,
     performanceRows: PERFORMANCE_ROWS,
     orderStatus: ORDER_STATUS,
+    year: reportYear,
+    month: reportMonth,
   } = getDashboardExportData();
-  const cashflowRows = await fetchCashflowExportRows();
+  const [cashflowRows, savedComments] = await Promise.all([
+    fetchCashflowExportRows(),
+    fetchSavedComments(reportYear, reportMonth),
+  ]);
   const { default: ExcelJS } = await import("exceljs");
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet("경영실적보고", {
@@ -363,26 +386,37 @@ export async function exportDashboardExcel(): Promise<void> {
   const sga = perfOf("판관비");
   const orders = perfOf("수주");
 
-  const analysisText =
+  const numberComments = (bodies: string[], startAt: number) =>
+    bodies.map((b, i) => `${startAt + i}. ${b.replace(/\s*\n\s*/g, " ")}`).join("\n");
+
+  const analysisAuto =
     `1. 수주 : 계획 대비 ${orders?.achM ?? "-"} 달성 (${orders?.actualM ?? "-"})\n` +
     `2. 매출 : 금월 누적 실적 ${sales?.actualM ?? "-"}, 달성율 ${sales?.achM ?? "-"}\n` +
     `3. 영업이익 : 금월 누적 ${op?.actualM ?? "-"} (달성율 ${op?.achM ?? "-"})\n` +
     `4. 판관비 : 계획 대비 ${sga?.achM ?? "-"} 집행으로 원가 절감 지속`;
+  const analysisText =
+    savedComments.analysis.length > 0
+      ? `${analysisAuto}\n${numberComments(savedComments.analysis, 5)}`
+      : analysisAuto;
 
-  const outlookText =
+  const outlookAuto =
     `1. 매출 : 연간 전망 ${sales?.forecastY ?? "-"}, 사업계획 대비 ${sales?.achY ?? "-"} 달성 전망\n` +
     `2. 영업이익 : 연간 전망 ${op?.forecastY ?? "-"} (달성율 ${op?.achY ?? "-"})\n` +
     `3. 경상이익 : 연간 전망 ${ord2?.forecastY ?? "-"} (달성율 ${ord2?.achY ?? "-"})\n` +
     `4. 판관비 : 적정 원가배분 모니터링 지속`;
+  const outlookText =
+    savedComments.outlook.length > 0
+      ? `${outlookAuto}\n${numberComments(savedComments.outlook, 5)}`
+      : outlookAuto;
 
-  const sections: { label: string; text: string }[] = [
-    { label: "실적\n분석", text: analysisText },
-    { label: "전망", text: outlookText },
+  const sections: { label: string; text: string; lines: number }[] = [
+    { label: "실적\n분석", text: analysisText, lines: 4 + savedComments.analysis.length },
+    { label: "전망", text: outlookText, lines: 4 + savedComments.outlook.length },
   ];
 
   row += 1;
   for (const section of sections) {
-    const endRow = row + 4;
+    const endRow = row + Math.max(4, section.lines);
     ws.mergeCells(row, G, endRow, G);
     const labelCell = ws.getCell(row, G);
     labelCell.value = section.label;

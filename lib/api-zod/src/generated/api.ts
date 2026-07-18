@@ -395,6 +395,57 @@ export const ApplyMgmtreportImportResponse = zod.object({
 
 
 /**
+ * @summary List saved 실적/전망 comments for a year+month
+ */
+export const listMgmtreportCommentsQueryMonthMax = 12;
+
+
+
+export const ListMgmtreportCommentsQueryParams = zod.object({
+  "year": zod.coerce.number(),
+  "month": zod.coerce.number().min(1).max(listMgmtreportCommentsQueryMonthMax),
+  "section": zod.enum(['analysis', 'outlook']).optional().describe('Filter by section (analysis=실적, outlook=전망)')
+})
+
+export const ListMgmtreportCommentsResponse = zod.object({
+  "comments": zod.array(zod.object({
+  "id": zod.number(),
+  "year": zod.number(),
+  "month": zod.number(),
+  "section": zod.enum(['analysis', 'outlook']),
+  "body": zod.string(),
+  "createdAt": zod.string()
+}))
+})
+
+
+/**
+ * @summary Save a 실적/전망 comment
+ */
+export const createMgmtreportCommentBodyMonthMax = 12;
+
+export const createMgmtreportCommentBodyBodyMax = 2000;
+
+
+
+export const CreateMgmtreportCommentBody = zod.object({
+  "year": zod.number(),
+  "month": zod.number().min(1).max(createMgmtreportCommentBodyMonthMax),
+  "section": zod.enum(['analysis', 'outlook']),
+  "body": zod.string().min(1).max(createMgmtreportCommentBodyBodyMax)
+})
+
+export const CreateMgmtreportCommentResponse = zod.object({
+  "id": zod.number(),
+  "year": zod.number(),
+  "month": zod.number(),
+  "section": zod.enum(['analysis', 'outlook']),
+  "body": zod.string(),
+  "createdAt": zod.string()
+})
+
+
+/**
  * Returns server health status
  * @summary Health check
  */

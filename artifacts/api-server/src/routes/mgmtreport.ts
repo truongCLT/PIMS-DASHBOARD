@@ -1,12 +1,23 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import multer from "multer";
-import { asc, eq } from "drizzle-orm";
-import { db, mrProjectsTable, mrMonthlyTable, mrAnnualTable, mrPnlTable } from "@workspace/db";
+import { and, asc, desc, eq } from "drizzle-orm";
+import {
+  db,
+  mrProjectsTable,
+  mrMonthlyTable,
+  mrAnnualTable,
+  mrPnlTable,
+  mrCommentsTable,
+} from "@workspace/db";
 import {
   GetMgmtreportSummaryQueryParams,
   GetMgmtreportSummaryResponse,
   ListMgmtreportProjectsQueryParams,
   ListMgmtreportProjectsResponse,
+  ListMgmtreportCommentsQueryParams,
+  ListMgmtreportCommentsResponse,
+  CreateMgmtreportCommentBody,
+  CreateMgmtreportCommentResponse,
 } from "@workspace/api-zod";
 import {
   parseMgmtreportWorkbook,
@@ -268,6 +279,70 @@ router.get("/mgmtreport/projects", async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "failed to list mgmtreport projects");
     res.status(500).json({ error: "프로젝트별 경영관리보고회 조회에 실패했습니다." });
+  }
+});
+
+router.get("/mgmtreport/comments", async (req, res) => {
+  const parsed = ListMgmtreportCommentsQueryParams.safeParse(req.query);
+  if (!parsed.success || !Number.isInteger(parsed.data.year) || !Number.isInteger(parsed.data.month)) {
+    res.status(400).json({ error: "잘못된 요청 파라미터입니다." });
+    return;
+  }
+  const { year, month, section } = parsed.data;
+
+  try {
+    const conditions = [eq(mrCommentsTable.year, year), eq(mrCommentsTable.month, month)];
+    if (section != null) conditions.push(eq(mrCommentsTable.section, section));
+    const rows = await db
+      .select()
+      .from(mrCommentsTable)
+      .where(and(...conditions))
+      .orderBy(desc(mrCommentsTable.createdAt), desc(mrCommentsTable.id));
+
+    res.json(
+      ListMgmtreportCommentsResponse.parse({
+        comments: rows.map((r) => ({
+          id: r.id,
+          year: r.year,
+          month: r.month,
+          section: r.section,
+          body: r.body,
+          createdAt: r.createdAt.toISOString(),
+        })),
+      }),
+    );
+  } catch (err) {
+    req.log.error({ err }, "failed to list mgmtreport comments");
+    res.status(500).json({ error: "코멘트 조회에 실패했습니다." });
+  }
+});
+
+router.post("/mgmtreport/comments", async (req, res) => {
+  const parsed = CreateMgmtreportCommentBody.safeParse(req.body);
+  if (!parsed.success || parsed.data.body.trim().length === 0) {
+    res.status(400).json({ error: "코멘트 내용이 올바르지 않습니다." });
+    return;
+  }
+  const { year, month, section, body } = parsed.data;
+
+  try {
+    const [row] = await db
+      .insert(mrCommentsTable)
+      .values({ year, month, section, body: body.trim() })
+      .returning();
+    res.status(201).json(
+      CreateMgmtreportCommentResponse.parse({
+        id: row.id,
+        year: row.year,
+        month: row.month,
+        section: row.section,
+        body: row.body,
+        createdAt: row.createdAt.toISOString(),
+      }),
+    );
+  } catch (err) {
+    req.log.error({ err }, "failed to create mgmtreport comment");
+    res.status(500).json({ error: "코멘트 저장에 실패했습니다." });
   }
 });
 

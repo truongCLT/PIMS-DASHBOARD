@@ -365,6 +365,67 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiErrorMessage"
+  /mgmtreport/comments:
+    get:
+      operationId: listMgmtreportComments
+      tags: [mgmtreport]
+      summary: List saved 실적/전망 comments for a year+month
+      parameters:
+        - name: year
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: month
+          in: query
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 12
+        - name: section
+          in: query
+          required: false
+          description: Filter by section (analysis=실적, outlook=전망)
+          schema:
+            type: string
+            enum: [analysis, outlook]
+      responses:
+        "200":
+          description: Comments (newest first)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MgmtreportCommentList"
+        "400":
+          description: Invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorMessage"
+    post:
+      operationId: createMgmtreportComment
+      tags: [mgmtreport]
+      summary: Save a 실적/전망 comment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMgmtreportComment"
+      responses:
+        "201":
+          description: Created comment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MgmtreportComment"
+        "400":
+          description: Invalid body
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorMessage"
   /healthz:
     get:
       operationId: healthCheck
@@ -380,6 +441,48 @@ paths:
                 $ref: "#/components/schemas/HealthStatus"
 components:
   schemas:
+    MgmtreportComment:
+      type: object
+      properties:
+        id:
+          type: integer
+        year:
+          type: integer
+        month:
+          type: integer
+        section:
+          type: string
+          enum: [analysis, outlook]
+        body:
+          type: string
+        createdAt:
+          type: string
+      required: [id, year, month, section, body, createdAt]
+    MgmtreportCommentList:
+      type: object
+      properties:
+        comments:
+          type: array
+          items:
+            $ref: "#/components/schemas/MgmtreportComment"
+      required: [comments]
+    CreateMgmtreportComment:
+      type: object
+      properties:
+        year:
+          type: integer
+        month:
+          type: integer
+          minimum: 1
+          maximum: 12
+        section:
+          type: string
+          enum: [analysis, outlook]
+        body:
+          type: string
+          minLength: 1
+          maxLength: 2000
+      required: [year, month, section, body]
     MgmtreportImportProjectPreview:
       type: object
       properties:

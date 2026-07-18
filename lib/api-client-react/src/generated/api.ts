@@ -25,14 +25,18 @@ import type {
   CashflowAggregateSeries,
   CashflowMonthlySeries,
   CashflowProject,
+  CreateMgmtreportComment,
   GetCashflowAggregateParams,
   GetCashflowMonthlyParams,
   GetMgmtreportSummaryParams,
   GetProjectdetailParams,
   GetSalescostSummaryParams,
   HealthStatus,
+  ListMgmtreportCommentsParams,
   ListMgmtreportProjectsParams,
   ListSalescostSitesParams,
+  MgmtreportComment,
+  MgmtreportCommentList,
   MgmtreportImportPreview,
   MgmtreportImportResult,
   MgmtreportProjects,
@@ -952,6 +956,161 @@ export const useApplyMgmtreportImport = <TError = ErrorType<ApiErrorMessage>,
         TContext
       > => {
       return useMutation(getApplyMgmtreportImportMutationOptions(options));
+    }
+
+export const getListMgmtreportCommentsUrl = (params: ListMgmtreportCommentsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/mgmtreport/comments?${stringifiedParams}` : `/api/mgmtreport/comments`
+}
+
+/**
+ * @summary List saved 실적/전망 comments for a year+month
+ */
+export const listMgmtreportComments = async (params: ListMgmtreportCommentsParams, options?: RequestInit): Promise<MgmtreportCommentList> => {
+
+  return customFetch<MgmtreportCommentList>(getListMgmtreportCommentsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListMgmtreportCommentsQueryKey = (params?: ListMgmtreportCommentsParams,) => {
+    return [
+    `/api/mgmtreport/comments`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListMgmtreportCommentsQueryOptions = <TData = Awaited<ReturnType<typeof listMgmtreportComments>>, TError = ErrorType<ApiErrorMessage>>(params: ListMgmtreportCommentsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMgmtreportComments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListMgmtreportCommentsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listMgmtreportComments>>> = ({ signal }) => listMgmtreportComments(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listMgmtreportComments>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListMgmtreportCommentsQueryResult = NonNullable<Awaited<ReturnType<typeof listMgmtreportComments>>>
+export type ListMgmtreportCommentsQueryError = ErrorType<ApiErrorMessage>
+
+
+/**
+ * @summary List saved 실적/전망 comments for a year+month
+ */
+
+export function useListMgmtreportComments<TData = Awaited<ReturnType<typeof listMgmtreportComments>>, TError = ErrorType<ApiErrorMessage>>(
+ params: ListMgmtreportCommentsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMgmtreportComments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListMgmtreportCommentsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateMgmtreportCommentUrl = () => {
+
+
+
+
+  return `/api/mgmtreport/comments`
+}
+
+/**
+ * @summary Save a 실적/전망 comment
+ */
+export const createMgmtreportComment = async (createMgmtreportComment: CreateMgmtreportComment, options?: RequestInit): Promise<MgmtreportComment> => {
+
+  return customFetch<MgmtreportComment>(getCreateMgmtreportCommentUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(createMgmtreportComment)
+  }
+);}
+
+
+
+
+
+export const getCreateMgmtreportCommentMutationOptions = <TError = ErrorType<ApiErrorMessage>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createMgmtreportComment>>, TError,{data: BodyType<CreateMgmtreportComment>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createMgmtreportComment>>, TError,{data: BodyType<CreateMgmtreportComment>}, TContext> => {
+
+const mutationKey = ['createMgmtreportComment'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createMgmtreportComment>>, {data: BodyType<CreateMgmtreportComment>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createMgmtreportComment(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateMgmtreportCommentMutationResult = NonNullable<Awaited<ReturnType<typeof createMgmtreportComment>>>
+    export type CreateMgmtreportCommentMutationBody = BodyType<CreateMgmtreportComment>
+    export type CreateMgmtreportCommentMutationError = ErrorType<ApiErrorMessage>
+
+    /**
+ * @summary Save a 실적/전망 comment
+ */
+export const useCreateMgmtreportComment = <TError = ErrorType<ApiErrorMessage>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createMgmtreportComment>>, TError,{data: BodyType<CreateMgmtreportComment>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createMgmtreportComment>>,
+        TError,
+        {data: BodyType<CreateMgmtreportComment>},
+        TContext
+      > => {
+      return useMutation(getCreateMgmtreportCommentMutationOptions(options));
     }
 
 export const getHealthCheckUrl = () => {

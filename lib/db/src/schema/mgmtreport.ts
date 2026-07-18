@@ -7,6 +7,7 @@ import {
   numeric,
   uniqueIndex,
   check,
+  timestamp,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
@@ -82,6 +83,23 @@ export const mrPnlTable = pgTable(
     uniqueIndex("mr_pnl_uq").on(t.year, t.lineCode, t.scenario, t.month),
     check("mr_pnl_month_ck", sql`${t.month} IS NULL OR (${t.month} BETWEEN 1 AND 12)`),
     check("mr_pnl_scenario_ck", sql`${t.scenario} IN ('plan','actual')`),
+  ],
+);
+
+// 실적/전망 코멘트 (메인 대시보드 하단 패널)
+export const mrCommentsTable = pgTable(
+  "mr_comments",
+  {
+    id: serial("id").primaryKey(),
+    year: integer("year").notNull(),
+    month: integer("month").notNull(), // 1..12
+    section: text("section").notNull(), // 'analysis'(실적) | 'outlook'(전망)
+    body: text("body").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    check("mr_comments_month_ck", sql`${t.month} BETWEEN 1 AND 12`),
+    check("mr_comments_section_ck", sql`${t.section} IN ('analysis','outlook')`),
   ],
 );
 
