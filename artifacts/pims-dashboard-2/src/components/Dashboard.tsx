@@ -9,9 +9,11 @@ import { PerformanceTable } from "./PerformanceTable";
 import { CommentPanel } from "./CommentPanel";
 import { DrilldownCard } from "./DrilldownCard";
 import type { DashboardScope } from "./Sidebar";
+import { DashboardFilterProvider } from "../lib/dashboardFilters";
 
 export function Dashboard({ scope = "전체" }: { scope?: DashboardScope }) {
   return (
+    <DashboardFilterProvider>
     <div style={{
       flex: 1,
       overflowY: "auto",
@@ -68,5 +70,6 @@ export function Dashboard({ scope = "전체" }: { scope?: DashboardScope }) {
         </div>
       </div>
     </div>
+    </DashboardFilterProvider>
   );
 }

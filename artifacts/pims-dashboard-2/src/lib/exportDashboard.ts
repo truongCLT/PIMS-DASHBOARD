@@ -277,10 +277,11 @@ export async function exportDashboardExcel(): Promise<void> {
     salesData: SALES_DATA,
     profitData: PROFIT_DATA,
     performanceRows: PERFORMANCE_ROWS,
-    orderStatus: ORDER_STATUS,
+    orderStatus,
     year: reportYear,
     month: reportMonth,
   } = getDashboardExportData();
+  const ORDER_STATUS = orderStatus ?? { planTotal: 0, ordered: 0, remaining: 0 };
   const [cashflowRows, savedComments] = await Promise.all([
     fetchCashflowExportRows(),
     fetchSavedComments(reportYear, reportMonth),

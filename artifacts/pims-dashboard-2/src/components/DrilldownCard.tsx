@@ -2,6 +2,7 @@ import React from "react";
 import { useListMgmtreportProjects } from "@workspace/api-client-react";
 import { useDashboardData, REPORT_YEAR } from "../lib/mgmtreportData";
 import { lastClosedMonth } from "../lib/monthRange";
+import { useDashboardFilters, makeConverter, roundSmart } from "../lib/dashboardFilters";
 
 const NAVY = "#1a3a6b";
 
@@ -27,24 +28,26 @@ function NumBadge({ n }: { n: number }) {
   );
 }
 
-function fmtK(v: number): string {
-  return `${Math.round(v).toLocaleString("ko-KR")}천 USD`;
-}
-
 export function DrilldownCard() {
   const { derived, isError } = useDashboardData();
+  const { currency, unitIndex } = useDashboardFilters();
   const projectsQuery = useListMgmtreportProjects({ year: REPORT_YEAR });
+
+  const unitLabel = derived?.unitLabel ?? "천 USD";
+  const convert = makeConverter(currency, unitIndex);
+  const fmtK = (v: number): string => `${roundSmart(v).toLocaleString("ko-KR")} ${unitLabel}`;
 
   const month = derived?.month ?? Math.max(lastClosedMonth(), 1);
 
   // 1. 수주 실적: corporate new_orders for the current month (fallback: cumulative)
+  // (derived 값은 이미 선택된 통화·단위로 변환되어 있음)
   const orderMonthActual = derived?.orderMonthActual ?? null;
-  const orderCumActual = derived?.orderStatus.ordered ?? null;
+  const orderCumActual = derived?.orderStatus?.ordered ?? null;
 
   // 2. 금월 주요 매출: top-3 projects by current-month actual revenue (groups excluded server-side)
   const topRevenue = (projectsQuery.data?.projects ?? [])
     .filter((p) => !p.isGroup)
-    .map((p) => ({ name: p.name, value: month > 0 ? p.revenueActual[month - 1] ?? 0 : 0 }))
+    .map((p) => ({ name: p.name, value: month > 0 ? convert(p.revenueActual[month - 1] ?? 0) : 0 }))
     .filter((p) => p.value > 0)
     .sort((a, b) => b.value - a.value)
     .slice(0, 3);

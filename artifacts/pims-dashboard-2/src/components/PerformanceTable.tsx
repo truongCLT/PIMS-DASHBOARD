@@ -14,7 +14,10 @@ export function PerformanceTable() {
       overflow: "hidden",
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-        <span style={{ fontSize: "12px", fontWeight: "600", color: "#1a3a5c" }}>경영실적 현황</span>
+        <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
+          <span style={{ fontSize: "12px", fontWeight: "600", color: "#1a3a5c" }}>경영실적 현황</span>
+          {derived && <span style={{ fontSize: "10px", color: "#5a6a7e" }}>단위: {derived.unitLabel}</span>}
+        </div>
         <button style={{ fontSize: "11px", color: "#1e6fdd", background: "none", border: "none", cursor: "pointer" }}>
           상세보기
         </button>

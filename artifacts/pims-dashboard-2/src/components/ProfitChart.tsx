@@ -60,15 +60,20 @@ export function ProfitChart() {
       padding: "10px 12px",
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
-        <span style={{ fontSize: "12px", fontWeight: "600", color: "#1a3a5c" }}>손익현황</span>
+        <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
+          <span style={{ fontSize: "12px", fontWeight: "600", color: "#1a3a5c" }}>손익현황</span>
+          {derived && <span style={{ fontSize: "10px", color: "#5a6a7e" }}>단위: {derived.unitLabel}</span>}
+        </div>
         <button style={{ fontSize: "11px", color: "#1e6fdd", background: "none", border: "none", cursor: "pointer" }}>
           상세보기
         </button>
       </div>
 
       {data.length === 0 ? (
-        <div style={{ height: "200px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", color: "#888" }}>
-          {isError ? "데이터를 불러오지 못했습니다." : "데이터 로딩 중…"}
+        <div style={{ height: "200px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", color: "#888", textAlign: "center", padding: "0 20px" }}>
+          {isError
+            ? "데이터를 불러오지 못했습니다."
+            : derived?.profitNote ?? "데이터 로딩 중…"}
         </div>
       ) : (
       <svg viewBox="0 0 1000 445" style={{ width: "100%", display: "block" }}>

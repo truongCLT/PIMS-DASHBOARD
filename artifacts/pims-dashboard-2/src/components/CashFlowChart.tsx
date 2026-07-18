@@ -18,6 +18,13 @@ import {
 import type { DashboardScope } from "./Sidebar";
 import { PROJECT_GROUPS } from "../data/projects";
 import { getCashflowProjectRef } from "../data/cashflowProjectMap";
+import {
+  useDashboardFilters,
+  resolveMonthWindow,
+  makeConverter,
+  unitLabelOf,
+  REPORT_YEAR,
+} from "../lib/dashboardFilters";
 
 // DECV 전체 = 시공(도급 사업) + 용역(용역 사업) 합산
 const BASE_SCOPE_PARAMS: Record<string, { division?: string; divisions?: string }> = {
@@ -105,29 +112,49 @@ function monthLabel(ym: string): string {
 
 export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) {
   const config = getScopeConfig(scope);
+  const filters = useDashboardFilters();
+  const { from, to } = resolveMonthWindow(filters.startYm, filters.endYm);
+  const emptyRange = from > to;
+  const projectSelected = filters.project !== "All";
+  const convert = makeConverter(filters.currency, filters.unitIndex);
+  const unitLabel =
+    filters.currency === "USD" && filters.unitIndex === 0
+      ? "천 USD"
+      : unitLabelOf(filters.currency, filters.unitIndex);
+
+  // 기간 필터 미설정 시 기존 기본값(1월부터 6개월) 유지
+  const hasCustomRange = filters.startYm !== "" || filters.endYm !== "";
+  const fromMonth = hasCustomRange && !emptyRange ? from : 1;
+  const months = hasCustomRange && !emptyRange ? to - from + 1 : 6;
+
+  const enabled = config.enabled && !projectSelected && !emptyRange;
   const params = {
     division: config.division,
     divisions: config.divisions,
     names: config.names,
-    fromYear: 2026,
-    fromMonth: 1,
-    months: 6,
+    fromYear: REPORT_YEAR,
+    fromMonth,
+    months,
   };
   const query = useGetCashflowAggregate(params, {
-    query: { queryKey: getGetCashflowAggregateQueryKey(params), enabled: config.enabled },
+    query: { queryKey: getGetCashflowAggregateQueryKey(params), enabled },
   });
 
   const points = query.data?.points ?? [];
   const chartData = points.map((p) => ({
     month: monthLabel(p.month),
-    inflow: p.cashIn,
-    outflow: -p.cashOut,
-    balance: p.equivalent,
+    inflow: convert(p.cashIn),
+    outflow: -convert(p.cashOut),
+    balance: convert(p.equivalent),
   }));
   const hasData = chartData.some((d) => d.inflow !== 0 || d.outflow !== 0 || d.balance !== 0);
 
   let body: React.ReactNode;
-  if (!config.enabled) {
+  if (projectSelected) {
+    body = <CenterNote text="프로젝트별 자금수지 집계는 제공되지 않습니다." />;
+  } else if (emptyRange) {
+    body = <CenterNote text="선택한 기간에 데이터가 없습니다." />;
+  } else if (!config.enabled) {
     body = <CenterNote text={config.emptyMessage ?? "집계 데이터가 없습니다."} />;
   } else if (query.isLoading) {
     body = <CenterNote text="자금수지 데이터를 불러오는 중..." />;
@@ -157,7 +184,7 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
             formatter={(value: number | string, name: string) => {
               const n = typeof value === "number" ? value : Number(value);
               const shown = name === "자금 유출" ? Math.abs(n) : n;
-              return [`${Math.round(shown).toLocaleString()} 천 USD`, name];
+              return [`${Math.round(shown).toLocaleString()} ${unitLabel}`, name];
             }}
           />
           <ReferenceLine y={0} stroke="#ccc" />
@@ -196,7 +223,7 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
         <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
           <span style={{ fontSize: "12px", fontWeight: "600", color: "#1a3a5c" }}>자금수지</span>
           <span style={{ fontSize: "10px", color: "#5a6a7e" }}>
-            {config.label} · 단위: 천 USD
+            {config.label} · 단위: {unitLabel}
           </span>
         </div>
         <button style={{ fontSize: "11px", color: "#1e6fdd", background: "none", border: "none", cursor: "pointer" }}>

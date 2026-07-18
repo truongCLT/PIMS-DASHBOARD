@@ -1,23 +1,36 @@
 import React, { useEffect, useRef, useState } from "react";
 import { ChevronsUp, Download, FileSpreadsheet, FileText, Upload } from "lucide-react";
-import { PROJECT_GROUPS } from "../data/projects";
+import { useListMgmtreportProjects } from "@workspace/api-client-react";
 import { exportDashboardExcel, exportDashboardPdf } from "../lib/exportDashboard";
 import { MgmtReportUploadModal } from "./MgmtReportUploadModal";
+import {
+  useDashboardFilters,
+  UNIT_OPTIONS,
+  REPORT_YEAR,
+  type PeriodMode,
+  type CurrencyCode,
+} from "../lib/dashboardFilters";
 
 export function DashboardHeader() {
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [period, setPeriod] = useState("Month");
-  const [currency, setCurrency] = useState("USD");
-  const [unitIndex, setUnitIndex] = useState(0);
+  const {
+    project,
+    setProject,
+    startYm: startDate,
+    setStartYm: setStartDate,
+    endYm: endDate,
+    setEndYm: setEndDate,
+    period,
+    setPeriod,
+    currency,
+    setCurrency,
+    unitIndex,
+    setUnitIndex,
+  } = useDashboardFilters();
 
-  const UNIT_OPTIONS: Record<string, [string, string]> = {
-    USD: ["1K USD", "1 USD"],
-    VND: ["1M VND", "1B VND"],
-    KRW: ["1M KRW", "1B KRW"],
-  };
+  const projectsQuery = useListMgmtreportProjects({ year: REPORT_YEAR });
+  const projectOptions = (projectsQuery.data?.projects ?? []).filter((p) => !p.isGroup);
+
   const unitOptions = UNIT_OPTIONS[currency] ?? UNIT_OPTIONS.USD;
-  const [project, setProject] = useState("All");
   const [downloadOpen, setDownloadOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
@@ -133,20 +146,11 @@ export function DashboardHeader() {
             }}
           >
             <option value="All">All</option>
-            {PROJECT_GROUPS.flatMap((group) =>
-              group.divisions.map((division) => (
-                <optgroup
-                  key={`${group.label}-${division.label}`}
-                  label={`${group.label} · ${division.label}`}
-                >
-                  {division.projects.map((p) => (
-                    <option key={p.code} value={p.code}>
-                      {p.name}
-                    </option>
-                  ))}
-                </optgroup>
-              )),
-            )}
+            {projectOptions.map((p) => (
+              <option key={p.name} value={p.name}>
+                {p.name}
+              </option>
+            ))}
           </select>
         </div>
 
@@ -202,7 +206,7 @@ export function DashboardHeader() {
           <span style={{ fontSize: "12px", color: "#333", fontWeight: "600" }}>조회 기준:</span>
           <select
             value={period}
-            onChange={(e) => setPeriod(e.target.value)}
+            onChange={(e) => setPeriod(e.target.value as PeriodMode)}
             style={{
               border: "1px solid #ccd4dd",
               borderRadius: "6px",
@@ -224,10 +228,7 @@ export function DashboardHeader() {
           <span style={{ fontSize: "12px", color: "#333", fontWeight: "600" }}>통화:</span>
           <select
             value={currency}
-            onChange={(e) => {
-              setCurrency(e.target.value);
-              setUnitIndex(0);
-            }}
+            onChange={(e) => setCurrency(e.target.value as CurrencyCode)}
             style={{
               border: "1px solid #ccd4dd",
               borderRadius: "6px",

@@ -98,7 +98,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 export function SalesChart() {
   const [viewType, setViewType] = useState<"net" | "report">("net");
   const { derived, isError } = useDashboardData();
-  const visibleData = derived ? derived.salesData.slice(0, derived.month) : [];
+  const visibleData = derived?.salesData ?? [];
   const PlanRateLabel = makePlanRateLabel(visibleData);
   const ActualRateLabel = makeActualRateLabel(visibleData);
 
@@ -115,7 +115,10 @@ export function SalesChart() {
     }}>
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-        <span style={{ fontSize: "12px", fontWeight: "600", color: "#1a3a5c" }}>매출 실적 및 전망</span>
+        <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
+          <span style={{ fontSize: "12px", fontWeight: "600", color: "#1a3a5c" }}>매출 실적 및 전망</span>
+          {derived && <span style={{ fontSize: "10px", color: "#5a6a7e" }}>단위: {derived.unitLabel}</span>}
+        </div>
         <button style={{
           fontSize: "11px",
           color: "#1e6fdd",
@@ -129,7 +132,11 @@ export function SalesChart() {
       <div style={{ flex: 1, minHeight: "160px" }}>
         {visibleData.length === 0 ? (
           <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", color: "#888" }}>
-            {isError ? "데이터를 불러오지 못했습니다." : "데이터 로딩 중…"}
+            {isError
+              ? "데이터를 불러오지 못했습니다."
+              : derived?.emptyRange
+                ? "선택한 기간에 데이터가 없습니다."
+                : "데이터 로딩 중…"}
           </div>
         ) : (
         <ResponsiveContainer width="100%" height="100%">
