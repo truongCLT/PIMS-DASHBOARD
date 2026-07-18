@@ -4,7 +4,7 @@ import projectPhoto from "../assets/project-photo.png";
 import { ConstructionProgressTab } from "./ConstructionProgressTab";
 import { CostingTab } from "./CostingTab";
 import { OutsourcingTab } from "./OutsourcingTab";
-import { CashflowTab } from "./CashflowTab";
+import { ServiceCashflowTab } from "./ServiceCashflowTab";
 import { ProjectDataEntryTab } from "./ProjectDataEntryTab";
 import { SaleProfitTab } from "./SaleProfitTab";
 
@@ -154,6 +154,10 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
   const [fromMonth, setFromMonth] = useState("04");
   const [toYear, setToYear] = useState(2026);
   const [toMonth, setToMonth] = useState("06");
+  const periodMonths = Math.min(
+    24,
+    Math.max(1, (toYear - fromYear) * 12 + (Number(toMonth) - Number(fromMonth)) + 1),
+  );
 
   return (
     <div style={{ flex: 1, overflowY: "auto", backgroundColor: "#e8edf3" }}>
@@ -405,11 +409,21 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
           </div>
         ) : activeTab === "Cashflow" ? (
           <div style={{ flex: 1, minWidth: 0 }}>
-            <CashflowTab />
+            <ServiceCashflowTab
+              projectName={projectName}
+              fromYear={fromYear}
+              fromMonth={Number(fromMonth)}
+              months={periodMonths}
+            />
           </div>
         ) : activeTab === "Sale & Profit" ? (
           <div style={{ flex: 1, minWidth: 0 }}>
-            <SaleProfitTab />
+            <SaleProfitTab
+              projectName={projectName}
+              fromYear={fromYear}
+              fromMonth={Number(fromMonth)}
+              months={periodMonths}
+            />
           </div>
         ) : (
         <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: "8px" }}>
