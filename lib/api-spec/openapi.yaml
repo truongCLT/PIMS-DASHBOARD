@@ -10,7 +10,72 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: cashflow
+    description: Cashflow (자금수지) operations
 paths:
+  /cashflow/projects:
+    get:
+      operationId: listCashflowProjects
+      tags: [cashflow]
+      summary: List cashflow projects
+      responses:
+        "200":
+          description: Cashflow project list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CashflowProject"
+  /cashflow/monthly:
+    get:
+      operationId: getCashflowMonthly
+      tags: [cashflow]
+      summary: Monthly cashflow series for a project
+      parameters:
+        - name: projectName
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: division
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: fromYear
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: fromMonth
+          in: query
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 12
+        - name: months
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 24
+            default: 6
+      responses:
+        "200":
+          description: Monthly cashflow series (cash in, cash out, cumulative balance) in 천 USD
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CashflowMonthlySeries"
+        "404":
+          description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorMessage"
   /healthz:
     get:
       operationId: healthCheck
@@ -26,6 +91,50 @@ paths:
                 $ref: "#/components/schemas/HealthStatus"
 components:
   schemas:
+    ApiErrorMessage:
+      type: object
+      properties:
+        error:
+          type: string
+      required: [error]
+    CashflowProject:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        division:
+          type: string
+      required: [id, name, division]
+    CashflowMonthlyPoint:
+      type: object
+      properties:
+        month:
+          type: string
+          description: Month in YYYY-MM format
+        cashIn:
+          type: number
+        cashOut:
+          type: number
+          description: Positive magnitude of outflow
+        equivalent:
+          type: number
+          description: Cumulative balance (과부족 누계) up to and including this month
+      required: [month, cashIn, cashOut, equivalent]
+    CashflowMonthlySeries:
+      type: object
+      properties:
+        projectName:
+          type: string
+        unit:
+          type: string
+          description: Amount unit (천 USD)
+        points:
+          type: array
+          items:
+            $ref: "#/components/schemas/CashflowMonthlyPoint"
+      required: [projectName, unit, points]
     HealthStatus:
       type: object
       properties:

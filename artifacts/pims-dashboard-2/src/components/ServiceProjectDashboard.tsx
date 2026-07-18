@@ -281,7 +281,15 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
         ) : activeTab === "Outsourcing" ? (
           <ServiceOutsourcingTab />
         ) : activeTab === "Cashflow" ? (
-          <ServiceCashflowTab />
+          <ServiceCashflowTab
+            projectName={projectName}
+            fromYear={fromYear}
+            fromMonth={Number(fromMonth)}
+            months={Math.min(
+              24,
+              Math.max(1, (toYear - fromYear) * 12 + (Number(toMonth) - Number(fromMonth)) + 1),
+            )}
+          />
         ) : activeTab === "Budget Execution" ? (
           <ServiceBudgetTab />
         ) : activeTab === "Overview" ? (
