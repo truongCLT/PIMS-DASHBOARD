@@ -19,16 +19,6 @@ import type { DashboardScope } from "./Sidebar";
 import { PROJECT_GROUPS } from "../data/projects";
 import { getCashflowProjectRef } from "../data/cashflowProjectMap";
 
-// Legacy mock data still referenced by the Excel export (exportDashboard.ts).
-export const CASHFLOW_DATA = [
-  { month: "1월", inflow: 20, outflow: -20, loan: 10, net: -5 },
-  { month: "2월", inflow: 40, outflow: -10, loan: 15, net: 8 },
-  { month: "3월", inflow: 20, outflow: -20, loan: 10, net: -5 },
-  { month: "4월", inflow: 50, outflow: -20, loan: 20, net: 15 },
-  { month: "5월", inflow: 25, outflow: -20, loan: 12, net: 5 },
-  { month: "6월", inflow: 30, outflow: -10, loan: 8, net: 10 },
-];
-
 // DECV 전체 = 시공(도급 사업) + 용역(용역 사업) 합산
 const BASE_SCOPE_PARAMS: Record<string, { division?: string; divisions?: string }> = {
   전체: { divisions: "도급 사업,용역 사업" },

@@ -1,8 +1,39 @@
 import type ExcelJS from "exceljs";
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas-pro";
-import { CASHFLOW_DATA } from "../components/CashFlowChart";
+import { getCashflowAggregate } from "@workspace/api-client-react";
 import { getDashboardExportData } from "./mgmtreportData";
+
+// Same params as the on-screen 자금수지 chart (DECV 전체 scope)
+const CASHFLOW_EXPORT_PARAMS = {
+  divisions: "도급 사업,용역 사업",
+  fromYear: 2026,
+  fromMonth: 1,
+  months: 6,
+};
+
+interface CashflowExportRow {
+  month: string;
+  inflow: number;
+  outflow: number;
+  net: number;
+  balance: number;
+}
+
+async function fetchCashflowExportRows(): Promise<CashflowExportRow[]> {
+  try {
+    const series = await getCashflowAggregate(CASHFLOW_EXPORT_PARAMS);
+    return (series.points ?? []).map((p) => ({
+      month: `${Number(p.month.slice(5, 7))}월`,
+      inflow: p.cashIn,
+      outflow: p.cashOut,
+      net: p.cashIn - p.cashOut,
+      balance: p.equivalent,
+    }));
+  } catch {
+    return [];
+  }
+}
 
 function todayStamp(): string {
   const d = new Date();
@@ -230,6 +261,7 @@ export async function exportDashboardExcel(): Promise<void> {
     performanceRows: PERFORMANCE_ROWS,
     orderStatus: ORDER_STATUS,
   } = getDashboardExportData();
+  const cashflowRows = await fetchCashflowExportRows();
   const { default: ExcelJS } = await import("exceljs");
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet("경영실적보고", {
@@ -470,8 +502,8 @@ export async function exportDashboardExcel(): Promise<void> {
   );
   addDataSheet(
     "자금수지",
-    ["월", "자금 유입", "자금 유출", "차액", "자금 잔액"],
-    CASHFLOW_DATA.map((r) => [r.month, r.inflow, r.outflow, r.loan, r.net]),
+    ["월", "자금 유입", "자금 유출", "차액", "누적 현금 잔액"],
+    cashflowRows.map((r) => [r.month, r.inflow, r.outflow, r.net, r.balance]),
   );
   const perfRows: (string | number)[][] = [];
   for (const r of PERFORMANCE_ROWS) {
