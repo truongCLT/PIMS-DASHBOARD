@@ -4,9 +4,46 @@ import { FileSpreadsheet, Upload, X } from "lucide-react";
 import {
   previewMgmtreportImport,
   applyMgmtreportImport,
+  previewCashflowImport,
+  applyCashflowImport,
+  previewSalescostImport,
+  applySalescostImport,
   type MgmtreportImportPreview,
+  type CashflowImportPreview,
+  type SalescostImportPreview,
 } from "@workspace/api-client-react";
 import { REPORT_YEAR } from "../lib/mgmtreportData";
+
+type Dataset = "mgmtreport" | "cashflow" | "salescost";
+
+const DATASET_META: Record<
+  Dataset,
+  { label: string; needsYear: boolean; description: string }
+> = {
+  mgmtreport: {
+    label: "경영관리보고회",
+    needsYear: true,
+    description:
+      "매월 취합된 경영관리보고회 Excel(.xlsx)을 업로드하면 자동으로 파싱하여 미리보기를 보여드립니다. 반영 시 기존 경영관리보고회 데이터가 새 파일 내용으로 교체됩니다.",
+  },
+  cashflow: {
+    label: "자금수지",
+    needsYear: false,
+    description:
+      "법인 자금수지 Excel(.xlsx)을 업로드하면 자동으로 파싱하여 미리보기를 보여드립니다. 반영 시 기존 자금수지 데이터가 새 파일 내용으로 교체됩니다.",
+  },
+  salescost: {
+    label: "매출/원가",
+    needsYear: true,
+    description:
+      "Summary of Sales+costs Excel(.xlsx)을 업로드하면 자동으로 파싱하여 미리보기를 보여드립니다. 반영 시 해당 연도의 매출/원가 데이터가 새 파일 내용으로 교체됩니다.",
+  },
+};
+
+type PreviewState =
+  | { kind: "mgmtreport"; data: MgmtreportImportPreview }
+  | { kind: "cashflow"; data: CashflowImportPreview }
+  | { kind: "salescost"; data: SalescostImportPreview };
 
 function errorMessage(err: unknown): string {
   const data = (err as { data?: { error?: string } } | null)?.data;
@@ -18,21 +55,43 @@ function errorMessage(err: unknown): string {
 const fmt = (n: number) =>
   n.toLocaleString("ko-KR", { maximumFractionDigits: 0 });
 
+const thLeft: React.CSSProperties = { textAlign: "left", padding: "6px 14px", fontWeight: 600 };
+const thRight: React.CSSProperties = { textAlign: "right", padding: "6px 10px", fontWeight: 600 };
+const thRightEdge: React.CSSProperties = { textAlign: "right", padding: "6px 14px", fontWeight: 600 };
+const tdRight: React.CSSProperties = { padding: "6px 10px", textAlign: "right" };
+const tdRightEdge: React.CSSProperties = { padding: "6px 14px", textAlign: "right" };
+const statRow: React.CSSProperties = {
+  padding: "10px 14px",
+  fontSize: "12px",
+  color: "#333",
+  display: "flex",
+  gap: "18px",
+  flexWrap: "wrap",
+  borderBottom: "1px solid #eef1f5",
+};
+
 export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
   const queryClient = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
+  const [dataset, setDataset] = useState<Dataset>("mgmtreport");
   const [file, setFile] = useState<File | null>(null);
   const [year, setYear] = useState(REPORT_YEAR);
-  const [preview, setPreview] = useState<MgmtreportImportPreview | null>(null);
+  const [preview, setPreview] = useState<PreviewState | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<"preview" | "apply" | null>(null);
   const [done, setDone] = useState(false);
 
-  const pickFile = (f: File | null) => {
-    setFile(f);
+  const meta = DATASET_META[dataset];
+
+  const resetResult = () => {
     setPreview(null);
     setError(null);
     setDone(false);
+  };
+
+  const pickFile = (f: File | null) => {
+    setFile(f);
+    resetResult();
   };
 
   const handlePreview = async () => {
@@ -47,8 +106,16 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
     setLoading("preview");
     setError(null);
     try {
-      const res = await previewMgmtreportImport({ file, year });
-      setPreview(res);
+      if (dataset === "mgmtreport") {
+        const res = await previewMgmtreportImport({ file, year });
+        setPreview({ kind: "mgmtreport", data: res });
+      } else if (dataset === "cashflow") {
+        const res = await previewCashflowImport({ file });
+        setPreview({ kind: "cashflow", data: res });
+      } else {
+        const res = await previewSalescostImport({ file, year });
+        setPreview({ kind: "salescost", data: res });
+      }
     } catch (err) {
       setPreview(null);
       setError(errorMessage(err));
@@ -62,7 +129,13 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
     setLoading("apply");
     setError(null);
     try {
-      await applyMgmtreportImport({ file, year });
+      if (preview.kind === "mgmtreport") {
+        await applyMgmtreportImport({ file, year });
+      } else if (preview.kind === "cashflow") {
+        await applyCashflowImport({ file });
+      } else {
+        await applySalescostImport({ file, year });
+      }
       setDone(true);
       await queryClient.invalidateQueries();
     } catch (err) {
@@ -114,7 +187,7 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <FileSpreadsheet size={16} color="#1e7145" />
             <span style={{ fontSize: "14px", fontWeight: 700, color: "#1a2d4d" }}>
-              경영관리보고회 Excel 업로드
+              Excel 업로드
             </span>
           </div>
           <button
@@ -128,12 +201,35 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
         {/* Body */}
         <div style={{ padding: "16px 18px", overflowY: "auto" }}>
           <p style={{ margin: "0 0 12px", fontSize: "12px", color: "#5a6579", lineHeight: 1.6 }}>
-            매월 취합된 경영관리보고회 Excel(.xlsx)을 업로드하면 자동으로 파싱하여 미리보기를 보여드립니다.
-            내용을 확인한 뒤 <b>반영</b>을 누르면 대시보드 데이터가 갱신됩니다. (기존 경영관리보고회 데이터는 새 파일 내용으로 교체됩니다.)
+            {meta.description} 내용을 확인한 뒤 <b>반영</b>을 누르면 대시보드 데이터가 갱신됩니다.
           </p>
 
           {/* Controls */}
           <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap", marginBottom: "12px" }}>
+            <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: "#333", fontWeight: 600 }}>
+              데이터 종류:
+              <select
+                value={dataset}
+                disabled={busy}
+                onChange={(e) => {
+                  setDataset(e.target.value as Dataset);
+                  resetResult();
+                }}
+                style={{
+                  border: "1px solid #ccd4dd",
+                  borderRadius: "6px",
+                  padding: "6px 8px",
+                  fontSize: "12px",
+                  backgroundColor: "#fff",
+                }}
+              >
+                {(Object.keys(DATASET_META) as Dataset[]).map((key) => (
+                  <option key={key} value={key}>
+                    {DATASET_META[key].label}
+                  </option>
+                ))}
+              </select>
+            </label>
             <input
               ref={fileRef}
               type="file"
@@ -164,28 +260,30 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
               <Upload size={13} />
               {file ? file.name : "Excel 파일 선택 (.xlsx)"}
             </button>
-            <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: "#333", fontWeight: 600 }}>
-              대상 연도:
-              <input
-                type="number"
-                value={year}
-                min={2000}
-                max={2100}
-                disabled={busy}
-                onChange={(e) => {
-                  setYear(Number(e.target.value));
-                  setPreview(null);
-                  setDone(false);
-                }}
-                style={{
-                  width: "72px",
-                  border: "1px solid #ccd4dd",
-                  borderRadius: "6px",
-                  padding: "6px 8px",
-                  fontSize: "12px",
-                }}
-              />
-            </label>
+            {meta.needsYear && (
+              <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: "#333", fontWeight: 600 }}>
+                대상 연도:
+                <input
+                  type="number"
+                  value={year}
+                  min={2000}
+                  max={2100}
+                  disabled={busy}
+                  onChange={(e) => {
+                    setYear(Number(e.target.value));
+                    setPreview(null);
+                    setDone(false);
+                  }}
+                  style={{
+                    width: "72px",
+                    border: "1px solid #ccd4dd",
+                    borderRadius: "6px",
+                    padding: "6px 8px",
+                    fontSize: "12px",
+                  }}
+                />
+              </label>
+            )}
             <button
               onClick={handlePreview}
               disabled={busy || !file}
@@ -239,45 +337,125 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
             </div>
           )}
 
-          {preview && (
+          {preview?.kind === "mgmtreport" && (
             <div style={{ border: "1px solid #dde5ee", borderRadius: "10px", overflow: "hidden" }}>
               <div style={{ backgroundColor: "#f2f6fb", padding: "10px 14px", fontSize: "12px", color: "#1a2d4d", fontWeight: 700 }}>
-                파싱 결과 미리보기 — {preview.year}년 (단위: {preview.unit})
+                파싱 결과 미리보기 — {preview.data.year}년 (단위: {preview.data.unit})
               </div>
-              <div style={{ padding: "10px 14px", fontSize: "12px", color: "#333", display: "flex", gap: "18px", flexWrap: "wrap", borderBottom: "1px solid #eef1f5" }}>
-                <span>프로젝트 <b>{preview.projectCount}</b>개</span>
-                <span>월별 데이터 <b>{fmt(preview.monthlyCount)}</b>건</span>
-                <span>연간 전망 <b>{fmt(preview.annualCount)}</b>건</span>
-                <span>손익 라인 <b>{fmt(preview.pnlCount)}</b>건</span>
+              <div style={statRow}>
+                <span>프로젝트 <b>{preview.data.projectCount}</b>개</span>
+                <span>월별 데이터 <b>{fmt(preview.data.monthlyCount)}</b>건</span>
+                <span>연간 전망 <b>{fmt(preview.data.annualCount)}</b>건</span>
+                <span>손익 라인 <b>{fmt(preview.data.pnlCount)}</b>건</span>
                 <span>
-                  실적 입력 월: <b>{preview.monthsWithActual.length > 0 ? `${Math.min(...preview.monthsWithActual)}~${Math.max(...preview.monthsWithActual)}월` : "-"}</b>
+                  실적 입력 월: <b>{preview.data.monthsWithActual.length > 0 ? `${Math.min(...preview.data.monthsWithActual)}~${Math.max(...preview.data.monthsWithActual)}월` : "-"}</b>
                 </span>
               </div>
-              <div style={{ padding: "10px 14px", fontSize: "12px", color: "#333", display: "flex", gap: "18px", flexWrap: "wrap", borderBottom: "1px solid #eef1f5" }}>
-                <span>매출 계획 합계 <b>{fmt(preview.totals.revenuePlan)}</b></span>
-                <span>매출 실적/전망 합계 <b>{fmt(preview.totals.revenueActual)}</b></span>
-                <span>원가 실적/전망 합계 <b>{fmt(preview.totals.cogsActual)}</b></span>
+              <div style={statRow}>
+                <span>매출 계획 합계 <b>{fmt(preview.data.totals.revenuePlan)}</b></span>
+                <span>매출 실적/전망 합계 <b>{fmt(preview.data.totals.revenueActual)}</b></span>
+                <span>원가 실적/전망 합계 <b>{fmt(preview.data.totals.cogsActual)}</b></span>
               </div>
               <div style={{ maxHeight: "220px", overflowY: "auto" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "11px" }}>
                   <thead>
                     <tr style={{ backgroundColor: "#f8fafc", color: "#5a6579" }}>
-                      <th style={{ textAlign: "left", padding: "6px 14px", fontWeight: 600 }}>프로젝트</th>
-                      <th style={{ textAlign: "right", padding: "6px 10px", fontWeight: 600 }}>매출 실적/전망</th>
-                      <th style={{ textAlign: "right", padding: "6px 10px", fontWeight: 600 }}>원가 실적/전망</th>
-                      <th style={{ textAlign: "right", padding: "6px 14px", fontWeight: 600 }}>데이터 건수</th>
+                      <th style={thLeft}>프로젝트</th>
+                      <th style={thRight}>매출 실적/전망</th>
+                      <th style={thRight}>원가 실적/전망</th>
+                      <th style={thRightEdge}>데이터 건수</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {preview.projects.map((p) => (
+                    {preview.data.projects.map((p) => (
                       <tr key={p.name} style={{ borderTop: "1px solid #eef1f5", backgroundColor: p.isGroup ? "#fbf7ec" : "#fff" }}>
                         <td style={{ padding: "6px 14px", color: "#1a2d4d", fontWeight: p.isGroup ? 700 : 400 }}>
                           {p.name}
                           {p.siteCode ? ` (${p.siteCode})` : ""}
                         </td>
-                        <td style={{ padding: "6px 10px", textAlign: "right" }}>{fmt(p.revenueActualTotal)}</td>
-                        <td style={{ padding: "6px 10px", textAlign: "right" }}>{fmt(p.cogsActualTotal)}</td>
-                        <td style={{ padding: "6px 14px", textAlign: "right" }}>{fmt(p.monthlyCount)}</td>
+                        <td style={tdRight}>{fmt(p.revenueActualTotal)}</td>
+                        <td style={tdRight}>{fmt(p.cogsActualTotal)}</td>
+                        <td style={tdRightEdge}>{fmt(p.monthlyCount)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {preview?.kind === "cashflow" && (
+            <div style={{ border: "1px solid #dde5ee", borderRadius: "10px", overflow: "hidden" }}>
+              <div style={{ backgroundColor: "#f2f6fb", padding: "10px 14px", fontSize: "12px", color: "#1a2d4d", fontWeight: 700 }}>
+                파싱 결과 미리보기 — 자금수지 (단위: {preview.data.unit})
+              </div>
+              <div style={statRow}>
+                <span>프로젝트 <b>{preview.data.projectCount}</b>개</span>
+                <span>월별 데이터 <b>{fmt(preview.data.amountCount)}</b>건</span>
+              </div>
+              <div style={statRow}>
+                <span>수입 합계 <b>{fmt(preview.data.totals.cashIn)}</b></span>
+                <span>지출 합계 <b>{fmt(preview.data.totals.cashOut)}</b></span>
+              </div>
+              <div style={{ maxHeight: "220px", overflowY: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "11px" }}>
+                  <thead>
+                    <tr style={{ backgroundColor: "#f8fafc", color: "#5a6579" }}>
+                      <th style={thLeft}>프로젝트</th>
+                      <th style={thLeft}>구분</th>
+                      <th style={thRight}>수입 합계</th>
+                      <th style={thRight}>지출 합계</th>
+                      <th style={thRightEdge}>데이터 건수</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {preview.data.projects.map((p) => (
+                      <tr key={p.name} style={{ borderTop: "1px solid #eef1f5" }}>
+                        <td style={{ padding: "6px 14px", color: "#1a2d4d" }}>{p.name}</td>
+                        <td style={{ padding: "6px 14px", color: "#5a6579" }}>{p.division}</td>
+                        <td style={tdRight}>{fmt(p.cashInTotal)}</td>
+                        <td style={tdRight}>{fmt(p.cashOutTotal)}</td>
+                        <td style={tdRightEdge}>{fmt(p.amountCount)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {preview?.kind === "salescost" && (
+            <div style={{ border: "1px solid #dde5ee", borderRadius: "10px", overflow: "hidden" }}>
+              <div style={{ backgroundColor: "#f2f6fb", padding: "10px 14px", fontSize: "12px", color: "#1a2d4d", fontWeight: 700 }}>
+                파싱 결과 미리보기 — 매출/원가 {preview.data.year}년 (단위: {preview.data.unit})
+              </div>
+              <div style={statRow}>
+                <span>현장 <b>{preview.data.siteCount}</b>개</span>
+                <span>월별 데이터 <b>{fmt(preview.data.amountCount)}</b>건</span>
+              </div>
+              <div style={statRow}>
+                <span>매출 합계 <b>{fmt(preview.data.totals.revenueUsd)}</b></span>
+                <span>원가 합계 <b>{fmt(preview.data.totals.cogsUsd)}</b></span>
+              </div>
+              <div style={{ maxHeight: "220px", overflowY: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "11px" }}>
+                  <thead>
+                    <tr style={{ backgroundColor: "#f8fafc", color: "#5a6579" }}>
+                      <th style={thLeft}>코드</th>
+                      <th style={thLeft}>현장명</th>
+                      <th style={thRight}>매출 합계</th>
+                      <th style={thRight}>원가 합계</th>
+                      <th style={thRightEdge}>데이터 건수</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {preview.data.sites.map((s) => (
+                      <tr key={s.code} style={{ borderTop: "1px solid #eef1f5" }}>
+                        <td style={{ padding: "6px 14px", color: "#5a6579" }}>{s.code}</td>
+                        <td style={{ padding: "6px 14px", color: "#1a2d4d" }}>{s.name}</td>
+                        <td style={tdRight}>{fmt(s.revenueUsdTotal)}</td>
+                        <td style={tdRight}>{fmt(s.cogsUsdTotal)}</td>
+                        <td style={tdRightEdge}>{fmt(s.amountCount)}</td>
                       </tr>
                     ))}
                   </tbody>

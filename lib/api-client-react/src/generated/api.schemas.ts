@@ -112,6 +112,57 @@ export type MgmtreportImportResult = MgmtreportImportPreview & {
   applied: boolean;
 };
 
+export interface CashflowImportProjectPreview {
+  name: string;
+  division: string;
+  cashInTotal: number;
+  cashOutTotal: number;
+  amountCount: number;
+}
+
+export type CashflowImportPreviewTotals = {
+  cashIn: number;
+  cashOut: number;
+};
+
+export interface CashflowImportPreview {
+  unit: string;
+  projectCount: number;
+  amountCount: number;
+  totals: CashflowImportPreviewTotals;
+  projects: CashflowImportProjectPreview[];
+}
+
+export type CashflowImportResult = CashflowImportPreview & {
+  applied: boolean;
+};
+
+export interface SalescostImportSitePreview {
+  code: string;
+  name: string;
+  revenueUsdTotal: number;
+  cogsUsdTotal: number;
+  amountCount: number;
+}
+
+export type SalescostImportPreviewTotals = {
+  revenueUsd: number;
+  cogsUsd: number;
+};
+
+export interface SalescostImportPreview {
+  year: number;
+  unit: string;
+  siteCount: number;
+  amountCount: number;
+  totals: SalescostImportPreviewTotals;
+  sites: SalescostImportSitePreview[];
+}
+
+export type SalescostImportResult = SalescostImportPreview & {
+  applied: boolean;
+};
+
 export interface ApiErrorMessage {
   error: string;
 }
@@ -397,6 +448,24 @@ fromMonth: number;
  * @maximum 24
  */
 months?: number;
+};
+
+export type PreviewCashflowImportBody = {
+  file: Blob;
+};
+
+export type ApplyCashflowImportBody = {
+  file: Blob;
+};
+
+export type PreviewSalescostImportBody = {
+  file: Blob;
+  year: number;
+};
+
+export type ApplySalescostImportBody = {
+  file: Blob;
+  year: number;
 };
 
 export type GetSalescostSummaryParams = {

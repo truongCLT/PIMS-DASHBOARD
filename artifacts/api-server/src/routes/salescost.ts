@@ -7,8 +7,59 @@ import {
   ListSalescostSitesQueryParams,
   ListSalescostSitesResponse,
 } from "@workspace/api-zod";
+import {
+  parseSalescostWorkbook,
+  buildSalescostPreview,
+  applySalescostImport,
+  SalescostParseError,
+} from "../lib/salescostImport";
+import { readExcelUpload } from "../lib/excelUpload";
+import { requireAdmin } from "../middlewares/adminAuth";
 
 const router: IRouter = Router();
+
+router.post("/salescost/import/preview", requireAdmin, async (req, res) => {
+  const r = await readExcelUpload(req, res, { requireYear: true });
+  if ("error" in r) {
+    res.status(400).json({ error: r.error });
+    return;
+  }
+  try {
+    const parsed = await parseSalescostWorkbook(r.file.buffer, r.year!);
+    res.json(buildSalescostPreview(parsed));
+  } catch (err) {
+    if (err instanceof SalescostParseError) {
+      res.status(422).json({ error: err.message });
+      return;
+    }
+    req.log.error({ err }, "failed to preview salescost import");
+    res.status(500).json({ error: "Excel 파싱 중 오류가 발생했습니다." });
+  }
+});
+
+router.post("/salescost/import/apply", requireAdmin, async (req, res) => {
+  const r = await readExcelUpload(req, res, { requireYear: true });
+  if ("error" in r) {
+    res.status(400).json({ error: r.error });
+    return;
+  }
+  try {
+    const parsed = await parseSalescostWorkbook(r.file.buffer, r.year!);
+    await applySalescostImport(parsed);
+    req.log.info(
+      { year: r.year, sites: parsed.sites.length, amounts: parsed.amounts.length },
+      "salescost import applied",
+    );
+    res.json({ ...buildSalescostPreview(parsed), applied: true });
+  } catch (err) {
+    if (err instanceof SalescostParseError) {
+      res.status(422).json({ error: err.message });
+      return;
+    }
+    req.log.error({ err }, "failed to apply salescost import");
+    res.status(500).json({ error: "데이터 반영 중 오류가 발생했습니다. 기존 데이터는 변경되지 않았습니다." });
+  }
+});
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 

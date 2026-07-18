@@ -8,8 +8,59 @@ import {
   GetCashflowAggregateQueryParams,
   GetCashflowAggregateResponse,
 } from "@workspace/api-zod";
+import {
+  parseCashflowWorkbook,
+  buildCashflowPreview,
+  applyCashflowImport,
+  CashflowParseError,
+} from "../lib/cashflowImport";
+import { readExcelUpload } from "../lib/excelUpload";
+import { requireAdmin } from "../middlewares/adminAuth";
 
 const router: IRouter = Router();
+
+router.post("/cashflow/import/preview", requireAdmin, async (req, res) => {
+  const r = await readExcelUpload(req, res);
+  if ("error" in r) {
+    res.status(400).json({ error: r.error });
+    return;
+  }
+  try {
+    const parsed = await parseCashflowWorkbook(r.file.buffer);
+    res.json(buildCashflowPreview(parsed));
+  } catch (err) {
+    if (err instanceof CashflowParseError) {
+      res.status(422).json({ error: err.message });
+      return;
+    }
+    req.log.error({ err }, "failed to preview cashflow import");
+    res.status(500).json({ error: "Excel 파싱 중 오류가 발생했습니다." });
+  }
+});
+
+router.post("/cashflow/import/apply", requireAdmin, async (req, res) => {
+  const r = await readExcelUpload(req, res);
+  if ("error" in r) {
+    res.status(400).json({ error: r.error });
+    return;
+  }
+  try {
+    const parsed = await parseCashflowWorkbook(r.file.buffer);
+    await applyCashflowImport(parsed);
+    req.log.info(
+      { projects: parsed.projects.length },
+      "cashflow import applied",
+    );
+    res.json({ ...buildCashflowPreview(parsed), applied: true });
+  } catch (err) {
+    if (err instanceof CashflowParseError) {
+      res.status(422).json({ error: err.message });
+      return;
+    }
+    req.log.error({ err }, "failed to apply cashflow import");
+    res.status(500).json({ error: "데이터 반영 중 오류가 발생했습니다. 기존 데이터는 변경되지 않았습니다." });
+  }
+});
 
 router.get("/cashflow/projects", async (req, res) => {
   try {

@@ -422,6 +422,158 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiErrorMessage"
+  /cashflow/import/preview:
+    post:
+      operationId: previewCashflowImport
+      tags: [cashflow]
+      summary: Parse an uploaded 자금수지 Excel and return a preview (no DB changes)
+      security:
+        - adminBearer: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+              required: [file]
+      responses:
+        "200":
+          description: Parsed preview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CashflowImportPreview"
+        "400":
+          description: Bad upload (missing file, too large)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorMessage"
+        "422":
+          description: Excel format error (Korean message)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorMessage"
+  /cashflow/import/apply:
+    post:
+      operationId: applyCashflowImport
+      tags: [cashflow]
+      summary: Parse an uploaded 자금수지 Excel and replace cashflow data in the DB
+      security:
+        - adminBearer: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+              required: [file]
+      responses:
+        "200":
+          description: Import applied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CashflowImportResult"
+        "400":
+          description: Bad upload (missing file, too large)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorMessage"
+        "422":
+          description: Excel format error (Korean message)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorMessage"
+  /salescost/import/preview:
+    post:
+      operationId: previewSalescostImport
+      tags: [salescost]
+      summary: Parse an uploaded 매출/원가 Excel and return a preview (no DB changes)
+      security:
+        - adminBearer: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                year:
+                  type: integer
+              required: [file, year]
+      responses:
+        "200":
+          description: Parsed preview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SalescostImportPreview"
+        "400":
+          description: Bad upload (missing file, bad year, too large)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorMessage"
+        "422":
+          description: Excel format error (Korean message)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorMessage"
+  /salescost/import/apply:
+    post:
+      operationId: applySalescostImport
+      tags: [salescost]
+      summary: Parse an uploaded 매출/원가 Excel and replace salescost data in the DB
+      security:
+        - adminBearer: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                year:
+                  type: integer
+              required: [file, year]
+      responses:
+        "200":
+          description: Import applied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SalescostImportResult"
+        "400":
+          description: Bad upload (missing file, bad year, too large)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorMessage"
+        "422":
+          description: Excel format error (Korean message)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorMessage"
   /salescost/summary:
     get:
       operationId: getSalescostSummary
@@ -821,6 +973,96 @@ components:
     MgmtreportImportResult:
       allOf:
         - $ref: "#/components/schemas/MgmtreportImportPreview"
+        - type: object
+          properties:
+            applied:
+              type: boolean
+          required: [applied]
+    CashflowImportProjectPreview:
+      type: object
+      properties:
+        name:
+          type: string
+        division:
+          type: string
+        cashInTotal:
+          type: number
+        cashOutTotal:
+          type: number
+        amountCount:
+          type: integer
+      required: [name, division, cashInTotal, cashOutTotal, amountCount]
+    CashflowImportPreview:
+      type: object
+      properties:
+        unit:
+          type: string
+        projectCount:
+          type: integer
+        amountCount:
+          type: integer
+        totals:
+          type: object
+          properties:
+            cashIn:
+              type: number
+            cashOut:
+              type: number
+          required: [cashIn, cashOut]
+        projects:
+          type: array
+          items:
+            $ref: "#/components/schemas/CashflowImportProjectPreview"
+      required: [unit, projectCount, amountCount, totals, projects]
+    CashflowImportResult:
+      allOf:
+        - $ref: "#/components/schemas/CashflowImportPreview"
+        - type: object
+          properties:
+            applied:
+              type: boolean
+          required: [applied]
+    SalescostImportSitePreview:
+      type: object
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        revenueUsdTotal:
+          type: number
+        cogsUsdTotal:
+          type: number
+        amountCount:
+          type: integer
+      required: [code, name, revenueUsdTotal, cogsUsdTotal, amountCount]
+    SalescostImportPreview:
+      type: object
+      properties:
+        year:
+          type: integer
+        unit:
+          type: string
+        siteCount:
+          type: integer
+        amountCount:
+          type: integer
+        totals:
+          type: object
+          properties:
+            revenueUsd:
+              type: number
+            cogsUsd:
+              type: number
+          required: [revenueUsd, cogsUsd]
+        sites:
+          type: array
+          items:
+            $ref: "#/components/schemas/SalescostImportSitePreview"
+      required: [year, unit, siteCount, amountCount, totals, sites]
+    SalescostImportResult:
+      allOf:
+        - $ref: "#/components/schemas/SalescostImportPreview"
         - type: object
           properties:
             applied:

@@ -436,6 +436,114 @@ export const GetCashflowAggregateResponse = zod.object({
 
 
 /**
+ * @summary Parse an uploaded 자금수지 Excel and return a preview (no DB changes)
+ */
+export const PreviewCashflowImportBody = zod.object({
+  "file": zod.instanceof(File)
+})
+
+export const PreviewCashflowImportResponse = zod.object({
+  "unit": zod.string(),
+  "projectCount": zod.number(),
+  "amountCount": zod.number(),
+  "totals": zod.object({
+  "cashIn": zod.number(),
+  "cashOut": zod.number()
+}),
+  "projects": zod.array(zod.object({
+  "name": zod.string(),
+  "division": zod.string(),
+  "cashInTotal": zod.number(),
+  "cashOutTotal": zod.number(),
+  "amountCount": zod.number()
+}))
+})
+
+
+/**
+ * @summary Parse an uploaded 자금수지 Excel and replace cashflow data in the DB
+ */
+export const ApplyCashflowImportBody = zod.object({
+  "file": zod.instanceof(File)
+})
+
+export const ApplyCashflowImportResponse = zod.object({
+  "unit": zod.string(),
+  "projectCount": zod.number(),
+  "amountCount": zod.number(),
+  "totals": zod.object({
+  "cashIn": zod.number(),
+  "cashOut": zod.number()
+}),
+  "projects": zod.array(zod.object({
+  "name": zod.string(),
+  "division": zod.string(),
+  "cashInTotal": zod.number(),
+  "cashOutTotal": zod.number(),
+  "amountCount": zod.number()
+}))
+}).and(zod.object({
+  "applied": zod.boolean()
+}))
+
+
+/**
+ * @summary Parse an uploaded 매출/원가 Excel and return a preview (no DB changes)
+ */
+export const PreviewSalescostImportBody = zod.object({
+  "file": zod.instanceof(File),
+  "year": zod.number()
+})
+
+export const PreviewSalescostImportResponse = zod.object({
+  "year": zod.number(),
+  "unit": zod.string(),
+  "siteCount": zod.number(),
+  "amountCount": zod.number(),
+  "totals": zod.object({
+  "revenueUsd": zod.number(),
+  "cogsUsd": zod.number()
+}),
+  "sites": zod.array(zod.object({
+  "code": zod.string(),
+  "name": zod.string(),
+  "revenueUsdTotal": zod.number(),
+  "cogsUsdTotal": zod.number(),
+  "amountCount": zod.number()
+}))
+})
+
+
+/**
+ * @summary Parse an uploaded 매출/원가 Excel and replace salescost data in the DB
+ */
+export const ApplySalescostImportBody = zod.object({
+  "file": zod.instanceof(File),
+  "year": zod.number()
+})
+
+export const ApplySalescostImportResponse = zod.object({
+  "year": zod.number(),
+  "unit": zod.string(),
+  "siteCount": zod.number(),
+  "amountCount": zod.number(),
+  "totals": zod.object({
+  "revenueUsd": zod.number(),
+  "cogsUsd": zod.number()
+}),
+  "sites": zod.array(zod.object({
+  "code": zod.string(),
+  "name": zod.string(),
+  "revenueUsdTotal": zod.number(),
+  "cogsUsdTotal": zod.number(),
+  "amountCount": zod.number()
+}))
+}).and(zod.object({
+  "applied": zod.boolean()
+}))
+
+
+/**
  * @summary Company-wide monthly sales/costs summary (매출, 원가, 매출이익, 판관비, 영업이익)
  */
 export const GetSalescostSummaryQueryParams = zod.object({

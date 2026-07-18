@@ -23,8 +23,12 @@ import type {
   AdminLoginBody,
   AdminLoginResult,
   ApiErrorMessage,
+  ApplyCashflowImportBody,
   ApplyMgmtreportImportBody,
+  ApplySalescostImportBody,
   CashflowAggregateSeries,
+  CashflowImportPreview,
+  CashflowImportResult,
   CashflowMonthlySeries,
   CashflowProject,
   CreateMgmtreportComment,
@@ -45,8 +49,12 @@ import type {
   MgmtreportImportResult,
   MgmtreportProjects,
   MgmtreportSummary,
+  PreviewCashflowImportBody,
   PreviewMgmtreportImportBody,
+  PreviewSalescostImportBody,
   ProjectDetail,
+  SalescostImportPreview,
+  SalescostImportResult,
   SalescostSites,
   SalescostSummary,
   UpdateMgmtreportComment,
@@ -1067,6 +1075,300 @@ export function useGetCashflowAggregate<TData = Awaited<ReturnType<typeof getCas
 
 
 
+
+export const getPreviewCashflowImportUrl = () => {
+
+
+
+
+  return `/api/cashflow/import/preview`
+}
+
+/**
+ * @summary Parse an uploaded 자금수지 Excel and return a preview (no DB changes)
+ */
+export const previewCashflowImport = async (previewCashflowImportBody: PreviewCashflowImportBody, options?: RequestInit): Promise<CashflowImportPreview> => {
+    const formData = new FormData();
+formData.append(`file`, previewCashflowImportBody.file);
+
+  return customFetch<CashflowImportPreview>(getPreviewCashflowImportUrl(),
+  {
+    ...options,
+    method: 'POST'
+    ,
+    body: formData
+  }
+);}
+
+
+
+
+
+export const getPreviewCashflowImportMutationOptions = <TError = ErrorType<ApiErrorMessage>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof previewCashflowImport>>, TError,{data: BodyType<PreviewCashflowImportBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof previewCashflowImport>>, TError,{data: BodyType<PreviewCashflowImportBody>}, TContext> => {
+
+const mutationKey = ['previewCashflowImport'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof previewCashflowImport>>, {data: BodyType<PreviewCashflowImportBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  previewCashflowImport(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PreviewCashflowImportMutationResult = NonNullable<Awaited<ReturnType<typeof previewCashflowImport>>>
+    export type PreviewCashflowImportMutationBody = BodyType<PreviewCashflowImportBody>
+    export type PreviewCashflowImportMutationError = ErrorType<ApiErrorMessage>
+
+    /**
+ * @summary Parse an uploaded 자금수지 Excel and return a preview (no DB changes)
+ */
+export const usePreviewCashflowImport = <TError = ErrorType<ApiErrorMessage>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof previewCashflowImport>>, TError,{data: BodyType<PreviewCashflowImportBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof previewCashflowImport>>,
+        TError,
+        {data: BodyType<PreviewCashflowImportBody>},
+        TContext
+      > => {
+      return useMutation(getPreviewCashflowImportMutationOptions(options));
+    }
+
+export const getApplyCashflowImportUrl = () => {
+
+
+
+
+  return `/api/cashflow/import/apply`
+}
+
+/**
+ * @summary Parse an uploaded 자금수지 Excel and replace cashflow data in the DB
+ */
+export const applyCashflowImport = async (applyCashflowImportBody: ApplyCashflowImportBody, options?: RequestInit): Promise<CashflowImportResult> => {
+    const formData = new FormData();
+formData.append(`file`, applyCashflowImportBody.file);
+
+  return customFetch<CashflowImportResult>(getApplyCashflowImportUrl(),
+  {
+    ...options,
+    method: 'POST'
+    ,
+    body: formData
+  }
+);}
+
+
+
+
+
+export const getApplyCashflowImportMutationOptions = <TError = ErrorType<ApiErrorMessage>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof applyCashflowImport>>, TError,{data: BodyType<ApplyCashflowImportBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof applyCashflowImport>>, TError,{data: BodyType<ApplyCashflowImportBody>}, TContext> => {
+
+const mutationKey = ['applyCashflowImport'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof applyCashflowImport>>, {data: BodyType<ApplyCashflowImportBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  applyCashflowImport(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ApplyCashflowImportMutationResult = NonNullable<Awaited<ReturnType<typeof applyCashflowImport>>>
+    export type ApplyCashflowImportMutationBody = BodyType<ApplyCashflowImportBody>
+    export type ApplyCashflowImportMutationError = ErrorType<ApiErrorMessage>
+
+    /**
+ * @summary Parse an uploaded 자금수지 Excel and replace cashflow data in the DB
+ */
+export const useApplyCashflowImport = <TError = ErrorType<ApiErrorMessage>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof applyCashflowImport>>, TError,{data: BodyType<ApplyCashflowImportBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof applyCashflowImport>>,
+        TError,
+        {data: BodyType<ApplyCashflowImportBody>},
+        TContext
+      > => {
+      return useMutation(getApplyCashflowImportMutationOptions(options));
+    }
+
+export const getPreviewSalescostImportUrl = () => {
+
+
+
+
+  return `/api/salescost/import/preview`
+}
+
+/**
+ * @summary Parse an uploaded 매출/원가 Excel and return a preview (no DB changes)
+ */
+export const previewSalescostImport = async (previewSalescostImportBody: PreviewSalescostImportBody, options?: RequestInit): Promise<SalescostImportPreview> => {
+    const formData = new FormData();
+formData.append(`file`, previewSalescostImportBody.file);
+formData.append(`year`, previewSalescostImportBody.year.toString())
+
+  return customFetch<SalescostImportPreview>(getPreviewSalescostImportUrl(),
+  {
+    ...options,
+    method: 'POST'
+    ,
+    body: formData
+  }
+);}
+
+
+
+
+
+export const getPreviewSalescostImportMutationOptions = <TError = ErrorType<ApiErrorMessage>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof previewSalescostImport>>, TError,{data: BodyType<PreviewSalescostImportBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof previewSalescostImport>>, TError,{data: BodyType<PreviewSalescostImportBody>}, TContext> => {
+
+const mutationKey = ['previewSalescostImport'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof previewSalescostImport>>, {data: BodyType<PreviewSalescostImportBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  previewSalescostImport(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PreviewSalescostImportMutationResult = NonNullable<Awaited<ReturnType<typeof previewSalescostImport>>>
+    export type PreviewSalescostImportMutationBody = BodyType<PreviewSalescostImportBody>
+    export type PreviewSalescostImportMutationError = ErrorType<ApiErrorMessage>
+
+    /**
+ * @summary Parse an uploaded 매출/원가 Excel and return a preview (no DB changes)
+ */
+export const usePreviewSalescostImport = <TError = ErrorType<ApiErrorMessage>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof previewSalescostImport>>, TError,{data: BodyType<PreviewSalescostImportBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof previewSalescostImport>>,
+        TError,
+        {data: BodyType<PreviewSalescostImportBody>},
+        TContext
+      > => {
+      return useMutation(getPreviewSalescostImportMutationOptions(options));
+    }
+
+export const getApplySalescostImportUrl = () => {
+
+
+
+
+  return `/api/salescost/import/apply`
+}
+
+/**
+ * @summary Parse an uploaded 매출/원가 Excel and replace salescost data in the DB
+ */
+export const applySalescostImport = async (applySalescostImportBody: ApplySalescostImportBody, options?: RequestInit): Promise<SalescostImportResult> => {
+    const formData = new FormData();
+formData.append(`file`, applySalescostImportBody.file);
+formData.append(`year`, applySalescostImportBody.year.toString())
+
+  return customFetch<SalescostImportResult>(getApplySalescostImportUrl(),
+  {
+    ...options,
+    method: 'POST'
+    ,
+    body: formData
+  }
+);}
+
+
+
+
+
+export const getApplySalescostImportMutationOptions = <TError = ErrorType<ApiErrorMessage>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof applySalescostImport>>, TError,{data: BodyType<ApplySalescostImportBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof applySalescostImport>>, TError,{data: BodyType<ApplySalescostImportBody>}, TContext> => {
+
+const mutationKey = ['applySalescostImport'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof applySalescostImport>>, {data: BodyType<ApplySalescostImportBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  applySalescostImport(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ApplySalescostImportMutationResult = NonNullable<Awaited<ReturnType<typeof applySalescostImport>>>
+    export type ApplySalescostImportMutationBody = BodyType<ApplySalescostImportBody>
+    export type ApplySalescostImportMutationError = ErrorType<ApiErrorMessage>
+
+    /**
+ * @summary Parse an uploaded 매출/원가 Excel and replace salescost data in the DB
+ */
+export const useApplySalescostImport = <TError = ErrorType<ApiErrorMessage>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof applySalescostImport>>, TError,{data: BodyType<ApplySalescostImportBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof applySalescostImport>>,
+        TError,
+        {data: BodyType<ApplySalescostImportBody>},
+        TContext
+      > => {
+      return useMutation(getApplySalescostImportMutationOptions(options));
+    }
 
 export const getGetSalescostSummaryUrl = (params: GetSalescostSummaryParams,) => {
   const normalizedParams = new URLSearchParams();
