@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Download, MessageSquare, Send } from "lucide-react";
 import { Donut, MiniBar } from "./ProjectDashboard";
 import { ServiceSaleTab } from "./ServiceSaleTab";
+import { ServiceOutsourcingTab } from "./ServiceOutsourcingTab";
 
 const cardStyle: React.CSSProperties = {
   backgroundColor: "#fff",
@@ -275,6 +276,8 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
       <div style={{ display: "flex", flexDirection: "column", gap: "8px", padding: "10px" }}>
         {activeTab === "Sale & Profit" ? (
           <ServiceSaleTab />
+        ) : activeTab === "Outsourcing" ? (
+          <ServiceOutsourcingTab />
         ) : activeTab === "Overview" ? (
           <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: "8px" }}>
             {/* Row 1: Revenue / Budget Execution Status / Cash */}
