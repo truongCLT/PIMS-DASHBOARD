@@ -62,6 +62,10 @@ months?: number;
 
 export type GetCashflowAggregateParams = {
 division?: string;
+/**
+ * Comma-separated cf_projects.name values to restrict the aggregation to
+ */
+names?: string;
 fromYear: number;
 /**
  * @minimum 1

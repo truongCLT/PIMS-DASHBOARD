@@ -3,7 +3,14 @@ import pimsBranding from "../assets/pims-branding.png";
 import { FolderClosed } from "lucide-react";
 import { PROJECT_GROUPS } from "../data/projects";
 
-export type DashboardScope = "전체" | "시공" | "용역";
+export type DashboardScope =
+  | "전체"
+  | "시공"
+  | "용역"
+  | "시공-진행중"
+  | "시공-종료"
+  | "용역-진행중"
+  | "용역-종료";
 
 interface TreeItem {
   label: string;
@@ -26,12 +33,12 @@ const TREE_DATA: TreeItem[] = PROJECT_GROUPS.map((group) => ({
         ? [
             {
               label: "진행중",
-              scope: division.label as DashboardScope,
+              scope: `${division.label}-진행중` as DashboardScope,
               children: division.projects.map((project) => ({ label: project.name, isProject: true })),
             },
             {
               label: "종료",
-              scope: division.label as DashboardScope,
+              scope: `${division.label}-종료` as DashboardScope,
               children: [],
             },
           ]

@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, inArray } from "drizzle-orm";
 import { db, cfProjectsTable, cfMonthlyAmountsTable } from "@workspace/db";
 import {
   ListCashflowProjectsResponseItem,
@@ -128,13 +128,24 @@ router.get("/cashflow/aggregate", async (req, res) => {
     res.status(400).json({ error: "잘못된 요청 파라미터입니다." });
     return;
   }
-  const { division, fromYear, fromMonth, months = 6 } = parsed.data;
+  const { division, names, fromYear, fromMonth, months = 6 } = parsed.data;
   if (![fromYear, fromMonth, months].every(Number.isInteger)) {
+    res.status(400).json({ error: "잘못된 요청 파라미터입니다." });
+    return;
+  }
+  const nameList = names
+    ? names.split(",").map((n) => n.trim()).filter((n) => n.length > 0)
+    : null;
+  if (nameList != null && nameList.length === 0) {
     res.status(400).json({ error: "잘못된 요청 파라미터입니다." });
     return;
   }
 
   try {
+    const conditions = [
+      division ? eq(cfProjectsTable.division, division) : undefined,
+      nameList ? inArray(cfProjectsTable.name, nameList) : undefined,
+    ].filter((c) => c != null);
     const amounts = await db
       .select({
         flowType: cfMonthlyAmountsTable.flowType,
@@ -143,7 +154,7 @@ router.get("/cashflow/aggregate", async (req, res) => {
       })
       .from(cfMonthlyAmountsTable)
       .innerJoin(cfProjectsTable, eq(cfMonthlyAmountsTable.projectId, cfProjectsTable.id))
-      .where(division ? eq(cfProjectsTable.division, division) : undefined)
+      .where(conditions.length > 0 ? and(...conditions) : undefined)
       .orderBy(asc(cfMonthlyAmountsTable.month));
 
     if (amounts.length === 0) {

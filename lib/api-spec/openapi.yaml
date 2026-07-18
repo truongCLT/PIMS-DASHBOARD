@@ -87,6 +87,12 @@ paths:
           required: false
           schema:
             type: string
+        - name: names
+          in: query
+          required: false
+          description: Comma-separated cf_projects.name values to restrict the aggregation to
+          schema:
+            type: string
         - name: fromYear
           in: query
           required: true

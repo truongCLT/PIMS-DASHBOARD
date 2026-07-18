@@ -16,6 +16,8 @@ import {
   getGetCashflowAggregateQueryKey,
 } from "@workspace/api-client-react";
 import type { DashboardScope } from "./Sidebar";
+import { PROJECT_GROUPS } from "../data/projects";
+import { getCashflowProjectRef } from "../data/cashflowProjectMap";
 
 // Legacy mock data still referenced by the Excel export (exportDashboard.ts).
 export const CASHFLOW_DATA = [
@@ -27,11 +29,61 @@ export const CASHFLOW_DATA = [
   { month: "6월", inflow: 30, outflow: -10, loan: 8, net: 10 },
 ];
 
-const SCOPE_TO_DIVISION: Record<DashboardScope, string | undefined> = {
+const BASE_SCOPE_TO_DIVISION: Record<string, string | undefined> = {
   전체: undefined,
   시공: "도급 사업",
   용역: "용역 사업",
 };
+
+// 진행중 = 해당 사업부 하위에 나열된 프로젝트들의 자금수지 합산
+function getOngoingRefs(divisionLabel: "시공" | "용역") {
+  const decv = PROJECT_GROUPS.find((g) => g.label === "DECV");
+  const division = decv?.divisions.find((d) => d.label === divisionLabel);
+  const refs = (division?.projects ?? [])
+    .map((p) => getCashflowProjectRef(p.name))
+    .filter((r): r is NonNullable<typeof r> => r != null);
+  return refs;
+}
+
+interface ScopeQueryConfig {
+  label: string;
+  enabled: boolean;
+  division?: string;
+  names?: string;
+  emptyMessage?: string;
+}
+
+function getScopeConfig(scope: DashboardScope): ScopeQueryConfig {
+  if (scope === "시공-종료" || scope === "용역-종료") {
+    return {
+      label: scope.replace("-", " "),
+      enabled: false,
+      emptyMessage: "종료된 프로젝트가 없어 집계 데이터가 없습니다.",
+    };
+  }
+  if (scope === "시공-진행중" || scope === "용역-진행중") {
+    const divisionLabel = scope.startsWith("시공") ? "시공" : "용역";
+    const refs = getOngoingRefs(divisionLabel);
+    if (refs.length === 0) {
+      return {
+        label: scope.replace("-", " "),
+        enabled: false,
+        emptyMessage: "진행중 프로젝트의 자금수지 데이터가 없습니다.",
+      };
+    }
+    return {
+      label: scope.replace("-", " "),
+      enabled: true,
+      division: refs[0].division,
+      names: refs.map((r) => r.name).join(","),
+    };
+  }
+  return {
+    label: scope === "전체" ? "DECV 전체" : scope,
+    enabled: true,
+    division: BASE_SCOPE_TO_DIVISION[scope],
+  };
+}
 
 const InflowLabel = (props: any) => {
   const { x, y, width, value } = props;
@@ -60,10 +112,16 @@ function monthLabel(ym: string): string {
 }
 
 export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) {
-  const division = SCOPE_TO_DIVISION[scope];
-  const params = { division, fromYear: 2026, fromMonth: 1, months: 6 };
+  const config = getScopeConfig(scope);
+  const params = {
+    division: config.division,
+    names: config.names,
+    fromYear: 2026,
+    fromMonth: 1,
+    months: 6,
+  };
   const query = useGetCashflowAggregate(params, {
-    query: { queryKey: getGetCashflowAggregateQueryKey(params) },
+    query: { queryKey: getGetCashflowAggregateQueryKey(params), enabled: config.enabled },
   });
 
   const points = query.data?.points ?? [];
@@ -76,7 +134,9 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
   const hasData = chartData.some((d) => d.inflow !== 0 || d.outflow !== 0 || d.balance !== 0);
 
   let body: React.ReactNode;
-  if (query.isLoading) {
+  if (!config.enabled) {
+    body = <CenterNote text={config.emptyMessage ?? "집계 데이터가 없습니다."} />;
+  } else if (query.isLoading) {
     body = <CenterNote text="자금수지 데이터를 불러오는 중..." />;
   } else if (query.isError) {
     const status = (query.error as { response?: { status?: number } })?.response?.status;
@@ -143,7 +203,7 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
         <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
           <span style={{ fontSize: "12px", fontWeight: "600", color: "#1a3a5c" }}>자금수지</span>
           <span style={{ fontSize: "10px", color: "#5a6a7e" }}>
-            {scope === "전체" ? "DECV 전체" : scope} · 단위: 천 USD
+            {config.label} · 단위: 천 USD
           </span>
         </div>
         <button style={{ fontSize: "11px", color: "#1e6fdd", background: "none", border: "none", cursor: "pointer" }}>
