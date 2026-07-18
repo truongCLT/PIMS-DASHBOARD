@@ -5,6 +5,38 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export interface MgmtreportImportProjectPreview {
+  name: string;
+  /** @nullable */
+  siteCode: string | null;
+  isGroup: boolean;
+  revenueActualTotal: number;
+  cogsActualTotal: number;
+  monthlyCount: number;
+}
+
+export type MgmtreportImportPreviewTotals = {
+  revenuePlan: number;
+  revenueActual: number;
+  cogsActual: number;
+};
+
+export interface MgmtreportImportPreview {
+  year: number;
+  unit: string;
+  projectCount: number;
+  monthlyCount: number;
+  annualCount: number;
+  pnlCount: number;
+  monthsWithActual: number[];
+  totals: MgmtreportImportPreviewTotals;
+  projects: MgmtreportImportProjectPreview[];
+}
+
+export type MgmtreportImportResult = MgmtreportImportPreview & {
+  applied: boolean;
+};
+
 export interface ApiErrorMessage {
   error: string;
 }
@@ -275,5 +307,15 @@ year: number;
  * Include corporate rollup rows (DECV법인 취합본)
  */
 includeGroups?: boolean;
+};
+
+export type PreviewMgmtreportImportBody = {
+  file: Blob;
+  year: number;
+};
+
+export type ApplyMgmtreportImportBody = {
+  file: Blob;
+  year: number;
 };
 

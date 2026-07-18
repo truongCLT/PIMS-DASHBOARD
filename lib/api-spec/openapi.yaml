@@ -291,6 +291,80 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiErrorMessage"
+  /mgmtreport/import/preview:
+    post:
+      operationId: previewMgmtreportImport
+      tags: [mgmtreport]
+      summary: Parse an uploaded 경영관리보고회 Excel and return a preview (no DB changes)
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                year:
+                  type: integer
+              required: [file, year]
+      responses:
+        "200":
+          description: Parsed preview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MgmtreportImportPreview"
+        "400":
+          description: Bad upload (missing file, bad year, too large)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorMessage"
+        "422":
+          description: Excel format error (Korean message)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorMessage"
+  /mgmtreport/import/apply:
+    post:
+      operationId: applyMgmtreportImport
+      tags: [mgmtreport]
+      summary: Parse an uploaded 경영관리보고회 Excel and replace mgmtreport data in the DB
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                year:
+                  type: integer
+              required: [file, year]
+      responses:
+        "200":
+          description: Import applied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MgmtreportImportResult"
+        "400":
+          description: Bad upload (missing file, bad year, too large)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorMessage"
+        "422":
+          description: Excel format error (Korean message)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorMessage"
   /healthz:
     get:
       operationId: healthCheck
@@ -306,6 +380,65 @@ paths:
                 $ref: "#/components/schemas/HealthStatus"
 components:
   schemas:
+    MgmtreportImportProjectPreview:
+      type: object
+      properties:
+        name:
+          type: string
+        siteCode:
+          type: [string, "null"]
+        isGroup:
+          type: boolean
+        revenueActualTotal:
+          type: number
+        cogsActualTotal:
+          type: number
+        monthlyCount:
+          type: integer
+      required: [name, siteCode, isGroup, revenueActualTotal, cogsActualTotal, monthlyCount]
+    MgmtreportImportPreview:
+      type: object
+      properties:
+        year:
+          type: integer
+        unit:
+          type: string
+        projectCount:
+          type: integer
+        monthlyCount:
+          type: integer
+        annualCount:
+          type: integer
+        pnlCount:
+          type: integer
+        monthsWithActual:
+          type: array
+          items:
+            type: integer
+        totals:
+          type: object
+          properties:
+            revenuePlan:
+              type: number
+            revenueActual:
+              type: number
+            cogsActual:
+              type: number
+          required: [revenuePlan, revenueActual, cogsActual]
+        projects:
+          type: array
+          items:
+            $ref: "#/components/schemas/MgmtreportImportProjectPreview"
+      required:
+        [year, unit, projectCount, monthlyCount, annualCount, pnlCount, monthsWithActual, totals, projects]
+    MgmtreportImportResult:
+      allOf:
+        - $ref: "#/components/schemas/MgmtreportImportPreview"
+        - type: object
+          properties:
+            applied:
+              type: boolean
+          required: [applied]
     ApiErrorMessage:
       type: object
       properties:

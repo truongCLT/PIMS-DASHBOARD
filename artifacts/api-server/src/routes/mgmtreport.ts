@@ -1,4 +1,5 @@
-import { Router, type IRouter } from "express";
+import { Router, type IRouter, type Request, type Response } from "express";
+import multer from "multer";
 import { asc, eq } from "drizzle-orm";
 import { db, mrProjectsTable, mrMonthlyTable, mrAnnualTable, mrPnlTable } from "@workspace/db";
 import {
@@ -7,8 +8,100 @@ import {
   ListMgmtreportProjectsQueryParams,
   ListMgmtreportProjectsResponse,
 } from "@workspace/api-zod";
+import {
+  parseMgmtreportWorkbook,
+  buildPreview,
+  applyMgmtreportImport,
+  MgmtreportParseError,
+} from "../lib/mgmtreportImport";
 
 const router: IRouter = Router();
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 25 * 1024 * 1024 },
+});
+
+function parseYearField(raw: unknown): number | null {
+  const y = Number(raw);
+  if (!Number.isInteger(y) || y < 2000 || y > 2100) return null;
+  return y;
+}
+
+const uploadSingle = (req: Request, res: Response) =>
+  new Promise<Error | undefined>((resolve) => {
+    upload.single("file")(req, res, (err?: unknown) => resolve(err as Error | undefined));
+  });
+
+async function readUpload(req: Request, res: Response) {
+  const err = await uploadSingle(req, res);
+  if (err) {
+    const isSize = (err as { code?: string }).code === "LIMIT_FILE_SIZE";
+    return {
+      error: isSize
+        ? "파일이 너무 큽니다. 25MB 이하의 Excel 파일만 업로드할 수 있습니다."
+        : "파일 업로드에 실패했습니다. 다시 시도해 주세요.",
+    } as const;
+  }
+  const file = (req as unknown as { file?: { buffer: Buffer; originalname: string } }).file;
+  if (!file) {
+    return { error: "업로드된 파일이 없습니다. Excel(.xlsx) 파일을 선택해 주세요." } as const;
+  }
+  const year = parseYearField((req.body as Record<string, unknown>)?.year);
+  if (year == null) {
+    return { error: "연도(year)가 올바르지 않습니다. 예: 2026" } as const;
+  }
+  return { file, year } as const;
+}
+
+router.post("/mgmtreport/import/preview", async (req, res) => {
+  const r = await readUpload(req, res);
+  if ("error" in r) {
+    res.status(400).json({ error: r.error });
+    return;
+  }
+  try {
+    const parsed = await parseMgmtreportWorkbook(r.file.buffer, r.year);
+    res.json(buildPreview(parsed));
+  } catch (err) {
+    if (err instanceof MgmtreportParseError) {
+      res.status(422).json({ error: err.message });
+      return;
+    }
+    req.log.error({ err }, "failed to preview mgmtreport import");
+    res.status(500).json({ error: "Excel 파싱 중 오류가 발생했습니다." });
+  }
+});
+
+router.post("/mgmtreport/import/apply", async (req, res) => {
+  const r = await readUpload(req, res);
+  if ("error" in r) {
+    res.status(400).json({ error: r.error });
+    return;
+  }
+  try {
+    const parsed = await parseMgmtreportWorkbook(r.file.buffer, r.year);
+    await applyMgmtreportImport(parsed);
+    req.log.info(
+      {
+        year: r.year,
+        projects: parsed.projects.length,
+        monthly: parsed.monthly.length,
+        annual: parsed.annual.length,
+        pnl: parsed.pnl.length,
+      },
+      "mgmtreport import applied",
+    );
+    res.json({ ...buildPreview(parsed), applied: true });
+  } catch (err) {
+    if (err instanceof MgmtreportParseError) {
+      res.status(422).json({ error: err.message });
+      return;
+    }
+    req.log.error({ err }, "failed to apply mgmtreport import");
+    res.status(500).json({ error: "데이터 반영 중 오류가 발생했습니다. 기존 데이터는 변경되지 않았습니다." });
+  }
+});
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 

@@ -7,6 +7,7 @@
  */
 
 export * from './apiErrorMessage';
+export * from './applyMgmtreportImportBody';
 export * from './cashflowAggregateSeries';
 export * from './cashflowMonthlyPoint';
 export * from './cashflowMonthlySeries';
@@ -21,10 +22,15 @@ export * from './listMgmtreportProjectsParams';
 export * from './listSalescostSitesMetric';
 export * from './listSalescostSitesParams';
 export * from './mgmtreportAnnualPoint';
+export * from './mgmtreportImportPreview';
+export * from './mgmtreportImportPreviewTotals';
+export * from './mgmtreportImportProjectPreview';
+export * from './mgmtreportImportResult';
 export * from './mgmtreportLine';
 export * from './mgmtreportProject';
 export * from './mgmtreportProjects';
 export * from './mgmtreportSummary';
+export * from './previewMgmtreportImportBody';
 export * from './projectDetail';
 export * from './projectDetailCostBudget';
 export * from './projectDetailCostEstimation';

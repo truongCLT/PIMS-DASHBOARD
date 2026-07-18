@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
-import { ChevronsUp, Download, FileSpreadsheet, FileText } from "lucide-react";
+import { ChevronsUp, Download, FileSpreadsheet, FileText, Upload } from "lucide-react";
 import { PROJECT_GROUPS } from "../data/projects";
 import { exportDashboardExcel, exportDashboardPdf } from "../lib/exportDashboard";
+import { MgmtReportUploadModal } from "./MgmtReportUploadModal";
 
 export function DashboardHeader() {
   const [startDate, setStartDate] = useState("");
@@ -19,6 +20,7 @@ export function DashboardHeader() {
   const [project, setProject] = useState("All");
   const [downloadOpen, setDownloadOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [uploadOpen, setUploadOpen] = useState(false);
   const downloadRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -276,6 +278,27 @@ export function DashboardHeader() {
           </span>
         </div>
 
+        {/* Excel upload button */}
+        <button
+          onClick={() => setUploadOpen(true)}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "6px",
+            backgroundColor: "#1e7145",
+            color: "#fff",
+            border: "none",
+            borderRadius: "6px",
+            padding: "7px 14px",
+            fontSize: "12px",
+            cursor: "pointer",
+            fontWeight: "500",
+          }}
+        >
+          <Upload size={13} />
+          Excel 업로드
+        </button>
+
         {/* Download button + dropdown */}
         <div ref={downloadRef} style={{ position: "relative" }}>
           <button
@@ -361,6 +384,8 @@ export function DashboardHeader() {
           )}
         </div>
       </div>
+
+      {uploadOpen && <MgmtReportUploadModal onClose={() => setUploadOpen(false)} />}
     </div>
   );
 }

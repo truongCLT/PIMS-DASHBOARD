@@ -21,6 +21,7 @@ import type {
 
 import type {
   ApiErrorMessage,
+  ApplyMgmtreportImportBody,
   CashflowAggregateSeries,
   CashflowMonthlySeries,
   CashflowProject,
@@ -32,8 +33,11 @@ import type {
   HealthStatus,
   ListMgmtreportProjectsParams,
   ListSalescostSitesParams,
+  MgmtreportImportPreview,
+  MgmtreportImportResult,
   MgmtreportProjects,
   MgmtreportSummary,
+  PreviewMgmtreportImportBody,
   ProjectDetail,
   SalescostSites,
   SalescostSummary
@@ -801,6 +805,154 @@ export function useListMgmtreportProjects<TData = Awaited<ReturnType<typeof list
 
 
 
+
+export const getPreviewMgmtreportImportUrl = () => {
+
+
+
+
+  return `/api/mgmtreport/import/preview`
+}
+
+/**
+ * @summary Parse an uploaded 경영관리보고회 Excel and return a preview (no DB changes)
+ */
+export const previewMgmtreportImport = async (previewMgmtreportImportBody: PreviewMgmtreportImportBody, options?: RequestInit): Promise<MgmtreportImportPreview> => {
+    const formData = new FormData();
+formData.append(`file`, previewMgmtreportImportBody.file);
+formData.append(`year`, previewMgmtreportImportBody.year.toString())
+
+  return customFetch<MgmtreportImportPreview>(getPreviewMgmtreportImportUrl(),
+  {
+    ...options,
+    method: 'POST'
+    ,
+    body: formData
+  }
+);}
+
+
+
+
+
+export const getPreviewMgmtreportImportMutationOptions = <TError = ErrorType<ApiErrorMessage>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof previewMgmtreportImport>>, TError,{data: BodyType<PreviewMgmtreportImportBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof previewMgmtreportImport>>, TError,{data: BodyType<PreviewMgmtreportImportBody>}, TContext> => {
+
+const mutationKey = ['previewMgmtreportImport'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof previewMgmtreportImport>>, {data: BodyType<PreviewMgmtreportImportBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  previewMgmtreportImport(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PreviewMgmtreportImportMutationResult = NonNullable<Awaited<ReturnType<typeof previewMgmtreportImport>>>
+    export type PreviewMgmtreportImportMutationBody = BodyType<PreviewMgmtreportImportBody>
+    export type PreviewMgmtreportImportMutationError = ErrorType<ApiErrorMessage>
+
+    /**
+ * @summary Parse an uploaded 경영관리보고회 Excel and return a preview (no DB changes)
+ */
+export const usePreviewMgmtreportImport = <TError = ErrorType<ApiErrorMessage>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof previewMgmtreportImport>>, TError,{data: BodyType<PreviewMgmtreportImportBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof previewMgmtreportImport>>,
+        TError,
+        {data: BodyType<PreviewMgmtreportImportBody>},
+        TContext
+      > => {
+      return useMutation(getPreviewMgmtreportImportMutationOptions(options));
+    }
+
+export const getApplyMgmtreportImportUrl = () => {
+
+
+
+
+  return `/api/mgmtreport/import/apply`
+}
+
+/**
+ * @summary Parse an uploaded 경영관리보고회 Excel and replace mgmtreport data in the DB
+ */
+export const applyMgmtreportImport = async (applyMgmtreportImportBody: ApplyMgmtreportImportBody, options?: RequestInit): Promise<MgmtreportImportResult> => {
+    const formData = new FormData();
+formData.append(`file`, applyMgmtreportImportBody.file);
+formData.append(`year`, applyMgmtreportImportBody.year.toString())
+
+  return customFetch<MgmtreportImportResult>(getApplyMgmtreportImportUrl(),
+  {
+    ...options,
+    method: 'POST'
+    ,
+    body: formData
+  }
+);}
+
+
+
+
+
+export const getApplyMgmtreportImportMutationOptions = <TError = ErrorType<ApiErrorMessage>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof applyMgmtreportImport>>, TError,{data: BodyType<ApplyMgmtreportImportBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof applyMgmtreportImport>>, TError,{data: BodyType<ApplyMgmtreportImportBody>}, TContext> => {
+
+const mutationKey = ['applyMgmtreportImport'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof applyMgmtreportImport>>, {data: BodyType<ApplyMgmtreportImportBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  applyMgmtreportImport(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ApplyMgmtreportImportMutationResult = NonNullable<Awaited<ReturnType<typeof applyMgmtreportImport>>>
+    export type ApplyMgmtreportImportMutationBody = BodyType<ApplyMgmtreportImportBody>
+    export type ApplyMgmtreportImportMutationError = ErrorType<ApiErrorMessage>
+
+    /**
+ * @summary Parse an uploaded 경영관리보고회 Excel and replace mgmtreport data in the DB
+ */
+export const useApplyMgmtreportImport = <TError = ErrorType<ApiErrorMessage>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof applyMgmtreportImport>>, TError,{data: BodyType<ApplyMgmtreportImportBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof applyMgmtreportImport>>,
+        TError,
+        {data: BodyType<ApplyMgmtreportImportBody>},
+        TContext
+      > => {
+      return useMutation(getApplyMgmtreportImportMutationOptions(options));
+    }
 
 export const getHealthCheckUrl = () => {
 

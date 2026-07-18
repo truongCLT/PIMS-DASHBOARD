@@ -329,6 +329,72 @@ export const ListMgmtreportProjectsResponse = zod.object({
 
 
 /**
+ * @summary Parse an uploaded 경영관리보고회 Excel and return a preview (no DB changes)
+ */
+export const PreviewMgmtreportImportBody = zod.object({
+  "file": zod.instanceof(File),
+  "year": zod.number()
+})
+
+export const PreviewMgmtreportImportResponse = zod.object({
+  "year": zod.number(),
+  "unit": zod.string(),
+  "projectCount": zod.number(),
+  "monthlyCount": zod.number(),
+  "annualCount": zod.number(),
+  "pnlCount": zod.number(),
+  "monthsWithActual": zod.array(zod.number()),
+  "totals": zod.object({
+  "revenuePlan": zod.number(),
+  "revenueActual": zod.number(),
+  "cogsActual": zod.number()
+}),
+  "projects": zod.array(zod.object({
+  "name": zod.string(),
+  "siteCode": zod.string().nullable(),
+  "isGroup": zod.boolean(),
+  "revenueActualTotal": zod.number(),
+  "cogsActualTotal": zod.number(),
+  "monthlyCount": zod.number()
+}))
+})
+
+
+/**
+ * @summary Parse an uploaded 경영관리보고회 Excel and replace mgmtreport data in the DB
+ */
+export const ApplyMgmtreportImportBody = zod.object({
+  "file": zod.instanceof(File),
+  "year": zod.number()
+})
+
+export const ApplyMgmtreportImportResponse = zod.object({
+  "year": zod.number(),
+  "unit": zod.string(),
+  "projectCount": zod.number(),
+  "monthlyCount": zod.number(),
+  "annualCount": zod.number(),
+  "pnlCount": zod.number(),
+  "monthsWithActual": zod.array(zod.number()),
+  "totals": zod.object({
+  "revenuePlan": zod.number(),
+  "revenueActual": zod.number(),
+  "cogsActual": zod.number()
+}),
+  "projects": zod.array(zod.object({
+  "name": zod.string(),
+  "siteCode": zod.string().nullable(),
+  "isGroup": zod.boolean(),
+  "revenueActualTotal": zod.number(),
+  "cogsActualTotal": zod.number(),
+  "monthlyCount": zod.number()
+}))
+}).and(zod.object({
+  "applied": zod.boolean()
+}))
+
+
+/**
  * Returns server health status
  * @summary Health check
  */
