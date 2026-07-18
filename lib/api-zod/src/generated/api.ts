@@ -178,7 +178,9 @@ export const GetProjectdetailResponse = zod.object({
   "overview": zod.object({
   "contractAmount": zod.number().nullable().describe('도급액 (천 USD)'),
   "startDate": zod.string().nullable().describe('공사 시작일 YYYY-MM-DD'),
-  "endDate": zod.string().nullable().describe('공사 종료일 YYYY-MM-DD')
+  "endDate": zod.string().nullable().describe('공사 종료일 YYYY-MM-DD'),
+  "client": zod.string().nullable().describe('발주처'),
+  "scale": zod.string().nullable().describe('공사규모')
 }),
   "progress": zod.array(zod.object({
   "year": zod.number(),
@@ -246,7 +248,9 @@ export const PutProjectdetailBody = zod.object({
   "overview": zod.object({
   "contractAmount": zod.number().nullable().describe('도급액 (천 USD)'),
   "startDate": zod.string().nullable().describe('공사 시작일 YYYY-MM-DD'),
-  "endDate": zod.string().nullable().describe('공사 종료일 YYYY-MM-DD')
+  "endDate": zod.string().nullable().describe('공사 종료일 YYYY-MM-DD'),
+  "client": zod.string().nullable().describe('발주처'),
+  "scale": zod.string().nullable().describe('공사규모')
 }),
   "progress": zod.array(zod.object({
   "year": zod.number(),
@@ -310,7 +314,9 @@ export const PutProjectdetailResponse = zod.object({
   "overview": zod.object({
   "contractAmount": zod.number().nullable().describe('도급액 (천 USD)'),
   "startDate": zod.string().nullable().describe('공사 시작일 YYYY-MM-DD'),
-  "endDate": zod.string().nullable().describe('공사 종료일 YYYY-MM-DD')
+  "endDate": zod.string().nullable().describe('공사 종료일 YYYY-MM-DD'),
+  "client": zod.string().nullable().describe('발주처'),
+  "scale": zod.string().nullable().describe('공사규모')
 }),
   "progress": zod.array(zod.object({
   "year": zod.number(),

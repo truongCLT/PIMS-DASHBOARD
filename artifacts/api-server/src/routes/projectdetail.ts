@@ -75,6 +75,8 @@ async function loadDetail(projectName: string) {
       contractAmount: ov ? num(ov.contractAmount) : null,
       startDate: ov?.startDate ?? null,
       endDate: ov?.endDate ?? null,
+      client: ov?.client ?? null,
+      scale: ov?.scale ?? null,
     },
     progress: progress.map((p) => ({
       year: p.year,
@@ -166,12 +168,22 @@ router.put("/projectdetail", requireAdmin, async (req, res) => {
       await tx.delete(pdPhotosTable).where(eq(pdPhotosTable.projectName, projectName));
 
       const ov = body.overview;
-      if (ov.contractAmount != null || ov.startDate != null || ov.endDate != null) {
+      const client = ov.client?.trim() ? ov.client.trim() : null;
+      const scale = ov.scale?.trim() ? ov.scale.trim() : null;
+      if (
+        ov.contractAmount != null ||
+        ov.startDate != null ||
+        ov.endDate != null ||
+        client != null ||
+        scale != null
+      ) {
         await tx.insert(pdOverviewTable).values({
           projectName,
           contractAmount: str(ov.contractAmount),
           startDate: ov.startDate ?? null,
           endDate: ov.endDate ?? null,
+          client,
+          scale,
         });
       }
       if (body.progress.length > 0) {

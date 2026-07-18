@@ -1303,7 +1303,15 @@ components:
           type: string
           nullable: true
           description: 공사 종료일 YYYY-MM-DD
-      required: [contractAmount, startDate, endDate]
+        client:
+          type: string
+          nullable: true
+          description: 발주처
+        scale:
+          type: string
+          nullable: true
+          description: 공사규모
+      required: [contractAmount, startDate, endDate, client, scale]
     ProjectDetailProgressPoint:
       type: object
       properties:

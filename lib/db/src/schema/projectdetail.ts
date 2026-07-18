@@ -23,6 +23,8 @@ export const pdOverviewTable = pgTable(
     contractAmount: numeric("contract_amount", { precision: 18, scale: 4 }), // 도급액 (천 USD)
     startDate: text("start_date"), // 공사 시작일 'YYYY-MM-DD'
     endDate: text("end_date"), // 공사 종료일 'YYYY-MM-DD'
+    client: text("client"), // 발주처
+    scale: text("scale"), // 공사규모
   },
   (t) => [uniqueIndex("pd_overview_uq").on(t.projectName)],
 );

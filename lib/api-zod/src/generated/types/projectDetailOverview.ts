@@ -13,4 +13,8 @@ export interface ProjectDetailOverview {
   startDate: string | null;
   /** 공사 종료일 YYYY-MM-DD */
   endDate: string | null;
+  /** 발주처 */
+  client: string | null;
+  /** 공사규모 */
+  scale: string | null;
 }

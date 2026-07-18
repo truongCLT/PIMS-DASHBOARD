@@ -70,7 +70,7 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
   );
 
   const { detail } = useProjectDetail(projectName);
-  const ov = detail?.overview ?? { contractAmount: null, startDate: null, endDate: null };
+  const ov = detail?.overview ?? { contractAmount: null, startDate: null, endDate: null, client: null, scale: null };
   const fmtDate = (d: string | null) => (d ? `'${d.slice(2, 4)}.${d.slice(5, 7)}.${d.slice(8, 10)}` : "-");
   const periodLabel =
     ov.startDate && ov.endDate
@@ -245,7 +245,7 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
         <div style={{ flex: 1 }}>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 0", fontSize: "12px", color: "#1a2d4d" }}>
             <span style={{ fontWeight: 700, paddingRight: "14px" }}>Project : {projectName}</span>
-            <span style={{ borderLeft: "1px solid #d5dce6", padding: "0 14px" }}>발주처 : 000000000000</span>
+            <span style={{ borderLeft: "1px solid #d5dce6", padding: "0 14px" }}>발주처 : {ov.client ?? "-"}</span>
             <span style={{ borderLeft: "1px solid #d5dce6", padding: "0 14px" }}>
               공사기간 : {periodLabel}
             </span>
@@ -253,7 +253,7 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
           <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 0", fontSize: "12px", color: "#1a2d4d", marginTop: "8px" }}>
             <span style={{ fontWeight: 700, paddingRight: "14px" }}>도급액 : {fmtNum(ov.contractAmount)}</span>
             <span style={{ borderLeft: "1px solid #d5dce6", padding: "0 14px" }}>
-              공사규모 : B2~00F&nbsp;&nbsp;0개동 (오피스 및 아파트)&nbsp;&nbsp;공동주택 000세대
+              공사규모 : {ov.scale ?? "-"}
             </span>
           </div>
         </div>

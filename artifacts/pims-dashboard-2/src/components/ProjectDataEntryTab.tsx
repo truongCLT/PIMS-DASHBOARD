@@ -126,7 +126,7 @@ export function ProjectDataEntryTab({ projectName }: { projectName: string }) {
   const mutation = usePutProjectdetail();
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
 
-  const [overview, setOverview] = useState<ProjectDetailOverview>({ contractAmount: null, startDate: null, endDate: null });
+  const [overview, setOverview] = useState<ProjectDetailOverview>({ contractAmount: null, startDate: null, endDate: null, client: null, scale: null });
   const [progress, setProgress] = useState<ProjectDetailProgressPoint[]>([]);
   const [milestones, setMilestones] = useState<ProjectDetailMilestone[]>([]);
   const [costEstimation, setCostEstimation] = useState<ProjectDetailCostEstimation[]>([]);
@@ -145,7 +145,7 @@ export function ProjectDataEntryTab({ projectName }: { projectName: string }) {
 
   useEffect(() => {
     if (detail && !loaded) {
-      setOverview(detail.overview ?? { contractAmount: null, startDate: null, endDate: null });
+      setOverview(detail.overview ?? { contractAmount: null, startDate: null, endDate: null, client: null, scale: null });
       setProgress(detail.progress);
       setMilestones(detail.milestones);
       setCostEstimation(
@@ -281,6 +281,8 @@ export function ProjectDataEntryTab({ projectName }: { projectName: string }) {
               <th style={th}>도급액 (천 USD)</th>
               <th style={th}>공사 시작일</th>
               <th style={th}>공사 종료일</th>
+              <th style={th}>발주처</th>
+              <th style={th}>공사규모</th>
             </tr>
           </thead>
           <tbody>
@@ -301,6 +303,24 @@ export function ProjectDataEntryTab({ projectName }: { projectName: string }) {
                   type="date"
                   value={overview.endDate ?? ""}
                   onChange={(e) => setOverview((o) => ({ ...o, endDate: e.target.value === "" ? null : e.target.value }))}
+                  style={inputStyle}
+                />
+              </td>
+              <td style={tdCell}>
+                <input
+                  type="text"
+                  value={overview.client ?? ""}
+                  placeholder="예: OO개발(주)"
+                  onChange={(e) => setOverview((o) => ({ ...o, client: e.target.value === "" ? null : e.target.value }))}
+                  style={inputStyle}
+                />
+              </td>
+              <td style={tdCell}>
+                <input
+                  type="text"
+                  value={overview.scale ?? ""}
+                  placeholder="예: B2~35F 3개동, 공동주택 500세대"
+                  onChange={(e) => setOverview((o) => ({ ...o, scale: e.target.value === "" ? null : e.target.value }))}
                   style={inputStyle}
                 />
               </td>
