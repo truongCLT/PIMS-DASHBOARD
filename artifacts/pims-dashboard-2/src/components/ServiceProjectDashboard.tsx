@@ -4,6 +4,7 @@ import { Donut, MiniBar } from "./ProjectDashboard";
 import { ServiceSaleTab } from "./ServiceSaleTab";
 import { ServiceOutsourcingTab } from "./ServiceOutsourcingTab";
 import { ServiceCashflowTab } from "./ServiceCashflowTab";
+import { ServiceBudgetTab } from "./ServiceBudgetTab";
 
 const cardStyle: React.CSSProperties = {
   backgroundColor: "#fff",
@@ -281,6 +282,8 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
           <ServiceOutsourcingTab />
         ) : activeTab === "Cashflow" ? (
           <ServiceCashflowTab />
+        ) : activeTab === "Budget Execution" ? (
+          <ServiceBudgetTab />
         ) : activeTab === "Overview" ? (
           <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: "8px" }}>
             {/* Row 1: Revenue / Budget Execution Status / Cash */}
