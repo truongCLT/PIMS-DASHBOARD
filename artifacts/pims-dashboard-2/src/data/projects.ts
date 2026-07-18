@@ -13,6 +13,22 @@ export interface ProjectGroup {
   divisions: ProjectDivision[];
 }
 
+const SERVICE_KEYWORDS = [
+  "용역",
+  "프리콘",
+  "인허가",
+  "산출",
+  "유지관리",
+  "운영관리",
+  "분양대행",
+  "테스트 파일",
+];
+
+/** mr 프로젝트명 기반 시공/용역 분류 (키워드 매칭, 기본값 시공) */
+export function classifyMrProject(projectName: string): "시공" | "용역" {
+  return SERVICE_KEYWORDS.some((k) => projectName.includes(k)) ? "용역" : "시공";
+}
+
 export function getProjectDivision(projectName: string): string | null {
   for (const group of PROJECT_GROUPS) {
     for (const division of group.divisions) {
@@ -21,7 +37,7 @@ export function getProjectDivision(projectName: string): string | null {
       }
     }
   }
-  return null;
+  return classifyMrProject(projectName);
 }
 
 export const PROJECT_GROUPS: ProjectGroup[] = [

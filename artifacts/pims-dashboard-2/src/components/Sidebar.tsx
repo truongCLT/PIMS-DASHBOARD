@@ -1,7 +1,9 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import pimsBranding from "../assets/pims-branding.png";
 import { FolderClosed } from "lucide-react";
-import { PROJECT_GROUPS } from "../data/projects";
+import { useListMgmtreportProjects } from "@workspace/api-client-react";
+import { PROJECT_GROUPS, classifyMrProject } from "../data/projects";
+import { REPORT_YEAR } from "../lib/mgmtreportData";
 
 export type DashboardScope =
   | "전체"
@@ -19,32 +21,41 @@ interface TreeItem {
   scope?: DashboardScope;
 }
 
-const TREE_DATA: TreeItem[] = PROJECT_GROUPS.map((group) => ({
-  label: group.label,
-  scope: group.label === "DECV" ? ("전체" as DashboardScope) : undefined,
-  children: group.divisions.map((division) => ({
-    label: division.label,
-    scope:
-      group.label === "DECV" && (division.label === "시공" || division.label === "용역")
-        ? (division.label as DashboardScope)
-        : undefined,
-    children:
-      division.label === "시공" || division.label === "용역"
-        ? [
-            {
-              label: "진행중",
-              scope: `${division.label}-진행중` as DashboardScope,
-              children: division.projects.map((project) => ({ label: project.name, isProject: true })),
-            },
-            {
-              label: "종료",
-              scope: `${division.label}-종료` as DashboardScope,
-              children: [],
-            },
-          ]
-        : division.projects.map((project) => ({ label: project.name, isProject: true })),
-  })),
-}));
+function buildTreeData(mrProjectNames: string[]): TreeItem[] {
+  const byDivision: Record<"시공" | "용역", string[]> = { 시공: [], 용역: [] };
+  for (const name of mrProjectNames) {
+    byDivision[classifyMrProject(name)].push(name);
+  }
+  return PROJECT_GROUPS.map((group) => ({
+    label: group.label,
+    scope: group.label === "DECV" ? ("전체" as DashboardScope) : undefined,
+    children: group.divisions.map((division) => ({
+      label: division.label,
+      scope:
+        group.label === "DECV" && (division.label === "시공" || division.label === "용역")
+          ? (division.label as DashboardScope)
+          : undefined,
+      children:
+        division.label === "시공" || division.label === "용역"
+          ? [
+              {
+                label: "진행중",
+                scope: `${division.label}-진행중` as DashboardScope,
+                children: (group.label === "DECV"
+                  ? byDivision[division.label as "시공" | "용역"]
+                  : []
+                ).map((name) => ({ label: name, isProject: true })),
+              },
+              {
+                label: "종료",
+                scope: `${division.label}-종료` as DashboardScope,
+                children: [],
+              },
+            ]
+          : [],
+    })),
+  }));
+}
 
 function TreeNode({
   item,
@@ -155,6 +166,14 @@ export function Sidebar({
   onSelectScope: (scope: DashboardScope) => void;
   onSelectTotal: () => void;
 }) {
+  const projectsQuery = useListMgmtreportProjects({ year: REPORT_YEAR });
+  const treeData = useMemo(() => {
+    const names = (projectsQuery.data?.projects ?? [])
+      .filter((p) => !p.isGroup)
+      .map((p) => p.name);
+    return buildTreeData(names);
+  }, [projectsQuery.data]);
+
   return (
     <div style={{
       width: "170px",
@@ -186,7 +205,7 @@ export function Sidebar({
 
       {/* Tree */}
       <div style={{ flex: 1, overflowY: "auto" }}>
-        {TREE_DATA.map((item, i) => (
+        {treeData.map((item, i) => (
           <TreeNode
             key={i}
             item={item}
