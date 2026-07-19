@@ -9,8 +9,7 @@ import {
 import projectPhoto from "../assets/project-photo.png";
 import { Donut, MiniBar } from "./charts";
 import { useProjectDetail, fmtNum, fmtPct, ratioPct } from "../lib/projectDetailData";
-import { getSalescostSiteName } from "../data/salescostSiteMap";
-import { getCashflowProjectRef } from "../data/cashflowProjectMap";
+import { getMrCashflowRef, useMrProject } from "../data/mrProjectLinks";
 import { REPORT_YEAR } from "../lib/mgmtreportData";
 
 const cardStyle: React.CSSProperties = {
@@ -92,28 +91,33 @@ function timeElapsedPct(startDate: string | null, endDate: string | null): numbe
 export function OverviewTab({ projectName }: { projectName: string }) {
   const { detail } = useProjectDetail(projectName);
 
-  // ---- 매출 (salescost) ----
-  const siteName = getSalescostSiteName(projectName);
+  // ---- 매출 (salescost — mr_projects.site_code 로 자동 연결, 없으면 mr_monthly 폴백) ----
+  const mr = useMrProject(projectName, REPORT_YEAR);
+  const siteCode = mr.project?.siteCode ?? null;
   const revParams = { year: REPORT_YEAR, metric: "revenue" as const };
   const cogsParams = { year: REPORT_YEAR, metric: "cogs" as const };
   const revQ = useListSalescostSites(revParams, {
-    query: { enabled: siteName != null, queryKey: getListSalescostSitesQueryKey(revParams) },
+    query: { enabled: siteCode != null, queryKey: getListSalescostSitesQueryKey(revParams) },
   });
   const cogsQ = useListSalescostSites(cogsParams, {
-    query: { enabled: siteName != null, queryKey: getListSalescostSitesQueryKey(cogsParams) },
+    query: { enabled: siteCode != null, queryKey: getListSalescostSitesQueryKey(cogsParams) },
   });
-  const revMonths = revQ.data?.sites.find((s) => s.name === siteName)?.months ?? [];
-  const cogsMonths = cogsQ.data?.sites.find((s) => s.name === siteName)?.months ?? [];
+  const scRevMonths = revQ.data?.sites.find((s) => s.code === siteCode)?.months ?? [];
+  const scCogsMonths = cogsQ.data?.sites.find((s) => s.code === siteCode)?.months ?? [];
+  const scHasAny = scRevMonths.some((v) => (v ?? 0) !== 0);
+  // sc 데이터가 없으면 경영관리보고회 월별 실적(mr_monthly)으로 폴백
+  const revMonths = scHasAny ? scRevMonths : (mr.project?.revenueActual ?? []);
+  const cogsMonths = scHasAny ? scCogsMonths : (mr.project?.cogsActual ?? []);
   let lastMonthIdx = -1;
   for (let i = 0; i < revMonths.length; i++) if ((revMonths[i] ?? 0) !== 0) lastMonthIdx = i;
   const thisMonthRev = lastMonthIdx >= 0 ? (revMonths[lastMonthIdx] ?? 0) : null;
   const prevMonthRev = lastMonthIdx >= 1 ? (revMonths[lastMonthIdx - 1] ?? 0) : null;
   const cumRev = revMonths.reduce((a, b) => a + (b ?? 0), 0);
   const cumCogs = cogsMonths.reduce((a, b) => a + (b ?? 0), 0);
-  const hasRevenue = siteName != null && lastMonthIdx >= 0;
+  const hasRevenue = lastMonthIdx >= 0;
 
   // ---- 자금 (cashflow) ----
-  const cfRef = getCashflowProjectRef(projectName);
+  const cfRef = getMrCashflowRef(projectName);
   const cfParams = {
     projectName: cfRef?.name ?? "",
     division: cfRef?.division,
@@ -245,12 +249,10 @@ export function OverviewTab({ projectName }: { projectName: string }) {
         {/* Revenue */}
         <div style={cardStyle}>
           <span style={sectionTitle}>Revenue</span>
-          {siteName != null && (revQ.isLoading || cogsQ.isLoading) ? (
+          {mr.isLoading || (siteCode != null && (revQ.isLoading || cogsQ.isLoading)) ? (
             <div style={emptyNote}>매출 데이터를 불러오는 중입니다…</div>
           ) : !hasRevenue ? (
-            <div style={emptyNote}>
-              {siteName == null ? "이 프로젝트에 매핑된 매출/원가 데이터가 없습니다." : `${REPORT_YEAR}년 매출 데이터가 없습니다.`}
-            </div>
+            <div style={emptyNote}>{`${REPORT_YEAR}년 매출 데이터가 없습니다.`}</div>
           ) : (
             <>
               <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-around", marginTop: "6px" }}>

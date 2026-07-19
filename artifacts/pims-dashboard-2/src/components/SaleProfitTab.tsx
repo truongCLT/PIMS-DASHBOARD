@@ -14,7 +14,8 @@ import {
   useListSalescostSites,
   getListSalescostSitesQueryKey,
 } from "@workspace/api-client-react";
-import { getSalescostSiteName } from "../data/salescostSiteMap";
+import { useMrProject } from "../data/mrProjectLinks";
+import { REPORT_YEAR } from "../lib/mgmtreportData";
 
 const cardStyle: React.CSSProperties = {
   backgroundColor: "#fff",
@@ -62,8 +63,6 @@ export function SaleProfitTab({
   fromMonth: number;
   months: number;
 }) {
-  const siteName = getSalescostSiteName(projectName);
-
   // Build the requested (year, month) list from the period filter
   const period: { year: number; month: number }[] = [];
   {
@@ -84,26 +83,41 @@ export function SaleProfitTab({
   const yearB = years[1] ?? null;
   const yearC = years[2] ?? null;
 
-  const revA = useSiteMonths(yearA, "revenue", siteName != null);
-  const cogsA = useSiteMonths(yearA, "cogs", siteName != null);
-  const revB = useSiteMonths(yearB ?? 0, "revenue", siteName != null && yearB != null);
-  const cogsB = useSiteMonths(yearB ?? 0, "cogs", siteName != null && yearB != null);
-  const revC = useSiteMonths(yearC ?? 0, "revenue", siteName != null && yearC != null);
-  const cogsC = useSiteMonths(yearC ?? 0, "cogs", siteName != null && yearC != null);
+  // mr_projects.site_code 로 sc_sites 자동 연결 (기준 연도 목록에서 siteCode 조회)
+  const mrMain = useMrProject(projectName, REPORT_YEAR);
+  const siteCode = mrMain.project?.siteCode ?? null;
+  const hasSite = siteCode != null;
+
+  const revA = useSiteMonths(yearA, "revenue", hasSite);
+  const cogsA = useSiteMonths(yearA, "cogs", hasSite);
+  const revB = useSiteMonths(yearB ?? 0, "revenue", hasSite && yearB != null);
+  const cogsB = useSiteMonths(yearB ?? 0, "cogs", hasSite && yearB != null);
+  const revC = useSiteMonths(yearC ?? 0, "revenue", hasSite && yearC != null);
+  const cogsC = useSiteMonths(yearC ?? 0, "cogs", hasSite && yearC != null);
+
+  // sc 데이터가 없을 때 폴백: mr_monthly (경영관리보고회 프로젝트별 월별 매출/원가 실적)
+  const mrA = useMrProject(projectName, yearA);
+  const mrB = useMrProject(projectName, yearB ?? 0, yearB != null);
+  const mrC = useMrProject(projectName, yearC ?? 0, yearC != null);
 
   const queries = [
-    revA,
-    cogsA,
-    ...(yearB != null ? [revB, cogsB] : []),
-    ...(yearC != null ? [revC, cogsC] : []),
+    ...(hasSite
+      ? [revA, cogsA, ...(yearB != null ? [revB, cogsB] : []), ...(yearC != null ? [revC, cogsC] : [])]
+      : []),
+    mrMain,
+    mrA,
+    ...(yearB != null ? [mrB] : []),
+    ...(yearC != null ? [mrC] : []),
   ];
   const isLoading = queries.some((q) => q.isLoading);
   // 404 (해당 연도 데이터 없음) is treated as "no data", not a failure
-  const hardError = queries.some(
-    (q) => q.isError && (q.error as { status?: number } | null)?.status !== 404,
+  const hardError = queries.some((q) =>
+    "isError" in q && typeof q.isError === "boolean"
+      ? q.isError && ((q as { error?: { status?: number } | null }).error?.status ?? 0) !== 404
+      : false,
   );
 
-  const lookup = (year: number, metric: "revenue" | "cogs", month: number): number => {
+  const scLookup = (year: number, metric: "revenue" | "cogs", month: number): number => {
     const q =
       year === yearA
         ? metric === "revenue"
@@ -118,9 +132,20 @@ export function SaleProfitTab({
               ? revC
               : cogsC
             : null;
-    const site = q?.data?.sites.find((s) => s.name === siteName);
+    const site = q?.data?.sites.find((s) => s.code === siteCode);
     return site?.months[month - 1] ?? 0;
   };
+
+  const mrLookup = (year: number, metric: "revenue" | "cogs", month: number): number => {
+    const q = year === yearA ? mrA : year === yearB ? mrB : year === yearC ? mrC : null;
+    const arr = metric === "revenue" ? q?.project?.revenueActual : q?.project?.cogsActual;
+    return arr?.[month - 1] ?? 0;
+  };
+
+  // sc 데이터가 기간 내에 하나라도 있으면 sc 우선, 없으면 mr 폴백
+  const scHasAny =
+    hasSite && period.some(({ year, month }) => scLookup(year, "revenue", month) !== 0);
+  const lookup = scHasAny ? scLookup : mrLookup;
 
   let cumulative = 0;
   const chartData = period.map(({ year, month }) => {
@@ -136,14 +161,6 @@ export function SaleProfitTab({
   });
 
   const hasData = chartData.some((d) => d.revenue !== 0 || d.cumulative !== 0);
-
-  if (siteName == null) {
-    return (
-      <div style={cardStyle}>
-        <Notice>이 프로젝트에 매핑된 매출/원가 데이터가 없습니다.</Notice>
-      </div>
-    );
-  }
   if (isLoading) {
     return (
       <div style={cardStyle}>

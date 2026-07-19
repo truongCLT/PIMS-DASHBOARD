@@ -12,7 +12,7 @@ import {
   LabelList,
 } from "recharts";
 import { useGetCashflowMonthly, getGetCashflowMonthlyQueryKey } from "@workspace/api-client-react";
-import { getCashflowProjectRef } from "../data/cashflowProjectMap";
+import { getMrCashflowRef } from "../data/mrProjectLinks";
 import { useProjectDetail } from "../lib/projectDetailData";
 
 const cardStyle: React.CSSProperties = {
@@ -52,7 +52,7 @@ export function ServiceCashflowTab({
 }) {
   const [comment, setComment] = useState("");
 
-  // 1순위: 데이터 입력 탭에서 저장한 프로젝트별 자금 데이터 (pd_cashflow_monthly)
+  // 보조: 데이터 입력 탭에서 저장한 프로젝트별 자금 데이터 (pd_cashflow_monthly)
   const { detail, isLoading: pdLoading } = useProjectDetail(projectName);
   const startIdx = fromYear * 12 + (fromMonth - 1);
   const pdPoints = (detail?.cashflow ?? [])
@@ -68,8 +68,8 @@ export function ServiceCashflowTab({
     }));
   const hasPdData = pdPoints.some((p) => p.cashIn !== 0 || p.cashOut !== 0 || p.equivalent !== 0);
 
-  // 2순위: 자금수지 Excel(cf_*) 매핑 데이터
-  const cfRef = getCashflowProjectRef(projectName);
+  // 1순위: 자금수지 Excel(cf_*) DB 데이터 — DB 값이 있으면 항상 우선
+  const cfRef = getMrCashflowRef(projectName);
   const params = {
     projectName: cfRef?.name ?? "",
     division: cfRef?.division,
@@ -79,12 +79,15 @@ export function ServiceCashflowTab({
   };
   const query = useGetCashflowMonthly(params, {
     query: {
-      enabled: cfRef != null && !hasPdData,
+      enabled: cfRef != null,
       queryKey: getGetCashflowMonthlyQueryKey(params),
     },
   });
+  const cfPoints = query.data?.points ?? [];
+  const hasCfData = cfPoints.some((p) => p.cashIn !== 0 || p.cashOut !== 0 || p.equivalent !== 0);
 
-  const points = hasPdData ? pdPoints : (query.data?.points ?? []);
+  const useCf = cfRef != null && hasCfData;
+  const points = useCf ? cfPoints : pdPoints;
   const chartData = points.map((p) => ({
     month: monthLabel(p.month),
     cashIn: p.cashIn,
@@ -109,20 +112,20 @@ export function ServiceCashflowTab({
   );
 
   let body: React.ReactNode;
-  if (pdLoading || (!hasPdData && cfRef != null && query.isLoading)) {
+  if (pdLoading || (cfRef != null && query.isLoading)) {
     body = (
       <div style={{ padding: "60px 20px", textAlign: "center", fontSize: "13px", color: "#5a6a7e" }}>
         자금 데이터를 불러오는 중입니다…
       </div>
     );
-  } else if (!hasPdData && cfRef == null) {
+  } else if (cfRef == null && !hasPdData) {
     body = (
       <div style={{ padding: "60px 20px", textAlign: "center", fontSize: "13px", color: "#5a6a7e" }}>
         아직 입력된 자금 데이터가 없습니다.
         {entryGuide}
       </div>
     );
-  } else if (!hasPdData && query.isError) {
+  } else if (!useCf && !hasPdData && query.isError) {
     const status = (query.error as { status?: number } | null)?.status;
     body = (
       <div style={{ padding: "60px 20px", textAlign: "center", fontSize: "13px", color: status === 404 ? "#5a6a7e" : "#c0392b" }}>
@@ -227,10 +230,10 @@ export function ServiceCashflowTab({
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span style={{ fontSize: "13px", fontWeight: 700, color: "#1a3a6b" }}>Cashflow</span>
           <span style={{ fontSize: "11px", color: "#5a6a7e" }}>
-            {hasPdData
-              ? `${projectName} · 단위: 천 USD`
-              : query.data
-                ? `${query.data.projectName} · 단위: ${query.data.unit}`
+            {useCf && query.data
+              ? `${query.data.projectName} · 단위: ${query.data.unit}`
+              : hasPdData
+                ? `${projectName} · 단위: 천 USD`
                 : ""}
           </span>
         </div>
