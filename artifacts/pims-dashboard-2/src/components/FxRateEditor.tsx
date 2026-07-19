@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { DollarSign } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePutFxRates, getGetFxRatesQueryKey } from "@workspace/api-client-react";
@@ -11,6 +12,8 @@ export function FxRateEditor() {
   const [vnd, setVnd] = useState("");
   const [error, setError] = useState<string | null>(null);
   const ref = useRef<HTMLDivElement>(null);
+  const popupRef = useRef<HTMLDivElement>(null);
+  const [popupPos, setPopupPos] = useState<{ top: number; left: number } | null>(null);
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -18,11 +21,30 @@ export function FxRateEditor() {
     setKrw(String(fxRates.KRW));
     setVnd(String(fxRates.VND));
     setError(null);
+    // 버튼 위치 기준으로 팝업 좌표 계산 (포털이라 화면 기준 fixed 좌표 사용)
+    const updatePos = () => {
+      const btn = ref.current;
+      if (!btn) return;
+      const rect = btn.getBoundingClientRect();
+      const width = 220;
+      const left = Math.max(8, Math.min(rect.right - width, window.innerWidth - width - 8));
+      setPopupPos({ top: rect.bottom + 4, left });
+    };
+    updatePos();
+    window.addEventListener("resize", updatePos);
+    window.addEventListener("scroll", updatePos, true);
     const onClickOutside = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      const target = e.target as Node;
+      if (ref.current?.contains(target)) return;
+      if (popupRef.current?.contains(target)) return;
+      setOpen(false);
     };
     document.addEventListener("mousedown", onClickOutside);
-    return () => document.removeEventListener("mousedown", onClickOutside);
+    return () => {
+      window.removeEventListener("resize", updatePos);
+      window.removeEventListener("scroll", updatePos, true);
+      document.removeEventListener("mousedown", onClickOutside);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
@@ -87,11 +109,13 @@ export function FxRateEditor() {
         환율 설정
       </button>
 
-      {open && (
-        <div style={{
-          position: "absolute",
-          top: "calc(100% + 4px)",
-          right: 0,
+      {open && popupPos && createPortal(
+        <div ref={popupRef} style={{
+          position: "fixed",
+          top: popupPos.top,
+          left: popupPos.left,
+          maxHeight: `calc(100vh - ${popupPos.top + 8}px)`,
+          overflowY: "auto",
           backgroundColor: "#fff",
           border: "1px solid #ccd4dd",
           borderRadius: "8px",
@@ -145,7 +169,8 @@ export function FxRateEditor() {
           >
             {saveMutation.isPending ? "저장 중…" : "저장"}
           </button>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );
