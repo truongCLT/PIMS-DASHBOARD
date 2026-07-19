@@ -45,14 +45,17 @@ import type {
   ListSalescostSitesParams,
   MgmtreportComment,
   MgmtreportCommentList,
+  MgmtreportImportHistoryList,
   MgmtreportImportPreview,
   MgmtreportImportResult,
   MgmtreportProjects,
+  MgmtreportRevertResult,
   MgmtreportSummary,
   PreviewCashflowImportBody,
   PreviewMgmtreportImportBody,
   PreviewSalescostImportBody,
   ProjectDetail,
+  RevertMgmtreportImport,
   SalescostImportPreview,
   SalescostImportResult,
   SalescostSites,
@@ -1852,6 +1855,154 @@ export const useApplyMgmtreportImport = <TError = ErrorType<ApiErrorMessage>,
         TContext
       > => {
       return useMutation(getApplyMgmtreportImportMutationOptions(options));
+    }
+
+export const getListMgmtreportImportHistoryUrl = () => {
+
+
+
+
+  return `/api/mgmtreport/import/history`
+}
+
+/**
+ * @summary List recent 경영관리보고회 Excel apply history (admin)
+ */
+export const listMgmtreportImportHistory = async ( options?: RequestInit): Promise<MgmtreportImportHistoryList> => {
+
+  return customFetch<MgmtreportImportHistoryList>(getListMgmtreportImportHistoryUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListMgmtreportImportHistoryQueryKey = () => {
+    return [
+    `/api/mgmtreport/import/history`
+    ] as const;
+    }
+
+
+export const getListMgmtreportImportHistoryQueryOptions = <TData = Awaited<ReturnType<typeof listMgmtreportImportHistory>>, TError = ErrorType<ApiErrorMessage>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMgmtreportImportHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListMgmtreportImportHistoryQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listMgmtreportImportHistory>>> = ({ signal }) => listMgmtreportImportHistory({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listMgmtreportImportHistory>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListMgmtreportImportHistoryQueryResult = NonNullable<Awaited<ReturnType<typeof listMgmtreportImportHistory>>>
+export type ListMgmtreportImportHistoryQueryError = ErrorType<ApiErrorMessage>
+
+
+/**
+ * @summary List recent 경영관리보고회 Excel apply history (admin)
+ */
+
+export function useListMgmtreportImportHistory<TData = Awaited<ReturnType<typeof listMgmtreportImportHistory>>, TError = ErrorType<ApiErrorMessage>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMgmtreportImportHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListMgmtreportImportHistoryQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getRevertMgmtreportImportUrl = () => {
+
+
+
+
+  return `/api/mgmtreport/import/revert`
+}
+
+/**
+ * @summary Restore mgmtreport data to the snapshot taken before the selected apply (admin)
+ */
+export const revertMgmtreportImport = async (revertMgmtreportImport: RevertMgmtreportImport, options?: RequestInit): Promise<MgmtreportRevertResult> => {
+
+  return customFetch<MgmtreportRevertResult>(getRevertMgmtreportImportUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(revertMgmtreportImport)
+  }
+);}
+
+
+
+
+
+export const getRevertMgmtreportImportMutationOptions = <TError = ErrorType<ApiErrorMessage>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revertMgmtreportImport>>, TError,{data: BodyType<RevertMgmtreportImport>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof revertMgmtreportImport>>, TError,{data: BodyType<RevertMgmtreportImport>}, TContext> => {
+
+const mutationKey = ['revertMgmtreportImport'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof revertMgmtreportImport>>, {data: BodyType<RevertMgmtreportImport>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  revertMgmtreportImport(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RevertMgmtreportImportMutationResult = NonNullable<Awaited<ReturnType<typeof revertMgmtreportImport>>>
+    export type RevertMgmtreportImportMutationBody = BodyType<RevertMgmtreportImport>
+    export type RevertMgmtreportImportMutationError = ErrorType<ApiErrorMessage>
+
+    /**
+ * @summary Restore mgmtreport data to the snapshot taken before the selected apply (admin)
+ */
+export const useRevertMgmtreportImport = <TError = ErrorType<ApiErrorMessage>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revertMgmtreportImport>>, TError,{data: BodyType<RevertMgmtreportImport>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof revertMgmtreportImport>>,
+        TError,
+        {data: BodyType<RevertMgmtreportImport>},
+        TContext
+      > => {
+      return useMutation(getRevertMgmtreportImportMutationOptions(options));
     }
 
 export const getListMgmtreportCommentsUrl = (params: ListMgmtreportCommentsParams,) => {

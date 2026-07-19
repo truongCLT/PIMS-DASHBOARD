@@ -112,6 +112,32 @@ export type MgmtreportImportResult = MgmtreportImportPreview & {
   applied: boolean;
 };
 
+export interface MgmtreportImportHistoryEntry {
+  id: number;
+  createdAt: string;
+  filename: string;
+  year: number;
+  snapshotProjectCount: number;
+  snapshotMonthlyCount: number;
+  snapshotEmpty: boolean;
+}
+
+export interface MgmtreportImportHistoryList {
+  entries: MgmtreportImportHistoryEntry[];
+}
+
+export interface RevertMgmtreportImport {
+  historyId: number;
+}
+
+export interface MgmtreportRevertResult {
+  id: number;
+  filename: string;
+  year: number;
+  restoredProjects: number;
+  restoredMonthly: number;
+}
+
 export interface CashflowImportProjectPreview {
   name: string;
   division: string;

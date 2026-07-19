@@ -759,6 +759,64 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiErrorMessage"
+  /mgmtreport/import/history:
+    get:
+      operationId: listMgmtreportImportHistory
+      tags: [mgmtreport]
+      summary: List recent 경영관리보고회 Excel apply history (admin)
+      security:
+        - adminBearer: []
+      responses:
+        "200":
+          description: Recent apply history, newest first
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MgmtreportImportHistoryList"
+        "401":
+          description: Admin auth required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorMessage"
+  /mgmtreport/import/revert:
+    post:
+      operationId: revertMgmtreportImport
+      tags: [mgmtreport]
+      summary: Restore mgmtreport data to the snapshot taken before the selected apply (admin)
+      security:
+        - adminBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RevertMgmtreportImport"
+      responses:
+        "200":
+          description: Data restored to pre-apply snapshot
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MgmtreportRevertResult"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorMessage"
+        "404":
+          description: History entry not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorMessage"
+        "422":
+          description: Snapshot cannot be restored (e.g. empty pre-apply state)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorMessage"
   /mgmtreport/comments:
     get:
       operationId: listMgmtreportComments
@@ -978,6 +1036,53 @@ components:
             applied:
               type: boolean
           required: [applied]
+    MgmtreportImportHistoryEntry:
+      type: object
+      properties:
+        id:
+          type: integer
+        createdAt:
+          type: string
+        filename:
+          type: string
+        year:
+          type: integer
+        snapshotProjectCount:
+          type: integer
+        snapshotMonthlyCount:
+          type: integer
+        snapshotEmpty:
+          type: boolean
+      required:
+        [id, createdAt, filename, year, snapshotProjectCount, snapshotMonthlyCount, snapshotEmpty]
+    MgmtreportImportHistoryList:
+      type: object
+      properties:
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/MgmtreportImportHistoryEntry"
+      required: [entries]
+    RevertMgmtreportImport:
+      type: object
+      properties:
+        historyId:
+          type: integer
+      required: [historyId]
+    MgmtreportRevertResult:
+      type: object
+      properties:
+        id:
+          type: integer
+        filename:
+          type: string
+        year:
+          type: integer
+        restoredProjects:
+          type: integer
+        restoredMonthly:
+          type: integer
+      required: [id, filename, year, restoredProjects, restoredMonthly]
     CashflowImportProjectPreview:
       type: object
       properties:

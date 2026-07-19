@@ -759,6 +759,38 @@ export const ApplyMgmtreportImportResponse = zod.object({
 
 
 /**
+ * @summary List recent 경영관리보고회 Excel apply history (admin)
+ */
+export const ListMgmtreportImportHistoryResponse = zod.object({
+  "entries": zod.array(zod.object({
+  "id": zod.number(),
+  "createdAt": zod.string(),
+  "filename": zod.string(),
+  "year": zod.number(),
+  "snapshotProjectCount": zod.number(),
+  "snapshotMonthlyCount": zod.number(),
+  "snapshotEmpty": zod.boolean()
+}))
+})
+
+
+/**
+ * @summary Restore mgmtreport data to the snapshot taken before the selected apply (admin)
+ */
+export const RevertMgmtreportImportBody = zod.object({
+  "historyId": zod.number()
+})
+
+export const RevertMgmtreportImportResponse = zod.object({
+  "id": zod.number(),
+  "filename": zod.string(),
+  "year": zod.number(),
+  "restoredProjects": zod.number(),
+  "restoredMonthly": zod.number()
+})
+
+
+/**
  * @summary List saved 실적/전망 comments for a year+month
  */
 export const listMgmtreportCommentsQueryMonthMax = 12;

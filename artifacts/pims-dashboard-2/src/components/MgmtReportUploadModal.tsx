@@ -1,6 +1,6 @@
 import React, { useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { FileSpreadsheet, Upload, X } from "lucide-react";
+import { FileSpreadsheet, History, RotateCcw, Upload, X } from "lucide-react";
 import {
   previewMgmtreportImport,
   applyMgmtreportImport,
@@ -8,6 +8,9 @@ import {
   applyCashflowImport,
   previewSalescostImport,
   applySalescostImport,
+  useListMgmtreportImportHistory,
+  getListMgmtreportImportHistoryQueryKey,
+  revertMgmtreportImport,
   type MgmtreportImportPreview,
   type CashflowImportPreview,
   type SalescostImportPreview,
@@ -78,10 +81,40 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
   const [year, setYear] = useState(REPORT_YEAR);
   const [preview, setPreview] = useState<PreviewState | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState<"preview" | "apply" | null>(null);
+  const [loading, setLoading] = useState<"preview" | "apply" | "revert" | null>(null);
   const [done, setDone] = useState(false);
+  const [revertDone, setRevertDone] = useState<string | null>(null);
+  const [confirmRevertId, setConfirmRevertId] = useState<number | null>(null);
 
   const meta = DATASET_META[dataset];
+
+  const historyQuery = useListMgmtreportImportHistory({
+    query: {
+      enabled: dataset === "mgmtreport",
+      queryKey: getListMgmtreportImportHistoryQueryKey(),
+    },
+  });
+  const history = historyQuery.data?.entries ?? [];
+
+  const handleRevert = async (historyId: number) => {
+    setLoading("revert");
+    setError(null);
+    setRevertDone(null);
+    try {
+      const res = await revertMgmtreportImport({ historyId });
+      setRevertDone(
+        `"${res.filename}" 반영 이전 상태로 되돌렸습니다. (프로젝트 ${res.restoredProjects}개, 월별 데이터 ${fmt(res.restoredMonthly)}건 복원)`,
+      );
+      setConfirmRevertId(null);
+      setPreview(null);
+      setDone(false);
+      await queryClient.invalidateQueries();
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setLoading(null);
+    }
+  };
 
   const resetResult = () => {
     setPreview(null);
@@ -334,6 +367,130 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
               }}
             >
               반영이 완료되었습니다. 대시보드가 새 데이터로 갱신되었습니다.
+            </div>
+          )}
+
+          {revertDone && (
+            <div
+              style={{
+                backgroundColor: "#eef4fd",
+                border: "1px solid #c3d7f2",
+                color: "#2e4568",
+                borderRadius: "8px",
+                padding: "10px 12px",
+                fontSize: "12px",
+                marginBottom: "12px",
+                fontWeight: 600,
+              }}
+            >
+              {revertDone}
+            </div>
+          )}
+
+          {dataset === "mgmtreport" && history.length > 0 && (
+            <div style={{ border: "1px solid #dde5ee", borderRadius: "10px", overflow: "hidden", marginBottom: "12px" }}>
+              <div
+                style={{
+                  backgroundColor: "#f2f6fb",
+                  padding: "10px 14px",
+                  fontSize: "12px",
+                  color: "#1a2d4d",
+                  fontWeight: 700,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                }}
+              >
+                <History size={13} />
+                최근 반영 내역 (되돌리면 해당 반영 이전 상태로 복원됩니다)
+              </div>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "11px" }}>
+                <thead>
+                  <tr style={{ backgroundColor: "#f8fafc", color: "#5a6579" }}>
+                    <th style={thLeft}>반영 일시</th>
+                    <th style={thLeft}>파일명</th>
+                    <th style={thRight}>연도</th>
+                    <th style={thRightEdge}></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {history.map((h) => (
+                    <tr key={h.id} style={{ borderTop: "1px solid #eef1f5" }}>
+                      <td style={{ padding: "6px 14px", color: "#5a6579", whiteSpace: "nowrap" }}>
+                        {new Date(h.createdAt).toLocaleString("ko-KR", {
+                          year: "2-digit",
+                          month: "2-digit",
+                          day: "2-digit",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </td>
+                      <td style={{ padding: "6px 14px", color: "#1a2d4d", wordBreak: "break-all" }}>{h.filename}</td>
+                      <td style={tdRight}>{h.year}</td>
+                      <td style={{ ...tdRightEdge, whiteSpace: "nowrap" }}>
+                        {h.snapshotEmpty ? (
+                          <span style={{ color: "#8a94a6" }}>복원 불가(이전 데이터 없음)</span>
+                        ) : confirmRevertId === h.id ? (
+                          <span style={{ display: "inline-flex", gap: "6px", alignItems: "center" }}>
+                            <span style={{ color: "#a94442", fontWeight: 600 }}>이전 상태로 복원할까요?</span>
+                            <button
+                              onClick={() => handleRevert(h.id)}
+                              disabled={busy}
+                              style={{
+                                backgroundColor: "#a94442",
+                                color: "#fff",
+                                border: "none",
+                                borderRadius: "5px",
+                                padding: "4px 10px",
+                                fontSize: "11px",
+                                fontWeight: 700,
+                                cursor: busy ? "wait" : "pointer",
+                              }}
+                            >
+                              {loading === "revert" ? "복원 중..." : "확인"}
+                            </button>
+                            <button
+                              onClick={() => setConfirmRevertId(null)}
+                              disabled={busy}
+                              style={{
+                                backgroundColor: "#fff",
+                                border: "1px solid #ccd4dd",
+                                borderRadius: "5px",
+                                padding: "4px 10px",
+                                fontSize: "11px",
+                                cursor: "pointer",
+                              }}
+                            >
+                              취소
+                            </button>
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => setConfirmRevertId(h.id)}
+                            disabled={busy}
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "5px",
+                              backgroundColor: "#fff",
+                              border: "1px solid #ccd4dd",
+                              borderRadius: "5px",
+                              padding: "4px 10px",
+                              fontSize: "11px",
+                              color: "#2e4568",
+                              fontWeight: 600,
+                              cursor: busy ? "wait" : "pointer",
+                            }}
+                          >
+                            <RotateCcw size={11} />
+                            이전 데이터로 되돌리기
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
 

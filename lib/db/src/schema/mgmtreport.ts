@@ -8,6 +8,7 @@ import {
   uniqueIndex,
   check,
   timestamp,
+  jsonb,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
@@ -102,6 +103,17 @@ export const mrCommentsTable = pgTable(
     check("mr_comments_section_ck", sql`${t.section} IN ('analysis','outlook')`),
   ],
 );
+
+// Excel 반영 이력 — 반영 직전의 mr_* 전체 스냅샷을 보관해 되돌리기를 지원
+export const mrImportHistoryTable = pgTable("mr_import_history", {
+  id: serial("id").primaryKey(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  filename: text("filename").notNull(), // 업로드된 Excel 파일명
+  year: integer("year").notNull(), // 반영 대상 연도
+  snapshot: jsonb("snapshot").notNull(), // 반영 직전 mr_projects/mr_monthly/mr_annual/mr_pnl 전체
+});
+
+export type MrImportHistory = typeof mrImportHistoryTable.$inferSelect;
 
 export const insertMrProjectSchema = createInsertSchema(mrProjectsTable).omit({ id: true });
 export type InsertMrProject = z.infer<typeof insertMrProjectSchema>;

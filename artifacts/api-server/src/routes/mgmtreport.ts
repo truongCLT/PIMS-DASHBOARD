@@ -20,12 +20,18 @@ import {
   CreateMgmtreportCommentResponse,
   UpdateMgmtreportCommentBody,
   UpdateMgmtreportCommentResponse,
+  ListMgmtreportImportHistoryResponse,
+  RevertMgmtreportImportBody,
+  RevertMgmtreportImportResponse,
 } from "@workspace/api-zod";
 import {
   parseMgmtreportWorkbook,
   buildPreview,
   applyMgmtreportImport,
+  listMgmtreportImportHistory,
+  revertMgmtreportImport,
   MgmtreportParseError,
+  MgmtreportRevertError,
 } from "../lib/mgmtreportImport";
 import { requireAdmin } from "../middlewares/adminAuth";
 
@@ -95,7 +101,9 @@ router.post("/mgmtreport/import/apply", requireAdmin, async (req, res) => {
   }
   try {
     const parsed = await parseMgmtreportWorkbook(r.file.buffer, r.year);
-    await applyMgmtreportImport(parsed);
+    // multer는 파일명을 latin1로 해석하므로 한글 파일명을 UTF-8로 복원
+    const filename = Buffer.from(r.file.originalname, "latin1").toString("utf8");
+    await applyMgmtreportImport(parsed, filename);
     req.log.info(
       {
         year: r.year,
@@ -114,6 +122,37 @@ router.post("/mgmtreport/import/apply", requireAdmin, async (req, res) => {
     }
     req.log.error({ err }, "failed to apply mgmtreport import");
     res.status(500).json({ error: "데이터 반영 중 오류가 발생했습니다. 기존 데이터는 변경되지 않았습니다." });
+  }
+});
+
+router.get("/mgmtreport/import/history", requireAdmin, async (req, res) => {
+  try {
+    const entries = await listMgmtreportImportHistory();
+    res.json(ListMgmtreportImportHistoryResponse.parse({ entries }));
+  } catch (err) {
+    req.log.error({ err }, "failed to list mgmtreport import history");
+    res.status(500).json({ error: "반영 이력 조회에 실패했습니다." });
+  }
+});
+
+router.post("/mgmtreport/import/revert", requireAdmin, async (req, res) => {
+  const parsed = RevertMgmtreportImportBody.safeParse(req.body);
+  if (!parsed.success || !Number.isInteger(parsed.data.historyId)) {
+    res.status(400).json({ error: "잘못된 요청입니다." });
+    return;
+  }
+  try {
+    const result = await revertMgmtreportImport(parsed.data.historyId);
+    req.log.info({ historyId: result.id, year: result.year }, "mgmtreport import reverted");
+    res.json(RevertMgmtreportImportResponse.parse(result));
+  } catch (err) {
+    if (err instanceof MgmtreportRevertError) {
+      const notFound = err.message.includes("찾을 수 없습니다");
+      res.status(notFound ? 404 : 422).json({ error: err.message });
+      return;
+    }
+    req.log.error({ err }, "failed to revert mgmtreport import");
+    res.status(500).json({ error: "되돌리기 중 오류가 발생했습니다. 데이터는 변경되지 않았습니다." });
   }
 });
 
