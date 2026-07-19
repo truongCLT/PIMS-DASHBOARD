@@ -9,7 +9,7 @@ import { PerformanceTable } from "./PerformanceTable";
 import { CommentPanel } from "./CommentPanel";
 import { DrilldownCard } from "./DrilldownCard";
 import type { DashboardScope } from "./Sidebar";
-import { DashboardFilterProvider } from "../lib/dashboardFilters";
+import { DashboardFilterProvider, type DashboardDivision } from "../lib/dashboardFilters";
 
 export function Dashboard({
   scope = "전체",
@@ -18,8 +18,13 @@ export function Dashboard({
   scope?: DashboardScope;
   onSelectProject?: (name: string) => void;
 }) {
+  const division: DashboardDivision | null = scope.startsWith("시공")
+    ? "시공"
+    : scope.startsWith("용역")
+      ? "용역"
+      : null;
   return (
-    <DashboardFilterProvider>
+    <DashboardFilterProvider division={division}>
     <div style={{
       flex: 1,
       overflowY: "auto",

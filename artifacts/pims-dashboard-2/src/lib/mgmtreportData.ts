@@ -5,6 +5,7 @@ import {
   getListMgmtreportProjectsQueryKey,
 } from "@workspace/api-client-react";
 import { lastClosedMonth } from "./monthRange";
+import { classifyMrProject } from "../data/projects";
 import {
   useDashboardFilters,
   resolveMonthWindow,
@@ -150,6 +151,8 @@ function makeBuckets(from: number, to: number, mode: PeriodMode): Bucket[] {
 
 export interface ProjectScope {
   name: string;
+  /** "project" = 단일 프로젝트, "division" = 시공/용역 부문 합계 */
+  kind?: "project" | "division";
   revenuePlan: number[];
   revenueActual: number[];
   cogsPlan: number[];
@@ -387,7 +390,9 @@ export function deriveDashboardData(
     profitNote: emptyRange
       ? "선택한 기간에 데이터가 없습니다."
       : projectScope
-        ? "프로젝트별 손익 상세(판관비·영업이익) 데이터는 제공되지 않습니다."
+        ? projectScope.kind === "division"
+          ? "부문별 손익 상세(판관비·영업이익) 데이터는 제공되지 않습니다."
+          : "프로젝트별 손익 상세(판관비·영업이익) 데이터는 제공되지 않습니다."
         : null,
     emptyRange,
   };
@@ -409,19 +414,21 @@ export function useDashboardData() {
   const query = useGetMgmtreportSummary({ year: REPORT_YEAR });
 
   const projectSelected = filters.project !== "All";
+  const divisionSelected = !projectSelected && filters.division != null;
+  const needProjects = projectSelected || divisionSelected;
   const projectsQuery = useListMgmtreportProjects(
     { year: REPORT_YEAR },
     {
       query: {
         queryKey: getListMgmtreportProjectsQueryKey({ year: REPORT_YEAR }),
-        enabled: projectSelected,
+        enabled: needProjects,
       },
     },
   );
 
   const derived = useMemo(() => {
     if (!query.data) return null;
-    if (projectSelected && !projectsQuery.data) return null;
+    if (needProjects && !projectsQuery.data) return null;
 
     const { from, to } = resolveMonthWindow(filters.startYm, filters.endYm);
     const convert = makeConverter(filters.currency, filters.unitIndex, filters.fxRates);
@@ -436,12 +443,33 @@ export function useDashboardData() {
       if (p) {
         projectScope = {
           name: p.name,
+          kind: "project",
           revenuePlan: p.revenuePlan,
           revenueActual: p.revenueActual,
           cogsPlan: p.cogsPlan,
           cogsActual: p.cogsActual,
         };
       }
+    } else if (divisionSelected && filters.division) {
+      const members = (projectsQuery.data?.projects ?? []).filter(
+        (p) => !p.isGroup && classifyMrProject(p.name) === filters.division,
+      );
+      const sum12 = (pick: (p: (typeof members)[number]) => number[]): number[] => {
+        const out = Array(12).fill(0) as number[];
+        for (const p of members) {
+          const arr = pick(p);
+          for (let i = 0; i < 12; i += 1) out[i] += arr[i] ?? 0;
+        }
+        return out;
+      };
+      projectScope = {
+        name: `${filters.division} 부문`,
+        kind: "division",
+        revenuePlan: sum12((p) => p.revenuePlan),
+        revenueActual: sum12((p) => p.revenueActual),
+        cogsPlan: sum12((p) => p.cogsPlan),
+        cogsActual: sum12((p) => p.cogsActual),
+      };
     }
 
     return deriveDashboardData(query.data, {
@@ -456,7 +484,10 @@ export function useDashboardData() {
     query.data,
     projectsQuery.data,
     projectSelected,
+    divisionSelected,
+    needProjects,
     filters.project,
+    filters.division,
     filters.startYm,
     filters.endYm,
     filters.period,
@@ -477,8 +508,8 @@ export function useDashboardData() {
     if (baseline) exportSnapshot = baseline;
   }, [baseline]);
 
-  const isLoading = query.isLoading || (projectSelected && projectsQuery.isLoading);
-  const isError = query.isError || (projectSelected && projectsQuery.isError);
+  const isLoading = query.isLoading || (needProjects && projectsQuery.isLoading);
+  const isError = query.isError || (needProjects && projectsQuery.isError);
 
   return { ...query, isLoading, isError, derived };
 }

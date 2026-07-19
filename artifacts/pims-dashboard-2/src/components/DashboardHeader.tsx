@@ -20,6 +20,7 @@ export function DashboardHeader({
 }) {
   const {
     project,
+    division,
     setProject,
     startYm: startDate,
     setStartYm: setStartDate,
@@ -166,6 +167,22 @@ export function DashboardHeader({
               </option>
             ))}
           </select>
+          {division && project === "All" && (
+            <span
+              style={{
+                fontSize: "12px",
+                fontWeight: 700,
+                color: "#1e6fdd",
+                backgroundColor: "#eaf2fd",
+                border: "1px solid #c4dbf7",
+                borderRadius: "6px",
+                padding: "4px 8px",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {division} 부문 합계
+            </span>
+          )}
         </div>
 
         {/* Date filter */}

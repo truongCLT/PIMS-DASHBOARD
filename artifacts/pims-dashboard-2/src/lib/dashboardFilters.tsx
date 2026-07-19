@@ -51,6 +51,8 @@ export function roundSmart(v: number): number {
   return Math.round(v * 100) / 100;
 }
 
+export type DashboardDivision = "시공" | "용역";
+
 export interface DashboardFilterState {
   project: string; // "All" 또는 경영관리보고회 프로젝트명
   startYm: string; // "" 또는 "YYYY-MM"
@@ -61,6 +63,8 @@ export interface DashboardFilterState {
 }
 
 interface DashboardFilterContextValue extends DashboardFilterState {
+  /** 좌측 메뉴에서 선택된 부문 (시공/용역), 없으면 null */
+  division: DashboardDivision | null;
   fxRates: FxRateMap;
   setProject: (v: string) => void;
   setStartYm: (v: string) => void;
@@ -81,7 +85,13 @@ export const DEFAULT_FILTERS: DashboardFilterState = {
 
 const FilterContext = createContext<DashboardFilterContextValue | null>(null);
 
-export function DashboardFilterProvider({ children }: { children: React.ReactNode }) {
+export function DashboardFilterProvider({
+  children,
+  division = null,
+}: {
+  children: React.ReactNode;
+  division?: DashboardDivision | null;
+}) {
   const [project, setProject] = useState(DEFAULT_FILTERS.project);
   const [startYm, setStartYm] = useState(DEFAULT_FILTERS.startYm);
   const [endYm, setEndYm] = useState(DEFAULT_FILTERS.endYm);
@@ -101,6 +111,7 @@ export function DashboardFilterProvider({ children }: { children: React.ReactNod
   const value = useMemo<DashboardFilterContextValue>(
     () => ({
       project,
+      division,
       fxRates,
       startYm,
       endYm,
@@ -117,7 +128,7 @@ export function DashboardFilterProvider({ children }: { children: React.ReactNod
       },
       setUnitIndex,
     }),
-    [project, startYm, endYm, period, currency, unitIndex, fxRates],
+    [project, division, startYm, endYm, period, currency, unitIndex, fxRates],
   );
 
   return <FilterContext.Provider value={value}>{children}</FilterContext.Provider>;
@@ -129,6 +140,7 @@ export function useDashboardFilters(): DashboardFilterContextValue {
   // Provider 밖(다른 화면)에서도 안전하게 기본값으로 동작
   return {
     ...DEFAULT_FILTERS,
+    division: null,
     fxRates: FX_RATES,
     setProject: () => {},
     setStartYm: () => {},
