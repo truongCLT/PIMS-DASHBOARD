@@ -378,6 +378,7 @@ export async function exportDashboardExcel(): Promise<void> {
     styleRange(ws, row, G, endRow, G, { fill: HEADER_FILL, border: true });
     row = endRow + 1;
   }
+  const tableEndRow = row - 1;
 
   /* ---- analysis / outlook sections ---- */
   const perfOf = (label: string) => PERFORMANCE_ROWS.find((p) => p.label === label);
@@ -416,6 +417,8 @@ export async function exportDashboardExcel(): Promise<void> {
   ];
 
   row += 1;
+  const sectionsStartRow = row;
+  let sectionsEndRow = row;
   for (const section of sections) {
     const endRow = row + Math.max(4, section.lines);
     ws.mergeCells(row, G, endRow, G);
@@ -432,6 +435,7 @@ export async function exportDashboardExcel(): Promise<void> {
 
     styleRange(ws, row, G, endRow, G + 6, { border: true });
     styleRange(ws, row, G, endRow, G, { fill: HEADER_FILL, border: true });
+    sectionsEndRow = endRow;
     row = endRow + 2;
   }
 
@@ -483,8 +487,11 @@ export async function exportDashboardExcel(): Promise<void> {
 
   const img1 = wb.addImage({ base64: chart1, extension: "png" });
   const img2 = wb.addImage({ base64: chart2, extension: "png" });
-  ws.addImage(img1, { tl: { col: 0, row: 3 }, ext: { width: 480, height: 320 } });
-  ws.addImage(img2, { tl: { col: 0, row: 21 }, ext: { width: 480, height: 320 } });
+  // Anchor charts to the same row ranges as the right-hand blocks so the
+  // left charts line up with the table (chart 1) and the 실적 분석/전망
+  // boxes (chart 2), matching the reference report layout.
+  ws.addImage(img1, `A4:E${tableEndRow}`);
+  ws.addImage(img2, `A${sectionsStartRow}:E${sectionsEndRow}`);
 
   /* ---- raw data sheets (reference) ---- */
   const addDataSheet = (name: string, headers: string[], rows: (string | number)[][]) => {
