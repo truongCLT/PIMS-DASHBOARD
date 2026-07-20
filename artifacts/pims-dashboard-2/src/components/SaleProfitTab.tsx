@@ -17,6 +17,7 @@ import {
 import { useMrProject } from "../data/mrProjectLinks";
 import { REPORT_YEAR } from "../lib/mgmtreportData";
 import { chartTheme } from "../lib/chartTheme";
+import { useMoney } from "../lib/displayUnit";
 
 const cardStyle: React.CSSProperties = {
   backgroundColor: "#fff",
@@ -64,6 +65,7 @@ export function SaleProfitTab({
   fromMonth: number;
   months: number;
 }) {
+  const { convert, unitLabel } = useMoney();
   // Build the requested (year, month) list from the period filter
   const period: { year: number; month: number }[] = [];
   {
@@ -155,8 +157,8 @@ export function SaleProfitTab({
     cumulative += revenue;
     return {
       label: `'${String(year).slice(2)}.${String(month).padStart(2, "0")}`,
-      revenue: Math.round(revenue * 10) / 10,
-      cumulative: Math.round(cumulative * 10) / 10,
+      revenue: Math.round(convert(revenue) * 10) / 10,
+      cumulative: Math.round(convert(cumulative) * 10) / 10,
       ratio: revenue > 0 ? Math.round((cogs / revenue) * 1000) / 10 : null,
     };
   });
@@ -193,7 +195,7 @@ export function SaleProfitTab({
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
       {/* Monthly Revenue */}
       <div style={cardStyle}>
-        <span style={sectionTitle}>Monthly Revenue (천 USD)</span>
+        <span style={sectionTitle}>Monthly Revenue ({unitLabel})</span>
         <div style={{ width: "100%", height: "260px", marginTop: "8px" }}>
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart data={chartData} margin={{ top: 30, right: 40, left: 40, bottom: 0 }}>

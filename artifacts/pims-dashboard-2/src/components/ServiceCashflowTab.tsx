@@ -15,6 +15,7 @@ import { useGetCashflowMonthly, getGetCashflowMonthlyQueryKey } from "@workspace
 import { getMrCashflowRef } from "../data/mrProjectLinks";
 import { useProjectDetail } from "../lib/projectDetailData";
 import { chartTheme } from "../lib/chartTheme";
+import { useMoney } from "../lib/displayUnit";
 
 const cardStyle: React.CSSProperties = {
   backgroundColor: "#fff",
@@ -52,6 +53,7 @@ export function ServiceCashflowTab({
   months: number;
 }) {
   const [comment, setComment] = useState("");
+  const { convert, unitLabel } = useMoney();
 
   // 보조: 데이터 입력 탭에서 저장한 프로젝트별 자금 데이터 (pd_cashflow_monthly)
   const { detail, isLoading: pdLoading } = useProjectDetail(projectName);
@@ -92,11 +94,15 @@ export function ServiceCashflowTab({
   // 우선순위: 데이터 입력 탭에서 저장한 행(pd_*)이 있으면 그 값을, 없으면 자금수지 Excel(cf_*) 값을 표시
   const useCf = cfRef != null && hasCfData && !hasPdRows;
   const points = hasPdRows ? pdPoints : cfPoints;
+  // cf_* 데이터는 자체 단위 문자열을 갖고 있어 "천 USD" 기반일 때만 통화/단위 변환 적용
+  const cfConvertible = (query.data?.unit ?? "").includes("USD");
+  const applyConvert = hasPdRows || cfConvertible;
+  const cv = (v: number) => (applyConvert ? convert(v) : v);
   const chartData = points.map((p) => ({
     month: monthLabel(p.month),
-    cashIn: p.cashIn,
-    cashOut: -p.cashOut,
-    equivalent: p.equivalent,
+    cashIn: cv(p.cashIn),
+    cashOut: -cv(p.cashOut),
+    equivalent: cv(p.equivalent),
   }));
 
   const maxVal = Math.max(...chartData.map((d) => Math.max(d.cashIn, d.equivalent, 0)), 0);
@@ -235,9 +241,9 @@ export function ServiceCashflowTab({
           <span style={{ fontSize: "13px", fontWeight: 700, color: chartTheme.titleNavy }}>Cashflow</span>
           <span style={{ fontSize: "11px", color: "#5a6a7e" }}>
             {useCf && query.data
-              ? `${query.data.projectName} · 단위: ${query.data.unit}`
+              ? `${query.data.projectName} · 단위: ${cfConvertible ? unitLabel : query.data.unit}`
               : hasPdData
-                ? `${projectName} · 단위: 천 USD`
+                ? `${projectName} · 단위: ${unitLabel}`
                 : ""}
           </span>
         </div>

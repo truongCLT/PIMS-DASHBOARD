@@ -4,7 +4,8 @@ import {
   useListSalescostSites,
   getListSalescostSitesQueryKey,
 } from "@workspace/api-client-react";
-import { useProjectDetail, fmtNum, fmtPct, ratioPct } from "../lib/projectDetailData";
+import { useProjectDetail, fmtPct, ratioPct } from "../lib/projectDetailData";
+import { useMoney } from "../lib/displayUnit";
 import { useMrProject } from "../data/mrProjectLinks";
 import { REPORT_YEAR } from "../lib/mgmtreportData";
 import { chartTheme } from "../lib/chartTheme";
@@ -92,6 +93,7 @@ type BudgetRow = {
 };
 
 function BudgetExecutionStatus({ rows }: { rows: BudgetRow[] }) {
+  const { fmtMoney } = useMoney();
   const maxBudget = Math.max(...rows.map((r) => r.budget ?? 0), 1);
   let lastCategory: string | null = null;
   return (
@@ -134,7 +136,7 @@ function BudgetExecutionStatus({ rows }: { rows: BudgetRow[] }) {
                         color: "#555",
                       }}
                     >
-                      {fmtNum(row.budget)}
+                      {fmtMoney(row.budget)}
                     </span>
                   </div>
                   {row.plan != null && (
@@ -159,7 +161,7 @@ function BudgetExecutionStatus({ rows }: { rows: BudgetRow[] }) {
                           fontWeight: 700,
                         }}
                       >
-                        {fmtNum(row.plan)}
+                        {fmtMoney(row.plan)}
                       </span>
                       {planPct != null && (
                         <span
@@ -200,7 +202,7 @@ function BudgetExecutionStatus({ rows }: { rows: BudgetRow[] }) {
                           fontWeight: 700,
                         }}
                       >
-                        {fmtNum(row.actual)}
+                        {fmtMoney(row.actual)}
                       </span>
                       {actualPct != null && (
                         <span
@@ -233,6 +235,7 @@ const MONTH_LABELS = ["1월", "2월", "3월", "4월", "5월", "6월", "7월", "8
 
 /** DB 원가 실적 (sc_monthly cogs 우선, 없으면 mr_monthly cogs 폴백) */
 function DbCostActualCard({ projectName }: { projectName: string }) {
+  const { fmtMoney, unitLabel } = useMoney();
   const mr = useMrProject(projectName, REPORT_YEAR);
   const siteCode = mr.project?.siteCode ?? null;
   const cogsParams = { year: REPORT_YEAR, metric: "cogs" as const };
@@ -255,7 +258,7 @@ function DbCostActualCard({ projectName }: { projectName: string }) {
   return (
     <div style={cardStyle}>
       <span style={sectionTitle}>
-        Cost Actual (원가 실적, {REPORT_YEAR}년 · 천 USD{hasAny ? (scHasAny ? " · 매출/원가 DB" : " · 경영관리보고회 DB") : ""})
+        Cost Actual (원가 실적, {REPORT_YEAR}년 · {unitLabel}{hasAny ? (scHasAny ? " · 매출/원가 DB" : " · 경영관리보고회 DB") : ""})
       </span>
       {loading ? (
         <div style={emptyStyle}>불러오는 중…</div>
@@ -279,7 +282,7 @@ function DbCostActualCard({ projectName }: { projectName: string }) {
                 <td style={{ border: "1px solid #d0dce8", padding: "4px 6px", fontWeight: 600, color: "#333", whiteSpace: "nowrap" }}>월 원가</td>
                 {rows.map((r) => (
                   <td key={r.label} style={{ border: "1px solid #d0dce8", padding: "4px 6px", textAlign: "right", color: "#333" }}>
-                    {r.value !== 0 ? fmtNum(r.value) : "-"}
+                    {r.value !== 0 ? fmtMoney(r.value) : "-"}
                   </td>
                 ))}
               </tr>
@@ -287,7 +290,7 @@ function DbCostActualCard({ projectName }: { projectName: string }) {
                 <td style={{ border: "1px solid #d0dce8", padding: "4px 6px", fontWeight: 600, color: chartTheme.planBlue, whiteSpace: "nowrap" }}>누계</td>
                 {rows.map((r) => (
                   <td key={r.label} style={{ border: "1px solid #d0dce8", padding: "4px 6px", textAlign: "right", color: chartTheme.planBlue, fontWeight: 600 }}>
-                    {r.cum !== 0 ? fmtNum(r.cum) : "-"}
+                    {r.cum !== 0 ? fmtMoney(r.cum) : "-"}
                   </td>
                 ))}
               </tr>
@@ -300,6 +303,7 @@ function DbCostActualCard({ projectName }: { projectName: string }) {
 }
 
 export function CostingTab({ projectName }: { projectName: string }) {
+  const { fmtMoney } = useMoney();
   const [comment, setComment] = React.useState("");
   const { detail, isLoading } = useProjectDetail(projectName);
 
@@ -356,7 +360,7 @@ export function CostingTab({ projectName }: { projectName: string }) {
               return (
                 <div key={meta.kind} style={{ textAlign: "center" }}>
                   <div style={{ fontSize: "10px", color: "#555", marginBottom: "2px" }}>
-                    {cost != null || contract != null ? `${fmtNum(cost)} / ${fmtNum(contract)}` : "-"}
+                    {cost != null || contract != null ? `${fmtMoney(cost)} / ${fmtMoney(contract)}` : "-"}
                   </div>
                   <Donut percent={pct ?? 0} color={meta.color} size={150} stroke={16} centerLabel={fmtPct(pct)} />
                   <div style={{ fontSize: "11px", color: "#1a2d4d", fontWeight: 600, marginTop: "4px" }}>{meta.label}</div>

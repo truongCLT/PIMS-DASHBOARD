@@ -8,7 +8,9 @@ import { ServiceCashflowTab } from "./ServiceCashflowTab";
 import { ProjectDataEntryTab } from "./ProjectDataEntryTab";
 import { SaleProfitTab } from "./SaleProfitTab";
 import { OverviewTab } from "./OverviewTab";
-import { useProjectDetail, fmtNum } from "../lib/projectDetailData";
+import { useProjectDetail } from "../lib/projectDetailData";
+import { DisplayUnitProvider, formatMoney, moneyUnitLabel } from "../lib/displayUnit";
+import { exportProjectDetailExcel } from "../lib/exportProjectDetail";
 import { useAdminAuth } from "../lib/adminAuth";
 export { Donut, MiniBar } from "./charts";
 
@@ -70,6 +72,19 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
   );
 
   const { detail } = useProjectDetail(projectName);
+  const [exporting, setExporting] = useState(false);
+  const handleExport = async () => {
+    if (!detail || exporting) return;
+    setExporting(true);
+    try {
+      await exportProjectDetailExcel(projectName, detail, currency, unitOn);
+    } catch (err) {
+      console.error("Excel export failed", err);
+      alert("Excel 내보내기에 실패했습니다. 잠시 후 다시 시도해 주세요.");
+    } finally {
+      setExporting(false);
+    }
+  };
   const ov = detail?.overview ?? { contractAmount: null, startDate: null, endDate: null, client: null, scale: null };
   const fmtDate = (d: string | null) => (d ? `'${d.slice(2, 4)}.${d.slice(5, 7)}.${d.slice(8, 10)}` : "-");
   const periodLabel =
@@ -83,6 +98,7 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
       : "-";
 
   return (
+    <DisplayUnitProvider currency={currency} unitOn={unitOn}>
     <div style={{ flex: 1, overflowY: "auto", backgroundColor: "#e8edf3" }}>
       {/* Banner */}
       <div
@@ -216,10 +232,12 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
               }}
             />
           </div>
-          <span style={{ fontSize: "12px", color: "#333", fontWeight: 600 }}>1K {currency}</span>
+          <span style={{ fontSize: "12px", color: "#333", fontWeight: 600 }}>{moneyUnitLabel(currency, unitOn)}</span>
         </div>
 
         <button
+          onClick={handleExport}
+          disabled={detail == null || exporting}
           style={{
             marginLeft: "auto",
             display: "flex",
@@ -232,11 +250,12 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
             padding: "7px 14px",
             fontSize: "12px",
             fontWeight: 500,
-            cursor: "pointer",
+            cursor: detail == null || exporting ? "not-allowed" : "pointer",
+            opacity: detail == null || exporting ? 0.6 : 1,
           }}
         >
           <Download size={13} />
-          Export Excel
+          {exporting ? "내보내는 중…" : "Export Excel"}
         </button>
       </div>
 
@@ -251,7 +270,9 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
             </span>
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 0", fontSize: "12px", color: "#1a2d4d", marginTop: "8px" }}>
-            <span style={{ fontWeight: 700, paddingRight: "14px" }}>도급액 : {fmtNum(ov.contractAmount)}</span>
+            <span style={{ fontWeight: 700, paddingRight: "14px" }}>
+              도급액 : {formatMoney(ov.contractAmount, currency, unitOn)} {moneyUnitLabel(currency, unitOn)}
+            </span>
             <span style={{ borderLeft: "1px solid #d5dce6", padding: "0 14px" }}>
               공사규모 : {ov.scale ?? "-"}
             </span>
@@ -412,5 +433,6 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
 
       </div>
     </div>
+    </DisplayUnitProvider>
   );
 }

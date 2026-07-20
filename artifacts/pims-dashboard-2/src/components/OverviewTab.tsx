@@ -8,7 +8,8 @@ import {
 } from "@workspace/api-client-react";
 import projectPhoto from "../assets/project-photo.png";
 import { Donut, MiniBar } from "./charts";
-import { useProjectDetail, fmtNum, fmtPct, ratioPct } from "../lib/projectDetailData";
+import { useProjectDetail, fmtPct, ratioPct } from "../lib/projectDetailData";
+import { useMoney } from "../lib/displayUnit";
 import { getMrCashflowRef, useMrProject } from "../data/mrProjectLinks";
 import { REPORT_YEAR } from "../lib/mgmtreportData";
 import { chartTheme } from "../lib/chartTheme";
@@ -93,6 +94,7 @@ function timeElapsedPct(startDate: string | null, endDate: string | null): numbe
 
 export function OverviewTab({ projectName }: { projectName: string }) {
   const { detail } = useProjectDetail(projectName);
+  const { fmtMoney } = useMoney();
 
   // ---- 매출 (salescost — mr_projects.site_code 로 자동 연결, 없으면 mr_monthly 폴백) ----
   const mr = useMrProject(projectName, REPORT_YEAR);
@@ -266,7 +268,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                     color={chartTheme.neutralGray}
                     label="전월"
                     height={110}
-                    valueLabel={fmtNum(prevMonthRev)}
+                    valueLabel={fmtMoney(prevMonthRev)}
                   />
                   <MiniBar
                     value={thisMonthRev ?? 0}
@@ -274,11 +276,11 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                     color={chartTheme.planBlue}
                     label="당월"
                     height={110}
-                    valueLabel={fmtNum(thisMonthRev)}
+                    valueLabel={fmtMoney(thisMonthRev)}
                   />
                 </div>
                 <div style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: "10px", color: "#555", marginBottom: "2px" }}>{fmtNum(cumRev)}</div>
+                  <div style={{ fontSize: "10px", color: "#555", marginBottom: "2px" }}>{fmtMoney(cumRev)}</div>
                   <Donut
                     percent={ratioPct(cumRev, overview.contractAmount) ?? 0}
                     color={chartTheme.planBlue}
@@ -292,7 +294,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                   </div>
                 </div>
                 <div style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: "10px", color: "#555", marginBottom: "2px" }}>{fmtNum(cumCogs)}</div>
+                  <div style={{ fontSize: "10px", color: "#555", marginBottom: "2px" }}>{fmtMoney(cumCogs)}</div>
                   <Donut
                     percent={ratioPct(cumCogs, cumRev) ?? 0}
                     color={chartTheme.balanceNavy}
@@ -328,12 +330,12 @@ export function OverviewTab({ projectName }: { projectName: string }) {
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-around", marginTop: "6px" }}>
               <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                 <div style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: "9px", color: "#555" }}>{fmtNum(bidding?.costAmount)}</div>
+                  <div style={{ fontSize: "9px", color: "#555" }}>{fmtMoney(bidding?.costAmount)}</div>
                   <Donut percent={estPct(bidding) ?? 0} color={chartTheme.planBlue} size={78} stroke={9} label={fmtPct(estPct(bidding))} labelSize={14} />
                   <div style={{ fontSize: "10px", color: "#1a2d4d", fontWeight: 600 }}>Bidding</div>
                 </div>
                 <div style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: "9px", color: "#555" }}>{fmtNum(execution?.costAmount)}</div>
+                  <div style={{ fontSize: "9px", color: "#555" }}>{fmtMoney(execution?.costAmount)}</div>
                   <Donut percent={estPct(execution) ?? 0} color={chartTheme.balanceNavy} size={78} stroke={9} label={fmtPct(estPct(execution))} labelSize={14} />
                   <div style={{ fontSize: "10px", color: "#1a2d4d", fontWeight: 600, textDecoration: "underline" }}>
                     Execution Budgeting
@@ -342,7 +344,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
               </div>
               <div style={{ textAlign: "center" }}>
                 <div style={{ fontSize: "10px", color: "#555" }}>
-                  {fmtNum(completion?.contractAmount)} / {fmtNum(completion?.costAmount)}
+                  {fmtMoney(completion?.contractAmount)} / {fmtMoney(completion?.costAmount)}
                 </div>
                 <Donut percent={estPct(completion) ?? 0} color={chartTheme.planBlue} size={160} stroke={18} label={fmtPct(estPct(completion))} labelSize={26} />
                 <div style={{ fontSize: "11px", color: "#1a2d4d", fontWeight: 700, marginTop: "4px" }}>Total Cost Rate</div>
@@ -386,7 +388,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                   const pct = ratioPct(g.actual, g.budget);
                   return (
                     <div key={g.item} style={{ textAlign: "center" }}>
-                      <div style={{ fontSize: "9px", color: "#555", marginBottom: "2px" }}>{fmtNum(g.budget)}</div>
+                      <div style={{ fontSize: "9px", color: "#555", marginBottom: "2px" }}>{fmtMoney(g.budget)}</div>
                       <div style={{ height: `${H}px`, display: "flex", alignItems: "flex-end", gap: "3px", justifyContent: "center" }}>
                         <div style={{ width: "22px", height: `${bh}px`, backgroundColor: chartTheme.lightGray }} />
                         {sh > 0 && (
@@ -402,7 +404,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                                 fontWeight: 700,
                               }}
                             >
-                              {fmtNum(spent)}
+                              {fmtMoney(spent)}
                             </span>
                           </div>
                         )}
@@ -447,7 +449,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                 color={chartTheme.neutralGray}
                 label="유입 누계"
                 height={140}
-                valueLabel={fmtNum(cashIn)}
+                valueLabel={fmtMoney(cashIn)}
                 width={24}
               />
               <MiniBar
@@ -456,7 +458,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                 color={chartTheme.outflowRed}
                 label="유출 누계"
                 height={140}
-                valueLabel={fmtNum(cashOut)}
+                valueLabel={fmtMoney(cashOut)}
                 width={24}
               />
               <MiniBar
@@ -465,7 +467,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                 color={chartTheme.planBlue}
                 label="잔액"
                 height={140}
-                valueLabel={fmtNum(balance)}
+                valueLabel={fmtMoney(balance)}
                 width={24}
               />
             </div>
