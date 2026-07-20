@@ -4,6 +4,10 @@ import { setAuthTokenGetter } from "@workspace/api-client-react";
 const TOKEN_KEY = "pims2:adminToken";
 const EXP_KEY = "pims2:adminTokenExp";
 
+export function readAdminToken(): string | null {
+  return readStoredToken();
+}
+
 function readStoredToken(): string | null {
   try {
     const token = localStorage.getItem(TOKEN_KEY);

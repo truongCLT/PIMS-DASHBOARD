@@ -2,12 +2,12 @@ import React, { useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { FileSpreadsheet, History, RotateCcw, Upload, X } from "lucide-react";
 import {
-  previewMgmtreportImport,
-  applyMgmtreportImport,
-  previewCashflowImport,
-  applyCashflowImport,
-  previewSalescostImport,
-  applySalescostImport,
+  getPreviewMgmtreportImportUrl,
+  getApplyMgmtreportImportUrl,
+  getPreviewCashflowImportUrl,
+  getApplyCashflowImportUrl,
+  getPreviewSalescostImportUrl,
+  getApplySalescostImportUrl,
   useListMgmtreportImportHistory,
   getListMgmtreportImportHistoryQueryKey,
   revertMgmtreportImport,
@@ -16,6 +16,7 @@ import {
   type SalescostImportPreview,
 } from "@workspace/api-client-react";
 import { REPORT_YEAR } from "../lib/mgmtreportData";
+import { uploadWithProgress, type UploadProgress } from "../lib/uploadWithProgress";
 
 type Dataset = "mgmtreport" | "cashflow" | "salescost";
 
@@ -83,6 +84,7 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<"preview" | "apply" | "revert" | null>(null);
   const [done, setDone] = useState(false);
+  const [progress, setProgress] = useState<UploadProgress | null>(null);
   const [revertDone, setRevertDone] = useState<string | null>(null);
   const [confirmRevertId, setConfirmRevertId] = useState<number | null>(null);
 
@@ -138,15 +140,31 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
     }
     setLoading("preview");
     setError(null);
+    setProgress({ phase: "upload", percent: 0 });
     try {
+      const form = new FormData();
+      form.append("file", file);
+      if (dataset !== "cashflow") form.append("year", String(year));
       if (dataset === "mgmtreport") {
-        const res = await previewMgmtreportImport({ file, year });
+        const res = await uploadWithProgress<MgmtreportImportPreview>(
+          getPreviewMgmtreportImportUrl(),
+          form,
+          setProgress,
+        );
         setPreview({ kind: "mgmtreport", data: res });
       } else if (dataset === "cashflow") {
-        const res = await previewCashflowImport({ file });
+        const res = await uploadWithProgress<CashflowImportPreview>(
+          getPreviewCashflowImportUrl(),
+          form,
+          setProgress,
+        );
         setPreview({ kind: "cashflow", data: res });
       } else {
-        const res = await previewSalescostImport({ file, year });
+        const res = await uploadWithProgress<SalescostImportPreview>(
+          getPreviewSalescostImportUrl(),
+          form,
+          setProgress,
+        );
         setPreview({ kind: "salescost", data: res });
       }
     } catch (err) {
@@ -154,6 +172,7 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
       setError(errorMessage(err));
     } finally {
       setLoading(null);
+      setProgress(null);
     }
   };
 
@@ -161,13 +180,17 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
     if (!file || !preview) return;
     setLoading("apply");
     setError(null);
+    setProgress({ phase: "upload", percent: 0 });
     try {
+      const form = new FormData();
+      form.append("file", file);
+      if (preview.kind !== "cashflow") form.append("year", String(year));
       if (preview.kind === "mgmtreport") {
-        await applyMgmtreportImport({ file, year });
+        await uploadWithProgress(getApplyMgmtreportImportUrl(), form, setProgress);
       } else if (preview.kind === "cashflow") {
-        await applyCashflowImport({ file });
+        await uploadWithProgress(getApplyCashflowImportUrl(), form, setProgress);
       } else {
-        await applySalescostImport({ file, year });
+        await uploadWithProgress(getApplySalescostImportUrl(), form, setProgress);
       }
       setDone(true);
       await queryClient.invalidateQueries();
@@ -175,6 +198,7 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
       setError(errorMessage(err));
     } finally {
       setLoading(null);
+      setProgress(null);
     }
   };
 
@@ -335,6 +359,49 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
               {loading === "preview" ? "분석 중..." : "미리보기"}
             </button>
           </div>
+
+          {progress && (
+            <div style={{ marginBottom: "12px" }}>
+              <style>{`@keyframes uploadIndeterminate { 0% { left: -40%; } 100% { left: 100%; } }`}</style>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: "#5a6579", marginBottom: "4px", fontWeight: 600 }}>
+                <span>
+                  {progress.phase === "upload"
+                    ? "파일 업로드 중..."
+                    : loading === "apply"
+                      ? dataset === "cashflow"
+                        ? "서버에서 데이터 반영 중... (자금수지는 20초 정도 걸릴 수 있습니다)"
+                        : "서버에서 데이터 반영 중..."
+                      : "서버에서 파일 분석 중..."}
+                </span>
+                {progress.phase === "upload" && <span>{progress.percent}%</span>}
+              </div>
+              <div style={{ position: "relative", height: "8px", backgroundColor: "#e8edf3", borderRadius: "4px", overflow: "hidden" }}>
+                {progress.phase === "upload" ? (
+                  <div
+                    style={{
+                      height: "100%",
+                      width: `${progress.percent}%`,
+                      backgroundColor: "#2e4568",
+                      borderRadius: "4px",
+                      transition: "width 0.2s ease",
+                    }}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      height: "100%",
+                      width: "40%",
+                      backgroundColor: "#1e7145",
+                      borderRadius: "4px",
+                      animation: "uploadIndeterminate 1.2s linear infinite",
+                    }}
+                  />
+                )}
+              </div>
+            </div>
+          )}
 
           {error && (
             <div
