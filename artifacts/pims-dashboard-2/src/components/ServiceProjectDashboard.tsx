@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Download, MessageSquare, Send } from "lucide-react";
+import { ProjectCommentPanel } from "./ProjectCommentPanel";
+import { Download } from "lucide-react";
 import { MiniBar } from "./ProjectDashboard";
 import { SaleProfitTab } from "./SaleProfitTab";
 import { ServiceOutsourcingTab } from "./ServiceOutsourcingTab";
@@ -103,7 +104,6 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
   const [unitOn, setUnitOn] = useState(true);
   const [activeTab, setActiveTab] = useState("Overview");
   const { isAdmin } = useAdminAuth();
-  const [comment, setComment] = useState("");
   const [fromYear, setFromYear] = useState(2026);
   const [fromMonth, setFromMonth] = useState("04");
   const [toYear, setToYear] = useState(2026);
@@ -453,39 +453,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
 
             {/* Comment */}
             <div style={cardStyle}>
-              <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "8px" }}>
-                <MessageSquare size={13} color="#1a2d4d" />
-                <span style={{ fontSize: "12px", fontWeight: 700, color: "#1a2d4d" }}>Comment</span>
-              </div>
-              {isAdmin && (
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "flex-end",
-                    gap: "8px",
-                    border: "1px solid #ccd4dd",
-                    borderRadius: "6px",
-                    padding: "8px 10px",
-                  }}
-                >
-                  <textarea
-                    value={comment}
-                    onChange={(e) => setComment(e.target.value)}
-                    placeholder="Write a comment"
-                    rows={2}
-                    style={{
-                      flex: 1,
-                      border: "none",
-                      outline: "none",
-                      resize: "none",
-                      fontSize: "11px",
-                      color: "#333",
-                      fontFamily: "inherit",
-                    }}
-                  />
-                  <Send size={14} color="#1e6fdd" style={{ cursor: "pointer", flexShrink: 0 }} />
-                </div>
-              )}
+              <ProjectCommentPanel projectName={projectName} tab="service" />
             </div>
           </div>
         ) : (

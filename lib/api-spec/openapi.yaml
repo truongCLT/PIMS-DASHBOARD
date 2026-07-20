@@ -302,6 +302,130 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiErrorMessage"
+  /projectdetail/comments:
+    get:
+      operationId: listProjectdetailComments
+      tags: [projectdetail]
+      summary: List comments for a project + tab (newest first)
+      parameters:
+        - name: projectName
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: tab
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [overview, progress, costing, outsourcing, cashflow, saleprofit, budget, service]
+      responses:
+        "200":
+          description: Comments (newest first)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectdetailCommentList"
+        "400":
+          description: Invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorMessage"
+    post:
+      operationId: createProjectdetailComment
+      tags: [projectdetail]
+      summary: Save a project detail tab comment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProjectdetailComment"
+      responses:
+        "201":
+          description: Created comment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectdetailComment"
+        "400":
+          description: Invalid body
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorMessage"
+  /projectdetail/comments/{id}:
+    patch:
+      operationId: updateProjectdetailComment
+      tags: [projectdetail]
+      summary: Update a comment body (admin only)
+      security:
+        - adminBearer: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProjectdetailComment"
+      responses:
+        "200":
+          description: Updated comment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectdetailComment"
+        "400":
+          description: Invalid body
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorMessage"
+        "401":
+          description: Admin authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorMessage"
+        "404":
+          description: Comment not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorMessage"
+    delete:
+      operationId: deleteProjectdetailComment
+      tags: [projectdetail]
+      summary: Delete a comment (admin only)
+      security:
+        - adminBearer: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "401":
+          description: Admin authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorMessage"
+        "404":
+          description: Comment not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorMessage"
   /cashflow/projects:
     get:
       operationId: listCashflowProjects
@@ -957,6 +1081,51 @@ components:
           type: number
           exclusiveMinimum: 0
       required: [usd, krw, vnd]
+    ProjectdetailComment:
+      type: object
+      properties:
+        id:
+          type: integer
+        projectName:
+          type: string
+        tab:
+          type: string
+          enum: [overview, progress, costing, outsourcing, cashflow, saleprofit, budget, service]
+        body:
+          type: string
+        createdAt:
+          type: string
+      required: [id, projectName, tab, body, createdAt]
+    ProjectdetailCommentList:
+      type: object
+      properties:
+        comments:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProjectdetailComment"
+      required: [comments]
+    CreateProjectdetailComment:
+      type: object
+      properties:
+        projectName:
+          type: string
+          minLength: 1
+        tab:
+          type: string
+          enum: [overview, progress, costing, outsourcing, cashflow, saleprofit, budget, service]
+        body:
+          type: string
+          minLength: 1
+          maxLength: 2000
+      required: [projectName, tab, body]
+    UpdateProjectdetailComment:
+      type: object
+      properties:
+        body:
+          type: string
+          minLength: 1
+          maxLength: 2000
+      required: [body]
     UpdateMgmtreportComment:
       type: object
       properties:

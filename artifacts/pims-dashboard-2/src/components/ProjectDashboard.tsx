@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Download, MessageSquare, Send } from "lucide-react";
+import { ProjectCommentPanel } from "./ProjectCommentPanel";
+import { Download } from "lucide-react";
 import projectPhoto from "../assets/project-photo.png";
 import { ConstructionProgressTab } from "./ConstructionProgressTab";
 import { CostingTab } from "./CostingTab";
@@ -61,7 +62,6 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
   const [unitOn, setUnitOn] = useState(true);
   const [activeTab, setActiveTab] = useState("Overview");
   const { isAdmin } = useAdminAuth();
-  const [overviewComment, setOverviewComment] = useState("");
   const [fromYear, setFromYear] = useState(2026);
   const [fromMonth, setFromMonth] = useState("04");
   const [toYear, setToYear] = useState(2026);
@@ -375,58 +375,7 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
 
           {/* Comment */}
           <div style={cardStyle}>
-            <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "8px" }}>
-              <MessageSquare size={13} color="#1a2d4d" />
-              <span style={{ fontSize: "12px", fontWeight: 700, color: "#1a2d4d" }}>Comment</span>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: "14px", marginBottom: "8px", flexWrap: "wrap" }}>
-              <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", color: "#333" }}>
-                Chart :
-                <select style={{ fontSize: "11px", padding: "4px 6px", border: "1px solid #ccd4dd", borderRadius: "4px" }}>
-                  <option>Sale by division</option>
-                  <option>Progress</option>
-                  <option>Revenue</option>
-                  <option>Cost estimation</option>
-                  <option>Budget Execution Status</option>
-                  <option>Cash</option>
-                </select>
-              </label>
-              <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", color: "#333" }}>
-                Month :
-                <select defaultValue="June" style={{ fontSize: "11px", padding: "4px 6px", border: "1px solid #ccd4dd", borderRadius: "4px" }}>
-                  {["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"].map((mo) => (
-                    <option key={mo}>{mo}</option>
-                  ))}
-                </select>
-              </label>
-            </div>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "flex-end",
-                gap: "8px",
-                border: "1px solid #ccd4dd",
-                borderRadius: "6px",
-                padding: "8px 10px",
-              }}
-            >
-              <textarea
-                value={overviewComment}
-                onChange={(e) => setOverviewComment(e.target.value)}
-                placeholder="Write a comment"
-                rows={2}
-                style={{
-                  flex: 1,
-                  border: "none",
-                  outline: "none",
-                  resize: "none",
-                  fontSize: "11px",
-                  color: "#333",
-                  fontFamily: "inherit",
-                }}
-              />
-              <Send size={14} color="#1e6fdd" style={{ cursor: "pointer", flexShrink: 0 }} />
-            </div>
+            <ProjectCommentPanel projectName={projectName} tab="overview" />
           </div>
         </div>
         )}

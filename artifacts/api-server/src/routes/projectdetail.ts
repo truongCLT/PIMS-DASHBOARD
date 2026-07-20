@@ -1,7 +1,8 @@
 import { Router, type IRouter } from "express";
-import { asc, eq } from "drizzle-orm";
+import { and, asc, desc, eq } from "drizzle-orm";
 import {
   db,
+  pdCommentsTable,
   pdOverviewTable,
   pdProgressMonthlyTable,
   pdMilestonesTable,
@@ -16,6 +17,12 @@ import {
   GetProjectdetailResponse,
   PutProjectdetailBody,
   PutProjectdetailResponse,
+  ListProjectdetailCommentsQueryParams,
+  ListProjectdetailCommentsResponse,
+  CreateProjectdetailCommentBody,
+  CreateProjectdetailCommentResponse,
+  UpdateProjectdetailCommentBody,
+  UpdateProjectdetailCommentResponse,
 } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/adminAuth";
 
@@ -319,6 +326,114 @@ router.put("/projectdetail", requireAdmin, async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "failed to save project detail");
     res.status(500).json({ error: "프로젝트 상세 데이터 저장에 실패했습니다." });
+  }
+});
+
+router.get("/projectdetail/comments", async (req, res) => {
+  const parsed = ListProjectdetailCommentsQueryParams.safeParse(req.query);
+  if (!parsed.success || !parsed.data.projectName.trim()) {
+    res.status(400).json({ error: "잘못된 요청 파라미터입니다." });
+    return;
+  }
+  const { projectName, tab } = parsed.data;
+  try {
+    const rows = await db
+      .select()
+      .from(pdCommentsTable)
+      .where(and(eq(pdCommentsTable.projectName, projectName), eq(pdCommentsTable.tab, tab)))
+      .orderBy(desc(pdCommentsTable.createdAt), desc(pdCommentsTable.id));
+    res.json(
+      ListProjectdetailCommentsResponse.parse({
+        comments: rows.map((r) => ({
+          id: r.id,
+          projectName: r.projectName,
+          tab: r.tab,
+          body: r.body,
+          createdAt: r.createdAt.toISOString(),
+        })),
+      }),
+    );
+  } catch (err) {
+    req.log.error({ err }, "failed to list projectdetail comments");
+    res.status(500).json({ error: "코멘트 조회에 실패했습니다." });
+  }
+});
+
+router.post("/projectdetail/comments", async (req, res) => {
+  const parsed = CreateProjectdetailCommentBody.safeParse(req.body);
+  if (!parsed.success || parsed.data.body.trim().length === 0 || !parsed.data.projectName.trim()) {
+    res.status(400).json({ error: "코멘트 내용이 올바르지 않습니다." });
+    return;
+  }
+  const { projectName, tab, body } = parsed.data;
+  try {
+    const [row] = await db
+      .insert(pdCommentsTable)
+      .values({ projectName: projectName.trim(), tab, body: body.trim() })
+      .returning();
+    res.status(201).json(
+      CreateProjectdetailCommentResponse.parse({
+        id: row.id,
+        projectName: row.projectName,
+        tab: row.tab,
+        body: row.body,
+        createdAt: row.createdAt.toISOString(),
+      }),
+    );
+  } catch (err) {
+    req.log.error({ err }, "failed to create projectdetail comment");
+    res.status(500).json({ error: "코멘트 저장에 실패했습니다." });
+  }
+});
+
+router.patch("/projectdetail/comments/:id", requireAdmin, async (req, res) => {
+  const id = Number(req.params.id);
+  const parsed = UpdateProjectdetailCommentBody.safeParse(req.body);
+  if (!Number.isInteger(id) || !parsed.success || parsed.data.body.trim().length === 0) {
+    res.status(400).json({ error: "코멘트 내용이 올바르지 않습니다." });
+    return;
+  }
+  try {
+    const [row] = await db
+      .update(pdCommentsTable)
+      .set({ body: parsed.data.body.trim() })
+      .where(eq(pdCommentsTable.id, id))
+      .returning();
+    if (!row) {
+      res.status(404).json({ error: "코멘트를 찾을 수 없습니다." });
+      return;
+    }
+    res.json(
+      UpdateProjectdetailCommentResponse.parse({
+        id: row.id,
+        projectName: row.projectName,
+        tab: row.tab,
+        body: row.body,
+        createdAt: row.createdAt.toISOString(),
+      }),
+    );
+  } catch (err) {
+    req.log.error({ err }, "failed to update projectdetail comment");
+    res.status(500).json({ error: "코멘트 수정에 실패했습니다." });
+  }
+});
+
+router.delete("/projectdetail/comments/:id", requireAdmin, async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) {
+    res.status(400).json({ error: "잘못된 코멘트 ID입니다." });
+    return;
+  }
+  try {
+    const rows = await db.delete(pdCommentsTable).where(eq(pdCommentsTable.id, id)).returning();
+    if (rows.length === 0) {
+      res.status(404).json({ error: "코멘트를 찾을 수 없습니다." });
+      return;
+    }
+    res.status(204).end();
+  } catch (err) {
+    req.log.error({ err }, "failed to delete projectdetail comment");
+    res.status(500).json({ error: "코멘트 삭제에 실패했습니다." });
   }
 });
 

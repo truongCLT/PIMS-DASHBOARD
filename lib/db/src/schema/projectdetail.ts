@@ -8,6 +8,7 @@ import {
   uniqueIndex,
   index,
   check,
+  timestamp,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
@@ -145,6 +146,29 @@ export const pdOutsourcingTable = pgTable(
   },
   (t) => [index("pd_outsourcing_project_idx").on(t.projectName)],
 );
+
+// 코멘트 — 프로젝트 상세 탭별 코멘트
+export const pdCommentsTable = pgTable(
+  "pd_comments",
+  {
+    id: serial("id").primaryKey(),
+    projectName: text("project_name").notNull(),
+    tab: text("tab").notNull(), // 'overview' | 'progress' | 'costing' | 'outsourcing' | 'cashflow' | 'saleprofit' | 'budget' | 'service'
+    body: text("body").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("pd_comments_project_tab_idx").on(t.projectName, t.tab),
+    check(
+      "pd_comments_tab_ck",
+      sql`${t.tab} IN ('overview','progress','costing','outsourcing','cashflow','saleprofit','budget','service')`,
+    ),
+  ],
+);
+
+export const insertPdCommentSchema = createInsertSchema(pdCommentsTable).omit({ id: true, createdAt: true });
+export type InsertPdComment = z.infer<typeof insertPdCommentSchema>;
+export type PdComment = typeof pdCommentsTable.$inferSelect;
 
 export const insertPdOverviewSchema = createInsertSchema(pdOverviewTable).omit({ id: true });
 export type InsertPdOverview = z.infer<typeof insertPdOverviewSchema>;

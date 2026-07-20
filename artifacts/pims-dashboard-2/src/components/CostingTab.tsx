@@ -1,5 +1,6 @@
 import React from "react";
-import { Send, MessageSquare } from "lucide-react";
+import { ProjectCommentPanel } from "./ProjectCommentPanel";
+
 import {
   useListSalescostSites,
   getListSalescostSitesQueryKey,
@@ -304,7 +305,6 @@ function DbCostActualCard({ projectName }: { projectName: string }) {
 
 export function CostingTab({ projectName }: { projectName: string }) {
   const { fmtMoney } = useMoney();
-  const [comment, setComment] = React.useState("");
   const { detail, isLoading } = useProjectDetail(projectName);
 
   const estimation = detail?.costEstimation ?? [];
@@ -379,37 +379,7 @@ export function CostingTab({ projectName }: { projectName: string }) {
 
       {/* Row 3: Comment */}
       <div style={cardStyle}>
-        <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "8px" }}>
-          <MessageSquare size={13} color="#1a2d4d" />
-          <span style={{ fontSize: "12px", fontWeight: 700, color: chartTheme.headingNavy }}>Comment</span>
-        </div>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "flex-end",
-            gap: "8px",
-            border: "1px solid #ccd4dd",
-            borderRadius: "6px",
-            padding: "8px 10px",
-          }}
-        >
-          <textarea
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            placeholder="Write a comment"
-            rows={2}
-            style={{
-              flex: 1,
-              border: "none",
-              outline: "none",
-              resize: "none",
-              fontSize: "11px",
-              color: "#333",
-              fontFamily: "inherit",
-            }}
-          />
-          <Send size={14} color="#1e6fdd" style={{ cursor: "pointer", flexShrink: 0 }} />
-        </div>
+        <ProjectCommentPanel projectName={projectName} tab="costing" />
       </div>
     </div>
   );

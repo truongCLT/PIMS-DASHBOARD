@@ -28,6 +28,65 @@ export interface FxRates {
   vnd: number;
 }
 
+export type ProjectdetailCommentTab = typeof ProjectdetailCommentTab[keyof typeof ProjectdetailCommentTab];
+
+
+export const ProjectdetailCommentTab = {
+  overview: 'overview',
+  progress: 'progress',
+  costing: 'costing',
+  outsourcing: 'outsourcing',
+  cashflow: 'cashflow',
+  saleprofit: 'saleprofit',
+  budget: 'budget',
+  service: 'service',
+} as const;
+
+export interface ProjectdetailComment {
+  id: number;
+  projectName: string;
+  tab: ProjectdetailCommentTab;
+  body: string;
+  createdAt: string;
+}
+
+export interface ProjectdetailCommentList {
+  comments: ProjectdetailComment[];
+}
+
+export type CreateProjectdetailCommentTab = typeof CreateProjectdetailCommentTab[keyof typeof CreateProjectdetailCommentTab];
+
+
+export const CreateProjectdetailCommentTab = {
+  overview: 'overview',
+  progress: 'progress',
+  costing: 'costing',
+  outsourcing: 'outsourcing',
+  cashflow: 'cashflow',
+  saleprofit: 'saleprofit',
+  budget: 'budget',
+  service: 'service',
+} as const;
+
+export interface CreateProjectdetailComment {
+  /** @minLength 1 */
+  projectName: string;
+  tab: CreateProjectdetailCommentTab;
+  /**
+     * @minLength 1
+     * @maxLength 2000
+     */
+  body: string;
+}
+
+export interface UpdateProjectdetailComment {
+  /**
+     * @minLength 1
+     * @maxLength 2000
+     */
+  body: string;
+}
+
 export interface UpdateMgmtreportComment {
   /**
      * @minLength 1
@@ -483,6 +542,25 @@ export interface HealthStatus {
 export type GetProjectdetailParams = {
 projectName: string;
 };
+
+export type ListProjectdetailCommentsParams = {
+projectName: string;
+tab: ListProjectdetailCommentsTab;
+};
+
+export type ListProjectdetailCommentsTab = typeof ListProjectdetailCommentsTab[keyof typeof ListProjectdetailCommentsTab];
+
+
+export const ListProjectdetailCommentsTab = {
+  overview: 'overview',
+  progress: 'progress',
+  costing: 'costing',
+  outsourcing: 'outsourcing',
+  cashflow: 'cashflow',
+  saleprofit: 'saleprofit',
+  budget: 'budget',
+  service: 'service',
+} as const;
 
 export type GetCashflowMonthlyParams = {
 projectName: string;

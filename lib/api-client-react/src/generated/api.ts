@@ -32,6 +32,7 @@ import type {
   CashflowMonthlySeries,
   CashflowProject,
   CreateMgmtreportComment,
+  CreateProjectdetailComment,
   ErrorEnvelope,
   FxRates,
   GetCashflowAggregateParams,
@@ -42,6 +43,7 @@ import type {
   HealthStatus,
   ListMgmtreportCommentsParams,
   ListMgmtreportProjectsParams,
+  ListProjectdetailCommentsParams,
   ListSalescostSitesParams,
   MgmtreportComment,
   MgmtreportCommentList,
@@ -56,12 +58,15 @@ import type {
   PreviewMgmtreportImportBody,
   PreviewSalescostImportBody,
   ProjectDetail,
+  ProjectdetailComment,
+  ProjectdetailCommentList,
   RevertMgmtreportImport,
   SalescostImportPreview,
   SalescostImportResult,
   SalescostSites,
   SalescostSummary,
   UpdateMgmtreportComment,
+  UpdateProjectdetailComment,
   UploadUrlRequest,
   UploadUrlResponse
 } from './api.schemas';
@@ -833,6 +838,304 @@ export const usePutProjectdetail = <TError = ErrorType<ApiErrorMessage>,
         TContext
       > => {
       return useMutation(getPutProjectdetailMutationOptions(options));
+    }
+
+export const getListProjectdetailCommentsUrl = (params: ListProjectdetailCommentsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/projectdetail/comments?${stringifiedParams}` : `/api/projectdetail/comments`
+}
+
+/**
+ * @summary List comments for a project + tab (newest first)
+ */
+export const listProjectdetailComments = async (params: ListProjectdetailCommentsParams, options?: RequestInit): Promise<ProjectdetailCommentList> => {
+
+  return customFetch<ProjectdetailCommentList>(getListProjectdetailCommentsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListProjectdetailCommentsQueryKey = (params?: ListProjectdetailCommentsParams,) => {
+    return [
+    `/api/projectdetail/comments`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListProjectdetailCommentsQueryOptions = <TData = Awaited<ReturnType<typeof listProjectdetailComments>>, TError = ErrorType<ApiErrorMessage>>(params: ListProjectdetailCommentsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listProjectdetailComments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListProjectdetailCommentsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listProjectdetailComments>>> = ({ signal }) => listProjectdetailComments(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listProjectdetailComments>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListProjectdetailCommentsQueryResult = NonNullable<Awaited<ReturnType<typeof listProjectdetailComments>>>
+export type ListProjectdetailCommentsQueryError = ErrorType<ApiErrorMessage>
+
+
+/**
+ * @summary List comments for a project + tab (newest first)
+ */
+
+export function useListProjectdetailComments<TData = Awaited<ReturnType<typeof listProjectdetailComments>>, TError = ErrorType<ApiErrorMessage>>(
+ params: ListProjectdetailCommentsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listProjectdetailComments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListProjectdetailCommentsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateProjectdetailCommentUrl = () => {
+
+
+
+
+  return `/api/projectdetail/comments`
+}
+
+/**
+ * @summary Save a project detail tab comment
+ */
+export const createProjectdetailComment = async (createProjectdetailComment: CreateProjectdetailComment, options?: RequestInit): Promise<ProjectdetailComment> => {
+
+  return customFetch<ProjectdetailComment>(getCreateProjectdetailCommentUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(createProjectdetailComment)
+  }
+);}
+
+
+
+
+
+export const getCreateProjectdetailCommentMutationOptions = <TError = ErrorType<ApiErrorMessage>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createProjectdetailComment>>, TError,{data: BodyType<CreateProjectdetailComment>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createProjectdetailComment>>, TError,{data: BodyType<CreateProjectdetailComment>}, TContext> => {
+
+const mutationKey = ['createProjectdetailComment'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createProjectdetailComment>>, {data: BodyType<CreateProjectdetailComment>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createProjectdetailComment(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateProjectdetailCommentMutationResult = NonNullable<Awaited<ReturnType<typeof createProjectdetailComment>>>
+    export type CreateProjectdetailCommentMutationBody = BodyType<CreateProjectdetailComment>
+    export type CreateProjectdetailCommentMutationError = ErrorType<ApiErrorMessage>
+
+    /**
+ * @summary Save a project detail tab comment
+ */
+export const useCreateProjectdetailComment = <TError = ErrorType<ApiErrorMessage>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createProjectdetailComment>>, TError,{data: BodyType<CreateProjectdetailComment>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createProjectdetailComment>>,
+        TError,
+        {data: BodyType<CreateProjectdetailComment>},
+        TContext
+      > => {
+      return useMutation(getCreateProjectdetailCommentMutationOptions(options));
+    }
+
+export const getUpdateProjectdetailCommentUrl = (id: number,) => {
+
+
+
+
+  return `/api/projectdetail/comments/${id}`
+}
+
+/**
+ * @summary Update a comment body (admin only)
+ */
+export const updateProjectdetailComment = async (id: number,
+    updateProjectdetailComment: UpdateProjectdetailComment, options?: RequestInit): Promise<ProjectdetailComment> => {
+
+  return customFetch<ProjectdetailComment>(getUpdateProjectdetailCommentUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(updateProjectdetailComment)
+  }
+);}
+
+
+
+
+
+export const getUpdateProjectdetailCommentMutationOptions = <TError = ErrorType<ApiErrorMessage>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateProjectdetailComment>>, TError,{id: number;data: BodyType<UpdateProjectdetailComment>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateProjectdetailComment>>, TError,{id: number;data: BodyType<UpdateProjectdetailComment>}, TContext> => {
+
+const mutationKey = ['updateProjectdetailComment'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateProjectdetailComment>>, {id: number;data: BodyType<UpdateProjectdetailComment>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateProjectdetailComment(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateProjectdetailCommentMutationResult = NonNullable<Awaited<ReturnType<typeof updateProjectdetailComment>>>
+    export type UpdateProjectdetailCommentMutationBody = BodyType<UpdateProjectdetailComment>
+    export type UpdateProjectdetailCommentMutationError = ErrorType<ApiErrorMessage>
+
+    /**
+ * @summary Update a comment body (admin only)
+ */
+export const useUpdateProjectdetailComment = <TError = ErrorType<ApiErrorMessage>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateProjectdetailComment>>, TError,{id: number;data: BodyType<UpdateProjectdetailComment>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateProjectdetailComment>>,
+        TError,
+        {id: number;data: BodyType<UpdateProjectdetailComment>},
+        TContext
+      > => {
+      return useMutation(getUpdateProjectdetailCommentMutationOptions(options));
+    }
+
+export const getDeleteProjectdetailCommentUrl = (id: number,) => {
+
+
+
+
+  return `/api/projectdetail/comments/${id}`
+}
+
+/**
+ * @summary Delete a comment (admin only)
+ */
+export const deleteProjectdetailComment = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteProjectdetailCommentUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteProjectdetailCommentMutationOptions = <TError = ErrorType<ApiErrorMessage>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteProjectdetailComment>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteProjectdetailComment>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteProjectdetailComment'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteProjectdetailComment>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteProjectdetailComment(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteProjectdetailCommentMutationResult = NonNullable<Awaited<ReturnType<typeof deleteProjectdetailComment>>>
+
+    export type DeleteProjectdetailCommentMutationError = ErrorType<ApiErrorMessage>
+
+    /**
+ * @summary Delete a comment (admin only)
+ */
+export const useDeleteProjectdetailComment = <TError = ErrorType<ApiErrorMessage>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteProjectdetailComment>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteProjectdetailComment>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteProjectdetailCommentMutationOptions(options));
     }
 
 export const getListCashflowProjectsUrl = () => {

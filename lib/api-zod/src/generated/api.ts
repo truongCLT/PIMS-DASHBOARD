@@ -415,6 +415,82 @@ export const PutProjectdetailResponse = zod.object({
 
 
 /**
+ * @summary List comments for a project + tab (newest first)
+ */
+export const ListProjectdetailCommentsQueryParams = zod.object({
+  "projectName": zod.coerce.string(),
+  "tab": zod.enum(['overview', 'progress', 'costing', 'outsourcing', 'cashflow', 'saleprofit', 'budget', 'service'])
+})
+
+export const ListProjectdetailCommentsResponse = zod.object({
+  "comments": zod.array(zod.object({
+  "id": zod.number(),
+  "projectName": zod.string(),
+  "tab": zod.enum(['overview', 'progress', 'costing', 'outsourcing', 'cashflow', 'saleprofit', 'budget', 'service']),
+  "body": zod.string(),
+  "createdAt": zod.string()
+}))
+})
+
+
+/**
+ * @summary Save a project detail tab comment
+ */
+
+export const createProjectdetailCommentBodyBodyMax = 2000;
+
+
+
+export const CreateProjectdetailCommentBody = zod.object({
+  "projectName": zod.string().min(1),
+  "tab": zod.enum(['overview', 'progress', 'costing', 'outsourcing', 'cashflow', 'saleprofit', 'budget', 'service']),
+  "body": zod.string().min(1).max(createProjectdetailCommentBodyBodyMax)
+})
+
+export const CreateProjectdetailCommentResponse = zod.object({
+  "id": zod.number(),
+  "projectName": zod.string(),
+  "tab": zod.enum(['overview', 'progress', 'costing', 'outsourcing', 'cashflow', 'saleprofit', 'budget', 'service']),
+  "body": zod.string(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Update a comment body (admin only)
+ */
+export const UpdateProjectdetailCommentParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const updateProjectdetailCommentBodyBodyMax = 2000;
+
+
+
+export const UpdateProjectdetailCommentBody = zod.object({
+  "body": zod.string().min(1).max(updateProjectdetailCommentBodyBodyMax)
+})
+
+export const UpdateProjectdetailCommentResponse = zod.object({
+  "id": zod.number(),
+  "projectName": zod.string(),
+  "tab": zod.enum(['overview', 'progress', 'costing', 'outsourcing', 'cashflow', 'saleprofit', 'budget', 'service']),
+  "body": zod.string(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Delete a comment (admin only)
+ */
+export const DeleteProjectdetailCommentParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DeleteProjectdetailCommentResponse = zod.void()
+
+
+/**
  * @summary List cashflow projects
  */
 export const ListCashflowProjectsResponseItem = zod.object({

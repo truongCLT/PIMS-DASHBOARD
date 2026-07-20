@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { MessageSquare, Send } from "lucide-react";
+import { ProjectCommentPanel } from "./ProjectCommentPanel";
+
 import {
   ComposedChart,
   Bar,
@@ -52,7 +53,6 @@ export function ServiceCashflowTab({
   fromMonth: number;
   months: number;
 }) {
-  const [comment, setComment] = useState("");
   const { convert, unitLabel } = useMoney();
 
   // 보조: 데이터 입력 탭에서 저장한 프로젝트별 자금 데이터 (pd_cashflow_monthly)
@@ -252,54 +252,7 @@ export function ServiceCashflowTab({
 
       {/* Comment */}
       <div style={cardStyle}>
-        <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "8px" }}>
-          <MessageSquare size={13} color="#1a2d4d" />
-          <span style={{ fontSize: "12px", fontWeight: 700, color: "#1a2d4d" }}>Comment</span>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "14px", marginBottom: "8px", flexWrap: "wrap" }}>
-          <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", color: "#333" }}>
-            Chart :
-            <select style={{ fontSize: "11px", padding: "4px 6px", border: "1px solid #ccd4dd", borderRadius: "4px" }}>
-              <option>Sale by division</option>
-              <option>Cashflow</option>
-            </select>
-          </label>
-          <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", color: "#333" }}>
-            Month :
-            <select defaultValue="June" style={{ fontSize: "11px", padding: "4px 6px", border: "1px solid #ccd4dd", borderRadius: "4px" }}>
-              {["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"].map((mo) => (
-                <option key={mo}>{mo}</option>
-              ))}
-            </select>
-          </label>
-        </div>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "flex-end",
-            gap: "8px",
-            border: "1px solid #ccd4dd",
-            borderRadius: "6px",
-            padding: "8px 10px",
-          }}
-        >
-          <textarea
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            placeholder="Write a comment"
-            rows={2}
-            style={{
-              flex: 1,
-              border: "none",
-              outline: "none",
-              resize: "none",
-              fontSize: "11px",
-              color: "#333",
-              fontFamily: "inherit",
-            }}
-          />
-          <Send size={14} color="#1e6fdd" style={{ cursor: "pointer", flexShrink: 0 }} />
-        </div>
+        <ProjectCommentPanel projectName={projectName} tab="cashflow" />
       </div>
     </div>
   );
