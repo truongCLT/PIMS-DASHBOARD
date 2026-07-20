@@ -49,6 +49,7 @@ function Donut({
   track = chartTheme.trackGray,
   extraArc,
   label,
+  labelSize = 22,
 }: {
   percent: number;
   size?: number;
@@ -57,6 +58,7 @@ function Donut({
   track?: string;
   extraArc?: { percent: number; color: string };
   label?: string;
+  labelSize?: number;
 }) {
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
@@ -92,7 +94,7 @@ function Donut({
           y={size / 2}
           textAnchor="middle"
           dominantBaseline="central"
-          fontSize={22}
+          fontSize={labelSize}
           fontWeight={700}
           fill="#1a2d4d"
         >
@@ -270,7 +272,7 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
       {/* Row 1: Construction site progress + Progress */}
-      <div style={{ display: "grid", gridTemplateColumns: "1.9fr 1fr", gap: "8px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "8px" }}>
         {/* Construction site progress */}
         <div style={{ ...cardStyle, display: "flex", flexDirection: "column" }}>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
@@ -312,6 +314,9 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
               color={chartTheme.outflowRed}
               extraArc={planCum != null ? { percent: planCum, color: chartTheme.planBlue } : undefined}
               label={fmtPct(actualCum)}
+              size={170}
+              stroke={20}
+              labelSize={28}
             />
             <span style={{ position: "absolute", right: "6px", bottom: "10px", fontSize: "10px", color: chartTheme.planBlue, fontWeight: 700 }}>
               {fmtPct(planCum)}
