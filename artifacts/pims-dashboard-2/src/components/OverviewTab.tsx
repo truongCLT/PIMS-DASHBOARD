@@ -11,6 +11,7 @@ import { Donut, MiniBar } from "./charts";
 import { useProjectDetail, fmtNum, fmtPct, ratioPct } from "../lib/projectDetailData";
 import { getMrCashflowRef, useMrProject } from "../data/mrProjectLinks";
 import { REPORT_YEAR } from "../lib/mgmtreportData";
+import { chartTheme } from "../lib/chartTheme";
 
 const cardStyle: React.CSSProperties = {
   backgroundColor: "#fff",
@@ -175,11 +176,11 @@ export function OverviewTab({ projectName }: { projectName: string }) {
         {/* Progress */}
         <div style={cardStyle}>
           <div style={{ display: "flex", justifyContent: "space-between" }}>
-            <span style={{ ...sectionTitle, color: "#3e7d4c" }}>Progress</span>
+            <span style={{ ...sectionTitle, color: chartTheme.profitGreen }}>Progress</span>
             <span
               style={{
                 fontSize: "9px",
-                backgroundColor: "#3e7d4c",
+                backgroundColor: chartTheme.profitGreen,
                 color: "#fff",
                 borderRadius: "3px",
                 padding: "1px 5px",
@@ -204,8 +205,8 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                 }}
               >
                 {[
-                  { label: "계획 (A)", value: planCum, color: "#2b5cad" },
-                  { label: "실적 (B)", value: actualCum, color: "#c0392b" },
+                  { label: "계획 (A)", value: planCum, color: chartTheme.planBlue },
+                  { label: "실적 (B)", value: actualCum, color: chartTheme.outflowRed },
                 ].map((b) => (
                   <div
                     key={b.label}
@@ -226,7 +227,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                   </div>
                 ))}
               </div>
-              <div style={{ textAlign: "center", fontSize: "11px", color: "#3e7d4c", fontWeight: 700 }}>
+              <div style={{ textAlign: "center", fontSize: "11px", color: chartTheme.profitGreen, fontWeight: 700 }}>
                 달성률 : {fmtPct(achieveRate)} (B/A)
               </div>
             </>
@@ -260,7 +261,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                   <MiniBar
                     value={prevMonthRev ?? 0}
                     max={Math.max(prevMonthRev ?? 0, thisMonthRev ?? 0, 1)}
-                    color="#c9d2dd"
+                    color={chartTheme.neutralGray}
                     label="전월"
                     height={110}
                     valueLabel={fmtNum(prevMonthRev)}
@@ -268,7 +269,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                   <MiniBar
                     value={thisMonthRev ?? 0}
                     max={Math.max(prevMonthRev ?? 0, thisMonthRev ?? 0, 1)}
-                    color="#2b5cad"
+                    color={chartTheme.planBlue}
                     label="당월"
                     height={110}
                     valueLabel={fmtNum(thisMonthRev)}
@@ -278,7 +279,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                   <div style={{ fontSize: "10px", color: "#555", marginBottom: "2px" }}>{fmtNum(cumRev)}</div>
                   <Donut
                     percent={ratioPct(cumRev, overview.contractAmount) ?? 0}
-                    color="#2b5cad"
+                    color={chartTheme.planBlue}
                     size={110}
                     stroke={13}
                     label={fmtPct(ratioPct(cumRev, overview.contractAmount))}
@@ -292,7 +293,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                   <div style={{ fontSize: "10px", color: "#555", marginBottom: "2px" }}>{fmtNum(cumCogs)}</div>
                   <Donut
                     percent={ratioPct(cumCogs, cumRev) ?? 0}
-                    color="#1a3a6b"
+                    color={chartTheme.balanceNavy}
                     size={110}
                     stroke={13}
                     label={fmtPct(ratioPct(cumCogs, cumRev))}
@@ -326,12 +327,12 @@ export function OverviewTab({ projectName }: { projectName: string }) {
               <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                 <div style={{ textAlign: "center" }}>
                   <div style={{ fontSize: "9px", color: "#555" }}>{fmtNum(bidding?.costAmount)}</div>
-                  <Donut percent={estPct(bidding) ?? 0} color="#2b5cad" size={78} stroke={9} label={fmtPct(estPct(bidding))} labelSize={14} />
+                  <Donut percent={estPct(bidding) ?? 0} color={chartTheme.planBlue} size={78} stroke={9} label={fmtPct(estPct(bidding))} labelSize={14} />
                   <div style={{ fontSize: "10px", color: "#1a2d4d", fontWeight: 600 }}>Bidding</div>
                 </div>
                 <div style={{ textAlign: "center" }}>
                   <div style={{ fontSize: "9px", color: "#555" }}>{fmtNum(execution?.costAmount)}</div>
-                  <Donut percent={estPct(execution) ?? 0} color="#1a3a6b" size={78} stroke={9} label={fmtPct(estPct(execution))} labelSize={14} />
+                  <Donut percent={estPct(execution) ?? 0} color={chartTheme.balanceNavy} size={78} stroke={9} label={fmtPct(estPct(execution))} labelSize={14} />
                   <div style={{ fontSize: "10px", color: "#1a2d4d", fontWeight: 600, textDecoration: "underline" }}>
                     Execution Budgeting
                   </div>
@@ -341,7 +342,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                 <div style={{ fontSize: "10px", color: "#555" }}>
                   {fmtNum(completion?.contractAmount)} / {fmtNum(completion?.costAmount)}
                 </div>
-                <Donut percent={estPct(completion) ?? 0} color="#2b5cad" size={160} stroke={18} label={fmtPct(estPct(completion))} labelSize={26} />
+                <Donut percent={estPct(completion) ?? 0} color={chartTheme.planBlue} size={160} stroke={18} label={fmtPct(estPct(completion))} labelSize={26} />
                 <div style={{ fontSize: "11px", color: "#1a2d4d", fontWeight: 700, marginTop: "4px" }}>Total Cost Rate</div>
                 <div style={{ fontSize: "10px", color: "#333", marginTop: "2px" }}>Estimated Completion</div>
               </div>
@@ -385,9 +386,9 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                     <div key={g.item} style={{ textAlign: "center" }}>
                       <div style={{ fontSize: "9px", color: "#555", marginBottom: "2px" }}>{fmtNum(g.budget)}</div>
                       <div style={{ height: `${H}px`, display: "flex", alignItems: "flex-end", gap: "3px", justifyContent: "center" }}>
-                        <div style={{ width: "22px", height: `${bh}px`, backgroundColor: "#d9dee5" }} />
+                        <div style={{ width: "22px", height: `${bh}px`, backgroundColor: chartTheme.lightGray }} />
                         {sh > 0 && (
-                          <div style={{ width: "22px", height: `${sh}px`, backgroundColor: "#c0392b", position: "relative" }}>
+                          <div style={{ width: "22px", height: `${sh}px`, backgroundColor: chartTheme.outflowRed, position: "relative" }}>
                             <span
                               style={{
                                 position: "absolute",
@@ -405,7 +406,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                         )}
                       </div>
                       {pct != null && (
-                        <div style={{ fontSize: "9px", color: "#4a90d9", fontWeight: 600, marginTop: "2px" }}>{fmtPct(pct)}</div>
+                        <div style={{ fontSize: "9px", color: chartTheme.inflowBlue, fontWeight: 600, marginTop: "2px" }}>{fmtPct(pct)}</div>
                       )}
                       <div style={{ fontSize: "9px", color: "#333", fontWeight: 600, marginTop: "2px" }}>{g.item}</div>
                     </div>
@@ -441,7 +442,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
               <MiniBar
                 value={cashIn}
                 max={Math.max(cashIn, cashOut, Math.abs(balance ?? 0), 1)}
-                color="#c9d2dd"
+                color={chartTheme.neutralGray}
                 label="유입 누계"
                 height={140}
                 valueLabel={fmtNum(cashIn)}
@@ -450,7 +451,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
               <MiniBar
                 value={cashOut}
                 max={Math.max(cashIn, cashOut, Math.abs(balance ?? 0), 1)}
-                color="#c0392b"
+                color={chartTheme.outflowRed}
                 label="유출 누계"
                 height={140}
                 valueLabel={fmtNum(cashOut)}
@@ -459,7 +460,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
               <MiniBar
                 value={Math.max(balance ?? 0, 0)}
                 max={Math.max(cashIn, cashOut, Math.abs(balance ?? 0), 1)}
-                color="#2b5cad"
+                color={chartTheme.planBlue}
                 label="잔액"
                 height={140}
                 valueLabel={fmtNum(balance)}

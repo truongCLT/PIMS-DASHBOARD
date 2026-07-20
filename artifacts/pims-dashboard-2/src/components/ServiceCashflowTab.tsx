@@ -14,6 +14,7 @@ import {
 import { useGetCashflowMonthly, getGetCashflowMonthlyQueryKey } from "@workspace/api-client-react";
 import { getMrCashflowRef } from "../data/mrProjectLinks";
 import { useProjectDetail } from "../lib/projectDetailData";
+import { chartTheme } from "../lib/chartTheme";
 
 const cardStyle: React.CSSProperties = {
   backgroundColor: "#fff",
@@ -159,7 +160,7 @@ export function ServiceCashflowTab({
               dataKey="month"
               tick={{ fontSize: 12, fill: "#333", fontWeight: 600 }}
               tickLine={false}
-              axisLine={{ stroke: "#d5dce6" }}
+              axisLine={{ stroke: chartTheme.axisLine }}
             />
             <YAxis
               tick={{ fontSize: 11, fill: "#333", fontWeight: 600 }}
@@ -178,11 +179,11 @@ export function ServiceCashflowTab({
               ticks={ticks}
             />
             <Legend wrapperStyle={{ fontSize: "12px", fontWeight: 600 }} iconSize={14} />
-            <ReferenceLine y={0} stroke="#e0763a" strokeDasharray="3 3" />
+            <ReferenceLine y={0} stroke={chartTheme.sgaOrange} strokeDasharray="3 3" />
             <Bar
               dataKey="cashIn"
               name="Cash in"
-              fill="#2e6db4"
+              fill={chartTheme.inflowBlue}
               barSize={barSize}
               stackId="cash"
               isAnimationActive={false}
@@ -198,7 +199,7 @@ export function ServiceCashflowTab({
             <Bar
               dataKey="cashOut"
               name="Cash out"
-              fill="#1e8449"
+              fill={chartTheme.actualGreen}
               barSize={barSize}
               stackId="cash"
               isAnimationActive={false}
@@ -215,9 +216,9 @@ export function ServiceCashflowTab({
               dataKey="equivalent"
               name="Cash equivalent"
               type="monotone"
-              stroke="#1e8449"
+              stroke={chartTheme.actualGreen}
               strokeWidth={2}
-              dot={{ r: 3, fill: "#fff", stroke: "#1e8449" }}
+              dot={{ r: 3, fill: "#fff", stroke: chartTheme.actualGreen }}
               isAnimationActive={false}
             />
           </ComposedChart>
@@ -231,7 +232,7 @@ export function ServiceCashflowTab({
       {/* Cashflow */}
       <div style={cardStyle}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span style={{ fontSize: "13px", fontWeight: 700, color: "#1a3a6b" }}>Cashflow</span>
+          <span style={{ fontSize: "13px", fontWeight: 700, color: chartTheme.titleNavy }}>Cashflow</span>
           <span style={{ fontSize: "11px", color: "#5a6a7e" }}>
             {useCf && query.data
               ? `${query.data.projectName} · 단위: ${query.data.unit}`

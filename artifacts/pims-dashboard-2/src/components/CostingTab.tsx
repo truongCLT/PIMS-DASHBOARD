@@ -7,6 +7,7 @@ import {
 import { useProjectDetail, fmtNum, fmtPct, ratioPct } from "../lib/projectDetailData";
 import { useMrProject } from "../data/mrProjectLinks";
 import { REPORT_YEAR } from "../lib/mgmtreportData";
+import { chartTheme } from "../lib/chartTheme";
 
 const cardStyle: React.CSSProperties = {
   backgroundColor: "#fff",
@@ -32,8 +33,8 @@ function Donut({
   percent,
   size = 150,
   stroke = 16,
-  color = "#2b5cad",
-  track = "#dfe5ec",
+  color = chartTheme.planBlue,
+  track = chartTheme.trackGray,
   centerLabel,
 }: {
   percent: number;
@@ -77,9 +78,9 @@ function Donut({
 }
 
 const EST_META: { kind: "bidding" | "execution" | "completion"; label: string; color: string }[] = [
-  { kind: "bidding", label: "Bidding", color: "#9db8d9" },
-  { kind: "execution", label: "Execution Budgeting", color: "#2b5cad" },
-  { kind: "completion", label: "Estimated Completion", color: "#1a2d4d" },
+  { kind: "bidding", label: "Bidding", color: chartTheme.paleBlue },
+  { kind: "execution", label: "Execution Budgeting", color: chartTheme.planBlue },
+  { kind: "completion", label: "Estimated Completion", color: chartTheme.headingNavy },
 ];
 
 type BudgetRow = {
@@ -120,7 +121,7 @@ function BudgetExecutionStatus({ rows }: { rows: BudgetRow[] }) {
                       position: "relative",
                       width: `${trackW}%`,
                       height: row.plan != null || row.actual != null ? "52px" : "40px",
-                      backgroundColor: "#d9dee5",
+                      backgroundColor: chartTheme.lightGray,
                     }}
                   >
                     <span
@@ -144,7 +145,7 @@ function BudgetExecutionStatus({ rows }: { rows: BudgetRow[] }) {
                         left: 0,
                         width: `${Math.max(planW, 3)}%`,
                         height: "20px",
-                        backgroundColor: "#c0392b",
+                        backgroundColor: chartTheme.outflowRed,
                       }}
                     >
                       <span
@@ -168,7 +169,7 @@ function BudgetExecutionStatus({ rows }: { rows: BudgetRow[] }) {
                             top: "50%",
                             transform: "translate(100%, -50%)",
                             fontSize: "8px",
-                            color: "#c0392b",
+                            color: chartTheme.outflowRed,
                             fontWeight: 700,
                           }}
                         >
@@ -185,7 +186,7 @@ function BudgetExecutionStatus({ rows }: { rows: BudgetRow[] }) {
                         left: 0,
                         width: `${Math.max(actualW, 3)}%`,
                         height: "20px",
-                        backgroundColor: "#2b5cad",
+                        backgroundColor: chartTheme.planBlue,
                       }}
                     >
                       <span
@@ -209,7 +210,7 @@ function BudgetExecutionStatus({ rows }: { rows: BudgetRow[] }) {
                             top: "50%",
                             transform: "translate(100%, -50%)",
                             fontSize: "8px",
-                            color: "#2b5cad",
+                            color: chartTheme.planBlue,
                             fontWeight: 700,
                           }}
                         >
@@ -283,9 +284,9 @@ function DbCostActualCard({ projectName }: { projectName: string }) {
                 ))}
               </tr>
               <tr>
-                <td style={{ border: "1px solid #d0dce8", padding: "4px 6px", fontWeight: 600, color: "#2b5cad", whiteSpace: "nowrap" }}>누계</td>
+                <td style={{ border: "1px solid #d0dce8", padding: "4px 6px", fontWeight: 600, color: chartTheme.planBlue, whiteSpace: "nowrap" }}>누계</td>
                 {rows.map((r) => (
-                  <td key={r.label} style={{ border: "1px solid #d0dce8", padding: "4px 6px", textAlign: "right", color: "#2b5cad", fontWeight: 600 }}>
+                  <td key={r.label} style={{ border: "1px solid #d0dce8", padding: "4px 6px", textAlign: "right", color: chartTheme.planBlue, fontWeight: 600 }}>
                     {r.cum !== 0 ? fmtNum(r.cum) : "-"}
                   </td>
                 ))}
@@ -376,7 +377,7 @@ export function CostingTab({ projectName }: { projectName: string }) {
       <div style={cardStyle}>
         <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "8px" }}>
           <MessageSquare size={13} color="#1a2d4d" />
-          <span style={{ fontSize: "12px", fontWeight: 700, color: "#1a2d4d" }}>Comment</span>
+          <span style={{ fontSize: "12px", fontWeight: 700, color: chartTheme.headingNavy }}>Comment</span>
         </div>
         <div
           style={{

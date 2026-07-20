@@ -16,6 +16,7 @@ import {
 } from "@workspace/api-client-react";
 import { useMrProject } from "../data/mrProjectLinks";
 import { REPORT_YEAR } from "../lib/mgmtreportData";
+import { chartTheme } from "../lib/chartTheme";
 
 const cardStyle: React.CSSProperties = {
   backgroundColor: "#fff",
@@ -198,9 +199,9 @@ export function SaleProfitTab({
             <ComposedChart data={chartData} margin={{ top: 30, right: 40, left: 40, bottom: 0 }}>
               <XAxis
                 dataKey="label"
-                tick={{ fontSize: 10, fill: "#555" }}
+                tick={{ fontSize: 10, fill: chartTheme.axisText }}
                 tickLine={false}
-                axisLine={{ stroke: "#d5dce6" }}
+                axisLine={{ stroke: chartTheme.axisLine }}
               />
               <YAxis hide domain={[0, Math.max(maxRevenue * 1.25, 1)]} />
               <YAxis yAxisId="cum" hide domain={[0, Math.max(maxCum * 1.15, 1)]} />
@@ -209,14 +210,14 @@ export function SaleProfitTab({
               <Bar
                 dataKey="revenue"
                 name="월 매출"
-                fill="#2b5cad"
+                fill={chartTheme.planBlue}
                 barSize={22}
                 isAnimationActive={false}
               >
                 <LabelList
                   dataKey="revenue"
                   position="top"
-                  style={{ fontSize: "9px", fill: "#555" }}
+                  style={{ fontSize: "9px", fill: chartTheme.axisText }}
                   formatter={(v: number) => v.toLocaleString()}
                 />
               </Bar>
@@ -225,7 +226,7 @@ export function SaleProfitTab({
                 dataKey="cumulative"
                 name="누계"
                 type="monotone"
-                stroke="#c0392b"
+                stroke={chartTheme.outflowRed}
                 strokeWidth={2}
                 dot={{ r: 3 }}
                 isAnimationActive={false}
@@ -233,7 +234,7 @@ export function SaleProfitTab({
                 <LabelList
                   dataKey="cumulative"
                   position="top"
-                  style={{ fontSize: "9px", fill: "#c0392b" }}
+                  style={{ fontSize: "9px", fill: chartTheme.outflowRed }}
                   formatter={(v: number) => v.toLocaleString()}
                 />
               </Line>
@@ -253,9 +254,9 @@ export function SaleProfitTab({
               <ComposedChart data={chartData} margin={{ top: 30, right: 40, left: 40, bottom: 0 }}>
                 <XAxis
                   dataKey="label"
-                  tick={{ fontSize: 10, fill: "#555" }}
+                  tick={{ fontSize: 10, fill: chartTheme.axisText }}
                   tickLine={false}
-                  axisLine={{ stroke: "#d5dce6" }}
+                  axisLine={{ stroke: chartTheme.axisLine }}
                 />
                 <YAxis hide domain={[0, Math.max(ratioMax * 1.3, 10)]} />
                 <Tooltip contentStyle={{ fontSize: "11px" }} formatter={(v) => `${v}%`} />
@@ -263,7 +264,7 @@ export function SaleProfitTab({
                   dataKey="ratio"
                   name="원가율"
                   type="monotone"
-                  stroke="#3e7d4c"
+                  stroke={chartTheme.profitGreen}
                   strokeWidth={2}
                   dot={{ r: 3 }}
                   connectNulls
@@ -272,7 +273,7 @@ export function SaleProfitTab({
                   <LabelList
                     dataKey="ratio"
                     position="top"
-                    style={{ fontSize: "9px", fill: "#3e7d4c" }}
+                    style={{ fontSize: "9px", fill: chartTheme.profitGreen }}
                     formatter={(v: number) => `${v}%`}
                   />
                 </Line>

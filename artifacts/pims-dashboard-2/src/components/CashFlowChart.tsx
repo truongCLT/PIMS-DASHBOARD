@@ -25,6 +25,7 @@ import {
   unitLabelOf,
   REPORT_YEAR,
 } from "../lib/dashboardFilters";
+import { chartTheme } from "../lib/chartTheme";
 
 // DECV 전체 = 시공(도급 사업) + 용역(용역 사업) 합산
 const BASE_SCOPE_PARAMS: Record<string, { division?: string; divisions?: string }> = {
@@ -88,7 +89,7 @@ const InflowLabel = (props: any) => {
   const { x, y, width, value } = props;
   if (!value) return null;
   return (
-    <text x={x + width / 2} y={y - 3} fill="#1565c0" textAnchor="middle" fontSize={8} fontWeight="600">
+    <text x={x + width / 2} y={y - 3} fill={chartTheme.inflowBlue} textAnchor="middle" fontSize={8} fontWeight="600">
       +{Math.round(value).toLocaleString()}
     </text>
   );
@@ -99,7 +100,7 @@ const OutflowLabel = (props: any) => {
   if (!value) return null;
   const bottom = Math.max(y, y + height);
   return (
-    <text x={x + width / 2} y={bottom + 9} fill="#e53935" textAnchor="middle" fontSize={8} fontWeight="600">
+    <text x={x + width / 2} y={bottom + 9} fill={chartTheme.outflowRed} textAnchor="middle" fontSize={8} fontWeight="600">
       {Math.round(value).toLocaleString()}
     </text>
   );
@@ -171,10 +172,10 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
     body = (
       <ResponsiveContainer width="100%" height="100%">
         <ComposedChart data={chartData} margin={{ top: 20, right: 10, left: 0, bottom: 12 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#e8f0f8" vertical={false} />
-          <XAxis dataKey="month" tick={{ fontSize: 10, fill: "#666" }} axisLine={false} tickLine={false} />
+          <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.gridLine} vertical={false} />
+          <XAxis dataKey="month" tick={{ fontSize: 10, fill: chartTheme.axisText }} axisLine={false} tickLine={false} />
           <YAxis
-            tick={{ fontSize: 10, fill: "#666" }}
+            tick={{ fontSize: 10, fill: chartTheme.axisText }}
             axisLine={false}
             tickLine={false}
             tickFormatter={(v: number) => v.toLocaleString()}
@@ -187,11 +188,11 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
               return [`${Math.round(shown).toLocaleString()} ${unitLabel}`, name];
             }}
           />
-          <ReferenceLine y={0} stroke="#ccc" />
-          <Bar isAnimationActive={false} dataKey="inflow" name="자금 유입" fill="#1565c0" barSize={16} radius={[2, 2, 0, 0]}>
+          <ReferenceLine y={0} stroke={chartTheme.zeroLine} />
+          <Bar isAnimationActive={false} dataKey="inflow" name="자금 유입" fill={chartTheme.inflowBlue} barSize={16} radius={[2, 2, 0, 0]}>
             <LabelList dataKey="inflow" content={InflowLabel} />
           </Bar>
-          <Bar isAnimationActive={false} dataKey="outflow" name="자금 유출" fill="#e53935" barSize={16} radius={[0, 0, 2, 2]}>
+          <Bar isAnimationActive={false} dataKey="outflow" name="자금 유출" fill={chartTheme.outflowRed} barSize={16} radius={[0, 0, 2, 2]}>
             <LabelList dataKey="outflow" content={OutflowLabel} />
           </Bar>
           <Line
@@ -199,9 +200,9 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
             type="monotone"
             dataKey="balance"
             name="누적 현금 잔액"
-            stroke="#1a3a5c"
+            stroke={chartTheme.balanceNavy}
             strokeWidth={2}
-            dot={{ r: 3, fill: "#1a3a5c" }}
+            dot={{ r: 3, fill: chartTheme.balanceNavy }}
           />
         </ComposedChart>
       </ResponsiveContainer>
@@ -221,7 +222,7 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
-          <span style={{ fontSize: "12px", fontWeight: "600", color: "#1a3a5c" }}>자금수지</span>
+          <span style={{ fontSize: "12px", fontWeight: "600", color: chartTheme.titleNavy }}>자금수지</span>
           <span style={{ fontSize: "10px", color: "#5a6a7e" }}>
             {config.label} · 단위: {unitLabel}
           </span>
@@ -236,9 +237,9 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
       {/* Legend */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginTop: "4px" }}>
         {[
-          { color: "#1565c0", label: "자금 유입", type: "rect" },
-          { color: "#e53935", label: "자금 유출", type: "rect" },
-          { color: "#1a3a5c", label: "누적 현금 잔액", type: "line" },
+          { color: chartTheme.inflowBlue, label: "자금 유입", type: "rect" },
+          { color: chartTheme.outflowRed, label: "자금 유출", type: "rect" },
+          { color: chartTheme.balanceNavy, label: "누적 현금 잔액", type: "line" },
         ].map((item) => (
           <div key={item.label} style={{ display: "flex", alignItems: "center", gap: "4px" }}>
             {item.type === "rect" ? (

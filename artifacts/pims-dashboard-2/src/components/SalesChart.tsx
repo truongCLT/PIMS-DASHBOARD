@@ -10,10 +10,11 @@ import {
   LabelList,
 } from "recharts";
 import { useDashboardData, type SalesRow } from "../lib/mgmtreportData";
+import { chartTheme } from "../lib/chartTheme";
 
-const PLAN_COLOR = "#2b5cad";
-const ACTUAL_COLOR = "#2e8b3d";
-const RATE_COLOR = "#e67e22";
+const PLAN_COLOR = chartTheme.planBlue;
+const ACTUAL_COLOR = chartTheme.actualGreen;
+const RATE_COLOR = chartTheme.rateOrange;
 
 /* Badge label above dot */
 const BadgeLabel = (fill: string) => (props: any) => {
@@ -116,7 +117,7 @@ export function SalesChart() {
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
-          <span style={{ fontSize: "12px", fontWeight: "600", color: "#1a3a5c" }}>매출 실적 및 전망</span>
+          <span style={{ fontSize: "12px", fontWeight: "600", color: chartTheme.titleNavy }}>매출 실적 및 전망</span>
           {derived && <span style={{ fontSize: "10px", color: "#5a6a7e" }}>단위: {derived.unitLabel}</span>}
         </div>
         <button style={{
@@ -141,17 +142,17 @@ export function SalesChart() {
         ) : (
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={visibleData} margin={{ top: 36, right: 18, left: -10, bottom: 4 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e8f0f8" vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.gridLine} vertical={false} />
             <XAxis
               dataKey="month"
-              tick={{ fontSize: 10, fill: "#666" }}
+              tick={{ fontSize: 10, fill: chartTheme.axisText }}
               axisLine={false}
               tickLine={false}
               padding={{ left: 18, right: 6 }}
             />
             <YAxis
               domain={["auto", "auto"]}
-              tick={{ fontSize: 10, fill: "#666" }}
+              tick={{ fontSize: 10, fill: chartTheme.axisText }}
               tickFormatter={(v: number) => v.toLocaleString("ko-KR")}
               axisLine={false}
               tickLine={false}

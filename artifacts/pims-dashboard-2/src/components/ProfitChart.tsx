@@ -1,10 +1,11 @@
 import React from "react";
 import { useDashboardData } from "../lib/mgmtreportData";
+import { chartTheme } from "../lib/chartTheme";
 
-const NAVY = "#3d5a8f";
-const GREEN = "#3e7d4c";
-const LIGHT = "#eef4fb";
-const ORANGE = "#e07b28";
+const NAVY = chartTheme.profitNavy;
+const GREEN = chartTheme.profitGreen;
+const LIGHT = chartTheme.profitLight;
+const ORANGE = chartTheme.sgaOrange;
 
 const Y0 = 400; // bottom of plot area
 const YTOP = 20;
@@ -61,7 +62,7 @@ export function ProfitChart() {
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
-          <span style={{ fontSize: "12px", fontWeight: "600", color: "#1a3a5c" }}>손익현황</span>
+          <span style={{ fontSize: "12px", fontWeight: "600", color: chartTheme.titleNavy }}>손익현황</span>
           {derived && <span style={{ fontSize: "10px", color: "#5a6a7e" }}>단위: {derived.unitLabel}</span>}
         </div>
         <button style={{ fontSize: "11px", color: "#1e6fdd", background: "none", border: "none", cursor: "pointer" }}>

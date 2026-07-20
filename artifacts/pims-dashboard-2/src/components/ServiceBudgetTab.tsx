@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { MessageSquare, Send } from "lucide-react";
 import { useProjectDetail, fmtNum, fmtPct, ratioPct } from "../lib/projectDetailData";
+import { chartTheme } from "../lib/chartTheme";
 
 const cardStyle: React.CSSProperties = {
   backgroundColor: "#fff",
@@ -17,6 +18,7 @@ function HBar({
   pctLabel,
   totalLabel,
   execColor,
+  tone = "plan",
   trackColor = "#d5d7e2",
   height = 46,
   sub = false,
@@ -28,6 +30,7 @@ function HBar({
   pctLabel?: string;
   totalLabel?: string;
   execColor?: string;
+  tone?: "plan" | "warn";
   trackColor?: string;
   height?: number;
   sub?: boolean;
@@ -70,7 +73,7 @@ function HBar({
                     left: "100%",
                     marginLeft: "8px",
                     fontSize: "10px",
-                    color: execColor === "#f0a875" ? "#e07b28" : "#2b5cad",
+                    color: tone === "warn" ? chartTheme.sgaOrange : chartTheme.planBlue,
                     fontWeight: 600,
                     whiteSpace: "nowrap",
                   }}
@@ -126,7 +129,7 @@ export function ServiceBudgetTab({ projectName }: { projectName: string }) {
                   execLabel={c.actual != null ? fmtNum(c.actual) : undefined}
                   pctLabel={fmtPct(ratioPct(c.actual, c.budget)) === "-" ? undefined : fmtPct(ratioPct(c.actual, c.budget))}
                   totalLabel={fmtNum(c.budget)}
-                  execColor="#2b5cad"
+                  execColor={chartTheme.planBlue}
                 />
               );
             })}
@@ -137,7 +140,7 @@ export function ServiceBudgetTab({ projectName }: { projectName: string }) {
               execLabel={totalActual != null ? fmtNum(totalActual) : undefined}
               pctLabel={fmtPct(ratioPct(totalActual, totalBudget)) === "-" ? undefined : fmtPct(ratioPct(totalActual, totalBudget))}
               totalLabel={fmtNum(totalBudget)}
-              execColor="#2b5cad"
+              execColor={chartTheme.planBlue}
             />
           </div>
         )}

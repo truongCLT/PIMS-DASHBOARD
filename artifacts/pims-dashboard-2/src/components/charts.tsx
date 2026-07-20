@@ -1,12 +1,13 @@
 import React from "react";
+import { chartTheme } from "../lib/chartTheme";
 
 /* ---------- small SVG donut ---------- */
 export function Donut({
   percent,
   size = 110,
   stroke = 14,
-  color = "#2b5cad",
-  track = "#e3e8ef",
+  color = chartTheme.planBlue,
+  track = chartTheme.trackGray,
   label,
   labelSize = 20,
   extraArc,
@@ -57,7 +58,7 @@ export function Donut({
           dominantBaseline="central"
           fontSize={labelSize}
           fontWeight={700}
-          fill="#1a2d4d"
+          fill={chartTheme.headingNavy}
         >
           {label}
         </text>

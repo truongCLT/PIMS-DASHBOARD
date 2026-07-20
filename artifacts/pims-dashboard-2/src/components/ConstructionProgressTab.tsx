@@ -19,6 +19,7 @@ import {
   indexToYmLabel,
   type ProjectDetail,
 } from "../lib/projectDetailData";
+import { chartTheme } from "../lib/chartTheme";
 
 const cardStyle: React.CSSProperties = {
   backgroundColor: "#fff",
@@ -44,8 +45,8 @@ function Donut({
   percent,
   size = 130,
   stroke = 16,
-  color = "#c0392b",
-  track = "#e3e8ef",
+  color = chartTheme.outflowRed,
+  track = chartTheme.trackGray,
   extraArc,
   label,
 }: {
@@ -143,11 +144,11 @@ function MilestoneChart({ milestones }: { milestones: ProjectDetail["milestones"
         <span style={{ ...sectionTitle }}>Mile Stone</span>
         <div style={{ display: "flex", flexDirection: "column", gap: "4px", fontSize: "9px", color: "#333" }}>
           <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            <span style={{ width: "26px", height: "5px", backgroundColor: "#e02020", display: "inline-block" }} />
+            <span style={{ width: "26px", height: "5px", backgroundColor: chartTheme.outflowRed, display: "inline-block" }} />
             <u>Plan</u>
           </span>
           <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            <span style={{ width: "26px", height: "5px", backgroundColor: "#1e6fdd", display: "inline-block" }} />
+            <span style={{ width: "26px", height: "5px", backgroundColor: chartTheme.planBlue, display: "inline-block" }} />
             Actual
           </span>
         </div>
@@ -195,7 +196,7 @@ function MilestoneChart({ milestones }: { milestones: ProjectDetail["milestones"
                         left: `${plan.left}%`,
                         width: `${plan.width}%`,
                         height: "5px",
-                        backgroundColor: "#e02020",
+                        backgroundColor: chartTheme.outflowRed,
                       }}
                     />
                   )}
@@ -207,7 +208,7 @@ function MilestoneChart({ milestones }: { milestones: ProjectDetail["milestones"
                         left: `${actual.left}%`,
                         width: `${actual.width}%`,
                         height: "5px",
-                        backgroundColor: "#1e6fdd",
+                        backgroundColor: chartTheme.planBlue,
                       }}
                     />
                   )}
@@ -287,12 +288,12 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
         {/* Progress */}
         <div style={cardStyle}>
           <div style={{ display: "flex", justifyContent: "space-between" }}>
-            <span style={{ ...sectionTitle, color: "#3e7d4c" }}>Progress</span>
+            <span style={{ ...sectionTitle, color: chartTheme.profitGreen }}>Progress</span>
             <span
               style={{
                 fontSize: "9px",
                 backgroundColor: diff != null && diff < 0 ? "#fdecea" : "#dff2e3",
-                color: diff != null && diff < 0 ? "#c0392b" : "#3e7d4c",
+                color: diff != null && diff < 0 ? chartTheme.outflowRed : chartTheme.profitGreen,
                 borderRadius: "3px",
                 padding: "2px 6px",
                 height: "fit-content",
@@ -308,11 +309,11 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
           <div style={{ display: "flex", justifyContent: "center", margin: "4px 0 2px", position: "relative" }}>
             <Donut
               percent={actualCum ?? 0}
-              color="#c0392b"
-              extraArc={planCum != null ? { percent: planCum, color: "#2b5cad" } : undefined}
+              color={chartTheme.outflowRed}
+              extraArc={planCum != null ? { percent: planCum, color: chartTheme.planBlue } : undefined}
               label={fmtPct(actualCum)}
             />
-            <span style={{ position: "absolute", right: "6px", bottom: "10px", fontSize: "10px", color: "#2b5cad", fontWeight: 700 }}>
+            <span style={{ position: "absolute", right: "6px", bottom: "10px", fontSize: "10px", color: chartTheme.planBlue, fontWeight: 700 }}>
               {fmtPct(planCum)}
             </span>
           </div>
@@ -348,11 +349,11 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
           <div style={{ width: "100%", height: "240px" }}>
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={lifecycleData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                <CartesianGrid stroke="#eef1f5" vertical={false} />
-                <XAxis dataKey="month" tick={{ fontSize: 9, fill: "#555" }} tickLine={false} axisLine={{ stroke: "#d5dce6" }} />
+                <CartesianGrid stroke={chartTheme.gridLine} vertical={false} />
+                <XAxis dataKey="month" tick={{ fontSize: 9, fill: chartTheme.axisText }} tickLine={false} axisLine={{ stroke: chartTheme.axisLine }} />
                 <YAxis
                   yAxisId="left"
-                  tick={{ fontSize: 9, fill: "#555" }}
+                  tick={{ fontSize: 9, fill: chartTheme.axisText }}
                   tickLine={false}
                   axisLine={false}
                   tickFormatter={(v) => `${v}%`}
@@ -360,17 +361,17 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
                 <YAxis
                   yAxisId="right"
                   orientation="right"
-                  tick={{ fontSize: 9, fill: "#555" }}
+                  tick={{ fontSize: 9, fill: chartTheme.axisText }}
                   tickLine={false}
                   axisLine={false}
                   tickFormatter={(v) => `${v}%`}
                 />
                 <Tooltip contentStyle={{ fontSize: "11px" }} formatter={(v) => (v == null ? "-" : `${Number(v).toLocaleString()}%`)} />
                 <Legend wrapperStyle={{ fontSize: "12px" }} iconSize={12} />
-                <Bar yAxisId="left" dataKey="plan" name="Plan Monthly" fill="#2b5cad" barSize={12} isAnimationActive={false} />
-                <Bar yAxisId="left" dataKey="actual" name="Actual Monthly" fill="#9dc3e6" barSize={12} isAnimationActive={false} />
-                <Line yAxisId="right" dataKey="planAccum" name="Plan Accum" stroke="#3e7d4c" strokeWidth={2} dot={{ r: 2 }} isAnimationActive={false} connectNulls />
-                <Line yAxisId="right" dataKey="actualAccum" name="Actual Accum" stroke="#e08a3c" strokeWidth={2} dot={{ r: 2 }} isAnimationActive={false} connectNulls />
+                <Bar yAxisId="left" dataKey="plan" name="Plan Monthly" fill={chartTheme.planBlue} barSize={12} isAnimationActive={false} />
+                <Bar yAxisId="left" dataKey="actual" name="Actual Monthly" fill={chartTheme.lightBlue} barSize={12} isAnimationActive={false} />
+                <Line yAxisId="right" dataKey="planAccum" name="Plan Accum" stroke={chartTheme.profitGreen} strokeWidth={2} dot={{ r: 2 }} isAnimationActive={false} connectNulls />
+                <Line yAxisId="right" dataKey="actualAccum" name="Actual Accum" stroke={chartTheme.sgaOrange} strokeWidth={2} dot={{ r: 2 }} isAnimationActive={false} connectNulls />
               </ComposedChart>
             </ResponsiveContainer>
           </div>
