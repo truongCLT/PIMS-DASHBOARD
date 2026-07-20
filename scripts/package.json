@@ -8,6 +8,7 @@
     "import-cashflow": "tsx ./src/import-cashflow.ts",
     "import-salescost": "NODE_OPTIONS=--max-old-space-size=6144 tsx ./src/import-salescost.ts",
     "import-mgmtreport": "NODE_OPTIONS=--max-old-space-size=6144 tsx ./src/import-mgmtreport.ts",
+    "test-comments-auth": "tsx ./src/test-comments-auth.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {

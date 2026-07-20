@@ -18,6 +18,7 @@ import { useMrProject } from "../data/mrProjectLinks";
 import { REPORT_YEAR } from "../lib/mgmtreportData";
 import { chartTheme } from "../lib/chartTheme";
 import { useMoney } from "../lib/displayUnit";
+import { ProjectCommentPanel } from "./ProjectCommentPanel";
 
 const cardStyle: React.CSSProperties = {
   backgroundColor: "#fff",
@@ -283,6 +284,11 @@ export function SaleProfitTab({
             </ResponsiveContainer>
           </div>
         )}
+      </div>
+
+      {/* Comment */}
+      <div style={cardStyle}>
+        <ProjectCommentPanel projectName={projectName} tab="saleprofit" />
       </div>
     </div>
   );
