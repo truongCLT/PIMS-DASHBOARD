@@ -13,6 +13,8 @@ import { getMrCashflowRef, useMrProject } from "../data/mrProjectLinks";
 import { REPORT_YEAR } from "../lib/mgmtreportData";
 import { chartTheme } from "../lib/chartTheme";
 
+const ROW_COLUMNS = "1fr 1.6fr 1.6fr";
+
 const cardStyle: React.CSSProperties = {
   backgroundColor: "#fff",
   border: "1px solid #d0dce8",
@@ -172,7 +174,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
   return (
     <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: "8px" }}>
       {/* Row 1: Progress / Revenue / Cost estimation */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1.6fr 1.6fr", gap: "8px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: ROW_COLUMNS, gap: "8px" }}>
         {/* Progress */}
         <div style={cardStyle}>
           <div style={{ display: "flex", justifyContent: "space-between" }}>
@@ -352,7 +354,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
       </div>
 
       {/* Row 2: Photo / Budget Execution Status / Cash */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1.6fr 1.2fr", gap: "8px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: ROW_COLUMNS, gap: "8px" }}>
         {/* Photo */}
         <PhotoCard projectName={projectName} photos={detail?.photos ?? []} />
 
