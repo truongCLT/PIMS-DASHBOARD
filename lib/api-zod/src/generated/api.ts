@@ -431,7 +431,7 @@ export const ListCashflowProjectsResponse = zod.array(ListCashflowProjectsRespon
 export const getCashflowMonthlyQueryFromMonthMax = 12;
 
 export const getCashflowMonthlyQueryMonthsDefault = 6;
-export const getCashflowMonthlyQueryMonthsMax = 24;
+export const getCashflowMonthlyQueryMonthsMax = 120;
 
 
 

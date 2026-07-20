@@ -67,8 +67,10 @@ export function ServiceCashflowTab({
       equivalent: c.equivalent ?? 0,
     }));
   const hasPdData = pdPoints.some((p) => p.cashIn !== 0 || p.cashOut !== 0 || p.equivalent !== 0);
+  // 저장된 pd 행이 존재하면(값이 모두 0이어도) pd 데이터를 우선 사용
+  const hasPdRows = (detail?.cashflow ?? []).length > 0;
 
-  // 1순위: 자금수지 Excel(cf_*) DB 데이터 — DB 값이 있으면 항상 우선
+  // 자금수지 Excel(cf_*) DB 데이터 — 저장된 pd 데이터가 없을 때 사용
   const cfRef = getMrCashflowRef(projectName);
   const params = {
     projectName: cfRef?.name ?? "",
@@ -86,8 +88,9 @@ export function ServiceCashflowTab({
   const cfPoints = query.data?.points ?? [];
   const hasCfData = cfPoints.some((p) => p.cashIn !== 0 || p.cashOut !== 0 || p.equivalent !== 0);
 
-  const useCf = cfRef != null && hasCfData;
-  const points = useCf ? cfPoints : pdPoints;
+  // 우선순위: 데이터 입력 탭에서 저장한 행(pd_*)이 있으면 그 값을, 없으면 자금수지 Excel(cf_*) 값을 표시
+  const useCf = cfRef != null && hasCfData && !hasPdRows;
+  const points = hasPdRows ? pdPoints : cfPoints;
   const chartData = points.map((p) => ({
     month: monthLabel(p.month),
     cashIn: p.cashIn,

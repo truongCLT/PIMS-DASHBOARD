@@ -7,6 +7,8 @@ import {
   useListMgmtreportProjects,
   useUpdateMgmtreportProjectStatus,
   getListMgmtreportProjectsQueryKey,
+  useGetCashflowMonthly,
+  getGetCashflowMonthlyQueryKey,
 } from "@workspace/api-client-react";
 import type {
   ProjectDetail,
@@ -21,6 +23,7 @@ import type {
 } from "@workspace/api-client-react";
 import { useProjectDetail, getGetProjectdetailQueryKey } from "../lib/projectDetailData";
 import { REPORT_YEAR } from "../lib/mgmtreportData";
+import { getMrCashflowRef } from "../data/mrProjectLinks";
 
 const cardStyle: React.CSSProperties = {
   backgroundColor: "#fff",
@@ -165,13 +168,29 @@ export function ProjectDataEntryTab({ projectName }: { projectName: string }) {
   const [photoMsg, setPhotoMsg] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [loaded, setLoaded] = useState(false);
+  const [cfPrefilled, setCfPrefilled] = useState(false);
+
+  // 자금수지 Excel(cf_*) DB 데이터 — 데이터 입력 이력이 없으면 표에 미리 채워 수정할 수 있게 함
+  const cfRef = getMrCashflowRef(projectName);
+  // 자금수지 DB의 전체 기간(2022~2031)을 넉넉히 커버하도록 REPORT_YEAR-4년 1월부터 120개월 조회
+  const cfParams = {
+    projectName: cfRef?.name ?? "",
+    division: cfRef?.division,
+    fromYear: REPORT_YEAR - 4,
+    fromMonth: 1,
+    months: 120,
+  };
+  const cfQuery = useGetCashflowMonthly(cfParams, {
+    query: { enabled: cfRef != null, queryKey: getGetCashflowMonthlyQueryKey(cfParams), staleTime: 60_000 },
+  });
 
   useEffect(() => {
     setLoaded(false);
+    setCfPrefilled(false);
   }, [projectName]);
 
   useEffect(() => {
-    if (detail && !loaded) {
+    if (detail && !loaded && !(cfRef != null && cfQuery.isLoading)) {
       setOverview(detail.overview ?? { contractAmount: null, startDate: null, endDate: null, client: null, scale: null });
       setProgress(detail.progress);
       setMilestones(detail.milestones);
@@ -180,11 +199,26 @@ export function ProjectDataEntryTab({ projectName }: { projectName: string }) {
       );
       setCostBudget(detail.costBudget);
       setOutsourcing(detail.outsourcing);
-      setCashflow(detail.cashflow);
+      if (detail.cashflow.length > 0) {
+        setCashflow(detail.cashflow);
+        setCfPrefilled(false);
+      } else {
+        const cfRows: ProjectDetailCashflowPoint[] = (cfQuery.data?.points ?? [])
+          .filter((p) => p.cashIn !== 0 || p.cashOut !== 0 || p.equivalent !== 0)
+          .map((p) => ({
+            year: Number(p.month.slice(0, 4)),
+            month: Number(p.month.slice(5, 7)),
+            cashIn: p.cashIn,
+            cashOut: p.cashOut,
+            equivalent: p.equivalent,
+          }));
+        setCashflow(cfRows);
+        setCfPrefilled(cfRows.length > 0);
+      }
       setPhotos(detail.photos);
       setLoaded(true);
     }
-  }, [detail, loaded]);
+  }, [detail, loaded, cfRef, cfQuery.isLoading, cfQuery.data]);
 
   const updateAt = <T,>(setter: React.Dispatch<React.SetStateAction<T[]>>, i: number, patch: Partial<T>) =>
     setter((rows) => rows.map((r, j) => (j === i ? { ...r, ...patch } : r)));
@@ -682,6 +716,11 @@ export function ProjectDataEntryTab({ projectName }: { projectName: string }) {
         <div style={{ fontSize: "10px", color: "#8a97a8", marginTop: "6px" }}>
           지출은 양수로 입력하세요(차트에서 자동으로 아래 방향 표시). 금액 단위: 천 USD.
         </div>
+        {cfPrefilled && (
+          <div style={{ fontSize: "10px", color: "#1e6fdd", marginTop: "4px", fontWeight: 600 }}>
+            자금수지 Excel(DB)에 저장된 데이터를 불러왔습니다. 수정 후 "전체 저장"을 누르면 이 프로젝트의 자금 데이터로 저장되며, 이후에는 저장된 값이 우선 표시됩니다.
+          </div>
+        )}
       </div>
 
       {/* 7. 현장 사진 */}

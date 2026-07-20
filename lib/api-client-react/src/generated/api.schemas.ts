@@ -495,7 +495,7 @@ fromYear: number;
 fromMonth: number;
 /**
  * @minimum 1
- * @maximum 24
+ * @maximum 120
  */
 months?: number;
 };
