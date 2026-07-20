@@ -1,4 +1,5 @@
 import ExcelJS from "exceljs";
+import { Readable } from "node:stream";
 import { db, cfProjectsTable, cfMonthlyAmountsTable } from "@workspace/db";
 
 // 자금수지 Excel parser — mirrors scripts/src/import-cashflow.ts (keep both in sync).
@@ -77,39 +78,78 @@ export interface ParsedCashflow {
   projects: ProjectRec[];
 }
 
+// NOTE: 이 워크북은 전체 로드(wb.xlsx.load) 시 ExcelJS가 4GB 가까운 메모리를 사용해
+// 운영 서버에서 OOM으로 죽는다. 스트리밍 리더(피크 ~130MB)로 행 단위 파싱한다.
+// 스트리밍 모드는 병합 셀 값을 채워주지 않으므로 구분(col1)/프로젝트(col2)는
+// 마지막 비어있지 않은 값을 이어받는다(carry-forward) — 병합 셀 의미와 동일.
 export async function parseCashflowWorkbook(buffer: Buffer): Promise<ParsedCashflow> {
-  const wb = new ExcelJS.Workbook();
+  const colSpecs = buildColSpecs();
+  const projects = new Map<string, ProjectRec>();
+  let sortOrder = 0;
+  let sheetFound = false;
+
+  let lastDivision = "";
+  let lastProject = "";
+  let lastFlow = "";
+
   try {
-    await wb.xlsx.load(buffer as unknown as ExcelJS.Buffer);
-  } catch {
+    const reader = new ExcelJS.stream.xlsx.WorkbookReader(Readable.from(buffer), {
+      entries: "emit",
+      sharedStrings: "cache",
+      styles: "ignore",
+      hyperlinks: "ignore",
+      worksheets: "emit",
+    });
+    for await (const ws of reader) {
+      // WorksheetReader has a runtime `name` that the typings omit
+      if ((ws as unknown as { name?: string }).name !== SHEET) continue;
+      sheetFound = true;
+      for await (const row of ws) {
+        if (row.number < 16) continue;
+        handleRow(row);
+      }
+    }
+  } catch (err) {
+    if (err instanceof CashflowParseError) throw err;
     throw new CashflowParseError(
       "Excel 파일을 열 수 없습니다. .xlsx 형식의 파일인지 확인해 주세요.",
     );
   }
-  const ws = wb.getWorksheet(SHEET);
-  if (!ws) {
+
+  if (!sheetFound) {
     throw new CashflowParseError(
       `'${SHEET}' 시트를 찾을 수 없습니다. 자금수지 취합 양식이 맞는지 확인해 주세요.`,
     );
   }
 
-  const colSpecs = buildColSpecs();
-  const projects = new Map<string, ProjectRec>();
-  let sortOrder = 0;
-
-  for (let r = 16; r <= ws.rowCount; r++) {
-    const row = ws.getRow(r);
-    const division = norm(cellText(row.getCell(1).value));
-    let projectName = norm(cellText(row.getCell(2).value));
-    const flowType = norm(cellText(row.getCell(3).value));
+  function handleRow(row: ExcelJS.Row) {
+    const divisionRaw = norm(cellText(row.getCell(1).value));
+    const projectRaw = norm(cellText(row.getCell(2).value));
+    const flowRaw = norm(cellText(row.getCell(3).value));
     const itemName = norm(cellText(row.getCell(4).value));
 
-    if (!division || SKIP_DIVISIONS.has(division)) continue;
-    if (flowType !== "수입" && flowType !== "지출") continue;
-    if (/^합\s*계$/.test(projectName)) continue;
+    // 병합 셀 carry-forward: 새 구분/프로젝트가 시작되면 하위 값 초기화
+    if (divisionRaw) {
+      lastDivision = divisionRaw;
+      lastProject = "";
+      lastFlow = "";
+    }
+    if (projectRaw) {
+      lastProject = projectRaw;
+      lastFlow = "";
+    }
+    if (flowRaw) lastFlow = flowRaw;
+
+    const division = lastDivision;
+    let projectName = lastProject;
+    const flowType = lastFlow;
+
+    if (!division || SKIP_DIVISIONS.has(division)) return;
+    if (flowType !== "수입" && flowType !== "지출") return;
+    if (/^합\s*계$/.test(projectName)) return;
     if (!projectName) {
       if (division === "본사판관비") projectName = "본사판관비";
-      else continue;
+      else return;
     }
 
     const key = `${division}|${projectName}`;

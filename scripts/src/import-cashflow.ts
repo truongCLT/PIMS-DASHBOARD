@@ -64,12 +64,12 @@ function cellNumber(v: ExcelJS.CellValue): number | null {
 
 const norm = (s: string) => s.replace(/\s+/g, " ").trim();
 
+// NOTE: full-load (wb.xlsx.readFile) on this workbook peaks near 4GB RSS; the
+// streaming reader stays around 130MB. Streaming does not fill merged cell
+// values, so division (col1) / project (col2) carry forward the last non-empty
+// value — same semantics as the merged cells. Mirrors
+// artifacts/api-server/src/lib/cashflowImport.ts (keep both in sync).
 async function main() {
-  const wb = new ExcelJS.Workbook();
-  await wb.xlsx.readFile(FILE);
-  const ws = wb.getWorksheet(SHEET);
-  if (!ws) throw new Error(`Sheet not found: ${SHEET}`);
-
   const colSpecs = buildColSpecs();
 
   type ProjectRec = {
@@ -82,22 +82,60 @@ async function main() {
   };
   const projects = new Map<string, ProjectRec>();
   let sortOrder = 0;
+  let sheetFound = false;
 
-  for (let r = 16; r <= ws.rowCount; r++) {
-    const row = ws.getRow(r);
-    const division = norm(cellText(row.getCell(1).value));
-    let projectName = norm(cellText(row.getCell(2).value));
-    const flowType = norm(cellText(row.getCell(3).value));
+  let lastDivision = "";
+  let lastProject = "";
+  let lastFlow = "";
+
+  const reader = new ExcelJS.stream.xlsx.WorkbookReader(FILE, {
+    entries: "emit",
+    sharedStrings: "cache",
+    styles: "ignore",
+    hyperlinks: "ignore",
+    worksheets: "emit",
+  });
+  for await (const ws of reader) {
+    // WorksheetReader has a runtime `name` that the typings omit
+    if ((ws as unknown as { name?: string }).name !== SHEET) continue;
+    sheetFound = true;
+    for await (const row of ws) {
+      if (row.number < 16) continue;
+      handleRow(row);
+    }
+  }
+  if (!sheetFound) throw new Error(`Sheet not found: ${SHEET}`);
+
+  function handleRow(row: ExcelJS.Row) {
+    const divisionRaw = norm(cellText(row.getCell(1).value));
+    const projectRaw = norm(cellText(row.getCell(2).value));
+    const flowRaw = norm(cellText(row.getCell(3).value));
     const itemName = norm(cellText(row.getCell(4).value));
 
-    if (!division || SKIP_DIVISIONS.has(division)) continue;
-    if (flowType !== "수입" && flowType !== "지출") continue; // skip 과부족 etc.
+    // merged-cell carry-forward: new division/project block resets nested values
+    if (divisionRaw) {
+      lastDivision = divisionRaw;
+      lastProject = "";
+      lastFlow = "";
+    }
+    if (projectRaw) {
+      lastProject = projectRaw;
+      lastFlow = "";
+    }
+    if (flowRaw) lastFlow = flowRaw;
+
+    const division = lastDivision;
+    let projectName = lastProject;
+    const flowType = lastFlow;
+
+    if (!division || SKIP_DIVISIONS.has(division)) return;
+    if (flowType !== "수입" && flowType !== "지출") return; // skip 과부족 etc.
     // aggregate rows within a section
-    if (/^합\s*계$/.test(projectName)) continue;
+    if (/^합\s*계$/.test(projectName)) return;
     // 본사판관비 / 재무·투자 style sections: project name may be empty or in col 1
     if (!projectName) {
       if (division === "본사판관비") projectName = "본사판관비";
-      else continue; // blank project rows (template placeholders)
+      else return; // blank project rows (template placeholders)
     }
 
     const key = `${division}|${projectName}`;

@@ -1,4 +1,5 @@
 - [Multi-artifact testing trap](multi-artifact-testing.md) — test subagents can land on the wrong app when similar artifacts exist; add a content guard step before feature assertions.
 - [Sales+costs Excel import](salescost-excel-import.md) — this workbook OOMs ExcelJS on default heap; needs NODE_OPTIONS=--max-old-space-size=6144, plus sheet-layout quirks.
+- [Cashflow Excel streaming parse](cashflow-excel-streaming.md) — 자금수지 workbook OOM-kills prod under full ExcelJS load (~4GB); must use streaming reader + merged-cell carry-forward.
 - [Orval multipart codegen quirks](orval-multipart-codegen.md) — multipart upload endpoints break api-zod typecheck (Blob/File lib, duplicate-export name collisions); fixes documented.
 - [Orval codegen barrels](orval-codegen-barrels.md) — every codegen run appends duplicate barrel exports; dedupe + extend explicit *Body re-exports or typecheck:libs fails.
