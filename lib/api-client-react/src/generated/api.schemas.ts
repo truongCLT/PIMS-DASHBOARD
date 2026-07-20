@@ -289,9 +289,35 @@ export interface MgmtreportAnnualPoint {
   cogs: number;
 }
 
+export type MgmtreportProjectStatusUpdateStatus = typeof MgmtreportProjectStatusUpdateStatus[keyof typeof MgmtreportProjectStatusUpdateStatus];
+
+
+export const MgmtreportProjectStatusUpdateStatus = {
+  ongoing: 'ongoing',
+  closed: 'closed',
+} as const;
+
+export interface MgmtreportProjectStatusUpdate {
+  name: string;
+  status: MgmtreportProjectStatusUpdateStatus;
+}
+
+/**
+ * 진행 상태 (ongoing=진행중, closed=종료)
+ */
+export type MgmtreportProjectStatus = typeof MgmtreportProjectStatus[keyof typeof MgmtreportProjectStatus];
+
+
+export const MgmtreportProjectStatus = {
+  ongoing: 'ongoing',
+  closed: 'closed',
+} as const;
+
 export interface MgmtreportProject {
   name: string;
   siteCode?: string | null;
+  /** 진행 상태 (ongoing=진행중, closed=종료) */
+  status?: MgmtreportProjectStatus;
   /** True for corporate rollup rows (DECV법인 취합본) */
   isGroup: boolean;
   revenuePlan: number[];

@@ -188,13 +188,18 @@ async function main() {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
+    // 프로젝트 진행 상태(status)는 Excel에 없으므로 이름 기준으로 보존
+    const prevStatus = await client.query(`SELECT name, status FROM mr_projects`);
+    const statusByName = new Map<string, string>(
+      prevStatus.rows.map((r: { name: string; status: string }) => [r.name, r.status]),
+    );
     await client.query("TRUNCATE mr_monthly, mr_annual, mr_pnl, mr_projects RESTART IDENTITY CASCADE");
     const idByName = new Map<string, number>();
     for (const p of projects.values()) {
       const res = await client.query(
-        `INSERT INTO mr_projects (name, site_code, group_label, sort_order)
-         VALUES ($1, $2, $3, $4) RETURNING id`,
-        [p.name, p.siteCode, p.groupLabel, p.sortOrder],
+        `INSERT INTO mr_projects (name, site_code, group_label, sort_order, status)
+         VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+        [p.name, p.siteCode, p.groupLabel, p.sortOrder, statusByName.get(p.name) ?? "ongoing"],
       );
       idByName.set(p.name, res.rows[0].id as number);
     }

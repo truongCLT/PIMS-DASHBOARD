@@ -677,6 +677,7 @@ export const ListMgmtreportProjectsResponse = zod.object({
   "projects": zod.array(zod.object({
   "name": zod.string(),
   "siteCode": zod.string().nullish(),
+  "status": zod.enum(['ongoing', 'closed']).optional().describe('진행 상태 (ongoing=진행중, closed=종료)'),
   "isGroup": zod.boolean().describe('True for corporate rollup rows (DECV법인 취합본)'),
   "revenuePlan": zod.array(zod.number()),
   "revenueActual": zod.array(zod.number()),
@@ -689,6 +690,20 @@ export const ListMgmtreportProjectsResponse = zod.object({
   "cogs": zod.number()
 }))
 }))
+})
+
+
+/**
+ * @summary Update a project's progress status (ongoing/closed). Admin only.
+ */
+export const UpdateMgmtreportProjectStatusBody = zod.object({
+  "name": zod.string(),
+  "status": zod.enum(['ongoing', 'closed'])
+})
+
+export const UpdateMgmtreportProjectStatusResponse = zod.object({
+  "name": zod.string(),
+  "status": zod.enum(['ongoing', 'closed'])
 })
 
 

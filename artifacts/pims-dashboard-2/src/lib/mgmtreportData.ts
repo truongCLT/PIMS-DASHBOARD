@@ -153,6 +153,8 @@ export interface ProjectScope {
   name: string;
   /** "project" = 단일 프로젝트, "division" = 시공/용역 부문 합계 */
   kind?: "project" | "division";
+  /** 집계 대상 프로젝트가 하나도 없음 (예: 종료 프로젝트 없음) → KPI를 "-"로 표시 */
+  empty?: boolean;
   revenuePlan: number[];
   revenueActual: number[];
   cogsPlan: number[];
@@ -252,7 +254,7 @@ export function deriveDashboardData(
     plan && actual / plan >= 1 ? "#00bcd4" : "#ff5722";
 
   const kpiOf = (title: string, line: Line | null, monthly: boolean): KpiItem => {
-    if (emptyRange || !line) {
+    if (emptyRange || !line || projectScope?.empty) {
       return {
         title,
         plan: "-",
@@ -452,7 +454,10 @@ export function useDashboardData() {
       }
     } else if (divisionSelected && filters.division) {
       const members = (projectsQuery.data?.projects ?? []).filter(
-        (p) => !p.isGroup && classifyMrProject(p.name) === filters.division,
+        (p) =>
+          !p.isGroup &&
+          classifyMrProject(p.name) === filters.division &&
+          (filters.statusFilter == null || (p.status ?? "ongoing") === filters.statusFilter),
       );
       const sum12 = (pick: (p: (typeof members)[number]) => number[]): number[] => {
         const out = Array(12).fill(0) as number[];
@@ -463,8 +468,12 @@ export function useDashboardData() {
         return out;
       };
       projectScope = {
-        name: `${filters.division} 부문`,
+        name:
+          filters.statusFilter == null
+            ? `${filters.division} 부문`
+            : `${filters.division} 부문 (${filters.statusFilter === "ongoing" ? "진행중" : "종료"})`,
         kind: "division",
+        empty: members.length === 0,
         revenuePlan: sum12((p) => p.revenuePlan),
         revenueActual: sum12((p) => p.revenueActual),
         cogsPlan: sum12((p) => p.cogsPlan),
@@ -488,6 +497,7 @@ export function useDashboardData() {
     needProjects,
     filters.project,
     filters.division,
+    filters.statusFilter,
     filters.startYm,
     filters.endYm,
     filters.period,

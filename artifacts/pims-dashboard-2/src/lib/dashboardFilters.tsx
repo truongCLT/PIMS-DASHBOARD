@@ -52,6 +52,7 @@ export function roundSmart(v: number): number {
 }
 
 export type DashboardDivision = "시공" | "용역";
+export type ProjectStatusFilter = "ongoing" | "closed";
 
 export interface DashboardFilterState {
   project: string; // "All" 또는 경영관리보고회 프로젝트명
@@ -65,6 +66,8 @@ export interface DashboardFilterState {
 interface DashboardFilterContextValue extends DashboardFilterState {
   /** 좌측 메뉴에서 선택된 부문 (시공/용역), 없으면 null */
   division: DashboardDivision | null;
+  /** 좌측 메뉴에서 선택된 진행 상태 (진행중/종료), 없으면 null = 전체 */
+  statusFilter: ProjectStatusFilter | null;
   fxRates: FxRateMap;
   setProject: (v: string) => void;
   setStartYm: (v: string) => void;
@@ -88,9 +91,11 @@ const FilterContext = createContext<DashboardFilterContextValue | null>(null);
 export function DashboardFilterProvider({
   children,
   division = null,
+  statusFilter = null,
 }: {
   children: React.ReactNode;
   division?: DashboardDivision | null;
+  statusFilter?: ProjectStatusFilter | null;
 }) {
   const [project, setProject] = useState(DEFAULT_FILTERS.project);
   const [startYm, setStartYm] = useState(DEFAULT_FILTERS.startYm);
@@ -112,6 +117,7 @@ export function DashboardFilterProvider({
     () => ({
       project,
       division,
+      statusFilter,
       fxRates,
       startYm,
       endYm,
@@ -128,7 +134,7 @@ export function DashboardFilterProvider({
       },
       setUnitIndex,
     }),
-    [project, division, startYm, endYm, period, currency, unitIndex, fxRates],
+    [project, division, statusFilter, startYm, endYm, period, currency, unitIndex, fxRates],
   );
 
   return <FilterContext.Provider value={value}>{children}</FilterContext.Provider>;
@@ -141,6 +147,7 @@ export function useDashboardFilters(): DashboardFilterContextValue {
   return {
     ...DEFAULT_FILTERS,
     division: null,
+    statusFilter: null,
     fxRates: FX_RATES,
     setProject: () => {},
     setStartYm: () => {},

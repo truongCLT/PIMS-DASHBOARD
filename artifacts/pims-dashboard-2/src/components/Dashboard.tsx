@@ -9,7 +9,11 @@ import { PerformanceTable } from "./PerformanceTable";
 import { CommentPanel } from "./CommentPanel";
 import { DrilldownCard } from "./DrilldownCard";
 import type { DashboardScope } from "./Sidebar";
-import { DashboardFilterProvider, type DashboardDivision } from "../lib/dashboardFilters";
+import {
+  DashboardFilterProvider,
+  type DashboardDivision,
+  type ProjectStatusFilter,
+} from "../lib/dashboardFilters";
 
 export function Dashboard({
   scope = "전체",
@@ -23,8 +27,13 @@ export function Dashboard({
     : scope.startsWith("용역")
       ? "용역"
       : null;
+  const statusFilter: ProjectStatusFilter | null = scope.endsWith("-진행중")
+    ? "ongoing"
+    : scope.endsWith("-종료")
+      ? "closed"
+      : null;
   return (
-    <DashboardFilterProvider division={division}>
+    <DashboardFilterProvider division={division} statusFilter={statusFilter}>
     <div style={{
       flex: 1,
       overflowY: "auto",

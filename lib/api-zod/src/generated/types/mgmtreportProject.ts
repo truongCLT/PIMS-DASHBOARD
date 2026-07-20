@@ -6,10 +6,13 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { MgmtreportAnnualPoint } from './mgmtreportAnnualPoint';
+import type { MgmtreportProjectStatus } from './mgmtreportProjectStatus';
 
 export interface MgmtreportProject {
   name: string;
   siteCode?: string | null;
+  /** 진행 상태 (ongoing=진행중, closed=종료) */
+  status?: MgmtreportProjectStatus;
   /** True for corporate rollup rows (DECV법인 취합본) */
   isGroup: boolean;
   revenuePlan: number[];

@@ -292,7 +292,7 @@ export function buildPreview(parsed: ParsedMgmtreport) {
 
 // 되돌리기용 스냅샷: project id 대신 이름으로 참조해 재삽입 시 id 재매핑이 필요 없도록 함
 export interface MrSnapshot {
-  projects: { name: string; siteCode: string | null; groupLabel: string | null; sortOrder: number }[];
+  projects: { name: string; siteCode: string | null; groupLabel: string | null; sortOrder: number; status?: string }[];
   monthly: { project: string; year: number; month: number; scenario: string; metric: string; amountUsd: string }[];
   annual: { project: string; year: number; scenario: string; metric: string; amountUsd: string }[];
   pnl: { year: number; lineCode: string; lineLabel: string; scenario: string; month: number | null; amountUsd: string; sortOrder: number }[];
@@ -314,6 +314,7 @@ async function readSnapshot(tx: Tx): Promise<MrSnapshot> {
       siteCode: p.siteCode,
       groupLabel: p.groupLabel,
       sortOrder: p.sortOrder,
+      status: p.status,
     })),
     monthly: monthly
       .filter((m) => nameById.has(m.projectId))
@@ -412,6 +413,8 @@ export async function applyMgmtreportImport(parsed: ParsedMgmtreport, filename: 
     );
 
     // Full replace: this workbook is the single source of truth for mgmtreport data
+    // 단, 프로젝트 진행 상태(status)는 Excel에 없으므로 이름 기준으로 보존한다
+    const statusByName = new Map(snapshot.projects.map((p) => [p.name, p.status ?? "ongoing"]));
     await tx.delete(mrMonthlyTable);
     await tx.delete(mrAnnualTable);
     await tx.delete(mrProjectsTable);
@@ -426,6 +429,7 @@ export async function applyMgmtreportImport(parsed: ParsedMgmtreport, filename: 
           siteCode: p.siteCode,
           groupLabel: p.groupLabel,
           sortOrder: p.sortOrder,
+          status: statusByName.get(p.name) ?? "ongoing",
         })
         .returning({ id: mrProjectsTable.id });
       idByName.set(p.name, row.id);

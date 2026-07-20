@@ -1,7 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Plus, Trash2, Save, Upload, ArrowLeft, ArrowRight } from "lucide-react";
-import { usePutProjectdetail, requestUploadUrl } from "@workspace/api-client-react";
+import {
+  usePutProjectdetail,
+  requestUploadUrl,
+  useListMgmtreportProjects,
+  useUpdateMgmtreportProjectStatus,
+  getListMgmtreportProjectsQueryKey,
+} from "@workspace/api-client-react";
 import type {
   ProjectDetail,
   ProjectDetailOverview,
@@ -14,6 +20,7 @@ import type {
   ProjectDetailPhoto,
 } from "@workspace/api-client-react";
 import { useProjectDetail, getGetProjectdetailQueryKey } from "../lib/projectDetailData";
+import { REPORT_YEAR } from "../lib/mgmtreportData";
 
 const cardStyle: React.CSSProperties = {
   backgroundColor: "#fff",
@@ -125,6 +132,26 @@ export function ProjectDataEntryTab({ projectName }: { projectName: string }) {
   const queryClient = useQueryClient();
   const mutation = usePutProjectdetail();
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
+
+  const mrProjectsQuery = useListMgmtreportProjects({ year: REPORT_YEAR });
+  const currentStatus =
+    mrProjectsQuery.data?.projects.find((p) => p.name === projectName)?.status ?? "ongoing";
+  const statusMutation = useUpdateMgmtreportProjectStatus();
+  const [statusMsg, setStatusMsg] = useState<string | null>(null);
+  const toggleStatus = () => {
+    const next = currentStatus === "closed" ? "ongoing" : "closed";
+    setStatusMsg(null);
+    statusMutation.mutate(
+      { data: { name: projectName, status: next } },
+      {
+        onSuccess: () => {
+          setStatusMsg(next === "closed" ? "종료로 변경되었습니다." : "진행중으로 변경되었습니다.");
+          queryClient.invalidateQueries({ queryKey: getListMgmtreportProjectsQueryKey() });
+        },
+        onError: () => setStatusMsg("상태 변경에 실패했습니다."),
+      },
+    );
+  };
 
   const [overview, setOverview] = useState<ProjectDetailOverview>({ contractAmount: null, startDate: null, endDate: null, client: null, scale: null });
   const [progress, setProgress] = useState<ProjectDetailProgressPoint[]>([]);
@@ -293,6 +320,47 @@ export function ProjectDataEntryTab({ projectName }: { projectName: string }) {
           <b>{projectName}</b> 프로젝트의 공정/원가/외주 데이터를 입력합니다. 금액 단위: <b>천 USD</b>, 공정률 단위: <b>%</b>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          {statusMsg && (
+            <span style={{ fontSize: "11px", color: statusMsg.includes("실패") ? "#c0392b" : "#3e7d4c", fontWeight: 600 }}>
+              {statusMsg}
+            </span>
+          )}
+          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            <span
+              style={{
+                fontSize: "11px",
+                fontWeight: 700,
+                padding: "3px 8px",
+                borderRadius: "10px",
+                backgroundColor: currentStatus === "closed" ? "#f3d9d5" : "#d8ecdc",
+                color: currentStatus === "closed" ? "#a83a2a" : "#2f6b3d",
+              }}
+            >
+              {currentStatus === "closed" ? "종료" : "진행중"}
+            </span>
+            <button
+              onClick={toggleStatus}
+              disabled={statusMutation.isPending || mrProjectsQuery.isLoading}
+              title="프로젝트 진행 상태 전환"
+              style={{
+                fontSize: "11px",
+                fontWeight: 600,
+                color: "#2e4568",
+                backgroundColor: "#fff",
+                border: "1px solid #b9c6d8",
+                borderRadius: "6px",
+                padding: "5px 10px",
+                cursor: statusMutation.isPending ? "wait" : "pointer",
+                opacity: statusMutation.isPending ? 0.7 : 1,
+              }}
+            >
+              {statusMutation.isPending
+                ? "변경 중…"
+                : currentStatus === "closed"
+                  ? "진행중으로 변경"
+                  : "종료로 변경"}
+            </button>
+          </div>
           {saveMsg && (
             <span style={{ fontSize: "11px", color: saveMsg.startsWith("저장되") ? "#3e7d4c" : "#c0392b", fontWeight: 600 }}>
               {saveMsg}

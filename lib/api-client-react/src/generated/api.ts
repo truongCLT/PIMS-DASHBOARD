@@ -48,6 +48,7 @@ import type {
   MgmtreportImportHistoryList,
   MgmtreportImportPreview,
   MgmtreportImportResult,
+  MgmtreportProjectStatusUpdate,
   MgmtreportProjects,
   MgmtreportRevertResult,
   MgmtreportSummary,
@@ -1708,6 +1709,77 @@ export function useListMgmtreportProjects<TData = Awaited<ReturnType<typeof list
 
 
 
+
+export const getUpdateMgmtreportProjectStatusUrl = () => {
+
+
+
+
+  return `/api/mgmtreport/projects/status`
+}
+
+/**
+ * @summary Update a project's progress status (ongoing/closed). Admin only.
+ */
+export const updateMgmtreportProjectStatus = async (mgmtreportProjectStatusUpdate: MgmtreportProjectStatusUpdate, options?: RequestInit): Promise<MgmtreportProjectStatusUpdate> => {
+
+  return customFetch<MgmtreportProjectStatusUpdate>(getUpdateMgmtreportProjectStatusUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(mgmtreportProjectStatusUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateMgmtreportProjectStatusMutationOptions = <TError = ErrorType<ApiErrorMessage>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateMgmtreportProjectStatus>>, TError,{data: BodyType<MgmtreportProjectStatusUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateMgmtreportProjectStatus>>, TError,{data: BodyType<MgmtreportProjectStatusUpdate>}, TContext> => {
+
+const mutationKey = ['updateMgmtreportProjectStatus'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateMgmtreportProjectStatus>>, {data: BodyType<MgmtreportProjectStatusUpdate>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateMgmtreportProjectStatus(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateMgmtreportProjectStatusMutationResult = NonNullable<Awaited<ReturnType<typeof updateMgmtreportProjectStatus>>>
+    export type UpdateMgmtreportProjectStatusMutationBody = BodyType<MgmtreportProjectStatusUpdate>
+    export type UpdateMgmtreportProjectStatusMutationError = ErrorType<ApiErrorMessage>
+
+    /**
+ * @summary Update a project's progress status (ongoing/closed). Admin only.
+ */
+export const useUpdateMgmtreportProjectStatus = <TError = ErrorType<ApiErrorMessage>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateMgmtreportProjectStatus>>, TError,{data: BodyType<MgmtreportProjectStatusUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateMgmtreportProjectStatus>>,
+        TError,
+        {data: BodyType<MgmtreportProjectStatusUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateMgmtreportProjectStatusMutationOptions(options));
+    }
 
 export const getPreviewMgmtreportImportUrl = () => {
 

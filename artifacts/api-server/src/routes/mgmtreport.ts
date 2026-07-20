@@ -23,6 +23,7 @@ import {
   ListMgmtreportImportHistoryResponse,
   RevertMgmtreportImportBody,
   RevertMgmtreportImportResponse,
+  UpdateMgmtreportProjectStatusBody,
 } from "@workspace/api-zod";
 import {
   parseMgmtreportWorkbook,
@@ -258,6 +259,7 @@ router.get("/mgmtreport/projects", async (req, res) => {
     type Proj = {
       name: string;
       siteCode: string | null;
+      status: string;
       isGroup: boolean;
       revenuePlan: number[];
       revenueActual: number[];
@@ -271,6 +273,7 @@ router.get("/mgmtreport/projects", async (req, res) => {
       byId.set(p.id, {
         name: p.name,
         siteCode: p.siteCode,
+        status: p.status,
         isGroup: p.groupLabel != null,
         revenuePlan: Array(12).fill(0),
         revenueActual: Array(12).fill(0),
@@ -321,6 +324,31 @@ router.get("/mgmtreport/projects", async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "failed to list mgmtreport projects");
     res.status(500).json({ error: "프로젝트별 경영관리보고회 조회에 실패했습니다." });
+  }
+});
+
+router.put("/mgmtreport/projects/status", requireAdmin, async (req, res) => {
+  const parsed = UpdateMgmtreportProjectStatusBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "잘못된 요청 본문입니다." });
+    return;
+  }
+  const { name, status } = parsed.data;
+  try {
+    const rows = await db
+      .update(mrProjectsTable)
+      .set({ status })
+      .where(eq(mrProjectsTable.name, name))
+      .returning({ name: mrProjectsTable.name, status: mrProjectsTable.status });
+    if (rows.length === 0) {
+      res.status(404).json({ error: "해당 이름의 프로젝트를 찾을 수 없습니다." });
+      return;
+    }
+    req.log.info({ name, status }, "mgmtreport project status updated");
+    res.json(rows[0]);
+  } catch (err) {
+    req.log.error({ err }, "failed to update mgmtreport project status");
+    res.status(500).json({ error: "프로젝트 상태 변경에 실패했습니다." });
   }
 });
 

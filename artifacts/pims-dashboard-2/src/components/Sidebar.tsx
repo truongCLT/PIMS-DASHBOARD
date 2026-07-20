@@ -21,10 +21,17 @@ interface TreeItem {
   scope?: DashboardScope;
 }
 
-function buildTreeData(mrProjectNames: string[]): TreeItem[] {
-  const byDivision: Record<"시공" | "용역", string[]> = { 시공: [], 용역: [] };
-  for (const name of mrProjectNames) {
-    byDivision[classifyMrProject(name)].push(name);
+function buildTreeData(mrProjects: { name: string; status?: string }[]): TreeItem[] {
+  const byDivision: Record<
+    "시공" | "용역",
+    { ongoing: string[]; closed: string[] }
+  > = {
+    시공: { ongoing: [], closed: [] },
+    용역: { ongoing: [], closed: [] },
+  };
+  for (const p of mrProjects) {
+    const bucket = p.status === "closed" ? "closed" : "ongoing";
+    byDivision[classifyMrProject(p.name)][bucket].push(p.name);
   }
   return PROJECT_GROUPS.map((group) => ({
     label: group.label,
@@ -42,14 +49,17 @@ function buildTreeData(mrProjectNames: string[]): TreeItem[] {
                 label: "진행중",
                 scope: `${division.label}-진행중` as DashboardScope,
                 children: (group.label === "DECV"
-                  ? byDivision[division.label as "시공" | "용역"]
+                  ? byDivision[division.label as "시공" | "용역"].ongoing
                   : []
                 ).map((name) => ({ label: name, isProject: true })),
               },
               {
                 label: "종료",
                 scope: `${division.label}-종료` as DashboardScope,
-                children: [],
+                children: (group.label === "DECV"
+                  ? byDivision[division.label as "시공" | "용역"].closed
+                  : []
+                ).map((name) => ({ label: name, isProject: true })),
               },
             ]
           : [],
@@ -170,10 +180,10 @@ export function Sidebar({
 }) {
   const projectsQuery = useListMgmtreportProjects({ year: REPORT_YEAR });
   const treeData = useMemo(() => {
-    const names = (projectsQuery.data?.projects ?? [])
+    const projects = (projectsQuery.data?.projects ?? [])
       .filter((p) => !p.isGroup)
-      .map((p) => p.name);
-    return buildTreeData(names);
+      .map((p) => ({ name: p.name, status: p.status }));
+    return buildTreeData(projects);
   }, [projectsQuery.data]);
 
   return (

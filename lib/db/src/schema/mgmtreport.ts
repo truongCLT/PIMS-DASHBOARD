@@ -23,8 +23,12 @@ export const mrProjectsTable = pgTable(
     siteCode: text("site_code"), // e.g. 'SITE23' when present in label
     groupLabel: text("group_label"), // e.g. 'DECV법인 취합본 [법인전체]' | null for regular projects
     sortOrder: integer("sort_order").notNull().default(0),
+    status: text("status").notNull().default("ongoing"), // 'ongoing'(진행중) | 'closed'(종료)
   },
-  (t) => [uniqueIndex("mr_projects_name_uq").on(t.name)],
+  (t) => [
+    uniqueIndex("mr_projects_name_uq").on(t.name),
+    check("mr_projects_status_ck", sql`${t.status} IN ('ongoing','closed')`),
+  ],
 );
 
 export const mrMonthlyTable = pgTable(
