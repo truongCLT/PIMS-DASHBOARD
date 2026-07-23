@@ -717,7 +717,6 @@ export function ProjectDataEntryTab({ projectName }: { projectName: string }) {
       {/* 4. 예산 집행 현황 */}
       <div style={cardStyle}>
         <span style={sectionTitle}>4. 예산 집행 현황 (원가 탭)</span>
-        <div style={{ fontSize: "10px", color: "#8a97a8", marginBottom: "4px" }}>예산·기성 실적은 읽기 전용입니다. 기성 계획만 입력 가능합니다.</div>
         <div data-tbl="costBudget" onKeyDown={makeArrowNav("costBudget")}>
         <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "4px" }}>
           <thead>
@@ -735,13 +734,9 @@ export function ProjectDataEntryTab({ projectName }: { projectName: string }) {
               <tr key={i}>
                 <td style={tdCell}><TextInput value={c.category} onChange={(v) => updateAt(setCostBudget, i, { category: v })} placeholder="예: Direct Cost" data-row={i} data-col={0} /></td>
                 <td style={tdCell}><TextInput value={c.item} onChange={(v) => updateAt(setCostBudget, i, { item: v ?? "" })} placeholder="예: 외주비" data-row={i} data-col={1} /></td>
-                <td style={{ ...tdCell, backgroundColor: "#f7f9fc", textAlign: "right", fontSize: "11px", padding: "5px 6px", color: c.budget != null ? "#1a2d4d" : "#b0b8c4" }}>
-                  {c.budget != null ? fmtVnd(c.budget * VND_PER_K_USD) : "-"}
-                </td>
-                <td style={tdCell}><VndInput valueKUsd={c.plan} onChange={(v) => updateAt(setCostBudget, i, { plan: v })} data-row={i} data-col={2} /></td>
-                <td style={{ ...tdCell, backgroundColor: "#f7f9fc", textAlign: "right", fontSize: "11px", padding: "5px 6px", color: c.actual != null ? "#1a2d4d" : "#b0b8c4" }}>
-                  {c.actual != null ? fmtVnd(c.actual * VND_PER_K_USD) : "-"}
-                </td>
+                <td style={tdCell}><VndInput valueKUsd={c.budget} onChange={(v) => updateAt(setCostBudget, i, { budget: v })} data-row={i} data-col={2} /></td>
+                <td style={tdCell}><VndInput valueKUsd={c.plan} onChange={(v) => updateAt(setCostBudget, i, { plan: v })} data-row={i} data-col={3} /></td>
+                <td style={tdCell}><VndInput valueKUsd={c.actual} onChange={(v) => updateAt(setCostBudget, i, { actual: v })} data-row={i} data-col={4} /></td>
                 <td style={{ ...tdCell, textAlign: "center" }}><DelBtn onClick={() => removeAt(setCostBudget, i)} /></td>
               </tr>
             ))}
