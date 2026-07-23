@@ -283,7 +283,7 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
             border: "1px solid #c8d2de",
             borderRadius: "4px",
             padding: "8px 14px",
-            fontSize: "13px",
+            fontSize: "11px",
             fontWeight: 700,
             color: "#1a2d4d",
             display: "flex",
