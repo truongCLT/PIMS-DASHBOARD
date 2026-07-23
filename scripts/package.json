@@ -17,6 +17,7 @@
     "tsx": "catalog:"
   },
   "dependencies": {
+    "@workspace/mgmtreport-parse": "workspace:*",
     "exceljs": "^4.4.0",
     "pg": "^8.22.0"
   }

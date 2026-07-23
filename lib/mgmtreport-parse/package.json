@@ -1,0 +1,15 @@
+{
+  "name": "@workspace/mgmtreport-parse",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "exceljs": "^4.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:"
+  }
+}
