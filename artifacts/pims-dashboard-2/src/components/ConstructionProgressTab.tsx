@@ -364,7 +364,7 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
       {/* Row 1: Construction site progress + Progress */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "8px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
         {/* Construction site progress */}
         <div style={{ ...cardStyle, display: "flex", flexDirection: "column" }}>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
