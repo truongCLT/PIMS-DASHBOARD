@@ -15,16 +15,16 @@ export function PerformanceTable() {
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
-          <span style={{ fontSize: "12px", fontWeight: "600", color: "#1a3a5c" }}>경영실적 현황</span>
-          {derived && <span style={{ fontSize: "10px", color: "#5a6a7e" }}>단위: {derived.unitLabel}</span>}
+          <span style={{ fontSize: "13px", fontWeight: "600", color: "#1a3a5c" }}>경영실적 현황</span>
+          {derived && <span style={{ fontSize: "11px", color: "#5a6a7e" }}>단위: {derived.unitLabel}</span>}
         </div>
-        <button style={{ fontSize: "11px", color: "#1e6fdd", background: "none", border: "none", cursor: "pointer" }}>
+        <button style={{ fontSize: "12px", color: "#1e6fdd", background: "none", border: "none", cursor: "pointer" }}>
           상세보기
         </button>
       </div>
 
       <div style={{ overflowX: "auto" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "10px" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "11px" }}>
           <thead>
             <tr style={{ backgroundColor: "#e8f0f8" }}>
               <th style={{ padding: "4px 6px", textAlign: "left", color: "#555", fontWeight: "600", borderBottom: "1px solid #d0dce8" }} rowSpan={2}>구분</th>
@@ -61,12 +61,12 @@ export function PerformanceTable() {
                 </tr>
                 {row.sub && (
                   <tr style={{ borderBottom: "1px solid #e8f0f8", backgroundColor: i % 2 === 0 ? "#fff" : "#f8fbff" }}>
-                    <td style={{ padding: "2px 6px 4px 12px", color: "#888", fontSize: "9px" }}>%</td>
-                    <td style={{ padding: "2px 6px 4px", textAlign: "right", color: "#888", fontSize: "9px", borderLeft: "1px solid #e8f0f8" }}>{row.sub}</td>
-                    <td style={{ padding: "2px 6px 4px", textAlign: "right", color: "#888", fontSize: "9px", borderLeft: "1px solid #e8f0f8" }}>{row.subActual}</td>
-                    <td style={{ padding: "2px 6px 4px", textAlign: "right", color: "#888", fontSize: "9px", borderLeft: "1px solid #e8f0f8" }}></td>
-                    <td style={{ padding: "2px 6px 4px", textAlign: "right", color: "#888", fontSize: "9px", borderLeft: "1px solid #e8f0f8" }}>{row.subForecast}</td>
-                    <td style={{ padding: "2px 6px 4px", textAlign: "right", color: "#888", fontSize: "9px", borderLeft: "1px solid #e8f0f8" }}>{row.subAch}</td>
+                    <td style={{ padding: "2px 6px 4px 12px", color: "#888", fontSize: "10px" }}>%</td>
+                    <td style={{ padding: "2px 6px 4px", textAlign: "right", color: "#888", fontSize: "10px", borderLeft: "1px solid #e8f0f8" }}>{row.sub}</td>
+                    <td style={{ padding: "2px 6px 4px", textAlign: "right", color: "#888", fontSize: "10px", borderLeft: "1px solid #e8f0f8" }}>{row.subActual}</td>
+                    <td style={{ padding: "2px 6px 4px", textAlign: "right", color: "#888", fontSize: "10px", borderLeft: "1px solid #e8f0f8" }}></td>
+                    <td style={{ padding: "2px 6px 4px", textAlign: "right", color: "#888", fontSize: "10px", borderLeft: "1px solid #e8f0f8" }}>{row.subForecast}</td>
+                    <td style={{ padding: "2px 6px 4px", textAlign: "right", color: "#888", fontSize: "10px", borderLeft: "1px solid #e8f0f8" }}>{row.subAch}</td>
                     <td style={{ padding: "2px 6px 4px", borderLeft: "1px solid #e8f0f8" }}></td>
                   </tr>
                 )}

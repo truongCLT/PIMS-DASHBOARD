@@ -18,7 +18,7 @@ function NumBadge({ n }: { n: number }) {
         borderRadius: "50%",
         backgroundColor: NAVY,
         color: "#fff",
-        fontSize: "11px",
+        fontSize: "12px",
         fontWeight: 700,
         flexShrink: 0,
       }}
@@ -70,7 +70,7 @@ export function DrilldownCard() {
           backgroundColor: NAVY,
           color: "#fff",
           textAlign: "center",
-          fontSize: "12px",
+          fontSize: "13px",
           fontWeight: 700,
           padding: "7px 8px",
         }}
@@ -82,7 +82,7 @@ export function DrilldownCard() {
         {/* 1. 수주 실적 */}
         <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
           <NumBadge n={1} />
-          <span style={{ fontSize: "12px", fontWeight: 700, color: NAVY }}>
+          <span style={{ fontSize: "13px", fontWeight: 700, color: NAVY }}>
             수주 실적{month ? ` (${month}월)` : ""}
           </span>
         </div>
@@ -91,7 +91,7 @@ export function DrilldownCard() {
             backgroundColor: "#f4f7fb",
             borderRadius: "4px",
             padding: "8px 10px",
-            fontSize: "12px",
+            fontSize: "13px",
             color: "#1a2d4d",
             fontWeight: 600,
           }}
@@ -115,7 +115,7 @@ export function DrilldownCard() {
         {/* 2. 금월 주요 매출 */}
         <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
           <NumBadge n={2} />
-          <span style={{ fontSize: "12px", fontWeight: 700, color: NAVY }}>금월 주요 매출</span>
+          <span style={{ fontSize: "13px", fontWeight: 700, color: NAVY }}>금월 주요 매출</span>
         </div>
         <div
           style={{
@@ -128,11 +128,11 @@ export function DrilldownCard() {
           }}
         >
           {error ? (
-            <span style={{ fontSize: "12px", color: "#1a2d4d", fontWeight: 600 }}>오류</span>
+            <span style={{ fontSize: "13px", color: "#1a2d4d", fontWeight: 600 }}>오류</span>
           ) : loading ? (
-            <span style={{ fontSize: "12px", color: "#1a2d4d", fontWeight: 600 }}>-</span>
+            <span style={{ fontSize: "13px", color: "#1a2d4d", fontWeight: 600 }}>-</span>
           ) : topRevenue.length === 0 ? (
-            <span style={{ fontSize: "12px", color: "#6b7c94", fontWeight: 500 }}>당월 매출 없음</span>
+            <span style={{ fontSize: "13px", color: "#6b7c94", fontWeight: 500 }}>당월 매출 없음</span>
           ) : (
             topRevenue.map((p) => (
               <div
@@ -141,7 +141,7 @@ export function DrilldownCard() {
                   display: "flex",
                   alignItems: "center",
                   gap: "6px",
-                  fontSize: "12px",
+                  fontSize: "13px",
                   color: "#1a2d4d",
                   fontWeight: 600,
                 }}

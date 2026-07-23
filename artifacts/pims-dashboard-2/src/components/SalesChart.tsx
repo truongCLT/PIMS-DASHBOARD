@@ -35,7 +35,7 @@ const BadgeLabel = (fill: string) => (props: any) => {
         textAnchor="middle"
         dominantBaseline="central"
         fill="#fff"
-        fontSize={10.5}
+        fontSize={11.5}
         fontWeight={700}
       >
         {text}
@@ -59,7 +59,7 @@ const makePlanRateLabel = (chartData: SalesRow[]) => (props: any) => {
   if (!d || d.rate == null || d.plan == null || d.actual == null) return null;
   if (d.plan > d.actual) return null; // actual is lower → its label will render
   return (
-    <text x={x} y={y + 18} textAnchor="middle" fill={RATE_COLOR} fontSize={9} fontWeight={700}>
+    <text x={x} y={y + 18} textAnchor="middle" fill={RATE_COLOR} fontSize={10} fontWeight={700}>
       {d.rate}%
     </text>
   );
@@ -72,7 +72,7 @@ const makeActualRateLabel = (chartData: SalesRow[]) => (props: any) => {
   if (!d || d.rate == null || d.plan == null || d.actual == null) return null;
   if (d.actual >= d.plan) return null; // plan is lower or equal → its label will render
   return (
-    <text x={x} y={y + 18} textAnchor="middle" fill={RATE_COLOR} fontSize={9} fontWeight={700}>
+    <text x={x} y={y + 18} textAnchor="middle" fill={RATE_COLOR} fontSize={10} fontWeight={700}>
       {d.rate}%
     </text>
   );
@@ -85,7 +85,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   const actual = payload.find((p: any) => p.dataKey === "actual");
   const rate = plan?.payload?.rate;
   return (
-    <div style={{ backgroundColor: "#fff", border: "1px solid #d0dce8", borderRadius: "4px", padding: "8px 10px", fontSize: "11px" }}>
+    <div style={{ backgroundColor: "#fff", border: "1px solid #d0dce8", borderRadius: "4px", padding: "8px 10px", fontSize: "12px" }}>
       <div style={{ fontWeight: 700, marginBottom: "4px", color: "#1a2d4d" }}>{label}</div>
       {plan && <div style={{ color: PLAN_COLOR }}>매출(계획): {Number(plan.value).toLocaleString("ko-KR")}</div>}
       {actual && <div style={{ color: ACTUAL_COLOR }}>매출(실적 및 전망): {Number(actual.value).toLocaleString("ko-KR")}</div>}
@@ -117,11 +117,11 @@ export function SalesChart() {
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
-          <span style={{ fontSize: "12px", fontWeight: "600", color: chartTheme.titleNavy }}>매출 실적 및 전망</span>
-          {derived && <span style={{ fontSize: "10px", color: "#5a6a7e" }}>단위: {derived.unitLabel}</span>}
+          <span style={{ fontSize: "13px", fontWeight: "600", color: chartTheme.titleNavy }}>매출 실적 및 전망</span>
+          {derived && <span style={{ fontSize: "11px", color: "#5a6a7e" }}>단위: {derived.unitLabel}</span>}
         </div>
         <button style={{
-          fontSize: "11px",
+          fontSize: "12px",
           color: "#1e6fdd",
           background: "none",
           border: "none",
@@ -132,7 +132,7 @@ export function SalesChart() {
       {/* Chart */}
       <div style={{ flex: 1, minHeight: "160px" }}>
         {visibleData.length === 0 ? (
-          <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", color: "#888" }}>
+          <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", color: "#888" }}>
             {isError
               ? "데이터를 불러오지 못했습니다."
               : derived?.emptyRange
@@ -145,14 +145,14 @@ export function SalesChart() {
             <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.gridLine} vertical={false} />
             <XAxis
               dataKey="month"
-              tick={{ fontSize: 10, fill: chartTheme.axisText }}
+              tick={{ fontSize: 11, fill: chartTheme.axisText }}
               axisLine={false}
               tickLine={false}
               padding={{ left: 18, right: 6 }}
             />
             <YAxis
               domain={["auto", "auto"]}
-              tick={{ fontSize: 10, fill: chartTheme.axisText }}
+              tick={{ fontSize: 11, fill: chartTheme.axisText }}
               tickFormatter={(v: number) => v.toLocaleString("ko-KR")}
               axisLine={false}
               tickLine={false}
@@ -196,7 +196,7 @@ export function SalesChart() {
       {/* Legend + Toggle */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "4px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <label style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "10px", color: "#555", cursor: "pointer" }}>
+          <label style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11px", color: "#555", cursor: "pointer" }}>
             <input
               type="radio"
               name="viewType"
@@ -206,7 +206,7 @@ export function SalesChart() {
             />
             넷
           </label>
-          <label style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "10px", color: "#555", cursor: "pointer" }}>
+          <label style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11px", color: "#555", cursor: "pointer" }}>
             <input
               type="radio"
               name="viewType"
@@ -224,7 +224,7 @@ export function SalesChart() {
               <circle cx="6" cy="4" r="2.5" fill={PLAN_COLOR} />
               <circle cx="20" cy="4" r="2.5" fill={PLAN_COLOR} />
             </svg>
-            <span style={{ fontSize: "11px", color: "#555" }}>매출(계획)</span>
+            <span style={{ fontSize: "12px", color: "#555" }}>매출(계획)</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
             <svg width="26" height="8">
@@ -232,11 +232,11 @@ export function SalesChart() {
               <circle cx="6" cy="4" r="2.5" fill={ACTUAL_COLOR} />
               <circle cx="20" cy="4" r="2.5" fill={ACTUAL_COLOR} />
             </svg>
-            <span style={{ fontSize: "11px", color: "#555" }}>매출(실적 및 전망)</span>
+            <span style={{ fontSize: "12px", color: "#555" }}>매출(실적 및 전망)</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-            <span style={{ fontSize: "11px", fontWeight: 700, color: RATE_COLOR }}>%</span>
-            <span style={{ fontSize: "11px", color: "#555" }}>달성률</span>
+            <span style={{ fontSize: "12px", fontWeight: 700, color: RATE_COLOR }}>%</span>
+            <span style={{ fontSize: "12px", color: "#555" }}>달성률</span>
           </div>
         </div>
       </div>

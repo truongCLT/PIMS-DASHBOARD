@@ -19,14 +19,14 @@ export function OrderStatus() {
         padding: "10px 12px",
       }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
-          <span style={{ fontSize: "12px", fontWeight: "600", color: "#1a3a5c" }}>수주 실적 현황</span>
+          <span style={{ fontSize: "13px", fontWeight: "600", color: "#1a3a5c" }}>수주 실적 현황</span>
         </div>
         <div style={{
           height: "150px",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontSize: "11px",
+          fontSize: "12px",
           color: "#888",
           textAlign: "center",
           padding: "0 10px",
@@ -52,7 +52,7 @@ export function OrderStatus() {
       padding: "10px 12px",
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
-        <span style={{ fontSize: "12px", fontWeight: "600", color: "#1a3a5c" }}>수주 실적 현황</span>
+        <span style={{ fontSize: "13px", fontWeight: "600", color: "#1a3a5c" }}>수주 실적 현황</span>
       </div>
 
       {/* Donut chart with center label */}
@@ -77,7 +77,7 @@ export function OrderStatus() {
               ))}
             </Pie>
             <Tooltip
-              contentStyle={{ fontSize: "11px" }}
+              contentStyle={{ fontSize: "12px" }}
               formatter={(v: any) => Number(v).toLocaleString()}
             />
           </PieChart>
@@ -92,28 +92,28 @@ export function OrderStatus() {
             pointerEvents: "none",
           }}
         >
-          <div style={{ fontSize: "18px", fontWeight: 700, color: "#1565c0" }}>{pct}%</div>
-          <div style={{ fontSize: "8px", color: "#888" }}>계획 대비</div>
+          <div style={{ fontSize: "20px", fontWeight: 700, color: "#1565c0" }}>{pct}%</div>
+          <div style={{ fontSize: "9px", color: "#888" }}>계획 대비</div>
         </div>
       </div>
 
       {/* Stats row */}
       <div style={{ display: "flex", gap: "8px", marginBottom: "8px" }}>
         <div style={{ flex: 1, textAlign: "center", borderRight: "1px solid #e8f0f8" }}>
-          <div style={{ fontSize: "10px", color: "#888", marginBottom: "2px" }}>계획</div>
-          <div style={{ fontSize: "18px", fontWeight: "700", color: "#1a3a5c" }}>
+          <div style={{ fontSize: "11px", color: "#888", marginBottom: "2px" }}>계획</div>
+          <div style={{ fontSize: "20px", fontWeight: "700", color: "#1a3a5c" }}>
             {planTotal.toLocaleString()}
           </div>
         </div>
         <div style={{ flex: 1, textAlign: "center", borderRight: "1px solid #e8f0f8" }}>
-          <div style={{ fontSize: "10px", color: "#888", marginBottom: "2px" }}>수주</div>
-          <div style={{ fontSize: "18px", fontWeight: "700", color: "#1565c0" }}>
+          <div style={{ fontSize: "11px", color: "#888", marginBottom: "2px" }}>수주</div>
+          <div style={{ fontSize: "20px", fontWeight: "700", color: "#1565c0" }}>
             {ordered.toLocaleString()}
           </div>
         </div>
         <div style={{ flex: 1, textAlign: "center" }}>
-          <div style={{ fontSize: "10px", color: "#888", marginBottom: "2px" }}>잔여</div>
-          <div style={{ fontSize: "18px", fontWeight: "700", color: "#ff7043" }}>
+          <div style={{ fontSize: "11px", color: "#888", marginBottom: "2px" }}>잔여</div>
+          <div style={{ fontSize: "20px", fontWeight: "700", color: "#ff7043" }}>
             {remaining.toLocaleString()}
           </div>
         </div>
@@ -122,7 +122,7 @@ export function OrderStatus() {
       <button style={{
         width: "100%",
         textAlign: "right",
-        fontSize: "11px",
+        fontSize: "12px",
         color: "#1e6fdd",
         background: "none",
         border: "none",

@@ -89,7 +89,7 @@ const InflowLabel = (props: any) => {
   const { x, y, width, value } = props;
   if (!value) return null;
   return (
-    <text x={x + width / 2} y={y - 3} fill={chartTheme.inflowBlue} textAnchor="middle" fontSize={8} fontWeight="600">
+    <text x={x + width / 2} y={y - 3} fill={chartTheme.inflowBlue} textAnchor="middle" fontSize={9} fontWeight="600">
       +{Math.round(value).toLocaleString()}
     </text>
   );
@@ -100,7 +100,7 @@ const OutflowLabel = (props: any) => {
   if (!value) return null;
   const bottom = Math.max(y, y + height);
   return (
-    <text x={x + width / 2} y={bottom + 9} fill={chartTheme.outflowRed} textAnchor="middle" fontSize={8} fontWeight="600">
+    <text x={x + width / 2} y={bottom + 9} fill={chartTheme.outflowRed} textAnchor="middle" fontSize={9} fontWeight="600">
       {Math.round(value).toLocaleString()}
     </text>
   );
@@ -173,10 +173,10 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
       <ResponsiveContainer width="100%" height="100%">
         <ComposedChart data={chartData} margin={{ top: 20, right: 0, left: 0, bottom: 12 }}>
           <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.gridLine} vertical={false} />
-          <XAxis dataKey="month" tick={{ fontSize: 10, fill: chartTheme.axisText }} axisLine={false} tickLine={false} />
+          <XAxis dataKey="month" tick={{ fontSize: 11, fill: chartTheme.axisText }} axisLine={false} tickLine={false} />
           <YAxis
             yAxisId="flow"
-            tick={{ fontSize: 10, fill: chartTheme.axisText }}
+            tick={{ fontSize: 11, fill: chartTheme.axisText }}
             axisLine={false}
             tickLine={false}
             tickFormatter={(v: number) => v.toLocaleString()}
@@ -184,13 +184,13 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
           <YAxis
             yAxisId="balance"
             orientation="right"
-            tick={{ fontSize: 10, fill: chartTheme.balanceNavy }}
+            tick={{ fontSize: 11, fill: chartTheme.balanceNavy }}
             axisLine={false}
             tickLine={false}
             tickFormatter={(v: number) => v.toLocaleString()}
           />
           <Tooltip
-            contentStyle={{ fontSize: "11px" }}
+            contentStyle={{ fontSize: "12px" }}
             formatter={(value: number | string, name: string) => {
               const n = typeof value === "number" ? value : Number(value);
               const shown = name === "자금 유출" ? Math.abs(n) : n;
@@ -232,12 +232,12 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
-          <span style={{ fontSize: "12px", fontWeight: "600", color: chartTheme.titleNavy }}>자금수지</span>
-          <span style={{ fontSize: "10px", color: "#5a6a7e" }}>
+          <span style={{ fontSize: "13px", fontWeight: "600", color: chartTheme.titleNavy }}>자금수지</span>
+          <span style={{ fontSize: "11px", color: "#5a6a7e" }}>
             {config.label} · 단위: {unitLabel}
           </span>
         </div>
-        <button style={{ fontSize: "11px", color: "#1e6fdd", background: "none", border: "none", cursor: "pointer" }}>
+        <button style={{ fontSize: "12px", color: "#1e6fdd", background: "none", border: "none", cursor: "pointer" }}>
           상세보기
         </button>
       </div>
@@ -257,7 +257,7 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
             ) : (
               <div style={{ width: "18px", height: "2px", backgroundColor: item.color }} />
             )}
-            <span style={{ fontSize: "11px", color: "#555" }}>{item.label}</span>
+            <span style={{ fontSize: "12px", color: "#555" }}>{item.label}</span>
           </div>
         ))}
       </div>
@@ -272,7 +272,7 @@ function CenterNote({ text }: { text: string }) {
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      fontSize: "12px",
+      fontSize: "13px",
       color: "#5a6a7e",
       textAlign: "center",
     }}>
