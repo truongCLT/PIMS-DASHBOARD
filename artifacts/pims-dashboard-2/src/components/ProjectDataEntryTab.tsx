@@ -247,7 +247,7 @@ const EST_KINDS: { kind: "bidding" | "execution" | "completion"; label: string }
   { kind: "completion", label: "Estimated Completion (준공 전망)" },
 ];
 
-export function ProjectDataEntryTab({ projectName }: { projectName: string }) {
+export function ProjectDataEntryTab({ projectName, service = false }: { projectName: string; service?: boolean }) {
   const { detail, isLoading } = useProjectDetail(projectName);
   const queryClient = useQueryClient();
   const mutation = usePutProjectdetail();
@@ -580,6 +580,8 @@ export function ProjectDataEntryTab({ projectName }: { projectName: string }) {
       </div>
 
       {/* 0. 개요 정보 */}
+      {!service && (
+      <>
       <div style={cardStyle}>
         <span style={sectionTitle}>0. 개요 정보 (개요 탭)</span>
         <div data-tbl="overview" onKeyDown={makeArrowNav("overview")}>
@@ -724,10 +726,12 @@ export function ProjectDataEntryTab({ projectName }: { projectName: string }) {
           <Plus size={12} /> 마일스톤 추가
         </button>
       </div>
+      </>
+      )}
 
       {/* 3. 원가율 */}
       <div style={cardStyle}>
-        <span style={sectionTitle}>3. 원가율 (원가 탭)</span>
+        <span style={sectionTitle}>{service ? "1. 도급액·원가 (개요)" : "3. 원가율 (원가 탭)"}</span>
         <div data-tbl="costEst" onKeyDown={makeArrowNav("costEst")}>
         <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px" }}>
           <thead>
@@ -754,7 +758,7 @@ export function ProjectDataEntryTab({ projectName }: { projectName: string }) {
 
       {/* 4. 예산 집행 현황 */}
       <div style={cardStyle}>
-        <span style={sectionTitle}>4. 예산 집행 현황 (원가 탭)</span>
+        <span style={sectionTitle}>{service ? "2. 예산 집행 현황 (예산집행 탭)" : "4. 예산 집행 현황 (원가 탭)"}</span>
         <div data-tbl="costBudget" onKeyDown={makeArrowNav("costBudget")}>
         <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "4px" }}>
           <thead>
@@ -791,7 +795,7 @@ export function ProjectDataEntryTab({ projectName }: { projectName: string }) {
 
       {/* 5. 외주/자재 */}
       <div style={cardStyle}>
-        <span style={sectionTitle}>5. 외주/자재 (외주 탭)</span>
+        <span style={sectionTitle}>{service ? "3. 외주/자재 (외주 탭)" : "5. 외주/자재 (외주 탭)"}</span>
         <div data-tbl="outsourcing" onKeyDown={makeArrowNav("outsourcing")}>
         <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px" }}>
           <thead>
@@ -843,7 +847,7 @@ export function ProjectDataEntryTab({ projectName }: { projectName: string }) {
 
       {/* 6. 월별 자금 */}
       <div style={cardStyle}>
-        <span style={sectionTitle}>6. 월별 자금 (자금 탭)</span>
+        <span style={sectionTitle}>{service ? "4. 월별 자금 (자금 탭)" : "6. 월별 자금 (자금 탭)"}</span>
         <div data-tbl="cashflow" onKeyDown={makeArrowNav("cashflow")}>
         <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px" }}>
           <thead>
@@ -895,6 +899,7 @@ export function ProjectDataEntryTab({ projectName }: { projectName: string }) {
       </div>
 
       {/* 7. 현장 사진 */}
+      {!service && (
       <div style={cardStyle}>
         <span style={sectionTitle}>7. 현장 사진 (개요 탭)</span>
         <div style={{ marginTop: "8px", display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
@@ -964,6 +969,7 @@ export function ProjectDataEntryTab({ projectName }: { projectName: string }) {
           첫 번째 사진이 개요 탭에 가장 먼저 표시됩니다. 순서 변경/삭제 후에도 상단 '저장' 버튼을 눌러야 반영됩니다.
         </div>
       </div>
+      )}
     </div>
   );
 }

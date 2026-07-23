@@ -323,7 +323,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
         ) : activeTab === "Budget Execution" ? (
           <ServiceBudgetTab projectName={projectName} />
         ) : activeTab === "Data entry" ? (
-          <ProjectDataEntryTab projectName={projectName} />
+          <ProjectDataEntryTab projectName={projectName} service />
         ) : activeTab === "Overview" ? (
           <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: "8px" }}>
             {/* Row 1: Budget Execution Status / Outsourcing */}
