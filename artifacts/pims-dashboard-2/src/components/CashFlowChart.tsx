@@ -171,11 +171,20 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
   } else {
     body = (
       <ResponsiveContainer width="100%" height="100%">
-        <ComposedChart data={chartData} margin={{ top: 20, right: 10, left: 0, bottom: 12 }}>
+        <ComposedChart data={chartData} margin={{ top: 20, right: 0, left: 0, bottom: 12 }}>
           <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.gridLine} vertical={false} />
           <XAxis dataKey="month" tick={{ fontSize: 10, fill: chartTheme.axisText }} axisLine={false} tickLine={false} />
           <YAxis
+            yAxisId="flow"
             tick={{ fontSize: 10, fill: chartTheme.axisText }}
+            axisLine={false}
+            tickLine={false}
+            tickFormatter={(v: number) => v.toLocaleString()}
+          />
+          <YAxis
+            yAxisId="balance"
+            orientation="right"
+            tick={{ fontSize: 10, fill: chartTheme.balanceNavy }}
             axisLine={false}
             tickLine={false}
             tickFormatter={(v: number) => v.toLocaleString()}
@@ -188,15 +197,16 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
               return [`${Math.round(shown).toLocaleString()} ${unitLabel}`, name];
             }}
           />
-          <ReferenceLine y={0} stroke={chartTheme.zeroLine} />
-          <Bar isAnimationActive={false} dataKey="inflow" name="자금 유입" fill={chartTheme.inflowBlue} barSize={16} radius={[2, 2, 0, 0]}>
+          <ReferenceLine y={0} yAxisId="flow" stroke={chartTheme.zeroLine} />
+          <Bar isAnimationActive={false} yAxisId="flow" dataKey="inflow" name="자금 유입" fill={chartTheme.inflowBlue} barSize={16} radius={[2, 2, 0, 0]}>
             <LabelList dataKey="inflow" content={InflowLabel} />
           </Bar>
-          <Bar isAnimationActive={false} dataKey="outflow" name="자금 유출" fill={chartTheme.outflowRed} barSize={16} radius={[0, 0, 2, 2]}>
+          <Bar isAnimationActive={false} yAxisId="flow" dataKey="outflow" name="자금 유출" fill={chartTheme.outflowRed} barSize={16} radius={[0, 0, 2, 2]}>
             <LabelList dataKey="outflow" content={OutflowLabel} />
           </Bar>
           <Line
             isAnimationActive={false}
+            yAxisId="balance"
             type="monotone"
             dataKey="balance"
             name="누적 현금 잔액"
