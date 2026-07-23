@@ -52,16 +52,16 @@ export function Dashboard({
           <KPICards />
         </div>
 
-        {/* Row 2: 매출 차트 — 수주 실적 현황(단독) — 손익 차트 */}
+        {/* Row 2: 매출 차트 — 손익 차트 — 수주 실적 현황(맨 오른쪽 단독) */}
         <div style={{
           display: "grid",
-          gridTemplateColumns: "1fr 220px 1fr",
+          gridTemplateColumns: "1fr 1fr 220px",
           gap: "6px",
           padding: "4px 10px",
         }}>
           <SalesChart />
-          <OrderStatus />
           <ProfitChart />
+          <OrderStatus />
         </div>
 
         {/* Row 3: 자금 수지 — 경영실적 현황 — 상세정보(드릴다운, 단독) */}
