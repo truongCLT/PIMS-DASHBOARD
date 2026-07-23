@@ -181,14 +181,6 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
             tickLine={false}
             tickFormatter={(v: number) => v.toLocaleString()}
           />
-          <YAxis
-            yAxisId="balance"
-            orientation="right"
-            tick={{ fontSize: 11, fill: chartTheme.balanceNavy }}
-            axisLine={false}
-            tickLine={false}
-            tickFormatter={(v: number) => v.toLocaleString()}
-          />
           <Tooltip
             contentStyle={{ fontSize: "12px" }}
             formatter={(value: number | string, name: string) => {
@@ -206,7 +198,7 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
           </Bar>
           <Line
             isAnimationActive={false}
-            yAxisId="balance"
+            yAxisId="flow"
             type="monotone"
             dataKey="balance"
             name="누적 현금 잔액"
