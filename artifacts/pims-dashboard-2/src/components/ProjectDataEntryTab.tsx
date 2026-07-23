@@ -339,6 +339,11 @@ export function ProjectDataEntryTab({ projectName }: { projectName: string }) {
 
   const updateAt = <T,>(setter: React.Dispatch<React.SetStateAction<T[]>>, i: number, patch: Partial<T>) =>
     setter((rows) => rows.map((r, j) => (j === i ? { ...r, ...patch } : r)));
+  // 자금수지 표를 사용자가 직접 수정하면 prefill 상태 해제 → 이후 저장부터 실제 데이터로 저장
+  const editCashflow: React.Dispatch<React.SetStateAction<ProjectDetailCashflowPoint[]>> = (action) => {
+    setCfPrefilled(false);
+    setCashflow(action);
+  };
   const removeAt = <T,>(setter: React.Dispatch<React.SetStateAction<T[]>>, i: number) =>
     setter((rows) => rows.filter((_, j) => j !== i));
 
@@ -378,7 +383,14 @@ export function ProjectDataEntryTab({ projectName }: { projectName: string }) {
     return errors.length > 0 ? errors.join(" ") : null;
   };
 
+  const pendingRef = useRef(false);
+  const queuedRef = useRef(false);
+
   const save = () => {
+    if (pendingRef.current) {
+      queuedRef.current = true;
+      return;
+    }
     setSaveMsg(null);
     const progressRows = progress.filter(
       (p) => p.year !== 0 || p.month !== 0 || p.planPct != null || p.actualPct != null || p.planCumPct != null || p.actualCumPct != null,
@@ -397,12 +409,21 @@ export function ProjectDataEntryTab({ projectName }: { projectName: string }) {
       costEstimation: costEstimation.filter((e) => e.contractAmount != null || e.costAmount != null),
       costBudget: costBudget.filter((c) => c.item.trim() !== ""),
       outsourcing: outsourcing.filter((o) => o.trade.trim() !== ""),
-      cashflow: cashflow.filter((c) => c.year > 0 && c.month >= 1 && c.month <= 12),
+      // 자금수지 Excel prefill을 아직 수정하지 않았다면 저장하지 않음(향후 Excel 갱신 반영 유지)
+      cashflow: cfPrefilled ? [] : cashflow.filter((c) => c.year > 0 && c.month >= 1 && c.month <= 12),
       photos: photos.filter((p) => p.objectPath.trim() !== ""),
     };
+    pendingRef.current = true;
     mutation.mutate(
       { data: body },
       {
+        onSettled: () => {
+          pendingRef.current = false;
+          if (queuedRef.current) {
+            queuedRef.current = false;
+            saveRef.current();
+          }
+        },
         onSuccess: () => {
           setSaveMsg("저장되었습니다.");
           queryClient.invalidateQueries({ queryKey: getGetProjectdetailQueryKey({ projectName }) });
@@ -417,6 +438,23 @@ export function ProjectDataEntryTab({ projectName }: { projectName: string }) {
       },
     );
   };
+
+  // 입력 후 자동 저장 — 저장되면 projectdetail 쿼리가 무효화되어 개요/다른 탭이 즉시 갱신됨
+  const saveRef = useRef(save);
+  saveRef.current = save;
+  const skipAutoSaveRef = useRef(true);
+  useEffect(() => {
+    skipAutoSaveRef.current = true;
+  }, [projectName]);
+  useEffect(() => {
+    if (!loaded) return;
+    if (skipAutoSaveRef.current) {
+      skipAutoSaveRef.current = false;
+      return;
+    }
+    const t = setTimeout(() => saveRef.current(), 1000);
+    return () => clearTimeout(t);
+  }, [loaded, overview, progress, milestones, costEstimation, costBudget, outsourcing, cashflow, photos]);
 
   const uploadPhotos = async (files: FileList) => {
     setPhotoMsg(null);
@@ -821,12 +859,12 @@ export function ProjectDataEntryTab({ projectName }: { projectName: string }) {
           <tbody>
             {cashflow.map((c, i) => (
               <tr key={i}>
-                <td style={tdCell}><NumInput value={c.year} onChange={(v) => updateAt(setCashflow, i, { year: v ?? 0 })} data-row={i} data-col={0} /></td>
-                <td style={tdCell}><NumInput value={c.month} onChange={(v) => updateAt(setCashflow, i, { month: v ?? 0 })} data-row={i} data-col={1} /></td>
-                <td style={tdCell}><VndInput valueKUsd={c.cashIn} onChange={(v) => updateAt(setCashflow, i, { cashIn: v })} data-row={i} data-col={2} /></td>
-                <td style={tdCell}><VndInput valueKUsd={c.cashOut} onChange={(v) => updateAt(setCashflow, i, { cashOut: v })} data-row={i} data-col={3} /></td>
-                <td style={tdCell}><VndInput valueKUsd={c.equivalent} onChange={(v) => updateAt(setCashflow, i, { equivalent: v })} data-row={i} data-col={4} /></td>
-                <td style={{ ...tdCell, textAlign: "center" }}><DelBtn onClick={() => removeAt(setCashflow, i)} /></td>
+                <td style={tdCell}><NumInput value={c.year} onChange={(v) => updateAt(editCashflow, i, { year: v ?? 0 })} data-row={i} data-col={0} /></td>
+                <td style={tdCell}><NumInput value={c.month} onChange={(v) => updateAt(editCashflow, i, { month: v ?? 0 })} data-row={i} data-col={1} /></td>
+                <td style={tdCell}><VndInput valueKUsd={c.cashIn} onChange={(v) => updateAt(editCashflow, i, { cashIn: v })} data-row={i} data-col={2} /></td>
+                <td style={tdCell}><VndInput valueKUsd={c.cashOut} onChange={(v) => updateAt(editCashflow, i, { cashOut: v })} data-row={i} data-col={3} /></td>
+                <td style={tdCell}><VndInput valueKUsd={c.equivalent} onChange={(v) => updateAt(editCashflow, i, { equivalent: v })} data-row={i} data-col={4} /></td>
+                <td style={{ ...tdCell, textAlign: "center" }}><DelBtn onClick={() => removeAt(editCashflow, i)} /></td>
               </tr>
             ))}
           </tbody>
@@ -841,7 +879,7 @@ export function ProjectDataEntryTab({ projectName }: { projectName: string }) {
                 ? { year: last.year + 1, month: 1 }
                 : { year: last.year, month: last.month + 1 }
               : { year: nowYear, month: 1 };
-            setCashflow((rows) => [...rows, { ...next, cashIn: null, cashOut: null, equivalent: null }]);
+            editCashflow((rows) => [...rows, { ...next, cashIn: null, cashOut: null, equivalent: null }]);
           }}
         >
           <Plus size={12} /> 월 추가
@@ -851,7 +889,7 @@ export function ProjectDataEntryTab({ projectName }: { projectName: string }) {
         </div>
         {cfPrefilled && (
           <div style={{ fontSize: "10px", color: "#1e6fdd", marginTop: "4px", fontWeight: 600 }}>
-            자금수지 Excel(DB)에 저장된 데이터를 불러왔습니다. 수정 후 "전체 저장"을 누르면 이 프로젝트의 자금 데이터로 저장되며, 이후에는 저장된 값이 우선 표시됩니다.
+            자금수지 Excel(DB)에 저장된 데이터를 불러왔습니다. 표를 수정하면 이 프로젝트의 자금 데이터로 저장되며, 이후에는 저장된 값이 우선 표시됩니다.
           </div>
         )}
       </div>
