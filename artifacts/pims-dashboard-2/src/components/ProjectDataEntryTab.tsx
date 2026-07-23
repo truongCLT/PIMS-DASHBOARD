@@ -77,28 +77,134 @@ const addBtn: React.CSSProperties = {
   marginTop: "8px",
 };
 
-function NumInput({ value, onChange }: { value: number | null | undefined; onChange: (v: number | null) => void }) {
+const VND_PER_K_USD = 25_400_000;
+
+function fmtVnd(vnd: number): string {
+  return Math.round(vnd).toLocaleString("en-US");
+}
+
+function VndInput({
+  valueKUsd,
+  onChange,
+  "data-row": dataRow,
+  "data-col": dataCol,
+}: {
+  valueKUsd: number | null | undefined;
+  onChange: (kUsd: number | null) => void;
+  "data-row"?: string | number;
+  "data-col"?: string | number;
+}) {
+  const [editing, setEditing] = React.useState(false);
+  const [rawStr, setRawStr] = React.useState("");
+
+  const displayValue = editing
+    ? rawStr
+    : valueKUsd != null
+      ? fmtVnd(valueKUsd * VND_PER_K_USD)
+      : "";
+
+  return (
+    <input
+      type="text"
+      inputMode="numeric"
+      value={displayValue}
+      data-row={dataRow}
+      data-col={dataCol}
+      style={{ ...inputStyle, textAlign: "right" }}
+      onFocus={() => {
+        const vnd = valueKUsd != null ? valueKUsd * VND_PER_K_USD : 0;
+        setRawStr(vnd === 0 ? "" : String(Math.round(vnd)));
+        setEditing(true);
+      }}
+      onChange={(e) => {
+        const digits = e.target.value.replace(/[^\d]/g, "");
+        setRawStr(digits === "" ? "" : Number(digits).toLocaleString("en-US"));
+      }}
+      onBlur={() => {
+        setEditing(false);
+        const cleaned = rawStr.replace(/,/g, "");
+        if (cleaned === "" || cleaned === "0") {
+          onChange(null);
+        } else {
+          const vnd = parseFloat(cleaned);
+          onChange(isNaN(vnd) ? null : Math.round(vnd / VND_PER_K_USD));
+        }
+        setRawStr("");
+      }}
+    />
+  );
+}
+
+function NumInput({
+  value,
+  onChange,
+  "data-row": dataRow,
+  "data-col": dataCol,
+}: {
+  value: number | null | undefined;
+  onChange: (v: number | null) => void;
+  "data-row"?: string | number;
+  "data-col"?: string | number;
+}) {
   return (
     <input
       type="number"
       step="any"
       value={value ?? ""}
+      data-row={dataRow}
+      data-col={dataCol}
       onChange={(e) => onChange(e.target.value === "" ? null : Number(e.target.value))}
       style={{ ...inputStyle, textAlign: "right" }}
     />
   );
 }
 
-function TextInput({ value, onChange, placeholder }: { value: string | null | undefined; onChange: (v: string | null) => void; placeholder?: string }) {
+function TextInput({
+  value,
+  onChange,
+  placeholder,
+  "data-row": dataRow,
+  "data-col": dataCol,
+}: {
+  value: string | null | undefined;
+  onChange: (v: string | null) => void;
+  placeholder?: string;
+  "data-row"?: string | number;
+  "data-col"?: string | number;
+}) {
   return (
     <input
       type="text"
       value={value ?? ""}
       placeholder={placeholder}
+      data-row={dataRow}
+      data-col={dataCol}
       onChange={(e) => onChange(e.target.value === "" ? null : e.target.value)}
       style={inputStyle}
     />
   );
+}
+
+function makeArrowNav(tblId: string) {
+  return (e: React.KeyboardEvent) => {
+    if (!["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) return;
+    const target = e.target as HTMLElement;
+    const rowStr = target.getAttribute("data-row");
+    const colStr = target.getAttribute("data-col");
+    if (rowStr == null || colStr == null) return;
+    e.preventDefault();
+    const row = parseInt(rowStr);
+    const col = parseInt(colStr);
+    let nextRow = row, nextCol = col;
+    if (e.key === "ArrowDown") nextRow = row + 1;
+    else if (e.key === "ArrowUp") nextRow = row - 1;
+    else if (e.key === "ArrowRight") nextCol = col + 1;
+    else if (e.key === "ArrowLeft") nextCol = col - 1;
+    const next = document.querySelector<HTMLElement>(
+      `[data-tbl="${tblId}"] [data-row="${nextRow}"][data-col="${nextCol}"]`,
+    );
+    next?.focus();
+  };
 }
 
 function MonthInput({ value, onChange }: { value: string | null | undefined; onChange: (v: string | null) => void }) {
@@ -362,7 +468,7 @@ export function ProjectDataEntryTab({ projectName }: { projectName: string }) {
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
       <div style={{ ...cardStyle, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ fontSize: "12px", color: "#333" }}>
-          <b>{projectName}</b> 프로젝트의 공정/원가/외주 데이터를 입력합니다. 금액 단위: <b>천 USD</b>, 공정률 단위: <b>%</b>
+          <b>{projectName}</b> 프로젝트의 공정/원가/외주 데이터를 입력합니다. 금액 입력: <b>VND</b> (저장 시 천 USD 자동 변환), 공정률 단위: <b>%</b>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           {statusMsg && (
@@ -438,10 +544,11 @@ export function ProjectDataEntryTab({ projectName }: { projectName: string }) {
       {/* 0. 개요 정보 */}
       <div style={cardStyle}>
         <span style={sectionTitle}>0. 개요 정보 (개요 탭)</span>
+        <div data-tbl="overview" onKeyDown={makeArrowNav("overview")}>
         <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px" }}>
           <thead>
             <tr>
-              <th style={th}>도급액 (천 USD)</th>
+              <th style={th}>도급액 (VND)</th>
               <th style={th}>공사 시작일</th>
               <th style={th}>공사 종료일</th>
               <th style={th}>발주처</th>
@@ -451,7 +558,7 @@ export function ProjectDataEntryTab({ projectName }: { projectName: string }) {
           <tbody>
             <tr>
               <td style={tdCell}>
-                <NumInput value={overview.contractAmount} onChange={(v) => setOverview((o) => ({ ...o, contractAmount: v }))} />
+                <VndInput valueKUsd={overview.contractAmount} onChange={(v) => setOverview((o) => ({ ...o, contractAmount: v }))} data-row={0} data-col={0} />
               </td>
               <td style={tdCell}>
                 <input
@@ -493,11 +600,13 @@ export function ProjectDataEntryTab({ projectName }: { projectName: string }) {
         <div style={{ fontSize: "10px", color: "#8a97a8", marginTop: "6px" }}>
           입찰(Bidding)·실행예산 금액은 아래 "3. 원가율" 표에 입력하면 개요 탭에 함께 반영됩니다.
         </div>
+        </div>
       </div>
 
       {/* 1. 월별 공정률 */}
       <div style={cardStyle}>
         <span style={sectionTitle}>1. 월별 공정률 (공정 탭)</span>
+        <div data-tbl="progress" onKeyDown={makeArrowNav("progress")}>
         <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px" }}>
           <thead>
             <tr>
@@ -513,17 +622,18 @@ export function ProjectDataEntryTab({ projectName }: { projectName: string }) {
           <tbody>
             {progress.map((p, i) => (
               <tr key={i}>
-                <td style={tdCell}><NumInput value={p.year} onChange={(v) => updateAt(setProgress, i, { year: v ?? 0 })} /></td>
-                <td style={tdCell}><NumInput value={p.month} onChange={(v) => updateAt(setProgress, i, { month: v ?? 0 })} /></td>
-                <td style={tdCell}><NumInput value={p.planPct} onChange={(v) => updateAt(setProgress, i, { planPct: v })} /></td>
-                <td style={tdCell}><NumInput value={p.actualPct} onChange={(v) => updateAt(setProgress, i, { actualPct: v })} /></td>
-                <td style={tdCell}><NumInput value={p.planCumPct} onChange={(v) => updateAt(setProgress, i, { planCumPct: v })} /></td>
-                <td style={tdCell}><NumInput value={p.actualCumPct} onChange={(v) => updateAt(setProgress, i, { actualCumPct: v })} /></td>
+                <td style={tdCell}><NumInput value={p.year} onChange={(v) => updateAt(setProgress, i, { year: v ?? 0 })} data-row={i} data-col={0} /></td>
+                <td style={tdCell}><NumInput value={p.month} onChange={(v) => updateAt(setProgress, i, { month: v ?? 0 })} data-row={i} data-col={1} /></td>
+                <td style={tdCell}><NumInput value={p.planPct} onChange={(v) => updateAt(setProgress, i, { planPct: v })} data-row={i} data-col={2} /></td>
+                <td style={tdCell}><NumInput value={p.actualPct} onChange={(v) => updateAt(setProgress, i, { actualPct: v })} data-row={i} data-col={3} /></td>
+                <td style={tdCell}><NumInput value={p.planCumPct} onChange={(v) => updateAt(setProgress, i, { planCumPct: v })} data-row={i} data-col={4} /></td>
+                <td style={tdCell}><NumInput value={p.actualCumPct} onChange={(v) => updateAt(setProgress, i, { actualCumPct: v })} data-row={i} data-col={5} /></td>
                 <td style={{ ...tdCell, textAlign: "center" }}><DelBtn onClick={() => removeAt(setProgress, i)} /></td>
               </tr>
             ))}
           </tbody>
         </table>
+        </div>
         <button
           style={addBtn}
           onClick={() => {
@@ -543,6 +653,7 @@ export function ProjectDataEntryTab({ projectName }: { projectName: string }) {
       {/* 2. 마일스톤 */}
       <div style={cardStyle}>
         <span style={sectionTitle}>2. 마일스톤 (공정 탭)</span>
+        <div data-tbl="milestones" onKeyDown={makeArrowNav("milestones")}>
         <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px" }}>
           <thead>
             <tr>
@@ -557,7 +668,7 @@ export function ProjectDataEntryTab({ projectName }: { projectName: string }) {
           <tbody>
             {milestones.map((m, i) => (
               <tr key={i}>
-                <td style={tdCell}><TextInput value={m.label} onChange={(v) => updateAt(setMilestones, i, { label: v ?? "" })} placeholder="예: 착공" /></td>
+                <td style={tdCell}><TextInput value={m.label} onChange={(v) => updateAt(setMilestones, i, { label: v ?? "" })} placeholder="예: 착공" data-row={i} data-col={0} /></td>
                 <td style={tdCell}><DateInput value={m.planStart} onChange={(v) => updateAt(setMilestones, i, { planStart: v })} /></td>
                 <td style={tdCell}><DateInput value={m.planEnd} onChange={(v) => updateAt(setMilestones, i, { planEnd: v })} /></td>
                 <td style={tdCell}><DateInput value={m.actualStart} onChange={(v) => updateAt(setMilestones, i, { actualStart: v })} /></td>
@@ -567,6 +678,7 @@ export function ProjectDataEntryTab({ projectName }: { projectName: string }) {
             ))}
           </tbody>
         </table>
+        </div>
         <button
           style={addBtn}
           onClick={() => setMilestones((rows) => [...rows, { label: "", planStart: null, planEnd: null, actualStart: null, actualEnd: null }])}
@@ -578,12 +690,13 @@ export function ProjectDataEntryTab({ projectName }: { projectName: string }) {
       {/* 3. 원가율 */}
       <div style={cardStyle}>
         <span style={sectionTitle}>3. 원가율 (원가 탭)</span>
+        <div data-tbl="costEst" onKeyDown={makeArrowNav("costEst")}>
         <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px" }}>
           <thead>
             <tr>
               <th style={th}>구분</th>
-              <th style={th}>도급액 (천 USD)</th>
-              <th style={th}>원가 (천 USD)</th>
+              <th style={th}>도급액 (VND)</th>
+              <th style={th}>원가 (VND)</th>
             </tr>
           </thead>
           <tbody>
@@ -592,41 +705,49 @@ export function ProjectDataEntryTab({ projectName }: { projectName: string }) {
                 <td style={{ ...tdCell, fontSize: "11px", padding: "5px 6px", color: "#333" }}>
                   {EST_KINDS.find((k) => k.kind === e.kind)?.label ?? e.kind}
                 </td>
-                <td style={tdCell}><NumInput value={e.contractAmount} onChange={(v) => updateAt(setCostEstimation, i, { contractAmount: v })} /></td>
-                <td style={tdCell}><NumInput value={e.costAmount} onChange={(v) => updateAt(setCostEstimation, i, { costAmount: v })} /></td>
+                <td style={tdCell}><VndInput valueKUsd={e.contractAmount} onChange={(v) => updateAt(setCostEstimation, i, { contractAmount: v })} data-row={i} data-col={0} /></td>
+                <td style={tdCell}><VndInput valueKUsd={e.costAmount} onChange={(v) => updateAt(setCostEstimation, i, { costAmount: v })} data-row={i} data-col={1} /></td>
               </tr>
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
       {/* 4. 예산 집행 현황 */}
       <div style={cardStyle}>
         <span style={sectionTitle}>4. 예산 집행 현황 (원가 탭)</span>
-        <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px" }}>
+        <div style={{ fontSize: "10px", color: "#8a97a8", marginBottom: "4px" }}>예산·기성 실적은 읽기 전용입니다. 기성 계획만 입력 가능합니다.</div>
+        <div data-tbl="costBudget" onKeyDown={makeArrowNav("costBudget")}>
+        <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "4px" }}>
           <thead>
             <tr>
               <th style={th}>분류</th>
               <th style={th}>항목</th>
-              <th style={th}>예산</th>
-              <th style={th}>기성 계획</th>
-              <th style={th}>기성 실적</th>
+              <th style={th}>예산 (VND)</th>
+              <th style={th}>기성 계획 (VND)</th>
+              <th style={th}>기성 실적 (VND)</th>
               <th style={{ ...th, width: "36px" }}></th>
             </tr>
           </thead>
           <tbody>
             {costBudget.map((c, i) => (
               <tr key={i}>
-                <td style={tdCell}><TextInput value={c.category} onChange={(v) => updateAt(setCostBudget, i, { category: v })} placeholder="예: Direct Cost" /></td>
-                <td style={tdCell}><TextInput value={c.item} onChange={(v) => updateAt(setCostBudget, i, { item: v ?? "" })} placeholder="예: 외주비" /></td>
-                <td style={tdCell}><NumInput value={c.budget} onChange={(v) => updateAt(setCostBudget, i, { budget: v })} /></td>
-                <td style={tdCell}><NumInput value={c.plan} onChange={(v) => updateAt(setCostBudget, i, { plan: v })} /></td>
-                <td style={tdCell}><NumInput value={c.actual} onChange={(v) => updateAt(setCostBudget, i, { actual: v })} /></td>
+                <td style={tdCell}><TextInput value={c.category} onChange={(v) => updateAt(setCostBudget, i, { category: v })} placeholder="예: Direct Cost" data-row={i} data-col={0} /></td>
+                <td style={tdCell}><TextInput value={c.item} onChange={(v) => updateAt(setCostBudget, i, { item: v ?? "" })} placeholder="예: 외주비" data-row={i} data-col={1} /></td>
+                <td style={{ ...tdCell, backgroundColor: "#f7f9fc", textAlign: "right", fontSize: "11px", padding: "5px 6px", color: c.budget != null ? "#1a2d4d" : "#b0b8c4" }}>
+                  {c.budget != null ? fmtVnd(c.budget * VND_PER_K_USD) : "-"}
+                </td>
+                <td style={tdCell}><VndInput valueKUsd={c.plan} onChange={(v) => updateAt(setCostBudget, i, { plan: v })} data-row={i} data-col={2} /></td>
+                <td style={{ ...tdCell, backgroundColor: "#f7f9fc", textAlign: "right", fontSize: "11px", padding: "5px 6px", color: c.actual != null ? "#1a2d4d" : "#b0b8c4" }}>
+                  {c.actual != null ? fmtVnd(c.actual * VND_PER_K_USD) : "-"}
+                </td>
                 <td style={{ ...tdCell, textAlign: "center" }}><DelBtn onClick={() => removeAt(setCostBudget, i)} /></td>
               </tr>
             ))}
           </tbody>
         </table>
+        </div>
         <button
           style={addBtn}
           onClick={() => setCostBudget((rows) => [...rows, { category: null, item: "", budget: null, plan: null, actual: null }])}
@@ -638,6 +759,7 @@ export function ProjectDataEntryTab({ projectName }: { projectName: string }) {
       {/* 5. 외주/자재 */}
       <div style={cardStyle}>
         <span style={sectionTitle}>5. 외주/자재 (외주 탭)</span>
+        <div data-tbl="outsourcing" onKeyDown={makeArrowNav("outsourcing")}>
         <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px" }}>
           <thead>
             <tr>
@@ -646,36 +768,39 @@ export function ProjectDataEntryTab({ projectName }: { projectName: string }) {
               <th style={th}>구분</th>
               <th style={th}>최초 계약일</th>
               <th style={th}>변경 차수</th>
-              <th style={th}>예산(A)</th>
-              <th style={th}>결의금액(B)</th>
-              <th style={th}>기성 이번달</th>
-              <th style={th}>기성 누계(C)</th>
+              <th style={th}>예산(A) (VND)</th>
+              <th style={th}>집행예산 (VND)</th>
+              <th style={th}>결의금액(B) (VND)</th>
+              <th style={th}>기성 이번달 (VND)</th>
+              <th style={th}>기성 누계(C) (VND)</th>
               <th style={{ ...th, width: "36px" }}></th>
             </tr>
           </thead>
           <tbody>
             {outsourcing.map((o, i) => (
               <tr key={i}>
-                <td style={tdCell}><TextInput value={o.trade} onChange={(v) => updateAt(setOutsourcing, i, { trade: v ?? "" })} placeholder="예: 토공사" /></td>
-                <td style={tdCell}><TextInput value={o.vendor} onChange={(v) => updateAt(setOutsourcing, i, { vendor: v })} /></td>
-                <td style={tdCell}><TextInput value={o.category} onChange={(v) => updateAt(setOutsourcing, i, { category: v })} placeholder="용역/외주" /></td>
-                <td style={tdCell}><TextInput value={o.contractDate} onChange={(v) => updateAt(setOutsourcing, i, { contractDate: v })} placeholder="'24.12.31" /></td>
-                <td style={tdCell}><TextInput value={o.changeNo} onChange={(v) => updateAt(setOutsourcing, i, { changeNo: v })} /></td>
-                <td style={tdCell}><NumInput value={o.budget} onChange={(v) => updateAt(setOutsourcing, i, { budget: v })} /></td>
-                <td style={tdCell}><NumInput value={o.resolved} onChange={(v) => updateAt(setOutsourcing, i, { resolved: v })} /></td>
-                <td style={tdCell}><NumInput value={o.thisMonth} onChange={(v) => updateAt(setOutsourcing, i, { thisMonth: v })} /></td>
-                <td style={tdCell}><NumInput value={o.accum} onChange={(v) => updateAt(setOutsourcing, i, { accum: v })} /></td>
+                <td style={tdCell}><TextInput value={o.trade} onChange={(v) => updateAt(setOutsourcing, i, { trade: v ?? "" })} placeholder="예: 토공사" data-row={i} data-col={0} /></td>
+                <td style={tdCell}><TextInput value={o.vendor} onChange={(v) => updateAt(setOutsourcing, i, { vendor: v })} data-row={i} data-col={1} /></td>
+                <td style={tdCell}><TextInput value={o.category} onChange={(v) => updateAt(setOutsourcing, i, { category: v })} placeholder="용역/외주" data-row={i} data-col={2} /></td>
+                <td style={tdCell}><TextInput value={o.contractDate} onChange={(v) => updateAt(setOutsourcing, i, { contractDate: v })} placeholder="'24.12.31" data-row={i} data-col={3} /></td>
+                <td style={tdCell}><TextInput value={o.changeNo} onChange={(v) => updateAt(setOutsourcing, i, { changeNo: v })} data-row={i} data-col={4} /></td>
+                <td style={tdCell}><VndInput valueKUsd={o.budget} onChange={(v) => updateAt(setOutsourcing, i, { budget: v })} data-row={i} data-col={5} /></td>
+                <td style={tdCell}><VndInput valueKUsd={o.executedBudget} onChange={(v) => updateAt(setOutsourcing, i, { executedBudget: v })} data-row={i} data-col={6} /></td>
+                <td style={tdCell}><VndInput valueKUsd={o.resolved} onChange={(v) => updateAt(setOutsourcing, i, { resolved: v })} data-row={i} data-col={7} /></td>
+                <td style={tdCell}><VndInput valueKUsd={o.thisMonth} onChange={(v) => updateAt(setOutsourcing, i, { thisMonth: v })} data-row={i} data-col={8} /></td>
+                <td style={tdCell}><VndInput valueKUsd={o.accum} onChange={(v) => updateAt(setOutsourcing, i, { accum: v })} data-row={i} data-col={9} /></td>
                 <td style={{ ...tdCell, textAlign: "center" }}><DelBtn onClick={() => removeAt(setOutsourcing, i)} /></td>
               </tr>
             ))}
           </tbody>
         </table>
+        </div>
         <button
           style={addBtn}
           onClick={() =>
             setOutsourcing((rows) => [
               ...rows,
-              { trade: "", vendor: null, category: null, contractDate: null, changeNo: null, budget: null, resolved: null, thisMonth: null, accum: null },
+              { trade: "", vendor: null, category: null, contractDate: null, changeNo: null, budget: null, executedBudget: null, resolved: null, thisMonth: null, accum: null },
             ])
           }
         >
@@ -686,30 +811,32 @@ export function ProjectDataEntryTab({ projectName }: { projectName: string }) {
       {/* 6. 월별 자금 */}
       <div style={cardStyle}>
         <span style={sectionTitle}>6. 월별 자금 (자금 탭)</span>
+        <div data-tbl="cashflow" onKeyDown={makeArrowNav("cashflow")}>
         <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px" }}>
           <thead>
             <tr>
               <th style={th}>연도</th>
               <th style={th}>월</th>
-              <th style={th}>수입 (Cash in)</th>
-              <th style={th}>지출 (Cash out)</th>
-              <th style={th}>보유 현금 (Cash equivalent)</th>
+              <th style={th}>수입 Cash in (VND)</th>
+              <th style={th}>지출 Cash out (VND)</th>
+              <th style={th}>보유 현금 Equivalent (VND)</th>
               <th style={{ ...th, width: "36px" }}></th>
             </tr>
           </thead>
           <tbody>
             {cashflow.map((c, i) => (
               <tr key={i}>
-                <td style={tdCell}><NumInput value={c.year} onChange={(v) => updateAt(setCashflow, i, { year: v ?? 0 })} /></td>
-                <td style={tdCell}><NumInput value={c.month} onChange={(v) => updateAt(setCashflow, i, { month: v ?? 0 })} /></td>
-                <td style={tdCell}><NumInput value={c.cashIn} onChange={(v) => updateAt(setCashflow, i, { cashIn: v })} /></td>
-                <td style={tdCell}><NumInput value={c.cashOut} onChange={(v) => updateAt(setCashflow, i, { cashOut: v })} /></td>
-                <td style={tdCell}><NumInput value={c.equivalent} onChange={(v) => updateAt(setCashflow, i, { equivalent: v })} /></td>
+                <td style={tdCell}><NumInput value={c.year} onChange={(v) => updateAt(setCashflow, i, { year: v ?? 0 })} data-row={i} data-col={0} /></td>
+                <td style={tdCell}><NumInput value={c.month} onChange={(v) => updateAt(setCashflow, i, { month: v ?? 0 })} data-row={i} data-col={1} /></td>
+                <td style={tdCell}><VndInput valueKUsd={c.cashIn} onChange={(v) => updateAt(setCashflow, i, { cashIn: v })} data-row={i} data-col={2} /></td>
+                <td style={tdCell}><VndInput valueKUsd={c.cashOut} onChange={(v) => updateAt(setCashflow, i, { cashOut: v })} data-row={i} data-col={3} /></td>
+                <td style={tdCell}><VndInput valueKUsd={c.equivalent} onChange={(v) => updateAt(setCashflow, i, { equivalent: v })} data-row={i} data-col={4} /></td>
                 <td style={{ ...tdCell, textAlign: "center" }}><DelBtn onClick={() => removeAt(setCashflow, i)} /></td>
               </tr>
             ))}
           </tbody>
         </table>
+        </div>
         <button
           style={addBtn}
           onClick={() => {
@@ -725,7 +852,7 @@ export function ProjectDataEntryTab({ projectName }: { projectName: string }) {
           <Plus size={12} /> 월 추가
         </button>
         <div style={{ fontSize: "10px", color: "#8a97a8", marginTop: "6px" }}>
-          지출은 양수로 입력하세요(차트에서 자동으로 아래 방향 표시). 금액 단위: 천 USD.
+          지출은 양수로 입력하세요(차트에서 자동으로 아래 방향 표시). VND 기준으로 입력하면 저장 시 천 USD로 자동 변환됩니다.
         </div>
         {cfPrefilled && (
           <div style={{ fontSize: "10px", color: "#1e6fdd", marginTop: "4px", fontWeight: 600 }}>

@@ -1753,6 +1753,9 @@ components:
         budget:
           type: number
           nullable: true
+        executedBudget:
+          type: number
+          nullable: true
         resolved:
           type: number
           nullable: true

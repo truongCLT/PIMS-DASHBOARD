@@ -47,6 +47,7 @@ export function OutsourcingTab({ projectName }: { projectName: string }) {
 
   const sum = {
     budget: rows.some((r) => r.budget != null) ? rows.reduce((a, r) => a + (r.budget ?? 0), 0) : null,
+    executedBudget: rows.some((r) => r.executedBudget != null) ? rows.reduce((a, r) => a + (r.executedBudget ?? 0), 0) : null,
     resolved: rows.some((r) => r.resolved != null) ? rows.reduce((a, r) => a + (r.resolved ?? 0), 0) : null,
     thisMonth: rows.some((r) => r.thisMonth != null) ? rows.reduce((a, r) => a + (r.thisMonth ?? 0), 0) : null,
     accum: rows.some((r) => r.accum != null) ? rows.reduce((a, r) => a + (r.accum ?? 0), 0) : null,
@@ -65,6 +66,7 @@ export function OutsourcingTab({ projectName }: { projectName: string }) {
               <th style={th} rowSpan={2}>최초<br />계약일</th>
               <th style={th} rowSpan={2}>변경<br />계약<br />차수</th>
               <th style={th} rowSpan={2}>예산<br />(A)</th>
+              <th style={th} rowSpan={2}>집행예산</th>
               <th style={th} rowSpan={2}>결의금액<br />(B)</th>
               <th style={th} rowSpan={2}>결의율<br />(B/A)</th>
               <th style={th} colSpan={3}>기성현황</th>
@@ -78,13 +80,13 @@ export function OutsourcingTab({ projectName }: { projectName: string }) {
           <tbody>
             {isLoading ? (
               <tr>
-                <td style={{ ...td, borderLeft: "1px solid #333" }} colSpan={10}>
+                <td style={{ ...td, borderLeft: "1px solid #333" }} colSpan={11}>
                   불러오는 중…
                 </td>
               </tr>
             ) : rows.length === 0 ? (
               <tr>
-                <td style={{ ...td, borderLeft: "1px solid #333", color: "#8a97a8" }} colSpan={10}>
+                <td style={{ ...td, borderLeft: "1px solid #333", color: "#8a97a8" }} colSpan={11}>
                   외주/자재 데이터가 없습니다. ( - )
                 </td>
               </tr>
@@ -97,6 +99,7 @@ export function OutsourcingTab({ projectName }: { projectName: string }) {
                     <td style={td}>{r.contractDate ?? "-"}</td>
                     <td style={td}>{r.changeNo ?? "-"}</td>
                     <td style={td}>{fmtMoney(r.budget)}</td>
+                    <td style={td}>{fmtMoney(r.executedBudget)}</td>
                     <td style={td}>{fmtMoney(r.resolved)}</td>
                     <td style={td}>{fmtPct(ratioPct(r.resolved, r.budget))}</td>
                     <td style={td}>{fmtMoney(r.thisMonth)}</td>
@@ -110,6 +113,7 @@ export function OutsourcingTab({ projectName }: { projectName: string }) {
                   <td style={td} />
                   <td style={td} />
                   <td style={{ ...td, fontWeight: 600 }}>{fmtMoney(sum.budget)}</td>
+                  <td style={{ ...td, fontWeight: 600 }}>{fmtMoney(sum.executedBudget)}</td>
                   <td style={{ ...td, fontWeight: 600 }}>{fmtMoney(sum.resolved)}</td>
                   <td style={{ ...td, fontWeight: 600 }}>{fmtPct(ratioPct(sum.resolved, sum.budget))}</td>
                   <td style={{ ...td, fontWeight: 600 }}>{fmtMoney(sum.thisMonth)}</td>

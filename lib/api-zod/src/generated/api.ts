@@ -231,6 +231,7 @@ export const GetProjectdetailResponse = zod.object({
   "contractDate": zod.string().nullish(),
   "changeNo": zod.string().nullish(),
   "budget": zod.number().nullish(),
+  "executedBudget": zod.number().nullish(),
   "resolved": zod.number().nullish(),
   "thisMonth": zod.number().nullish(),
   "accum": zod.number().nullish()
@@ -316,6 +317,7 @@ export const PutProjectdetailBody = zod.object({
   "contractDate": zod.string().nullish(),
   "changeNo": zod.string().nullish(),
   "budget": zod.number().nullish(),
+  "executedBudget": zod.number().nullish(),
   "resolved": zod.number().nullish(),
   "thisMonth": zod.number().nullish(),
   "accum": zod.number().nullish()
@@ -397,6 +399,7 @@ export const PutProjectdetailResponse = zod.object({
   "contractDate": zod.string().nullish(),
   "changeNo": zod.string().nullish(),
   "budget": zod.number().nullish(),
+  "executedBudget": zod.number().nullish(),
   "resolved": zod.number().nullish(),
   "thisMonth": zod.number().nullish(),
   "accum": zod.number().nullish()

@@ -139,6 +139,7 @@ export const pdOutsourcingTable = pgTable(
     contractDate: text("contract_date"), // 최초 계약일 (자유 형식)
     changeNo: text("change_no"), // 변경 계약 차수
     budget: numeric("budget", { precision: 18, scale: 4 }), // 예산 (A)
+    executedBudget: numeric("executed_budget", { precision: 18, scale: 4 }), // 집행예산
     resolved: numeric("resolved", { precision: 18, scale: 4 }), // 결의금액 (B)
     thisMonth: numeric("this_month", { precision: 18, scale: 4 }), // 기성 이번달
     accum: numeric("accum", { precision: 18, scale: 4 }), // 기성 누계 (C)

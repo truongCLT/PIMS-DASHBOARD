@@ -492,6 +492,7 @@ export interface ProjectDetailOutsourcing {
   contractDate?: string | null;
   changeNo?: string | null;
   budget?: number | null;
+  executedBudget?: number | null;
   resolved?: number | null;
   thisMonth?: number | null;
   accum?: number | null;
