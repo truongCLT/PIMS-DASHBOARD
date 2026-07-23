@@ -175,15 +175,6 @@ export function ServiceCashflowTab({
               domain={[bottom, top]}
               ticks={ticks}
             />
-            <YAxis
-              yAxisId="right"
-              orientation="right"
-              tick={{ fontSize: 11, fill: "#333", fontWeight: 600 }}
-              tickLine={false}
-              axisLine={false}
-              domain={[bottom, top]}
-              ticks={ticks}
-            />
             <Legend wrapperStyle={{ fontSize: "12px", fontWeight: 600 }} iconSize={14} />
             <ReferenceLine y={0} stroke={chartTheme.sgaOrange} strokeDasharray="3 3" />
             <Bar
