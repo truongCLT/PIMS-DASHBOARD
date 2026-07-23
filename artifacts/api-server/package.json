@@ -12,8 +12,10 @@
   "dependencies": {
     "@google-cloud/storage": "^7.21.0",
     "@workspace/api-zod": "workspace:*",
+    "@workspace/cashflow-parse": "workspace:*",
     "@workspace/db": "workspace:*",
     "@workspace/mgmtreport-parse": "workspace:*",
+    "@workspace/salescost-parse": "workspace:*",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "drizzle-orm": "catalog:",

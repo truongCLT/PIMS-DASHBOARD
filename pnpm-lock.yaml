@@ -176,12 +176,18 @@ importers:
       '@workspace/api-zod':
         specifier: workspace:*
         version: link:../../lib/api-zod
+      '@workspace/cashflow-parse':
+        specifier: workspace:*
+        version: link:../../lib/cashflow-parse
       '@workspace/db':
         specifier: workspace:*
         version: link:../../lib/db
       '@workspace/mgmtreport-parse':
         specifier: workspace:*
         version: link:../../lib/mgmtreport-parse
+      '@workspace/salescost-parse':
+        specifier: workspace:*
+        version: link:../../lib/salescost-parse
       cookie-parser:
         specifier: ^1.4.7
         version: 1.4.7
@@ -1234,6 +1240,16 @@ importers:
         specifier: 'catalog:'
         version: 3.25.76
 
+  lib/cashflow-parse:
+    dependencies:
+      exceljs:
+        specifier: ^4.4.0
+        version: 4.4.0
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 25.9.4
+
   lib/db:
     dependencies:
       drizzle-orm:
@@ -1269,11 +1285,27 @@ importers:
         specifier: 'catalog:'
         version: 25.9.4
 
+  lib/salescost-parse:
+    dependencies:
+      exceljs:
+        specifier: ^4.4.0
+        version: 4.4.0
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 25.9.4
+
   scripts:
     dependencies:
+      '@workspace/cashflow-parse':
+        specifier: workspace:*
+        version: link:../lib/cashflow-parse
       '@workspace/mgmtreport-parse':
         specifier: workspace:*
         version: link:../lib/mgmtreport-parse
+      '@workspace/salescost-parse':
+        specifier: workspace:*
+        version: link:../lib/salescost-parse
       exceljs:
         specifier: ^4.4.0
         version: 4.4.0

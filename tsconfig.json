@@ -14,6 +14,12 @@
     },
     {
       "path": "./lib/mgmtreport-parse"
+    },
+    {
+      "path": "./lib/cashflow-parse"
+    },
+    {
+      "path": "./lib/salescost-parse"
     }
   ]
 }
