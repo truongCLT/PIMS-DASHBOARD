@@ -89,7 +89,7 @@ const InflowLabel = (props: any) => {
   const { x, y, width, value } = props;
   if (!value) return null;
   return (
-    <text x={x + width / 2} y={y - 3} fill={chartTheme.inflowBlue} textAnchor="middle" fontSize={11} fontWeight="600">
+    <text x={x + width / 2} y={y - 3} fill={chartTheme.inflowBlue} textAnchor="middle" fontSize={13} fontWeight="600">
       +{Math.round(value).toLocaleString()}
     </text>
   );
@@ -100,7 +100,7 @@ const OutflowLabel = (props: any) => {
   if (!value) return null;
   const bottom = Math.max(y, y + height);
   return (
-    <text x={x + width / 2} y={bottom + 9} fill={chartTheme.outflowRed} textAnchor="middle" fontSize={11} fontWeight="600">
+    <text x={x + width / 2} y={bottom + 9} fill={chartTheme.outflowRed} textAnchor="middle" fontSize={13} fontWeight="600">
       {Math.round(value).toLocaleString()}
     </text>
   );
