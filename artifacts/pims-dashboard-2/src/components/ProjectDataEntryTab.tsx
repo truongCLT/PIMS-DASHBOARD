@@ -112,6 +112,17 @@ function MonthInput({ value, onChange }: { value: string | null | undefined; onC
   );
 }
 
+function DateInput({ value, onChange }: { value: string | null | undefined; onChange: (v: string | null) => void }) {
+  return (
+    <input
+      type="date"
+      value={value ?? ""}
+      onChange={(e) => onChange(e.target.value === "" ? null : e.target.value)}
+      style={inputStyle}
+    />
+  );
+}
+
 function DelBtn({ onClick }: { onClick: () => void }) {
   return (
     <button
@@ -547,10 +558,10 @@ export function ProjectDataEntryTab({ projectName }: { projectName: string }) {
             {milestones.map((m, i) => (
               <tr key={i}>
                 <td style={tdCell}><TextInput value={m.label} onChange={(v) => updateAt(setMilestones, i, { label: v ?? "" })} placeholder="예: 착공" /></td>
-                <td style={tdCell}><MonthInput value={m.planStart} onChange={(v) => updateAt(setMilestones, i, { planStart: v })} /></td>
-                <td style={tdCell}><MonthInput value={m.planEnd} onChange={(v) => updateAt(setMilestones, i, { planEnd: v })} /></td>
-                <td style={tdCell}><MonthInput value={m.actualStart} onChange={(v) => updateAt(setMilestones, i, { actualStart: v })} /></td>
-                <td style={tdCell}><MonthInput value={m.actualEnd} onChange={(v) => updateAt(setMilestones, i, { actualEnd: v })} /></td>
+                <td style={tdCell}><DateInput value={m.planStart} onChange={(v) => updateAt(setMilestones, i, { planStart: v })} /></td>
+                <td style={tdCell}><DateInput value={m.planEnd} onChange={(v) => updateAt(setMilestones, i, { planEnd: v })} /></td>
+                <td style={tdCell}><DateInput value={m.actualStart} onChange={(v) => updateAt(setMilestones, i, { actualStart: v })} /></td>
+                <td style={tdCell}><DateInput value={m.actualEnd} onChange={(v) => updateAt(setMilestones, i, { actualEnd: v })} /></td>
                 <td style={{ ...tdCell, textAlign: "center" }}><DelBtn onClick={() => removeAt(setMilestones, i)} /></td>
               </tr>
             ))}

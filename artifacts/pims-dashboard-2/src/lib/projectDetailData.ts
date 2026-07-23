@@ -40,10 +40,11 @@ export function ratioPct(numer: number | null | undefined, denom: number | null 
   return (numer / denom) * 100;
 }
 
-/** 'YYYY-MM' → 절대 월 인덱스 (year*12 + month-1), 형식 오류 시 null */
+/** 'YYYY-MM' 또는 'YYYY-MM-DD' → 절대 월 인덱스 (year*12 + month-1), 형식 오류 시 null */
 export function ymToIndex(ym: string | null | undefined): number | null {
   if (!ym) return null;
-  const m = /^(\d{4})-(\d{1,2})$/.exec(ym.trim());
+  const str = ym.trim().slice(0, 7); // YYYY-MM-DD도 앞 7자만 사용
+  const m = /^(\d{4})-(\d{1,2})$/.exec(str);
   if (!m) return null;
   const year = Number(m[1]);
   const month = Number(m[2]);

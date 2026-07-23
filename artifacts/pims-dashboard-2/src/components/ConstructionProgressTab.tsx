@@ -108,6 +108,22 @@ function Donut({
 
 const MONTH_ABBR = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
+/** YYYY-MM 또는 YYYY-MM-DD → 표시용 문자열 (원본 그대로, 단 null이면 "-") */
+function fmtDate(d: string | null | undefined): string {
+  if (!d) return "-";
+  return d.slice(0, 10);
+}
+
+/** 시작~종료 날짜 범위 문자열 */
+function dateRange(s: string | null | undefined, e: string | null | undefined): string {
+  const sf = fmtDate(s);
+  const ef = fmtDate(e);
+  if (sf === "-" && ef === "-") return "";
+  if (sf === ef || ef === "-") return sf;
+  if (sf === "-") return ef;
+  return `${sf} ~ ${ef}`;
+}
+
 function MilestoneChart({ milestones }: { milestones: ProjectDetail["milestones"] }) {
   // 축 범위 계산 (계획/실적 시작~종료 월 전체)
   const idxs: number[] = [];
@@ -129,6 +145,7 @@ function MilestoneChart({ milestones }: { milestones: ProjectDetail["milestones"
   const todayPos = hasBars && todayIdx >= minIdx && todayIdx <= maxIdx + 1 ? (todayIdx - minIdx + 0.5) / total : null;
 
   const AXIS_LEFT = 150;
+  const ROW_H = 36; // 높이 늘려서 날짜 라벨 공간 확보
 
   const barPos = (start: string | null | undefined, end: string | null | undefined) => {
     const s = ymToIndex(start ?? null);
@@ -140,6 +157,16 @@ function MilestoneChart({ milestones }: { milestones: ProjectDetail["milestones"
     const width = Math.max(((e2 - s2 + 1) / total) * 100, 100 / total / 2);
     return { left, width };
   };
+
+  // 각 마일스톤 planStart 위치에 수직 구분선
+  const vertLines: number[] = [];
+  for (const m of milestones) {
+    const idx = ymToIndex(m.planStart ?? null);
+    if (idx != null) {
+      const pct = ((idx - minIdx) / total) * 100;
+      if (!vertLines.includes(pct)) vertLines.push(pct);
+    }
+  }
 
   return (
     <div style={cardStyle}>
@@ -160,6 +187,7 @@ function MilestoneChart({ milestones }: { milestones: ProjectDetail["milestones"
         <div style={emptyStyle}>마일스톤 데이터가 없습니다. ( - )</div>
       ) : (
         <div style={{ position: "relative", marginTop: "8px" }}>
+          {/* 오늘 날짜 기준선 */}
           {todayPos != null && (
             <div
               style={{
@@ -168,55 +196,119 @@ function MilestoneChart({ milestones }: { milestones: ProjectDetail["milestones"
                 bottom: "18px",
                 left: `calc(${AXIS_LEFT}px + (100% - ${AXIS_LEFT}px) * ${todayPos})`,
                 borderLeft: "2px dashed #f0b429",
+                zIndex: 2,
               }}
             />
           )}
+          {/* 마일스톤 planStart 위치 수직 구분선 */}
+          {hasBars && vertLines.map((pct, vi) => (
+            <div
+              key={vi}
+              style={{
+                position: "absolute",
+                top: 0,
+                bottom: "18px",
+                left: `calc(${AXIS_LEFT}px + (100% - ${AXIS_LEFT}px) * ${pct / 100})`,
+                borderLeft: "1px solid #dde6f0",
+                zIndex: 1,
+                pointerEvents: "none",
+              }}
+            />
+          ))}
           {milestones.map((m, mi) => {
             const plan = barPos(m.planStart, m.planEnd);
             const actual = barPos(m.actualStart, m.actualEnd);
+            const planLabel = dateRange(m.planStart, m.planEnd);
+            const actualLabel = dateRange(m.actualStart, m.actualEnd);
             return (
-              <div key={`${m.label}-${mi}`} style={{ display: "flex", alignItems: "center", height: "22px" }}>
+              <div
+                key={`${m.label}-${mi}`}
+                style={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  height: `${ROW_H}px`,
+                  borderBottom: "1px solid #eef1f5",
+                }}
+              >
                 <div
                   style={{
                     width: `${AXIS_LEFT}px`,
                     minWidth: `${AXIS_LEFT}px`,
                     fontSize: "9px",
+                    fontWeight: 600,
                     color: "#333",
                     overflow: "hidden",
                     textOverflow: "ellipsis",
                     whiteSpace: "nowrap",
                     paddingRight: "8px",
+                    paddingTop: "6px",
                   }}
                 >
                   {m.label}
                 </div>
                 <div style={{ flex: 1, position: "relative", height: "100%" }}>
+                  {/* Plan bar */}
                   {plan && (
                     <div
                       style={{
                         position: "absolute",
-                        top: "3px",
+                        top: "5px",
                         left: `${plan.left}%`,
                         width: `${plan.width}%`,
-                        height: "5px",
+                        height: "6px",
                         backgroundColor: chartTheme.outflowRed,
+                        borderRadius: "2px",
                       }}
                     />
                   )}
+                  {/* Plan date label */}
+                  {planLabel && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: "13px",
+                        left: plan ? `${plan.left}%` : "0%",
+                        fontSize: "7px",
+                        color: chartTheme.outflowRed,
+                        whiteSpace: "nowrap",
+                        lineHeight: 1,
+                      }}
+                    >
+                      {planLabel}
+                    </div>
+                  )}
+                  {/* Actual bar */}
                   {actual && (
                     <div
                       style={{
                         position: "absolute",
-                        top: "11px",
+                        top: "22px",
                         left: `${actual.left}%`,
                         width: `${actual.width}%`,
-                        height: "5px",
+                        height: "6px",
                         backgroundColor: chartTheme.planBlue,
+                        borderRadius: "2px",
                       }}
                     />
                   )}
+                  {/* Actual date label */}
+                  {actualLabel && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: "29px",
+                        left: actual ? `${actual.left}%` : "0%",
+                        fontSize: "7px",
+                        color: chartTheme.planBlue,
+                        whiteSpace: "nowrap",
+                        lineHeight: 1,
+                      }}
+                    >
+                      {actualLabel}
+                    </div>
+                  )}
                   {!plan && !actual && (
-                    <span style={{ position: "absolute", top: "4px", fontSize: "9px", color: "#aab2bc" }}>-</span>
+                    <span style={{ position: "absolute", top: "8px", fontSize: "9px", color: "#aab2bc" }}>-</span>
                   )}
                 </div>
               </div>
