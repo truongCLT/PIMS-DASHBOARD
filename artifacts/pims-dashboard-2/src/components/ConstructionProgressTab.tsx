@@ -380,7 +380,7 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
         </div>
 
         {/* Progress */}
-        <div style={cardStyle}>
+        <div style={{ ...cardStyle, display: "flex", flexDirection: "column" }}>
           <div style={{ display: "flex", justifyContent: "space-between" }}>
             <span style={{ ...sectionTitle, color: chartTheme.profitGreen }}>Progress</span>
             <span
@@ -400,15 +400,15 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
           <div style={{ textAlign: "center", fontSize: "10px", color: "#333", marginTop: "4px" }}>
             Planned Progress (A)
           </div>
-          <div style={{ display: "flex", justifyContent: "center", margin: "4px 0 2px", position: "relative" }}>
+          <div style={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "center", margin: "4px 0 2px", position: "relative", minHeight: 0 }}>
             <Donut
               percent={actualCum ?? 0}
               color={chartTheme.outflowRed}
               extraArc={planCum != null ? { percent: planCum, color: chartTheme.planBlue } : undefined}
               label={fmtPct(actualCum)}
-              size={170}
-              stroke={20}
-              labelSize={28}
+              size={230}
+              stroke={26}
+              labelSize={34}
             />
             <span style={{ position: "absolute", right: "6px", bottom: "10px", fontSize: "10px", color: chartTheme.planBlue, fontWeight: 700 }}>
               {fmtPct(planCum)}
