@@ -2,7 +2,7 @@ import React, { useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePutProjectdetail } from "@workspace/api-client-react";
 import { ProjectCommentPanel } from "./ProjectCommentPanel";
-import { Download, Upload, FileSpreadsheet } from "lucide-react";
+import { Upload, FileSpreadsheet } from "lucide-react";
 import projectPhoto from "../assets/project-photo.png";
 import { ConstructionProgressTab } from "./ConstructionProgressTab";
 import { CostingTab } from "./CostingTab";
@@ -14,7 +14,6 @@ import { OverviewTab } from "./OverviewTab";
 import { useProjectDetail, getGetProjectdetailQueryKey } from "../lib/projectDetailData";
 import { downloadProjectDetailTemplate, parseProjectDetailWorkbook, ExcelParseError } from "../lib/projectDetailExcel";
 import { DisplayUnitProvider, formatMoney, moneyUnitLabel } from "../lib/displayUnit";
-import { exportProjectDetailExcel } from "../lib/exportProjectDetail";
 import { useAdminAuth } from "../lib/adminAuth";
 export { Donut, MiniBar } from "./charts";
 
@@ -127,19 +126,6 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
     }
   };
 
-  const [exporting, setExporting] = useState(false);
-  const handleExport = async () => {
-    if (!detail || exporting) return;
-    setExporting(true);
-    try {
-      await exportProjectDetailExcel(projectName, detail, currency, unitOn);
-    } catch (err) {
-      console.error("Excel export failed", err);
-      alert("Excel 내보내기에 실패했습니다. 잠시 후 다시 시도해 주세요.");
-    } finally {
-      setExporting(false);
-    }
-  };
   const ov = detail?.overview ?? { contractAmount: null, startDate: null, endDate: null, client: null, scale: null };
   const fmtDate = (d: string | null) => (d ? `'${d.slice(2, 4)}.${d.slice(5, 7)}.${d.slice(8, 10)}` : "-");
   const periodLabel =
@@ -290,28 +276,6 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
           <span style={{ fontSize: "12px", color: "#333", fontWeight: 600 }}>{moneyUnitLabel(currency, unitOn)}</span>
         </div>
 
-        <button
-          onClick={handleExport}
-          disabled={detail == null || exporting}
-          style={{
-            marginLeft: "auto",
-            display: "flex",
-            alignItems: "center",
-            gap: "6px",
-            backgroundColor: "#2e4568",
-            color: "#fff",
-            border: "none",
-            borderRadius: "6px",
-            padding: "7px 14px",
-            fontSize: "12px",
-            fontWeight: 500,
-            cursor: detail == null || exporting ? "not-allowed" : "pointer",
-            opacity: detail == null || exporting ? 0.6 : 1,
-          }}
-        >
-          <Download size={13} />
-          {exporting ? "내보내는 중…" : "Export Excel"}
-        </button>
       </div>
 
       {/* Project info bar — always visible */}
