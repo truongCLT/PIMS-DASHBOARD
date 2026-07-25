@@ -158,16 +158,6 @@ function MilestoneChart({ milestones }: { milestones: ProjectDetail["milestones"
     return { left, width };
   };
 
-  // 각 마일스톤 planStart 위치에 수직 구분선
-  const vertLines: number[] = [];
-  for (const m of milestones) {
-    const idx = ymToIndex(m.planStart ?? null);
-    if (idx != null) {
-      const pct = ((idx - minIdx) / total) * 100;
-      if (!vertLines.includes(pct)) vertLines.push(pct);
-    }
-  }
-
   return (
     <div style={cardStyle}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
@@ -200,21 +190,6 @@ function MilestoneChart({ milestones }: { milestones: ProjectDetail["milestones"
               }}
             />
           )}
-          {/* 마일스톤 planStart 위치 수직 구분선 */}
-          {hasBars && vertLines.map((pct, vi) => (
-            <div
-              key={vi}
-              style={{
-                position: "absolute",
-                top: 0,
-                bottom: "18px",
-                left: `calc(${AXIS_LEFT}px + (100% - ${AXIS_LEFT}px) * ${pct / 100})`,
-                borderLeft: "1px solid #dde6f0",
-                zIndex: 1,
-                pointerEvents: "none",
-              }}
-            />
-          ))}
           {milestones.map((m, mi) => {
             const plan = barPos(m.planStart, m.planEnd);
             const actual = barPos(m.actualStart, m.actualEnd);
