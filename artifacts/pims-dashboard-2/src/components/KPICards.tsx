@@ -1,5 +1,6 @@
 import React from "react";
 import { useDashboardData } from "../lib/mgmtreportData";
+import { useDashboardFilters } from "../lib/dashboardFilters";
 
 interface KPICardProps {
   title: string;
@@ -7,9 +8,11 @@ interface KPICardProps {
   actual: string | number;
   achievement: string;
   achievementColor?: string;
+  compact?: boolean;
 }
 
-function KPICard({ title, plan, actual, achievement, achievementColor = "#00bcd4" }: KPICardProps) {
+function KPICard({ title, plan, actual, achievement, achievementColor = "#00bcd4", compact = false }: KPICardProps) {
+  const numFont = compact ? "clamp(11px, 0.95vw, 16px)" : "clamp(18px, 1.7vw, 30px)";
   return (
     <div style={{
       backgroundColor: "#33415f",
@@ -31,21 +34,21 @@ function KPICard({ title, plan, actual, achievement, achievementColor = "#00bcd4
         {/* Plan */}
         <div>
           <div style={{ fontSize: "clamp(10px, 0.8vw, 13px)", color: "#9fb0cc", marginBottom: "4px" }}>계획</div>
-          <div style={{ fontSize: "clamp(18px, 1.7vw, 30px)", fontWeight: "700", color: "#ffffff" }}>
+          <div style={{ fontSize: numFont, fontWeight: "700", color: "#ffffff" }}>
             {plan.toLocaleString()}
           </div>
         </div>
         {/* Actual */}
         <div>
           <div style={{ fontSize: "clamp(10px, 0.8vw, 13px)", color: "#9fb0cc", marginBottom: "4px" }}>실적</div>
-          <div style={{ fontSize: "clamp(18px, 1.7vw, 30px)", fontWeight: "700", color: "#ffffff" }}>
+          <div style={{ fontSize: numFont, fontWeight: "700", color: "#ffffff" }}>
             {actual.toLocaleString()}
           </div>
         </div>
         {/* Achievement */}
         <div>
           <div style={{ fontSize: "clamp(10px, 0.8vw, 13px)", color: "#9fb0cc", marginBottom: "4px" }}>달성률</div>
-          <div style={{ fontSize: "clamp(18px, 1.7vw, 30px)", fontWeight: "700", color: achievementColor }}>
+          <div style={{ fontSize: compact ? "clamp(12px, 1.05vw, 18px)" : "clamp(18px, 1.7vw, 30px)", fontWeight: "700", color: achievementColor }}>
             {achievement}
           </div>
         </div>
@@ -58,6 +61,7 @@ const PLACEHOLDER_TITLES = ["당월 매출", "당월 영업이익", "연간 누�
 
 export function KPICards() {
   const { derived, isError } = useDashboardData();
+  const { unitIndex } = useDashboardFilters();
 
   const cards = derived?.kpi ?? PLACEHOLDER_TITLES.map((title) => ({
     title,
@@ -77,6 +81,7 @@ export function KPICards() {
           actual={kpi.actual}
           achievement={kpi.achievement}
           achievementColor={kpi.achievementColor}
+          compact={unitIndex === 1}
         />
       ))}
     </div>

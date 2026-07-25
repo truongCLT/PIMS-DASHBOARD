@@ -10,6 +10,7 @@ import {
   LabelList,
 } from "recharts";
 import { useDashboardData, type SalesRow } from "../lib/mgmtreportData";
+import { useDashboardFilters } from "../lib/dashboardFilters";
 import { chartTheme } from "../lib/chartTheme";
 
 const PLAN_COLOR = chartTheme.planBlue;
@@ -17,12 +18,14 @@ const ACTUAL_COLOR = chartTheme.actualGreen;
 const RATE_COLOR = chartTheme.rateOrange;
 
 /* Badge label above dot */
-const BadgeLabel = (fill: string) => (props: any) => {
+const BadgeLabel = (fill: string, compact = false) => (props: any) => {
   const { x, y, value } = props;
   if (value == null || x == null || y == null) return null;
   const text = Number(value).toLocaleString("ko-KR");
-  const w = Math.max(34, text.length * 7 + 10);
-  const h = 21;
+  const fontSize = compact ? 9 : 11.5;
+  const charW = compact ? 5.6 : 7;
+  const w = Math.max(compact ? 26 : 34, text.length * charW + (compact ? 8 : 10));
+  const h = compact ? 16 : 21;
   const bx = x - w / 2;
   const by = y - h - 9;
   return (
@@ -35,7 +38,7 @@ const BadgeLabel = (fill: string) => (props: any) => {
         textAnchor="middle"
         dominantBaseline="central"
         fill="#fff"
-        fontSize={11.5}
+        fontSize={fontSize}
         fontWeight={700}
       >
         {text}
@@ -99,6 +102,8 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 export function SalesChart() {
   const [viewType, setViewType] = useState<"net" | "report">("net");
   const { derived, isError } = useDashboardData();
+  const { unitIndex } = useDashboardFilters();
+  const compact = unitIndex === 1;
   const visibleData = derived?.salesData ?? [];
   const PlanRateLabel = makePlanRateLabel(visibleData);
   const ActualRateLabel = makeActualRateLabel(visibleData);
@@ -152,7 +157,8 @@ export function SalesChart() {
             />
             <YAxis
               domain={["auto", "auto"]}
-              tick={{ fontSize: 11, fill: chartTheme.axisText }}
+              tick={{ fontSize: compact ? 9 : 11, fill: chartTheme.axisText }}
+              width={compact ? 88 : 60}
               tickFormatter={(v: number) => v.toLocaleString("ko-KR")}
               axisLine={false}
               tickLine={false}
@@ -170,7 +176,7 @@ export function SalesChart() {
               connectNulls
               isAnimationActive={false}
             >
-              <LabelList dataKey="actual" content={BadgeLabel(ACTUAL_COLOR)} />
+              <LabelList dataKey="actual" content={BadgeLabel(ACTUAL_COLOR, compact)} />
               <LabelList dataKey="actual" content={ActualRateLabel} />
             </Line>
 
@@ -185,7 +191,7 @@ export function SalesChart() {
               connectNulls
               isAnimationActive={false}
             >
-              <LabelList dataKey="plan" content={BadgeLabel(PLAN_COLOR)} />
+              <LabelList dataKey="plan" content={BadgeLabel(PLAN_COLOR, compact)} />
               <LabelList dataKey="plan" content={PlanRateLabel} />
             </Line>
           </ComposedChart>

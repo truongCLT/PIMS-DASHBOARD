@@ -1,9 +1,12 @@
 import React from "react";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import { useDashboardData } from "../lib/mgmtreportData";
+import { useDashboardFilters } from "../lib/dashboardFilters";
 
 export function OrderStatus() {
   const { derived } = useDashboardData();
+  const { unitIndex } = useDashboardFilters();
+  const statFont = unitIndex === 1 ? "12px" : "20px";
   const unavailable = derived != null && derived.orderStatus == null;
   const planTotal = derived?.orderStatus?.planTotal ?? 0;
   const ordered = derived?.orderStatus?.ordered ?? 0;
@@ -101,19 +104,19 @@ export function OrderStatus() {
       <div style={{ display: "flex", gap: "8px", marginBottom: "8px" }}>
         <div style={{ flex: 1, textAlign: "center", borderRight: "1px solid #e8f0f8" }}>
           <div style={{ fontSize: "11px", color: "#888", marginBottom: "2px" }}>계획</div>
-          <div style={{ fontSize: "20px", fontWeight: "700", color: "#1a3a5c" }}>
+          <div style={{ fontSize: statFont, fontWeight: "700", color: "#1a3a5c" }}>
             {planTotal.toLocaleString()}
           </div>
         </div>
         <div style={{ flex: 1, textAlign: "center", borderRight: "1px solid #e8f0f8" }}>
           <div style={{ fontSize: "11px", color: "#888", marginBottom: "2px" }}>수주</div>
-          <div style={{ fontSize: "20px", fontWeight: "700", color: "#1565c0" }}>
+          <div style={{ fontSize: statFont, fontWeight: "700", color: "#1565c0" }}>
             {ordered.toLocaleString()}
           </div>
         </div>
         <div style={{ flex: 1, textAlign: "center" }}>
           <div style={{ fontSize: "11px", color: "#888", marginBottom: "2px" }}>잔여</div>
-          <div style={{ fontSize: "20px", fontWeight: "700", color: "#ff7043" }}>
+          <div style={{ fontSize: statFont, fontWeight: "700", color: "#ff7043" }}>
             {remaining.toLocaleString()}
           </div>
         </div>

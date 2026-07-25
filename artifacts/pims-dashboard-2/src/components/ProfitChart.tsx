@@ -1,5 +1,6 @@
 import React from "react";
 import { useDashboardData } from "../lib/mgmtreportData";
+import { useDashboardFilters } from "../lib/dashboardFilters";
 import { chartTheme } from "../lib/chartTheme";
 
 const NAVY = chartTheme.profitNavy;
@@ -21,9 +22,12 @@ function niceStep(raw: number): number {
 
 export function ProfitChart() {
   const { derived, isError } = useDashboardData();
+  const { unitIndex } = useDashboardFilters();
+  const compact = unitIndex === 1;
+  const fs = (n: number) => (compact ? Math.max(9, Math.round(n * 0.6)) : n);
   const data = derived?.profitData ?? [];
 
-  const plotLeft = 80;
+  const plotLeft = compact ? 130 : 80;
   const plotRight = 950;
   const slot = data.length > 0 ? (plotRight - plotLeft) / data.length : 0;
   const barW = 58;
@@ -82,7 +86,7 @@ export function ProfitChart() {
         {gridVals.map((v) => (
           <g key={v}>
             <line x1={plotLeft} y1={y(v)} x2={plotRight} y2={y(v)} stroke={v === 0 ? "#9aa8ba" : "#e6edf5"} strokeWidth={v === 0 ? 1.5 : 1} />
-            <text x={plotLeft - 12} y={y(v) + 7} textAnchor="end" fontSize="18" fill="#333">{v.toLocaleString("ko-KR")}</text>
+            <text x={plotLeft - 12} y={y(v) + 7} textAnchor="end" fontSize={fs(18)} fill="#333">{v.toLocaleString("ko-KR")}</text>
           </g>
         ))}
 
@@ -105,8 +109,8 @@ export function ProfitChart() {
               <rect x={bx} y={yOpTop} width={barW} height={Math.max(yOpBot - yOpTop, 0)} fill={NAVY} />
               {yOpBot - yOpTop > 44 && (
                 <>
-                  <text x={cx} y={(yOpTop + yOpBot) / 2 - 4} textAnchor="middle" fontSize="17" fontWeight="700" fill="#fff">{d.op.toLocaleString("ko-KR")}</text>
-                  <text x={cx} y={(yOpTop + yOpBot) / 2 + 20} textAnchor="middle" fontSize="16" fill="#fff">({d.opPct})</text>
+                  <text x={cx} y={(yOpTop + yOpBot) / 2 - 4} textAnchor="middle" fontSize={fs(17)} fontWeight="700" fill="#fff">{d.op.toLocaleString("ko-KR")}</text>
+                  <text x={cx} y={(yOpTop + yOpBot) / 2 + 20} textAnchor="middle" fontSize={fs(16)} fill="#fff">({d.opPct})</text>
                 </>
               )}
 
@@ -116,25 +120,25 @@ export function ProfitChart() {
               {/* 영업외손익 (green segment above/below gross top) */}
               <rect x={bx} y={y(nonTop)} width={barW} height={Math.max(y(nonBot) - y(nonTop), 0)} fill={GREEN} />
               {Math.abs(y(nonBot) - y(nonTop)) > 22 && (
-                <text x={cx} y={(y(nonTop) + y(nonBot)) / 2 + 7} textAnchor="middle" fontSize="16" fontWeight="700" fill="#fff">{d.non >= 0 ? "+" : ""}{d.non.toLocaleString("ko-KR")}</text>
+                <text x={cx} y={(y(nonTop) + y(nonBot)) / 2 + 7} textAnchor="middle" fontSize={fs(16)} fontWeight="700" fill="#fff">{d.non >= 0 ? "+" : ""}{d.non.toLocaleString("ko-KR")}</text>
               )}
 
               {/* 매출이익 label above bar */}
-              <text x={cx} y={labelTopY - 32} textAnchor="middle" fontSize="21" fontWeight="700" fill={NAVY}>{gross.toLocaleString("ko-KR")}</text>
-              <text x={cx} y={labelTopY - 10} textAnchor="middle" fontSize="17" fontWeight="600" fill={NAVY}>({d.totalPct})</text>
+              <text x={cx} y={labelTopY - 32} textAnchor="middle" fontSize={fs(21)} fontWeight="700" fill={NAVY}>{gross.toLocaleString("ko-KR")}</text>
+              <text x={cx} y={labelTopY - 10} textAnchor="middle" fontSize={fs(17)} fontWeight="600" fill={NAVY}>({d.totalPct})</text>
 
               {/* 판관비 bracket (orange): op → gross */}
               <path d={`M ${brX} ${yGross} h 7 V ${yOpTop} h -7`} fill="none" stroke={ORANGE} strokeWidth="2" />
-              <text x={brX + 13} y={(yGross + yOpTop) / 2 - 4} fontSize="14" fill={ORANGE}>판관비</text>
-              <text x={brX + 13} y={(yGross + yOpTop) / 2 + 13} fontSize="14" fill={ORANGE}>{d.sga}({d.sgaPct})</text>
+              <text x={brX + 13} y={(yGross + yOpTop) / 2 - 4} fontSize={fs(14)} fill={ORANGE}>판관비</text>
+              <text x={brX + 13} y={(yGross + yOpTop) / 2 + 13} fontSize={fs(14)} fill={ORANGE}>{d.sga}({d.sgaPct})</text>
 
               {/* 경상이익 (green dot + dashed leader + label) */}
               <line x1={bx - 26} y1={yOrd} x2={bx} y2={yOrd} stroke={GREEN} strokeWidth="1.5" strokeDasharray="4 3" />
               <circle cx={bx - 3} cy={yOrd} r="4" fill={GREEN} />
-              <text x={bx - 2} y={yOrd + 19} textAnchor="end" fontSize="14" fill={GREEN}>{d.ord.toLocaleString("ko-KR")}({d.ordPct})</text>
+              <text x={bx - 2} y={yOrd + 19} textAnchor="end" fontSize={fs(14)} fill={GREEN}>{d.ord.toLocaleString("ko-KR")}({d.ordPct})</text>
 
               {/* Month label */}
-              <text x={cx} y={Y0 + 32} textAnchor="middle" fontSize="17" fontWeight="600" fill="#333">{d.m}</text>
+              <text x={cx} y={Y0 + 32} textAnchor="middle" fontSize={fs(17)} fontWeight="600" fill="#333">{d.m}</text>
             </g>
           );
         })}

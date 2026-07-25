@@ -85,22 +85,22 @@ function getScopeConfig(scope: DashboardScope): ScopeQueryConfig {
   };
 }
 
-const InflowLabel = (props: any) => {
+const makeInflowLabel = (compact: boolean) => (props: any) => {
   const { x, y, width, value } = props;
   if (!value) return null;
   return (
-    <text x={x + width / 2} y={y - 3} fill={chartTheme.inflowBlue} textAnchor="middle" fontSize={13} fontWeight="600">
+    <text x={x + width / 2} y={y - 3} fill={chartTheme.inflowBlue} textAnchor="middle" fontSize={compact ? 9 : 13} fontWeight="600">
       +{Math.round(value).toLocaleString()}
     </text>
   );
 };
 
-const OutflowLabel = (props: any) => {
+const makeOutflowLabel = (compact: boolean) => (props: any) => {
   const { x, y, width, height, value } = props;
   if (!value) return null;
   const bottom = Math.max(y, y + height);
   return (
-    <text x={x + width / 2} y={bottom + 9} fill={chartTheme.outflowRed} textAnchor="middle" fontSize={13} fontWeight="600">
+    <text x={x + width / 2} y={bottom + 9} fill={chartTheme.outflowRed} textAnchor="middle" fontSize={compact ? 9 : 13} fontWeight="600">
       {Math.round(value).toLocaleString()}
     </text>
   );
@@ -117,6 +117,7 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
   const { from, to } = resolveMonthWindow(filters.startYm, filters.endYm);
   const emptyRange = from > to;
   const projectSelected = filters.project !== "All";
+  const compact = filters.unitIndex === 1;
   const convert = makeConverter(filters.currency, filters.unitIndex, filters.fxRates);
   const unitLabel =
     filters.currency === "USD" && filters.unitIndex === 0
@@ -176,7 +177,8 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
           <XAxis dataKey="month" tick={{ fontSize: 11, fill: chartTheme.axisText }} axisLine={false} tickLine={false} />
           <YAxis
             yAxisId="flow"
-            tick={{ fontSize: 11, fill: chartTheme.axisText }}
+            tick={{ fontSize: compact ? 9 : 11, fill: chartTheme.axisText }}
+            width={compact ? 88 : 60}
             axisLine={false}
             tickLine={false}
             tickFormatter={(v: number) => v.toLocaleString()}
@@ -191,10 +193,10 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
           />
           <ReferenceLine y={0} yAxisId="flow" stroke={chartTheme.zeroLine} />
           <Bar isAnimationActive={false} yAxisId="flow" dataKey="inflow" name="자금 유입" fill={chartTheme.inflowBlue} barSize={16} radius={[2, 2, 0, 0]}>
-            <LabelList dataKey="inflow" content={InflowLabel} />
+            <LabelList dataKey="inflow" content={makeInflowLabel(compact)} />
           </Bar>
           <Bar isAnimationActive={false} yAxisId="flow" dataKey="outflow" name="자금 유출" fill={chartTheme.outflowRed} barSize={16} radius={[0, 0, 2, 2]}>
-            <LabelList dataKey="outflow" content={OutflowLabel} />
+            <LabelList dataKey="outflow" content={makeOutflowLabel(compact)} />
           </Bar>
           <Line
             isAnimationActive={false}

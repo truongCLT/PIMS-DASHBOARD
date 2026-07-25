@@ -1,8 +1,10 @@
 import React from "react";
 import { useDashboardData } from "../lib/mgmtreportData";
+import { useDashboardFilters } from "../lib/dashboardFilters";
 
 export function PerformanceTable() {
   const { derived, isError } = useDashboardData();
+  const { unitIndex } = useDashboardFilters();
   const rows = derived?.performanceRows ?? [];
 
   return (
@@ -24,7 +26,7 @@ export function PerformanceTable() {
       </div>
 
       <div style={{ overflowX: "auto" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "11px" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: unitIndex === 1 ? "9.5px" : "11px" }}>
           <thead>
             <tr style={{ backgroundColor: "#e8f0f8" }}>
               <th style={{ padding: "4px 6px", textAlign: "left", color: "#555", fontWeight: "600", borderBottom: "1px solid #d0dce8" }} rowSpan={2}>구분</th>
