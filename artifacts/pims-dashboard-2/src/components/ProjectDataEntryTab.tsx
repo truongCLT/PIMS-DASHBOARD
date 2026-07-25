@@ -314,9 +314,18 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       setOverview(detail.overview ?? { contractAmount: null, startDate: null, endDate: null, client: null, scale: null });
       setProgress(detail.progress);
       setMilestones(detail.milestones);
-      setCostEstimation(
-        EST_KINDS.map(({ kind }) => detail.costEstimation.find((e) => e.kind === kind) ?? { kind, contractAmount: null, costAmount: null }),
-      );
+      {
+        const fixed = (["bidding", "execution"] as const).map(
+          (kind) => detail.costEstimation.find((e) => e.kind === kind) ?? { kind, contractAmount: null, costAmount: null },
+        );
+        const completions = detail.costEstimation
+          .filter((e) => e.kind === "completion")
+          .sort((a, b) => (a.year ?? 0) * 100 + (a.month ?? 0) - ((b.year ?? 0) * 100 + (b.month ?? 0)));
+        setCostEstimation([
+          ...fixed,
+          ...(completions.length > 0 ? completions : [{ kind: "completion" as const, contractAmount: null, costAmount: null, year: null, month: null }]),
+        ]);
+      }
       setCostBudget(
         FIXED_BUDGET_ITEMS.map((item) => {
           const found = detail.costBudget.find((r) => r.item.trim().toLowerCase() === item.toLowerCase());
@@ -410,13 +419,33 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       setSaveMsg(validationError);
       return;
     }
+    // 준공 전망(completion) 검증: 기준월 중복 및 기준월 없는 행 다중 입력 방지
+    const estRows = costEstimation.filter((e) => e.contractAmount != null || e.costAmount != null);
+    {
+      const completions = estRows.filter((e) => e.kind === "completion");
+      const undated = completions.filter((e) => e.year == null || e.month == null);
+      if (undated.length > 1) {
+        setSaveMsg("준공 전망(Estimated Completion)에서 기준월이 없는 행은 1건만 입력할 수 있습니다. 기준월을 지정해 주세요.");
+        return;
+      }
+      const seen = new Set<string>();
+      for (const c of completions) {
+        if (c.year == null || c.month == null) continue;
+        const key = `${c.year}-${c.month}`;
+        if (seen.has(key)) {
+          setSaveMsg(`준공 전망(Estimated Completion)에 같은 기준월(${c.year}.${String(c.month).padStart(2, "0")})이 중복 입력되었습니다.`);
+          return;
+        }
+        seen.add(key);
+      }
+    }
     const body: ProjectDetail = {
       projectName,
       unit: "천 USD",
       overview,
       progress: progressRows,
       milestones: milestones.filter((m) => m.label.trim() !== ""),
-      costEstimation: costEstimation.filter((e) => e.contractAmount != null || e.costAmount != null),
+      costEstimation: estRows,
       costBudget: costBudget.filter((c) => c.item.trim() !== ""),
       outsourcing: outsourcing.filter((o) => o.trade.trim() !== ""),
       // 자금수지 Excel prefill을 아직 수정하지 않았다면 저장하지 않음(향후 Excel 갱신 반영 유지)
@@ -747,22 +776,70 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
           <thead>
             <tr>
               <th style={th}>구분</th>
+              <th style={th}>기준월</th>
               <th style={th}>도급액 (VND)</th>
               <th style={th}>원가 (VND)</th>
+              <th style={{ ...th, width: "30px" }}></th>
             </tr>
           </thead>
           <tbody>
-            {costEstimation.map((e, i) => (
-              <tr key={e.kind}>
-                <td style={{ ...tdCell, fontSize: "11px", padding: "5px 6px", color: "#333" }}>
-                  {EST_KINDS.find((k) => k.kind === e.kind)?.label ?? e.kind}
-                </td>
-                <td style={tdCell}><VndInput valueKUsd={e.contractAmount} onChange={(v) => updateAt(setCostEstimation, i, { contractAmount: v })} data-row={i} data-col={0} /></td>
-                <td style={tdCell}><VndInput valueKUsd={e.costAmount} onChange={(v) => updateAt(setCostEstimation, i, { costAmount: v })} data-row={i} data-col={1} /></td>
-              </tr>
-            ))}
+            {costEstimation.map((e, i) => {
+              const isCompletion = e.kind === "completion";
+              const completionCount = costEstimation.filter((r) => r.kind === "completion").length;
+              return (
+                <tr key={`${e.kind}-${i}`}>
+                  <td style={{ ...tdCell, fontSize: "11px", padding: "5px 6px", color: "#333" }}>
+                    {EST_KINDS.find((k) => k.kind === e.kind)?.label ?? e.kind}
+                  </td>
+                  <td style={{ ...tdCell, textAlign: "center" }}>
+                    {isCompletion ? (
+                      <input
+                        type="month"
+                        value={e.year != null && e.month != null ? `${e.year}-${String(e.month).padStart(2, "0")}` : ""}
+                        onChange={(ev) => {
+                          const v = ev.target.value;
+                          if (!v) {
+                            updateAt(setCostEstimation, i, { year: null, month: null });
+                          } else {
+                            const [y, m] = v.split("-");
+                            updateAt(setCostEstimation, i, { year: Number(y), month: Number(m) });
+                          }
+                        }}
+                        style={{ fontSize: "11px", padding: "3px 4px", border: "1px solid #ccd6e3", borderRadius: "3px" }}
+                      />
+                    ) : (
+                      <span style={{ fontSize: "10px", color: "#aaa" }}>-</span>
+                    )}
+                  </td>
+                  <td style={tdCell}><VndInput valueKUsd={e.contractAmount} onChange={(v) => updateAt(setCostEstimation, i, { contractAmount: v })} data-row={i} data-col={0} /></td>
+                  <td style={tdCell}><VndInput valueKUsd={e.costAmount} onChange={(v) => updateAt(setCostEstimation, i, { costAmount: v })} data-row={i} data-col={1} /></td>
+                  <td style={{ ...tdCell, textAlign: "center" }}>
+                    {isCompletion && completionCount > 1 && (
+                      <button
+                        onClick={() => setCostEstimation((rows) => rows.filter((_, j) => j !== i))}
+                        style={{ border: "none", background: "none", cursor: "pointer", color: "#c0392b", padding: "2px" }}
+                        title="삭제"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
+        </div>
+        <button
+          onClick={() =>
+            setCostEstimation((rows) => [...rows, { kind: "completion", contractAmount: null, costAmount: null, year: null, month: null }])
+          }
+          style={{ marginTop: "6px", display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "10px", color: "#4472c4", border: "1px dashed #9db6d8", borderRadius: "4px", padding: "3px 8px", background: "none", cursor: "pointer" }}
+        >
+          <Plus size={12} /> 준공 전망(월별) 추가
+        </button>
+        <div style={{ fontSize: "10px", color: "#777", marginTop: "4px" }}>
+          Estimated Completion은 기준월별로 여러 건 입력할 수 있습니다. 원가 탭에서는 조회 기간 마지막 월 이하의 가장 최근 기준월 값이 표시됩니다.
         </div>
       </div>
 

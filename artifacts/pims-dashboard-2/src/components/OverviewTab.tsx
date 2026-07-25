@@ -165,7 +165,14 @@ export function OverviewTab({ projectName }: { projectName: string }) {
   const est = (kind: string) => detail?.costEstimation.find((e) => e.kind === kind) ?? null;
   const bidding = est("bidding");
   const execution = est("execution");
-  const completion = est("completion");
+  // completion(준공추정)은 월별 이력 중 가장 최근 기준월 값 사용 (기준월 없는 행은 폴백)
+  const completion = (() => {
+    const rows = (detail?.costEstimation ?? []).filter((e) => e.kind === "completion");
+    const dated = rows
+      .filter((e) => e.year != null && e.month != null)
+      .sort((a, b) => a.year! * 100 + a.month! - (b.year! * 100 + b.month!));
+    return dated[dated.length - 1] ?? rows[0] ?? null;
+  })();
   const estPct = (e: { contractAmount?: number | null; costAmount?: number | null } | null) =>
     e ? ratioPct(e.costAmount ?? null, e.contractAmount ?? null) : null;
 

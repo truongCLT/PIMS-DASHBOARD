@@ -104,6 +104,8 @@ async function loadDetail(projectName: string) {
       kind: c.kind as "bidding" | "execution" | "completion",
       contractAmount: num(c.contractAmount),
       costAmount: num(c.costAmount),
+      year: c.year,
+      month: c.month,
     })),
     costBudget: costBudget.map((c) => ({
       category: c.category,
@@ -266,6 +268,8 @@ router.put("/projectdetail", requireAdmin, async (req, res) => {
             kind: c.kind,
             contractAmount: str(c.contractAmount),
             costAmount: str(c.costAmount),
+            year: c.year ?? null,
+            month: c.month ?? null,
           })),
         );
       }

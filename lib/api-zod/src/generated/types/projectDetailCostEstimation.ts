@@ -11,4 +11,11 @@ export interface ProjectDetailCostEstimation {
   kind: ProjectDetailCostEstimationKind;
   contractAmount?: number | null;
   costAmount?: number | null;
+  /** completion 월별 이력용 기준 연도 (bidding/execution 은 null) */
+  year?: number | null;
+  /**
+     * @minimum 1
+     * @maximum 12
+     */
+  month?: number | null;
 }

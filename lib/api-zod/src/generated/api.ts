@@ -183,6 +183,8 @@ export const getProjectdetailResponseProgressItemPlanCumPctMax = 100;
 export const getProjectdetailResponseProgressItemActualCumPctMin = 0;
 export const getProjectdetailResponseProgressItemActualCumPctMax = 100;
 
+export const getProjectdetailResponseCostEstimationItemMonthMax = 12;
+
 export const getProjectdetailResponseCashflowItemMonthMax = 12;
 
 
@@ -215,7 +217,9 @@ export const GetProjectdetailResponse = zod.object({
   "costEstimation": zod.array(zod.object({
   "kind": zod.enum(['bidding', 'execution', 'completion']),
   "contractAmount": zod.number().nullish(),
-  "costAmount": zod.number().nullish()
+  "costAmount": zod.number().nullish(),
+  "year": zod.number().nullish().describe('completion 월별 이력용 기준 연도 (bidding\/execution 은 null)'),
+  "month": zod.number().min(1).max(getProjectdetailResponseCostEstimationItemMonthMax).nullish()
 })),
   "costBudget": zod.array(zod.object({
   "category": zod.string().nullish(),
@@ -269,6 +273,8 @@ export const putProjectdetailBodyProgressItemPlanCumPctMax = 100;
 export const putProjectdetailBodyProgressItemActualCumPctMin = 0;
 export const putProjectdetailBodyProgressItemActualCumPctMax = 100;
 
+export const putProjectdetailBodyCostEstimationItemMonthMax = 12;
+
 export const putProjectdetailBodyCashflowItemMonthMax = 12;
 
 
@@ -301,7 +307,9 @@ export const PutProjectdetailBody = zod.object({
   "costEstimation": zod.array(zod.object({
   "kind": zod.enum(['bidding', 'execution', 'completion']),
   "contractAmount": zod.number().nullish(),
-  "costAmount": zod.number().nullish()
+  "costAmount": zod.number().nullish(),
+  "year": zod.number().nullish().describe('completion 월별 이력용 기준 연도 (bidding\/execution 은 null)'),
+  "month": zod.number().min(1).max(putProjectdetailBodyCostEstimationItemMonthMax).nullish()
 })),
   "costBudget": zod.array(zod.object({
   "category": zod.string().nullish(),
@@ -351,6 +359,8 @@ export const putProjectdetailResponseProgressItemPlanCumPctMax = 100;
 export const putProjectdetailResponseProgressItemActualCumPctMin = 0;
 export const putProjectdetailResponseProgressItemActualCumPctMax = 100;
 
+export const putProjectdetailResponseCostEstimationItemMonthMax = 12;
+
 export const putProjectdetailResponseCashflowItemMonthMax = 12;
 
 
@@ -383,7 +393,9 @@ export const PutProjectdetailResponse = zod.object({
   "costEstimation": zod.array(zod.object({
   "kind": zod.enum(['bidding', 'execution', 'completion']),
   "contractAmount": zod.number().nullish(),
-  "costAmount": zod.number().nullish()
+  "costAmount": zod.number().nullish(),
+  "year": zod.number().nullish().describe('completion 월별 이력용 기준 연도 (bidding\/execution 은 null)'),
+  "month": zod.number().min(1).max(putProjectdetailResponseCostEstimationItemMonthMax).nullish()
 })),
   "costBudget": zod.array(zod.object({
   "category": zod.string().nullish(),

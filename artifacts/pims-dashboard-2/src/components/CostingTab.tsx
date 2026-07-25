@@ -303,11 +303,29 @@ function DbCostActualCard({ projectName }: { projectName: string }) {
   );
 }
 
-export function CostingTab({ projectName }: { projectName: string }) {
+export function CostingTab({
+  projectName,
+  toYear,
+  toMonth,
+}: {
+  projectName: string;
+  toYear: number;
+  toMonth: number;
+}) {
   const { fmtMoney } = useMoney();
   const { detail, isLoading } = useProjectDetail(projectName);
 
   const estimation = detail?.costEstimation ?? [];
+  // 준공추정(completion)은 월별 이력 중 조회 기간 마지막 월 이하의 가장 최근 값 사용
+  const completionRows = estimation.filter((e) => e.kind === "completion");
+  const datedCompletions = completionRows
+    .filter((e) => e.year != null && e.month != null)
+    .filter((e) => e.year! * 100 + e.month! <= toYear * 100 + toMonth)
+    .sort((a, b) => a.year! * 100 + a.month! - (b.year! * 100 + b.month!));
+  const pickedCompletion =
+    datedCompletions[datedCompletions.length - 1] ??
+    completionRows.find((e) => e.year == null || e.month == null) ??
+    null;
   const budgetRows: BudgetRow[] = (detail?.costBudget ?? []).map((r) => ({
     category: r.category ?? null,
     item: r.item,
@@ -353,17 +371,25 @@ export function CostingTab({ projectName }: { projectName: string }) {
             }}
           >
             {EST_META.map((meta) => {
-              const row = estimation.find((e) => e.kind === meta.kind);
+              const row =
+                meta.kind === "completion" ? pickedCompletion : estimation.find((e) => e.kind === meta.kind);
               const contract = row?.contractAmount ?? null;
               const cost = row?.costAmount ?? null;
               const pct = ratioPct(cost, contract);
+              const baseMonth =
+                meta.kind === "completion" && row?.year != null && row?.month != null
+                  ? ` ('${String(row.year).slice(2)}.${String(row.month).padStart(2, "0")} 기준)`
+                  : "";
               return (
                 <div key={meta.kind} style={{ textAlign: "center" }}>
                   <div style={{ fontSize: "10px", color: "#555", marginBottom: "2px" }}>
                     {cost != null || contract != null ? `${fmtMoney(cost)} / ${fmtMoney(contract)}` : "-"}
                   </div>
                   <Donut percent={pct ?? 0} color={meta.color} size={150} stroke={16} centerLabel={fmtPct(pct)} />
-                  <div style={{ fontSize: "11px", color: "#1a2d4d", fontWeight: 600, marginTop: "4px" }}>{meta.label}</div>
+                  <div style={{ fontSize: "11px", color: "#1a2d4d", fontWeight: 600, marginTop: "4px" }}>
+                    {meta.label}
+                    {baseMonth}
+                  </div>
                 </div>
               );
             })}

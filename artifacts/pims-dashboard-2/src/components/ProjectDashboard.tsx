@@ -329,7 +329,7 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
           </div>
         ) : activeTab === "Costing" ? (
           <div style={{ flex: 1, minWidth: 0 }}>
-            <CostingTab projectName={projectName} />
+            <CostingTab projectName={projectName} toYear={toYear} toMonth={Number(toMonth)} />
           </div>
         ) : activeTab === "Outsourcing" ? (
           <div style={{ flex: 1, minWidth: 0 }}>

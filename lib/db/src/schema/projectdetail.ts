@@ -6,6 +6,7 @@ import {
   integer,
   numeric,
   uniqueIndex,
+  unique,
   index,
   check,
   timestamp,
@@ -74,9 +75,11 @@ export const pdCostEstimationTable = pgTable(
     kind: text("kind").notNull(), // 'bidding' | 'execution' | 'completion'
     contractAmount: numeric("contract_amount", { precision: 18, scale: 4 }), // 도급액 기준 (천 USD)
     costAmount: numeric("cost_amount", { precision: 18, scale: 4 }), // 원가 (천 USD)
+    year: integer("year"), // completion 월별 이력용 (bidding/execution 은 null)
+    month: integer("month"), // 1..12
   },
   (t) => [
-    uniqueIndex("pd_cost_estimation_uq").on(t.projectName, t.kind),
+    unique("pd_cost_estimation_uq").on(t.projectName, t.kind, t.year, t.month).nullsNotDistinct(),
     check("pd_cost_estimation_kind_ck", sql`${t.kind} IN ('bidding','execution','completion')`),
   ],
 );
