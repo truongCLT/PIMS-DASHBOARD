@@ -76,6 +76,7 @@ export function MiniBar({
   height = 90,
   width = 18,
   valueLabel,
+  valueOnTop = false,
 }: {
   value: number;
   max: number;
@@ -84,15 +85,21 @@ export function MiniBar({
   height?: number;
   width?: number;
   valueLabel?: string;
+  valueOnTop?: boolean;
 }) {
   const h = max > 0 ? Math.max((value / max) * height, 2) : 2;
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "3px" }}>
-      <div style={{ height: `${height}px`, display: "flex", alignItems: "flex-end" }}>
+      <div style={{ height: `${height}px`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end" }}>
+        {valueOnTop && valueLabel != null && (
+          <span style={{ fontSize: "11px", color: "#1a2d4d", fontWeight: 700, whiteSpace: "nowrap", marginBottom: "3px" }}>
+            {valueLabel}
+          </span>
+        )}
         <div style={{ width: `${width}px`, height: `${h}px`, backgroundColor: color, borderRadius: "2px 2px 0 0" }} />
       </div>
       <span style={{ fontSize: "9px", color: "#555", whiteSpace: "nowrap" }}>{label}</span>
-      {valueLabel != null && <span style={{ fontSize: "9px", color: "#333", fontWeight: 600 }}>{valueLabel}</span>}
+      {!valueOnTop && valueLabel != null && <span style={{ fontSize: "9px", color: "#333", fontWeight: 600 }}>{valueLabel}</span>}
     </div>
   );
 }

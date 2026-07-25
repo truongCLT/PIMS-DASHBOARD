@@ -491,28 +491,31 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                 value={cashIn}
                 max={Math.max(cashIn, cashOut, Math.abs(balance ?? 0), 1)}
                 color={chartTheme.neutralGray}
-                label="유입 누계"
-                height={140}
+                label="수금"
+                height={120}
                 valueLabel={fmtMoney(cashIn)}
-                width={24}
+                valueOnTop
+                width={34}
               />
               <MiniBar
                 value={cashOut}
                 max={Math.max(cashIn, cashOut, Math.abs(balance ?? 0), 1)}
                 color={chartTheme.outflowRed}
-                label="유출 누계"
-                height={140}
+                label="지출"
+                height={120}
                 valueLabel={fmtMoney(cashOut)}
-                width={24}
+                valueOnTop
+                width={34}
               />
               <MiniBar
                 value={Math.max(balance ?? 0, 0)}
                 max={Math.max(cashIn, cashOut, Math.abs(balance ?? 0), 1)}
                 color={chartTheme.planBlue}
                 label="잔액"
-                height={140}
+                height={120}
                 valueLabel={fmtMoney(balance)}
-                width={24}
+                valueOnTop
+                width={34}
               />
             </div>
           )}
