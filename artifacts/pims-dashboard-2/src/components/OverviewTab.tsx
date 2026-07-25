@@ -116,9 +116,12 @@ export function OverviewTab({ projectName }: { projectName: string }) {
   let lastMonthIdx = -1;
   for (let i = 0; i < revMonths.length; i++) if ((revMonths[i] ?? 0) !== 0) lastMonthIdx = i;
   const thisMonthRev = lastMonthIdx >= 0 ? (revMonths[lastMonthIdx] ?? 0) : null;
-  const prevMonthRev = lastMonthIdx >= 1 ? (revMonths[lastMonthIdx - 1] ?? 0) : null;
+  const planMonths = mr.project?.revenuePlan ?? [];
+  const thisMonthPlan = lastMonthIdx >= 0 ? (planMonths[lastMonthIdx] ?? 0) : null;
+  const annualPlanRev = planMonths.reduce((a, b) => a + (b ?? 0), 0);
   const cumRev = revMonths.reduce((a, b) => a + (b ?? 0), 0);
   const cumCogs = cogsMonths.reduce((a, b) => a + (b ?? 0), 0);
+  void cumCogs;
   const hasRevenue = lastMonthIdx >= 0;
 
   // ---- 자금 (cashflow) ----
@@ -151,8 +154,10 @@ export function OverviewTab({ projectName }: { projectName: string }) {
   }
   const planCum = latest?.planCumPct ?? null;
   const actualCum = latest?.actualCumPct ?? null;
+  const monthlyPlan = latest?.planPct ?? null;
   const monthlyActual = latest?.actualPct ?? null;
   const achieveRate = ratioPct(actualCum, planCum);
+  const monthlyAchieveRate = ratioPct(monthlyActual, monthlyPlan);
   const overview = detail?.overview ?? { contractAmount: null, startDate: null, endDate: null };
   const elapsed = timeElapsedPct(overview.startDate, overview.endDate);
 
@@ -171,7 +176,6 @@ export function OverviewTab({ projectName }: { projectName: string }) {
   const directCostPct = ratioPct(actualTotal, budgetTotal);
 
   const MAX_H = 110;
-  const maxProg = Math.max(planCum ?? 0, actualCum ?? 0, 1);
 
   return (
     <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -201,38 +205,61 @@ export function OverviewTab({ projectName }: { projectName: string }) {
               <div
                 style={{
                   display: "flex",
-                  justifyContent: "center",
+                  justifyContent: "space-around",
                   alignItems: "flex-end",
-                  gap: "28px",
+                  gap: "12px",
                   margin: "16px 0 10px",
-                  height: `${MAX_H + 28}px`,
                 }}
               >
                 {[
-                  { label: "계획 (A)", value: planCum, color: chartTheme.planBlue },
-                  { label: "실적 (B)", value: actualCum, color: chartTheme.outflowRed },
-                ].map((b) => (
-                  <div
-                    key={b.label}
-                    style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", height: "100%" }}
-                  >
-                    <span style={{ fontSize: "11px", fontWeight: 700, color: b.color, marginBottom: "4px" }}>
-                      {fmtPct(b.value)}
-                    </span>
-                    <div
-                      style={{
-                        width: "48px",
-                        height: `${Math.round(((b.value ?? 0) / maxProg) * MAX_H)}px`,
-                        backgroundColor: b.color,
-                        borderRadius: "3px 3px 0 0",
-                      }}
-                    />
-                    <span style={{ fontSize: "10px", color: "#555", marginTop: "5px", fontWeight: 600 }}>{b.label}</span>
+                  {
+                    group: "월별",
+                    bars: [
+                      { label: "계획", value: monthlyPlan, color: chartTheme.planBlue },
+                      { label: "실적", value: monthlyActual, color: chartTheme.outflowRed },
+                    ],
+                    rate: monthlyAchieveRate,
+                  },
+                  {
+                    group: "누계",
+                    bars: [
+                      { label: "계획", value: planCum, color: chartTheme.planBlue },
+                      { label: "실적", value: actualCum, color: chartTheme.outflowRed },
+                    ],
+                    rate: achieveRate,
+                  },
+                ].map((grp) => {
+                  const gmax = Math.max(...grp.bars.map((b) => b.value ?? 0), 1);
+                  return (
+                  <div key={grp.group} style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                    <div style={{ display: "flex", alignItems: "flex-end", gap: "10px", height: `${MAX_H + 28}px` }}>
+                      {grp.bars.map((b) => (
+                        <div
+                          key={b.label}
+                          style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", height: "100%" }}
+                        >
+                          <span style={{ fontSize: "10px", fontWeight: 700, color: b.color, marginBottom: "4px" }}>
+                            {fmtPct(b.value)}
+                          </span>
+                          <div
+                            style={{
+                              width: "34px",
+                              height: `${Math.round(((b.value ?? 0) / gmax) * MAX_H)}px`,
+                              backgroundColor: b.color,
+                              borderRadius: "3px 3px 0 0",
+                            }}
+                          />
+                          <span style={{ fontSize: "9px", color: "#555", marginTop: "5px", fontWeight: 600 }}>{b.label}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ fontSize: "10px", fontWeight: 700, color: "#333", marginTop: "4px" }}>{grp.group}</div>
+                    <div style={{ fontSize: "10px", color: chartTheme.profitGreen, fontWeight: 700, marginTop: "2px" }}>
+                      달성률 {fmtPct(grp.rate)}
+                    </div>
                   </div>
-                ))}
-              </div>
-              <div style={{ textAlign: "center", fontSize: "11px", color: chartTheme.profitGreen, fontWeight: 700 }}>
-                달성률 : {fmtPct(achieveRate)} (B/A)
+                  );
+                })}
               </div>
             </>
           )}
@@ -263,30 +290,32 @@ export function OverviewTab({ projectName }: { projectName: string }) {
               <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-around", marginTop: "6px" }}>
                 <div style={{ display: "flex", gap: "10px", alignItems: "flex-end" }}>
                   <MiniBar
-                    value={prevMonthRev ?? 0}
-                    max={Math.max(prevMonthRev ?? 0, thisMonthRev ?? 0, 1)}
+                    value={thisMonthPlan ?? 0}
+                    max={Math.max(thisMonthPlan ?? 0, thisMonthRev ?? 0, 1)}
                     color={chartTheme.neutralGray}
-                    label="전월"
+                    label="계획"
                     height={110}
-                    valueLabel={fmtMoney(prevMonthRev)}
+                    valueLabel={fmtMoney(thisMonthPlan)}
                   />
                   <MiniBar
                     value={thisMonthRev ?? 0}
-                    max={Math.max(prevMonthRev ?? 0, thisMonthRev ?? 0, 1)}
+                    max={Math.max(thisMonthPlan ?? 0, thisMonthRev ?? 0, 1)}
                     color={chartTheme.planBlue}
-                    label="당월"
+                    label="실적"
                     height={110}
                     valueLabel={fmtMoney(thisMonthRev)}
                   />
                 </div>
                 <div style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: "10px", color: "#555", marginBottom: "2px" }}>{fmtMoney(cumRev)}</div>
+                  <div style={{ fontSize: "10px", color: "#555", marginBottom: "2px" }}>
+                    {fmtMoney(cumRev)} / {fmtMoney(annualPlanRev)}
+                  </div>
                   <Donut
-                    percent={ratioPct(cumRev, overview.contractAmount) ?? 0}
+                    percent={ratioPct(cumRev, annualPlanRev) ?? 0}
                     color={chartTheme.planBlue}
                     size={110}
                     stroke={13}
-                    label={fmtPct(ratioPct(cumRev, overview.contractAmount))}
+                    label={fmtPct(ratioPct(cumRev, annualPlanRev))}
                     labelSize={18}
                   />
                   <div style={{ fontSize: "10px", color: "#1a2d4d", fontWeight: 700, marginTop: "4px", textDecoration: "underline" }}>
@@ -294,27 +323,29 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                   </div>
                 </div>
                 <div style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: "10px", color: "#555", marginBottom: "2px" }}>{fmtMoney(cumCogs)}</div>
+                  <div style={{ fontSize: "10px", color: "#555", marginBottom: "2px" }}>
+                    {fmtMoney(cumRev)} / {fmtMoney(overview.contractAmount)}
+                  </div>
                   <Donut
-                    percent={ratioPct(cumCogs, cumRev) ?? 0}
+                    percent={ratioPct(cumRev, overview.contractAmount) ?? 0}
                     color={chartTheme.balanceNavy}
                     size={110}
                     stroke={13}
-                    label={fmtPct(ratioPct(cumCogs, cumRev))}
+                    label={fmtPct(ratioPct(cumRev, overview.contractAmount))}
                     labelSize={18}
                   />
                   <div style={{ fontSize: "10px", color: "#1a2d4d", fontWeight: 700, marginTop: "4px", textDecoration: "underline" }}>
-                    Cost Rate
+                    Contract Progress
                   </div>
                 </div>
               </div>
               <div style={{ display: "flex", justifyContent: "space-around", marginTop: "6px" }}>
-                <span style={{ fontSize: "10px", fontWeight: 700, color: "#333" }}>This Month</span>
+                <span style={{ fontSize: "10px", fontWeight: 700, color: "#333" }}>당월 매출 (계획 대비 실적)</span>
                 <span style={{ fontSize: "10px", fontWeight: 700, color: "#1a2d4d", textDecoration: "underline" }}>
-                  누계 매출 (도급액 대비)
+                  연간 목표 매출 달성률
                 </span>
                 <span style={{ fontSize: "10px", fontWeight: 700, color: "#1a2d4d", textDecoration: "underline" }}>
-                  누계 원가율
+                  누계 매출 (도급액 대비)
                 </span>
               </div>
             </>
