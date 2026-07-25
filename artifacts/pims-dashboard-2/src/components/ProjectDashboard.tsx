@@ -1,6 +1,8 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { usePutProjectdetail } from "@workspace/api-client-react";
 import { ProjectCommentPanel } from "./ProjectCommentPanel";
-import { Download } from "lucide-react";
+import { Download, Upload, FileSpreadsheet } from "lucide-react";
 import projectPhoto from "../assets/project-photo.png";
 import { ConstructionProgressTab } from "./ConstructionProgressTab";
 import { CostingTab } from "./CostingTab";
@@ -9,7 +11,8 @@ import { ServiceCashflowTab } from "./ServiceCashflowTab";
 import { ProjectDataEntryTab } from "./ProjectDataEntryTab";
 import { SaleProfitTab } from "./SaleProfitTab";
 import { OverviewTab } from "./OverviewTab";
-import { useProjectDetail } from "../lib/projectDetailData";
+import { useProjectDetail, getGetProjectdetailQueryKey } from "../lib/projectDetailData";
+import { downloadProjectDetailTemplate, parseProjectDetailWorkbook, ExcelParseError } from "../lib/projectDetailExcel";
 import { DisplayUnitProvider, formatMoney, moneyUnitLabel } from "../lib/displayUnit";
 import { exportProjectDetailExcel } from "../lib/exportProjectDetail";
 import { useAdminAuth } from "../lib/adminAuth";
@@ -75,6 +78,55 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
   );
 
   const { detail } = useProjectDetail(projectName);
+  const queryClient = useQueryClient();
+  const putMutation = usePutProjectdetail();
+  const excelFileRef = useRef<HTMLInputElement>(null);
+  const [excelMsg, setExcelMsg] = useState<string | null>(null);
+  const [excelBusy, setExcelBusy] = useState(false);
+
+  const handleTemplateDownload = async () => {
+    if (!detail || excelBusy) return;
+    setExcelBusy(true);
+    setExcelMsg(null);
+    try {
+      await downloadProjectDetailTemplate(projectName, detail);
+    } catch (err) {
+      console.error("Excel template download failed", err);
+      setExcelMsg("양식 다운로드에 실패했습니다.");
+    } finally {
+      setExcelBusy(false);
+    }
+  };
+
+  const handleExcelUpload = async (file: File) => {
+    if (!detail || excelBusy) return;
+    setExcelBusy(true);
+    setExcelMsg(null);
+    try {
+      const parsed = await parseProjectDetailWorkbook(file, detail);
+      if (!window.confirm("업로드한 Excel 내용으로 이 프로젝트의 데이터를 교체합니다. 계속할까요?")) {
+        setExcelBusy(false);
+        return;
+      }
+      await putMutation.mutateAsync({ data: { ...parsed, projectName } });
+      queryClient.invalidateQueries({ queryKey: getGetProjectdetailQueryKey({ projectName }) });
+      setExcelMsg("업로드가 완료되었습니다.");
+    } catch (err) {
+      console.error("Excel upload failed", err);
+      if (err instanceof ExcelParseError) setExcelMsg(err.message);
+      else {
+        const serverMsg =
+          typeof err === "object" && err != null && "data" in err
+            ? (err as { data?: { error?: string } | null }).data?.error
+            : undefined;
+        setExcelMsg(serverMsg || "업로드에 실패했습니다. 파일 양식을 확인해 주세요.");
+      }
+    } finally {
+      setExcelBusy(false);
+      if (excelFileRef.current) excelFileRef.current.value = "";
+    }
+  };
+
   const [exporting, setExporting] = useState(false);
   const handleExport = async () => {
     if (!detail || exporting) return;
@@ -319,6 +371,78 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
             </button>
           );
         })}
+        {isAdmin && (
+          <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "6px", paddingBottom: "6px" }}>
+            {excelMsg && (
+              <span
+                style={{
+                  fontSize: "11px",
+                  fontWeight: 600,
+                  color: excelMsg.includes("완료") ? "#3e7d4c" : "#c0392b",
+                  maxWidth: "360px",
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                }}
+                title={excelMsg}
+              >
+                {excelMsg}
+              </span>
+            )}
+            <button
+              onClick={handleTemplateDownload}
+              disabled={!detail || excelBusy}
+              title="현재 데이터가 담긴 Excel 양식을 내려받아 수정 후 업로드하세요."
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "5px",
+                padding: "5px 12px",
+                fontSize: "11px",
+                fontWeight: 600,
+                color: "#1a3a6b",
+                backgroundColor: "#fff",
+                border: "1px solid #c8d2de",
+                borderRadius: "4px",
+                cursor: excelBusy ? "wait" : "pointer",
+                opacity: !detail || excelBusy ? 0.6 : 1,
+              }}
+            >
+              <FileSpreadsheet size={13} /> Excel 다운로드
+            </button>
+            <button
+              onClick={() => excelFileRef.current?.click()}
+              disabled={!detail || excelBusy}
+              title="다운로드한 양식에 데이터를 입력해 업로드하면 전체 데이터가 교체됩니다."
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "5px",
+                padding: "5px 12px",
+                fontSize: "11px",
+                fontWeight: 600,
+                color: "#fff",
+                backgroundColor: "#2e4568",
+                border: "none",
+                borderRadius: "4px",
+                cursor: excelBusy ? "wait" : "pointer",
+                opacity: !detail || excelBusy ? 0.6 : 1,
+              }}
+            >
+              <Upload size={13} /> Excel 업로드
+            </button>
+            <input
+              ref={excelFileRef}
+              type="file"
+              accept=".xlsx"
+              style={{ display: "none" }}
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) void handleExcelUpload(f);
+              }}
+            />
+          </div>
+        )}
       </div>
 
       {/* Body: content */}
