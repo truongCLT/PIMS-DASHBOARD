@@ -104,10 +104,13 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
   const [unitOn, setUnitOn] = useState(true);
   const [activeTab, setActiveTab] = useState("Overview");
   const { isAdmin } = useAdminAuth();
-  const [fromYear, setFromYear] = useState(2026);
-  const [fromMonth, setFromMonth] = useState("04");
-  const [toYear, setToYear] = useState(2026);
-  const [toMonth, setToMonth] = useState("06");
+  // 기본 기간: 올해 1월 ~ 직전월
+  const now = new Date();
+  const prevMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const [fromYear, setFromYear] = useState(now.getFullYear());
+  const [fromMonth, setFromMonth] = useState("01");
+  const [toYear, setToYear] = useState(prevMonthDate.getFullYear());
+  const [toMonth, setToMonth] = useState(String(prevMonthDate.getMonth() + 1).padStart(2, "0"));
 
   const { detail, isLoading } = useProjectDetail(projectName);
 
