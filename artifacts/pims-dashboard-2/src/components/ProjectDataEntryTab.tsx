@@ -127,7 +127,7 @@ function VndInput({
           onChange(null);
         } else {
           const vnd = parseFloat(cleaned);
-          onChange(isNaN(vnd) ? null : Math.round(vnd / VND_PER_K_USD));
+          onChange(isNaN(vnd) ? null : vnd / VND_PER_K_USD);
         }
         setRawStr("");
       }}
@@ -154,6 +154,7 @@ function NumInput({
       data-row={dataRow}
       data-col={dataCol}
       onChange={(e) => onChange(e.target.value === "" ? null : Number(e.target.value))}
+      onWheel={(e) => (e.target as HTMLElement).blur()}
       style={{ ...inputStyle, textAlign: "right" }}
     />
   );
@@ -241,6 +242,8 @@ function DelBtn({ onClick }: { onClick: () => void }) {
   );
 }
 
+const FIXED_BUDGET_ITEMS = ["Common", "Expense 1"];
+
 const EST_KINDS: { kind: "bidding" | "execution" | "completion"; label: string }[] = [
   { kind: "bidding", label: "Bidding (수주 시)" },
   { kind: "execution", label: "Execution Budgeting (실행예산)" },
@@ -314,7 +317,14 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       setCostEstimation(
         EST_KINDS.map(({ kind }) => detail.costEstimation.find((e) => e.kind === kind) ?? { kind, contractAmount: null, costAmount: null }),
       );
-      setCostBudget(detail.costBudget);
+      setCostBudget(
+        FIXED_BUDGET_ITEMS.map((item) => {
+          const found = detail.costBudget.find((r) => r.item.trim().toLowerCase() === item.toLowerCase());
+          return found
+            ? { ...found, category: "Direct Cost", item }
+            : { category: "Direct Cost", item, budget: null, plan: null, actual: null };
+        }),
+      );
       setOutsourcing(detail.outsourcing);
       if (detail.cashflow.length > 0) {
         setCashflow(detail.cashflow);
@@ -759,38 +769,31 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       {/* 4. 예산 집행 현황 */}
       <div style={cardStyle}>
         <span style={sectionTitle}>{service ? "2. 예산 집행 현황 (예산집행 탭)" : "4. 예산 집행 현황 (원가 탭)"}</span>
+        <div style={{ fontSize: "10px", color: "#777", marginTop: "4px" }}>
+          Direct Cost 중 Common·Expense 1만 여기서 입력합니다. 외주성 예산·집행 실적은 아래 "외주/자재" 표에서 자동 집계됩니다.
+        </div>
         <div data-tbl="costBudget" onKeyDown={makeArrowNav("costBudget")}>
         <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "4px" }}>
           <thead>
             <tr>
-              <th style={th}>분류</th>
               <th style={th}>항목</th>
               <th style={th}>예산 (VND)</th>
               <th style={th}>기성 계획 (VND)</th>
               <th style={th}>기성 실적 (VND)</th>
-              <th style={{ ...th, width: "36px" }}></th>
             </tr>
           </thead>
           <tbody>
             {costBudget.map((c, i) => (
-              <tr key={i}>
-                <td style={tdCell}><TextInput value={c.category} onChange={(v) => updateAt(setCostBudget, i, { category: v })} placeholder="예: Direct Cost" data-row={i} data-col={0} /></td>
-                <td style={tdCell}><TextInput value={c.item} onChange={(v) => updateAt(setCostBudget, i, { item: v ?? "" })} placeholder="예: 외주비" data-row={i} data-col={1} /></td>
-                <td style={tdCell}><VndInput valueKUsd={c.budget} onChange={(v) => updateAt(setCostBudget, i, { budget: v })} data-row={i} data-col={2} /></td>
-                <td style={tdCell}><VndInput valueKUsd={c.plan} onChange={(v) => updateAt(setCostBudget, i, { plan: v })} data-row={i} data-col={3} /></td>
-                <td style={tdCell}><VndInput valueKUsd={c.actual} onChange={(v) => updateAt(setCostBudget, i, { actual: v })} data-row={i} data-col={4} /></td>
-                <td style={{ ...tdCell, textAlign: "center" }}><DelBtn onClick={() => removeAt(setCostBudget, i)} /></td>
+              <tr key={c.item}>
+                <td style={{ ...tdCell, fontSize: "11px", padding: "5px 6px", color: "#333", fontWeight: 600 }}>{c.item}</td>
+                <td style={tdCell}><VndInput valueKUsd={c.budget} onChange={(v) => updateAt(setCostBudget, i, { budget: v })} data-row={i} data-col={0} /></td>
+                <td style={tdCell}><VndInput valueKUsd={c.plan} onChange={(v) => updateAt(setCostBudget, i, { plan: v })} data-row={i} data-col={1} /></td>
+                <td style={tdCell}><VndInput valueKUsd={c.actual} onChange={(v) => updateAt(setCostBudget, i, { actual: v })} data-row={i} data-col={2} /></td>
               </tr>
             ))}
           </tbody>
         </table>
         </div>
-        <button
-          style={addBtn}
-          onClick={() => setCostBudget((rows) => [...rows, { category: null, item: "", budget: null, plan: null, actual: null }])}
-        >
-          <Plus size={12} /> 항목 추가
-        </button>
       </div>
 
       {/* 5. 외주/자재 */}

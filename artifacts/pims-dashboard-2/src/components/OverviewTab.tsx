@@ -169,8 +169,22 @@ export function OverviewTab({ projectName }: { projectName: string }) {
   const estPct = (e: { contractAmount?: number | null; costAmount?: number | null } | null) =>
     e ? ratioPct(e.costAmount ?? null, e.contractAmount ?? null) : null;
 
-  // ---- 실행예산 집행 (costBudget) ----
-  const budgetRows = (detail?.costBudget ?? []).filter((r) => r.budget != null || r.actual != null).slice(0, 5);
+  // ---- 실행예산 집행 (Direct Cost = Common + Expense 1 + 외주성) ----
+  // Common·Expense 1은 데이터 입력(costBudget), 외주성 예산·실적은 외주/자재 표에서 자동 집계
+  const cb = detail?.costBudget ?? [];
+  const findCb = (name: string) => cb.find((r) => r.item.trim().toLowerCase() === name.toLowerCase()) ?? null;
+  const common = findCb("Common");
+  const expense1 = findCb("Expense 1");
+  const outRows = detail?.outsourcing ?? [];
+  const outBudget = outRows.some((r) => r.budget != null) ? outRows.reduce((a, r) => a + (r.budget ?? 0), 0) : null;
+  const outActual = outRows.some((r) => r.accum != null || r.resolved != null)
+    ? outRows.reduce((a, r) => a + (r.accum ?? r.resolved ?? 0), 0)
+    : null;
+  const budgetRows = [
+    { item: "Common", budget: common?.budget ?? null, actual: common?.actual ?? null },
+    { item: "Expense 1", budget: expense1?.budget ?? null, actual: expense1?.actual ?? null },
+    { item: "외주성", budget: outBudget, actual: outActual },
+  ].filter((r) => r.budget != null || r.actual != null);
   const budgetTotal = budgetRows.reduce((a, r) => a + (r.budget ?? 0), 0);
   const actualTotal = budgetRows.reduce((a, r) => a + (r.actual ?? 0), 0);
   const directCostPct = ratioPct(actualTotal, budgetTotal);
@@ -448,7 +462,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                 })}
               </div>
               <div style={{ textAlign: "right", fontSize: "10px", color: "#333", fontWeight: 600 }}>
-                Direct Cost : {fmtPct(directCostPct)}
+                Direct Cost 집행 : {fmtMoney(actualTotal)} / {fmtMoney(budgetTotal)} ({fmtPct(directCostPct)})
               </div>
             </>
           )}
