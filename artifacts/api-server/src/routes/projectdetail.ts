@@ -115,6 +115,7 @@ async function loadDetail(projectName: string) {
       actual: num(c.actual),
     })),
     outsourcing: outsourcing.map((o) => ({
+      tradeGroup: o.tradeGroup,
       trade: o.trade,
       vendor: o.vendor,
       category: o.category,
@@ -290,6 +291,7 @@ router.put("/projectdetail", requireAdmin, async (req, res) => {
         await tx.insert(pdOutsourcingTable).values(
           body.outsourcing.map((o, i) => ({
             projectName,
+            tradeGroup: o.tradeGroup ?? null,
             trade: o.trade,
             vendor: o.vendor ?? null,
             category: o.category ?? null,

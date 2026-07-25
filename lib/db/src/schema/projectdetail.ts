@@ -136,7 +136,8 @@ export const pdOutsourcingTable = pgTable(
   {
     id: serial("id").primaryKey(),
     projectName: text("project_name").notNull(),
-    trade: text("trade").notNull(), // 공종
+    tradeGroup: text("trade_group"), // 대공종 (공통/토목/건축/기계/전기/조경)
+    trade: text("trade").notNull(), // 세부 공종
     vendor: text("vendor"), // 업체명
     category: text("category"), // 구분 (예: 용역/외주)
     contractDate: text("contract_date"), // 최초 계약일 (자유 형식)

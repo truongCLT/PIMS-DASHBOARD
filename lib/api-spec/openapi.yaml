@@ -1745,6 +1745,10 @@ components:
     ProjectDetailOutsourcing:
       type: object
       properties:
+        tradeGroup:
+          type: string
+          nullable: true
+          description: 대공종 (공통/토목/건축/기계/전기/조경)
         trade:
           type: string
         vendor:

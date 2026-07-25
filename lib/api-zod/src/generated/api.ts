@@ -229,6 +229,7 @@ export const GetProjectdetailResponse = zod.object({
   "actual": zod.number().nullish()
 })),
   "outsourcing": zod.array(zod.object({
+  "tradeGroup": zod.string().nullish().describe('대공종 (공통\/토목\/건축\/기계\/전기\/조경)'),
   "trade": zod.string(),
   "vendor": zod.string().nullish(),
   "category": zod.string().nullish(),
@@ -319,6 +320,7 @@ export const PutProjectdetailBody = zod.object({
   "actual": zod.number().nullish()
 })),
   "outsourcing": zod.array(zod.object({
+  "tradeGroup": zod.string().nullish().describe('대공종 (공통\/토목\/건축\/기계\/전기\/조경)'),
   "trade": zod.string(),
   "vendor": zod.string().nullish(),
   "category": zod.string().nullish(),
@@ -405,6 +407,7 @@ export const PutProjectdetailResponse = zod.object({
   "actual": zod.number().nullish()
 })),
   "outsourcing": zod.array(zod.object({
+  "tradeGroup": zod.string().nullish().describe('대공종 (공통\/토목\/건축\/기계\/전기\/조경)'),
   "trade": zod.string(),
   "vendor": zod.string().nullish(),
   "category": zod.string().nullish(),

@@ -244,6 +244,8 @@ function DelBtn({ onClick }: { onClick: () => void }) {
 
 const FIXED_BUDGET_ITEMS = ["Common", "Expense 1"];
 
+const TRADE_GROUPS = ["공통", "토목", "건축", "기계", "전기", "조경"];
+
 const EST_KINDS: { kind: "bidding" | "execution" | "completion"; label: string }[] = [
   { kind: "bidding", label: "Bidding (수주 시)" },
   { kind: "execution", label: "Execution Budgeting (실행예산)" },
@@ -880,7 +882,8 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
         <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px" }}>
           <thead>
             <tr>
-              <th style={th}>공종</th>
+              <th style={th}>대공종</th>
+              <th style={th}>세부공종</th>
               <th style={th}>업체명</th>
               <th style={th}>구분</th>
               <th style={th}>최초 계약일</th>
@@ -896,6 +899,18 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
           <tbody>
             {outsourcing.map((o, i) => (
               <tr key={i}>
+                <td style={tdCell}>
+                  <select
+                    value={o.tradeGroup ?? ""}
+                    onChange={(ev) => updateAt(setOutsourcing, i, { tradeGroup: ev.target.value || null })}
+                    style={{ width: "100%", fontSize: "11px", padding: "3px 2px", border: "1px solid #ccd6e3", borderRadius: "3px", backgroundColor: "#fff" }}
+                  >
+                    <option value="">-</option>
+                    {TRADE_GROUPS.map((g) => (
+                      <option key={g} value={g}>{g}</option>
+                    ))}
+                  </select>
+                </td>
                 <td style={tdCell}><TextInput value={o.trade} onChange={(v) => updateAt(setOutsourcing, i, { trade: v ?? "" })} placeholder="예: 토공사" data-row={i} data-col={0} /></td>
                 <td style={tdCell}><TextInput value={o.vendor} onChange={(v) => updateAt(setOutsourcing, i, { vendor: v })} data-row={i} data-col={1} /></td>
                 <td style={tdCell}><TextInput value={o.category} onChange={(v) => updateAt(setOutsourcing, i, { category: v })} placeholder="용역/외주" data-row={i} data-col={2} /></td>
@@ -917,7 +932,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
           onClick={() =>
             setOutsourcing((rows) => [
               ...rows,
-              { trade: "", vendor: null, category: null, contractDate: null, changeNo: null, budget: null, executedBudget: null, resolved: null, thisMonth: null, accum: null },
+              { tradeGroup: null, trade: "", vendor: null, category: null, contractDate: null, changeNo: null, budget: null, executedBudget: null, resolved: null, thisMonth: null, accum: null },
             ])
           }
         >

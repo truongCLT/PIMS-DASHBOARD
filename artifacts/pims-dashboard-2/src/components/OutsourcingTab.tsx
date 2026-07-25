@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { ProjectCommentPanel } from "./ProjectCommentPanel";
 
 import { useProjectDetail, fmtPct, ratioPct } from "../lib/projectDetailData";
@@ -22,10 +22,12 @@ const th: React.CSSProperties = {
   color: "#fff",
   fontSize: "11px",
   fontWeight: 700,
-  border: "1px solid #1f2a3a",
+  border: "1px solid #7b8ba3",
   padding: "8px 6px",
   textAlign: "center",
   verticalAlign: "middle",
+  position: "relative",
+  overflow: "hidden",
 };
 
 const td: React.CSSProperties = {
@@ -37,11 +39,60 @@ const td: React.CSSProperties = {
   padding: "8px 6px",
   verticalAlign: "middle",
   textAlign: "center",
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
 };
+
+// 컬럼: 대공종, 세부공종, 업체명, 계약일, 차수, 예산, 집행예산, 결의금액, 결의율, 이번달, 누계, 비율
+const DEFAULT_WIDTHS = [64, 90, 90, 70, 46, 92, 92, 92, 60, 92, 92, 60];
+
+function ResizeHandle({ onDrag }: { onDrag: (dx: number) => void }) {
+  return (
+    <div
+      onMouseDown={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const startX = e.clientX;
+        let last = 0;
+        const move = (ev: MouseEvent) => {
+          const dx = ev.clientX - startX;
+          onDrag(dx - last);
+          last = dx;
+        };
+        const up = () => {
+          window.removeEventListener("mousemove", move);
+          window.removeEventListener("mouseup", up);
+        };
+        window.addEventListener("mousemove", move);
+        window.addEventListener("mouseup", up);
+      }}
+      style={{
+        position: "absolute",
+        top: 0,
+        right: "-3px",
+        width: "7px",
+        height: "100%",
+        cursor: "col-resize",
+        zIndex: 2,
+      }}
+      title="드래그하여 열 너비 조절"
+    />
+  );
+}
 
 export function OutsourcingTab({ projectName }: { projectName: string }) {
   const { fmtMoney } = useMoney();
   const { detail, isLoading } = useProjectDetail(projectName);
+  const [widths, setWidths] = useState<number[]>(DEFAULT_WIDTHS);
+
+  const resize = (col: number) => (dx: number) => {
+    setWidths((w) => {
+      const next = [...w];
+      next[col] = Math.max(36, next[col] + dx);
+      return next;
+    });
+  };
 
   const rows = detail?.outsourcing ?? [];
 
@@ -53,77 +104,92 @@ export function OutsourcingTab({ projectName }: { projectName: string }) {
     accum: rows.some((r) => r.accum != null) ? rows.reduce((a, r) => a + (r.accum ?? 0), 0) : null,
   };
 
+  const totalWidth = widths.reduce((a, b) => a + b, 0);
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
       {/* Outsourcing and Materials table */}
       <div style={cardStyle}>
         <span style={sectionTitle}>Outsourcing and Materials</span>
-        <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "10px" }}>
-          <thead>
-            <tr>
-              <th style={th} rowSpan={2}>공종</th>
-              <th style={th} rowSpan={2}>업체명</th>
-              <th style={th} rowSpan={2}>최초<br />계약일</th>
-              <th style={th} rowSpan={2}>변경<br />계약<br />차수</th>
-              <th style={th} rowSpan={2}>예산<br />(A)</th>
-              <th style={th} rowSpan={2}>집행예산</th>
-              <th style={th} rowSpan={2}>결의금액<br />(B)</th>
-              <th style={th} rowSpan={2}>결의율<br />(B/A)</th>
-              <th style={th} colSpan={3}>기성현황</th>
-            </tr>
-            <tr>
-              <th style={th}>이번달</th>
-              <th style={th}>누계<br />(C)</th>
-              <th style={th}>비율<br />(C/B)</th>
-            </tr>
-          </thead>
-          <tbody>
-            {isLoading ? (
+        <div style={{ overflowX: "auto", marginTop: "10px" }}>
+          <table style={{ width: "100%", minWidth: `${totalWidth}px`, borderCollapse: "collapse", tableLayout: "fixed" }}>
+            <colgroup>
+              {widths.map((w, i) => (
+                <col key={i} style={{ width: `${w}px` }} />
+              ))}
+            </colgroup>
+            <thead>
               <tr>
-                <td style={{ ...td, borderLeft: "1px solid #333" }} colSpan={11}>
-                  불러오는 중…
-                </td>
+                <th style={th} colSpan={2}>
+                  공종
+                  <ResizeHandle onDrag={resize(1)} />
+                </th>
+                <th style={th} rowSpan={2}>업체명<ResizeHandle onDrag={resize(2)} /></th>
+                <th style={th} rowSpan={2}>최초<br />계약일<ResizeHandle onDrag={resize(3)} /></th>
+                <th style={th} rowSpan={2}>변경<br />계약<br />차수<ResizeHandle onDrag={resize(4)} /></th>
+                <th style={th} rowSpan={2}>예산<br />(A)<ResizeHandle onDrag={resize(5)} /></th>
+                <th style={th} rowSpan={2}>집행예산<ResizeHandle onDrag={resize(6)} /></th>
+                <th style={th} rowSpan={2}>결의금액<br />(B)<ResizeHandle onDrag={resize(7)} /></th>
+                <th style={th} rowSpan={2}>결의율<br />(B/A)<ResizeHandle onDrag={resize(8)} /></th>
+                <th style={th} colSpan={3}>기성현황</th>
               </tr>
-            ) : rows.length === 0 ? (
               <tr>
-                <td style={{ ...td, borderLeft: "1px solid #333", color: "#8a97a8" }} colSpan={11}>
-                  외주/자재 데이터가 없습니다. ( - )
-                </td>
+                <th style={th}>구분<ResizeHandle onDrag={resize(0)} /></th>
+                <th style={th}>세부공종<ResizeHandle onDrag={resize(1)} /></th>
+                <th style={th}>이번달<ResizeHandle onDrag={resize(9)} /></th>
+                <th style={th}>누계<br />(C)<ResizeHandle onDrag={resize(10)} /></th>
+                <th style={th}>비율<br />(C/B)<ResizeHandle onDrag={resize(11)} /></th>
               </tr>
-            ) : (
-              <>
-                {rows.map((r, i) => (
-                  <tr key={i}>
-                    <td style={{ ...td, borderLeft: "1px solid #333" }}>{r.trade || "-"}</td>
-                    <td style={td}>{r.vendor ?? "-"}</td>
-                    <td style={td}>{r.contractDate ?? "-"}</td>
-                    <td style={td}>{r.changeNo ?? "-"}</td>
-                    <td style={td}>{fmtMoney(r.budget)}</td>
-                    <td style={td}>{fmtMoney(r.executedBudget)}</td>
-                    <td style={td}>{fmtMoney(r.resolved)}</td>
-                    <td style={td}>{fmtPct(ratioPct(r.resolved, r.budget))}</td>
-                    <td style={td}>{fmtMoney(r.thisMonth)}</td>
-                    <td style={td}>{fmtMoney(r.accum)}</td>
-                    <td style={td}>{fmtPct(ratioPct(r.accum, r.resolved))}</td>
-                  </tr>
-                ))}
+            </thead>
+            <tbody>
+              {isLoading ? (
                 <tr>
-                  <td style={{ ...td, borderLeft: "1px solid #333", fontWeight: 700 }}>합계</td>
-                  <td style={td} />
-                  <td style={td} />
-                  <td style={td} />
-                  <td style={{ ...td, fontWeight: 600 }}>{fmtMoney(sum.budget)}</td>
-                  <td style={{ ...td, fontWeight: 600 }}>{fmtMoney(sum.executedBudget)}</td>
-                  <td style={{ ...td, fontWeight: 600 }}>{fmtMoney(sum.resolved)}</td>
-                  <td style={{ ...td, fontWeight: 600 }}>{fmtPct(ratioPct(sum.resolved, sum.budget))}</td>
-                  <td style={{ ...td, fontWeight: 600 }}>{fmtMoney(sum.thisMonth)}</td>
-                  <td style={{ ...td, fontWeight: 600 }}>{fmtMoney(sum.accum)}</td>
-                  <td style={{ ...td, fontWeight: 600 }}>{fmtPct(ratioPct(sum.accum, sum.resolved))}</td>
+                  <td style={{ ...td, borderLeft: "1px solid #333" }} colSpan={12}>
+                    불러오는 중…
+                  </td>
                 </tr>
-              </>
-            )}
-          </tbody>
-        </table>
+              ) : rows.length === 0 ? (
+                <tr>
+                  <td style={{ ...td, borderLeft: "1px solid #333", color: "#8a97a8" }} colSpan={12}>
+                    외주/자재 데이터가 없습니다. ( - )
+                  </td>
+                </tr>
+              ) : (
+                <>
+                  {rows.map((r, i) => (
+                    <tr key={i}>
+                      <td style={{ ...td, borderLeft: "1px solid #333" }} title={r.tradeGroup ?? undefined}>{r.tradeGroup ?? "-"}</td>
+                      <td style={td} title={r.trade || undefined}>{r.trade || "-"}</td>
+                      <td style={td} title={r.vendor ?? undefined}>{r.vendor ?? "-"}</td>
+                      <td style={td}>{r.contractDate ?? "-"}</td>
+                      <td style={td}>{r.changeNo ?? "-"}</td>
+                      <td style={td}>{fmtMoney(r.budget)}</td>
+                      <td style={td}>{fmtMoney(r.executedBudget)}</td>
+                      <td style={td}>{fmtMoney(r.resolved)}</td>
+                      <td style={td}>{fmtPct(ratioPct(r.resolved, r.budget))}</td>
+                      <td style={td}>{fmtMoney(r.thisMonth)}</td>
+                      <td style={td}>{fmtMoney(r.accum)}</td>
+                      <td style={td}>{fmtPct(ratioPct(r.accum, r.resolved))}</td>
+                    </tr>
+                  ))}
+                  <tr>
+                    <td style={{ ...td, borderLeft: "1px solid #333", fontWeight: 700 }} colSpan={2}>합계</td>
+                    <td style={td} />
+                    <td style={td} />
+                    <td style={td} />
+                    <td style={{ ...td, fontWeight: 600 }}>{fmtMoney(sum.budget)}</td>
+                    <td style={{ ...td, fontWeight: 600 }}>{fmtMoney(sum.executedBudget)}</td>
+                    <td style={{ ...td, fontWeight: 600 }}>{fmtMoney(sum.resolved)}</td>
+                    <td style={{ ...td, fontWeight: 600 }}>{fmtPct(ratioPct(sum.resolved, sum.budget))}</td>
+                    <td style={{ ...td, fontWeight: 600 }}>{fmtMoney(sum.thisMonth)}</td>
+                    <td style={{ ...td, fontWeight: 600 }}>{fmtMoney(sum.accum)}</td>
+                    <td style={{ ...td, fontWeight: 600 }}>{fmtPct(ratioPct(sum.accum, sum.resolved))}</td>
+                  </tr>
+                </>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Comment */}

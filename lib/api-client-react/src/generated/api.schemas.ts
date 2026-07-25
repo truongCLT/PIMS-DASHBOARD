@@ -493,6 +493,8 @@ export interface ProjectDetailCashflowPoint {
 }
 
 export interface ProjectDetailOutsourcing {
+  /** 대공종 (공통/토목/건축/기계/전기/조경) */
+  tradeGroup?: string | null;
   trade: string;
   vendor?: string | null;
   category?: string | null;
