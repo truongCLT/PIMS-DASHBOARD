@@ -152,16 +152,23 @@ export function SaleProfitTab({
   const lookup = scHasAny ? scLookup : mrLookup;
 
   let cumulative = 0;
+  let cumCogs = 0;
   const chartData = period.map(({ year, month }) => {
     const revenue = lookup(year, "revenue", month);
     const cogs = lookup(year, "cogs", month);
     cumulative += revenue;
+    cumCogs += cogs;
     return {
       label: `'${String(year).slice(2)}.${String(month).padStart(2, "0")}`,
-      revenue: Math.round(convert(revenue) * 10) / 10,
-      cumulative: Math.round(convert(cumulative) * 10) / 10,
-      ratio: revenue > 0 ? Math.round((cogs / revenue) * 1000) / 10 : null,
+      revenue: Math.round(convert(revenue)),
+      cumulative: Math.round(convert(cumulative)),
+      // 누계 원가율 — 기간 초부터 해당 월까지 누적된 원가/매출 비율 (매월 갱신)
+      ratio: cumulative > 0 ? Math.round((cumCogs / cumulative) * 1000) / 10 : null,
     };
+  });
+  let lastRatioIdx = -1;
+  chartData.forEach((d, i) => {
+    if (d.ratio != null) lastRatioIdx = i;
   });
 
   const hasData = chartData.some((d) => d.revenue !== 0 || d.cumulative !== 0);
@@ -206,8 +213,9 @@ export function SaleProfitTab({
                 tickLine={false}
                 axisLine={{ stroke: chartTheme.axisLine }}
               />
-              <YAxis hide domain={[0, Math.max(maxRevenue * 1.25, 1)]} />
-              <YAxis yAxisId="cum" hide domain={[0, Math.max(maxCum * 1.15, 1)]} />
+              {/* 막대는 아래쪽 절반, 누계 선은 위쪽에 배치해 숫자 겹침 방지 */}
+              <YAxis hide domain={[0, Math.max(maxRevenue * 2.4, 1)]} />
+              <YAxis yAxisId="cum" hide domain={[0, Math.max(maxCum * 1.1, 1)]} />
               <Tooltip contentStyle={{ fontSize: "11px" }} />
               <Legend wrapperStyle={{ fontSize: "10px" }} />
               <Bar
@@ -221,7 +229,7 @@ export function SaleProfitTab({
                   dataKey="revenue"
                   position="top"
                   style={{ fontSize: "9px", fill: chartTheme.axisText }}
-                  formatter={(v: number) => v.toLocaleString()}
+                  formatter={(v: number) => Math.round(v).toLocaleString()}
                 />
               </Bar>
               <Line
@@ -237,8 +245,9 @@ export function SaleProfitTab({
                 <LabelList
                   dataKey="cumulative"
                   position="top"
+                  offset={8}
                   style={{ fontSize: "9px", fill: chartTheme.outflowRed }}
-                  formatter={(v: number) => v.toLocaleString()}
+                  formatter={(v: number) => Math.round(v).toLocaleString()}
                 />
               </Line>
             </ComposedChart>
@@ -265,19 +274,48 @@ export function SaleProfitTab({
                 <Tooltip contentStyle={{ fontSize: "11px" }} formatter={(v) => `${v}%`} />
                 <Line
                   dataKey="ratio"
-                  name="원가율"
+                  name="누계 원가율"
                   type="monotone"
                   stroke={chartTheme.profitGreen}
                   strokeWidth={2}
-                  dot={{ r: 3 }}
+                  dot={(props: { cx?: number; cy?: number; index?: number; key?: string }) => {
+                    const { cx, cy, index, key } = props;
+                    if (cx == null || cy == null) return <g key={key} />;
+                    const isLast = index === lastRatioIdx;
+                    return (
+                      <circle
+                        key={key}
+                        cx={cx}
+                        cy={cy}
+                        r={isLast ? 6 : 3}
+                        fill={isLast ? chartTheme.sgaOrange : chartTheme.profitGreen}
+                        stroke="#fff"
+                        strokeWidth={isLast ? 2 : 0}
+                      />
+                    );
+                  }}
                   connectNulls
                   isAnimationActive={false}
                 >
                   <LabelList
                     dataKey="ratio"
-                    position="top"
-                    style={{ fontSize: "9px", fill: chartTheme.profitGreen }}
-                    formatter={(v: number) => `${v}%`}
+                    content={(props) => {
+                      const { x, y, value, index } = props as { x?: number; y?: number; value?: number | null; index?: number };
+                      if (value == null || x == null || y == null) return null;
+                      const isLast = index === lastRatioIdx;
+                      return (
+                        <text
+                          x={x}
+                          y={y - (isLast ? 14 : 10)}
+                          textAnchor="middle"
+                          fontSize={isLast ? 14 : 9}
+                          fontWeight={isLast ? 700 : 400}
+                          fill={isLast ? chartTheme.sgaOrange : chartTheme.profitGreen}
+                        >
+                          {value}%
+                        </text>
+                      );
+                    }}
                   />
                 </Line>
               </ComposedChart>
