@@ -406,19 +406,25 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
 
   const pendingRef = useRef(false);
   const queuedRef = useRef(false);
+  const [cardMsgs, setCardMsgs] = useState<Record<string, string | null>>({});
 
-  const save = () => {
+  const save = (card?: string) => {
     if (pendingRef.current) {
       queuedRef.current = true;
       return;
     }
     setSaveMsg(null);
+    if (card) setCardMsgs((m) => ({ ...m, [card]: null }));
+    const report = (msg: string) => {
+      if (card) setCardMsgs((m) => ({ ...m, [card]: msg }));
+      else setSaveMsg(msg);
+    };
     const progressRows = progress.filter(
       (p) => p.year !== 0 || p.month !== 0 || p.planPct != null || p.actualPct != null || p.planCumPct != null || p.actualCumPct != null,
     );
     const validationError = validateProgress(progressRows);
     if (validationError) {
-      setSaveMsg(validationError);
+      report(validationError);
       return;
     }
     // 준공 전망(completion) 검증: 기준월 중복 및 기준월 없는 행 다중 입력 방지
@@ -427,7 +433,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       const completions = estRows.filter((e) => e.kind === "completion");
       const undated = completions.filter((e) => e.year == null || e.month == null);
       if (undated.length > 1) {
-        setSaveMsg("준공 전망(Estimated Completion)에서 기준월이 없는 행은 1건만 입력할 수 있습니다. 기준월을 지정해 주세요.");
+        report("준공 전망(Estimated Completion)에서 기준월이 없는 행은 1건만 입력할 수 있습니다. 기준월을 지정해 주세요.");
         return;
       }
       const seen = new Set<string>();
@@ -435,7 +441,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
         if (c.year == null || c.month == null) continue;
         const key = `${c.year}-${c.month}`;
         if (seen.has(key)) {
-          setSaveMsg(`준공 전망(Estimated Completion)에 같은 기준월(${c.year}.${String(c.month).padStart(2, "0")})이 중복 입력되었습니다.`);
+          report(`준공 전망(Estimated Completion)에 같은 기준월(${c.year}.${String(c.month).padStart(2, "0")})이 중복 입력되었습니다.`);
           return;
         }
         seen.add(key);
@@ -466,7 +472,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
           }
         },
         onSuccess: () => {
-          setSaveMsg("저장되었습니다.");
+          report("저장되었습니다.");
           queryClient.invalidateQueries({ queryKey: getGetProjectdetailQueryKey({ projectName }) });
         },
         onError: (err: unknown) => {
@@ -474,7 +480,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
             typeof err === "object" && err != null && "data" in err
               ? (err as { data?: { error?: string } | null }).data?.error
               : undefined;
-          setSaveMsg(serverMsg || "저장에 실패했습니다. 다시 시도해 주세요.");
+          report(serverMsg || "저장에 실패했습니다. 다시 시도해 주세요.");
         },
       },
     );
@@ -543,6 +549,37 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
 
   const nowYear = new Date().getFullYear();
 
+  // 카드별 저장 버튼 + 결과 메시지가 있는 섹션 헤더
+  const cardHead = (label: string, key: string) => (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
+      <span style={sectionTitle}>{label}</span>
+      <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
+        {cardMsgs[key] && (
+          <span style={{ fontSize: "11px", color: cardMsgs[key] === "저장되었습니다." ? "#3e7d4c" : "#c0392b" }}>
+            {cardMsgs[key]}
+          </span>
+        )}
+        <button
+          onClick={() => save(key)}
+          disabled={mutation.isPending}
+          style={{
+            padding: "4px 14px",
+            fontSize: "11px",
+            fontWeight: 600,
+            backgroundColor: "#2e4568",
+            color: "#fff",
+            border: "none",
+            borderRadius: "4px",
+            cursor: mutation.isPending ? "wait" : "pointer",
+            opacity: mutation.isPending ? 0.6 : 1,
+          }}
+        >
+          저장
+        </button>
+      </span>
+    </div>
+  );
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
       <div style={{ ...cardStyle, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -597,7 +634,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
             </span>
           )}
           <button
-            onClick={save}
+            onClick={() => save()}
             disabled={mutation.isPending}
             style={{
               display: "flex",
@@ -686,7 +723,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
 
       {/* 1. 월별 공정률 */}
       <div style={cardStyle}>
-        <span style={sectionTitle}>1. 월별 공정률 (공정 탭)</span>
+        {cardHead("1. 월별 공정률 (공정 탭)", "progress")}
         <div data-tbl="progress" onKeyDown={makeArrowNav("progress")}>
         <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px" }}>
           <thead>
@@ -733,7 +770,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
 
       {/* 2. 마일스톤 */}
       <div style={cardStyle}>
-        <span style={sectionTitle}>2. 마일스톤 (공정 탭)</span>
+        {cardHead("2. 마일스톤 (공정 탭)", "milestones")}
         <div data-tbl="milestones" onKeyDown={makeArrowNav("milestones")}>
         <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px" }}>
           <thead>
@@ -772,7 +809,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
 
       {/* 3. 원가율 */}
       <div style={cardStyle}>
-        <span style={sectionTitle}>{service ? "1. 도급액·원가 (개요)" : "3. 원가율 (원가 탭)"}</span>
+        {cardHead(service ? "1. 도급액·원가 (개요)" : "3. 원가율 (원가 탭)", "costEstimation")}
         <div data-tbl="costEst" onKeyDown={makeArrowNav("costEst")}>
         <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px" }}>
           <thead>
@@ -847,7 +884,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
 
       {/* 4. 예산 집행 현황 */}
       <div style={cardStyle}>
-        <span style={sectionTitle}>{service ? "2. 예산 집행 현황 (예산집행 탭)" : "4. 예산 집행 현황 (원가 탭)"}</span>
+        {cardHead(service ? "2. 예산 집행 현황 (예산집행 탭)" : "4. 예산 집행 현황 (원가 탭)", "costBudget")}
         <div style={{ fontSize: "10px", color: "#777", marginTop: "4px" }}>
           Direct Cost 중 Common·Expense 1만 여기서 입력합니다. 외주성 예산·집행 실적은 아래 "외주/자재" 표에서 자동 집계됩니다.
         </div>
@@ -877,7 +914,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
 
       {/* 5. 외주/자재 */}
       <div style={cardStyle}>
-        <span style={sectionTitle}>{service ? "3. 외주/자재 (외주 탭)" : "5. 외주/자재 (외주 탭)"}</span>
+        {cardHead(service ? "3. 외주/자재 (외주 탭)" : "5. 외주/자재 (외주 탭)", "outsourcing")}
         <div data-tbl="outsourcing" onKeyDown={makeArrowNav("outsourcing")}>
         <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px" }}>
           <thead>
@@ -942,7 +979,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
 
       {/* 6. 월별 자금 */}
       <div style={cardStyle}>
-        <span style={sectionTitle}>{service ? "4. 월별 자금 (자금 탭)" : "6. 월별 자금 (자금 탭)"}</span>
+        {cardHead(service ? "4. 월별 자금 (자금 탭)" : "6. 월별 자금 (자금 탭)", "cashflow")}
         <div data-tbl="cashflow" onKeyDown={makeArrowNav("cashflow")}>
         <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px" }}>
           <thead>
@@ -996,7 +1033,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       {/* 7. 현장 사진 */}
       {!service && (
       <div style={cardStyle}>
-        <span style={sectionTitle}>7. 현장 사진 (개요 탭)</span>
+        {cardHead("7. 현장 사진 (개요 탭)", "photos")}
         <div style={{ marginTop: "8px", display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
           <input
             ref={fileInputRef}
