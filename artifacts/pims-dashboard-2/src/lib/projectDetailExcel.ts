@@ -6,6 +6,7 @@ import type {
   ProjectDetailCostBudget,
   ProjectDetailOutsourcing,
   ProjectDetailCashflowPoint,
+  ProjectDetailCogsPoint,
 } from "@workspace/api-client-react";
 
 // 시트/헤더 정의 — 다운로드와 업로드가 같은 양식을 사용한다. (금액 단위: 천 USD 원본값 그대로)
@@ -17,6 +18,7 @@ const SHEETS = {
   costBudget: "4.예산집행",
   outsourcing: "5.외주자재",
   cashflow: "6.월별자금",
+  cogsMonthly: "7.월별매출원가",
 } as const;
 
 const HEADERS: Record<string, string[]> = {
@@ -38,6 +40,7 @@ const HEADERS: Record<string, string[]> = {
     "누계(천USD)",
   ],
   [SHEETS.cashflow]: ["연도", "월", "수입(천USD)", "지출(천USD)", "보유현금(천USD)"],
+  [SHEETS.cogsMonthly]: ["연도", "월", "회계 매출원가(천USD)", "집행 매출원가 WIP(천USD)"],
 };
 
 type Cell = string | number | null;
@@ -76,6 +79,12 @@ export async function downloadProjectDetailTemplate(projectName: string, detail:
       ["준공일(YYYY-MM-DD)", ov.endDate ?? null],
       ["도급액(천USD)", ov.contractAmount ?? null],
       ["공사규모", ov.scale ?? null],
+      ["작성 기준월(YYYY-MM)", ov.asOfMonth ?? null],
+      ["수행내용", ov.scope ?? null],
+      ["연간 매출 목표(천USD)", ov.revenueAnnualTarget ?? null],
+      ["누계 매출 실적(천USD)", ov.revenueTotal ?? null],
+      ["Cash Confirmed(천USD)", ov.cashConfirmed ?? null],
+      ["Cash Collection(천USD)", ov.cashCollection ?? null],
     ];
     for (const [k, v] of rows) {
       const r = ws.addRow([k, v]);
@@ -120,6 +129,10 @@ export async function downloadProjectDetailTemplate(projectName: string, detail:
   addSheet(
     SHEETS.cashflow,
     detail.cashflow.map((c) => [c.year, c.month, c.cashIn ?? null, c.cashOut ?? null, c.equivalent ?? null]),
+  );
+  addSheet(
+    SHEETS.cogsMonthly,
+    (detail.cogsMonthly ?? []).map((c) => [c.year, c.month, c.acctCogs ?? null, c.wipCogs ?? null]),
   );
 
   const buf = await wb.xlsx.writeBuffer();
@@ -175,8 +188,11 @@ function cellInt(v: unknown): number | null {
 function cellYm(v: unknown): string | null {
   const s = cellStr(v);
   if (!s) return null;
-  const m = /^(\d{4})[-./](\d{1,2})/.exec(s);
+  // 전체 문자열이 YYYY-MM 또는 YYYY-MM-DD 형태여야 하고, 월은 1~12만 허용
+  const m = /^(\d{4})[-./](\d{1,2})(?:[-./]\d{1,2})?$/.exec(s);
   if (!m) return null;
+  const month = Number(m[2]);
+  if (month < 1 || month > 12) return null;
   return `${m[1]}-${m[2].padStart(2, "0")}`;
 }
 
@@ -226,6 +242,19 @@ export async function parseProjectDetailWorkbook(file: File, existing: ProjectDe
         contractAmount: cellNum(map.get("도급액")) ?? null,
         scale: cellStr(map.get("공사규모")) ?? null,
       };
+      // 신규 항목: 해당 행이 양식에 존재할 때만 반영(구버전 양식은 기존 값 유지)
+      if (map.has("작성 기준월")) {
+        const ym = cellYm(map.get("작성 기준월"));
+        if (map.get("작성 기준월") != null && cellStr(map.get("작성 기준월")) != null && ym == null) {
+          throw new ExcelParseError(`[${SHEETS.overview}] 작성 기준월은 YYYY-MM 형식으로 입력해 주세요.`);
+        }
+        result.overview.asOfMonth = ym;
+      }
+      if (map.has("수행내용")) result.overview.scope = cellStr(map.get("수행내용"));
+      if (map.has("연간 매출 목표")) result.overview.revenueAnnualTarget = cellNum(map.get("연간 매출 목표"));
+      if (map.has("누계 매출 실적")) result.overview.revenueTotal = cellNum(map.get("누계 매출 실적"));
+      if (map.has("Cash Confirmed")) result.overview.cashConfirmed = cellNum(map.get("Cash Confirmed"));
+      if (map.has("Cash Collection")) result.overview.cashCollection = cellNum(map.get("Cash Collection"));
     }
   }
 
@@ -369,6 +398,28 @@ export async function parseProjectDetailWorkbook(file: File, existing: ProjectDe
         out.push({ year, month, cashIn: cellNum(r[2]), cashOut: cellNum(r[3]), equivalent: cellNum(r[4]) });
       });
       result.cashflow = out;
+    }
+  }
+
+  // 월별 매출원가
+  {
+    const rows = rowsOf(SHEETS.cogsMonthly, true);
+    if (rows) {
+      const out: ProjectDetailCogsPoint[] = [];
+      const seen = new Set<string>();
+      rows.forEach((r, i) => {
+        const year = cellInt(r[0]);
+        const month = cellInt(r[1]);
+        if (year == null || month == null) throw new ExcelParseError(`[${SHEETS.cogsMonthly}] ${i + 2}행: 연도/월이 비어 있습니다.`);
+        if (month < 1 || month > 12) throw new ExcelParseError(`[${SHEETS.cogsMonthly}] ${i + 2}행: 월(${month})이 올바르지 않습니다.`);
+        const key = `${year}-${month}`;
+        if (seen.has(key)) {
+          throw new ExcelParseError(`[${SHEETS.cogsMonthly}] 같은 월(${year}.${String(month).padStart(2, "0")})이 중복 입력되었습니다.`);
+        }
+        seen.add(key);
+        out.push({ year, month, acctCogs: cellNum(r[2]), wipCogs: cellNum(r[3]) });
+      });
+      result.cogsMonthly = out;
     }
   }
 

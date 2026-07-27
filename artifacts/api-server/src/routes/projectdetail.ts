@@ -226,6 +226,14 @@ router.put("/projectdetail", requireAdmin, async (req, res) => {
     return;
   }
 
+  {
+    const asOf = body.overview.asOfMonth;
+    if (asOf != null && asOf.trim() !== "" && !/^\d{4}-(0[1-9]|1[0-2])$/.test(asOf.trim())) {
+      res.status(400).json({ error: "작성 기준월은 YYYY-MM 형식이어야 합니다." });
+      return;
+    }
+  }
+
   try {
     await db.transaction(async (tx) => {
       // 구버전 클라이언트/Excel 업로드가 신규 필드를 생략(undefined)한 경우 기존 값을 보존한다.
