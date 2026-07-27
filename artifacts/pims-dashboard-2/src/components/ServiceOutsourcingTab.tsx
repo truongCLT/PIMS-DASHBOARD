@@ -1,5 +1,6 @@
 import React from "react";
-import { useProjectDetail, fmtNum, fmtPct, ratioPct } from "../lib/projectDetailData";
+import { useProjectDetail, fmtPct, ratioPct } from "../lib/projectDetailData";
+import { useMoney } from "../lib/displayUnit";
 
 const HEADER_BG = "#2e3a4f";
 
@@ -29,6 +30,7 @@ const tdRight: React.CSSProperties = { ...tdStyle, textAlign: "right" };
 
 export function ServiceOutsourcingTab({ projectName }: { projectName: string }) {
   const { detail, isLoading } = useProjectDetail(projectName);
+  const { fmtMoney } = useMoney();
   const rows = detail?.outsourcing ?? [];
 
   const sum = {
@@ -90,11 +92,11 @@ export function ServiceOutsourcingTab({ projectName }: { projectName: string }) 
                   </td>
                   <td style={tdCenter}>{r.contractDate ?? "-"}</td>
                   <td style={tdCenter}>{r.changeNo ?? "-"}</td>
-                  <td style={tdRight}>{fmtNum(r.budget)}</td>
-                  <td style={tdRight}>{fmtNum(r.resolved)}</td>
+                  <td style={tdRight}>{fmtMoney(r.budget)}</td>
+                  <td style={tdRight}>{fmtMoney(r.resolved)}</td>
                   <td style={tdCenter}>{fmtPct(ratioPct(r.resolved, r.budget))}</td>
-                  <td style={tdRight}>{fmtNum(r.thisMonth)}</td>
-                  <td style={tdRight}>{fmtNum(r.accum)}</td>
+                  <td style={tdRight}>{fmtMoney(r.thisMonth)}</td>
+                  <td style={tdRight}>{fmtMoney(r.accum)}</td>
                   <td style={tdRight}>{fmtPct(ratioPct(r.accum, r.resolved))}</td>
                 </tr>
               ))}
@@ -104,11 +106,11 @@ export function ServiceOutsourcingTab({ projectName }: { projectName: string }) 
                 <td style={tdCenter}></td>
                 <td style={tdCenter}></td>
                 <td style={tdCenter}></td>
-                <td style={{ ...tdRight, fontWeight: 600 }}>{fmtNum(sum.budget)}</td>
-                <td style={{ ...tdRight, fontWeight: 600 }}>{fmtNum(sum.resolved)}</td>
+                <td style={{ ...tdRight, fontWeight: 600 }}>{fmtMoney(sum.budget)}</td>
+                <td style={{ ...tdRight, fontWeight: 600 }}>{fmtMoney(sum.resolved)}</td>
                 <td style={{ ...tdCenter, fontWeight: 600 }}>{fmtPct(ratioPct(sum.resolved, sum.budget))}</td>
-                <td style={{ ...tdRight, fontWeight: 600 }}>{fmtNum(sum.thisMonth)}</td>
-                <td style={{ ...tdRight, fontWeight: 600 }}>{fmtNum(sum.accum)}</td>
+                <td style={{ ...tdRight, fontWeight: 600 }}>{fmtMoney(sum.thisMonth)}</td>
+                <td style={{ ...tdRight, fontWeight: 600 }}>{fmtMoney(sum.accum)}</td>
                 <td style={{ ...tdRight, fontWeight: 600 }}>{fmtPct(ratioPct(sum.accum, sum.resolved))}</td>
               </tr>
             </>

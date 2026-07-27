@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { ProjectCommentPanel } from "./ProjectCommentPanel";
 
-import { useProjectDetail, fmtNum, fmtPct, ratioPct } from "../lib/projectDetailData";
+import { useProjectDetail, fmtPct, ratioPct } from "../lib/projectDetailData";
+import { useMoney } from "../lib/displayUnit";
 import { chartTheme } from "../lib/chartTheme";
 
 const cardStyle: React.CSSProperties = {
@@ -93,6 +94,7 @@ function HBar({
 
 export function ServiceBudgetTab({ projectName }: { projectName: string }) {
   const { detail, isLoading } = useProjectDetail(projectName);
+  const { fmtMoney, unitLabel } = useMoney();
 
   const rows = (detail?.costBudget ?? []).filter((c) => c.budget != null || c.actual != null);
   const totalBudget = rows.some((c) => c.budget != null) ? rows.reduce((a, c) => a + (c.budget ?? 0), 0) : null;
@@ -108,6 +110,7 @@ export function ServiceBudgetTab({ projectName }: { projectName: string }) {
       <div style={{ ...cardStyle, padding: "14px 18px 24px" }}>
         <span style={{ fontSize: "11px", fontWeight: 600, color: "#4472c4" }}>
           Budget <u>Execution Status</u>
+          <span style={{ marginLeft: "8px", fontSize: "10px", fontWeight: 500, color: "#8a97a8" }}>단위: {unitLabel}</span>
         </span>
 
         {isLoading ? (
@@ -126,9 +129,9 @@ export function ServiceBudgetTab({ projectName }: { projectName: string }) {
                   label={c.category ? `${c.category} · ${c.item}` : c.item}
                   totalWidth={widthPct(c.budget)}
                   execRatio={ratio}
-                  execLabel={c.actual != null ? fmtNum(c.actual) : undefined}
+                  execLabel={c.actual != null ? fmtMoney(c.actual) : undefined}
                   pctLabel={fmtPct(ratioPct(c.actual, c.budget)) === "-" ? undefined : fmtPct(ratioPct(c.actual, c.budget))}
-                  totalLabel={fmtNum(c.budget)}
+                  totalLabel={fmtMoney(c.budget)}
                   execColor={chartTheme.planBlue}
                 />
               );
@@ -137,9 +140,9 @@ export function ServiceBudgetTab({ projectName }: { projectName: string }) {
               label="Sum"
               totalWidth={widthPct(totalBudget)}
               execRatio={totalBudget != null && totalBudget > 0 && totalActual != null ? totalActual / totalBudget : 0}
-              execLabel={totalActual != null ? fmtNum(totalActual) : undefined}
+              execLabel={totalActual != null ? fmtMoney(totalActual) : undefined}
               pctLabel={fmtPct(ratioPct(totalActual, totalBudget)) === "-" ? undefined : fmtPct(ratioPct(totalActual, totalBudget))}
-              totalLabel={fmtNum(totalBudget)}
+              totalLabel={fmtMoney(totalBudget)}
               execColor={chartTheme.planBlue}
             />
           </div>

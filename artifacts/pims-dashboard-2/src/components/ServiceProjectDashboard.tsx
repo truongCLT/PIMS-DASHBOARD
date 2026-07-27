@@ -7,8 +7,9 @@ import { ServiceOutsourcingTab } from "./ServiceOutsourcingTab";
 import { ServiceCashflowTab } from "./ServiceCashflowTab";
 import { ServiceBudgetTab } from "./ServiceBudgetTab";
 import { ProjectDataEntryTab } from "./ProjectDataEntryTab";
-import { useProjectDetail, fmtNum, fmtPct, ratioPct } from "../lib/projectDetailData";
+import { useProjectDetail, fmtPct, ratioPct } from "../lib/projectDetailData";
 import { useAdminAuth } from "../lib/adminAuth";
+import { DisplayUnitProvider, formatMoney, moneyUnitLabel } from "../lib/displayUnit";
 
 const cardStyle: React.CSSProperties = {
   backgroundColor: "#fff",
@@ -144,6 +145,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
     null;
 
   return (
+    <DisplayUnitProvider currency={currency} unitOn={unitOn}>
     <div style={{ flex: 1, overflowY: "auto", backgroundColor: "#e8edf3" }}>
       {/* Banner */}
       <div
@@ -255,7 +257,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
           <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 0", fontSize: "12px", color: "#1a2d4d" }}>
             <span style={{ fontWeight: 700, paddingRight: "14px" }}>Project : {projectName}</span>
             <span style={{ borderLeft: "1px solid #d5dce6", padding: "0 14px" }}>
-              도급액 : {contractAmount != null ? `${fmtNum(contractAmount)} 천 USD` : "-"}
+              도급액 : {contractAmount != null ? `${formatMoney(contractAmount, currency, unitOn)} ${moneyUnitLabel(currency, unitOn)}` : "-"}
             </span>
           </div>
         </div>
@@ -364,7 +366,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                       const pct = ratioPct(g.actual, g.budget);
                       return (
                         <div key={`${g.item}-${gi}`} style={{ textAlign: "center" }}>
-                          <div style={{ fontSize: "9px", color: "#555", marginBottom: "2px" }}>{fmtNum(g.budget)}</div>
+                          <div style={{ fontSize: "9px", color: "#555", marginBottom: "2px" }}>{formatMoney(g.budget, currency, unitOn)}</div>
                           <div style={{ height: `${H}px`, display: "flex", alignItems: "flex-end", gap: "3px", justifyContent: "center" }}>
                             <div style={{ width: "24px", height: `${bh}px`, backgroundColor: "#d9dee5" }} />
                             {sh > 0 && (
@@ -380,7 +382,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                                     fontWeight: 700,
                                   }}
                                 >
-                                  {fmtNum(g.actual)}
+                                  {formatMoney(g.actual, currency, unitOn)}
                                 </span>
                               </div>
                             )}
@@ -419,7 +421,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                       color="#c9d2dd"
                       label="예산 (A)"
                       height={150}
-                      valueLabel={fmtNum(outSum.budget)}
+                      valueLabel={formatMoney(outSum.budget, currency, unitOn)}
                       width={24}
                     />
                     <MiniBar
@@ -428,7 +430,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                       color="#c9d2dd"
                       label="결의금액 (B)"
                       height={150}
-                      valueLabel={fmtNum(outSum.resolved)}
+                      valueLabel={formatMoney(outSum.resolved, currency, unitOn)}
                       width={24}
                     />
                     <MiniBar
@@ -437,7 +439,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                       color="#2b5cad"
                       label="기성 누계 (C)"
                       height={150}
-                      valueLabel={fmtNum(outSum.accum)}
+                      valueLabel={formatMoney(outSum.accum, currency, unitOn)}
                       width={24}
                     />
                     <MiniBar
@@ -446,7 +448,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                       color="#c0392b"
                       label="잔여 (B)-(C)"
                       height={150}
-                      valueLabel={fmtNum(outstanding)}
+                      valueLabel={formatMoney(outstanding, currency, unitOn)}
                       width={24}
                     />
                   </div>
@@ -474,5 +476,6 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
         )}
       </div>
     </div>
+    </DisplayUnitProvider>
   );
 }
