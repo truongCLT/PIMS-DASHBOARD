@@ -18,6 +18,7 @@ import { useMrProject } from "../data/mrProjectLinks";
 import { REPORT_YEAR } from "../lib/mgmtreportData";
 import { chartTheme } from "../lib/chartTheme";
 import { useMoney } from "../lib/displayUnit";
+import { useProjectDetail } from "../lib/projectDetailData";
 import { ProjectCommentPanel } from "./ProjectCommentPanel";
 
 const cardStyle: React.CSSProperties = {
@@ -67,6 +68,7 @@ export function SaleProfitTab({
   months: number;
 }) {
   const { convert, unitLabel } = useMoney();
+  const { detail: pdDetail, isLoading: pdLoading } = useProjectDetail(projectName);
   // Build the requested (year, month) list from the period filter
   const period: { year: number; month: number }[] = [];
   {
@@ -171,8 +173,29 @@ export function SaleProfitTab({
     if (d.ratio != null) lastRatioIdx = i;
   });
 
+  // 데이터 입력 탭의 월별 매출원가 (회계 vs 집행 WIP) — Cost 차트
+  const cogsMap = new Map<string, { acctCogs: number | null; wipCogs: number | null }>();
+  for (const c of pdDetail?.cogsMonthly ?? []) {
+    cogsMap.set(`${c.year}-${c.month}`, { acctCogs: c.acctCogs ?? null, wipCogs: c.wipCogs ?? null });
+  }
+  let cumAcct = 0;
+  let cumWip = 0;
+  const cogsChartData = period.map(({ year, month }) => {
+    const row = cogsMap.get(`${year}-${month}`);
+    cumAcct += row?.acctCogs ?? 0;
+    cumWip += row?.wipCogs ?? 0;
+    return {
+      label: `'${String(year).slice(2)}.${String(month).padStart(2, "0")}`,
+      acctCogs: row?.acctCogs != null ? Math.round(convert(row.acctCogs)) : 0,
+      wipCogs: row?.wipCogs != null ? Math.round(convert(row.wipCogs)) : 0,
+      acctCum: Math.round(convert(cumAcct)),
+      wipCum: Math.round(convert(cumWip)),
+    };
+  });
+  const hasCogs = cogsChartData.some((d) => d.acctCogs !== 0 || d.wipCogs !== 0);
+
   const hasData = chartData.some((d) => d.revenue !== 0 || d.cumulative !== 0);
-  if (isLoading) {
+  if (isLoading || pdLoading) {
     return (
       <div style={cardStyle}>
         <Notice>매출/원가 데이터를 불러오는 중입니다…</Notice>
@@ -186,7 +209,7 @@ export function SaleProfitTab({
       </div>
     );
   }
-  if (!hasData) {
+  if (!hasData && !hasCogs) {
     return (
       <div style={cardStyle}>
         <Notice>선택한 기간에 매출 데이터가 없습니다.</Notice>
@@ -253,6 +276,76 @@ export function SaleProfitTab({
             </ComposedChart>
           </ResponsiveContainer>
         </div>
+      </div>
+
+      {/* Cost — 회계 vs 집행(WIP) 매출원가 */}
+      <div style={cardStyle}>
+        <span style={sectionTitle}>Cost ({unitLabel})</span>
+        {!hasCogs ? (
+          <Notice>
+            선택한 기간에 매출원가 데이터가 없습니다. 관리자 모드로 로그인하면 "데이터 입력" 탭의 "월별 매출원가" 표에서 입력할 수 있습니다.
+          </Notice>
+        ) : (
+          <div style={{ width: "100%", height: "260px", marginTop: "8px" }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart data={cogsChartData} margin={{ top: 30, right: 40, left: 40, bottom: 0 }}>
+                <XAxis
+                  dataKey="label"
+                  tick={{ fontSize: 10, fill: chartTheme.axisText }}
+                  tickLine={false}
+                  axisLine={{ stroke: chartTheme.axisLine }}
+                />
+                <YAxis
+                  hide
+                  domain={[0, Math.max(...cogsChartData.map((d) => Math.max(d.acctCogs, d.wipCogs)), 1) * 2.4]}
+                />
+                <YAxis
+                  yAxisId="cum"
+                  hide
+                  domain={[0, Math.max(...cogsChartData.map((d) => Math.max(d.acctCum, d.wipCum)), 1) * 1.1]}
+                />
+                <Tooltip contentStyle={{ fontSize: "11px" }} />
+                <Legend wrapperStyle={{ fontSize: "10px" }} />
+                <Bar dataKey="acctCogs" name="회계 매출원가" fill={chartTheme.planBlue} barSize={14} isAnimationActive={false}>
+                  <LabelList
+                    dataKey="acctCogs"
+                    position="top"
+                    style={{ fontSize: "9px", fill: chartTheme.axisText }}
+                    formatter={(v: number) => (v !== 0 ? Math.round(v).toLocaleString() : "")}
+                  />
+                </Bar>
+                <Bar dataKey="wipCogs" name="집행 매출원가 (WIP)" fill={chartTheme.actualGreen} barSize={14} isAnimationActive={false}>
+                  <LabelList
+                    dataKey="wipCogs"
+                    position="top"
+                    style={{ fontSize: "9px", fill: chartTheme.axisText }}
+                    formatter={(v: number) => (v !== 0 ? Math.round(v).toLocaleString() : "")}
+                  />
+                </Bar>
+                <Line
+                  yAxisId="cum"
+                  dataKey="acctCum"
+                  name="회계 매출원가 누계"
+                  type="monotone"
+                  stroke={chartTheme.outflowRed}
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                  isAnimationActive={false}
+                />
+                <Line
+                  yAxisId="cum"
+                  dataKey="wipCum"
+                  name="집행 매출원가 (WIP) 누계"
+                  type="monotone"
+                  stroke={chartTheme.sgaOrange}
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                  isAnimationActive={false}
+                />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
+        )}
       </div>
 
       {/* Cost ratio */}

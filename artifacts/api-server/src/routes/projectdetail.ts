@@ -10,6 +10,7 @@ import {
   pdCostBudgetTable,
   pdOutsourcingTable,
   pdCashflowMonthlyTable,
+  pdCogsMonthlyTable,
   pdPhotosTable,
 } from "@workspace/db";
 import {
@@ -28,11 +29,13 @@ import { requireAdmin } from "../middlewares/adminAuth";
 
 const router: IRouter = Router();
 
+class DuplicateCogsMonthError extends Error {}
+
 const num = (v: string | null) => (v == null ? null : Number(v));
 const str = (v: number | null | undefined) => (v == null ? null : String(v));
 
 async function loadDetail(projectName: string) {
-  const [overviewRows, progress, milestones, costEstimation, costBudget, outsourcing, cashflow, photos] = await Promise.all([
+  const [overviewRows, progress, milestones, costEstimation, costBudget, outsourcing, cashflow, cogsMonthly, photos] = await Promise.all([
     db
       .select()
       .from(pdOverviewTable)
@@ -69,6 +72,11 @@ async function loadDetail(projectName: string) {
       .orderBy(asc(pdCashflowMonthlyTable.year), asc(pdCashflowMonthlyTable.month)),
     db
       .select()
+      .from(pdCogsMonthlyTable)
+      .where(eq(pdCogsMonthlyTable.projectName, projectName))
+      .orderBy(asc(pdCogsMonthlyTable.year), asc(pdCogsMonthlyTable.month)),
+    db
+      .select()
       .from(pdPhotosTable)
       .where(eq(pdPhotosTable.projectName, projectName))
       .orderBy(asc(pdPhotosTable.sortOrder), asc(pdPhotosTable.id)),
@@ -84,6 +92,12 @@ async function loadDetail(projectName: string) {
       endDate: ov?.endDate ?? null,
       client: ov?.client ?? null,
       scale: ov?.scale ?? null,
+      asOfMonth: ov?.asOfMonth ?? null,
+      scope: ov?.scope ?? null,
+      revenueAnnualTarget: ov ? num(ov.revenueAnnualTarget) : null,
+      revenueTotal: ov ? num(ov.revenueTotal) : null,
+      cashConfirmed: ov ? num(ov.cashConfirmed) : null,
+      cashCollection: ov ? num(ov.cashCollection) : null,
     },
     progress: progress.map((p) => ({
       year: p.year,
@@ -133,6 +147,12 @@ async function loadDetail(projectName: string) {
       cashIn: num(c.cashIn),
       cashOut: num(c.cashOut),
       equivalent: num(c.equivalent),
+    })),
+    cogsMonthly: cogsMonthly.map((c) => ({
+      year: c.year,
+      month: c.month,
+      acctCogs: num(c.acctCogs),
+      wipCogs: num(c.wipCogs),
     })),
     photos: photos.map((p) => ({ objectPath: p.objectPath })),
   };
@@ -208,6 +228,13 @@ router.put("/projectdetail", requireAdmin, async (req, res) => {
 
   try {
     await db.transaction(async (tx) => {
+      // 구버전 클라이언트/Excel 업로드가 신규 필드를 생략(undefined)한 경우 기존 값을 보존한다.
+      const existingOvRows = await tx
+        .select()
+        .from(pdOverviewTable)
+        .where(eq(pdOverviewTable.projectName, projectName));
+      const prevOv = existingOvRows[0];
+
       await tx.delete(pdOverviewTable).where(eq(pdOverviewTable.projectName, projectName));
       await tx.delete(pdProgressMonthlyTable).where(eq(pdProgressMonthlyTable.projectName, projectName));
       await tx.delete(pdMilestonesTable).where(eq(pdMilestonesTable.projectName, projectName));
@@ -215,17 +242,37 @@ router.put("/projectdetail", requireAdmin, async (req, res) => {
       await tx.delete(pdCostBudgetTable).where(eq(pdCostBudgetTable.projectName, projectName));
       await tx.delete(pdOutsourcingTable).where(eq(pdOutsourcingTable.projectName, projectName));
       await tx.delete(pdCashflowMonthlyTable).where(eq(pdCashflowMonthlyTable.projectName, projectName));
+      if (body.cogsMonthly !== undefined) {
+        await tx.delete(pdCogsMonthlyTable).where(eq(pdCogsMonthlyTable.projectName, projectName));
+      }
       await tx.delete(pdPhotosTable).where(eq(pdPhotosTable.projectName, projectName));
 
       const ov = body.overview;
       const client = ov.client?.trim() ? ov.client.trim() : null;
       const scale = ov.scale?.trim() ? ov.scale.trim() : null;
+      // 신규 필드: undefined(생략)는 기존 값 유지, null은 명시적 삭제
+      const asOfMonth =
+        ov.asOfMonth === undefined ? (prevOv?.asOfMonth ?? null) : ov.asOfMonth?.trim() ? ov.asOfMonth.trim() : null;
+      const scope =
+        ov.scope === undefined ? (prevOv?.scope ?? null) : ov.scope?.trim() ? ov.scope.trim() : null;
+      const revenueAnnualTarget =
+        ov.revenueAnnualTarget === undefined ? (prevOv?.revenueAnnualTarget ?? null) : str(ov.revenueAnnualTarget);
+      const revenueTotal = ov.revenueTotal === undefined ? (prevOv?.revenueTotal ?? null) : str(ov.revenueTotal);
+      const cashConfirmed = ov.cashConfirmed === undefined ? (prevOv?.cashConfirmed ?? null) : str(ov.cashConfirmed);
+      const cashCollection =
+        ov.cashCollection === undefined ? (prevOv?.cashCollection ?? null) : str(ov.cashCollection);
       if (
         ov.contractAmount != null ||
         ov.startDate != null ||
         ov.endDate != null ||
         client != null ||
-        scale != null
+        scale != null ||
+        asOfMonth != null ||
+        scope != null ||
+        revenueAnnualTarget != null ||
+        revenueTotal != null ||
+        cashConfirmed != null ||
+        cashCollection != null
       ) {
         await tx.insert(pdOverviewTable).values({
           projectName,
@@ -234,6 +281,12 @@ router.put("/projectdetail", requireAdmin, async (req, res) => {
           endDate: ov.endDate ?? null,
           client,
           scale,
+          asOfMonth,
+          scope,
+          revenueAnnualTarget,
+          revenueTotal,
+          cashConfirmed,
+          cashCollection,
         });
       }
       if (body.progress.length > 0) {
@@ -318,6 +371,26 @@ router.put("/projectdetail", requireAdmin, async (req, res) => {
           })),
         );
       }
+      const cogsRows = body.cogsMonthly ?? [];
+      const cogsKeys = new Set<string>();
+      for (const c of cogsRows) {
+        const k = `${c.year}-${c.month}`;
+        if (cogsKeys.has(k)) {
+          throw new DuplicateCogsMonthError(`${c.year}년 ${c.month}월`);
+        }
+        cogsKeys.add(k);
+      }
+      if (cogsRows.length > 0) {
+        await tx.insert(pdCogsMonthlyTable).values(
+          cogsRows.map((c) => ({
+            projectName,
+            year: c.year,
+            month: c.month,
+            acctCogs: str(c.acctCogs),
+            wipCogs: str(c.wipCogs),
+          })),
+        );
+      }
       if (body.photos.length > 0) {
         await tx.insert(pdPhotosTable).values(
           body.photos.map((p, i) => ({
@@ -332,6 +405,10 @@ router.put("/projectdetail", requireAdmin, async (req, res) => {
     const detail = await loadDetail(projectName);
     res.json(PutProjectdetailResponse.parse(detail));
   } catch (err) {
+    if (err instanceof DuplicateCogsMonthError) {
+      res.status(400).json({ error: `월별 매출원가에 중복된 월이 있습니다: ${err.message}` });
+      return;
+    }
     req.log.error({ err }, "failed to save project detail");
     res.status(500).json({ error: "프로젝트 상세 데이터 저장에 실패했습니다." });
   }

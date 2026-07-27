@@ -19,6 +19,7 @@ import type {
   ProjectDetailCostBudget,
   ProjectDetailOutsourcing,
   ProjectDetailCashflowPoint,
+  ProjectDetailCogsPoint,
   ProjectDetailPhoto,
 } from "@workspace/api-client-react";
 import { useProjectDetail, getGetProjectdetailQueryKey } from "../lib/projectDetailData";
@@ -242,6 +243,20 @@ function DelBtn({ onClick }: { onClick: () => void }) {
   );
 }
 
+const EMPTY_OVERVIEW: ProjectDetailOverview = {
+  contractAmount: null,
+  startDate: null,
+  endDate: null,
+  client: null,
+  scale: null,
+  asOfMonth: null,
+  scope: null,
+  revenueAnnualTarget: null,
+  revenueTotal: null,
+  cashConfirmed: null,
+  cashCollection: null,
+};
+
 const FIXED_BUDGET_ITEMS = ["Common", "Expense 1"];
 
 const TRADE_GROUPS = ["공통", "토목", "건축", "기계", "전기", "조경"];
@@ -278,13 +293,14 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
     );
   };
 
-  const [overview, setOverview] = useState<ProjectDetailOverview>({ contractAmount: null, startDate: null, endDate: null, client: null, scale: null });
+  const [overview, setOverview] = useState<ProjectDetailOverview>(EMPTY_OVERVIEW);
   const [progress, setProgress] = useState<ProjectDetailProgressPoint[]>([]);
   const [milestones, setMilestones] = useState<ProjectDetailMilestone[]>([]);
   const [costEstimation, setCostEstimation] = useState<ProjectDetailCostEstimation[]>([]);
   const [costBudget, setCostBudget] = useState<ProjectDetailCostBudget[]>([]);
   const [outsourcing, setOutsourcing] = useState<ProjectDetailOutsourcing[]>([]);
   const [cashflow, setCashflow] = useState<ProjectDetailCashflowPoint[]>([]);
+  const [cogsMonthly, setCogsMonthly] = useState<ProjectDetailCogsPoint[]>([]);
   const [photos, setPhotos] = useState<ProjectDetailPhoto[]>([]);
   const [uploading, setUploading] = useState(false);
   const [photoMsg, setPhotoMsg] = useState<string | null>(null);
@@ -313,7 +329,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
 
   useEffect(() => {
     if (detail && !loaded && !(cfRef != null && cfQuery.isLoading)) {
-      setOverview(detail.overview ?? { contractAmount: null, startDate: null, endDate: null, client: null, scale: null });
+      setOverview(detail.overview ?? EMPTY_OVERVIEW);
       setProgress(detail.progress);
       setMilestones(detail.milestones);
       {
@@ -353,6 +369,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
         setCashflow(cfRows);
         setCfPrefilled(cfRows.length > 0);
       }
+      setCogsMonthly(detail.cogsMonthly ?? []);
       setPhotos(detail.photos);
       setLoaded(true);
     }
@@ -458,6 +475,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       outsourcing: outsourcing.filter((o) => o.trade.trim() !== ""),
       // 자금수지 Excel prefill을 아직 수정하지 않았다면 저장하지 않음(향후 Excel 갱신 반영 유지)
       cashflow: cfPrefilled ? [] : cashflow.filter((c) => c.year > 0 && c.month >= 1 && c.month <= 12),
+      cogsMonthly: cogsMonthly.filter((c) => c.year > 0 && c.month >= 1 && c.month <= 12),
       photos: photos.filter((p) => p.objectPath.trim() !== ""),
     };
     pendingRef.current = true;
@@ -501,7 +519,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
     }
     const t = setTimeout(() => saveRef.current(), 1000);
     return () => clearTimeout(t);
-  }, [loaded, overview, progress, milestones, costEstimation, costBudget, outsourcing, cashflow, photos]);
+  }, [loaded, overview, progress, milestones, costEstimation, costBudget, outsourcing, cashflow, cogsMonthly, photos]);
 
   const uploadPhotos = async (files: FileList) => {
     setPhotoMsg(null);
@@ -807,6 +825,78 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       </>
       )}
 
+      {/* 용역: 개요 정보 */}
+      {service && (
+      <div style={cardStyle}>
+        {cardHead("0. 개요 정보 (개요 탭)", "overview")}
+        <div data-tbl="svcOverview" onKeyDown={makeArrowNav("svcOverview")}>
+        <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px" }}>
+          <thead>
+            <tr>
+              <th style={th}>도급액 (VND)</th>
+              <th style={th}>수행 시작일</th>
+              <th style={th}>수행 종료일</th>
+              <th style={th}>발주처</th>
+              <th style={th}>수행내용</th>
+              <th style={th}>작성 기준월</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style={tdCell}>
+                <VndInput valueKUsd={overview.contractAmount} onChange={(v) => setOverview((o) => ({ ...o, contractAmount: v }))} data-row={0} data-col={0} />
+              </td>
+              <td style={tdCell}>
+                <DateInput value={overview.startDate} onChange={(v) => setOverview((o) => ({ ...o, startDate: v }))} />
+              </td>
+              <td style={tdCell}>
+                <DateInput value={overview.endDate} onChange={(v) => setOverview((o) => ({ ...o, endDate: v }))} />
+              </td>
+              <td style={tdCell}>
+                <TextInput value={overview.client} placeholder="예: DAEWOO NHON TRACH" onChange={(v) => setOverview((o) => ({ ...o, client: v }))} data-row={0} data-col={1} />
+              </td>
+              <td style={tdCell}>
+                <TextInput value={overview.scope} placeholder="예: 인허가, 프리콘 보고서 제출" onChange={(v) => setOverview((o) => ({ ...o, scope: v }))} data-row={0} data-col={2} />
+              </td>
+              <td style={tdCell}>
+                <MonthInput value={overview.asOfMonth} onChange={(v) => setOverview((o) => ({ ...o, asOfMonth: v }))} />
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "10px" }}>
+          <thead>
+            <tr>
+              <th style={th}>연간 매출 목표 (VND)</th>
+              <th style={th}>누계 매출 실적 (VND)</th>
+              <th style={th}>Cash Confirmed (A) (VND)</th>
+              <th style={th}>Cash Collection (B) (VND)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style={tdCell}>
+                <VndInput valueKUsd={overview.revenueAnnualTarget} onChange={(v) => setOverview((o) => ({ ...o, revenueAnnualTarget: v }))} data-row={1} data-col={0} />
+              </td>
+              <td style={tdCell}>
+                <VndInput valueKUsd={overview.revenueTotal} onChange={(v) => setOverview((o) => ({ ...o, revenueTotal: v }))} data-row={1} data-col={1} />
+              </td>
+              <td style={tdCell}>
+                <VndInput valueKUsd={overview.cashConfirmed} onChange={(v) => setOverview((o) => ({ ...o, cashConfirmed: v }))} data-row={1} data-col={2} />
+              </td>
+              <td style={tdCell}>
+                <VndInput valueKUsd={overview.cashCollection} onChange={(v) => setOverview((o) => ({ ...o, cashCollection: v }))} data-row={1} data-col={3} />
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <div style={{ fontSize: "10px", color: "#8a97a8", marginTop: "6px" }}>
+          개요 탭의 프로젝트 정보·Revenue·Cash 카드에 반영됩니다. Outstanding은 (A)-(B)로 자동 계산됩니다.
+        </div>
+        </div>
+      </div>
+      )}
+
       {/* 3. 원가율 */}
       <div style={cardStyle}>
         {cardHead(service ? "1. 도급액·원가 (개요)" : "3. 원가율 (원가 탭)", "costEstimation")}
@@ -1029,6 +1119,54 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
           </div>
         )}
       </div>
+
+      {/* 용역: 월별 매출원가 */}
+      {service && (
+      <div style={cardStyle}>
+        {cardHead("5. 월별 매출원가 (매출 탭)", "cogsMonthly")}
+        <div data-tbl="cogsMonthly" onKeyDown={makeArrowNav("cogsMonthly")}>
+        <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px" }}>
+          <thead>
+            <tr>
+              <th style={th}>연도</th>
+              <th style={th}>월</th>
+              <th style={th}>회계 매출원가 (VND)</th>
+              <th style={th}>집행 매출원가 (WIP) (VND)</th>
+              <th style={{ ...th, width: "36px" }}></th>
+            </tr>
+          </thead>
+          <tbody>
+            {cogsMonthly.map((c, i) => (
+              <tr key={i}>
+                <td style={tdCell}><NumInput value={c.year} onChange={(v) => updateAt(setCogsMonthly, i, { year: v ?? 0 })} data-row={i} data-col={0} /></td>
+                <td style={tdCell}><NumInput value={c.month} onChange={(v) => updateAt(setCogsMonthly, i, { month: v ?? 0 })} data-row={i} data-col={1} /></td>
+                <td style={tdCell}><VndInput valueKUsd={c.acctCogs} onChange={(v) => updateAt(setCogsMonthly, i, { acctCogs: v })} data-row={i} data-col={2} /></td>
+                <td style={tdCell}><VndInput valueKUsd={c.wipCogs} onChange={(v) => updateAt(setCogsMonthly, i, { wipCogs: v })} data-row={i} data-col={3} /></td>
+                <td style={{ ...tdCell, textAlign: "center" }}><DelBtn onClick={() => removeAt(setCogsMonthly, i)} /></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        </div>
+        <button
+          style={addBtn}
+          onClick={() => {
+            const last = cogsMonthly[cogsMonthly.length - 1];
+            const next = last
+              ? last.month >= 12
+                ? { year: last.year + 1, month: 1 }
+                : { year: last.year, month: last.month + 1 }
+              : { year: new Date().getFullYear(), month: 1 };
+            setCogsMonthly((rows) => [...rows, { ...next, acctCogs: null, wipCogs: null }]);
+          }}
+        >
+          <Plus size={12} /> 월 추가
+        </button>
+        <div style={{ fontSize: "10px", color: "#8a97a8", marginTop: "6px" }}>
+          매출 탭의 Cost(회계 vs 집행 매출원가) 차트에 반영됩니다. VND 기준으로 입력하면 저장 시 천 USD로 자동 변환됩니다.
+        </div>
+      </div>
+      )}
 
       {/* 7. 현장 사진 */}
       {!service && (

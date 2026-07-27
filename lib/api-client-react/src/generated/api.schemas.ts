@@ -403,6 +403,18 @@ export interface ProjectDetailOverview {
   client: string | null;
   /** 공사규모 */
   scale: string | null;
+  /** 작성 기준월 YYYY-MM */
+  asOfMonth?: string | null;
+  /** 수행내용 (용역) */
+  scope?: string | null;
+  /** 연간 매출 목표 (천 USD) */
+  revenueAnnualTarget?: number | null;
+  /** 누계 매출 실적 (천 USD) */
+  revenueTotal?: number | null;
+  /** Cash Confirmed (A) (천 USD) */
+  cashConfirmed?: number | null;
+  /** Cash Collection (B) (천 USD) */
+  cashCollection?: number | null;
 }
 
 export interface ProjectDetailProgressPoint {
@@ -492,6 +504,19 @@ export interface ProjectDetailCashflowPoint {
   equivalent?: number | null;
 }
 
+export interface ProjectDetailCogsPoint {
+  year: number;
+  /**
+     * @minimum 1
+     * @maximum 12
+     */
+  month: number;
+  /** 회계 매출원가 (천 USD) */
+  acctCogs?: number | null;
+  /** 집행 매출원가 (WIP) (천 USD) */
+  wipCogs?: number | null;
+}
+
 export interface ProjectDetailOutsourcing {
   /** 대공종 (공통/토목/건축/기계/전기/조경) */
   tradeGroup?: string | null;
@@ -523,6 +548,7 @@ export interface ProjectDetail {
   costBudget: ProjectDetailCostBudget[];
   outsourcing: ProjectDetailOutsourcing[];
   cashflow: ProjectDetailCashflowPoint[];
+  cogsMonthly?: ProjectDetailCogsPoint[];
   photos: ProjectDetailPhoto[];
 }
 

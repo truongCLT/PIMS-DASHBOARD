@@ -138,11 +138,36 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
   const outstanding =
     outSum.resolved != null && outSum.accum != null ? outSum.resolved - outSum.accum : null;
 
-  // 도급액 — 원가율 데이터(execution 우선, 없으면 bidding)의 도급액 사용
+  // 도급액 — 개요 입력값 우선, 없으면 원가율 데이터(execution 우선, 없으면 bidding)의 도급액 사용
+  const ov = detail?.overview;
   const contractAmount =
+    ov?.contractAmount ??
     detail?.costEstimation.find((e) => e.kind === "execution")?.contractAmount ??
     detail?.costEstimation.find((e) => e.kind === "bidding")?.contractAmount ??
     null;
+
+  // 수행기간 표시 (YY.MM.DD ~ YY.MM.DD (n개월))
+  const periodLabel = (() => {
+    if (!ov?.startDate && !ov?.endDate) return null;
+    const fmt = (d: string | null | undefined) =>
+      d ? `'${d.slice(2, 4)}.${d.slice(5, 7)}.${d.slice(8, 10)}` : "-";
+    let months: number | null = null;
+    if (ov?.startDate && ov?.endDate) {
+      const s = new Date(ov.startDate);
+      const e = new Date(ov.endDate);
+      months = Math.max(1, Math.round((e.getTime() - s.getTime()) / (30.44 * 24 * 3600 * 1000)));
+    }
+    return `${fmt(ov?.startDate)} ~ ${fmt(ov?.endDate)}${months != null ? ` (${months}개월)` : ""}`;
+  })();
+
+  // Revenue / Cash 카드 값
+  const revenueTarget = ov?.revenueAnnualTarget ?? null;
+  const revenueTotal = ov?.revenueTotal ?? null;
+  const achievementPct = ratioPct(revenueTotal, revenueTarget);
+  const cashConfirmed = ov?.cashConfirmed ?? null;
+  const cashCollection = ov?.cashCollection ?? null;
+  const cashOutstanding =
+    cashConfirmed != null && cashCollection != null ? cashConfirmed - cashCollection : null;
 
   return (
     <DisplayUnitProvider currency={currency} unitOn={unitOn}>
@@ -256,6 +281,20 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
         <div style={{ flex: 1 }}>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 0", fontSize: "12px", color: "#1a2d4d" }}>
             <span style={{ fontWeight: 700, paddingRight: "14px" }}>Project : {projectName}</span>
+            {ov?.asOfMonth && (
+              <span style={{ borderLeft: "1px solid #d5dce6", padding: "0 14px" }}>
+                작성 기준 : {ov.asOfMonth.slice(0, 4)}년 {Number(ov.asOfMonth.slice(5, 7))}월 말
+              </span>
+            )}
+            {ov?.client && (
+              <span style={{ borderLeft: "1px solid #d5dce6", padding: "0 14px" }}>발주처 : {ov.client}</span>
+            )}
+            {periodLabel && (
+              <span style={{ borderLeft: "1px solid #d5dce6", padding: "0 14px" }}>수행기간 : {periodLabel}</span>
+            )}
+            {ov?.scope && (
+              <span style={{ borderLeft: "1px solid #d5dce6", padding: "0 14px" }}>수행내용 : {ov.scope}</span>
+            )}
             <span style={{ borderLeft: "1px solid #d5dce6", padding: "0 14px" }}>
               도급액 : {contractAmount != null ? `${formatMoney(contractAmount, currency, unitOn)} ${moneyUnitLabel(currency, unitOn)}` : "-"}
             </span>
@@ -331,6 +370,78 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
           <ProjectDataEntryTab projectName={projectName} service />
         ) : activeTab === "Overview" ? (
           <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: "8px" }}>
+            {/* Row 0: Revenue / Cash */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+              {/* Revenue — Annual Target Achievement */}
+              <div style={cardStyle}>
+                <span style={sectionTitle}>
+                  Revenue <u>Annual Target Achievement</u>
+                </span>
+                {isLoading ? (
+                  <div style={{ padding: "40px 10px", textAlign: "center", fontSize: "11px", color: "#8a97a8" }}>불러오는 중…</div>
+                ) : revenueTarget == null && revenueTotal == null ? (
+                  <EmptyHint label="Revenue 목표/실적" />
+                ) : (
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-around", padding: "18px 0 10px" }}>
+                    <div style={{ textAlign: "center" }}>
+                      <div style={{ fontSize: "10px", color: "#5a6a7e", fontWeight: 600 }}>Annual Target</div>
+                      <div style={{ fontSize: "20px", fontWeight: 800, color: "#1a3a6b", marginTop: "4px" }}>
+                        {formatMoney(revenueTarget, currency, unitOn)}
+                      </div>
+                      <div style={{ fontSize: "9px", color: "#8a97a8" }}>{moneyUnitLabel(currency, unitOn)}</div>
+                    </div>
+                    <div style={{ textAlign: "center" }}>
+                      <div style={{ fontSize: "10px", color: "#5a6a7e", fontWeight: 600 }}>Total Revenue</div>
+                      <div style={{ fontSize: "20px", fontWeight: 800, color: "#2b5cad", marginTop: "4px" }}>
+                        {formatMoney(revenueTotal, currency, unitOn)}
+                      </div>
+                      <div style={{ fontSize: "9px", color: "#8a97a8" }}>{moneyUnitLabel(currency, unitOn)}</div>
+                    </div>
+                    <div style={{ textAlign: "center" }}>
+                      <div style={{ fontSize: "10px", color: "#5a6a7e", fontWeight: 600 }}>Achievement Rate</div>
+                      <div style={{ fontSize: "26px", fontWeight: 800, color: "#3e7d4c", marginTop: "2px" }}>
+                        {fmtPct(achievementPct)}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Cash — Confirmed / Collection / Outstanding */}
+              <div style={cardStyle}>
+                <span style={sectionTitle}>Cash</span>
+                {isLoading ? (
+                  <div style={{ padding: "40px 10px", textAlign: "center", fontSize: "11px", color: "#8a97a8" }}>불러오는 중…</div>
+                ) : cashConfirmed == null && cashCollection == null ? (
+                  <EmptyHint label="Cash (Confirmed/Collection)" />
+                ) : (
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-around", padding: "18px 0 10px" }}>
+                    <div style={{ textAlign: "center" }}>
+                      <div style={{ fontSize: "10px", color: "#5a6a7e", fontWeight: 600 }}>Confirmed (A)</div>
+                      <div style={{ fontSize: "20px", fontWeight: 800, color: "#1a3a6b", marginTop: "4px" }}>
+                        {formatMoney(cashConfirmed, currency, unitOn)}
+                      </div>
+                      <div style={{ fontSize: "9px", color: "#8a97a8" }}>{moneyUnitLabel(currency, unitOn)}</div>
+                    </div>
+                    <div style={{ textAlign: "center" }}>
+                      <div style={{ fontSize: "10px", color: "#5a6a7e", fontWeight: 600 }}>Collection (B)</div>
+                      <div style={{ fontSize: "20px", fontWeight: 800, color: "#2b5cad", marginTop: "4px" }}>
+                        {formatMoney(cashCollection, currency, unitOn)}
+                      </div>
+                      <div style={{ fontSize: "9px", color: "#8a97a8" }}>{moneyUnitLabel(currency, unitOn)}</div>
+                    </div>
+                    <div style={{ textAlign: "center" }}>
+                      <div style={{ fontSize: "10px", color: "#5a6a7e", fontWeight: 600 }}>Outstanding (A)-(B)</div>
+                      <div style={{ fontSize: "20px", fontWeight: 800, color: "#c0392b", marginTop: "4px" }}>
+                        {formatMoney(cashOutstanding, currency, unitOn)}
+                      </div>
+                      <div style={{ fontSize: "9px", color: "#8a97a8" }}>{moneyUnitLabel(currency, unitOn)}</div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* Row 1: Budget Execution Status / Outsourcing */}
             <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: "8px" }}>
               {/* Budget Execution Status */}

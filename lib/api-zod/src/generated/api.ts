@@ -187,6 +187,8 @@ export const getProjectdetailResponseCostEstimationItemMonthMax = 12;
 
 export const getProjectdetailResponseCashflowItemMonthMax = 12;
 
+export const getProjectdetailResponseCogsMonthlyItemMonthMax = 12;
+
 
 
 export const GetProjectdetailResponse = zod.object({
@@ -197,7 +199,13 @@ export const GetProjectdetailResponse = zod.object({
   "startDate": zod.string().nullable().describe('공사 시작일 YYYY-MM-DD'),
   "endDate": zod.string().nullable().describe('공사 종료일 YYYY-MM-DD'),
   "client": zod.string().nullable().describe('발주처'),
-  "scale": zod.string().nullable().describe('공사규모')
+  "scale": zod.string().nullable().describe('공사규모'),
+  "asOfMonth": zod.string().nullish().describe('작성 기준월 YYYY-MM'),
+  "scope": zod.string().nullish().describe('수행내용 (용역)'),
+  "revenueAnnualTarget": zod.number().nullish().describe('연간 매출 목표 (천 USD)'),
+  "revenueTotal": zod.number().nullish().describe('누계 매출 실적 (천 USD)'),
+  "cashConfirmed": zod.number().nullish().describe('Cash Confirmed (A) (천 USD)'),
+  "cashCollection": zod.number().nullish().describe('Cash Collection (B) (천 USD)')
 }),
   "progress": zod.array(zod.object({
   "year": zod.number().min(getProjectdetailResponseProgressItemYearMin).max(getProjectdetailResponseProgressItemYearMax),
@@ -248,6 +256,12 @@ export const GetProjectdetailResponse = zod.object({
   "cashOut": zod.number().nullish().describe('지출 (천 USD)'),
   "equivalent": zod.number().nullish().describe('보유 현금 (천 USD)')
 })),
+  "cogsMonthly": zod.array(zod.object({
+  "year": zod.number(),
+  "month": zod.number().min(1).max(getProjectdetailResponseCogsMonthlyItemMonthMax),
+  "acctCogs": zod.number().nullish().describe('회계 매출원가 (천 USD)'),
+  "wipCogs": zod.number().nullish().describe('집행 매출원가 (WIP) (천 USD)')
+})).optional(),
   "photos": zod.array(zod.object({
   "objectPath": zod.string().describe('Object storage path (\'\/objects\/uploads\/<uuid>\')')
 }))
@@ -278,6 +292,8 @@ export const putProjectdetailBodyCostEstimationItemMonthMax = 12;
 
 export const putProjectdetailBodyCashflowItemMonthMax = 12;
 
+export const putProjectdetailBodyCogsMonthlyItemMonthMax = 12;
+
 
 
 export const PutProjectdetailBody = zod.object({
@@ -288,7 +304,13 @@ export const PutProjectdetailBody = zod.object({
   "startDate": zod.string().nullable().describe('공사 시작일 YYYY-MM-DD'),
   "endDate": zod.string().nullable().describe('공사 종료일 YYYY-MM-DD'),
   "client": zod.string().nullable().describe('발주처'),
-  "scale": zod.string().nullable().describe('공사규모')
+  "scale": zod.string().nullable().describe('공사규모'),
+  "asOfMonth": zod.string().nullish().describe('작성 기준월 YYYY-MM'),
+  "scope": zod.string().nullish().describe('수행내용 (용역)'),
+  "revenueAnnualTarget": zod.number().nullish().describe('연간 매출 목표 (천 USD)'),
+  "revenueTotal": zod.number().nullish().describe('누계 매출 실적 (천 USD)'),
+  "cashConfirmed": zod.number().nullish().describe('Cash Confirmed (A) (천 USD)'),
+  "cashCollection": zod.number().nullish().describe('Cash Collection (B) (천 USD)')
 }),
   "progress": zod.array(zod.object({
   "year": zod.number().min(putProjectdetailBodyProgressItemYearMin).max(putProjectdetailBodyProgressItemYearMax),
@@ -339,6 +361,12 @@ export const PutProjectdetailBody = zod.object({
   "cashOut": zod.number().nullish().describe('지출 (천 USD)'),
   "equivalent": zod.number().nullish().describe('보유 현금 (천 USD)')
 })),
+  "cogsMonthly": zod.array(zod.object({
+  "year": zod.number(),
+  "month": zod.number().min(1).max(putProjectdetailBodyCogsMonthlyItemMonthMax),
+  "acctCogs": zod.number().nullish().describe('회계 매출원가 (천 USD)'),
+  "wipCogs": zod.number().nullish().describe('집행 매출원가 (WIP) (천 USD)')
+})).optional(),
   "photos": zod.array(zod.object({
   "objectPath": zod.string().describe('Object storage path (\'\/objects\/uploads\/<uuid>\')')
 }))
@@ -365,6 +393,8 @@ export const putProjectdetailResponseCostEstimationItemMonthMax = 12;
 
 export const putProjectdetailResponseCashflowItemMonthMax = 12;
 
+export const putProjectdetailResponseCogsMonthlyItemMonthMax = 12;
+
 
 
 export const PutProjectdetailResponse = zod.object({
@@ -375,7 +405,13 @@ export const PutProjectdetailResponse = zod.object({
   "startDate": zod.string().nullable().describe('공사 시작일 YYYY-MM-DD'),
   "endDate": zod.string().nullable().describe('공사 종료일 YYYY-MM-DD'),
   "client": zod.string().nullable().describe('발주처'),
-  "scale": zod.string().nullable().describe('공사규모')
+  "scale": zod.string().nullable().describe('공사규모'),
+  "asOfMonth": zod.string().nullish().describe('작성 기준월 YYYY-MM'),
+  "scope": zod.string().nullish().describe('수행내용 (용역)'),
+  "revenueAnnualTarget": zod.number().nullish().describe('연간 매출 목표 (천 USD)'),
+  "revenueTotal": zod.number().nullish().describe('누계 매출 실적 (천 USD)'),
+  "cashConfirmed": zod.number().nullish().describe('Cash Confirmed (A) (천 USD)'),
+  "cashCollection": zod.number().nullish().describe('Cash Collection (B) (천 USD)')
 }),
   "progress": zod.array(zod.object({
   "year": zod.number().min(putProjectdetailResponseProgressItemYearMin).max(putProjectdetailResponseProgressItemYearMax),
@@ -426,6 +462,12 @@ export const PutProjectdetailResponse = zod.object({
   "cashOut": zod.number().nullish().describe('지출 (천 USD)'),
   "equivalent": zod.number().nullish().describe('보유 현금 (천 USD)')
 })),
+  "cogsMonthly": zod.array(zod.object({
+  "year": zod.number(),
+  "month": zod.number().min(1).max(putProjectdetailResponseCogsMonthlyItemMonthMax),
+  "acctCogs": zod.number().nullish().describe('회계 매출원가 (천 USD)'),
+  "wipCogs": zod.number().nullish().describe('집행 매출원가 (WIP) (천 USD)')
+})).optional(),
   "photos": zod.array(zod.object({
   "objectPath": zod.string().describe('Object storage path (\'\/objects\/uploads\/<uuid>\')')
 }))

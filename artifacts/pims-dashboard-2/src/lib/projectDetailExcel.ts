@@ -219,6 +219,7 @@ export async function parseProjectDetailWorkbook(file: File, existing: ProjectDe
         if (k) map.set(k.replace(/\(.*\)$/, "").trim(), r[1]);
       }
       result.overview = {
+        ...existing.overview,
         client: cellStr(map.get("발주처")) ?? null,
         startDate: cellStr(map.get("착공일")) ?? null,
         endDate: cellStr(map.get("준공일")) ?? null,

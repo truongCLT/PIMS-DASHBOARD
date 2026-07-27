@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ProjectDetailCashflowPoint } from './projectDetailCashflowPoint';
+import type { ProjectDetailCogsPoint } from './projectDetailCogsPoint';
 import type { ProjectDetailCostBudget } from './projectDetailCostBudget';
 import type { ProjectDetailCostEstimation } from './projectDetailCostEstimation';
 import type { ProjectDetailMilestone } from './projectDetailMilestone';
@@ -25,5 +26,6 @@ export interface ProjectDetail {
   costBudget: ProjectDetailCostBudget[];
   outsourcing: ProjectDetailOutsourcing[];
   cashflow: ProjectDetailCashflowPoint[];
+  cogsMonthly?: ProjectDetailCogsPoint[];
   photos: ProjectDetailPhoto[];
 }

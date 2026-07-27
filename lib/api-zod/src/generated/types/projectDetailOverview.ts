@@ -17,4 +17,16 @@ export interface ProjectDetailOverview {
   client: string | null;
   /** 공사규모 */
   scale: string | null;
+  /** 작성 기준월 YYYY-MM */
+  asOfMonth?: string | null;
+  /** 수행내용 (용역) */
+  scope?: string | null;
+  /** 연간 매출 목표 (천 USD) */
+  revenueAnnualTarget?: number | null;
+  /** 누계 매출 실적 (천 USD) */
+  revenueTotal?: number | null;
+  /** Cash Confirmed (A) (천 USD) */
+  cashConfirmed?: number | null;
+  /** Cash Collection (B) (천 USD) */
+  cashCollection?: number | null;
 }

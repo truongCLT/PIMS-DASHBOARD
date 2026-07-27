@@ -1628,6 +1628,30 @@ components:
           type: string
           nullable: true
           description: 공사규모
+        asOfMonth:
+          type: string
+          nullable: true
+          description: 작성 기준월 YYYY-MM
+        scope:
+          type: string
+          nullable: true
+          description: 수행내용 (용역)
+        revenueAnnualTarget:
+          type: number
+          nullable: true
+          description: 연간 매출 목표 (천 USD)
+        revenueTotal:
+          type: number
+          nullable: true
+          description: 누계 매출 실적 (천 USD)
+        cashConfirmed:
+          type: number
+          nullable: true
+          description: Cash Confirmed (A) (천 USD)
+        cashCollection:
+          type: number
+          nullable: true
+          description: Cash Collection (B) (천 USD)
       required: [contractAmount, startDate, endDate, client, scale]
     ProjectDetailProgressPoint:
       type: object
@@ -1742,6 +1766,24 @@ components:
           nullable: true
           description: 보유 현금 (천 USD)
       required: [year, month]
+    ProjectDetailCogsPoint:
+      type: object
+      properties:
+        year:
+          type: integer
+        month:
+          type: integer
+          minimum: 1
+          maximum: 12
+        acctCogs:
+          type: number
+          nullable: true
+          description: 회계 매출원가 (천 USD)
+        wipCogs:
+          type: number
+          nullable: true
+          description: 집행 매출원가 (WIP) (천 USD)
+      required: [year, month]
     ProjectDetailOutsourcing:
       type: object
       properties:
@@ -1813,6 +1855,10 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ProjectDetailCashflowPoint"
+        cogsMonthly:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProjectDetailCogsPoint"
         photos:
           type: array
           items:

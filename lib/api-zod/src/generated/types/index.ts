@@ -62,6 +62,7 @@ export * from './previewMgmtreportImportBody';
 export * from './previewSalescostImportBody';
 export * from './projectDetail';
 export * from './projectDetailCashflowPoint';
+export * from './projectDetailCogsPoint';
 export * from './projectdetailComment';
 export * from './projectdetailCommentList';
 export * from './projectdetailCommentTab';

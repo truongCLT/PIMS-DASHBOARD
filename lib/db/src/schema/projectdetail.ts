@@ -27,6 +27,12 @@ export const pdOverviewTable = pgTable(
     endDate: text("end_date"), // 공사 종료일 'YYYY-MM-DD'
     client: text("client"), // 발주처
     scale: text("scale"), // 공사규모
+    asOfMonth: text("as_of_month"), // 작성 기준월 'YYYY-MM'
+    scope: text("scope"), // 수행내용 (용역)
+    revenueAnnualTarget: numeric("revenue_annual_target", { precision: 18, scale: 4 }), // 연간 매출 목표 (천 USD)
+    revenueTotal: numeric("revenue_total", { precision: 18, scale: 4 }), // 누계 매출 실적 (천 USD)
+    cashConfirmed: numeric("cash_confirmed", { precision: 18, scale: 4 }), // Cash Confirmed (A) (천 USD)
+    cashCollection: numeric("cash_collection", { precision: 18, scale: 4 }), // Cash Collection (B) (천 USD)
   },
   (t) => [uniqueIndex("pd_overview_uq").on(t.projectName)],
 );
@@ -118,6 +124,23 @@ export const pdCashflowMonthlyTable = pgTable(
   ],
 );
 
+// 매출원가 — 월별 회계/집행(WIP) 매출원가 (용역 매출 탭)
+export const pdCogsMonthlyTable = pgTable(
+  "pd_cogs_monthly",
+  {
+    id: serial("id").primaryKey(),
+    projectName: text("project_name").notNull(),
+    year: integer("year").notNull(),
+    month: integer("month").notNull(), // 1..12
+    acctCogs: numeric("acct_cogs", { precision: 18, scale: 4 }), // 회계 매출원가 (천 USD)
+    wipCogs: numeric("wip_cogs", { precision: 18, scale: 4 }), // 집행 매출원가 (WIP) (천 USD)
+  },
+  (t) => [
+    uniqueIndex("pd_cogs_monthly_uq").on(t.projectName, t.year, t.month),
+    check("pd_cogs_month_ck", sql`${t.month} BETWEEN 1 AND 12`),
+  ],
+);
+
 // 사진 — 개요 탭 현장 사진 (object storage objectPath)
 export const pdPhotosTable = pgTable(
   "pd_photos",
@@ -198,6 +221,10 @@ export type PdCostBudget = typeof pdCostBudgetTable.$inferSelect;
 export const insertPdCashflowMonthlySchema = createInsertSchema(pdCashflowMonthlyTable).omit({ id: true });
 export type InsertPdCashflowMonthly = z.infer<typeof insertPdCashflowMonthlySchema>;
 export type PdCashflowMonthly = typeof pdCashflowMonthlyTable.$inferSelect;
+
+export const insertPdCogsMonthlySchema = createInsertSchema(pdCogsMonthlyTable).omit({ id: true });
+export type InsertPdCogsMonthly = z.infer<typeof insertPdCogsMonthlySchema>;
+export type PdCogsMonthly = typeof pdCogsMonthlyTable.$inferSelect;
 
 export const insertPdPhotoSchema = createInsertSchema(pdPhotosTable).omit({ id: true });
 export type InsertPdPhoto = z.infer<typeof insertPdPhotoSchema>;

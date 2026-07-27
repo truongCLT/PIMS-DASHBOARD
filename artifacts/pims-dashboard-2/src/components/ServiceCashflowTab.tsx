@@ -103,6 +103,7 @@ export function ServiceCashflowTab({
     cashIn: cv(p.cashIn),
     cashOut: -cv(p.cashOut),
     equivalent: cv(p.equivalent),
+    different: cv(p.cashIn) - cv(p.cashOut),
   }));
 
   const maxVal = Math.max(...chartData.map((d) => Math.max(d.cashIn, d.equivalent, 0)), 0);
@@ -117,7 +118,7 @@ export function ServiceCashflowTab({
 
   const entryGuide = (
     <div style={{ fontSize: "12px", color: "#8a97a8", marginTop: "8px" }}>
-      관리자 모드로 로그인하면 "데이터 입력" 탭의 "6. 월별 자금" 표에서 자금 데이터를 입력할 수 있습니다.
+      관리자 모드로 로그인하면 "데이터 입력" 탭의 "월별 자금" 표에서 자금 데이터를 입력할 수 있습니다.
     </div>
   );
 
@@ -209,6 +210,15 @@ export function ServiceCashflowTab({
                 formatter={(v: number) => (v !== 0 ? v.toLocaleString(undefined, { maximumFractionDigits: 0 }) : "")}
               />
             </Bar>
+            <Line
+              dataKey="different"
+              name="Different"
+              type="monotone"
+              stroke={chartTheme.sgaOrange}
+              strokeWidth={2}
+              dot={{ r: 3, fill: "#fff", stroke: chartTheme.sgaOrange }}
+              isAnimationActive={false}
+            />
             <Line
               dataKey="equivalent"
               name="Cash equivalent"
