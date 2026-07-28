@@ -17,7 +17,7 @@ export const FX_RATES: Record<CurrencyCode, number> = {
 export type FxRateMap = Record<CurrencyCode, number>;
 
 export const UNIT_OPTIONS: Record<CurrencyCode, [string, string]> = {
-  USD: ["1K USD", "1 USD"],
+  USD: ["K USD", "USD"],
   VND: ["1M VND", "1B VND"],
   KRW: ["1M KRW", "1B KRW"],
 };

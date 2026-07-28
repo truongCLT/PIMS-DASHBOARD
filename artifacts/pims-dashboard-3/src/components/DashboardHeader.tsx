@@ -275,7 +275,7 @@ export function DashboardHeader() {
               boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
             }} />
           </div>
-          <span style={{ fontSize: "13px", color: "var(--color-text-primary)", fontWeight: "600" }}>1K USD</span>
+          <span style={{ fontSize: "13px", color: "var(--color-text-primary)", fontWeight: "600" }}>K USD</span>
         </div>
 
         {/* Download button + dropdown */}

@@ -125,7 +125,7 @@ export function FxRateEditor() {
           padding: "14px",
         }}>
           <div style={{ fontSize: "12px", fontWeight: 700, color: "#1a2d4d", marginBottom: "10px" }}>
-            환율 설정 (1 USD 기준)
+            환율 설정 (USD 기준)
           </div>
           <div style={{ marginBottom: "8px" }}>
             <div style={labelStyle}>USD</div>
