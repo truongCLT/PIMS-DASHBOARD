@@ -35,6 +35,7 @@ export function ProjectCommentPanel({
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editText, setEditText] = useState("");
   const [actionError, setActionError] = useState<string | null>(null);
+  const [filterYm, setFilterYm] = useState<string>(""); // "" = 전체, "YYYY-MM" = 해당 월
 
   const params = { projectName, tab };
   const queryClient = useQueryClient();
@@ -83,12 +84,50 @@ export function ProjectCommentPanel({
 
   const comments = listQuery.data?.comments ?? [];
 
+  // 작성된 코멘트 월 목록 (중복 제거, 최신순)
+  const availableMonths = Array.from(
+    new Set(comments.map((c) => c.createdAt.slice(0, 7)))
+  ).sort((a, b) => b.localeCompare(a));
+
+  // filterYm이 더 이상 존재하지 않는 월이면 자동 초기화
+  const activeFilter = availableMonths.includes(filterYm) ? filterYm : "";
+
+  const visibleComments = activeFilter
+    ? comments.filter((c) => c.createdAt.startsWith(activeFilter))
+    : comments;
+
+  const fmtYm = (ym: string) => {
+    const [y, m] = ym.split("-");
+    return `${y}년 ${Number(m)}월`;
+  };
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
       {showHeader && (
         <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
           <MessageSquare size={13} color="#1a2d4d" />
           <span style={{ fontSize: "12px", fontWeight: 700, color: "#1a2d4d" }}>Comment</span>
+          {availableMonths.length > 0 && (
+            <select
+              value={activeFilter}
+              onChange={(e) => setFilterYm(e.target.value)}
+              style={{
+                marginLeft: "auto",
+                border: "1px solid #ccd4dd",
+                borderRadius: "4px",
+                padding: "2px 6px",
+                fontSize: "11px",
+                color: "#333",
+                backgroundColor: "#fff",
+                cursor: "pointer",
+              }}
+            >
+              <option value="">전체</option>
+              {availableMonths.map((ym) => (
+                <option key={ym} value={ym}>{fmtYm(ym)}</option>
+              ))}
+            </select>
+          )}
         </div>
       )}
 
@@ -142,9 +181,13 @@ export function ProjectCommentPanel({
         <div style={{ fontSize: "11px", color: "#999" }}>불러오는 중...</div>
       ) : listQuery.isError ? (
         <div style={{ fontSize: "11px", color: "#c0392b" }}>코멘트 조회에 실패했습니다.</div>
-      ) : comments.length === 0 ? null : (
+      ) : visibleComments.length === 0 ? (
+        activeFilter ? (
+          <div style={{ fontSize: "11px", color: "#999" }}>{fmtYm(activeFilter)}에 작성된 코멘트가 없습니다.</div>
+        ) : null
+      ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-          {comments.map((c) => (
+          {visibleComments.map((c) => (
             <div
               key={c.id}
               style={{
