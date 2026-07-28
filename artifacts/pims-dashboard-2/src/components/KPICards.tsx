@@ -27,8 +27,14 @@ function KPICard({ title, plan, actual, achievement, achievementColor = "#00bcd4
         fontWeight: "600",
         color: "#ffffff",
         marginBottom: "10px",
+        lineHeight: 1.35,
       }}>
-        {title}
+        {title.startsWith("연간 ") ? (
+          <>
+            <div>연간</div>
+            <div>{title.slice(3)}</div>
+          </>
+        ) : title}
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
         {/* Plan */}

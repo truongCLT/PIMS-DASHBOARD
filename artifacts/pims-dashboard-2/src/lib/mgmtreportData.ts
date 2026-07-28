@@ -277,8 +277,8 @@ export function deriveDashboardData(
   const kpi: KpiItem[] = [
     kpiOf("당월 매출", revenue, true),
     kpiOf("당월 영업이익", op1, true),
-    kpiOf("누적 매출", revenue, false),
-    kpiOf("누적 영업이익", op1, false),
+    kpiOf("연간 누적 매출", revenue, false),
+    kpiOf("연간 누적 영업이익", op1, false),
   ];
 
   const perfRow = (label: string, line: Line | null, withSub: boolean): PerformanceRow => {
