@@ -122,7 +122,7 @@ export function CommentPanel({
         <textarea
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
-          placeholder="Write a comment..."
+          placeholder="의견을 입력하세요..."
           style={{
             width: "100%",
             border: "1px solid #ccc",

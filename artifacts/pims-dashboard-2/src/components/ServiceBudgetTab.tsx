@@ -109,7 +109,7 @@ export function ServiceBudgetTab({ projectName }: { projectName: string }) {
       {/* Budget Execution Status */}
       <div style={{ ...cardStyle, padding: "14px 18px 24px" }}>
         <span style={{ fontSize: "11px", fontWeight: 600, color: "#4472c4" }}>
-          Budget <u>Execution Status</u>
+          예산 <u>집행 현황</u>
           <span style={{ marginLeft: "8px", fontSize: "10px", fontWeight: 500, color: "#8a97a8" }}>단위: {unitLabel}</span>
         </span>
 
@@ -137,7 +137,7 @@ export function ServiceBudgetTab({ projectName }: { projectName: string }) {
               );
             })}
             <HBar
-              label="Sum"
+              label="합계"
               totalWidth={widthPct(totalBudget)}
               execRatio={totalBudget != null && totalBudget > 0 && totalActual != null ? totalActual / totalBudget : 0}
               execLabel={totalActual != null ? fmtMoney(totalActual) : undefined}

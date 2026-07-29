@@ -2,16 +2,16 @@ import React from "react";
 import daewooLogo from "../assets/daewoo-logo.png";
 
 const NAV_TABS = [
-  { label: "Standard", active: true },
-  { label: "Dashboard" },
-  { label: "Common" },
-  { label: "Contracting" },
-  { label: "Budget" },
-  { label: "Sub-Contracting" },
-  { label: "Material" },
-  { label: "Expense" },
-  { label: "Cost" },
-  { label: "System" },
+  { label: "표준", active: true },
+  { label: "대시보드" },
+  { label: "공통" },
+  { label: "계약" },
+  { label: "예산" },
+  { label: "하도급" },
+  { label: "자재" },
+  { label: "비용" },
+  { label: "원가" },
+  { label: "시스템" },
 ];
 
 export function TopNav() {
@@ -93,7 +93,7 @@ export function TopNav() {
           fontSize: "12px",
           marginLeft: "auto",
         }}>
-          More
+          더보기
         </button>
       </div>
     </div>

@@ -112,7 +112,7 @@ export function ProjectCommentPanel({
       {showHeader && (
         <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
           <MessageSquare size={13} color="#1a2d4d" />
-          <span style={{ fontSize: "12px", fontWeight: 700, color: "#1a2d4d" }}>Comment</span>
+          <span style={{ fontSize: "12px", fontWeight: 700, color: "#1a2d4d" }}>의견</span>
         </div>
       )}
 

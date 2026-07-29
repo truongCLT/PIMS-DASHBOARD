@@ -99,7 +99,7 @@ function BudgetExecutionStatus({ rows }: { rows: BudgetRow[] }) {
   let lastCategory: string | null = null;
   return (
     <div style={cardStyle}>
-      <span style={sectionTitle}>Budget Execution Status</span>
+      <span style={sectionTitle}>예산 집행 현황</span>
       {rows.length === 0 ? (
         <div style={emptyStyle}>예산 집행 데이터가 없습니다. ( - )</div>
       ) : (
@@ -341,7 +341,7 @@ export function CostingTab({
           ...budgetRows,
           {
             category: null,
-            item: "Sum",
+            item: "합계",
             budget: budgetRows.reduce((a, r) => a + (r.budget ?? 0), 0),
             plan: budgetRows.some((r) => r.plan != null) ? budgetRows.reduce((a, r) => a + (r.plan ?? 0), 0) : null,
             actual: budgetRows.some((r) => r.actual != null) ? budgetRows.reduce((a, r) => a + (r.actual ?? 0), 0) : null,
@@ -353,7 +353,7 @@ export function CostingTab({
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
       {/* Row 1: Cost estimation donuts */}
       <div style={cardStyle}>
-        <span style={sectionTitle}>Cost estimation</span>
+        <span style={sectionTitle}>원가 견적</span>
         {isLoading ? (
           <div style={emptyStyle}>불러오는 중…</div>
         ) : estimation.length === 0 ? (

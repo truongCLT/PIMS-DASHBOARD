@@ -162,15 +162,15 @@ function MilestoneChart({ milestones }: { milestones: ProjectDetail["milestones"
   return (
     <div style={cardStyle}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-        <span style={{ ...sectionTitle }}>Mile Stone</span>
+        <span style={{ ...sectionTitle }}>마일스톤</span>
         <div style={{ display: "flex", flexDirection: "column", gap: "4px", fontSize: "9px", color: "#333" }}>
           <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
             <span style={{ width: "26px", height: "5px", backgroundColor: chartTheme.outflowRed, display: "inline-block" }} />
-            <u>Plan</u>
+            <u>계획</u>
           </span>
           <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
             <span style={{ width: "26px", height: "5px", backgroundColor: chartTheme.planBlue, display: "inline-block" }} />
-            Actual
+            실적
           </span>
         </div>
       </div>
@@ -346,7 +346,7 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
         {/* Construction site progress */}
         <div style={{ ...cardStyle, display: "flex", flexDirection: "column" }}>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
-            <span style={{ ...sectionTitle, color: "#1a2d4d" }}>Construction site progress</span>
+            <span style={{ ...sectionTitle, color: "#1a2d4d" }}>현장 공정 현황</span>
           </div>
           <div style={{ flex: 1, minHeight: 0 }}>
             {(() => {
@@ -371,7 +371,7 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
         {/* Progress */}
         <div style={{ ...cardStyle, display: "flex", flexDirection: "column" }}>
           <div style={{ display: "flex", justifyContent: "space-between" }}>
-            <span style={{ ...sectionTitle, color: chartTheme.profitGreen }}>Progress</span>
+            <span style={{ ...sectionTitle, color: chartTheme.profitGreen }}>공정</span>
             <span
               style={{
                 fontSize: "9px",
@@ -387,7 +387,7 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
             </span>
           </div>
           <div style={{ textAlign: "center", fontSize: "10px", color: "#333", marginTop: "4px" }}>
-            Planned Progress (A)
+            계획 공정 (A)
           </div>
           <div style={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "center", margin: "4px 0 2px", position: "relative", minHeight: 0 }}>
             <Donut
@@ -404,7 +404,7 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
             </span>
           </div>
           <div style={{ textAlign: "center", fontSize: "10px", color: "#1a2d4d", fontWeight: 600 }}>
-            Actual Progress (B)
+            실적 공정 (B)
           </div>
           <div
             style={{
@@ -425,7 +425,7 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
       {/* Row 2: Project lifecycle progress */}
       <div style={cardStyle}>
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
-          <span style={{ ...sectionTitle, color: "#1a2d4d" }}>Project lifecycle progress</span>
+          <span style={{ ...sectionTitle, color: "#1a2d4d" }}>프로젝트 생애주기 공정</span>
         </div>
         {isLoading ? (
           <div style={emptyStyle}>불러오는 중…</div>
@@ -454,10 +454,10 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
                 />
                 <Tooltip contentStyle={{ fontSize: "11px" }} formatter={(v) => (v == null ? "-" : `${Number(v).toLocaleString()}%`)} />
                 <Legend wrapperStyle={{ fontSize: "12px" }} iconSize={12} />
-                <Bar yAxisId="left" dataKey="plan" name="Plan Monthly" fill={chartTheme.planBlue} barSize={12} isAnimationActive={false} />
-                <Bar yAxisId="left" dataKey="actual" name="Actual Monthly" fill={chartTheme.lightBlue} barSize={12} isAnimationActive={false} />
-                <Line yAxisId="right" dataKey="planAccum" name="Plan Accum" stroke={chartTheme.profitGreen} strokeWidth={2} dot={{ r: 2 }} isAnimationActive={false} connectNulls />
-                <Line yAxisId="right" dataKey="actualAccum" name="Actual Accum" stroke={chartTheme.sgaOrange} strokeWidth={2} dot={{ r: 2 }} isAnimationActive={false} connectNulls />
+                <Bar yAxisId="left" dataKey="plan" name="월 계획" fill={chartTheme.planBlue} barSize={12} isAnimationActive={false} />
+                <Bar yAxisId="left" dataKey="actual" name="월 실적" fill={chartTheme.lightBlue} barSize={12} isAnimationActive={false} />
+                <Line yAxisId="right" dataKey="planAccum" name="누계 계획" stroke={chartTheme.profitGreen} strokeWidth={2} dot={{ r: 2 }} isAnimationActive={false} connectNulls />
+                <Line yAxisId="right" dataKey="actualAccum" name="누계 실적" stroke={chartTheme.sgaOrange} strokeWidth={2} dot={{ r: 2 }} isAnimationActive={false} connectNulls />
               </ComposedChart>
             </ResponsiveContainer>
           </div>

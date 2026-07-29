@@ -109,7 +109,7 @@ export function OutsourcingTab({ projectName }: { projectName: string }) {
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
       {/* Outsourcing and Materials table */}
       <div style={cardStyle}>
-        <span style={sectionTitle}>Outsourcing and Materials</span>
+        <span style={sectionTitle}>외주 및 자재</span>
         <div style={{ overflowX: "auto", marginTop: "10px" }}>
           <table style={{ width: "100%", minWidth: `${totalWidth}px`, borderCollapse: "collapse", tableLayout: "fixed" }}>
             <colgroup>

@@ -30,7 +30,7 @@ const defaultUnit: DisplayUnit = {
     v == null || Number.isNaN(v)
       ? "-"
       : v.toLocaleString("en-US", { maximumFractionDigits: digits, minimumFractionDigits: 0 }),
-  unitLabel: "K USD",
+  unitLabel: "천 USD",
 };
 
 const DisplayUnitContext = createContext<DisplayUnit>(defaultUnit);
@@ -56,7 +56,7 @@ export function formatMoney(
 
 /** 단위 라벨 (순수 함수) */
 export function moneyUnitLabel(currency: string, unitOn: boolean): string {
-  return unitOn ? `K ${currency}` : currency;
+  return unitOn ? `천 ${currency}` : currency;
 }
 
 export function DisplayUnitProvider({

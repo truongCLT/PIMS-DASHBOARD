@@ -255,7 +255,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span style={{ fontSize: "12px", color: "#333", fontWeight: 600 }}>Currency :</span>
+          <span style={{ fontSize: "12px", color: "#333", fontWeight: 600 }}>통화 :</span>
           <div style={{ display: "flex", border: "1px solid #ccd4dd", borderRadius: "6px", overflow: "hidden" }}>
             {["USD", "KRW", "VND"].map((c) => (
               <button
@@ -279,7 +279,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span style={{ fontSize: "12px", color: "#333", fontWeight: 600 }}>Unit :</span>
+          <span style={{ fontSize: "12px", color: "#333", fontWeight: 600 }}>단위 :</span>
           <div
             onClick={() => setUnitOn(!unitOn)}
             style={{
@@ -500,30 +500,30 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
               {/* Revenue — Annual Target Achievement */}
               <div style={cardStyle}>
                 <span style={sectionTitle}>
-                  Revenue <u>Annual Target Achievement</u>
+                  매출 <u>연간 목표 달성</u>
                 </span>
                 {isLoading ? (
                   <div style={{ padding: "40px 10px", textAlign: "center", fontSize: "11px", color: "#8a97a8" }}>불러오는 중…</div>
                 ) : revenueTarget == null && revenueTotal == null ? (
-                  <EmptyHint label="Revenue 목표/실적" />
+                  <EmptyHint label="매출 목표/실적" />
                 ) : (
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-around", padding: "18px 0 10px" }}>
                     <div style={{ textAlign: "center" }}>
-                      <div style={{ fontSize: "10px", color: "#5a6a7e", fontWeight: 600 }}>Annual Target</div>
+                      <div style={{ fontSize: "10px", color: "#5a6a7e", fontWeight: 600 }}>연간 목표</div>
                       <div style={{ fontSize: "20px", fontWeight: 800, color: "#1a3a6b", marginTop: "4px" }}>
                         {formatMoney(revenueTarget, currency, unitOn)}
                       </div>
                       <div style={{ fontSize: "9px", color: "#8a97a8" }}>{moneyUnitLabel(currency, unitOn)}</div>
                     </div>
                     <div style={{ textAlign: "center" }}>
-                      <div style={{ fontSize: "10px", color: "#5a6a7e", fontWeight: 600 }}>Total Revenue</div>
+                      <div style={{ fontSize: "10px", color: "#5a6a7e", fontWeight: 600 }}>매출 누계</div>
                       <div style={{ fontSize: "20px", fontWeight: 800, color: "#2b5cad", marginTop: "4px" }}>
                         {formatMoney(revenueTotal, currency, unitOn)}
                       </div>
                       <div style={{ fontSize: "9px", color: "#8a97a8" }}>{moneyUnitLabel(currency, unitOn)}</div>
                     </div>
                     <div style={{ textAlign: "center" }}>
-                      <div style={{ fontSize: "10px", color: "#5a6a7e", fontWeight: 600 }}>Achievement Rate</div>
+                      <div style={{ fontSize: "10px", color: "#5a6a7e", fontWeight: 600 }}>달성률</div>
                       <div style={{ fontSize: "26px", fontWeight: 800, color: "#3e7d4c", marginTop: "2px" }}>
                         {fmtPct(achievementPct)}
                       </div>
@@ -534,29 +534,29 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
 
               {/* Cash — Confirmed / Collection / Outstanding */}
               <div style={cardStyle}>
-                <span style={sectionTitle}>Cash</span>
+                <span style={sectionTitle}>현금</span>
                 {isLoading ? (
                   <div style={{ padding: "40px 10px", textAlign: "center", fontSize: "11px", color: "#8a97a8" }}>불러오는 중…</div>
                 ) : cashConfirmed == null && cashCollection == null ? (
-                  <EmptyHint label="Cash (Confirmed/Collection)" />
+                  <EmptyHint label="현금 (확정/수금)" />
                 ) : (
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-around", padding: "18px 0 10px" }}>
                     <div style={{ textAlign: "center" }}>
-                      <div style={{ fontSize: "10px", color: "#5a6a7e", fontWeight: 600 }}>Confirmed (A)</div>
+                      <div style={{ fontSize: "10px", color: "#5a6a7e", fontWeight: 600 }}>확정 (A)</div>
                       <div style={{ fontSize: "20px", fontWeight: 800, color: "#1a3a6b", marginTop: "4px" }}>
                         {formatMoney(cashConfirmed, currency, unitOn)}
                       </div>
                       <div style={{ fontSize: "9px", color: "#8a97a8" }}>{moneyUnitLabel(currency, unitOn)}</div>
                     </div>
                     <div style={{ textAlign: "center" }}>
-                      <div style={{ fontSize: "10px", color: "#5a6a7e", fontWeight: 600 }}>Collection (B)</div>
+                      <div style={{ fontSize: "10px", color: "#5a6a7e", fontWeight: 600 }}>수금 (B)</div>
                       <div style={{ fontSize: "20px", fontWeight: 800, color: "#2b5cad", marginTop: "4px" }}>
                         {formatMoney(cashCollection, currency, unitOn)}
                       </div>
                       <div style={{ fontSize: "9px", color: "#8a97a8" }}>{moneyUnitLabel(currency, unitOn)}</div>
                     </div>
                     <div style={{ textAlign: "center" }}>
-                      <div style={{ fontSize: "10px", color: "#5a6a7e", fontWeight: 600 }}>Outstanding (A)-(B)</div>
+                      <div style={{ fontSize: "10px", color: "#5a6a7e", fontWeight: 600 }}>미수금 (A-B)</div>
                       <div style={{ fontSize: "20px", fontWeight: 800, color: "#c0392b", marginTop: "4px" }}>
                         {formatMoney(cashOutstanding, currency, unitOn)}
                       </div>
@@ -573,10 +573,10 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
               <div style={cardStyle}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                   <span style={sectionTitle}>
-                    Budget <u>Execution Status</u>
+                    예산 <u>집행 현황</u>
                   </span>
                   <span style={{ fontSize: "10px", color: "#333", fontWeight: 600 }}>
-                    Total Execution : {fmtPct(ratioPct(totalActual, totalBudget))}
+                    총 집행률 : {fmtPct(ratioPct(totalActual, totalBudget))}
                   </span>
                 </div>
                 {isLoading ? (
@@ -636,7 +636,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
 
               {/* Outsourcing summary */}
               <div style={cardStyle}>
-                <span style={sectionTitle}>Outsourcing</span>
+                <span style={sectionTitle}>외주</span>
                 {isLoading ? (
                   <div style={{ padding: "40px 10px", textAlign: "center", fontSize: "11px", color: "#8a97a8" }}>불러오는 중…</div>
                 ) : outsourcing.length === 0 ? (

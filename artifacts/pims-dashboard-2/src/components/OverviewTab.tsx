@@ -211,7 +211,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
         {/* Progress */}
         <div style={cardStyle}>
           <div style={{ display: "flex", justifyContent: "space-between" }}>
-            <span style={{ ...sectionTitle, color: chartTheme.profitGreen }}>Progress</span>
+            <span style={{ ...sectionTitle, color: chartTheme.profitGreen }}>공정</span>
             <span
               style={{
                 fontSize: "9px",
@@ -301,13 +301,13 @@ export function OverviewTab({ projectName }: { projectName: string }) {
               paddingTop: "6px",
             }}
           >
-            Time Elapsed Rate ({fmtPct(elapsed)})
+            경과율 ({fmtPct(elapsed)})
           </div>
         </div>
 
         {/* Revenue */}
         <div style={cardStyle}>
-          <span style={sectionTitle}>Revenue</span>
+          <span style={sectionTitle}>매출</span>
           {mr.isLoading || (siteCode != null && (revQ.isLoading || cogsQ.isLoading)) ? (
             <div style={emptyNote}>매출 데이터를 불러오는 중입니다…</div>
           ) : !hasRevenue ? (
@@ -421,7 +421,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
         <div style={cardStyle}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "4px" }}>
             <span style={sectionTitle}>
-              Budget <u>Execution Status</u>
+              예산 <u>집행 현황</u>
             </span>
             <select
               value={budgetMonth ?? ""}
@@ -441,9 +441,9 @@ export function OverviewTab({ projectName }: { projectName: string }) {
               {/* 범례 */}
               <div style={{ display: "flex", gap: "10px", marginBottom: "6px", justifyContent: "flex-end" }}>
                 {[
-                  { label: "Budget", color: chartTheme.lightGray },
-                  { label: "Plan", color: chartTheme.outflowRed },
-                  { label: "Actual", color: chartTheme.inflowBlue },
+                  { label: "예산", color: chartTheme.lightGray },
+                  { label: "계획", color: chartTheme.outflowRed },
+                  { label: "실적", color: chartTheme.inflowBlue },
                 ].map(({ label, color }) => (
                   <div key={label} style={{ display: "flex", alignItems: "center", gap: "3px" }}>
                     <div style={{ width: "10px", height: "10px", backgroundColor: color, borderRadius: "2px" }} />
@@ -518,7 +518,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
 
         {/* Cash */}
         <div style={cardStyle}>
-          <span style={sectionTitle}>Cash</span>
+          <span style={sectionTitle}>현금</span>
           {cfRef != null && cfQ.isLoading ? (
             <div style={emptyNote}>자금수지 데이터를 불러오는 중입니다…</div>
           ) : !hasCash ? (

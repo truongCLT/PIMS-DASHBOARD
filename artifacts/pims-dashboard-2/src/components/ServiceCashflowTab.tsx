@@ -250,7 +250,7 @@ export function ServiceCashflowTab({
       {/* Cashflow */}
       <div style={cardStyle}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span style={{ fontSize: "13px", fontWeight: 700, color: chartTheme.titleNavy }}>Cashflow</span>
+          <span style={{ fontSize: "13px", fontWeight: 700, color: chartTheme.titleNavy }}>자금수지</span>
           <span style={{ fontSize: "11px", color: "#5a6a7e" }}>
             {useCf && query.data
               ? `${query.data.projectName} · 단위: ${cfConvertible ? unitLabel : query.data.unit}`

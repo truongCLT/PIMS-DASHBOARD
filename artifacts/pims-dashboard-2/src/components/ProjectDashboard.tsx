@@ -223,7 +223,7 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span style={{ fontSize: "12px", color: "#333", fontWeight: 600 }}>Currency :</span>
+          <span style={{ fontSize: "12px", color: "#333", fontWeight: 600 }}>통화 :</span>
           <div style={{ display: "flex", border: "1px solid #ccd4dd", borderRadius: "6px", overflow: "hidden" }}>
             {["USD", "KRW", "VND"].map((c) => (
               <button
@@ -247,7 +247,7 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span style={{ fontSize: "12px", color: "#333", fontWeight: 600 }}>Unit :</span>
+          <span style={{ fontSize: "12px", color: "#333", fontWeight: 600 }}>단위 :</span>
           <div
             onClick={() => setUnitOn(!unitOn)}
             style={{
@@ -282,7 +282,7 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
       <div style={{ ...cardStyle, margin: "8px 10px 0", display: "flex", gap: "10px", alignItems: "stretch" }}>
         <div style={{ flex: 1 }}>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 0", fontSize: "12px", color: "#1a2d4d" }}>
-            <span style={{ fontWeight: 700, paddingRight: "14px" }}>Project : {projectName}</span>
+            <span style={{ fontWeight: 700, paddingRight: "14px" }}>프로젝트 : {projectName}</span>
             <span style={{ borderLeft: "1px solid #d5dce6", padding: "0 14px" }}>발주처 : {ov.client ?? "-"}</span>
             <span style={{ borderLeft: "1px solid #d5dce6", padding: "0 14px" }}>
               공사기간 : {periodLabel}

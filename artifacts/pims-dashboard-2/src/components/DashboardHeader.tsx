@@ -160,7 +160,7 @@ export function DashboardHeader({
               maxWidth: "260px",
             }}
           >
-            <option value="All">All</option>
+            <option value="All">전체</option>
             {projectOptions.map((p) => (
               <option key={p.name} value={p.name}>
                 {p.name}
@@ -248,9 +248,9 @@ export function DashboardHeader({
               cursor: "pointer",
             }}
           >
-            <option value="Month">Month</option>
-            <option value="Quarter">Quarter</option>
-            <option value="Year">Year</option>
+            <option value="Month">월</option>
+            <option value="Quarter">분기</option>
+            <option value="Year">연간</option>
           </select>
         </div>
 

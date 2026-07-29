@@ -356,7 +356,7 @@ export function SaleProfitTab({
 
       {/* Cost ratio */}
       <div style={cardStyle}>
-        <span style={sectionTitle}>Cost Ratio (원가율, %)</span>
+        <span style={sectionTitle}>원가율 (%)</span>
         {ratios.length === 0 ? (
           <Notice>선택한 기간에 원가율을 계산할 매출 데이터가 없습니다.</Notice>
         ) : (
