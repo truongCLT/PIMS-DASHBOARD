@@ -158,11 +158,21 @@ export function ServiceCashflowTab({
       </div>
     );
   } else {
-    const barSize = Math.max(30, Math.min(110, Math.floor(600 / chartData.length)));
+    // 월 수에 따라 최소 컬럼 너비 90px 보장 → 막대가 충분히 넓게 표시됨
+    const minChartWidth = Math.max(640, chartData.length * 90);
+    const barSize = Math.max(32, Math.min(80, Math.floor((minChartWidth / chartData.length) * 0.5)));
     body = (
-      <div style={{ height: "320px", marginTop: "10px" }}>
+      // 가로 스크롤: 월 수가 많아도 막대 너비 유지
+      <div style={{ overflowX: "auto", marginTop: "10px" }}>
+        <div style={{
+          minWidth: `${minChartWidth}px`,
+          // 뷰포트 높이에서 고정 UI 영역(헤더·탭·카드 헤더·범례·코멘트·패딩) 제외
+          height: "calc(100vh - 390px)",
+          minHeight: "260px",
+          maxHeight: "540px",
+        }}>
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={chartData} stackOffset="sign" margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
+          <ComposedChart data={chartData} stackOffset="sign" margin={{ top: 10, right: 16, left: 10, bottom: 0 }}>
             <XAxis
               dataKey="month"
               tick={{ fontSize: 12, fill: "#333", fontWeight: 600 }}
@@ -230,6 +240,7 @@ export function ServiceCashflowTab({
             />
           </ComposedChart>
         </ResponsiveContainer>
+        </div>
       </div>
     );
   }
