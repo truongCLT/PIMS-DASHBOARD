@@ -1,9 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Plus, Trash2, Save, Upload, ArrowLeft, ArrowRight } from "lucide-react";
+import { Plus, Trash2, Save } from "lucide-react";
 import {
   usePutProjectdetail,
-  requestUploadUrl,
   useListMgmtreportProjects,
   useUpdateMgmtreportProjectStatus,
   getListMgmtreportProjectsQueryKey,
@@ -21,7 +20,6 @@ import type {
   ProjectDetailOutsourcing,
   ProjectDetailCashflowPoint,
   ProjectDetailCogsPoint,
-  ProjectDetailPhoto,
 } from "@workspace/api-client-react";
 import { useProjectDetail, getGetProjectdetailQueryKey } from "../lib/projectDetailData";
 import { REPORT_YEAR } from "../lib/mgmtreportData";
@@ -303,10 +301,6 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
   const [outsourcing, setOutsourcing] = useState<ProjectDetailOutsourcing[]>([]);
   const [cashflow, setCashflow] = useState<ProjectDetailCashflowPoint[]>([]);
   const [cogsMonthly, setCogsMonthly] = useState<ProjectDetailCogsPoint[]>([]);
-  const [photos, setPhotos] = useState<ProjectDetailPhoto[]>([]);
-  const [uploading, setUploading] = useState(false);
-  const [photoMsg, setPhotoMsg] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [loaded, setLoaded] = useState(false);
   const [cfPrefilled, setCfPrefilled] = useState(false);
 
@@ -373,7 +367,6 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
         setCfPrefilled(cfRows.length > 0);
       }
       setCogsMonthly(detail.cogsMonthly ?? []);
-      setPhotos(detail.photos);
       setLoaded(true);
     }
   }, [detail, loaded, cfRef, cfQuery.isLoading, cfQuery.data]);
@@ -480,7 +473,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       // 자금수지 Excel prefill을 아직 수정하지 않았다면 저장하지 않음(향후 Excel 갱신 반영 유지)
       cashflow: cfPrefilled ? [] : cashflow.filter((c) => c.year > 0 && c.month >= 1 && c.month <= 12),
       cogsMonthly: cogsMonthly.filter((c) => c.year > 0 && c.month >= 1 && c.month <= 12),
-      photos: photos.filter((p) => p.objectPath.trim() !== ""),
+      photos: [],
     };
     pendingRef.current = true;
     mutation.mutate(
@@ -523,47 +516,8 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
     }
     const t = setTimeout(() => saveRef.current(), 1000);
     return () => clearTimeout(t);
-  }, [loaded, overview, progress, milestones, costEstimation, costBudget, costBudgetMonthly, outsourcing, cashflow, cogsMonthly, photos]);
+  }, [loaded, overview, progress, milestones, costEstimation, costBudget, costBudgetMonthly, outsourcing, cashflow, cogsMonthly]);
 
-  const uploadPhotos = async (files: FileList) => {
-    setPhotoMsg(null);
-    setUploading(true);
-    try {
-      for (const file of Array.from(files)) {
-        if (!file.type.startsWith("image/")) {
-          setPhotoMsg(`이미지 파일만 업로드할 수 있습니다: ${file.name}`);
-          continue;
-        }
-        const { uploadURL, objectPath } = await requestUploadUrl({
-          name: file.name,
-          size: file.size,
-          contentType: file.type,
-        });
-        const putRes = await fetch(uploadURL, {
-          method: "PUT",
-          headers: { "Content-Type": file.type },
-          body: file,
-        });
-        if (!putRes.ok) throw new Error(`upload failed (${putRes.status})`);
-        setPhotos((rows) => [...rows, { objectPath }]);
-      }
-      setPhotoMsg("사진이 추가되었습니다. 상단 '저장' 버튼을 눌러야 반영됩니다.");
-    } catch {
-      setPhotoMsg("사진 업로드에 실패했습니다. 관리자 로그인 상태를 확인한 뒤 다시 시도해 주세요.");
-    } finally {
-      setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    }
-  };
-
-  const movePhoto = (i: number, dir: -1 | 1) =>
-    setPhotos((rows) => {
-      const j = i + dir;
-      if (j < 0 || j >= rows.length) return rows;
-      const next = [...rows];
-      [next[i], next[j]] = [next[j], next[i]];
-      return next;
-    });
 
   if (isLoading && !loaded) {
     return <div style={{ ...cardStyle, textAlign: "center", color: "#8a97a8", fontSize: "12px" }}>불러오는 중…</div>;
@@ -1215,78 +1169,6 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       </div>
       )}
 
-      {/* 7. 현장 사진 */}
-      {!service && (
-      <div style={cardStyle}>
-        {cardHead("7. 현장 사진 (개요 탭)", "photos")}
-        <div style={{ marginTop: "8px", display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            multiple
-            style={{ display: "none" }}
-            onChange={(e) => {
-              if (e.target.files && e.target.files.length > 0) void uploadPhotos(e.target.files);
-            }}
-          />
-          <button
-            style={{ ...addBtn, marginTop: 0, opacity: uploading ? 0.6 : 1 }}
-            disabled={uploading}
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <Upload size={12} /> {uploading ? "업로드 중…" : "사진 업로드"}
-          </button>
-          {photoMsg && (
-            <span style={{ fontSize: "11px", color: photoMsg.includes("실패") || photoMsg.includes("만") ? "#c0392b" : "#3e7d4c", fontWeight: 600 }}>
-              {photoMsg}
-            </span>
-          )}
-        </div>
-        {photos.length === 0 ? (
-          <div style={{ fontSize: "11px", color: "#8a97a8", marginTop: "10px" }}>
-            업로드된 사진이 없습니다. 사진이 없으면 개요 탭에 기본 이미지가 표시됩니다.
-          </div>
-        ) : (
-          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginTop: "10px" }}>
-            {photos.map((p, i) => (
-              <div key={`${p.objectPath}-${i}`} style={{ border: "1px solid #d5dce6", borderRadius: "6px", padding: "6px", width: "160px" }}>
-                <img
-                  src={`/api/storage${p.objectPath}`}
-                  alt={`현장 사진 ${i + 1}`}
-                  style={{ width: "100%", height: "100px", objectFit: "cover", borderRadius: "4px", backgroundColor: "#eef2f7" }}
-                />
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "4px" }}>
-                  <span style={{ fontSize: "10px", color: "#8a97a8" }}>{i + 1}번</span>
-                  <div style={{ display: "flex", alignItems: "center" }}>
-                    <button
-                      title="앞으로"
-                      onClick={() => movePhoto(i, -1)}
-                      disabled={i === 0}
-                      style={{ background: "none", border: "none", cursor: i === 0 ? "default" : "pointer", padding: "3px", color: i === 0 ? "#c9d2dd" : "#1e6fdd" }}
-                    >
-                      <ArrowLeft size={13} />
-                    </button>
-                    <button
-                      title="뒤로"
-                      onClick={() => movePhoto(i, 1)}
-                      disabled={i === photos.length - 1}
-                      style={{ background: "none", border: "none", cursor: i === photos.length - 1 ? "default" : "pointer", padding: "3px", color: i === photos.length - 1 ? "#c9d2dd" : "#1e6fdd" }}
-                    >
-                      <ArrowRight size={13} />
-                    </button>
-                    <DelBtn onClick={() => removeAt(setPhotos, i)} />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-        <div style={{ fontSize: "10px", color: "#8a97a8", marginTop: "6px" }}>
-          첫 번째 사진이 개요 탭에 가장 먼저 표시됩니다. 순서 변경/삭제 후에도 상단 '저장' 버튼을 눌러야 반영됩니다.
-        </div>
-      </div>
-      )}
     </div>
   );
 }
