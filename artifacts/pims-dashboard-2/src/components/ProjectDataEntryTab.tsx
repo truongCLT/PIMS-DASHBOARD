@@ -17,6 +17,7 @@ import type {
   ProjectDetailMilestone,
   ProjectDetailCostEstimation,
   ProjectDetailCostBudget,
+  ProjectDetailCostBudgetMonthly,
   ProjectDetailOutsourcing,
   ProjectDetailCashflowPoint,
   ProjectDetailCogsPoint,
@@ -298,6 +299,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
   const [milestones, setMilestones] = useState<ProjectDetailMilestone[]>([]);
   const [costEstimation, setCostEstimation] = useState<ProjectDetailCostEstimation[]>([]);
   const [costBudget, setCostBudget] = useState<ProjectDetailCostBudget[]>([]);
+  const [costBudgetMonthly, setCostBudgetMonthly] = useState<ProjectDetailCostBudgetMonthly[]>([]);
   const [outsourcing, setOutsourcing] = useState<ProjectDetailOutsourcing[]>([]);
   const [cashflow, setCashflow] = useState<ProjectDetailCashflowPoint[]>([]);
   const [cogsMonthly, setCogsMonthly] = useState<ProjectDetailCogsPoint[]>([]);
@@ -352,6 +354,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
             : { category: "Direct Cost", item, budget: null, plan: null, actual: null };
         }),
       );
+      setCostBudgetMonthly(detail.costBudgetMonthly ?? []);
       setOutsourcing(detail.outsourcing);
       if (detail.cashflow.length > 0) {
         setCashflow(detail.cashflow);
@@ -472,6 +475,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       milestones: milestones.filter((m) => m.label.trim() !== ""),
       costEstimation: estRows,
       costBudget: costBudget.filter((c) => c.item.trim() !== ""),
+      costBudgetMonthly: costBudgetMonthly.filter((r) => r.plan != null || r.actual != null),
       outsourcing: outsourcing.filter((o) => o.trade.trim() !== ""),
       // 자금수지 Excel prefill을 아직 수정하지 않았다면 저장하지 않음(향후 Excel 갱신 반영 유지)
       cashflow: cfPrefilled ? [] : cashflow.filter((c) => c.year > 0 && c.month >= 1 && c.month <= 12),
@@ -519,7 +523,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
     }
     const t = setTimeout(() => saveRef.current(), 1000);
     return () => clearTimeout(t);
-  }, [loaded, overview, progress, milestones, costEstimation, costBudget, outsourcing, cashflow, cogsMonthly, photos]);
+  }, [loaded, overview, progress, milestones, costEstimation, costBudget, costBudgetMonthly, outsourcing, cashflow, cogsMonthly, photos]);
 
   const uploadPhotos = async (files: FileList) => {
     setPhotoMsg(null);
@@ -999,6 +1003,49 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
             ))}
           </tbody>
         </table>
+        </div>
+
+        {/* 월별 계획/실적 */}
+        <div style={{ marginTop: "10px" }}>
+          <div style={{ fontSize: "10px", fontWeight: 600, color: "#4472c4", marginBottom: "4px" }}>
+            월별 계획 / 실적 ({REPORT_YEAR}년)
+          </div>
+          <div style={{ fontSize: "9px", color: "#777", marginBottom: "6px" }}>
+            선택한 월에 따라 Budget Execution Status 카드에 표시됩니다. 외주성도 입력 가능합니다.
+          </div>
+          {(["Common", "Expense 1", "외주성"] as const).map((item) => {
+            const getCbm = (month: number, field: "plan" | "actual") =>
+              costBudgetMonthly.find((r) => r.item === item && r.year === REPORT_YEAR && r.month === month)?.[field] ?? null;
+            const setCbm = (month: number, field: "plan" | "actual", value: number | null) =>
+              setCostBudgetMonthly((rows) => {
+                const idx = rows.findIndex((r) => r.item === item && r.year === REPORT_YEAR && r.month === month);
+                if (idx >= 0) return rows.map((r, i) => (i === idx ? { ...r, [field]: value } : r));
+                return [...rows, { item, year: REPORT_YEAR, month, plan: null, actual: null, [field]: value }];
+              });
+            return (
+              <div key={item} style={{ marginBottom: "10px" }}>
+                <div style={{ fontSize: "11px", fontWeight: 700, color: "#1a2d4d", marginBottom: "4px" }}>{item}</div>
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <thead>
+                    <tr>
+                      <th style={{ ...th, width: "44px" }}>월</th>
+                      <th style={th}>계획 Plan (VND)</th>
+                      <th style={th}>실적 Actual (VND)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Array.from({ length: 12 }, (_, i) => i + 1).map((month) => (
+                      <tr key={month}>
+                        <td style={{ ...tdCell, textAlign: "center", fontSize: "11px", color: "#555", padding: "3px 4px" }}>{month}월</td>
+                        <td style={tdCell}><VndInput valueKUsd={getCbm(month, "plan")} onChange={(v) => setCbm(month, "plan", v)} /></td>
+                        <td style={tdCell}><VndInput valueKUsd={getCbm(month, "actual")} onChange={(v) => setCbm(month, "actual", v)} /></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            );
+          })}
         </div>
       </div>
 

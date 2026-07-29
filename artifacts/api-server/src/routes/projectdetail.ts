@@ -8,6 +8,7 @@ import {
   pdMilestonesTable,
   pdCostEstimationTable,
   pdCostBudgetTable,
+  pdCostBudgetMonthlyTable,
   pdOutsourcingTable,
   pdCashflowMonthlyTable,
   pdCogsMonthlyTable,
@@ -35,7 +36,7 @@ const num = (v: string | null) => (v == null ? null : Number(v));
 const str = (v: number | null | undefined) => (v == null ? null : String(v));
 
 async function loadDetail(projectName: string) {
-  const [overviewRows, progress, milestones, costEstimation, costBudget, outsourcing, cashflow, cogsMonthly, photos] = await Promise.all([
+  const [overviewRows, progress, milestones, costEstimation, costBudget, costBudgetMonthly, outsourcing, cashflow, cogsMonthly, photos] = await Promise.all([
     db
       .select()
       .from(pdOverviewTable)
@@ -60,6 +61,11 @@ async function loadDetail(projectName: string) {
       .from(pdCostBudgetTable)
       .where(eq(pdCostBudgetTable.projectName, projectName))
       .orderBy(asc(pdCostBudgetTable.sortOrder), asc(pdCostBudgetTable.id)),
+    db
+      .select()
+      .from(pdCostBudgetMonthlyTable)
+      .where(eq(pdCostBudgetMonthlyTable.projectName, projectName))
+      .orderBy(asc(pdCostBudgetMonthlyTable.item), asc(pdCostBudgetMonthlyTable.year), asc(pdCostBudgetMonthlyTable.month)),
     db
       .select()
       .from(pdOutsourcingTable)
@@ -125,6 +131,13 @@ async function loadDetail(projectName: string) {
       category: c.category,
       item: c.item,
       budget: num(c.budget),
+      plan: num(c.plan),
+      actual: num(c.actual),
+    })),
+    costBudgetMonthly: costBudgetMonthly.map((c) => ({
+      item: c.item,
+      year: c.year,
+      month: c.month,
       plan: num(c.plan),
       actual: num(c.actual),
     })),
@@ -248,6 +261,7 @@ router.put("/projectdetail", requireAdmin, async (req, res) => {
       await tx.delete(pdMilestonesTable).where(eq(pdMilestonesTable.projectName, projectName));
       await tx.delete(pdCostEstimationTable).where(eq(pdCostEstimationTable.projectName, projectName));
       await tx.delete(pdCostBudgetTable).where(eq(pdCostBudgetTable.projectName, projectName));
+      await tx.delete(pdCostBudgetMonthlyTable).where(eq(pdCostBudgetMonthlyTable.projectName, projectName));
       await tx.delete(pdOutsourcingTable).where(eq(pdOutsourcingTable.projectName, projectName));
       await tx.delete(pdCashflowMonthlyTable).where(eq(pdCashflowMonthlyTable.projectName, projectName));
       if (body.cogsMonthly !== undefined) {
@@ -345,6 +359,21 @@ router.put("/projectdetail", requireAdmin, async (req, res) => {
             plan: str(c.plan),
             actual: str(c.actual),
             sortOrder: i,
+          })),
+        );
+      }
+      const cbmRows = (body.costBudgetMonthly ?? []).filter(
+        (r) => r.plan != null || r.actual != null,
+      );
+      if (cbmRows.length > 0) {
+        await tx.insert(pdCostBudgetMonthlyTable).values(
+          cbmRows.map((c) => ({
+            projectName,
+            item: c.item,
+            year: c.year,
+            month: c.month,
+            plan: str(c.plan),
+            actual: str(c.actual),
           })),
         );
       }

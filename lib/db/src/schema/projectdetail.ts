@@ -106,6 +106,24 @@ export const pdCostBudgetTable = pgTable(
   (t) => [index("pd_cost_budget_project_idx").on(t.projectName)],
 );
 
+// 원가 — 예산 집행 월별 계획/실적 (Common·Expense 1 항목별 1~12월)
+export const pdCostBudgetMonthlyTable = pgTable(
+  "pd_cost_budget_monthly",
+  {
+    id: serial("id").primaryKey(),
+    projectName: text("project_name").notNull(),
+    item: text("item").notNull(), // 'Common' | 'Expense 1'
+    year: integer("year").notNull(),
+    month: integer("month").notNull(), // 1..12
+    plan: numeric("plan", { precision: 18, scale: 4 }),
+    actual: numeric("actual", { precision: 18, scale: 4 }),
+  },
+  (t) => [
+    uniqueIndex("pd_cost_budget_monthly_uq").on(t.projectName, t.item, t.year, t.month),
+    check("pd_cost_budget_monthly_month_ck", sql`${t.month} BETWEEN 1 AND 12`),
+  ],
+);
+
 // 자금 — 월별 현금흐름 (Cash in / Cash out / 보유 현금)
 export const pdCashflowMonthlyTable = pgTable(
   "pd_cashflow_monthly",

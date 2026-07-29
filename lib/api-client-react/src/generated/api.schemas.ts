@@ -489,6 +489,18 @@ export interface ProjectDetailCostBudget {
   actual?: number | null;
 }
 
+export interface ProjectDetailCostBudgetMonthly {
+  item: string;
+  year: number;
+  /**
+     * @minimum 1
+     * @maximum 12
+     */
+  month: number;
+  plan?: number | null;
+  actual?: number | null;
+}
+
 export interface ProjectDetailCashflowPoint {
   year: number;
   /**
@@ -546,6 +558,7 @@ export interface ProjectDetail {
   milestones: ProjectDetailMilestone[];
   costEstimation: ProjectDetailCostEstimation[];
   costBudget: ProjectDetailCostBudget[];
+  costBudgetMonthly?: ProjectDetailCostBudgetMonthly[];
   outsourcing: ProjectDetailOutsourcing[];
   cashflow: ProjectDetailCashflowPoint[];
   cogsMonthly?: ProjectDetailCogsPoint[];

@@ -236,6 +236,13 @@ export const GetProjectdetailResponse = zod.object({
   "plan": zod.number().nullish(),
   "actual": zod.number().nullish()
 })),
+  "costBudgetMonthly": zod.array(zod.object({
+  "item": zod.string(),
+  "year": zod.number(),
+  "month": zod.number().min(1).max(12),
+  "plan": zod.number().nullish(),
+  "actual": zod.number().nullish()
+})).optional(),
   "outsourcing": zod.array(zod.object({
   "tradeGroup": zod.string().nullish().describe('대공종 (공통\/토목\/건축\/기계\/전기\/조경)'),
   "trade": zod.string(),
@@ -341,6 +348,13 @@ export const PutProjectdetailBody = zod.object({
   "plan": zod.number().nullish(),
   "actual": zod.number().nullish()
 })),
+  "costBudgetMonthly": zod.array(zod.object({
+  "item": zod.string(),
+  "year": zod.number(),
+  "month": zod.number().min(1).max(12),
+  "plan": zod.number().nullish(),
+  "actual": zod.number().nullish()
+})).optional(),
   "outsourcing": zod.array(zod.object({
   "tradeGroup": zod.string().nullish().describe('대공종 (공통\/토목\/건축\/기계\/전기\/조경)'),
   "trade": zod.string(),
@@ -442,6 +456,13 @@ export const PutProjectdetailResponse = zod.object({
   "plan": zod.number().nullish(),
   "actual": zod.number().nullish()
 })),
+  "costBudgetMonthly": zod.array(zod.object({
+  "item": zod.string(),
+  "year": zod.number(),
+  "month": zod.number().min(1).max(12),
+  "plan": zod.number().nullish(),
+  "actual": zod.number().nullish()
+})).optional(),
   "outsourcing": zod.array(zod.object({
   "tradeGroup": zod.string().nullish().describe('대공종 (공통\/토목\/건축\/기계\/전기\/조경)'),
   "trade": zod.string(),

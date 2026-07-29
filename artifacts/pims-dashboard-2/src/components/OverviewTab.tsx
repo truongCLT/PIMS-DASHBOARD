@@ -177,7 +177,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
     e ? ratioPct(e.costAmount ?? null, e.contractAmount ?? null) : null;
 
   // ---- 실행예산 집행 (Direct Cost = Common + Expense 1 + 외주성) ----
-  // Common·Expense 1은 데이터 입력(costBudget), 외주성 예산·실적은 외주/자재 표에서 자동 집계
+  const [budgetMonth, setBudgetMonth] = useState<number | null>(null); // null = 전체
   const cb = detail?.costBudget ?? [];
   const findCb = (name: string) => cb.find((r) => r.item.trim().toLowerCase() === name.toLowerCase()) ?? null;
   const common = findCb("Common");
@@ -187,11 +187,34 @@ export function OverviewTab({ projectName }: { projectName: string }) {
   const outActual = outRows.some((r) => r.accum != null || r.resolved != null)
     ? outRows.reduce((a, r) => a + (r.accum ?? r.resolved ?? 0), 0)
     : null;
+  const cbm = detail?.costBudgetMonthly ?? [];
+  const getCbm = (item: string, field: "plan" | "actual") => {
+    if (budgetMonth == null) return null; // 전체: monthly 미사용
+    const row = cbm.find((r) => r.item === item && r.year === REPORT_YEAR && r.month === budgetMonth);
+    return row?.[field] ?? null;
+  };
   const budgetRows = [
-    { item: "Common", budget: common?.budget ?? null, actual: common?.actual ?? null },
-    { item: "Expense 1", budget: expense1?.budget ?? null, actual: expense1?.actual ?? null },
-    { item: "외주성", budget: outBudget, actual: outActual },
-  ].filter((r) => r.budget != null || r.actual != null);
+    {
+      item: "Common",
+      budget: common?.budget ?? null,
+      plan: budgetMonth == null ? (common?.plan ?? null) : getCbm("Common", "plan"),
+      actual: budgetMonth == null ? (common?.actual ?? null) : getCbm("Common", "actual"),
+    },
+    {
+      item: "Expense 1",
+      budget: expense1?.budget ?? null,
+      plan: budgetMonth == null ? (expense1?.plan ?? null) : getCbm("Expense 1", "plan"),
+      actual: budgetMonth == null ? (expense1?.actual ?? null) : getCbm("Expense 1", "actual"),
+    },
+    {
+      item: "외주성",
+      budget: outBudget,
+      plan: budgetMonth == null
+        ? (outRows.some((r) => r.executedBudget != null) ? outRows.reduce((a, r) => a + (r.executedBudget ?? 0), 0) : null)
+        : getCbm("외주성", "plan"),
+      actual: budgetMonth == null ? outActual : getCbm("외주성", "actual"),
+    },
+  ].filter((r) => r.budget != null || r.actual != null || r.plan != null);
   const budgetTotal = budgetRows.reduce((a, r) => a + (r.budget ?? 0), 0);
   const actualTotal = budgetRows.reduce((a, r) => a + (r.actual ?? 0), 0);
   const directCostPct = ratioPct(actualTotal, budgetTotal);
@@ -413,62 +436,80 @@ export function OverviewTab({ projectName }: { projectName: string }) {
 
         {/* Budget Execution Status */}
         <div style={cardStyle}>
-          <span style={sectionTitle}>
-            Budget <u>Execution Status</u>
-          </span>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "4px" }}>
+            <span style={sectionTitle}>
+              Budget <u>Execution Status</u>
+            </span>
+            <select
+              value={budgetMonth ?? ""}
+              onChange={(e) => setBudgetMonth(e.target.value === "" ? null : Number(e.target.value))}
+              style={{ fontSize: "10px", border: "1px solid #c8d2de", borderRadius: "4px", padding: "2px 4px", color: "#333", cursor: "pointer" }}
+            >
+              <option value="">전체</option>
+              {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+                <option key={m} value={m}>{m}월</option>
+              ))}
+            </select>
+          </div>
           {budgetRows.length === 0 ? (
             <div style={emptyNote}>실행예산 데이터가 없습니다. 데이터 입력 탭에서 입력해 주세요.</div>
           ) : (
             <>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "flex-end",
-                  justifyContent: "space-around",
-                  marginTop: "10px",
-                  paddingBottom: "4px",
-                }}
-              >
-                {budgetRows.map((g) => {
-                  const H = 130;
-                  const budget = g.budget ?? 0;
-                  const spent = g.actual ?? 0;
-                  const maxBudget = Math.max(...budgetRows.map((r) => r.budget ?? 0), 1);
-                  const bh = Math.max((Math.log10(budget + 1) / Math.log10(maxBudget + 1)) * H, 8);
-                  const sh = spent > 0 && budget > 0 ? Math.max(bh * (spent / budget), 6) : 0;
-                  const pct = ratioPct(g.actual, g.budget);
-                  return (
-                    <div key={g.item} style={{ textAlign: "center" }}>
-                      <div style={{ fontSize: "9px", color: "#555", marginBottom: "2px" }}>{fmtMoney(g.budget)}</div>
-                      <div style={{ height: `${H}px`, display: "flex", alignItems: "flex-end", gap: "3px", justifyContent: "center" }}>
-                        <div style={{ width: "22px", height: `${bh}px`, backgroundColor: chartTheme.lightGray }} />
-                        {sh > 0 && (
-                          <div style={{ width: "22px", height: `${sh}px`, backgroundColor: chartTheme.outflowRed, position: "relative" }}>
-                            <span
-                              style={{
-                                position: "absolute",
-                                top: "50%",
-                                left: "50%",
-                                transform: "translate(-50%, -50%)",
-                                fontSize: "8px",
-                                color: "#fff",
-                                fontWeight: 700,
-                              }}
-                            >
-                              {fmtMoney(spent)}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                      {pct != null && (
-                        <div style={{ fontSize: "9px", color: chartTheme.inflowBlue, fontWeight: 600, marginTop: "2px" }}>{fmtPct(pct)}</div>
-                      )}
-                      <div style={{ fontSize: "9px", color: "#333", fontWeight: 600, marginTop: "2px" }}>{g.item}</div>
-                    </div>
-                  );
-                })}
+              {/* 범례 */}
+              <div style={{ display: "flex", gap: "10px", marginBottom: "6px", justifyContent: "flex-end" }}>
+                {[
+                  { label: "Budget", color: chartTheme.lightGray },
+                  { label: "Plan", color: chartTheme.outflowRed },
+                  { label: "Actual", color: chartTheme.inflowBlue },
+                ].map(({ label, color }) => (
+                  <div key={label} style={{ display: "flex", alignItems: "center", gap: "3px" }}>
+                    <div style={{ width: "10px", height: "10px", backgroundColor: color, borderRadius: "2px" }} />
+                    <span style={{ fontSize: "9px", color: "#555" }}>{label}</span>
+                  </div>
+                ))}
               </div>
-              <div style={{ textAlign: "right", fontSize: "10px", color: "#333", fontWeight: 600 }}>
+              <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-around", paddingBottom: "4px" }}>
+                {(() => {
+                  const H = 120;
+                  const maxVal = Math.max(...budgetRows.map((r) => r.budget ?? 0), 1);
+                  const barH = (v: number | null) => v != null && v > 0 ? Math.max((Math.log10(v + 1) / Math.log10(maxVal + 1)) * H, 6) : 0;
+                  return budgetRows.map((g) => {
+                    const bud = g.budget ?? 0;
+                    const pln = g.plan ?? 0;
+                    const act = g.actual ?? 0;
+                    const pct = bud > 0 && act > 0 ? (act / bud) * 100 : null;
+                    const bh = barH(bud);
+                    const ph = barH(pln);
+                    const ah = barH(act);
+                    return (
+                      <div key={g.item} style={{ textAlign: "center", flex: 1, minWidth: 0, paddingInline: "4px" }}>
+                        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "center", height: `${H}px`, gap: "3px" }}>
+                          {/* Budget */}
+                          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "2px" }}>
+                            <span style={{ fontSize: "8px", color: "#777", whiteSpace: "nowrap" }}>{fmtMoney(bud || null)}</span>
+                            <div style={{ width: "18px", height: `${bh}px`, backgroundColor: chartTheme.lightGray, borderRadius: "2px 2px 0 0" }} />
+                          </div>
+                          {/* Plan */}
+                          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "2px" }}>
+                            <span style={{ fontSize: "8px", color: chartTheme.outflowRed, whiteSpace: "nowrap" }}>{g.plan != null ? fmtMoney(pln || null) : "—"}</span>
+                            <div style={{ width: "18px", height: `${ph}px`, backgroundColor: chartTheme.outflowRed, borderRadius: "2px 2px 0 0", opacity: g.plan != null ? 1 : 0 }} />
+                          </div>
+                          {/* Actual */}
+                          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "2px" }}>
+                            <span style={{ fontSize: "8px", color: chartTheme.inflowBlue, whiteSpace: "nowrap" }}>{g.actual != null ? fmtMoney(act || null) : "—"}</span>
+                            <div style={{ width: "18px", height: `${ah}px`, backgroundColor: chartTheme.inflowBlue, borderRadius: "2px 2px 0 0", opacity: g.actual != null ? 1 : 0 }} />
+                          </div>
+                        </div>
+                        {pct != null && (
+                          <div style={{ fontSize: "9px", color: chartTheme.inflowBlue, fontWeight: 700, marginTop: "3px" }}>{fmtPct(pct)}</div>
+                        )}
+                        <div style={{ fontSize: "9px", color: "#1a2d4d", fontWeight: 700, marginTop: "2px" }}>{g.item}</div>
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
+              <div style={{ textAlign: "right", fontSize: "10px", color: "#333", fontWeight: 600, marginTop: "4px" }}>
                 Direct Cost 집행 : {fmtMoney(actualTotal)} / {fmtMoney(budgetTotal)} ({fmtPct(directCostPct)})
               </div>
             </>
