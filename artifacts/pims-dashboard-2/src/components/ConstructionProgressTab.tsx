@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { ProjectCommentPanel } from "./ProjectCommentPanel";
 import {
   ComposedChart,
@@ -13,6 +13,7 @@ import {
 } from "recharts";
 
 import projectPhoto from "../assets/project-photo.png";
+import { PhotoPager } from "./PhotoPager";
 import {
   useProjectDetail,
   fmtPct,
@@ -318,6 +319,8 @@ function MilestoneChart({ milestones }: { milestones: ProjectDetail["milestones"
 
 export function ConstructionProgressTab({ projectName }: { projectName: string }) {
   const { detail, isLoading } = useProjectDetail(projectName);
+  const [photoIdx, setPhotoIdx] = useState(0);
+  useEffect(() => { setPhotoIdx(0); }, [projectName]);
 
   const progress = detail?.progress ?? [];
   const milestones = detail?.milestones ?? [];
@@ -345,12 +348,23 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
             <span style={{ ...sectionTitle, color: "#1a2d4d" }}>Construction site progress</span>
           </div>
-          <div style={{ position: "relative", flex: 1 }}>
-            <img
-              src={projectPhoto}
-              alt={`${projectName} 공사 현장`}
-              style={{ width: "100%", height: "100%", minHeight: "230px", objectFit: "cover", borderRadius: "4px", display: "block" }}
-            />
+          <div style={{ flex: 1, minHeight: 0 }}>
+            {(() => {
+              const photos = detail?.photos ?? [];
+              const hasPhotos = photos.length > 0;
+              const safeIdx = Math.min(photoIdx, Math.max(photos.length - 1, 0));
+              const src = hasPhotos ? `/api/storage${photos[safeIdx].objectPath}` : projectPhoto;
+              return (
+                <PhotoPager
+                  src={src}
+                  alt={`${projectName} 공사 현장`}
+                  total={hasPhotos ? photos.length : 1}
+                  current={hasPhotos ? safeIdx : 0}
+                  onChange={setPhotoIdx}
+                  imgStyle={{ minHeight: "230px" }}
+                />
+              );
+            })()}
           </div>
         </div>
 

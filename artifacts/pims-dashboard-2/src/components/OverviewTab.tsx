@@ -7,6 +7,7 @@ import {
   getGetCashflowMonthlyQueryKey,
 } from "@workspace/api-client-react";
 import projectPhoto from "../assets/project-photo.png";
+import { PhotoPager } from "./PhotoPager";
 import { Donut, MiniBar } from "./charts";
 import { useProjectDetail, fmtPct, ratioPct } from "../lib/projectDetailData";
 import { useMoney } from "../lib/displayUnit";
@@ -40,44 +41,26 @@ const emptyNote: React.CSSProperties = {
 function PhotoCard({ projectName, photos }: { projectName: string; photos: ProjectDetailPhoto[] }) {
   const [active, setActive] = useState(0);
 
-  // 프로젝트 변경 또는 사진 수 감소 시 인덱스 보정
-  useEffect(() => {
-    setActive(0);
-  }, [projectName]);
+  useEffect(() => { setActive(0); }, [projectName]);
   useEffect(() => {
     if (active >= photos.length && photos.length > 0) setActive(0);
   }, [photos.length, active]);
 
   const hasPhotos = photos.length > 0;
-  const src = hasPhotos ? `/api/storage${photos[Math.min(active, photos.length - 1)].objectPath}` : projectPhoto;
+  const safeIdx = Math.min(active, Math.max(photos.length - 1, 0));
+  const src = hasPhotos ? `/api/storage${photos[safeIdx].objectPath}` : projectPhoto;
+  const total = hasPhotos ? photos.length : 1;
 
   return (
-    <div style={{ ...cardStyle, padding: "8px", display: "flex", flexDirection: "column" }}>
-      <img
+    <div style={{ ...cardStyle, padding: "8px", display: "flex", flexDirection: "column", minHeight: "220px" }}>
+      <PhotoPager
         src={src}
         alt={`${projectName} 현장 사진`}
-        style={{ width: "100%", flex: 1, objectFit: "cover", borderRadius: "4px", minHeight: "180px" }}
+        total={total}
+        current={hasPhotos ? safeIdx : 0}
+        onChange={setActive}
+        imgStyle={{ minHeight: "170px" }}
       />
-      {hasPhotos && photos.length > 1 && (
-        <div style={{ display: "flex", justifyContent: "center", gap: "6px", padding: "8px 0 2px" }}>
-          {photos.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => setActive(i)}
-              aria-label={`사진 ${i + 1} 보기`}
-              style={{
-                width: "8px",
-                height: "8px",
-                borderRadius: "50%",
-                border: "none",
-                padding: 0,
-                cursor: "pointer",
-                backgroundColor: i === active ? "#1a2d4d" : "#c9d2dd",
-              }}
-            />
-          ))}
-        </div>
-      )}
     </div>
   );
 }
