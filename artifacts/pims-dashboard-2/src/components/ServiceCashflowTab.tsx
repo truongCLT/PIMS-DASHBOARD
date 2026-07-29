@@ -163,8 +163,14 @@ export function ServiceCashflowTab({
     const barSize = Math.max(32, Math.min(80, Math.floor((minChartWidth / chartData.length) * 0.5)));
     body = (
       // 가로 스크롤: 월 수가 많아도 막대 너비 유지
-      <div style={{ overflowX: "auto", height: "100%" }}>
-        <div style={{ minWidth: `${minChartWidth}px`, height: "100%" }}>
+      <div style={{ overflowX: "auto", marginTop: "10px" }}>
+        <div style={{
+          minWidth: `${minChartWidth}px`,
+          // 뷰포트 높이에서 고정 UI 영역(헤더·탭·카드 헤더·범례·코멘트·패딩) 제외
+          height: "calc(100vh - 390px)",
+          minHeight: "260px",
+          maxHeight: "540px",
+        }}>
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={chartData} stackOffset="sign" margin={{ top: 10, right: 16, left: 10, bottom: 0 }}>
             <XAxis
@@ -240,11 +246,10 @@ export function ServiceCashflowTab({
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "8px", height: "100%" }}>
-      {/* Cashflow — flex:1 so it absorbs all remaining space */}
-      <div style={{ ...cardStyle, flex: 1, minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-        {/* Card header */}
-        <div style={{ flexShrink: 0, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+      {/* Cashflow */}
+      <div style={cardStyle}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span style={{ fontSize: "13px", fontWeight: 700, color: chartTheme.titleNavy }}>Cashflow</span>
           <span style={{ fontSize: "11px", color: "#5a6a7e" }}>
             {useCf && query.data
@@ -254,14 +259,11 @@ export function ServiceCashflowTab({
                 : ""}
           </span>
         </div>
-        {/* Chart body — fills remaining card space */}
-        <div style={{ flex: 1, minHeight: 0 }}>
-          {body}
-        </div>
+        {body}
       </div>
 
-      {/* Comment — fixed height, does not grow */}
-      <div style={{ ...cardStyle, flexShrink: 0 }}>
+      {/* Comment */}
+      <div style={cardStyle}>
         <ProjectCommentPanel projectName={projectName} tab="cashflow" />
       </div>
     </div>

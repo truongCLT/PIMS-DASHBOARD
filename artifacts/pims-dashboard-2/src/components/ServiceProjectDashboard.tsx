@@ -224,7 +224,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
 
   return (
     <DisplayUnitProvider currency={currency} unitOn={unitOn}>
-    <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", backgroundColor: "#e8edf3" }}>
+    <div style={{ flex: 1, overflowY: "auto", backgroundColor: "#e8edf3" }}>
       {/* Banner */}
       <div
         style={{
@@ -394,10 +394,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
       </div>
 
       {/* Body */}
-      <div style={activeTab === "Cashflow"
-        ? { flex: 1, minHeight: 0, overflow: "hidden", padding: "10px", display: "flex", flexDirection: "column" }
-        : { flex: 1, display: "flex", flexDirection: "column", gap: "8px", padding: "10px", overflowY: "auto" }
-      }>
+      <div style={{ display: "flex", flexDirection: "column", gap: "8px", padding: "10px" }}>
         {activeTab === "Sale & Profit" ? (
           <SaleProfitTab
             projectName={projectName}
