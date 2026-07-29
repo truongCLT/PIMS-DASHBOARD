@@ -28,10 +28,10 @@ export function fmtNum(v: number | null | undefined, digits = 0): string {
   return v.toLocaleString("en-US", { maximumFractionDigits: digits, minimumFractionDigits: 0 });
 }
 
-/** 숫자(%) → "12.3%" / null → "-" */
+/** 숫자(%) → "12.3%" / null → "-" (천 단위 구분자 포함) */
 export function fmtPct(v: number | null | undefined, digits = 1): string {
   if (v == null || Number.isNaN(v) || !Number.isFinite(v)) return "-";
-  return `${v.toFixed(digits)}%`;
+  return `${v.toLocaleString("en-US", { minimumFractionDigits: digits, maximumFractionDigits: digits })}%`;
 }
 
 /** 비율 계산 (분모 0/null 방어) — % 값 반환, 불가 시 null */

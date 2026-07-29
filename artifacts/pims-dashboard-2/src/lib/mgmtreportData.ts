@@ -118,12 +118,12 @@ function fmtN(v: number): string {
 
 function pctStr(actual: number, plan: number): string {
   if (!plan) return "-";
-  return `${Math.round((actual / plan) * 100)}%`;
+  return `${Math.round((actual / plan) * 100).toLocaleString("ko-KR")}%`;
 }
 
 function ratioStr(part: number, whole: number): string {
   if (!whole) return "-";
-  return `${((part / whole) * 100).toFixed(1)}%`;
+  return `${((part / whole) * 100).toLocaleString("en-US", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;
 }
 
 interface Bucket {

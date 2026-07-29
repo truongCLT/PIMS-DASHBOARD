@@ -239,7 +239,10 @@ export function SaleProfitTab({
               {/* 막대는 아래쪽 절반, 누계 선은 위쪽에 배치해 숫자 겹침 방지 */}
               <YAxis hide domain={[0, Math.max(maxRevenue * 2.4, 1)]} />
               <YAxis yAxisId="cum" hide domain={[0, Math.max(maxCum * 1.1, 1)]} />
-              <Tooltip contentStyle={{ fontSize: "11px" }} />
+              <Tooltip
+                contentStyle={{ fontSize: "11px" }}
+                formatter={(v: number, name: string) => [`${Math.round(v).toLocaleString()} ${unitLabel}`, name]}
+              />
               <Legend wrapperStyle={{ fontSize: "10px" }} />
               <Bar
                 dataKey="revenue"
@@ -304,7 +307,10 @@ export function SaleProfitTab({
                   hide
                   domain={[0, Math.max(...cogsChartData.map((d) => Math.max(d.acctCum, d.wipCum)), 1) * 1.1]}
                 />
-                <Tooltip contentStyle={{ fontSize: "11px" }} />
+                <Tooltip
+                  contentStyle={{ fontSize: "11px" }}
+                  formatter={(v: number, name: string) => [`${Math.round(v).toLocaleString()} ${unitLabel}`, name]}
+                />
                 <Legend wrapperStyle={{ fontSize: "10px" }} />
                 <Bar dataKey="acctCogs" name="회계 매출원가" fill={chartTheme.planBlue} barSize={14} isAnimationActive={false}>
                   <LabelList
@@ -364,7 +370,10 @@ export function SaleProfitTab({
                   axisLine={{ stroke: chartTheme.axisLine }}
                 />
                 <YAxis hide domain={[0, Math.max(ratioMax * 1.3, 10)]} />
-                <Tooltip contentStyle={{ fontSize: "11px" }} formatter={(v) => `${v}%`} />
+                <Tooltip
+                  contentStyle={{ fontSize: "11px" }}
+                  formatter={(v) => `${Number(v).toLocaleString("en-US", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`}
+                />
                 <Line
                   dataKey="ratio"
                   name="누계 원가율"
@@ -405,7 +414,7 @@ export function SaleProfitTab({
                           fontWeight={isLast ? 700 : 400}
                           fill={isLast ? chartTheme.sgaOrange : chartTheme.profitGreen}
                         >
-                          {value}%
+                          {Number(value).toLocaleString("en-US", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%
                         </text>
                       );
                     }}
