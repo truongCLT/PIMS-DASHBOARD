@@ -468,11 +468,14 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                   </div>
                 ))}
               </div>
-              <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-around", paddingBottom: "4px" }}>
+              {/* 항목별 3-bar 그룹 */}
+              <div style={{ display: "flex", justifyContent: "space-around", gap: "4px", marginTop: "4px" }}>
                 {(() => {
-                  const H = 120;
+                  const H = 100;
                   const maxVal = Math.max(...budgetRows.map((r) => r.budget ?? 0), 1);
-                  const barH = (v: number | null) => v != null && v > 0 ? Math.max((Math.log10(v + 1) / Math.log10(maxVal + 1)) * H, 6) : 0;
+                  const barH = (v: number | null) =>
+                    v != null && v > 0 ? Math.max((Math.log10(v + 1) / Math.log10(maxVal + 1)) * H, 6) : 0;
+                  const BAR_W = 20;
                   return budgetRows.map((g) => {
                     const bud = g.budget ?? 0;
                     const pln = g.plan ?? 0;
@@ -481,29 +484,43 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                     const bh = barH(bud);
                     const ph = barH(pln);
                     const ah = barH(act);
+                    const bars = [
+                      { h: bh, color: chartTheme.lightGray,  show: true,              val: fmtMoney(bud || null), valColor: "#888" },
+                      { h: ph, color: chartTheme.outflowRed, show: g.plan   != null,  val: g.plan   != null ? fmtMoney(pln || null) : null, valColor: chartTheme.outflowRed },
+                      { h: ah, color: chartTheme.inflowBlue, show: g.actual != null,  val: g.actual != null ? fmtMoney(act || null) : null, valColor: chartTheme.inflowBlue },
+                    ];
                     return (
-                      <div key={g.item} style={{ textAlign: "center", flex: 1, minWidth: 0, paddingInline: "4px" }}>
-                        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "center", height: `${H}px`, gap: "3px" }}>
-                          {/* Budget */}
-                          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "2px" }}>
-                            <span style={{ fontSize: "8px", color: "#777", whiteSpace: "nowrap" }}>{fmtMoney(bud || null)}</span>
-                            <div style={{ width: "18px", height: `${bh}px`, backgroundColor: chartTheme.lightGray, borderRadius: "2px 2px 0 0" }} />
-                          </div>
-                          {/* Plan */}
-                          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "2px" }}>
-                            <span style={{ fontSize: "8px", color: chartTheme.outflowRed, whiteSpace: "nowrap" }}>{g.plan != null ? fmtMoney(pln || null) : "—"}</span>
-                            <div style={{ width: "18px", height: `${ph}px`, backgroundColor: chartTheme.outflowRed, borderRadius: "2px 2px 0 0", opacity: g.plan != null ? 1 : 0 }} />
-                          </div>
-                          {/* Actual */}
-                          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "2px" }}>
-                            <span style={{ fontSize: "8px", color: chartTheme.inflowBlue, whiteSpace: "nowrap" }}>{g.actual != null ? fmtMoney(act || null) : "—"}</span>
-                            <div style={{ width: "18px", height: `${ah}px`, backgroundColor: chartTheme.inflowBlue, borderRadius: "2px 2px 0 0", opacity: g.actual != null ? 1 : 0 }} />
-                          </div>
+                      <div key={g.item} style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center" }}>
+                        {/* ① 금액 레이블 행 — 막대 위 고정 영역, 항목 전체에서 같은 높이 */}
+                        <div style={{ display: "flex", gap: "3px", marginBottom: "3px" }}>
+                          {bars.map((b, i) => (
+                            <div key={i} style={{ width: `${BAR_W}px`, textAlign: "center", fontSize: "8px", color: b.valColor, lineHeight: 1.3, wordBreak: "break-all", hyphens: "auto" }}>
+                              {b.show && b.val ? b.val : ""}
+                            </div>
+                          ))}
                         </div>
-                        {pct != null && (
-                          <div style={{ fontSize: "9px", color: chartTheme.inflowBlue, fontWeight: 700, marginTop: "3px" }}>{fmtPct(pct)}</div>
-                        )}
-                        <div style={{ fontSize: "9px", color: "#1a2d4d", fontWeight: 700, marginTop: "2px" }}>{g.item}</div>
+                        {/* ② 막대 영역 — 고정 높이, 막대는 아래 정렬 */}
+                        <div style={{ display: "flex", alignItems: "flex-end", gap: "3px", height: `${H}px`, width: "100%" , justifyContent: "center" }}>
+                          {bars.map((b, i) => (
+                            <div
+                              key={i}
+                              style={{
+                                width: `${BAR_W}px`,
+                                height: b.show && b.h > 0 ? `${b.h}px` : "2px",
+                                backgroundColor: b.show ? b.color : "transparent",
+                                borderRadius: "2px 2px 0 0",
+                                flexShrink: 0,
+                              }}
+                            />
+                          ))}
+                        </div>
+                        {/* ③ 집행률 + 항목명 */}
+                        <div style={{ borderTop: "1px solid #e8ecf0", width: "100%", marginTop: "2px", paddingTop: "3px", textAlign: "center" }}>
+                          {pct != null && (
+                            <div style={{ fontSize: "9px", color: chartTheme.inflowBlue, fontWeight: 700 }}>{fmtPct(pct)}</div>
+                          )}
+                          <div style={{ fontSize: "9px", color: "#1a2d4d", fontWeight: 700, marginTop: "1px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{g.item}</div>
+                        </div>
                       </div>
                     );
                   });
