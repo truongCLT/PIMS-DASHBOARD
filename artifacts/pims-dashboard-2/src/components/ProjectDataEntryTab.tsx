@@ -976,9 +976,11 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                 if (idx >= 0) return rows.map((r, i) => (i === idx ? { ...r, [field]: value } : r));
                 return [...rows, { item, year: REPORT_YEAR, month, plan: null, actual: null, [field]: value }];
               });
+            const tblKey = `cbm-${item}`;
             return (
               <div key={item} style={{ marginBottom: "10px" }}>
                 <div style={{ fontSize: "11px", fontWeight: 700, color: "#1a2d4d", marginBottom: "4px" }}>{item}</div>
+                <div data-tbl={tblKey} onKeyDown={makeArrowNav(tblKey)}>
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
                   <thead>
                     <tr>
@@ -991,12 +993,13 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                     {Array.from({ length: 12 }, (_, i) => i + 1).map((month) => (
                       <tr key={month}>
                         <td style={{ ...tdCell, textAlign: "center", fontSize: "11px", color: "#555", padding: "3px 4px" }}>{month}월</td>
-                        <td style={tdCell}><VndInput valueKUsd={getCbm(month, "plan")} onChange={(v) => setCbm(month, "plan", v)} /></td>
-                        <td style={tdCell}><VndInput valueKUsd={getCbm(month, "actual")} onChange={(v) => setCbm(month, "actual", v)} /></td>
+                        <td style={tdCell}><VndInput valueKUsd={getCbm(month, "plan")} onChange={(v) => setCbm(month, "plan", v)} data-row={month - 1} data-col={0} /></td>
+                        <td style={tdCell}><VndInput valueKUsd={getCbm(month, "actual")} onChange={(v) => setCbm(month, "actual", v)} data-row={month - 1} data-col={1} /></td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
+                </div>
               </div>
             );
           })}
