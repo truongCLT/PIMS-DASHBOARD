@@ -2,15 +2,13 @@ import React from "react";
 import { useProjectDetail, fmtPct, ratioPct } from "../lib/projectDetailData";
 import { useMoney } from "../lib/displayUnit";
 
-const HEADER_BG = "#2e3a4f";
-
 const thStyle: React.CSSProperties = {
-  backgroundColor: HEADER_BG,
-  color: "#fff",
+  backgroundColor: "#eef2f7",
+  color: "#1a2d4d",
   fontSize: "11px",
   fontWeight: 700,
   padding: "10px 8px",
-  border: "1px solid #fff",
+  border: "1px solid #c8d2de",
   textAlign: "center",
   verticalAlign: "middle",
   whiteSpace: "pre-line",
@@ -19,8 +17,8 @@ const thStyle: React.CSSProperties = {
 const tdStyle: React.CSSProperties = {
   fontSize: "11px",
   color: "#222",
-  padding: "12px 10px",
-  border: "1px solid #c8d2de",
+  padding: "10px 8px",
+  border: "1px solid #d5dce6",
   verticalAlign: "top",
   backgroundColor: "#fff",
 };
@@ -63,9 +61,9 @@ export function ServiceOutsourcingTab({ projectName }: { projectName: string }) 
             <th style={thStyle} colSpan={3}>기성현황</th>
           </tr>
           <tr>
-            <th style={{ ...thStyle, width: "13%" }}>이번달</th>
-            <th style={{ ...thStyle, width: "10%" }}>누계{"\n"}(C)</th>
-            <th style={thStyle}>비율{"\n"}(C/B)</th>
+            <th style={{ ...thStyle, width: "11%" }}>이번달</th>
+            <th style={{ ...thStyle, width: "11%" }}>누계{"\n"}(C)</th>
+            <th style={{ ...thStyle, width: "11%" }}>비율{"\n"}(C/B)</th>
           </tr>
         </thead>
         <tbody>

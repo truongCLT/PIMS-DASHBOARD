@@ -18,11 +18,11 @@ const sectionTitle: React.CSSProperties = {
 };
 
 const th: React.CSSProperties = {
-  backgroundColor: "#2e3c50",
-  color: "#fff",
+  backgroundColor: "#eef2f7",
+  color: "#1a2d4d",
   fontSize: "11px",
   fontWeight: 700,
-  border: "1px solid #7b8ba3",
+  border: "1px solid #c8d2de",
   padding: "8px 6px",
   textAlign: "center",
   verticalAlign: "middle",
@@ -31,9 +31,7 @@ const th: React.CSSProperties = {
 };
 
 const td: React.CSSProperties = {
-  border: "1px solid #333",
-  borderLeft: "none",
-  borderRight: "1px solid #333",
+  border: "1px solid #d5dce6",
   fontSize: "11px",
   color: "#333",
   padding: "8px 6px",
@@ -45,7 +43,8 @@ const td: React.CSSProperties = {
 };
 
 // 컬럼: 대공종, 세부공종, 업체명, 계약일, 차수, 예산, 집행예산, 결의금액, 결의율, 이번달, 누계, 비율
-const DEFAULT_WIDTHS = [64, 90, 90, 70, 46, 92, 92, 92, 60, 92, 92, 60];
+// 이번달(9), 누계(10), 비율(11) 동일 너비
+const DEFAULT_WIDTHS = [64, 90, 90, 70, 46, 92, 92, 92, 60, 80, 80, 80];
 
 function ResizeHandle({ onDrag }: { onDrag: (dx: number) => void }) {
   return (
@@ -144,13 +143,13 @@ export function OutsourcingTab({ projectName }: { projectName: string }) {
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td style={{ ...td, borderLeft: "1px solid #333" }} colSpan={12}>
+                  <td style={td} colSpan={12}>
                     불러오는 중…
                   </td>
                 </tr>
               ) : rows.length === 0 ? (
                 <tr>
-                  <td style={{ ...td, borderLeft: "1px solid #333", color: "#8a97a8" }} colSpan={12}>
+                  <td style={{ ...td, color: "#8a97a8" }} colSpan={12}>
                     외주/자재 데이터가 없습니다. ( - )
                   </td>
                 </tr>
@@ -158,7 +157,7 @@ export function OutsourcingTab({ projectName }: { projectName: string }) {
                 <>
                   {rows.map((r, i) => (
                     <tr key={i}>
-                      <td style={{ ...td, borderLeft: "1px solid #333" }} title={r.tradeGroup ?? undefined}>{r.tradeGroup ?? "-"}</td>
+                      <td style={td} title={r.tradeGroup ?? undefined}>{r.tradeGroup ?? "-"}</td>
                       <td style={td} title={r.trade || undefined}>{r.trade || "-"}</td>
                       <td style={td} title={r.vendor ?? undefined}>{r.vendor ?? "-"}</td>
                       <td style={td}>{r.contractDate ?? "-"}</td>
@@ -173,7 +172,7 @@ export function OutsourcingTab({ projectName }: { projectName: string }) {
                     </tr>
                   ))}
                   <tr>
-                    <td style={{ ...td, borderLeft: "1px solid #333", fontWeight: 700 }} colSpan={2}>합계</td>
+                    <td style={{ ...td, fontWeight: 700 }} colSpan={2}>합계</td>
                     <td style={td} />
                     <td style={td} />
                     <td style={td} />
