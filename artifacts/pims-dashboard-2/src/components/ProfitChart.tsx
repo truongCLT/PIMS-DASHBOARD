@@ -36,7 +36,7 @@ export function ProfitChart() {
 
   // ≤5개 버킷이면 매출 실적 및 전망 차트와 비슷한 실제 크기로 텍스트 확대
   // (SVG viewBox 1000 → 카드 폭으로 축소 렌더링되므로 약 1.7배 보정)
-  const scaleUp = data.length > 0 && !isCondensed ? 1.7 : 1;
+  const scaleUp = data.length > 0 && !isCondensed ? 1.4 : 1;
   const fs = (n: number) => {
     const base = compact ? Math.max(9, Math.round(n * 0.6)) : n;
     return Math.round(base * scaleUp);
