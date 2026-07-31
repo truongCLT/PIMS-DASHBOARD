@@ -256,7 +256,7 @@ export function SaleProfitTab({
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
       {/* Monthly Revenue */}
       <div style={cardStyle}>
-        <span style={sectionTitle}>Monthly Revenue ({unitLabel})</span>
+        <span style={sectionTitle}>당월 매출 ({unitLabel})</span>
         <div style={{ width: "100%", height: "260px", marginTop: "8px" }}>
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart data={chartData} margin={{ top: 30, right: 40, left: 40, bottom: 0 }}>
@@ -323,7 +323,7 @@ export function SaleProfitTab({
 
       {/* Cost — 회계 vs 집행(WIP) 매출원가 */}
       <div style={cardStyle}>
-        <span style={sectionTitle}>Cost ({unitLabel})</span>
+        <span style={sectionTitle}>원가 ({unitLabel})</span>
         {!hasCogs ? (
           <Notice>
             선택한 기간에 매출원가 데이터가 없습니다. 관리자 모드로 로그인하면 "데이터 입력" 탭의 "월별 매출원가" 표에서 입력할 수 있습니다.

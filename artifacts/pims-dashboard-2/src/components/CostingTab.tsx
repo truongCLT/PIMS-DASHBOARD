@@ -80,9 +80,9 @@ function Donut({
 }
 
 const EST_META: { kind: "bidding" | "execution" | "completion"; label: string; color: string }[] = [
-  { kind: "bidding", label: "Bidding", color: chartTheme.paleBlue },
-  { kind: "execution", label: "Execution Budgeting", color: chartTheme.planBlue },
-  { kind: "completion", label: "Estimated Completion", color: chartTheme.headingNavy },
+  { kind: "bidding", label: "입찰", color: chartTheme.paleBlue },
+  { kind: "execution", label: "실행예산 편성", color: chartTheme.planBlue },
+  { kind: "completion", label: "준공추정원가율", color: chartTheme.headingNavy },
 ];
 
 type BudgetRow = {
@@ -259,7 +259,7 @@ function DbCostActualCard({ projectName }: { projectName: string }) {
   return (
     <div style={cardStyle}>
       <span style={sectionTitle}>
-        Cost Actual (원가 실적, {REPORT_YEAR}년 · {unitLabel}{hasAny ? (scHasAny ? " · 매출/원가 DB" : " · 경영관리보고회 DB") : ""})
+        실제 원가 ({REPORT_YEAR}년 · {unitLabel}{hasAny ? (scHasAny ? " · 매출/원가 DB" : " · 경영관리보고회 DB") : ""})
       </span>
       {loading ? (
         <div style={emptyStyle}>불러오는 중…</div>

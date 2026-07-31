@@ -191,7 +191,7 @@ export function ServiceCashflowTab({
             <ReferenceLine y={0} stroke={chartTheme.sgaOrange} strokeDasharray="3 3" />
             <Bar
               dataKey="cashIn"
-              name="Cash in"
+              name="수금"
               fill={chartTheme.inflowBlue}
               barSize={barSize}
               stackId="cash"
@@ -207,7 +207,7 @@ export function ServiceCashflowTab({
             </Bar>
             <Bar
               dataKey="cashOut"
-              name="Cash out"
+              name="지출"
               fill={chartTheme.actualGreen}
               barSize={barSize}
               stackId="cash"
@@ -223,7 +223,7 @@ export function ServiceCashflowTab({
             </Bar>
             <Line
               dataKey="equivalent"
-              name="Cash equivalent"
+              name="잔액"
               type="linear"
               stroke={chartTheme.actualGreen}
               strokeWidth={2}

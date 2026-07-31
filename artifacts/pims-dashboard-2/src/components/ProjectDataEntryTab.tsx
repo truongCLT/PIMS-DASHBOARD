@@ -262,9 +262,9 @@ const FIXED_BUDGET_ITEMS = ["Common", "Expense 1"];
 const TRADE_GROUPS = ["공통", "토목", "건축", "기계", "전기", "조경"];
 
 const EST_KINDS: { kind: "bidding" | "execution" | "completion"; label: string }[] = [
-  { kind: "bidding", label: "Bidding (수주 시)" },
-  { kind: "execution", label: "Execution Budgeting (실행예산)" },
-  { kind: "completion", label: "Estimated Completion (준공 전망)" },
+  { kind: "bidding", label: "입찰" },
+  { kind: "execution", label: "실행예산 편성" },
+  { kind: "completion", label: "준공추정원가율 (준공 전망)" },
 ];
 
 export function ProjectDataEntryTab({ projectName, service = false }: { projectName: string; service?: boolean }) {
@@ -449,7 +449,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       const completions = estRows.filter((e) => e.kind === "completion");
       const undated = completions.filter((e) => e.year == null || e.month == null);
       if (undated.length > 1) {
-        report("준공 전망(Estimated Completion)에서 기준월이 없는 행은 1건만 입력할 수 있습니다. 기준월을 지정해 주세요.");
+        report("준공추정원가율(준공 전망)에서 기준월이 없는 행은 1건만 입력할 수 있습니다. 기준월을 지정해 주세요.");
         return;
       }
       const seen = new Set<string>();
@@ -457,7 +457,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
         if (c.year == null || c.month == null) continue;
         const key = `${c.year}-${c.month}`;
         if (seen.has(key)) {
-          report(`준공 전망(Estimated Completion)에 같은 기준월(${c.year}.${String(c.month).padStart(2, "0")})이 중복 입력되었습니다.`);
+          report(`준공추정원가율(준공 전망)에 같은 기준월(${c.year}.${String(c.month).padStart(2, "0")})이 중복 입력되었습니다.`);
           return;
         }
         seen.add(key);
@@ -930,7 +930,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
           <Plus size={12} /> 준공 전망(월별) 추가
         </button>
         <div style={{ fontSize: "10px", color: "#777", marginTop: "4px" }}>
-          Estimated Completion은 기준월별로 여러 건 입력할 수 있습니다. 원가 탭에서는 조회 기간 마지막 월 이하의 가장 최근 기준월 값이 표시됩니다.
+          준공추정원가율은 기준월별로 여러 건 입력할 수 있습니다. 원가 탭에서는 조회 기간 마지막 월 이하의 가장 최근 기준월 값이 표시됩니다.
         </div>
       </div>
 
