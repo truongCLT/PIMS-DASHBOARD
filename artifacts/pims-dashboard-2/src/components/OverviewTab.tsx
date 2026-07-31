@@ -108,6 +108,11 @@ export function OverviewTab({ projectName }: { projectName: string }) {
   const hasRevenue = lastMonthIdx >= 0;
 
   // ---- 자금 (cashflow) ----
+  const [cashMonth, setCashMonth] = useState<number | null>(null); // null = 전체(누계)
+  // 월 필터용: cashMonth 선택 시 해당 월(0-based index = cashMonth-1)까지 누계
+  const cumRevFiltered = cashMonth == null
+    ? cumRev
+    : revMonths.slice(0, cashMonth).reduce((a, b) => a + (b ?? 0), 0);
   const cfRef = getMrCashflowRef(projectName);
   const cfParams = {
     projectName: cfRef?.name ?? "",
@@ -120,10 +125,18 @@ export function OverviewTab({ projectName }: { projectName: string }) {
     query: { enabled: cfRef != null, queryKey: getGetCashflowMonthlyQueryKey(cfParams) },
   });
   const cfPoints = cfQ.data?.points ?? [];
-  const cashIn = cfPoints.reduce((a, p) => a + (p.cashIn ?? 0), 0);
-  const cashOut = cfPoints.reduce((a, p) => a + (p.cashOut ?? 0), 0);
+  // 월 필터: cashMonth 선택 시 해당 월까지 누계
+  const cfFiltered = cashMonth == null
+    ? cfPoints
+    : cfPoints.filter((p) => {
+        const ym = p.month; // "YYYY-MM"
+        const cutoff = `${REPORT_YEAR}-${String(cashMonth).padStart(2, "0")}`;
+        return ym <= cutoff;
+      });
+  const cashIn = cfFiltered.reduce((a, p) => a + (p.cashIn ?? 0), 0);
+  const cashOut = cfFiltered.reduce((a, p) => a + (p.cashOut ?? 0), 0);
   let balance: number | null = null;
-  for (const p of cfPoints) {
+  for (const p of cfFiltered) {
     if (p.cashIn !== 0 || p.cashOut !== 0 || p.equivalent !== 0) balance = p.equivalent;
   }
   const hasCash = cfRef != null && cfPoints.some((p) => p.cashIn !== 0 || p.cashOut !== 0 || p.equivalent !== 0);
@@ -590,7 +603,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
         {/* 자금 — 매출·확정·수금·채권 */}
         {(() => {
           const revenue    = overview.contractAmount ?? 0; // 도급액 (매출)
-          const confirmed  = cumRev;                        // 누계 기성 매출 (확정 A)
+          const confirmed  = cumRevFiltered;                // 누계 기성 매출 (확정 A)
           const collection = cashIn;                        // 실제 수금 (수금 B)
           const outstanding = Math.max(0, confirmed - collection); // 채권 (A-B)
           const cashMax = Math.max(revenue, confirmed, collection, outstanding, 1);
@@ -598,7 +611,19 @@ export function OverviewTab({ projectName }: { projectName: string }) {
           const isLoadingFund = (cfRef != null && cfQ.isLoading) || mr.isLoading;
           return (
             <div style={cardStyle}>
-              <span style={sectionTitle}>자금</span>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "4px" }}>
+                <span style={sectionTitle}>자금</span>
+                <select
+                  value={cashMonth ?? ""}
+                  onChange={(e) => setCashMonth(e.target.value === "" ? null : Number(e.target.value))}
+                  style={{ fontSize: "12px", border: "1px solid #c8d2de", borderRadius: "4px", padding: "2px 4px", color: "#333", cursor: "pointer" }}
+                >
+                  <option value="">전체(누계)</option>
+                  {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+                    <option key={m} value={m}>{m}월</option>
+                  ))}
+                </select>
+              </div>
               {isLoadingFund ? (
                 <div style={emptyNote}>자금 데이터를 불러오는 중입니다…</div>
               ) : !hasFundData ? (
