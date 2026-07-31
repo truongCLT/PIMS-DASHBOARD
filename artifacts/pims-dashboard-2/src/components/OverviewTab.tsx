@@ -315,8 +315,8 @@ export function OverviewTab({ projectName }: { projectName: string }) {
           ) : (
             <>
               <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-around", marginTop: "6px" }}>
+                {/* 당월 */}
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
-                  {/* 계획 대비 실적 달성률 */}
                   {thisMonthPlan != null && thisMonthPlan > 0 && thisMonthRev != null ? (
                     <span style={{
                       fontSize: "13px",
@@ -347,7 +347,10 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                       valueLabel={fmtMoney(thisMonthRev)}
                     />
                   </div>
+                  <span style={{ fontSize: "10px", fontWeight: 700, color: "#333", marginTop: "2px" }}>당월</span>
                 </div>
+
+                {/* 연 */}
                 <div style={{ textAlign: "center" }}>
                   <div style={{ fontSize: "10px", color: "#555", marginBottom: "2px" }}>
                     {fmtMoney(cumRev)} / {fmtMoney(annualPlanRev)}
@@ -364,6 +367,8 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                     연
                   </div>
                 </div>
+
+                {/* 누계 */}
                 <div style={{ textAlign: "center" }}>
                   <div style={{ fontSize: "10px", color: "#555", marginBottom: "2px" }}>
                     {fmtMoney(cumRev)} / {fmtMoney(overview.contractAmount)}
@@ -380,17 +385,6 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                     누계
                   </div>
                 </div>
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-around", marginTop: "6px" }}>
-                <span style={{ fontSize: "10px", fontWeight: 700, color: "#333", textAlign: "center" }}>
-                  당월
-                </span>
-                <span style={{ fontSize: "10px", fontWeight: 700, color: "#1a2d4d", textDecoration: "underline" }}>
-                  연
-                </span>
-                <span style={{ fontSize: "10px", fontWeight: 700, color: "#1a2d4d", textDecoration: "underline" }}>
-                  누계
-                </span>
               </div>
             </>
           )}
@@ -564,58 +558,69 @@ export function OverviewTab({ projectName }: { projectName: string }) {
           )}
         </div>
 
-        {/* Cash */}
-        <div style={cardStyle}>
-          <span style={sectionTitle}>자금</span>
-          {cfRef != null && cfQ.isLoading ? (
-            <div style={emptyNote}>자금수지 데이터를 불러오는 중입니다…</div>
-          ) : !hasCash ? (
-            <div style={emptyNote}>
-              {cfRef == null ? "이 프로젝트에 매핑된 자금수지 데이터가 없습니다." : `${REPORT_YEAR}년 자금수지 데이터가 없습니다.`}
+        {/* 자금 — 매출·확정·수금·채권 */}
+        {(() => {
+          const revenue    = overview.contractAmount ?? 0; // 도급액 (매출)
+          const confirmed  = cumRev;                        // 누계 기성 매출 (확정 A)
+          const collection = cashIn;                        // 실제 수금 (수금 B)
+          const outstanding = Math.max(0, confirmed - collection); // 채권 (A-B)
+          const cashMax = Math.max(revenue, confirmed, collection, outstanding, 1);
+          const hasFundData = revenue !== 0 || confirmed !== 0 || collection !== 0;
+          const isLoadingFund = (cfRef != null && cfQ.isLoading) || mr.isLoading;
+          return (
+            <div style={cardStyle}>
+              <span style={sectionTitle}>자금</span>
+              {isLoadingFund ? (
+                <div style={emptyNote}>자금 데이터를 불러오는 중입니다…</div>
+              ) : !hasFundData ? (
+                <div style={emptyNote}>자금 데이터가 없습니다. 데이터 입력 탭에서 입력해 주세요.</div>
+              ) : (
+                <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-around", marginTop: "10px", height: "170px" }}>
+                  <MiniBar
+                    value={revenue}
+                    max={cashMax}
+                    color={chartTheme.neutralGray}
+                    label="매출"
+                    height={120}
+                    valueLabel={fmtMoney(revenue)}
+                    valueOnTop
+                    width={34}
+                  />
+                  <MiniBar
+                    value={confirmed}
+                    max={cashMax}
+                    color={chartTheme.neutralGray}
+                    label="확정 (A)"
+                    height={120}
+                    valueLabel={fmtMoney(confirmed)}
+                    valueOnTop
+                    width={34}
+                  />
+                  <MiniBar
+                    value={collection}
+                    max={cashMax}
+                    color={chartTheme.balanceNavy}
+                    label="수금 (B)"
+                    height={120}
+                    valueLabel={fmtMoney(collection)}
+                    valueOnTop
+                    width={34}
+                  />
+                  <MiniBar
+                    value={outstanding}
+                    max={cashMax}
+                    color={chartTheme.outflowRed}
+                    label="채권 (A-B)"
+                    height={120}
+                    valueLabel={fmtMoney(outstanding)}
+                    valueOnTop
+                    width={34}
+                  />
+                </div>
+              )}
             </div>
-          ) : (
-            <div
-              style={{
-                display: "flex",
-                alignItems: "flex-end",
-                justifyContent: "space-around",
-                marginTop: "10px",
-                height: "170px",
-              }}
-            >
-              <MiniBar
-                value={cashIn}
-                max={Math.max(cashIn, cashOut, Math.abs(balance ?? 0), 1)}
-                color={chartTheme.neutralGray}
-                label="수금"
-                height={120}
-                valueLabel={fmtMoney(cashIn)}
-                valueOnTop
-                width={34}
-              />
-              <MiniBar
-                value={cashOut}
-                max={Math.max(cashIn, cashOut, Math.abs(balance ?? 0), 1)}
-                color={chartTheme.outflowRed}
-                label="지출"
-                height={120}
-                valueLabel={fmtMoney(cashOut)}
-                valueOnTop
-                width={34}
-              />
-              <MiniBar
-                value={Math.max(balance ?? 0, 0)}
-                max={Math.max(cashIn, cashOut, Math.abs(balance ?? 0), 1)}
-                color={chartTheme.planBlue}
-                label="잔액"
-                height={120}
-                valueLabel={fmtMoney(balance)}
-                valueOnTop
-                width={34}
-              />
-            </div>
-          )}
-        </div>
+          );
+        })()}
       </div>
     </div>
   );
