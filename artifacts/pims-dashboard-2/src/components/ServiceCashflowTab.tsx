@@ -185,6 +185,7 @@ export function ServiceCashflowTab({
               axisLine={false}
               domain={[bottom, top]}
               ticks={ticks}
+              tickFormatter={(v: number) => v.toLocaleString()}
             />
             <Legend wrapperStyle={{ fontSize: "12px", fontWeight: 600 }} iconSize={14} />
             <ReferenceLine y={0} stroke={chartTheme.sgaOrange} strokeDasharray="3 3" />
@@ -221,18 +222,9 @@ export function ServiceCashflowTab({
               />
             </Bar>
             <Line
-              dataKey="different"
-              name="Different"
-              type="monotone"
-              stroke={chartTheme.sgaOrange}
-              strokeWidth={2}
-              dot={{ r: 3, fill: "#fff", stroke: chartTheme.sgaOrange }}
-              isAnimationActive={false}
-            />
-            <Line
               dataKey="equivalent"
               name="Cash equivalent"
-              type="monotone"
+              type="linear"
               stroke={chartTheme.actualGreen}
               strokeWidth={2}
               dot={{ r: 3, fill: "#fff", stroke: chartTheme.actualGreen }}
@@ -253,9 +245,9 @@ export function ServiceCashflowTab({
           <span style={{ fontSize: "13px", fontWeight: 700, color: chartTheme.titleNavy }}>자금수지</span>
           <span style={{ fontSize: "11px", color: "#5a6a7e" }}>
             {useCf && query.data
-              ? `${query.data.projectName} · 단위: ${cfConvertible ? unitLabel : query.data.unit}`
+              ? `단위: ${cfConvertible ? unitLabel : query.data.unit}`
               : hasPdData
-                ? `${projectName} · 단위: ${unitLabel}`
+                ? `단위: ${unitLabel}`
                 : ""}
           </span>
         </div>
