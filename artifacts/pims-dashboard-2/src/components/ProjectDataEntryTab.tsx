@@ -560,6 +560,102 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
     </div>
   );
 
+  // 공통: 월별 매출 (매출 탭) — 표시 순서가 시공/용역 탭 순서에 따라 달라 별도 정의
+  const salesMonthlyCard = (
+    <div style={cardStyle}>
+      {cardHead(service ? "2. 월별 매출 (매출 탭)" : "3. 월별 매출 (매출 탭)", "salesMonthly")}
+      <div data-tbl="salesMonthly" onKeyDown={makeArrowNav("salesMonthly")}>
+      <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px" }}>
+        <thead>
+          <tr>
+            <th style={th}>연도</th>
+            <th style={th}>월</th>
+            <th style={th}>매출 계획 (VND)</th>
+            <th style={th}>매출 실적 (VND)</th>
+            <th style={{ ...th, width: "36px" }}></th>
+          </tr>
+        </thead>
+        <tbody>
+          {salesMonthly.map((s, i) => (
+            <tr key={i}>
+              <td style={tdCell}><NumInput value={s.year} onChange={(v) => updateAt(setSalesMonthly, i, { year: v ?? 0 })} data-row={i} data-col={0} /></td>
+              <td style={tdCell}><NumInput value={s.month} onChange={(v) => updateAt(setSalesMonthly, i, { month: v ?? 0 })} data-row={i} data-col={1} /></td>
+              <td style={tdCell}><VndInput valueKUsd={s.plan} onChange={(v) => updateAt(setSalesMonthly, i, { plan: v })} data-row={i} data-col={2} /></td>
+              <td style={tdCell}><VndInput valueKUsd={s.actual} onChange={(v) => updateAt(setSalesMonthly, i, { actual: v })} data-row={i} data-col={3} /></td>
+              <td style={{ ...tdCell, textAlign: "center" }}><DelBtn onClick={() => removeAt(setSalesMonthly, i)} /></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      </div>
+      <button
+        style={addBtn}
+        onClick={() => {
+          const last = salesMonthly[salesMonthly.length - 1];
+          const next = last
+            ? last.month >= 12
+              ? { year: last.year + 1, month: 1 }
+              : { year: last.year, month: last.month + 1 }
+            : { year: new Date().getFullYear(), month: 1 };
+          setSalesMonthly((rows) => [...rows, { ...next, plan: null, actual: null }]);
+        }}
+      >
+        <Plus size={12} /> 월 추가
+      </button>
+      <div style={{ fontSize: "12px", color: "#8a97a8", marginTop: "6px" }}>
+        매출 탭 차트에 반영됩니다. 입력 데이터가 있으면 메인 대시보드 데이터보다 우선 사용됩니다. VND 기준으로 입력하면 저장 시 천 USD로 자동 변환됩니다.
+      </div>
+    </div>
+  );
+
+  // 용역: 월별 매출원가 (매출 탭)
+  const cogsMonthlyCard = (
+    <div style={cardStyle}>
+      {cardHead("3. 월별 매출원가 (매출 탭)", "cogsMonthly")}
+      <div data-tbl="cogsMonthly" onKeyDown={makeArrowNav("cogsMonthly")}>
+      <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px" }}>
+        <thead>
+          <tr>
+            <th style={th}>연도</th>
+            <th style={th}>월</th>
+            <th style={th}>회계 매출원가 (VND)</th>
+            <th style={th}>집행 매출원가 (WIP) (VND)</th>
+            <th style={{ ...th, width: "36px" }}></th>
+          </tr>
+        </thead>
+        <tbody>
+          {cogsMonthly.map((c, i) => (
+            <tr key={i}>
+              <td style={tdCell}><NumInput value={c.year} onChange={(v) => updateAt(setCogsMonthly, i, { year: v ?? 0 })} data-row={i} data-col={0} /></td>
+              <td style={tdCell}><NumInput value={c.month} onChange={(v) => updateAt(setCogsMonthly, i, { month: v ?? 0 })} data-row={i} data-col={1} /></td>
+              <td style={tdCell}><VndInput valueKUsd={c.acctCogs} onChange={(v) => updateAt(setCogsMonthly, i, { acctCogs: v })} data-row={i} data-col={2} /></td>
+              <td style={tdCell}><VndInput valueKUsd={c.wipCogs} onChange={(v) => updateAt(setCogsMonthly, i, { wipCogs: v })} data-row={i} data-col={3} /></td>
+              <td style={{ ...tdCell, textAlign: "center" }}><DelBtn onClick={() => removeAt(setCogsMonthly, i)} /></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      </div>
+      <button
+        style={addBtn}
+        onClick={() => {
+          const last = cogsMonthly[cogsMonthly.length - 1];
+          const next = last
+            ? last.month >= 12
+              ? { year: last.year + 1, month: 1 }
+              : { year: last.year, month: last.month + 1 }
+            : { year: new Date().getFullYear(), month: 1 };
+          setCogsMonthly((rows) => [...rows, { ...next, acctCogs: null, wipCogs: null }]);
+        }}
+      >
+        <Plus size={12} /> 월 추가
+      </button>
+      <div style={{ fontSize: "12px", color: "#8a97a8", marginTop: "6px" }}>
+        매출 탭의 Cost(회계 vs 집행 매출원가) 차트에 반영됩니다. VND 기준으로 입력하면 저장 시 천 USD로 자동 변환됩니다.
+      </div>
+    </div>
+  );
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
       <div style={{ ...cardStyle, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -696,7 +792,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
           </tbody>
         </table>
         <div style={{ fontSize: "12px", color: "#8a97a8", marginTop: "6px" }}>
-          입찰(Bidding)·실행예산 금액은 아래 "3. 원가율" 표에 입력하면 개요 탭에 함께 반영됩니다.
+          입찰(Bidding)·실행예산 금액은 아래 "4. 원가율" 표에 입력하면 개요 탭에 함께 반영됩니다.
         </div>
         </div>
       </div>
@@ -784,6 +880,8 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
           <Plus size={12} /> 마일스톤 추가
         </button>
       </div>
+      {/* 시공: 매출 탭 순서(공정 다음) */}
+      {salesMonthlyCard}
       </>
       )}
 
@@ -861,7 +959,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
 
       {/* 3. 원가율 */}
       <div style={cardStyle}>
-        {cardHead(service ? "1. 도급액·원가 (개요)" : "3. 원가율 (원가 탭)", "costEstimation")}
+        {cardHead(service ? "1. 도급액·원가 (개요)" : "4. 원가율 (원가 탭)", "costEstimation")}
         <div data-tbl="costEst" onKeyDown={makeArrowNav("costEst")}>
         <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px" }}>
           <thead>
@@ -934,9 +1032,17 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
         </div>
       </div>
 
-      {/* 4. 예산 집행 현황 */}
+      {/* 용역: 매출 탭 순서(개요 다음) */}
+      {service && (
+        <>
+          {salesMonthlyCard}
+          {cogsMonthlyCard}
+        </>
+      )}
+
+      {/* 예산 집행 현황 */}
       <div style={cardStyle}>
-        {cardHead(service ? "2. 예산 집행 현황 (예산집행 탭)" : "4. 예산 집행 현황 (원가 탭)", "costBudget")}
+        {cardHead(service ? "4. 예산 집행 현황 (예산집행 탭)" : "5. 예산 집행 현황 (원가 탭)", "costBudget")}
         <div style={{ fontSize: "12px", color: "#777", marginTop: "4px" }}>
           Direct Cost 중 Common·Expense 1만 여기서 입력합니다. 외주성 예산·집행 실적은 아래 "외주/자재" 표에서 자동 집계됩니다.
         </div>
@@ -1012,7 +1118,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
 
       {/* 5. 외주/자재 */}
       <div style={cardStyle}>
-        {cardHead(service ? "3. 외주/자재 (외주 탭)" : "5. 외주/자재 (외주 탭)", "outsourcing")}
+        {cardHead(service ? "5. 외주/자재 (외주 탭)" : "6. 외주/자재 (외주 탭)", "outsourcing")}
         <div data-tbl="outsourcing" onKeyDown={makeArrowNav("outsourcing")}>
         <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px" }}>
           <thead>
@@ -1077,7 +1183,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
 
       {/* 6. 월별 자금 */}
       <div style={cardStyle}>
-        {cardHead(service ? "4. 월별 자금 (자금 탭)" : "6. 월별 자금 (자금 탭)", "cashflow")}
+        {cardHead(service ? "6. 월별 자금 (자금 탭)" : "7. 월별 자금 (자금 탭)", "cashflow")}
         <div data-tbl="cashflow" onKeyDown={makeArrowNav("cashflow")}>
         <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px" }}>
           <thead>
@@ -1127,100 +1233,6 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
           </div>
         )}
       </div>
-
-      {/* 공통: 월별 매출 (계획/실적) */}
-      <div style={cardStyle}>
-        {cardHead("월별 매출 (매출 탭)", "salesMonthly")}
-        <div data-tbl="salesMonthly" onKeyDown={makeArrowNav("salesMonthly")}>
-        <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px" }}>
-          <thead>
-            <tr>
-              <th style={th}>연도</th>
-              <th style={th}>월</th>
-              <th style={th}>매출 계획 (VND)</th>
-              <th style={th}>매출 실적 (VND)</th>
-              <th style={{ ...th, width: "36px" }}></th>
-            </tr>
-          </thead>
-          <tbody>
-            {salesMonthly.map((s, i) => (
-              <tr key={i}>
-                <td style={tdCell}><NumInput value={s.year} onChange={(v) => updateAt(setSalesMonthly, i, { year: v ?? 0 })} data-row={i} data-col={0} /></td>
-                <td style={tdCell}><NumInput value={s.month} onChange={(v) => updateAt(setSalesMonthly, i, { month: v ?? 0 })} data-row={i} data-col={1} /></td>
-                <td style={tdCell}><VndInput valueKUsd={s.plan} onChange={(v) => updateAt(setSalesMonthly, i, { plan: v })} data-row={i} data-col={2} /></td>
-                <td style={tdCell}><VndInput valueKUsd={s.actual} onChange={(v) => updateAt(setSalesMonthly, i, { actual: v })} data-row={i} data-col={3} /></td>
-                <td style={{ ...tdCell, textAlign: "center" }}><DelBtn onClick={() => removeAt(setSalesMonthly, i)} /></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        </div>
-        <button
-          style={addBtn}
-          onClick={() => {
-            const last = salesMonthly[salesMonthly.length - 1];
-            const next = last
-              ? last.month >= 12
-                ? { year: last.year + 1, month: 1 }
-                : { year: last.year, month: last.month + 1 }
-              : { year: new Date().getFullYear(), month: 1 };
-            setSalesMonthly((rows) => [...rows, { ...next, plan: null, actual: null }]);
-          }}
-        >
-          <Plus size={12} /> 월 추가
-        </button>
-        <div style={{ fontSize: "12px", color: "#8a97a8", marginTop: "6px" }}>
-          매출 탭 차트에 반영됩니다. 입력 데이터가 있으면 메인 대시보드 데이터보다 우선 사용됩니다. VND 기준으로 입력하면 저장 시 천 USD로 자동 변환됩니다.
-        </div>
-      </div>
-
-      {/* 용역: 월별 매출원가 */}
-      {service && (
-      <div style={cardStyle}>
-        {cardHead("5. 월별 매출원가 (매출 탭)", "cogsMonthly")}
-        <div data-tbl="cogsMonthly" onKeyDown={makeArrowNav("cogsMonthly")}>
-        <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px" }}>
-          <thead>
-            <tr>
-              <th style={th}>연도</th>
-              <th style={th}>월</th>
-              <th style={th}>회계 매출원가 (VND)</th>
-              <th style={th}>집행 매출원가 (WIP) (VND)</th>
-              <th style={{ ...th, width: "36px" }}></th>
-            </tr>
-          </thead>
-          <tbody>
-            {cogsMonthly.map((c, i) => (
-              <tr key={i}>
-                <td style={tdCell}><NumInput value={c.year} onChange={(v) => updateAt(setCogsMonthly, i, { year: v ?? 0 })} data-row={i} data-col={0} /></td>
-                <td style={tdCell}><NumInput value={c.month} onChange={(v) => updateAt(setCogsMonthly, i, { month: v ?? 0 })} data-row={i} data-col={1} /></td>
-                <td style={tdCell}><VndInput valueKUsd={c.acctCogs} onChange={(v) => updateAt(setCogsMonthly, i, { acctCogs: v })} data-row={i} data-col={2} /></td>
-                <td style={tdCell}><VndInput valueKUsd={c.wipCogs} onChange={(v) => updateAt(setCogsMonthly, i, { wipCogs: v })} data-row={i} data-col={3} /></td>
-                <td style={{ ...tdCell, textAlign: "center" }}><DelBtn onClick={() => removeAt(setCogsMonthly, i)} /></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        </div>
-        <button
-          style={addBtn}
-          onClick={() => {
-            const last = cogsMonthly[cogsMonthly.length - 1];
-            const next = last
-              ? last.month >= 12
-                ? { year: last.year + 1, month: 1 }
-                : { year: last.year, month: last.month + 1 }
-              : { year: new Date().getFullYear(), month: 1 };
-            setCogsMonthly((rows) => [...rows, { ...next, acctCogs: null, wipCogs: null }]);
-          }}
-        >
-          <Plus size={12} /> 월 추가
-        </button>
-        <div style={{ fontSize: "12px", color: "#8a97a8", marginTop: "6px" }}>
-          매출 탭의 Cost(회계 vs 집행 매출원가) 차트에 반영됩니다. VND 기준으로 입력하면 저장 시 천 USD로 자동 변환됩니다.
-        </div>
-      </div>
-      )}
 
     </div>
   );
