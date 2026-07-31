@@ -287,27 +287,27 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
                       <div style={{ fontSize: "10px", fontWeight: 700, marginBottom: "4px", whiteSpace: "nowrap" }}>
                         <span style={{ color: "#777" }}>계획 (A) </span>
-                        <span style={{ color: chartTheme.outflowRed, fontSize: "12px", fontWeight: 800 }}>{fmtPct(planCum)}</span>
+                        <span style={{ color: chartTheme.planBlue, fontSize: "12px", fontWeight: 800 }}>{fmtPct(planCum)}</span>
                       </div>
                       <svg width={136} height={136} viewBox="0 0 160 160">
                         {/* 회색 기준 링 (100%) */}
                         <circle cx={cx} cy={cy} r={rIn} fill="none" stroke="#e2e7ee" strokeWidth={16} />
-                        {/* 파랑: 실제 달성률 */}
+                        {/* 빨강: 실적 달성률 (내부 링) */}
                         <circle
                           cx={cx} cy={cy} r={rIn} fill="none"
-                          stroke={chartTheme.planBlue} strokeWidth={16}
+                          stroke={chartTheme.outflowRed} strokeWidth={16}
                           strokeDasharray={`${(aPct / 100) * cIn} ${cIn}`}
                           transform={`rotate(-90 ${cx} ${cy})`}
                         />
-                        {/* 빨강: 계획 달성률 (외부 링) */}
+                        {/* 파랑: 계획 달성률 (외부 링) */}
                         <circle
                           cx={cx} cy={cy} r={rOut} fill="none"
-                          stroke={chartTheme.outflowRed} strokeWidth={8}
+                          stroke={chartTheme.planBlue} strokeWidth={8}
                           strokeDasharray={`${(pPct / 100) * cOut} ${cOut}`}
                           strokeLinecap="round"
                           transform={`rotate(-90 ${cx} ${cy})`}
                         />
-                        <text x={cx} y={cy + 2} textAnchor="middle" fontSize={30} fontWeight={800} fill={chartTheme.planBlue}>
+                        <text x={cx} y={cy + 2} textAnchor="middle" fontSize={30} fontWeight={800} fill={chartTheme.outflowRed}>
                           {fmtPct(actualCum)}
                         </text>
                         <text x={cx} y={cy + 22} textAnchor="middle" fontSize={11} fill="#555">
@@ -315,9 +315,6 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                         </text>
                       </svg>
                       <div style={{ fontSize: "10px", fontWeight: 700, color: "#333", marginTop: "2px" }}>누계</div>
-                      <div style={{ fontSize: "10px", color: chartTheme.profitGreen, fontWeight: 700, marginTop: "2px" }}>
-                        달성률 {fmtPct(achieveRate)}
-                      </div>
                     </div>
                   );
                 })()}
