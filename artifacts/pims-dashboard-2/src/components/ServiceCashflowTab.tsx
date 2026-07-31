@@ -25,12 +25,9 @@ const cardStyle: React.CSSProperties = {
   padding: "10px 12px",
 };
 
-const MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
 function monthLabel(ym: string): string {
   const m = Number(ym.slice(5, 7));
-  const label = MONTH_LABELS[m - 1] ?? ym;
-  return `${label} '${ym.slice(2, 4)}`;
+  return `${m}월'${ym.slice(2, 4)}`;
 }
 
 function niceStep(range: number): number {
