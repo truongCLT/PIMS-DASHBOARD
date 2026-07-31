@@ -31,8 +31,8 @@ const cardStyle: React.CSSProperties = {
 };
 
 const sectionTitle: React.CSSProperties = {
-  fontSize: "13px",
-  fontWeight: 600,
+  fontSize: "16px",
+  fontWeight: 700,
   color: "#4472c4",
 };
 
@@ -346,7 +346,7 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
         {/* Construction site progress */}
         <div style={{ ...cardStyle, display: "flex", flexDirection: "column" }}>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
-            <span style={{ ...sectionTitle, color: "#1a2d4d" }}>현장 공정 현황</span>
+            <span style={sectionTitle}>현장 공정 현황</span>
           </div>
           <div style={{ flex: 1, minHeight: 0 }}>
             {(() => {
@@ -371,7 +371,7 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
         {/* Progress */}
         <div style={{ ...cardStyle, display: "flex", flexDirection: "column" }}>
           <div style={{ display: "flex", justifyContent: "space-between" }}>
-            <span style={{ ...sectionTitle, color: chartTheme.profitGreen }}>공정</span>
+            <span style={sectionTitle}>공정</span>
             <span
               style={{
                 fontSize: "11px",
@@ -425,7 +425,7 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
       {/* Row 2: Project lifecycle progress */}
       <div style={cardStyle}>
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
-          <span style={{ ...sectionTitle, color: "#1a2d4d" }}>프로젝트 생애주기 공정</span>
+          <span style={sectionTitle}>프로젝트 생애주기 공정</span>
         </div>
         {isLoading ? (
           <div style={emptyStyle}>불러오는 중…</div>

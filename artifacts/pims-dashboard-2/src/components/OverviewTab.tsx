@@ -25,8 +25,8 @@ const cardStyle: React.CSSProperties = {
 };
 
 const sectionTitle: React.CSSProperties = {
-  fontSize: "13px",
-  fontWeight: 600,
+  fontSize: "16px",
+  fontWeight: 700,
   color: "#4472c4",
   marginBottom: "6px",
 };
@@ -211,7 +211,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
         {/* Progress */}
         <div style={cardStyle}>
           <div style={{ display: "flex", justifyContent: "space-between" }}>
-            <span style={{ ...sectionTitle, color: chartTheme.profitGreen }}>공정</span>
+            <span style={sectionTitle}>공정</span>
             <span
               style={{
                 fontSize: "11px",

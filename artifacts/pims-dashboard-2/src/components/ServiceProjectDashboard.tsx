@@ -23,8 +23,8 @@ const cardStyle: React.CSSProperties = {
 };
 
 const sectionTitle: React.CSSProperties = {
-  fontSize: "13px",
-  fontWeight: 600,
+  fontSize: "16px",
+  fontWeight: 700,
   color: "#4472c4",
   marginBottom: "6px",
 };
@@ -46,7 +46,7 @@ const MONTHS = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11"
 const selectStyle: React.CSSProperties = {
   border: "none",
   outline: "none",
-  fontSize: "14px",
+  fontSize: "16px",
   color: "#333",
   backgroundColor: "transparent",
   cursor: "pointer",
@@ -237,7 +237,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                 onClick={() => setCurrency(c)}
                 style={{
                   padding: "5px 12px",
-                  fontSize: "14px",
+                  fontSize: "16px",
                   fontWeight: 600,
                   border: "none",
                   cursor: "pointer",
@@ -293,7 +293,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
             border: "none",
             borderRadius: "6px",
             padding: "7px 14px",
-            fontSize: "14px",
+            fontSize: "16px",
             fontWeight: 500,
             cursor: "pointer",
           }}
@@ -348,7 +348,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
               onClick={() => setActiveTab(tab)}
               style={{
                 padding: "7px 20px",
-                fontSize: "14px",
+                fontSize: "16px",
                 fontWeight: active ? 700 : 500,
                 color: active ? "#1a3a6b" : "#5a6a7e",
                 backgroundColor: active ? "#fff" : "transparent",

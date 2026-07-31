@@ -34,9 +34,9 @@ const cardStyle: React.CSSProperties = {
 };
 
 const sectionTitle: React.CSSProperties = {
-  fontSize: "14px",
+  fontSize: "16px",
   fontWeight: 700,
-  color: "#1a3a6b",
+  color: "#4472c4",
 };
 
 const th: React.CSSProperties = {
@@ -625,7 +625,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
               border: "none",
               borderRadius: "6px",
               padding: "8px 16px",
-              fontSize: "14px",
+              fontSize: "16px",
               fontWeight: 600,
               cursor: mutation.isPending ? "wait" : "pointer",
               opacity: mutation.isPending ? 0.7 : 1,

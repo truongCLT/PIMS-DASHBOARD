@@ -26,8 +26,8 @@ const cardStyle: React.CSSProperties = {
 };
 
 const sectionTitle: React.CSSProperties = {
-  fontSize: "11px",
-  fontWeight: 600,
+  fontSize: "16px",
+  fontWeight: 700,
   color: "#4472c4",
   marginBottom: "6px",
 };
