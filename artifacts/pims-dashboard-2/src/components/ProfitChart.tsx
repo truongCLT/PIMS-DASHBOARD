@@ -29,11 +29,18 @@ export function ProfitChart() {
   const { derived, isError } = useDashboardData();
   const { unitIndex } = useDashboardFilters();
   const compact     = unitIndex === 1;                 // 단위 기반 폰트 축소
-  const fs = (n: number) => compact ? Math.max(9, Math.round(n * 0.6)) : n;
   const data = derived?.profitData ?? [];
 
   // ≥6개 버킷이면 경상이익·판관비를 그래프에서 숨기고 툴팁에만 표시
   const isCondensed = data.length >= 6;
+
+  // ≤5개 버킷이면 매출 실적 및 전망 차트와 비슷한 실제 크기로 텍스트 확대
+  // (SVG viewBox 1000 → 카드 폭으로 축소 렌더링되므로 약 1.7배 보정)
+  const scaleUp = data.length > 0 && !isCondensed ? 1.7 : 1;
+  const fs = (n: number) => {
+    const base = compact ? Math.max(9, Math.round(n * 0.6)) : n;
+    return Math.round(base * scaleUp);
+  };
 
   const plotLeft  = compact ? 130 : 80;
   const plotRight = 950;
