@@ -5,6 +5,7 @@ import { ProjectCommentPanel } from "./ProjectCommentPanel";
 import { Download, FileSpreadsheet, Upload } from "lucide-react";
 import { downloadProjectDetailTemplate, parseProjectDetailWorkbook, ExcelParseError } from "../lib/projectDetailExcel";
 import { MiniBar } from "./ProjectDashboard";
+import { Donut } from "./charts";
 import { SaleProfitTab } from "./SaleProfitTab";
 import { ServiceOutsourcingTab } from "./ServiceOutsourcingTab";
 import { ServiceCashflowTab } from "./ServiceCashflowTab";
@@ -180,16 +181,6 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
     ? budgetRows.reduce((a, c) => a + (c.actual ?? 0), 0)
     : null;
   const maxBudget = budgetRows.reduce((a, c) => Math.max(a, c.budget ?? 0), 0);
-
-  // 외주 요약 (Cash 카드 대용 — 계약/기성 현황)
-  const outSum = {
-    budget: outsourcing.some((r) => r.budget != null) ? outsourcing.reduce((a, r) => a + (r.budget ?? 0), 0) : null,
-    resolved: outsourcing.some((r) => r.resolved != null) ? outsourcing.reduce((a, r) => a + (r.resolved ?? 0), 0) : null,
-    accum: outsourcing.some((r) => r.accum != null) ? outsourcing.reduce((a, r) => a + (r.accum ?? 0), 0) : null,
-  };
-  const outMax = Math.max(outSum.budget ?? 0, outSum.resolved ?? 0, outSum.accum ?? 0);
-  const outstanding =
-    outSum.resolved != null && outSum.accum != null ? outSum.resolved - outSum.accum : null;
 
   // 도급액 — 개요 입력값 우선, 없으면 원가율 데이터(execution 우선, 없으면 bidding)의 도급액 사용
   const ov = detail?.overview;
@@ -478,80 +469,53 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
           </>
         ) : activeTab === "Overview" ? (
           <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: "8px" }}>
-            {/* Row 0: Revenue / Cash */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
-              {/* Revenue — Annual Target Achievement */}
+            {/* Row: Revenue (도넛 2개) / Budget Execution Status / Cash (막대 4개) */}
+            <div style={{ display: "grid", gridTemplateColumns: "1.3fr 1fr 1fr", gap: "8px" }}>
+              {/* Revenue — 도넛 2개 */}
               <div style={cardStyle}>
-                <span style={sectionTitle}>
-                  매출 <u>연간 목표 달성</u>
-                </span>
+                <span style={sectionTitle}>매출</span>
                 {isLoading ? (
                   <div style={{ padding: "40px 10px", textAlign: "center", fontSize: "11px", color: "#8a97a8" }}>불러오는 중…</div>
                 ) : revenueTarget == null && revenueTotal == null ? (
                   <EmptyHint label="매출 목표/실적" />
                 ) : (
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-around", padding: "18px 0 10px" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-evenly", padding: "14px 0 6px" }}>
                     <div style={{ textAlign: "center" }}>
-                      <div style={{ fontSize: "10px", color: "#5a6a7e", fontWeight: 600 }}>연간 목표</div>
-                      <div style={{ fontSize: "20px", fontWeight: 800, color: "#1a3a6b", marginTop: "4px" }}>
-                        {formatMoney(revenueTarget, currency, unitOn)}
+                      <div style={{ fontSize: "10px", color: "#555", marginBottom: "4px" }}>
+                        {formatMoney(revenueTotal, currency, unitOn)} / {formatMoney(revenueTarget, currency, unitOn)}
                       </div>
-                      <div style={{ fontSize: "9px", color: "#8a97a8" }}>{moneyUnitLabel(currency, unitOn)}</div>
+                      <Donut
+                        percent={achievementPct ?? 0}
+                        color="#2b5cad"
+                        size={120}
+                        stroke={14}
+                        label={fmtPct(achievementPct)}
+                        labelSize={20}
+                      />
+                      <div style={{ fontSize: "10px", color: "#1a2d4d", fontWeight: 700, marginTop: "5px", textDecoration: "underline" }}>
+                        연간 목표 달성률
+                      </div>
                     </div>
                     <div style={{ textAlign: "center" }}>
-                      <div style={{ fontSize: "10px", color: "#5a6a7e", fontWeight: 600 }}>매출 누계</div>
-                      <div style={{ fontSize: "20px", fontWeight: 800, color: "#2b5cad", marginTop: "4px" }}>
-                        {formatMoney(revenueTotal, currency, unitOn)}
+                      <div style={{ fontSize: "10px", color: "#555", marginBottom: "4px" }}>
+                        {formatMoney(revenueTotal, currency, unitOn)} / {formatMoney(contractAmount, currency, unitOn)}
                       </div>
-                      <div style={{ fontSize: "9px", color: "#8a97a8" }}>{moneyUnitLabel(currency, unitOn)}</div>
-                    </div>
-                    <div style={{ textAlign: "center" }}>
-                      <div style={{ fontSize: "10px", color: "#5a6a7e", fontWeight: 600 }}>달성률</div>
-                      <div style={{ fontSize: "26px", fontWeight: 800, color: "#3e7d4c", marginTop: "2px" }}>
-                        {fmtPct(achievementPct)}
+                      <Donut
+                        percent={ratioPct(revenueTotal, contractAmount) ?? 0}
+                        color="#1a3a5c"
+                        size={120}
+                        stroke={14}
+                        label={fmtPct(ratioPct(revenueTotal, contractAmount))}
+                        labelSize={20}
+                      />
+                      <div style={{ fontSize: "10px", color: "#1a2d4d", fontWeight: 700, marginTop: "5px", textDecoration: "underline" }}>
+                        누계 매출 달성률
                       </div>
                     </div>
                   </div>
                 )}
               </div>
 
-              {/* Cash — Confirmed / Collection / Outstanding */}
-              <div style={cardStyle}>
-                <span style={sectionTitle}>현금</span>
-                {isLoading ? (
-                  <div style={{ padding: "40px 10px", textAlign: "center", fontSize: "11px", color: "#8a97a8" }}>불러오는 중…</div>
-                ) : cashConfirmed == null && cashCollection == null ? (
-                  <EmptyHint label="현금 (확정/수금)" />
-                ) : (
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-around", padding: "18px 0 10px" }}>
-                    <div style={{ textAlign: "center" }}>
-                      <div style={{ fontSize: "10px", color: "#5a6a7e", fontWeight: 600 }}>확정 (A)</div>
-                      <div style={{ fontSize: "20px", fontWeight: 800, color: "#1a3a6b", marginTop: "4px" }}>
-                        {formatMoney(cashConfirmed, currency, unitOn)}
-                      </div>
-                      <div style={{ fontSize: "9px", color: "#8a97a8" }}>{moneyUnitLabel(currency, unitOn)}</div>
-                    </div>
-                    <div style={{ textAlign: "center" }}>
-                      <div style={{ fontSize: "10px", color: "#5a6a7e", fontWeight: 600 }}>수금 (B)</div>
-                      <div style={{ fontSize: "20px", fontWeight: 800, color: "#2b5cad", marginTop: "4px" }}>
-                        {formatMoney(cashCollection, currency, unitOn)}
-                      </div>
-                      <div style={{ fontSize: "9px", color: "#8a97a8" }}>{moneyUnitLabel(currency, unitOn)}</div>
-                    </div>
-                    <div style={{ textAlign: "center" }}>
-                      <div style={{ fontSize: "10px", color: "#5a6a7e", fontWeight: 600 }}>미수금 (A-B)</div>
-                      <div style={{ fontSize: "20px", fontWeight: 800, color: "#c0392b", marginTop: "4px" }}>
-                        {formatMoney(cashOutstanding, currency, unitOn)}
-                      </div>
-                      <div style={{ fontSize: "9px", color: "#8a97a8" }}>{moneyUnitLabel(currency, unitOn)}</div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Row 1: Budget Execution Status / Outsourcing */}
-            <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: "8px" }}>
               {/* Budget Execution Status */}
               <div style={cardStyle}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
@@ -617,60 +581,71 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                 )}
               </div>
 
-              {/* Outsourcing summary */}
+              {/* Cash — 매출·확정·수금·채권 */}
               <div style={cardStyle}>
-                <span style={sectionTitle}>외주</span>
+                <span style={sectionTitle}>자금</span>
                 {isLoading ? (
                   <div style={{ padding: "40px 10px", textAlign: "center", fontSize: "11px", color: "#8a97a8" }}>불러오는 중…</div>
-                ) : outsourcing.length === 0 ? (
-                  <EmptyHint label="외주" />
+                ) : revenueTotal == null && cashConfirmed == null && cashCollection == null ? (
+                  <EmptyHint label="자금 (매출/확정/수금)" />
                 ) : (
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "flex-end",
-                      justifyContent: "space-around",
-                      marginTop: "10px",
-                      height: "190px",
-                    }}
-                  >
-                    <MiniBar
-                      value={outSum.budget ?? 0}
-                      max={outMax}
-                      color="#c9d2dd"
-                      label="예산 (A)"
-                      height={150}
-                      valueLabel={formatMoney(outSum.budget, currency, unitOn)}
-                      width={24}
-                    />
-                    <MiniBar
-                      value={outSum.resolved ?? 0}
-                      max={outMax}
-                      color="#c9d2dd"
-                      label="결의금액 (B)"
-                      height={150}
-                      valueLabel={formatMoney(outSum.resolved, currency, unitOn)}
-                      width={24}
-                    />
-                    <MiniBar
-                      value={outSum.accum ?? 0}
-                      max={outMax}
-                      color="#2b5cad"
-                      label="기성 누계 (C)"
-                      height={150}
-                      valueLabel={formatMoney(outSum.accum, currency, unitOn)}
-                      width={24}
-                    />
-                    <MiniBar
-                      value={outstanding ?? 0}
-                      max={outMax}
-                      color="#c0392b"
-                      label="잔여 (B)-(C)"
-                      height={150}
-                      valueLabel={formatMoney(outstanding, currency, unitOn)}
-                      width={24}
-                    />
-                  </div>
+                  (() => {
+                    const cashMax = Math.max(
+                      revenueTotal ?? 0,
+                      cashConfirmed ?? 0,
+                      cashCollection ?? 0,
+                      Math.abs(cashOutstanding ?? 0),
+                      1,
+                    );
+                    return (
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "flex-end",
+                          justifyContent: "space-around",
+                          marginTop: "10px",
+                          height: "190px",
+                        }}
+                      >
+                        <MiniBar
+                          value={revenueTotal ?? 0}
+                          max={cashMax}
+                          color="#c9d2dd"
+                          label="매출"
+                          height={150}
+                          valueLabel={formatMoney(revenueTotal, currency, unitOn)}
+                          width={24}
+                        />
+                        <MiniBar
+                          value={cashConfirmed ?? 0}
+                          max={cashMax}
+                          color="#c9d2dd"
+                          label="확정 (A)"
+                          height={150}
+                          valueLabel={formatMoney(cashConfirmed, currency, unitOn)}
+                          width={24}
+                        />
+                        <MiniBar
+                          value={cashCollection ?? 0}
+                          max={cashMax}
+                          color="#2b5cad"
+                          label="수금 (B)"
+                          height={150}
+                          valueLabel={formatMoney(cashCollection, currency, unitOn)}
+                          width={24}
+                        />
+                        <MiniBar
+                          value={Math.max(cashOutstanding ?? 0, 0)}
+                          max={cashMax}
+                          color="#c0392b"
+                          label="채권 (A)-(B)"
+                          height={150}
+                          valueLabel={formatMoney(cashOutstanding, currency, unitOn)}
+                          width={24}
+                        />
+                      </div>
+                    );
+                  })()
                 )}
               </div>
             </div>

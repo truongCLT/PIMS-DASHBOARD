@@ -238,55 +238,89 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                   margin: "16px 0 10px",
                 }}
               >
-                {[
-                  {
-                    group: "월별",
-                    bars: [
-                      { label: "계획", value: monthlyPlan, color: chartTheme.planBlue },
-                      { label: "실적", value: monthlyActual, color: chartTheme.outflowRed },
-                    ],
-                    rate: monthlyAchieveRate,
-                  },
-                  {
-                    group: "누계",
-                    bars: [
-                      { label: "계획", value: planCum, color: chartTheme.planBlue },
-                      { label: "실적", value: actualCum, color: chartTheme.outflowRed },
-                    ],
-                    rate: achieveRate,
-                  },
-                ].map((grp) => {
-                  const gmax = Math.max(...grp.bars.map((b) => b.value ?? 0), 1);
+                {/* 월별 — 2개 막대 + 중앙 상단 달성률 */}
+                {(() => {
+                  const bars = [
+                    { label: "계획", value: monthlyPlan, color: chartTheme.planBlue },
+                    { label: "실적", value: monthlyActual, color: chartTheme.outflowRed },
+                  ];
+                  const gmax = Math.max(...bars.map((b) => b.value ?? 0), 1);
                   return (
-                  <div key={grp.group} style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                    <div style={{ display: "flex", alignItems: "flex-end", gap: "10px", height: `${MAX_H + 28}px` }}>
-                      {grp.bars.map((b) => (
-                        <div
-                          key={b.label}
-                          style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", height: "100%" }}
-                        >
-                          <span style={{ fontSize: "10px", fontWeight: 700, color: b.color, marginBottom: "4px" }}>
-                            {fmtPct(b.value)}
-                          </span>
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                      <div style={{ fontSize: "12px", color: chartTheme.profitGreen, fontWeight: 800, marginBottom: "6px" }}>
+                        달성률 {fmtPct(monthlyAchieveRate)}
+                      </div>
+                      <div style={{ display: "flex", alignItems: "flex-end", gap: "10px", height: `${MAX_H + 20}px` }}>
+                        {bars.map((b) => (
                           <div
-                            style={{
-                              width: "34px",
-                              height: `${Math.round(((b.value ?? 0) / gmax) * MAX_H)}px`,
-                              backgroundColor: b.color,
-                              borderRadius: "3px 3px 0 0",
-                            }}
-                          />
-                          <span style={{ fontSize: "9px", color: "#555", marginTop: "5px", fontWeight: 600 }}>{b.label}</span>
-                        </div>
-                      ))}
+                            key={b.label}
+                            style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", height: "100%" }}
+                          >
+                            <span style={{ fontSize: "10px", fontWeight: 700, color: b.color, marginBottom: "4px" }}>
+                              {fmtPct(b.value)}
+                            </span>
+                            <div
+                              style={{
+                                width: "34px",
+                                height: `${Math.round(((b.value ?? 0) / gmax) * MAX_H)}px`,
+                                backgroundColor: b.color,
+                                borderRadius: "3px 3px 0 0",
+                              }}
+                            />
+                            <span style={{ fontSize: "9px", color: "#555", marginTop: "5px", fontWeight: 600 }}>{b.label}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <div style={{ fontSize: "10px", fontWeight: 700, color: "#333", marginTop: "4px" }}>월별</div>
                     </div>
-                    <div style={{ fontSize: "10px", fontWeight: 700, color: "#333", marginTop: "4px" }}>{grp.group}</div>
-                    <div style={{ fontSize: "10px", color: chartTheme.profitGreen, fontWeight: 700, marginTop: "2px" }}>
-                      달성률 {fmtPct(grp.rate)}
-                    </div>
-                  </div>
                   );
-                })}
+                })()}
+
+                {/* 누계 — 이중 도넛 (회색 100% + 빨강 계획 + 파랑 실적) */}
+                {(() => {
+                  const cx = 80, cy = 80, rIn = 54, rOut = 68;
+                  const cIn = 2 * Math.PI * rIn;
+                  const cOut = 2 * Math.PI * rOut;
+                  const aPct = Math.max(0, Math.min(actualCum ?? 0, 100));
+                  const pPct = Math.max(0, Math.min(planCum ?? 0, 100));
+                  return (
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                      <div style={{ fontSize: "10px", fontWeight: 700, marginBottom: "4px", whiteSpace: "nowrap" }}>
+                        <span style={{ color: "#777" }}>계획 (A) </span>
+                        <span style={{ color: chartTheme.outflowRed, fontSize: "12px", fontWeight: 800 }}>{fmtPct(planCum)}</span>
+                      </div>
+                      <svg width={136} height={136} viewBox="0 0 160 160">
+                        {/* 회색 기준 링 (100%) */}
+                        <circle cx={cx} cy={cy} r={rIn} fill="none" stroke="#e2e7ee" strokeWidth={16} />
+                        {/* 파랑: 실제 달성률 */}
+                        <circle
+                          cx={cx} cy={cy} r={rIn} fill="none"
+                          stroke={chartTheme.planBlue} strokeWidth={16}
+                          strokeDasharray={`${(aPct / 100) * cIn} ${cIn}`}
+                          transform={`rotate(-90 ${cx} ${cy})`}
+                        />
+                        {/* 빨강: 계획 달성률 (외부 링) */}
+                        <circle
+                          cx={cx} cy={cy} r={rOut} fill="none"
+                          stroke={chartTheme.outflowRed} strokeWidth={8}
+                          strokeDasharray={`${(pPct / 100) * cOut} ${cOut}`}
+                          strokeLinecap="round"
+                          transform={`rotate(-90 ${cx} ${cy})`}
+                        />
+                        <text x={cx} y={cy + 2} textAnchor="middle" fontSize={30} fontWeight={800} fill={chartTheme.planBlue}>
+                          {fmtPct(actualCum)}
+                        </text>
+                        <text x={cx} y={cy + 22} textAnchor="middle" fontSize={11} fill="#555">
+                          실적 (B)
+                        </text>
+                      </svg>
+                      <div style={{ fontSize: "10px", fontWeight: 700, color: "#333", marginTop: "2px" }}>누계</div>
+                      <div style={{ fontSize: "10px", color: chartTheme.profitGreen, fontWeight: 700, marginTop: "2px" }}>
+                        달성률 {fmtPct(achieveRate)}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             </>
           )}
@@ -301,7 +335,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
               paddingTop: "6px",
             }}
           >
-            경과율 ({fmtPct(elapsed)})
+            공경율 ({fmtPct(elapsed)})
           </div>
         </div>
 
