@@ -255,7 +255,11 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <span style={{ fontSize: "14px", color: "#333", fontWeight: 600 }}>단위 :</span>
           <div
-            onClick={() => setUnitOn(!unitOn)}
+            onClick={() => {
+              const sy = window.scrollY;
+              setUnitOn((v) => !v);
+              requestAnimationFrame(() => window.scrollTo({ top: sy, behavior: "instant" as ScrollBehavior }));
+            }}
             style={{
               width: "36px",
               height: "20px",
