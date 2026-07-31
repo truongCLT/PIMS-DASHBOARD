@@ -34,7 +34,7 @@ const cardStyle: React.CSSProperties = {
 };
 
 const sectionTitle: React.CSSProperties = {
-  fontSize: "12px",
+  fontSize: "14px",
   fontWeight: 700,
   color: "#1a3a6b",
 };
@@ -42,7 +42,7 @@ const sectionTitle: React.CSSProperties = {
 const th: React.CSSProperties = {
   backgroundColor: "#eef2f7",
   color: "#1a2d4d",
-  fontSize: "11px",
+  fontSize: "13px",
   fontWeight: 700,
   border: "1px solid #c8d2de",
   padding: "6px",
@@ -58,7 +58,7 @@ const inputStyle: React.CSSProperties = {
   width: "100%",
   border: "none",
   outline: "none",
-  fontSize: "11px",
+  fontSize: "13px",
   padding: "5px 6px",
   boxSizing: "border-box",
   backgroundColor: "transparent",
@@ -68,7 +68,7 @@ const addBtn: React.CSSProperties = {
   display: "inline-flex",
   alignItems: "center",
   gap: "4px",
-  fontSize: "11px",
+  fontSize: "13px",
   color: "#1e6fdd",
   background: "none",
   border: "1px dashed #9dc3e6",
@@ -524,7 +524,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
 
 
   if (isLoading && !loaded) {
-    return <div style={{ ...cardStyle, textAlign: "center", color: "#8a97a8", fontSize: "12px" }}>불러오는 중…</div>;
+    return <div style={{ ...cardStyle, textAlign: "center", color: "#8a97a8", fontSize: "14px" }}>불러오는 중…</div>;
   }
 
   const nowYear = new Date().getFullYear();
@@ -535,7 +535,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       <span style={sectionTitle}>{label}</span>
       <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
         {cardMsgs[key] && (
-          <span style={{ fontSize: "11px", color: cardMsgs[key] === "저장되었습니다." ? "#3e7d4c" : "#c0392b" }}>
+          <span style={{ fontSize: "13px", color: cardMsgs[key] === "저장되었습니다." ? "#3e7d4c" : "#c0392b" }}>
             {cardMsgs[key]}
           </span>
         )}
@@ -544,7 +544,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
           disabled={mutation.isPending}
           style={{
             padding: "4px 14px",
-            fontSize: "11px",
+            fontSize: "13px",
             fontWeight: 600,
             backgroundColor: "#2e4568",
             color: "#fff",
@@ -563,19 +563,19 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
       <div style={{ ...cardStyle, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ fontSize: "12px", color: "#333" }}>
+        <div style={{ fontSize: "14px", color: "#333" }}>
           <b>{projectName}</b> 프로젝트의 공정/원가/외주 데이터를 입력합니다. 금액 입력: <b>VND</b> (저장 시 천 USD 자동 변환), 공정률 단위: <b>%</b>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           {statusMsg && (
-            <span style={{ fontSize: "11px", color: statusMsg.includes("실패") ? "#c0392b" : "#3e7d4c", fontWeight: 600 }}>
+            <span style={{ fontSize: "13px", color: statusMsg.includes("실패") ? "#c0392b" : "#3e7d4c", fontWeight: 600 }}>
               {statusMsg}
             </span>
           )}
           <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
             <span
               style={{
-                fontSize: "11px",
+                fontSize: "13px",
                 fontWeight: 700,
                 padding: "3px 8px",
                 borderRadius: "10px",
@@ -590,7 +590,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
               disabled={statusMutation.isPending || mrProjectsQuery.isLoading}
               title="프로젝트 진행 상태 전환"
               style={{
-                fontSize: "11px",
+                fontSize: "13px",
                 fontWeight: 600,
                 color: "#2e4568",
                 backgroundColor: "#fff",
@@ -609,7 +609,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
             </button>
           </div>
           {saveMsg && (
-            <span style={{ fontSize: "11px", color: saveMsg.startsWith("저장되") ? "#3e7d4c" : "#c0392b", fontWeight: 600 }}>
+            <span style={{ fontSize: "13px", color: saveMsg.startsWith("저장되") ? "#3e7d4c" : "#c0392b", fontWeight: 600 }}>
               {saveMsg}
             </span>
           )}
@@ -625,7 +625,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
               border: "none",
               borderRadius: "6px",
               padding: "8px 16px",
-              fontSize: "12px",
+              fontSize: "14px",
               fontWeight: 600,
               cursor: mutation.isPending ? "wait" : "pointer",
               opacity: mutation.isPending ? 0.7 : 1,
@@ -695,7 +695,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
             </tr>
           </tbody>
         </table>
-        <div style={{ fontSize: "10px", color: "#8a97a8", marginTop: "6px" }}>
+        <div style={{ fontSize: "12px", color: "#8a97a8", marginTop: "6px" }}>
           입찰(Bidding)·실행예산 금액은 아래 "3. 원가율" 표에 입력하면 개요 탭에 함께 반영됩니다.
         </div>
         </div>
@@ -852,7 +852,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
             </tr>
           </tbody>
         </table>
-        <div style={{ fontSize: "10px", color: "#8a97a8", marginTop: "6px" }}>
+        <div style={{ fontSize: "12px", color: "#8a97a8", marginTop: "6px" }}>
           개요 탭의 프로젝트 정보·Revenue·Cash 카드에 반영됩니다. Outstanding은 (A)-(B)로 자동 계산됩니다.
         </div>
         </div>
@@ -879,7 +879,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
               const completionCount = costEstimation.filter((r) => r.kind === "completion").length;
               return (
                 <tr key={`${e.kind}-${i}`}>
-                  <td style={{ ...tdCell, fontSize: "11px", padding: "5px 6px", color: "#333" }}>
+                  <td style={{ ...tdCell, fontSize: "13px", padding: "5px 6px", color: "#333" }}>
                     {EST_KINDS.find((k) => k.kind === e.kind)?.label ?? e.kind}
                   </td>
                   <td style={{ ...tdCell, textAlign: "center" }}>
@@ -896,10 +896,10 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                             updateAt(setCostEstimation, i, { year: Number(y), month: Number(m) });
                           }
                         }}
-                        style={{ fontSize: "11px", padding: "3px 4px", border: "1px solid #ccd6e3", borderRadius: "3px" }}
+                        style={{ fontSize: "13px", padding: "3px 4px", border: "1px solid #ccd6e3", borderRadius: "3px" }}
                       />
                     ) : (
-                      <span style={{ fontSize: "10px", color: "#aaa" }}>-</span>
+                      <span style={{ fontSize: "12px", color: "#aaa" }}>-</span>
                     )}
                   </td>
                   <td style={tdCell}><VndInput valueKUsd={e.contractAmount} onChange={(v) => updateAt(setCostEstimation, i, { contractAmount: v })} data-row={i} data-col={0} /></td>
@@ -925,11 +925,11 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
           onClick={() =>
             setCostEstimation((rows) => [...rows, { kind: "completion", contractAmount: null, costAmount: null, year: null, month: null }])
           }
-          style={{ marginTop: "6px", display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "10px", color: "#4472c4", border: "1px dashed #9db6d8", borderRadius: "4px", padding: "3px 8px", background: "none", cursor: "pointer" }}
+          style={{ marginTop: "6px", display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "12px", color: "#4472c4", border: "1px dashed #9db6d8", borderRadius: "4px", padding: "3px 8px", background: "none", cursor: "pointer" }}
         >
           <Plus size={12} /> 준공 전망(월별) 추가
         </button>
-        <div style={{ fontSize: "10px", color: "#777", marginTop: "4px" }}>
+        <div style={{ fontSize: "12px", color: "#777", marginTop: "4px" }}>
           준공추정원가율은 기준월별로 여러 건 입력할 수 있습니다. 원가 탭에서는 조회 기간 마지막 월 이하의 가장 최근 기준월 값이 표시됩니다.
         </div>
       </div>
@@ -937,7 +937,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       {/* 4. 예산 집행 현황 */}
       <div style={cardStyle}>
         {cardHead(service ? "2. 예산 집행 현황 (예산집행 탭)" : "4. 예산 집행 현황 (원가 탭)", "costBudget")}
-        <div style={{ fontSize: "10px", color: "#777", marginTop: "4px" }}>
+        <div style={{ fontSize: "12px", color: "#777", marginTop: "4px" }}>
           Direct Cost 중 Common·Expense 1만 여기서 입력합니다. 외주성 예산·집행 실적은 아래 "외주/자재" 표에서 자동 집계됩니다.
         </div>
         <div data-tbl="costBudget" onKeyDown={makeArrowNav("costBudget")}>
@@ -953,7 +953,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
           <tbody>
             {costBudget.map((c, i) => (
               <tr key={c.item}>
-                <td style={{ ...tdCell, fontSize: "11px", padding: "5px 6px", color: "#333", fontWeight: 600 }}>{c.item}</td>
+                <td style={{ ...tdCell, fontSize: "13px", padding: "5px 6px", color: "#333", fontWeight: 600 }}>{c.item}</td>
                 <td style={tdCell}><VndInput valueKUsd={c.budget} onChange={(v) => updateAt(setCostBudget, i, { budget: v })} data-row={i} data-col={0} /></td>
                 <td style={tdCell}><VndInput valueKUsd={c.plan} onChange={(v) => updateAt(setCostBudget, i, { plan: v })} data-row={i} data-col={1} /></td>
                 <td style={tdCell}><VndInput valueKUsd={c.actual} onChange={(v) => updateAt(setCostBudget, i, { actual: v })} data-row={i} data-col={2} /></td>
@@ -965,10 +965,10 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
 
         {/* 월별 계획/실적 */}
         <div style={{ marginTop: "10px" }}>
-          <div style={{ fontSize: "10px", fontWeight: 600, color: "#4472c4", marginBottom: "4px" }}>
+          <div style={{ fontSize: "12px", fontWeight: 600, color: "#4472c4", marginBottom: "4px" }}>
             월별 계획 / 실적 ({REPORT_YEAR}년)
           </div>
-          <div style={{ fontSize: "9px", color: "#777", marginBottom: "6px" }}>
+          <div style={{ fontSize: "11px", color: "#777", marginBottom: "6px" }}>
             선택한 월에 따라 Budget Execution Status 카드에 표시됩니다. 외주성도 입력 가능합니다.
           </div>
           {(["Common", "Expense 1", "외주성"] as const).map((item) => {
@@ -983,7 +983,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
             const tblKey = `cbm-${item}`;
             return (
               <div key={item} style={{ marginBottom: "10px" }}>
-                <div style={{ fontSize: "11px", fontWeight: 700, color: "#1a2d4d", marginBottom: "4px" }}>{item}</div>
+                <div style={{ fontSize: "13px", fontWeight: 700, color: "#1a2d4d", marginBottom: "4px" }}>{item}</div>
                 <div data-tbl={tblKey} onKeyDown={makeArrowNav(tblKey)}>
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
                   <thead>
@@ -996,7 +996,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                   <tbody>
                     {Array.from({ length: 12 }, (_, i) => i + 1).map((month) => (
                       <tr key={month}>
-                        <td style={{ ...tdCell, textAlign: "center", fontSize: "11px", color: "#555", padding: "3px 4px" }}>{month}월</td>
+                        <td style={{ ...tdCell, textAlign: "center", fontSize: "13px", color: "#555", padding: "3px 4px" }}>{month}월</td>
                         <td style={tdCell}><VndInput valueKUsd={getCbm(month, "plan")} onChange={(v) => setCbm(month, "plan", v)} data-row={month - 1} data-col={0} /></td>
                         <td style={tdCell}><VndInput valueKUsd={getCbm(month, "actual")} onChange={(v) => setCbm(month, "actual", v)} data-row={month - 1} data-col={1} /></td>
                       </tr>
@@ -1038,7 +1038,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                   <select
                     value={o.tradeGroup ?? ""}
                     onChange={(ev) => updateAt(setOutsourcing, i, { tradeGroup: ev.target.value || null })}
-                    style={{ width: "100%", fontSize: "11px", padding: "3px 2px", border: "1px solid #ccd6e3", borderRadius: "3px", backgroundColor: "#fff" }}
+                    style={{ width: "100%", fontSize: "13px", padding: "3px 2px", border: "1px solid #ccd6e3", borderRadius: "3px", backgroundColor: "#fff" }}
                   >
                     <option value="">-</option>
                     {TRADE_GROUPS.map((g) => (
@@ -1118,11 +1118,11 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
         >
           <Plus size={12} /> 월 추가
         </button>
-        <div style={{ fontSize: "10px", color: "#8a97a8", marginTop: "6px" }}>
+        <div style={{ fontSize: "12px", color: "#8a97a8", marginTop: "6px" }}>
           지출은 양수로 입력하세요(차트에서 자동으로 아래 방향 표시). VND 기준으로 입력하면 저장 시 천 USD로 자동 변환됩니다.
         </div>
         {cfPrefilled && (
-          <div style={{ fontSize: "10px", color: "#1e6fdd", marginTop: "4px", fontWeight: 600 }}>
+          <div style={{ fontSize: "12px", color: "#1e6fdd", marginTop: "4px", fontWeight: 600 }}>
             자금수지 Excel(DB)에 저장된 데이터를 불러왔습니다. 표를 수정하면 이 프로젝트의 자금 데이터로 저장되며, 이후에는 저장된 값이 우선 표시됩니다.
           </div>
         )}
@@ -1169,7 +1169,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
         >
           <Plus size={12} /> 월 추가
         </button>
-        <div style={{ fontSize: "10px", color: "#8a97a8", marginTop: "6px" }}>
+        <div style={{ fontSize: "12px", color: "#8a97a8", marginTop: "6px" }}>
           매출 탭 차트에 반영됩니다. 입력 데이터가 있으면 메인 대시보드 데이터보다 우선 사용됩니다. VND 기준으로 입력하면 저장 시 천 USD로 자동 변환됩니다.
         </div>
       </div>
@@ -1216,7 +1216,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
         >
           <Plus size={12} /> 월 추가
         </button>
-        <div style={{ fontSize: "10px", color: "#8a97a8", marginTop: "6px" }}>
+        <div style={{ fontSize: "12px", color: "#8a97a8", marginTop: "6px" }}>
           매출 탭의 Cost(회계 vs 집행 매출원가) 차트에 반영됩니다. VND 기준으로 입력하면 저장 시 천 USD로 자동 변환됩니다.
         </div>
       </div>

@@ -19,7 +19,7 @@ const cardStyle: React.CSSProperties = {
 };
 
 const sectionTitle: React.CSSProperties = {
-  fontSize: "11px",
+  fontSize: "13px",
   fontWeight: 600,
   color: "#4472c4",
 };
@@ -27,7 +27,7 @@ const sectionTitle: React.CSSProperties = {
 const emptyStyle: React.CSSProperties = {
   padding: "24px 0",
   textAlign: "center",
-  fontSize: "11px",
+  fontSize: "13px",
   color: "#8a97a8",
 };
 
@@ -114,7 +114,7 @@ function BudgetExecutionStatus({ rows }: { rows: BudgetRow[] }) {
             const actualPct = ratioPct(row.actual, row.budget);
             return (
               <div key={`${row.item}-${i}`} style={{ display: "flex", alignItems: "center" }}>
-                <div style={{ width: "110px", minWidth: "110px", fontSize: "10px", color: "#333" }}>
+                <div style={{ width: "110px", minWidth: "110px", fontSize: "12px", color: "#333" }}>
                   {showCategory && <div style={{ marginBottom: "14px", fontWeight: 700 }}>{row.category}</div>}
                   <span>{row.item}</span>
                 </div>
@@ -133,7 +133,7 @@ function BudgetExecutionStatus({ rows }: { rows: BudgetRow[] }) {
                         right: "-8px",
                         top: "50%",
                         transform: "translate(100%, -50%)",
-                        fontSize: "9px",
+                        fontSize: "11px",
                         color: "#555",
                       }}
                     >
@@ -157,7 +157,7 @@ function BudgetExecutionStatus({ rows }: { rows: BudgetRow[] }) {
                           top: "50%",
                           left: "50%",
                           transform: "translate(-50%, -50%)",
-                          fontSize: "8px",
+                          fontSize: "10px",
                           color: "#fff",
                           fontWeight: 700,
                         }}
@@ -171,7 +171,7 @@ function BudgetExecutionStatus({ rows }: { rows: BudgetRow[] }) {
                             right: "-6px",
                             top: "50%",
                             transform: "translate(100%, -50%)",
-                            fontSize: "8px",
+                            fontSize: "10px",
                             color: chartTheme.outflowRed,
                             fontWeight: 700,
                           }}
@@ -198,7 +198,7 @@ function BudgetExecutionStatus({ rows }: { rows: BudgetRow[] }) {
                           top: "50%",
                           left: "50%",
                           transform: "translate(-50%, -50%)",
-                          fontSize: "8px",
+                          fontSize: "10px",
                           color: "#fff",
                           fontWeight: 700,
                         }}
@@ -212,7 +212,7 @@ function BudgetExecutionStatus({ rows }: { rows: BudgetRow[] }) {
                             right: "-6px",
                             top: "50%",
                             transform: "translate(100%, -50%)",
-                            fontSize: "8px",
+                            fontSize: "10px",
                             color: chartTheme.planBlue,
                             fontWeight: 700,
                           }}
@@ -267,7 +267,7 @@ function DbCostActualCard({ projectName }: { projectName: string }) {
         <div style={emptyStyle}>DB에 원가 실적 데이터가 없습니다. ( - )</div>
       ) : (
         <div style={{ overflowX: "auto", marginTop: "8px" }}>
-          <table style={{ borderCollapse: "collapse", width: "100%", fontSize: "10px" }}>
+          <table style={{ borderCollapse: "collapse", width: "100%", fontSize: "12px" }}>
             <thead>
               <tr>
                 <th style={{ border: "1px solid #d0dce8", padding: "4px 6px", backgroundColor: "#eef3f9", color: "#1a2d4d", textAlign: "left" }}>구분</th>
@@ -382,11 +382,11 @@ export function CostingTab({
                   : "";
               return (
                 <div key={meta.kind} style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: "10px", color: "#555", marginBottom: "2px" }}>
+                  <div style={{ fontSize: "12px", color: "#555", marginBottom: "2px" }}>
                     {cost != null || contract != null ? `${fmtMoney(cost)} / ${fmtMoney(contract)}` : "-"}
                   </div>
                   <Donut percent={pct ?? 0} color={meta.color} size={150} stroke={16} centerLabel={fmtPct(pct)} />
-                  <div style={{ fontSize: "11px", color: "#1a2d4d", fontWeight: 600, marginTop: "4px" }}>
+                  <div style={{ fontSize: "13px", color: "#1a2d4d", fontWeight: 600, marginTop: "4px" }}>
                     {meta.label}
                     {baseMonth}
                   </div>

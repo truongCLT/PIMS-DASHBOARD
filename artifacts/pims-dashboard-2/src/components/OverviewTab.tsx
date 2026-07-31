@@ -25,7 +25,7 @@ const cardStyle: React.CSSProperties = {
 };
 
 const sectionTitle: React.CSSProperties = {
-  fontSize: "11px",
+  fontSize: "13px",
   fontWeight: 600,
   color: "#4472c4",
   marginBottom: "6px",
@@ -34,7 +34,7 @@ const sectionTitle: React.CSSProperties = {
 const emptyNote: React.CSSProperties = {
   padding: "40px 12px",
   textAlign: "center",
-  fontSize: "11px",
+  fontSize: "13px",
   color: "#8a97a8",
 };
 
@@ -214,7 +214,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
             <span style={{ ...sectionTitle, color: chartTheme.profitGreen }}>공정</span>
             <span
               style={{
-                fontSize: "9px",
+                fontSize: "11px",
                 backgroundColor: chartTheme.profitGreen,
                 color: "#fff",
                 borderRadius: "3px",
@@ -247,7 +247,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                   const gmax = Math.max(...bars.map((b) => b.value ?? 0), 1);
                   return (
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                      <div style={{ fontSize: "12px", color: chartTheme.profitGreen, fontWeight: 800, marginBottom: "6px" }}>
+                      <div style={{ fontSize: "14px", color: chartTheme.profitGreen, fontWeight: 800, marginBottom: "6px" }}>
                         달성률 {fmtPct(monthlyAchieveRate)}
                       </div>
                       <div style={{ display: "flex", alignItems: "flex-end", gap: "10px", height: `${MAX_H + 20}px` }}>
@@ -256,7 +256,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                             key={b.label}
                             style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", height: "100%" }}
                           >
-                            <span style={{ fontSize: "10px", fontWeight: 700, color: b.color, marginBottom: "4px" }}>
+                            <span style={{ fontSize: "12px", fontWeight: 700, color: b.color, marginBottom: "4px" }}>
                               {fmtPct(b.value)}
                             </span>
                             <div
@@ -267,11 +267,11 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                                 borderRadius: "3px 3px 0 0",
                               }}
                             />
-                            <span style={{ fontSize: "9px", color: "#555", marginTop: "5px", fontWeight: 600 }}>{b.label}</span>
+                            <span style={{ fontSize: "11px", color: "#555", marginTop: "5px", fontWeight: 600 }}>{b.label}</span>
                           </div>
                         ))}
                       </div>
-                      <div style={{ fontSize: "10px", fontWeight: 700, color: "#333", marginTop: "4px" }}>월별</div>
+                      <div style={{ fontSize: "12px", fontWeight: 700, color: "#333", marginTop: "4px" }}>월별</div>
                     </div>
                   );
                 })()}
@@ -285,9 +285,9 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                   const pPct = Math.max(0, Math.min(planCum ?? 0, 100));
                   return (
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                      <div style={{ fontSize: "10px", fontWeight: 700, marginBottom: "4px", whiteSpace: "nowrap" }}>
+                      <div style={{ fontSize: "12px", fontWeight: 700, marginBottom: "4px", whiteSpace: "nowrap" }}>
                         <span style={{ color: "#777" }}>계획 (A) </span>
-                        <span style={{ color: chartTheme.planBlue, fontSize: "12px", fontWeight: 800 }}>{fmtPct(planCum)}</span>
+                        <span style={{ color: chartTheme.planBlue, fontSize: "14px", fontWeight: 800 }}>{fmtPct(planCum)}</span>
                       </div>
                       <svg width={136} height={136} viewBox="0 0 160 160">
                         {/* 회색 기준 링 (100%) */}
@@ -310,11 +310,11 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                         <text x={cx} y={cy + 2} textAnchor="middle" fontSize={30} fontWeight={800} fill={chartTheme.outflowRed}>
                           {fmtPct(actualCum)}
                         </text>
-                        <text x={cx} y={cy + 22} textAnchor="middle" fontSize={11} fill="#555">
+                        <text x={cx} y={cy + 22} textAnchor="middle" fontSize={13} fill="#555">
                           실적 (B)
                         </text>
                       </svg>
-                      <div style={{ fontSize: "10px", fontWeight: 700, color: "#333", marginTop: "2px" }}>누계</div>
+                      <div style={{ fontSize: "12px", fontWeight: 700, color: "#333", marginTop: "2px" }}>누계</div>
                     </div>
                   );
                 })()}
@@ -324,7 +324,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
           <div
             style={{
               textAlign: "center",
-              fontSize: "10px",
+              fontSize: "12px",
               color: "#333",
               fontWeight: 700,
               marginTop: "8px",
@@ -350,7 +350,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
                   {thisMonthPlan != null && thisMonthPlan > 0 && thisMonthRev != null ? (
                     <span style={{
-                      fontSize: "13px",
+                      fontSize: "15px",
                       fontWeight: 800,
                       color: (thisMonthRev / thisMonthPlan) >= 1 ? chartTheme.planBlue : chartTheme.outflowRed,
                       whiteSpace: "nowrap",
@@ -358,7 +358,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                       {fmtPct((thisMonthRev / thisMonthPlan) * 100)}
                     </span>
                   ) : (
-                    <span style={{ fontSize: "13px", color: "#aaa" }}>-</span>
+                    <span style={{ fontSize: "15px", color: "#aaa" }}>-</span>
                   )}
                   <div style={{ display: "flex", gap: "10px", alignItems: "flex-end" }}>
                     <MiniBar
@@ -378,12 +378,12 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                       valueLabel={fmtMoney(thisMonthRev)}
                     />
                   </div>
-                  <span style={{ fontSize: "10px", fontWeight: 700, color: "#333", marginTop: "2px" }}>당월</span>
+                  <span style={{ fontSize: "12px", fontWeight: 700, color: "#333", marginTop: "2px" }}>당월</span>
                 </div>
 
                 {/* 연 */}
                 <div style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: "10px", color: "#555", marginBottom: "2px" }}>
+                  <div style={{ fontSize: "12px", color: "#555", marginBottom: "2px" }}>
                     {fmtMoney(cumRev)} / {fmtMoney(annualPlanRev)}
                   </div>
                   <Donut
@@ -394,14 +394,14 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                     label={fmtPct(ratioPct(cumRev, annualPlanRev))}
                     labelSize={18}
                   />
-                  <div style={{ fontSize: "10px", color: "#1a2d4d", fontWeight: 700, marginTop: "4px", textDecoration: "underline" }}>
+                  <div style={{ fontSize: "12px", color: "#1a2d4d", fontWeight: 700, marginTop: "4px", textDecoration: "underline" }}>
                     연
                   </div>
                 </div>
 
                 {/* 누계 */}
                 <div style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: "10px", color: "#555", marginBottom: "2px" }}>
+                  <div style={{ fontSize: "12px", color: "#555", marginBottom: "2px" }}>
                     {fmtMoney(cumRev)} / {fmtMoney(overview.contractAmount)}
                   </div>
                   <Donut
@@ -412,7 +412,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                     label={fmtPct(ratioPct(cumRev, overview.contractAmount))}
                     labelSize={18}
                   />
-                  <div style={{ fontSize: "10px", color: "#1a2d4d", fontWeight: 700, marginTop: "4px", textDecoration: "underline" }}>
+                  <div style={{ fontSize: "12px", color: "#1a2d4d", fontWeight: 700, marginTop: "4px", textDecoration: "underline" }}>
                     누계
                   </div>
                 </div>
@@ -440,7 +440,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                       <div style={{ borderTop: "1px dashed #c8d4e0", margin: "4px 0" }} />
                     )}
                     <div style={{ textAlign: "center" }}>
-                      <div style={{ fontSize: "9px", color: "#777", marginBottom: "1px", whiteSpace: "nowrap" }}>
+                      <div style={{ fontSize: "11px", color: "#777", marginBottom: "1px", whiteSpace: "nowrap" }}>
                         {fmtMoney(c.data?.costAmount)} / {fmtMoney(c.data?.contractAmount)}
                       </div>
                       <Donut
@@ -451,7 +451,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                         label={fmtPct(estPct(c.data))}
                         labelSize={14}
                       />
-                      <div style={{ fontSize: "10px", color: "#1a2d4d", fontWeight: 700, marginTop: "3px" }}>{c.title}</div>
+                      <div style={{ fontSize: "12px", color: "#1a2d4d", fontWeight: 700, marginTop: "3px" }}>{c.title}</div>
                     </div>
                   </div>
                 ))}
@@ -459,7 +459,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
 
               {/* 우측: 준공추정 대형 도넛 */}
               <div style={{ flex: "0 0 auto", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-                <div style={{ fontSize: "10px", color: "#555", marginBottom: "2px", whiteSpace: "nowrap" }}>
+                <div style={{ fontSize: "12px", color: "#555", marginBottom: "2px", whiteSpace: "nowrap" }}>
                   {fmtMoney(completion?.costAmount)} / {fmtMoney(completion?.contractAmount)}
                 </div>
                 <Donut
@@ -470,7 +470,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                   label={fmtPct(estPct(completion))}
                   labelSize={26}
                 />
-                <div style={{ fontSize: "12px", color: "#1a2d4d", fontWeight: 800, marginTop: "2px" }}>
+                <div style={{ fontSize: "14px", color: "#1a2d4d", fontWeight: 800, marginTop: "2px" }}>
                   준공추정원가율
                 </div>
               </div>
@@ -494,7 +494,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
             <select
               value={budgetMonth ?? ""}
               onChange={(e) => setBudgetMonth(e.target.value === "" ? null : Number(e.target.value))}
-              style={{ fontSize: "10px", border: "1px solid #c8d2de", borderRadius: "4px", padding: "2px 4px", color: "#333", cursor: "pointer" }}
+              style={{ fontSize: "12px", border: "1px solid #c8d2de", borderRadius: "4px", padding: "2px 4px", color: "#333", cursor: "pointer" }}
             >
               <option value="">전체</option>
               {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
@@ -515,7 +515,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                 ].map(({ label, color }) => (
                   <div key={label} style={{ display: "flex", alignItems: "center", gap: "4px" }}>
                     <div style={{ width: "11px", height: "11px", backgroundColor: color, borderRadius: "2px" }} />
-                    <span style={{ fontSize: "11px", color: "#555" }}>{label}</span>
+                    <span style={{ fontSize: "13px", color: "#555" }}>{label}</span>
                   </div>
                 ))}
               </div>
@@ -548,7 +548,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                             b.show && b.val ? (
                               <div key={i} title={b.val} style={{ display: "flex", alignItems: "center", gap: "3px", whiteSpace: "nowrap", maxWidth: "100%", justifyContent: "center" }}>
                                 <span style={{ width: "7px", height: "7px", backgroundColor: b.color, borderRadius: "2px", flexShrink: 0 }} />
-                                <span style={{ fontSize: "10px", fontWeight: 600, color: b.valColor, lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis" }}>{b.val}</span>
+                                <span style={{ fontSize: "12px", fontWeight: 600, color: b.valColor, lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis" }}>{b.val}</span>
                               </div>
                             ) : null,
                           )}
@@ -571,16 +571,16 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                         {/* ③ 집행률 + 항목명 */}
                         <div style={{ borderTop: "1px solid #e8ecf0", width: "100%", marginTop: "2px", paddingTop: "4px", textAlign: "center" }}>
                           {pct != null && (
-                            <div style={{ fontSize: "11px", color: chartTheme.inflowBlue, fontWeight: 700 }}>{fmtPct(pct)}</div>
+                            <div style={{ fontSize: "13px", color: chartTheme.inflowBlue, fontWeight: 700 }}>{fmtPct(pct)}</div>
                           )}
-                          <div style={{ fontSize: "11px", color: "#1a2d4d", fontWeight: 700, marginTop: "1px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{g.item}</div>
+                          <div style={{ fontSize: "13px", color: "#1a2d4d", fontWeight: 700, marginTop: "1px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{g.item}</div>
                         </div>
                       </div>
                     );
                   });
                 })()}
               </div>
-              <div style={{ textAlign: "right", fontSize: "10px", color: "#333", fontWeight: 600, marginTop: "4px" }}>
+              <div style={{ textAlign: "right", fontSize: "12px", color: "#333", fontWeight: 600, marginTop: "4px" }}>
                 Direct Cost 집행 : {fmtMoney(actualTotal)} / {fmtMoney(budgetTotal)} ({fmtPct(directCostPct)})
               </div>
             </>

@@ -117,7 +117,7 @@ export function ServiceCashflowTab({
   const hasData = chartData.some((d) => d.cashIn !== 0 || d.cashOut !== 0 || d.equivalent !== 0);
 
   const entryGuide = (
-    <div style={{ fontSize: "12px", color: "#8a97a8", marginTop: "8px" }}>
+    <div style={{ fontSize: "14px", color: "#8a97a8", marginTop: "8px" }}>
       관리자 모드로 로그인하면 "데이터 입력" 탭의 "월별 자금" 표에서 자금 데이터를 입력할 수 있습니다.
     </div>
   );
@@ -125,13 +125,13 @@ export function ServiceCashflowTab({
   let body: React.ReactNode;
   if (pdLoading || (cfRef != null && query.isLoading)) {
     body = (
-      <div style={{ padding: "60px 20px", textAlign: "center", fontSize: "13px", color: "#5a6a7e" }}>
+      <div style={{ padding: "60px 20px", textAlign: "center", fontSize: "15px", color: "#5a6a7e" }}>
         자금 데이터를 불러오는 중입니다…
       </div>
     );
   } else if (cfRef == null && !hasPdData) {
     body = (
-      <div style={{ padding: "60px 20px", textAlign: "center", fontSize: "13px", color: "#5a6a7e" }}>
+      <div style={{ padding: "60px 20px", textAlign: "center", fontSize: "15px", color: "#5a6a7e" }}>
         아직 입력된 자금 데이터가 없습니다.
         {entryGuide}
       </div>
@@ -139,7 +139,7 @@ export function ServiceCashflowTab({
   } else if (!useCf && !hasPdData && query.isError) {
     const status = (query.error as { status?: number } | null)?.status;
     body = (
-      <div style={{ padding: "60px 20px", textAlign: "center", fontSize: "13px", color: status === 404 ? "#5a6a7e" : "#c0392b" }}>
+      <div style={{ padding: "60px 20px", textAlign: "center", fontSize: "15px", color: status === 404 ? "#5a6a7e" : "#c0392b" }}>
         {status === 404 ? (
           <>
             해당 프로젝트의 자금수지 데이터가 없습니다.
@@ -152,7 +152,7 @@ export function ServiceCashflowTab({
     );
   } else if (!hasData) {
     body = (
-      <div style={{ padding: "60px 20px", textAlign: "center", fontSize: "13px", color: "#5a6a7e" }}>
+      <div style={{ padding: "60px 20px", textAlign: "center", fontSize: "15px", color: "#5a6a7e" }}>
         선택한 기간에 자금 데이터가 없습니다.
         {entryGuide}
       </div>
@@ -187,7 +187,7 @@ export function ServiceCashflowTab({
               ticks={ticks}
               tickFormatter={(v: number) => v.toLocaleString()}
             />
-            <Legend wrapperStyle={{ fontSize: "12px", fontWeight: 600 }} iconSize={14} />
+            <Legend wrapperStyle={{ fontSize: "14px", fontWeight: 600 }} iconSize={14} />
             <ReferenceLine y={0} stroke={chartTheme.sgaOrange} strokeDasharray="3 3" />
             <Bar
               dataKey="cashIn"
@@ -201,7 +201,7 @@ export function ServiceCashflowTab({
               <LabelList
                 dataKey="cashIn"
                 position="center"
-                style={{ fontSize: "11px", fill: "#fff", fontWeight: 700 }}
+                style={{ fontSize: "13px", fill: "#fff", fontWeight: 700 }}
                 formatter={(v: number) => (v !== 0 ? v.toLocaleString(undefined, { maximumFractionDigits: 0 }) : "")}
               />
             </Bar>
@@ -217,7 +217,7 @@ export function ServiceCashflowTab({
               <LabelList
                 dataKey="cashOut"
                 position="center"
-                style={{ fontSize: "11px", fill: "#fff", fontWeight: 700 }}
+                style={{ fontSize: "13px", fill: "#fff", fontWeight: 700 }}
                 formatter={(v: number) => (v !== 0 ? v.toLocaleString(undefined, { maximumFractionDigits: 0 }) : "")}
               />
             </Bar>
@@ -242,8 +242,8 @@ export function ServiceCashflowTab({
       {/* Cashflow */}
       <div style={cardStyle}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span style={{ fontSize: "13px", fontWeight: 700, color: chartTheme.titleNavy }}>자금수지</span>
-          <span style={{ fontSize: "11px", color: "#5a6a7e" }}>
+          <span style={{ fontSize: "15px", fontWeight: 700, color: chartTheme.titleNavy }}>자금수지</span>
+          <span style={{ fontSize: "13px", color: "#5a6a7e" }}>
             {useCf && query.data
               ? `단위: ${cfConvertible ? unitLabel : query.data.unit}`
               : hasPdData

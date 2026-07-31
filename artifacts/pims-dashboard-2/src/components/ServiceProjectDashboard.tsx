@@ -23,7 +23,7 @@ const cardStyle: React.CSSProperties = {
 };
 
 const sectionTitle: React.CSSProperties = {
-  fontSize: "11px",
+  fontSize: "13px",
   fontWeight: 600,
   color: "#4472c4",
   marginBottom: "6px",
@@ -46,7 +46,7 @@ const MONTHS = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11"
 const selectStyle: React.CSSProperties = {
   border: "none",
   outline: "none",
-  fontSize: "12px",
+  fontSize: "14px",
   color: "#333",
   backgroundColor: "transparent",
   cursor: "pointer",
@@ -82,23 +82,23 @@ function YearMonthSelect({
         <select value={year} onChange={(e) => onYear(Number(e.target.value))} style={selectStyle}>
           {YEARS.map((y) => <option key={y} value={y}>{y}</option>)}
         </select>
-        <span style={{ position: "absolute", right: 0, fontSize: "9px", color: "#888", pointerEvents: "none" }}>▼</span>
+        <span style={{ position: "absolute", right: 0, fontSize: "11px", color: "#888", pointerEvents: "none" }}>▼</span>
       </div>
-      <span style={{ fontSize: "12px", color: "#aab2bc", margin: "0 1px" }}>년</span>
+      <span style={{ fontSize: "14px", color: "#aab2bc", margin: "0 1px" }}>년</span>
       <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
         <select value={month} onChange={(e) => onMonth(e.target.value)} style={selectStyle}>
           {MONTHS.map((m) => <option key={m} value={m}>{m}</option>)}
         </select>
-        <span style={{ position: "absolute", right: 0, fontSize: "9px", color: "#888", pointerEvents: "none" }}>▼</span>
+        <span style={{ position: "absolute", right: 0, fontSize: "11px", color: "#888", pointerEvents: "none" }}>▼</span>
       </div>
-      <span style={{ fontSize: "12px", color: "#aab2bc", margin: "0 1px" }}>월</span>
+      <span style={{ fontSize: "14px", color: "#aab2bc", margin: "0 1px" }}>월</span>
     </div>
   );
 }
 
 function EmptyHint({ label }: { label: string }) {
   return (
-    <div style={{ padding: "40px 10px", textAlign: "center", fontSize: "11px", color: "#8a97a8" }}>
+    <div style={{ padding: "40px 10px", textAlign: "center", fontSize: "13px", color: "#8a97a8" }}>
       {label} 데이터가 없습니다. "데이터 입력" 탭에서 입력해 주세요.
     </div>
   );
@@ -229,7 +229,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span style={{ fontSize: "12px", color: "#333", fontWeight: 600 }}>환율 :</span>
+          <span style={{ fontSize: "14px", color: "#333", fontWeight: 600 }}>환율 :</span>
           <div style={{ display: "flex", border: "1px solid #ccd4dd", borderRadius: "6px", overflow: "hidden" }}>
             {["USD", "KRW", "VND"].map((c) => (
               <button
@@ -237,7 +237,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                 onClick={() => setCurrency(c)}
                 style={{
                   padding: "5px 12px",
-                  fontSize: "12px",
+                  fontSize: "14px",
                   fontWeight: 600,
                   border: "none",
                   cursor: "pointer",
@@ -253,7 +253,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span style={{ fontSize: "12px", color: "#333", fontWeight: 600 }}>단위 :</span>
+          <span style={{ fontSize: "14px", color: "#333", fontWeight: 600 }}>단위 :</span>
           <div
             onClick={() => setUnitOn(!unitOn)}
             style={{
@@ -279,7 +279,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
               }}
             />
           </div>
-          <span style={{ fontSize: "12px", color: "#333", fontWeight: 600 }}>1K {currency}</span>
+          <span style={{ fontSize: "14px", color: "#333", fontWeight: 600 }}>1K {currency}</span>
         </div>
 
         <button
@@ -293,7 +293,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
             border: "none",
             borderRadius: "6px",
             padding: "7px 14px",
-            fontSize: "12px",
+            fontSize: "14px",
             fontWeight: 500,
             cursor: "pointer",
           }}
@@ -306,7 +306,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
       {/* Project info bar — always visible */}
       <div style={{ ...cardStyle, margin: "8px 10px 0", display: "flex", gap: "10px", alignItems: "stretch" }}>
         <div style={{ flex: 1 }}>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 0", fontSize: "12px", color: "#1a2d4d" }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 0", fontSize: "14px", color: "#1a2d4d" }}>
             <span style={{ fontWeight: 700, paddingRight: "14px" }}>Project : {projectName}</span>
             {ov?.asOfMonth && (
               <span style={{ borderLeft: "1px solid #d5dce6", padding: "0 14px" }}>
@@ -348,7 +348,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
               onClick={() => setActiveTab(tab)}
               style={{
                 padding: "7px 20px",
-                fontSize: "12px",
+                fontSize: "14px",
                 fontWeight: active ? 700 : 500,
                 color: active ? "#1a3a6b" : "#5a6a7e",
                 backgroundColor: active ? "#fff" : "transparent",
@@ -399,7 +399,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
               {excelMsg && (
                 <span
                   style={{
-                    fontSize: "11px",
+                    fontSize: "13px",
                     fontWeight: 600,
                     color: excelMsg.includes("완료") ? "#3e7d4c" : "#c0392b",
                     maxWidth: "360px",
@@ -421,7 +421,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                   alignItems: "center",
                   gap: "5px",
                   padding: "5px 12px",
-                  fontSize: "11px",
+                  fontSize: "13px",
                   fontWeight: 600,
                   color: "#1a3a6b",
                   backgroundColor: "#fff",
@@ -442,7 +442,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                   alignItems: "center",
                   gap: "5px",
                   padding: "5px 12px",
-                  fontSize: "11px",
+                  fontSize: "13px",
                   fontWeight: 600,
                   color: "#fff",
                   backgroundColor: "#2e4568",
@@ -475,13 +475,13 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
               <div style={cardStyle}>
                 <span style={sectionTitle}>매출</span>
                 {isLoading ? (
-                  <div style={{ padding: "40px 10px", textAlign: "center", fontSize: "11px", color: "#8a97a8" }}>불러오는 중…</div>
+                  <div style={{ padding: "40px 10px", textAlign: "center", fontSize: "13px", color: "#8a97a8" }}>불러오는 중…</div>
                 ) : revenueTarget == null && revenueTotal == null ? (
                   <EmptyHint label="매출 목표/실적" />
                 ) : (
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-evenly", padding: "14px 0 6px" }}>
                     <div style={{ textAlign: "center" }}>
-                      <div style={{ fontSize: "10px", color: "#555", marginBottom: "4px" }}>
+                      <div style={{ fontSize: "12px", color: "#555", marginBottom: "4px" }}>
                         {formatMoney(revenueTotal, currency, unitOn)} / {formatMoney(revenueTarget, currency, unitOn)}
                       </div>
                       <Donut
@@ -492,12 +492,12 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                         label={fmtPct(achievementPct)}
                         labelSize={20}
                       />
-                      <div style={{ fontSize: "10px", color: "#1a2d4d", fontWeight: 700, marginTop: "5px", textDecoration: "underline" }}>
+                      <div style={{ fontSize: "12px", color: "#1a2d4d", fontWeight: 700, marginTop: "5px", textDecoration: "underline" }}>
                         연간 목표 달성률
                       </div>
                     </div>
                     <div style={{ textAlign: "center" }}>
-                      <div style={{ fontSize: "10px", color: "#555", marginBottom: "4px" }}>
+                      <div style={{ fontSize: "12px", color: "#555", marginBottom: "4px" }}>
                         {formatMoney(revenueTotal, currency, unitOn)} / {formatMoney(contractAmount, currency, unitOn)}
                       </div>
                       <Donut
@@ -508,7 +508,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                         label={fmtPct(ratioPct(revenueTotal, contractAmount))}
                         labelSize={20}
                       />
-                      <div style={{ fontSize: "10px", color: "#1a2d4d", fontWeight: 700, marginTop: "5px", textDecoration: "underline" }}>
+                      <div style={{ fontSize: "12px", color: "#1a2d4d", fontWeight: 700, marginTop: "5px", textDecoration: "underline" }}>
                         누계 매출 달성률
                       </div>
                     </div>
@@ -522,12 +522,12 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                   <span style={sectionTitle}>
                     예산 <u>집행 현황</u>
                   </span>
-                  <span style={{ fontSize: "10px", color: "#333", fontWeight: 600 }}>
+                  <span style={{ fontSize: "12px", color: "#333", fontWeight: 600 }}>
                     총 집행률 : {fmtPct(ratioPct(totalActual, totalBudget))}
                   </span>
                 </div>
                 {isLoading ? (
-                  <div style={{ padding: "40px 10px", textAlign: "center", fontSize: "11px", color: "#8a97a8" }}>불러오는 중…</div>
+                  <div style={{ padding: "40px 10px", textAlign: "center", fontSize: "13px", color: "#8a97a8" }}>불러오는 중…</div>
                 ) : budgetRows.length === 0 ? (
                   <EmptyHint label="예산 집행" />
                 ) : (
@@ -549,7 +549,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                       const pct = ratioPct(g.actual, g.budget);
                       return (
                         <div key={`${g.item}-${gi}`} style={{ textAlign: "center" }}>
-                          <div style={{ fontSize: "9px", color: "#555", marginBottom: "2px" }}>{formatMoney(g.budget, currency, unitOn)}</div>
+                          <div style={{ fontSize: "11px", color: "#555", marginBottom: "2px" }}>{formatMoney(g.budget, currency, unitOn)}</div>
                           <div style={{ height: `${H}px`, display: "flex", alignItems: "flex-end", gap: "3px", justifyContent: "center" }}>
                             <div style={{ width: "24px", height: `${bh}px`, backgroundColor: "#d9dee5" }} />
                             {sh > 0 && (
@@ -560,7 +560,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                                     top: "50%",
                                     left: "50%",
                                     transform: "translate(-50%, -50%)",
-                                    fontSize: "8px",
+                                    fontSize: "10px",
                                     color: "#fff",
                                     fontWeight: 700,
                                   }}
@@ -571,9 +571,9 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                             )}
                           </div>
                           {pct != null && (
-                            <div style={{ fontSize: "9px", color: "#4a90d9", fontWeight: 600, marginTop: "2px" }}>{fmtPct(pct)}</div>
+                            <div style={{ fontSize: "11px", color: "#4a90d9", fontWeight: 600, marginTop: "2px" }}>{fmtPct(pct)}</div>
                           )}
-                          <div style={{ fontSize: "9px", color: "#333", fontWeight: 600, marginTop: "2px" }}>{g.item}</div>
+                          <div style={{ fontSize: "11px", color: "#333", fontWeight: 600, marginTop: "2px" }}>{g.item}</div>
                         </div>
                       );
                     })}
@@ -585,7 +585,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
               <div style={cardStyle}>
                 <span style={sectionTitle}>자금</span>
                 {isLoading ? (
-                  <div style={{ padding: "40px 10px", textAlign: "center", fontSize: "11px", color: "#8a97a8" }}>불러오는 중…</div>
+                  <div style={{ padding: "40px 10px", textAlign: "center", fontSize: "13px", color: "#8a97a8" }}>불러오는 중…</div>
                 ) : revenueTotal == null && cashConfirmed == null && cashCollection == null ? (
                   <EmptyHint label="자금 (매출/확정/수금)" />
                 ) : (
@@ -661,7 +661,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
               ...cardStyle,
               padding: "60px 20px",
               textAlign: "center",
-              fontSize: "13px",
+              fontSize: "15px",
               color: "#5a6a7e",
             }}
           >

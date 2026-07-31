@@ -43,7 +43,7 @@ function HBar({
         style={{
           width: sub ? "160px" : "130px",
           paddingLeft: sub ? "60px" : "0",
-          fontSize: "11px",
+          fontSize: "13px",
           color: "#333",
           fontWeight: 600,
           flexShrink: 0,
@@ -66,7 +66,7 @@ function HBar({
               }}
             >
               {execLabel && (
-                <span style={{ fontSize: "10px", color: "#fff", fontWeight: 700 }}>{execLabel}</span>
+                <span style={{ fontSize: "12px", color: "#fff", fontWeight: 700 }}>{execLabel}</span>
               )}
               {pctLabel && (
                 <span
@@ -74,7 +74,7 @@ function HBar({
                     position: "absolute",
                     left: "100%",
                     marginLeft: "8px",
-                    fontSize: "10px",
+                    fontSize: "12px",
                     color: tone === "warn" ? chartTheme.sgaOrange : chartTheme.planBlue,
                     fontWeight: 600,
                     whiteSpace: "nowrap",
@@ -86,7 +86,7 @@ function HBar({
             </div>
           )}
         </div>
-        {totalLabel && <span style={{ fontSize: "10px", color: "#333", whiteSpace: "nowrap" }}>{totalLabel}</span>}
+        {totalLabel && <span style={{ fontSize: "12px", color: "#333", whiteSpace: "nowrap" }}>{totalLabel}</span>}
       </div>
     </div>
   );
@@ -108,15 +108,15 @@ export function ServiceBudgetTab({ projectName }: { projectName: string }) {
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
       {/* Budget Execution Status */}
       <div style={{ ...cardStyle, padding: "14px 18px 24px" }}>
-        <span style={{ fontSize: "11px", fontWeight: 600, color: "#4472c4" }}>
+        <span style={{ fontSize: "13px", fontWeight: 600, color: "#4472c4" }}>
           예산 <u>집행 현황</u>
-          <span style={{ marginLeft: "8px", fontSize: "10px", fontWeight: 500, color: "#8a97a8" }}>단위: {unitLabel}</span>
+          <span style={{ marginLeft: "8px", fontSize: "12px", fontWeight: 500, color: "#8a97a8" }}>단위: {unitLabel}</span>
         </span>
 
         {isLoading ? (
-          <div style={{ padding: "50px 20px", textAlign: "center", fontSize: "12px", color: "#8a97a8" }}>불러오는 중…</div>
+          <div style={{ padding: "50px 20px", textAlign: "center", fontSize: "14px", color: "#8a97a8" }}>불러오는 중…</div>
         ) : rows.length === 0 ? (
-          <div style={{ padding: "50px 20px", textAlign: "center", fontSize: "12px", color: "#8a97a8" }}>
+          <div style={{ padding: "50px 20px", textAlign: "center", fontSize: "14px", color: "#8a97a8" }}>
             예산 집행 데이터가 없습니다. "데이터 입력" 탭에서 예산 집행 현황을 입력해 주세요.
           </div>
         ) : (

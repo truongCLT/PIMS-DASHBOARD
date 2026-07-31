@@ -31,7 +31,7 @@ const cardStyle: React.CSSProperties = {
 };
 
 const sectionTitle: React.CSSProperties = {
-  fontSize: "11px",
+  fontSize: "13px",
   fontWeight: 600,
   color: "#4472c4",
 };
@@ -39,7 +39,7 @@ const sectionTitle: React.CSSProperties = {
 const emptyStyle: React.CSSProperties = {
   padding: "24px 0",
   textAlign: "center",
-  fontSize: "11px",
+  fontSize: "13px",
   color: "#8a97a8",
 };
 
@@ -163,7 +163,7 @@ function MilestoneChart({ milestones }: { milestones: ProjectDetail["milestones"
     <div style={cardStyle}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <span style={{ ...sectionTitle }}>마일스톤</span>
-        <div style={{ display: "flex", flexDirection: "column", gap: "4px", fontSize: "9px", color: "#333" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "4px", fontSize: "11px", color: "#333" }}>
           <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
             <span style={{ width: "26px", height: "5px", backgroundColor: chartTheme.outflowRed, display: "inline-block" }} />
             <u>계획</u>
@@ -210,7 +210,7 @@ function MilestoneChart({ milestones }: { milestones: ProjectDetail["milestones"
                   style={{
                     width: `${AXIS_LEFT}px`,
                     minWidth: `${AXIS_LEFT}px`,
-                    fontSize: "9px",
+                    fontSize: "11px",
                     fontWeight: 600,
                     color: "#333",
                     overflow: "hidden",
@@ -244,7 +244,7 @@ function MilestoneChart({ milestones }: { milestones: ProjectDetail["milestones"
                         position: "absolute",
                         top: "13px",
                         left: plan ? `${plan.left}%` : "0%",
-                        fontSize: "7px",
+                        fontSize: "9px",
                         color: chartTheme.outflowRed,
                         whiteSpace: "nowrap",
                         lineHeight: 1,
@@ -274,7 +274,7 @@ function MilestoneChart({ milestones }: { milestones: ProjectDetail["milestones"
                         position: "absolute",
                         top: "29px",
                         left: actual ? `${actual.left}%` : "0%",
-                        fontSize: "7px",
+                        fontSize: "9px",
                         color: chartTheme.planBlue,
                         whiteSpace: "nowrap",
                         lineHeight: 1,
@@ -284,7 +284,7 @@ function MilestoneChart({ milestones }: { milestones: ProjectDetail["milestones"
                     </div>
                   )}
                   {!plan && !actual && (
-                    <span style={{ position: "absolute", top: "8px", fontSize: "9px", color: "#aab2bc" }}>-</span>
+                    <span style={{ position: "absolute", top: "8px", fontSize: "11px", color: "#aab2bc" }}>-</span>
                   )}
                 </div>
               </div>
@@ -299,7 +299,7 @@ function MilestoneChart({ milestones }: { milestones: ProjectDetail["milestones"
                     key={mo}
                     style={{
                       flex: 1,
-                      fontSize: "8px",
+                      fontSize: "10px",
                       color: "#777",
                       textAlign: "left",
                       visibility: total > 18 && i % 2 === 1 ? "hidden" : "visible",
@@ -374,7 +374,7 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
             <span style={{ ...sectionTitle, color: chartTheme.profitGreen }}>공정</span>
             <span
               style={{
-                fontSize: "9px",
+                fontSize: "11px",
                 backgroundColor: diff != null && diff < 0 ? "#fdecea" : "#dff2e3",
                 color: diff != null && diff < 0 ? chartTheme.outflowRed : chartTheme.profitGreen,
                 borderRadius: "3px",
@@ -386,7 +386,7 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
               (B-A) {diff != null ? `${diff >= 0 ? "+" : ""}${diff.toFixed(1)}%` : "-"}
             </span>
           </div>
-          <div style={{ textAlign: "center", fontSize: "10px", color: "#333", marginTop: "4px" }}>
+          <div style={{ textAlign: "center", fontSize: "12px", color: "#333", marginTop: "4px" }}>
             계획 공정 (A)
           </div>
           <div style={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "center", margin: "4px 0 2px", position: "relative", minHeight: 0 }}>
@@ -399,17 +399,17 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
               stroke={26}
               labelSize={34}
             />
-            <span style={{ position: "absolute", right: "6px", bottom: "10px", fontSize: "10px", color: chartTheme.planBlue, fontWeight: 700 }}>
+            <span style={{ position: "absolute", right: "6px", bottom: "10px", fontSize: "12px", color: chartTheme.planBlue, fontWeight: 700 }}>
               {fmtPct(planCum)}
             </span>
           </div>
-          <div style={{ textAlign: "center", fontSize: "10px", color: "#1a2d4d", fontWeight: 600 }}>
+          <div style={{ textAlign: "center", fontSize: "12px", color: "#1a2d4d", fontWeight: 600 }}>
             실적 공정 (B)
           </div>
           <div
             style={{
               textAlign: "center",
-              fontSize: "11px",
+              fontSize: "13px",
               color: "#333",
               fontWeight: 700,
               marginTop: "8px",
@@ -452,8 +452,8 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
                   axisLine={false}
                   tickFormatter={(v) => `${v}%`}
                 />
-                <Tooltip contentStyle={{ fontSize: "11px" }} formatter={(v) => (v == null ? "-" : `${Number(v).toLocaleString()}%`)} />
-                <Legend wrapperStyle={{ fontSize: "12px" }} iconSize={12} />
+                <Tooltip contentStyle={{ fontSize: "13px" }} formatter={(v) => (v == null ? "-" : `${Number(v).toLocaleString()}%`)} />
+                <Legend wrapperStyle={{ fontSize: "14px" }} iconSize={12} />
                 <Bar yAxisId="left" dataKey="plan" name="월 계획" fill={chartTheme.planBlue} barSize={12} isAnimationActive={false} />
                 <Bar yAxisId="left" dataKey="actual" name="월 실적" fill={chartTheme.lightBlue} barSize={12} isAnimationActive={false} />
                 <Line yAxisId="right" dataKey="planAccum" name="누계 계획" stroke={chartTheme.profitGreen} strokeWidth={2} dot={{ r: 2 }} isAnimationActive={false} connectNulls />

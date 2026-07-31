@@ -29,7 +29,7 @@ const cardStyle: React.CSSProperties = {
 };
 
 const sectionTitle: React.CSSProperties = {
-  fontSize: "11px",
+  fontSize: "13px",
   fontWeight: 600,
   color: "#4472c4",
 };
@@ -47,7 +47,7 @@ function Notice({ children, error }: { children: React.ReactNode; error?: boolea
       style={{
         padding: "60px 20px",
         textAlign: "center",
-        fontSize: "13px",
+        fontSize: "15px",
         color: error ? "#c0392b" : "#5a6a7e",
       }}
     >
@@ -270,16 +270,16 @@ export function SaleProfitTab({
               <YAxis hide domain={[0, Math.max(maxRevenue * 2.4, 1)]} />
               <YAxis yAxisId="cum" hide domain={[0, Math.max(maxCum * 1.1, 1)]} />
               <Tooltip
-                contentStyle={{ fontSize: "11px" }}
+                contentStyle={{ fontSize: "13px" }}
                 formatter={(v: number, name: string) => [`${Math.round(v).toLocaleString()} ${unitLabel}`, name]}
               />
-              <Legend wrapperStyle={{ fontSize: "10px" }} />
+              <Legend wrapperStyle={{ fontSize: "12px" }} />
               {pdSalesHasAny && (
                 <Bar dataKey="plan" name="월 계획" fill="#c9d2dd" barSize={14} isAnimationActive={false}>
                   <LabelList
                     dataKey="plan"
                     position="top"
-                    style={{ fontSize: "9px", fill: chartTheme.axisText }}
+                    style={{ fontSize: "11px", fill: chartTheme.axisText }}
                     formatter={(v: number) => (v !== 0 ? Math.round(v).toLocaleString() : "")}
                   />
                 </Bar>
@@ -294,7 +294,7 @@ export function SaleProfitTab({
                 <LabelList
                   dataKey="revenue"
                   position="top"
-                  style={{ fontSize: "9px", fill: chartTheme.axisText }}
+                  style={{ fontSize: "11px", fill: chartTheme.axisText }}
                   formatter={(v: number) => (v !== 0 ? Math.round(v).toLocaleString() : "")}
                 />
               </Bar>
@@ -312,7 +312,7 @@ export function SaleProfitTab({
                   dataKey="cumulative"
                   position="top"
                   offset={8}
-                  style={{ fontSize: "9px", fill: chartTheme.outflowRed }}
+                  style={{ fontSize: "11px", fill: chartTheme.outflowRed }}
                   formatter={(v: number) => Math.round(v).toLocaleString()}
                 />
               </Line>
@@ -348,15 +348,15 @@ export function SaleProfitTab({
                   domain={[0, Math.max(...cogsChartData.map((d) => Math.max(d.acctCum, d.wipCum)), 1) * 1.1]}
                 />
                 <Tooltip
-                  contentStyle={{ fontSize: "11px" }}
+                  contentStyle={{ fontSize: "13px" }}
                   formatter={(v: number, name: string) => [`${Math.round(v).toLocaleString()} ${unitLabel}`, name]}
                 />
-                <Legend wrapperStyle={{ fontSize: "10px" }} />
+                <Legend wrapperStyle={{ fontSize: "12px" }} />
                 <Bar dataKey="acctCogs" name="회계 매출원가" fill={chartTheme.planBlue} barSize={14} isAnimationActive={false}>
                   <LabelList
                     dataKey="acctCogs"
                     position="top"
-                    style={{ fontSize: "9px", fill: chartTheme.axisText }}
+                    style={{ fontSize: "11px", fill: chartTheme.axisText }}
                     formatter={(v: number) => (v !== 0 ? Math.round(v).toLocaleString() : "")}
                   />
                 </Bar>
@@ -364,7 +364,7 @@ export function SaleProfitTab({
                   <LabelList
                     dataKey="wipCogs"
                     position="top"
-                    style={{ fontSize: "9px", fill: chartTheme.axisText }}
+                    style={{ fontSize: "11px", fill: chartTheme.axisText }}
                     formatter={(v: number) => (v !== 0 ? Math.round(v).toLocaleString() : "")}
                   />
                 </Bar>
@@ -411,7 +411,7 @@ export function SaleProfitTab({
                 />
                 <YAxis hide domain={[0, Math.max(ratioMax * 1.3, 10)]} />
                 <Tooltip
-                  contentStyle={{ fontSize: "11px" }}
+                  contentStyle={{ fontSize: "13px" }}
                   formatter={(v) => `${Number(v).toLocaleString("en-US", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`}
                 />
                 <Line

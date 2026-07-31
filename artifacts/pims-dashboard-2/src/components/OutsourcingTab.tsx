@@ -12,7 +12,7 @@ const cardStyle: React.CSSProperties = {
 };
 
 const sectionTitle: React.CSSProperties = {
-  fontSize: "11px",
+  fontSize: "13px",
   fontWeight: 600,
   color: "#4472c4",
 };
@@ -20,7 +20,7 @@ const sectionTitle: React.CSSProperties = {
 const th: React.CSSProperties = {
   backgroundColor: "#eef2f7",
   color: "#1a2d4d",
-  fontSize: "11px",
+  fontSize: "13px",
   fontWeight: 700,
   border: "1px solid #c8d2de",
   padding: "8px 6px",
@@ -32,7 +32,7 @@ const th: React.CSSProperties = {
 
 const td: React.CSSProperties = {
   border: "1px solid #d5dce6",
-  fontSize: "11px",
+  fontSize: "13px",
   color: "#333",
   padding: "8px 6px",
   verticalAlign: "middle",

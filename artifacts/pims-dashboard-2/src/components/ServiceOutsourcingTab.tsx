@@ -5,7 +5,7 @@ import { useMoney } from "../lib/displayUnit";
 const thStyle: React.CSSProperties = {
   backgroundColor: "#eef2f7",
   color: "#1a2d4d",
-  fontSize: "11px",
+  fontSize: "13px",
   fontWeight: 700,
   padding: "10px 8px",
   border: "1px solid #c8d2de",
@@ -15,7 +15,7 @@ const thStyle: React.CSSProperties = {
 };
 
 const tdStyle: React.CSSProperties = {
-  fontSize: "11px",
+  fontSize: "13px",
   color: "#222",
   padding: "10px 8px",
   border: "1px solid #d5dce6",
