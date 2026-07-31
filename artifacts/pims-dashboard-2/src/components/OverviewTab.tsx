@@ -396,7 +396,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
           {bidding == null && execution == null && completion == null ? (
             <div style={emptyNote}>원가율 데이터가 없습니다. 데이터 입력 탭에서 입력해 주세요.</div>
           ) : (
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "8px" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "16px", marginTop: "8px" }}>
 
               {/* 좌측: 입찰 + 실행예산 소형 스택 */}
               <div style={{ display: "flex", flexDirection: "column", gap: "0", flex: "0 0 auto" }}>
@@ -427,7 +427,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
               </div>
 
               {/* 우측: 준공추정 대형 도넛 */}
-              <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+              <div style={{ flex: "0 0 auto", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
                 <div style={{ fontSize: "10px", color: "#555", marginBottom: "2px", whiteSpace: "nowrap" }}>
                   {fmtMoney(completion?.costAmount)} / {fmtMoney(completion?.contractAmount)}
                 </div>
