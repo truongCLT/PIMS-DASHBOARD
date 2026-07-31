@@ -439,26 +439,26 @@ export function OverviewTab({ projectName }: { projectName: string }) {
           ) : (
             <>
               {/* 범례 */}
-              <div style={{ display: "flex", gap: "10px", marginBottom: "6px", justifyContent: "flex-end" }}>
+              <div style={{ display: "flex", gap: "12px", marginBottom: "8px", justifyContent: "flex-end", flexWrap: "wrap" }}>
                 {[
-                  { label: "예산", color: chartTheme.lightGray },
-                  { label: "계획", color: chartTheme.outflowRed },
-                  { label: "실적", color: chartTheme.inflowBlue },
+                  { label: "총 예산", color: chartTheme.lightGray },
+                  { label: budgetMonth == null ? "집행 계획(누계)" : `집행 계획(${budgetMonth}월)`, color: chartTheme.outflowRed },
+                  { label: budgetMonth == null ? "집행 실적(누계)" : `집행 실적(${budgetMonth}월)`, color: chartTheme.inflowBlue },
                 ].map(({ label, color }) => (
-                  <div key={label} style={{ display: "flex", alignItems: "center", gap: "3px" }}>
-                    <div style={{ width: "10px", height: "10px", backgroundColor: color, borderRadius: "2px" }} />
-                    <span style={{ fontSize: "9px", color: "#555" }}>{label}</span>
+                  <div key={label} style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                    <div style={{ width: "11px", height: "11px", backgroundColor: color, borderRadius: "2px" }} />
+                    <span style={{ fontSize: "11px", color: "#555" }}>{label}</span>
                   </div>
                 ))}
               </div>
               {/* 항목별 3-bar 그룹 */}
-              <div style={{ display: "flex", justifyContent: "space-around", gap: "4px", marginTop: "4px" }}>
+              <div style={{ display: "flex", justifyContent: "space-around", gap: "8px", marginTop: "4px" }}>
                 {(() => {
-                  const H = 100;
+                  const H = 90;
                   const maxVal = Math.max(...budgetRows.map((r) => r.budget ?? 0), 1);
                   const barH = (v: number | null) =>
                     v != null && v > 0 ? Math.max((Math.log10(v + 1) / Math.log10(maxVal + 1)) * H, 6) : 0;
-                  const BAR_W = 20;
+                  const BAR_W = 22;
                   return budgetRows.map((g) => {
                     const bud = g.budget ?? 0;
                     const pln = g.plan ?? 0;
@@ -468,19 +468,22 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                     const ph = barH(pln);
                     const ah = barH(act);
                     const bars = [
-                      { h: bh, color: chartTheme.lightGray,  show: true,              val: fmtMoney(bud || null), valColor: "#888" },
+                      { h: bh, color: chartTheme.lightGray,  show: true,              val: fmtMoney(bud || null), valColor: "#666" },
                       { h: ph, color: chartTheme.outflowRed, show: g.plan   != null,  val: g.plan   != null ? fmtMoney(pln || null) : null, valColor: chartTheme.outflowRed },
                       { h: ah, color: chartTheme.inflowBlue, show: g.actual != null,  val: g.actual != null ? fmtMoney(act || null) : null, valColor: chartTheme.inflowBlue },
                     ];
                     return (
                       <div key={g.item} style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center" }}>
-                        {/* ① 금액 레이블 행 — 막대 위 고정 영역, 항목 전체에서 같은 높이 */}
-                        <div style={{ display: "flex", gap: "3px", marginBottom: "3px" }}>
-                          {bars.map((b, i) => (
-                            <div key={i} style={{ width: `${BAR_W}px`, textAlign: "center", fontSize: "8px", color: b.valColor, lineHeight: 1.3, wordBreak: "break-all", hyphens: "auto" }}>
-                              {b.show && b.val ? b.val : ""}
-                            </div>
-                          ))}
+                        {/* ① 금액 레이블 — 항목별 세로 스택, 한 줄 고정(줄바꿈 없음), 단위가 바뀌어도 3행 높이 고정 */}
+                        <div style={{ display: "flex", flexDirection: "column", gap: "1px", marginBottom: "4px", alignItems: "center", minHeight: "42px", justifyContent: "flex-end", width: "100%" }}>
+                          {bars.map((b, i) =>
+                            b.show && b.val ? (
+                              <div key={i} title={b.val} style={{ display: "flex", alignItems: "center", gap: "3px", whiteSpace: "nowrap", maxWidth: "100%", justifyContent: "center" }}>
+                                <span style={{ width: "7px", height: "7px", backgroundColor: b.color, borderRadius: "2px", flexShrink: 0 }} />
+                                <span style={{ fontSize: "10px", fontWeight: 600, color: b.valColor, lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis" }}>{b.val}</span>
+                              </div>
+                            ) : null,
+                          )}
                         </div>
                         {/* ② 막대 영역 — 고정 높이, 막대는 아래 정렬 */}
                         <div style={{ display: "flex", alignItems: "flex-end", gap: "3px", height: `${H}px`, width: "100%" , justifyContent: "center" }}>
@@ -498,11 +501,11 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                           ))}
                         </div>
                         {/* ③ 집행률 + 항목명 */}
-                        <div style={{ borderTop: "1px solid #e8ecf0", width: "100%", marginTop: "2px", paddingTop: "3px", textAlign: "center" }}>
+                        <div style={{ borderTop: "1px solid #e8ecf0", width: "100%", marginTop: "2px", paddingTop: "4px", textAlign: "center" }}>
                           {pct != null && (
-                            <div style={{ fontSize: "9px", color: chartTheme.inflowBlue, fontWeight: 700 }}>{fmtPct(pct)}</div>
+                            <div style={{ fontSize: "11px", color: chartTheme.inflowBlue, fontWeight: 700 }}>{fmtPct(pct)}</div>
                           )}
-                          <div style={{ fontSize: "9px", color: "#1a2d4d", fontWeight: 700, marginTop: "1px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{g.item}</div>
+                          <div style={{ fontSize: "11px", color: "#1a2d4d", fontWeight: 700, marginTop: "1px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{g.item}</div>
                         </div>
                       </div>
                     );

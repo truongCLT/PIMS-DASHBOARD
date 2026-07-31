@@ -256,7 +256,7 @@ export function DashboardHeader({
 
         {/* Currency */}
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span style={{ fontSize: "12px", color: "#333", fontWeight: "600" }}>통화:</span>
+          <span style={{ fontSize: "12px", color: "#333", fontWeight: "600" }}>환율:</span>
           <select
             value={currency}
             onChange={(e) => setCurrency(e.target.value as CurrencyCode)}

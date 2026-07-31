@@ -56,7 +56,10 @@ export function formatMoney(
 
 /** 단위 라벨 (순수 함수) */
 export function moneyUnitLabel(currency: string, unitOn: boolean): string {
-  return unitOn ? `천 ${currency}` : currency;
+  if (!unitOn) return currency;
+  if (currency === "KRW") return "백만원";
+  if (currency === "VND") return "Bil. VND";
+  return `천 ${currency}`;
 }
 
 export function DisplayUnitProvider({

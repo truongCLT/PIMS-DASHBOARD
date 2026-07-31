@@ -225,16 +225,6 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
   return (
     <DisplayUnitProvider currency={currency} unitOn={unitOn}>
     <div style={{ flex: 1, overflowY: "auto", backgroundColor: "#e8edf3" }}>
-      {/* Banner */}
-      <div
-        style={{
-          background: "linear-gradient(90deg, #dfe9f5 0%, #c9dcf0 55%, #9fc0e0 100%)",
-          padding: "16px 20px 12px",
-        }}
-      >
-        <div style={{ fontSize: "22px", fontWeight: 800, color: "#1a3a6b" }}>Dashboard of {projectName}</div>
-      </div>
-
       {/* Filter row */}
       <div
         style={{
@@ -248,14 +238,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span style={{ fontSize: "12px", color: "#333", fontWeight: 600 }}>기간 :</span>
-          <YearMonthSelect year={fromYear} month={fromMonth} onYear={setFromYear} onMonth={setFromMonth} />
-          <span style={{ fontSize: "12px", color: "#aab2bc" }}>→</span>
-          <YearMonthSelect year={toYear} month={toMonth} onYear={setToYear} onMonth={setToMonth} />
-        </div>
-
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span style={{ fontSize: "12px", color: "#333", fontWeight: 600 }}>통화 :</span>
+          <span style={{ fontSize: "12px", color: "#333", fontWeight: 600 }}>환율 :</span>
           <div style={{ display: "flex", border: "1px solid #ccd4dd", borderRadius: "6px", overflow: "hidden" }}>
             {["USD", "KRW", "VND"].map((c) => (
               <button
