@@ -314,7 +314,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
             <div style={emptyNote}>{`${REPORT_YEAR}년 매출 데이터가 없습니다.`}</div>
           ) : (
             <>
-              <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-around", marginTop: "6px" }}>
+              <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-evenly", width: "100%", marginTop: "6px" }}>
                 {/* 당월 */}
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
                   {thisMonthPlan != null && thisMonthPlan > 0 && thisMonthRev != null ? (
