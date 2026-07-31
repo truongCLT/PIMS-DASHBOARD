@@ -18,8 +18,8 @@ export type FxRateMap = Record<CurrencyCode, number>;
 
 export const UNIT_OPTIONS: Record<CurrencyCode, [string, string]> = {
   USD: ["K USD", "USD"],
-  VND: ["1M VND", "1B VND"],
-  KRW: ["1M KRW", "1B KRW"],
+  VND: ["M VND", "Bil. VND"],
+  KRW: ["M KRW", "Bil. KRW"],
 };
 
 /* 단위 나누는 값 (원 단위 통화 금액 기준) */

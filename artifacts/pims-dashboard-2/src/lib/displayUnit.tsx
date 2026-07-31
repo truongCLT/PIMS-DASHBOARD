@@ -35,9 +35,21 @@ const defaultUnit: DisplayUnit = {
 
 const DisplayUnitContext = createContext<DisplayUnit>(defaultUnit);
 
-/** 천 USD 기준 값 → 표시 통화/단위 값 (순수 함수) */
+/** 천 USD 기준 값 → 표시 통화/단위 값 (순수 함수)
+ *
+ * unitOn=true 기준 단위:
+ *   USD → 천 USD  (× rate × 1)
+ *   KRW → 백만원  (× rate × 1)   [레이블만 변경, 배수 동일]
+ *   VND → Bil. VND (× rate × 1000 / 1e9 = × rate / 1e6)
+ *
+ * unitOn=false: 원 단위 (× rate × 1000)
+ */
 export function convertMoney(v: number, currency: string, unitOn: boolean): number {
   const rate = EXCHANGE_RATES[currency] ?? 1;
+  if (currency === "VND" && unitOn) {
+    // 1 K USD = rate * 1000 VND / 1,000,000,000 Bil.VND
+    return v * rate * 1000 / 1_000_000_000;
+  }
   return unitOn ? v * rate : v * rate * 1000;
 }
 
@@ -50,8 +62,9 @@ export function formatMoney(
 ): string {
   if (v == null || Number.isNaN(v)) return "-";
   const c = convertMoney(v, currency, unitOn);
-  const d = currency === "USD" ? digits : 0;
-  return c.toLocaleString("en-US", { maximumFractionDigits: d, minimumFractionDigits: 0 });
+  // Bil. VND는 값이 작아질 수 있으므로 최대 2자리 소수 허용
+  const maxD = currency === "VND" && unitOn ? 2 : currency === "USD" ? digits : 0;
+  return c.toLocaleString("en-US", { maximumFractionDigits: maxD, minimumFractionDigits: 0 });
 }
 
 /** 단위 라벨 (순수 함수) */
