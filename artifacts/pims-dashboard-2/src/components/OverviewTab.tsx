@@ -470,11 +470,9 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                   label={fmtPct(estPct(completion))}
                   labelSize={26}
                 />
-                <div style={{ fontSize: "10px", color: "#888", marginTop: "2px" }}>Total Cost Rate</div>
                 <div style={{ fontSize: "12px", color: "#1a2d4d", fontWeight: 800, marginTop: "2px" }}>
                   준공추정원가율
                 </div>
-                <div style={{ fontSize: "9px", color: "#999", marginTop: "1px" }}>현재 기준 (매월·분기 갱신)</div>
               </div>
 
             </div>
