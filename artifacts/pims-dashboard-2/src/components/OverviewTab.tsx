@@ -396,55 +396,53 @@ export function OverviewTab({ projectName }: { projectName: string }) {
           {bidding == null && execution == null && completion == null ? (
             <div style={emptyNote}>원가율 데이터가 없습니다. 데이터 입력 탭에서 입력해 주세요.</div>
           ) : (
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-evenly", width: "100%", marginTop: "8px" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "16px", marginTop: "8px" }}>
 
-              {/* 입찰 */}
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                <div style={{ fontSize: "9px", color: "#777", marginBottom: "1px", whiteSpace: "nowrap" }}>
-                  {fmtMoney(bidding?.costAmount)} / {fmtMoney(bidding?.contractAmount)}
-                </div>
-                <Donut
-                  percent={estPct(bidding) ?? 0}
-                  color={chartTheme.neutralGray}
-                  size={90}
-                  stroke={10}
-                  label={fmtPct(estPct(bidding))}
-                  labelSize={15}
-                />
-                <div style={{ fontSize: "10px", color: "#1a2d4d", fontWeight: 700, marginTop: "4px" }}>입찰</div>
+              {/* 좌측: 입찰 + 실행예산 소형 스택 */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "0", flex: "0 0 auto" }}>
+                {[
+                  { title: "입찰", sub: "입찰 원가율", data: bidding, color: chartTheme.neutralGray },
+                  { title: "실행예산 편성", sub: "실행예산 원가율", data: execution, color: chartTheme.balanceNavy },
+                ].map((c, i) => (
+                  <div key={c.title}>
+                    {i > 0 && (
+                      <div style={{ borderTop: "1px dashed #c8d4e0", margin: "4px 0" }} />
+                    )}
+                    <div style={{ textAlign: "center" }}>
+                      <div style={{ fontSize: "9px", color: "#777", marginBottom: "1px", whiteSpace: "nowrap" }}>
+                        {fmtMoney(c.data?.costAmount)} / {fmtMoney(c.data?.contractAmount)}
+                      </div>
+                      <Donut
+                        percent={estPct(c.data) ?? 0}
+                        color={c.color}
+                        size={82}
+                        stroke={9}
+                        label={fmtPct(estPct(c.data))}
+                        labelSize={14}
+                      />
+                      <div style={{ fontSize: "10px", color: "#1a2d4d", fontWeight: 700, marginTop: "3px" }}>{c.title}</div>
+                    </div>
+                  </div>
+                ))}
               </div>
 
-              {/* 실행예산 편성 */}
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                <div style={{ fontSize: "9px", color: "#777", marginBottom: "1px", whiteSpace: "nowrap" }}>
-                  {fmtMoney(execution?.costAmount)} / {fmtMoney(execution?.contractAmount)}
-                </div>
-                <Donut
-                  percent={estPct(execution) ?? 0}
-                  color={chartTheme.balanceNavy}
-                  size={90}
-                  stroke={10}
-                  label={fmtPct(estPct(execution))}
-                  labelSize={15}
-                />
-                <div style={{ fontSize: "10px", color: "#1a2d4d", fontWeight: 700, marginTop: "4px" }}>실행예산 편성</div>
-              </div>
-
-              {/* 준공추정원가율 */}
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                <div style={{ fontSize: "9px", color: "#777", marginBottom: "1px", whiteSpace: "nowrap" }}>
+              {/* 우측: 준공추정 대형 도넛 */}
+              <div style={{ flex: "0 0 auto", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+                <div style={{ fontSize: "10px", color: "#555", marginBottom: "2px", whiteSpace: "nowrap" }}>
                   {fmtMoney(completion?.costAmount)} / {fmtMoney(completion?.contractAmount)}
                 </div>
                 <Donut
                   percent={estPct(completion) ?? 0}
                   color={chartTheme.planBlue}
-                  size={120}
-                  stroke={13}
+                  size={148}
+                  stroke={16}
                   label={fmtPct(estPct(completion))}
-                  labelSize={20}
+                  labelSize={26}
                 />
-                <div style={{ fontSize: "10px", color: "#888", marginTop: "3px" }}>Total Cost Rate</div>
-                <div style={{ fontSize: "11px", color: "#1a2d4d", fontWeight: 800, marginTop: "2px" }}>준공추정원가율</div>
+                <div style={{ fontSize: "10px", color: "#888", marginTop: "2px" }}>Total Cost Rate</div>
+                <div style={{ fontSize: "12px", color: "#1a2d4d", fontWeight: 800, marginTop: "2px" }}>
+                  준공추정원가율
+                </div>
                 <div style={{ fontSize: "9px", color: "#999", marginTop: "1px" }}>현재 기준 (매월·분기 갱신)</div>
               </div>
 
