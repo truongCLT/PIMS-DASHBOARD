@@ -361,7 +361,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                     labelSize={18}
                   />
                   <div style={{ fontSize: "10px", color: "#1a2d4d", fontWeight: 700, marginTop: "4px", textDecoration: "underline" }}>
-                    Achievement Rate
+                    연
                   </div>
                 </div>
                 <div style={{ textAlign: "center" }}>
@@ -377,19 +377,19 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                     labelSize={18}
                   />
                   <div style={{ fontSize: "10px", color: "#1a2d4d", fontWeight: 700, marginTop: "4px", textDecoration: "underline" }}>
-                    Contract Progress
+                    누계
                   </div>
                 </div>
               </div>
               <div style={{ display: "flex", justifyContent: "space-around", marginTop: "6px" }}>
                 <span style={{ fontSize: "10px", fontWeight: 700, color: "#333", textAlign: "center" }}>
-                  당월 매출<br />(계획 대비 실적)
+                  당월
                 </span>
                 <span style={{ fontSize: "10px", fontWeight: 700, color: "#1a2d4d", textDecoration: "underline" }}>
-                  연간 목표 매출 달성률
+                  연
                 </span>
                 <span style={{ fontSize: "10px", fontWeight: 700, color: "#1a2d4d", textDecoration: "underline" }}>
-                  누계 매출 (도급액 대비)
+                  누계
                 </span>
               </div>
             </>
@@ -398,7 +398,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
 
         {/* Cost estimation */}
         <div style={cardStyle}>
-          <span style={sectionTitle}>Cost estimation (원가율 비교)</span>
+          <span style={sectionTitle}>원가율</span>
           {bidding == null && execution == null && completion == null ? (
             <div style={emptyNote}>원가율 데이터가 없습니다. 데이터 입력 탭에서 입력해 주세요.</div>
           ) : (
@@ -407,8 +407,8 @@ export function OverviewTab({ projectName }: { projectName: string }) {
               {/* 좌측: 입찰 + 실행예산 소형 스택 */}
               <div style={{ display: "flex", flexDirection: "column", gap: "0", flex: "0 0 auto" }}>
                 {[
-                  { title: "Bidding", sub: "입찰 원가율", data: bidding, color: chartTheme.neutralGray },
-                  { title: "Execution Budgeting", sub: "실행예산 원가율", data: execution, color: chartTheme.balanceNavy },
+                  { title: "입찰", sub: "입찰 원가율", data: bidding, color: chartTheme.neutralGray },
+                  { title: "실행예산 편성", sub: "실행예산 원가율", data: execution, color: chartTheme.balanceNavy },
                 ].map((c, i) => (
                   <div key={c.title}>
                     {i > 0 && (
@@ -447,7 +447,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                 />
                 <div style={{ fontSize: "10px", color: "#888", marginTop: "2px" }}>Total Cost Rate</div>
                 <div style={{ fontSize: "12px", color: "#1a2d4d", fontWeight: 800, marginTop: "2px" }}>
-                  Estimated Completion
+                  준공추정원가율
                 </div>
                 <div style={{ fontSize: "9px", color: "#999", marginTop: "1px" }}>현재 기준 (매월·분기 갱신)</div>
               </div>
@@ -566,7 +566,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
 
         {/* Cash */}
         <div style={cardStyle}>
-          <span style={sectionTitle}>현금</span>
+          <span style={sectionTitle}>자금</span>
           {cfRef != null && cfQ.isLoading ? (
             <div style={emptyNote}>자금수지 데이터를 불러오는 중입니다…</div>
           ) : !hasCash ? (
