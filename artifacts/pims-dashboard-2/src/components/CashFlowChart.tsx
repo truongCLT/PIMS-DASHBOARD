@@ -183,6 +183,15 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
             tickLine={false}
             tickFormatter={(v: number) => v.toLocaleString()}
           />
+          <YAxis
+            yAxisId="balance"
+            orientation="right"
+            tick={{ fontSize: compact ? 9 : 11, fill: chartTheme.balanceNavy }}
+            width={compact ? 88 : 60}
+            axisLine={false}
+            tickLine={false}
+            tickFormatter={(v: number) => v.toLocaleString()}
+          />
           <Tooltip
             contentStyle={{ fontSize: "12px" }}
             formatter={(value: number | string, name: string) => {
@@ -200,7 +209,7 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
           </Bar>
           <Line
             isAnimationActive={false}
-            yAxisId="flow"
+            yAxisId="balance"
             type="monotone"
             dataKey="balance"
             name="누적 현금 잔액"
@@ -243,7 +252,7 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
         {[
           { color: chartTheme.inflowBlue, label: "자금 유입", type: "rect" },
           { color: chartTheme.outflowRed, label: "자금 유출", type: "rect" },
-          { color: chartTheme.balanceNavy, label: "누적 현금 잔액", type: "line" },
+          { color: chartTheme.balanceNavy, label: "누적 현금 잔액 (우측 축)", type: "line" },
         ].map((item) => (
           <div key={item.label} style={{ display: "flex", alignItems: "center", gap: "4px" }}>
             {item.type === "rect" ? (
