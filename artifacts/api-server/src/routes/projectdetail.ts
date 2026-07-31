@@ -12,6 +12,7 @@ import {
   pdOutsourcingTable,
   pdCashflowMonthlyTable,
   pdCogsMonthlyTable,
+  pdSalesMonthlyTable,
   pdPhotosTable,
 } from "@workspace/db";
 import {
@@ -31,12 +32,14 @@ import { requireAdmin } from "../middlewares/adminAuth";
 const router: IRouter = Router();
 
 class DuplicateCogsMonthError extends Error {}
+class DuplicateSalesMonthError extends Error {}
+class InvalidSalesRowError extends Error {}
 
 const num = (v: string | null) => (v == null ? null : Number(v));
 const str = (v: number | null | undefined) => (v == null ? null : String(v));
 
 async function loadDetail(projectName: string) {
-  const [overviewRows, progress, milestones, costEstimation, costBudget, costBudgetMonthly, outsourcing, cashflow, cogsMonthly, photos] = await Promise.all([
+  const [overviewRows, progress, milestones, costEstimation, costBudget, costBudgetMonthly, outsourcing, cashflow, cogsMonthly, salesMonthly, photos] = await Promise.all([
     db
       .select()
       .from(pdOverviewTable)
@@ -81,6 +84,11 @@ async function loadDetail(projectName: string) {
       .from(pdCogsMonthlyTable)
       .where(eq(pdCogsMonthlyTable.projectName, projectName))
       .orderBy(asc(pdCogsMonthlyTable.year), asc(pdCogsMonthlyTable.month)),
+    db
+      .select()
+      .from(pdSalesMonthlyTable)
+      .where(eq(pdSalesMonthlyTable.projectName, projectName))
+      .orderBy(asc(pdSalesMonthlyTable.year), asc(pdSalesMonthlyTable.month)),
     db
       .select()
       .from(pdPhotosTable)
@@ -166,6 +174,12 @@ async function loadDetail(projectName: string) {
       month: c.month,
       acctCogs: num(c.acctCogs),
       wipCogs: num(c.wipCogs),
+    })),
+    salesMonthly: salesMonthly.map((s) => ({
+      year: s.year,
+      month: s.month,
+      plan: num(s.plan),
+      actual: num(s.actual),
     })),
     photos: photos.map((p) => ({ objectPath: p.objectPath })),
   };
@@ -266,6 +280,9 @@ router.put("/projectdetail", requireAdmin, async (req, res) => {
       await tx.delete(pdCashflowMonthlyTable).where(eq(pdCashflowMonthlyTable.projectName, projectName));
       if (body.cogsMonthly !== undefined) {
         await tx.delete(pdCogsMonthlyTable).where(eq(pdCogsMonthlyTable.projectName, projectName));
+      }
+      if (body.salesMonthly !== undefined) {
+        await tx.delete(pdSalesMonthlyTable).where(eq(pdSalesMonthlyTable.projectName, projectName));
       }
       await tx.delete(pdPhotosTable).where(eq(pdPhotosTable.projectName, projectName));
 
@@ -428,6 +445,29 @@ router.put("/projectdetail", requireAdmin, async (req, res) => {
           })),
         );
       }
+      const salesRows = body.salesMonthly ?? [];
+      const salesKeys = new Set<string>();
+      for (const s of salesRows) {
+        if (!Number.isInteger(s.year) || s.year < 2000 || s.year > 2100 || !Number.isInteger(s.month) || s.month < 1 || s.month > 12) {
+          throw new InvalidSalesRowError(`${s.year}.${s.month}`);
+        }
+        const k = `${s.year}-${s.month}`;
+        if (salesKeys.has(k)) {
+          throw new DuplicateSalesMonthError(`${s.year}년 ${s.month}월`);
+        }
+        salesKeys.add(k);
+      }
+      if (salesRows.length > 0) {
+        await tx.insert(pdSalesMonthlyTable).values(
+          salesRows.map((s) => ({
+            projectName,
+            year: s.year,
+            month: s.month,
+            plan: str(s.plan),
+            actual: str(s.actual),
+          })),
+        );
+      }
       if (body.photos.length > 0) {
         await tx.insert(pdPhotosTable).values(
           body.photos.map((p, i) => ({
@@ -444,6 +484,14 @@ router.put("/projectdetail", requireAdmin, async (req, res) => {
   } catch (err) {
     if (err instanceof DuplicateCogsMonthError) {
       res.status(400).json({ error: `월별 매출원가에 중복된 월이 있습니다: ${err.message}` });
+      return;
+    }
+    if (err instanceof DuplicateSalesMonthError) {
+      res.status(400).json({ error: `월별 매출에 중복된 월이 있습니다: ${err.message}` });
+      return;
+    }
+    if (err instanceof InvalidSalesRowError) {
+      res.status(400).json({ error: `월별 매출의 연도/월이 올바르지 않습니다: ${err.message} (연도 2000~2100, 월 1~12의 정수)` });
       return;
     }
     req.log.error({ err }, "failed to save project detail");

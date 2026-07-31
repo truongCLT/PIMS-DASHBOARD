@@ -7,6 +7,7 @@ import type {
   ProjectDetailOutsourcing,
   ProjectDetailCashflowPoint,
   ProjectDetailCogsPoint,
+  ProjectDetailSalesPoint,
 } from "@workspace/api-client-react";
 
 // 시트/헤더 정의 — 다운로드와 업로드가 같은 양식을 사용한다. (금액 단위: 천 USD 원본값 그대로)
@@ -19,6 +20,7 @@ const SHEETS = {
   outsourcing: "5.외주자재",
   cashflow: "6.월별자금",
   cogsMonthly: "7.월별매출원가",
+  salesMonthly: "8.월별매출",
 } as const;
 
 const HEADERS: Record<string, string[]> = {
@@ -41,6 +43,7 @@ const HEADERS: Record<string, string[]> = {
   ],
   [SHEETS.cashflow]: ["연도", "월", "수입(천USD)", "지출(천USD)", "보유현금(천USD)"],
   [SHEETS.cogsMonthly]: ["연도", "월", "회계 매출원가(천USD)", "집행 매출원가 WIP(천USD)"],
+  [SHEETS.salesMonthly]: ["연도", "월", "매출 계획(천USD)", "매출 실적(천USD)"],
 };
 
 type Cell = string | number | null;
@@ -133,6 +136,10 @@ export async function downloadProjectDetailTemplate(projectName: string, detail:
   addSheet(
     SHEETS.cogsMonthly,
     (detail.cogsMonthly ?? []).map((c) => [c.year, c.month, c.acctCogs ?? null, c.wipCogs ?? null]),
+  );
+  addSheet(
+    SHEETS.salesMonthly,
+    (detail.salesMonthly ?? []).map((s) => [s.year, s.month, s.plan ?? null, s.actual ?? null]),
   );
 
   const buf = await wb.xlsx.writeBuffer();
@@ -420,6 +427,33 @@ export async function parseProjectDetailWorkbook(file: File, existing: ProjectDe
         out.push({ year, month, acctCogs: cellNum(r[2]), wipCogs: cellNum(r[3]) });
       });
       result.cogsMonthly = out;
+    }
+  }
+
+  // 월별 매출 (계획/실적)
+  {
+    const rows = rowsOf(SHEETS.salesMonthly, true);
+    if (rows) {
+      const out: ProjectDetailSalesPoint[] = [];
+      const seen = new Set<string>();
+      rows.forEach((r, i) => {
+        const yearRaw = cellNum(r[0]);
+        const monthRaw = cellNum(r[1]);
+        if (yearRaw == null || monthRaw == null) throw new ExcelParseError(`[${SHEETS.salesMonthly}] ${i + 2}행: 연도/월이 비어 있습니다.`);
+        if (!Number.isInteger(yearRaw) || !Number.isInteger(monthRaw)) {
+          throw new ExcelParseError(`[${SHEETS.salesMonthly}] ${i + 2}행: 연도/월은 정수여야 합니다. (${yearRaw}/${monthRaw})`);
+        }
+        const year = yearRaw;
+        const month = monthRaw;
+        if (month < 1 || month > 12) throw new ExcelParseError(`[${SHEETS.salesMonthly}] ${i + 2}행: 월(${month})이 올바르지 않습니다.`);
+        const key = `${year}-${month}`;
+        if (seen.has(key)) {
+          throw new ExcelParseError(`[${SHEETS.salesMonthly}] 같은 월(${year}.${String(month).padStart(2, "0")})이 중복 입력되었습니다.`);
+        }
+        seen.add(key);
+        out.push({ year, month, plan: cellNum(r[2]), actual: cellNum(r[3]) });
+      });
+      result.salesMonthly = out;
     }
   }
 

@@ -185,9 +185,13 @@ export const getProjectdetailResponseProgressItemActualCumPctMax = 100;
 
 export const getProjectdetailResponseCostEstimationItemMonthMax = 12;
 
+export const getProjectdetailResponseCostBudgetMonthlyItemMonthMax = 12;
+
 export const getProjectdetailResponseCashflowItemMonthMax = 12;
 
 export const getProjectdetailResponseCogsMonthlyItemMonthMax = 12;
+
+export const getProjectdetailResponseSalesMonthlyItemMonthMax = 12;
 
 
 
@@ -239,7 +243,7 @@ export const GetProjectdetailResponse = zod.object({
   "costBudgetMonthly": zod.array(zod.object({
   "item": zod.string(),
   "year": zod.number(),
-  "month": zod.number().min(1).max(12),
+  "month": zod.number().min(1).max(getProjectdetailResponseCostBudgetMonthlyItemMonthMax),
   "plan": zod.number().nullish(),
   "actual": zod.number().nullish()
 })).optional(),
@@ -269,6 +273,12 @@ export const GetProjectdetailResponse = zod.object({
   "acctCogs": zod.number().nullish().describe('회계 매출원가 (천 USD)'),
   "wipCogs": zod.number().nullish().describe('집행 매출원가 (WIP) (천 USD)')
 })).optional(),
+  "salesMonthly": zod.array(zod.object({
+  "year": zod.number(),
+  "month": zod.number().min(1).max(getProjectdetailResponseSalesMonthlyItemMonthMax),
+  "plan": zod.number().nullish().describe('매출 계획 (천 USD)'),
+  "actual": zod.number().nullish().describe('매출 실적 (천 USD)')
+})).optional(),
   "photos": zod.array(zod.object({
   "objectPath": zod.string().describe('Object storage path (\'\/objects\/uploads\/<uuid>\')')
 }))
@@ -297,9 +307,13 @@ export const putProjectdetailBodyProgressItemActualCumPctMax = 100;
 
 export const putProjectdetailBodyCostEstimationItemMonthMax = 12;
 
+export const putProjectdetailBodyCostBudgetMonthlyItemMonthMax = 12;
+
 export const putProjectdetailBodyCashflowItemMonthMax = 12;
 
 export const putProjectdetailBodyCogsMonthlyItemMonthMax = 12;
+
+export const putProjectdetailBodySalesMonthlyItemMonthMax = 12;
 
 
 
@@ -351,7 +365,7 @@ export const PutProjectdetailBody = zod.object({
   "costBudgetMonthly": zod.array(zod.object({
   "item": zod.string(),
   "year": zod.number(),
-  "month": zod.number().min(1).max(12),
+  "month": zod.number().min(1).max(putProjectdetailBodyCostBudgetMonthlyItemMonthMax),
   "plan": zod.number().nullish(),
   "actual": zod.number().nullish()
 })).optional(),
@@ -381,6 +395,12 @@ export const PutProjectdetailBody = zod.object({
   "acctCogs": zod.number().nullish().describe('회계 매출원가 (천 USD)'),
   "wipCogs": zod.number().nullish().describe('집행 매출원가 (WIP) (천 USD)')
 })).optional(),
+  "salesMonthly": zod.array(zod.object({
+  "year": zod.number(),
+  "month": zod.number().min(1).max(putProjectdetailBodySalesMonthlyItemMonthMax),
+  "plan": zod.number().nullish().describe('매출 계획 (천 USD)'),
+  "actual": zod.number().nullish().describe('매출 실적 (천 USD)')
+})).optional(),
   "photos": zod.array(zod.object({
   "objectPath": zod.string().describe('Object storage path (\'\/objects\/uploads\/<uuid>\')')
 }))
@@ -405,9 +425,13 @@ export const putProjectdetailResponseProgressItemActualCumPctMax = 100;
 
 export const putProjectdetailResponseCostEstimationItemMonthMax = 12;
 
+export const putProjectdetailResponseCostBudgetMonthlyItemMonthMax = 12;
+
 export const putProjectdetailResponseCashflowItemMonthMax = 12;
 
 export const putProjectdetailResponseCogsMonthlyItemMonthMax = 12;
+
+export const putProjectdetailResponseSalesMonthlyItemMonthMax = 12;
 
 
 
@@ -459,7 +483,7 @@ export const PutProjectdetailResponse = zod.object({
   "costBudgetMonthly": zod.array(zod.object({
   "item": zod.string(),
   "year": zod.number(),
-  "month": zod.number().min(1).max(12),
+  "month": zod.number().min(1).max(putProjectdetailResponseCostBudgetMonthlyItemMonthMax),
   "plan": zod.number().nullish(),
   "actual": zod.number().nullish()
 })).optional(),
@@ -488,6 +512,12 @@ export const PutProjectdetailResponse = zod.object({
   "month": zod.number().min(1).max(putProjectdetailResponseCogsMonthlyItemMonthMax),
   "acctCogs": zod.number().nullish().describe('회계 매출원가 (천 USD)'),
   "wipCogs": zod.number().nullish().describe('집행 매출원가 (WIP) (천 USD)')
+})).optional(),
+  "salesMonthly": zod.array(zod.object({
+  "year": zod.number(),
+  "month": zod.number().min(1).max(putProjectdetailResponseSalesMonthlyItemMonthMax),
+  "plan": zod.number().nullish().describe('매출 계획 (천 USD)'),
+  "actual": zod.number().nullish().describe('매출 실적 (천 USD)')
 })).optional(),
   "photos": zod.array(zod.object({
   "objectPath": zod.string().describe('Object storage path (\'\/objects\/uploads\/<uuid>\')')

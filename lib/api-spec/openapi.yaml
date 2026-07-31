@@ -1784,6 +1784,42 @@ components:
           nullable: true
           description: 집행 매출원가 (WIP) (천 USD)
       required: [year, month]
+    ProjectDetailCostBudgetMonthly:
+      type: object
+      properties:
+        item:
+          type: string
+        year:
+          type: integer
+        month:
+          type: integer
+          minimum: 1
+          maximum: 12
+        plan:
+          type: number
+          nullable: true
+        actual:
+          type: number
+          nullable: true
+      required: [item, year, month]
+    ProjectDetailSalesPoint:
+      type: object
+      properties:
+        year:
+          type: integer
+        month:
+          type: integer
+          minimum: 1
+          maximum: 12
+        plan:
+          type: number
+          nullable: true
+          description: 매출 계획 (천 USD)
+        actual:
+          type: number
+          nullable: true
+          description: 매출 실적 (천 USD)
+      required: [year, month]
     ProjectDetailOutsourcing:
       type: object
       properties:
@@ -1847,6 +1883,10 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ProjectDetailCostBudget"
+        costBudgetMonthly:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProjectDetailCostBudgetMonthly"
         outsourcing:
           type: array
           items:
@@ -1859,6 +1899,10 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ProjectDetailCogsPoint"
+        salesMonthly:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProjectDetailSalesPoint"
         photos:
           type: array
           items:

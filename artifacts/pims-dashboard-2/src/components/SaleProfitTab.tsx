@@ -148,24 +148,54 @@ export function SaleProfitTab({
     return arr?.[month - 1] ?? 0;
   };
 
+  // 데이터 입력 탭의 월별 매출 (계획/실적) — 입력된 데이터가 있으면 최우선 사용
+  const salesMap = new Map<string, { plan: number | null; actual: number | null }>();
+  for (const s of pdDetail?.salesMonthly ?? []) {
+    salesMap.set(`${s.year}-${s.month}`, { plan: s.plan ?? null, actual: s.actual ?? null });
+  }
+  const pdSalesHasAny = period.some(({ year, month }) => {
+    const row = salesMap.get(`${year}-${month}`);
+    return row != null && (row.plan != null || row.actual != null);
+  });
+
   // sc 데이터가 기간 내에 하나라도 있으면 sc 우선, 없으면 mr 폴백
   const scHasAny =
     hasSite && period.some(({ year, month }) => scLookup(year, "revenue", month) !== 0);
   const lookup = scHasAny ? scLookup : mrLookup;
 
+  // 원가율의 원가 소스는 매출 소스와 일치시킨다:
+  // pd 매출 사용 시 → pd 월별 매출원가(회계), 아니면 sc/mr 원가
+  const pdCogsLookup = new Map<string, number>();
+  for (const c of pdDetail?.cogsMonthly ?? []) {
+    if (c.acctCogs != null) pdCogsLookup.set(`${c.year}-${c.month}`, c.acctCogs);
+  }
+  const pdCogsHasAny = period.some(({ year, month }) => pdCogsLookup.has(`${year}-${month}`));
+
   let cumulative = 0;
   let cumCogs = 0;
+  let cumPlan = 0;
   const chartData = period.map(({ year, month }) => {
-    const revenue = lookup(year, "revenue", month);
-    const cogs = lookup(year, "cogs", month);
+    const pdRow = pdSalesHasAny ? salesMap.get(`${year}-${month}`) : undefined;
+    const revenue = pdSalesHasAny ? (pdRow?.actual ?? 0) : lookup(year, "revenue", month);
+    const plan = pdSalesHasAny ? (pdRow?.plan ?? 0) : 0;
+    const cogs = pdSalesHasAny
+      ? (pdCogsHasAny ? (pdCogsLookup.get(`${year}-${month}`) ?? 0) : 0)
+      : lookup(year, "cogs", month);
     cumulative += revenue;
     cumCogs += cogs;
+    cumPlan += plan;
     return {
       label: `'${String(year).slice(2)}.${String(month).padStart(2, "0")}`,
       revenue: Math.round(convert(revenue)),
+      plan: Math.round(convert(plan)),
       cumulative: Math.round(convert(cumulative)),
+      planCum: Math.round(convert(cumPlan)),
       // 누계 원가율 — 기간 초부터 해당 월까지 누적된 원가/매출 비율 (매월 갱신)
-      ratio: cumulative > 0 ? Math.round((cumCogs / cumulative) * 1000) / 10 : null,
+      // pd 매출 사용 중인데 pd 원가가 없으면 소스 불일치 방지를 위해 원가율 미표시
+      ratio:
+        cumulative > 0 && !(pdSalesHasAny && !pdCogsHasAny)
+          ? Math.round((cumCogs / cumulative) * 1000) / 10
+          : null,
     };
   });
   let lastRatioIdx = -1;
@@ -194,7 +224,7 @@ export function SaleProfitTab({
   });
   const hasCogs = cogsChartData.some((d) => d.acctCogs !== 0 || d.wipCogs !== 0);
 
-  const hasData = chartData.some((d) => d.revenue !== 0 || d.cumulative !== 0);
+  const hasData = chartData.some((d) => d.revenue !== 0 || d.cumulative !== 0 || d.plan !== 0);
   if (isLoading || pdLoading) {
     return (
       <div style={cardStyle}>
@@ -217,8 +247,8 @@ export function SaleProfitTab({
     );
   }
 
-  const maxRevenue = Math.max(...chartData.map((d) => d.revenue), 0);
-  const maxCum = Math.max(...chartData.map((d) => d.cumulative), 0);
+  const maxRevenue = Math.max(...chartData.map((d) => Math.max(d.revenue, d.plan)), 0);
+  const maxCum = Math.max(...chartData.map((d) => Math.max(d.cumulative, d.planCum)), 0);
   const ratios = chartData.filter((d) => d.ratio != null).map((d) => d.ratio as number);
   const ratioMax = ratios.length > 0 ? Math.max(...ratios) : 100;
 
@@ -244,18 +274,28 @@ export function SaleProfitTab({
                 formatter={(v: number, name: string) => [`${Math.round(v).toLocaleString()} ${unitLabel}`, name]}
               />
               <Legend wrapperStyle={{ fontSize: "10px" }} />
+              {pdSalesHasAny && (
+                <Bar dataKey="plan" name="월 계획" fill="#c9d2dd" barSize={14} isAnimationActive={false}>
+                  <LabelList
+                    dataKey="plan"
+                    position="top"
+                    style={{ fontSize: "9px", fill: chartTheme.axisText }}
+                    formatter={(v: number) => (v !== 0 ? Math.round(v).toLocaleString() : "")}
+                  />
+                </Bar>
+              )}
               <Bar
                 dataKey="revenue"
                 name="월 매출"
                 fill={chartTheme.planBlue}
-                barSize={22}
+                barSize={pdSalesHasAny ? 14 : 22}
                 isAnimationActive={false}
               >
                 <LabelList
                   dataKey="revenue"
                   position="top"
                   style={{ fontSize: "9px", fill: chartTheme.axisText }}
-                  formatter={(v: number) => Math.round(v).toLocaleString()}
+                  formatter={(v: number) => (v !== 0 ? Math.round(v).toLocaleString() : "")}
                 />
               </Bar>
               <Line

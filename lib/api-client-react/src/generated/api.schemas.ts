@@ -489,18 +489,6 @@ export interface ProjectDetailCostBudget {
   actual?: number | null;
 }
 
-export interface ProjectDetailCostBudgetMonthly {
-  item: string;
-  year: number;
-  /**
-     * @minimum 1
-     * @maximum 12
-     */
-  month: number;
-  plan?: number | null;
-  actual?: number | null;
-}
-
 export interface ProjectDetailCashflowPoint {
   year: number;
   /**
@@ -527,6 +515,31 @@ export interface ProjectDetailCogsPoint {
   acctCogs?: number | null;
   /** 집행 매출원가 (WIP) (천 USD) */
   wipCogs?: number | null;
+}
+
+export interface ProjectDetailCostBudgetMonthly {
+  item: string;
+  year: number;
+  /**
+     * @minimum 1
+     * @maximum 12
+     */
+  month: number;
+  plan?: number | null;
+  actual?: number | null;
+}
+
+export interface ProjectDetailSalesPoint {
+  year: number;
+  /**
+     * @minimum 1
+     * @maximum 12
+     */
+  month: number;
+  /** 매출 계획 (천 USD) */
+  plan?: number | null;
+  /** 매출 실적 (천 USD) */
+  actual?: number | null;
 }
 
 export interface ProjectDetailOutsourcing {
@@ -562,6 +575,7 @@ export interface ProjectDetail {
   outsourcing: ProjectDetailOutsourcing[];
   cashflow: ProjectDetailCashflowPoint[];
   cogsMonthly?: ProjectDetailCogsPoint[];
+  salesMonthly?: ProjectDetailSalesPoint[];
   photos: ProjectDetailPhoto[];
 }
 

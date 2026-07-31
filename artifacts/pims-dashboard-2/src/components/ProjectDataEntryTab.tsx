@@ -20,6 +20,7 @@ import type {
   ProjectDetailOutsourcing,
   ProjectDetailCashflowPoint,
   ProjectDetailCogsPoint,
+  ProjectDetailSalesPoint,
 } from "@workspace/api-client-react";
 import { useProjectDetail, getGetProjectdetailQueryKey } from "../lib/projectDetailData";
 import { REPORT_YEAR } from "../lib/mgmtreportData";
@@ -301,6 +302,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
   const [outsourcing, setOutsourcing] = useState<ProjectDetailOutsourcing[]>([]);
   const [cashflow, setCashflow] = useState<ProjectDetailCashflowPoint[]>([]);
   const [cogsMonthly, setCogsMonthly] = useState<ProjectDetailCogsPoint[]>([]);
+  const [salesMonthly, setSalesMonthly] = useState<ProjectDetailSalesPoint[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [cfPrefilled, setCfPrefilled] = useState(false);
 
@@ -367,6 +369,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
         setCfPrefilled(cfRows.length > 0);
       }
       setCogsMonthly(detail.cogsMonthly ?? []);
+      setSalesMonthly(detail.salesMonthly ?? []);
       setLoaded(true);
     }
   }, [detail, loaded, cfRef, cfQuery.isLoading, cfQuery.data]);
@@ -473,6 +476,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       // 자금수지 Excel prefill을 아직 수정하지 않았다면 저장하지 않음(향후 Excel 갱신 반영 유지)
       cashflow: cfPrefilled ? [] : cashflow.filter((c) => c.year > 0 && c.month >= 1 && c.month <= 12),
       cogsMonthly: cogsMonthly.filter((c) => c.year > 0 && c.month >= 1 && c.month <= 12),
+      salesMonthly: salesMonthly.filter((s) => s.year > 0 && s.month >= 1 && s.month <= 12),
       photos: [],
     };
     pendingRef.current = true;
@@ -516,7 +520,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
     }
     const t = setTimeout(() => saveRef.current(), 1000);
     return () => clearTimeout(t);
-  }, [loaded, overview, progress, milestones, costEstimation, costBudget, costBudgetMonthly, outsourcing, cashflow, cogsMonthly]);
+  }, [loaded, overview, progress, milestones, costEstimation, costBudget, costBudgetMonthly, outsourcing, cashflow, cogsMonthly, salesMonthly]);
 
 
   if (isLoading && !loaded) {
@@ -1122,6 +1126,52 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
             자금수지 Excel(DB)에 저장된 데이터를 불러왔습니다. 표를 수정하면 이 프로젝트의 자금 데이터로 저장되며, 이후에는 저장된 값이 우선 표시됩니다.
           </div>
         )}
+      </div>
+
+      {/* 공통: 월별 매출 (계획/실적) */}
+      <div style={cardStyle}>
+        {cardHead("월별 매출 (매출 탭)", "salesMonthly")}
+        <div data-tbl="salesMonthly" onKeyDown={makeArrowNav("salesMonthly")}>
+        <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px" }}>
+          <thead>
+            <tr>
+              <th style={th}>연도</th>
+              <th style={th}>월</th>
+              <th style={th}>매출 계획 (VND)</th>
+              <th style={th}>매출 실적 (VND)</th>
+              <th style={{ ...th, width: "36px" }}></th>
+            </tr>
+          </thead>
+          <tbody>
+            {salesMonthly.map((s, i) => (
+              <tr key={i}>
+                <td style={tdCell}><NumInput value={s.year} onChange={(v) => updateAt(setSalesMonthly, i, { year: v ?? 0 })} data-row={i} data-col={0} /></td>
+                <td style={tdCell}><NumInput value={s.month} onChange={(v) => updateAt(setSalesMonthly, i, { month: v ?? 0 })} data-row={i} data-col={1} /></td>
+                <td style={tdCell}><VndInput valueKUsd={s.plan} onChange={(v) => updateAt(setSalesMonthly, i, { plan: v })} data-row={i} data-col={2} /></td>
+                <td style={tdCell}><VndInput valueKUsd={s.actual} onChange={(v) => updateAt(setSalesMonthly, i, { actual: v })} data-row={i} data-col={3} /></td>
+                <td style={{ ...tdCell, textAlign: "center" }}><DelBtn onClick={() => removeAt(setSalesMonthly, i)} /></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        </div>
+        <button
+          style={addBtn}
+          onClick={() => {
+            const last = salesMonthly[salesMonthly.length - 1];
+            const next = last
+              ? last.month >= 12
+                ? { year: last.year + 1, month: 1 }
+                : { year: last.year, month: last.month + 1 }
+              : { year: new Date().getFullYear(), month: 1 };
+            setSalesMonthly((rows) => [...rows, { ...next, plan: null, actual: null }]);
+          }}
+        >
+          <Plus size={12} /> 월 추가
+        </button>
+        <div style={{ fontSize: "10px", color: "#8a97a8", marginTop: "6px" }}>
+          매출 탭 차트에 반영됩니다. 입력 데이터가 있으면 메인 대시보드 데이터보다 우선 사용됩니다. VND 기준으로 입력하면 저장 시 천 USD로 자동 변환됩니다.
+        </div>
       </div>
 
       {/* 용역: 월별 매출원가 */}

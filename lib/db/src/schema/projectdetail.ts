@@ -159,6 +159,23 @@ export const pdCogsMonthlyTable = pgTable(
   ],
 );
 
+// 매출 — 월별 매출 계획/실적 (매출 탭)
+export const pdSalesMonthlyTable = pgTable(
+  "pd_sales_monthly",
+  {
+    id: serial("id").primaryKey(),
+    projectName: text("project_name").notNull(),
+    year: integer("year").notNull(),
+    month: integer("month").notNull(), // 1..12
+    plan: numeric("plan", { precision: 18, scale: 4 }), // 매출 계획 (천 USD)
+    actual: numeric("actual", { precision: 18, scale: 4 }), // 매출 실적 (천 USD)
+  },
+  (t) => [
+    uniqueIndex("pd_sales_monthly_uq").on(t.projectName, t.year, t.month),
+    check("pd_sales_month_ck", sql`${t.month} BETWEEN 1 AND 12`),
+  ],
+);
+
 // 사진 — 개요 탭 현장 사진 (object storage objectPath)
 export const pdPhotosTable = pgTable(
   "pd_photos",
@@ -243,6 +260,10 @@ export type PdCashflowMonthly = typeof pdCashflowMonthlyTable.$inferSelect;
 export const insertPdCogsMonthlySchema = createInsertSchema(pdCogsMonthlyTable).omit({ id: true });
 export type InsertPdCogsMonthly = z.infer<typeof insertPdCogsMonthlySchema>;
 export type PdCogsMonthly = typeof pdCogsMonthlyTable.$inferSelect;
+
+export const insertPdSalesMonthlySchema = createInsertSchema(pdSalesMonthlyTable).omit({ id: true });
+export type InsertPdSalesMonthly = z.infer<typeof insertPdSalesMonthlySchema>;
+export type PdSalesMonthly = typeof pdSalesMonthlyTable.$inferSelect;
 
 export const insertPdPhotoSchema = createInsertSchema(pdPhotosTable).omit({ id: true });
 export type InsertPdPhoto = z.infer<typeof insertPdPhotoSchema>;

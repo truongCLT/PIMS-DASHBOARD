@@ -8,12 +8,14 @@
 import type { ProjectDetailCashflowPoint } from './projectDetailCashflowPoint';
 import type { ProjectDetailCogsPoint } from './projectDetailCogsPoint';
 import type { ProjectDetailCostBudget } from './projectDetailCostBudget';
+import type { ProjectDetailCostBudgetMonthly } from './projectDetailCostBudgetMonthly';
 import type { ProjectDetailCostEstimation } from './projectDetailCostEstimation';
 import type { ProjectDetailMilestone } from './projectDetailMilestone';
 import type { ProjectDetailOutsourcing } from './projectDetailOutsourcing';
 import type { ProjectDetailOverview } from './projectDetailOverview';
 import type { ProjectDetailPhoto } from './projectDetailPhoto';
 import type { ProjectDetailProgressPoint } from './projectDetailProgressPoint';
+import type { ProjectDetailSalesPoint } from './projectDetailSalesPoint';
 
 export interface ProjectDetail {
   projectName: string;
@@ -24,8 +26,10 @@ export interface ProjectDetail {
   milestones: ProjectDetailMilestone[];
   costEstimation: ProjectDetailCostEstimation[];
   costBudget: ProjectDetailCostBudget[];
+  costBudgetMonthly?: ProjectDetailCostBudgetMonthly[];
   outsourcing: ProjectDetailOutsourcing[];
   cashflow: ProjectDetailCashflowPoint[];
   cogsMonthly?: ProjectDetailCogsPoint[];
+  salesMonthly?: ProjectDetailSalesPoint[];
   photos: ProjectDetailPhoto[];
 }
