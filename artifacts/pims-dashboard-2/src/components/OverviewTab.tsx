@@ -315,23 +315,38 @@ export function OverviewTab({ projectName }: { projectName: string }) {
           ) : (
             <>
               <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-around", marginTop: "6px" }}>
-                <div style={{ display: "flex", gap: "10px", alignItems: "flex-end" }}>
-                  <MiniBar
-                    value={thisMonthPlan ?? 0}
-                    max={Math.max(thisMonthPlan ?? 0, thisMonthRev ?? 0, 1)}
-                    color={chartTheme.neutralGray}
-                    label="계획"
-                    height={110}
-                    valueLabel={fmtMoney(thisMonthPlan)}
-                  />
-                  <MiniBar
-                    value={thisMonthRev ?? 0}
-                    max={Math.max(thisMonthPlan ?? 0, thisMonthRev ?? 0, 1)}
-                    color={chartTheme.planBlue}
-                    label="실적"
-                    height={110}
-                    valueLabel={fmtMoney(thisMonthRev)}
-                  />
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
+                  {/* 계획 대비 실적 달성률 */}
+                  {thisMonthPlan != null && thisMonthPlan > 0 && thisMonthRev != null ? (
+                    <span style={{
+                      fontSize: "13px",
+                      fontWeight: 800,
+                      color: (thisMonthRev / thisMonthPlan) >= 1 ? chartTheme.planBlue : chartTheme.outflowRed,
+                      whiteSpace: "nowrap",
+                    }}>
+                      {fmtPct((thisMonthRev / thisMonthPlan) * 100)}
+                    </span>
+                  ) : (
+                    <span style={{ fontSize: "13px", color: "#aaa" }}>-</span>
+                  )}
+                  <div style={{ display: "flex", gap: "10px", alignItems: "flex-end" }}>
+                    <MiniBar
+                      value={thisMonthPlan ?? 0}
+                      max={Math.max(thisMonthPlan ?? 0, thisMonthRev ?? 0, 1)}
+                      color={chartTheme.neutralGray}
+                      label="계획"
+                      height={110}
+                      valueLabel={fmtMoney(thisMonthPlan)}
+                    />
+                    <MiniBar
+                      value={thisMonthRev ?? 0}
+                      max={Math.max(thisMonthPlan ?? 0, thisMonthRev ?? 0, 1)}
+                      color={chartTheme.planBlue}
+                      label="실적"
+                      height={110}
+                      valueLabel={fmtMoney(thisMonthRev)}
+                    />
+                  </div>
                 </div>
                 <div style={{ textAlign: "center" }}>
                   <div style={{ fontSize: "10px", color: "#555", marginBottom: "2px" }}>
@@ -367,7 +382,9 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                 </div>
               </div>
               <div style={{ display: "flex", justifyContent: "space-around", marginTop: "6px" }}>
-                <span style={{ fontSize: "10px", fontWeight: 700, color: "#333" }}>당월 매출 (계획 대비 실적)</span>
+                <span style={{ fontSize: "10px", fontWeight: 700, color: "#333", textAlign: "center" }}>
+                  당월 매출<br />(계획 대비 실적)
+                </span>
                 <span style={{ fontSize: "10px", fontWeight: 700, color: "#1a2d4d", textDecoration: "underline" }}>
                   연간 목표 매출 달성률
                 </span>
