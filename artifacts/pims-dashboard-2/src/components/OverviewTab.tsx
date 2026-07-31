@@ -407,7 +407,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                     label={fmtPct(ratioPct(cumRev, annualPlanRev))}
                     labelSize={18}
                   />
-                  <div style={{ fontSize: "12px", color: "#1a2d4d", fontWeight: 700, marginTop: "4px", textDecoration: "underline" }}>
+                  <div style={{ fontSize: "12px", color: "#1a2d4d", fontWeight: 700, marginTop: "4px" }}>
                     연
                   </div>
                 </div>
@@ -425,7 +425,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                     label={fmtPct(ratioPct(cumRev, overview.contractAmount))}
                     labelSize={18}
                   />
-                  <div style={{ fontSize: "12px", color: "#1a2d4d", fontWeight: 700, marginTop: "4px", textDecoration: "underline" }}>
+                  <div style={{ fontSize: "12px", color: "#1a2d4d", fontWeight: 700, marginTop: "4px" }}>
                     누계
                   </div>
                 </div>
@@ -502,7 +502,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
         <div style={cardStyle}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "4px" }}>
             <span style={sectionTitle}>
-              예산 <u>집행 현황</u>
+              예산 집행 현황
             </span>
             <select
               value={budgetMonth ?? ""}
@@ -618,7 +618,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                   onChange={(e) => setCashMonth(e.target.value === "" ? null : Number(e.target.value))}
                   style={{ fontSize: "12px", border: "1px solid #c8d2de", borderRadius: "4px", padding: "2px 4px", color: "#333", cursor: "pointer" }}
                 >
-                  <option value="">전체(누계)</option>
+                  <option value="">전체</option>
                   {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
                     <option key={m} value={m}>{m}월</option>
                   ))}
