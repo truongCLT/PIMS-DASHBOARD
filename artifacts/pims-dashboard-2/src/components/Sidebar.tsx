@@ -2,7 +2,7 @@ import React, { useMemo, useState } from "react";
 import pimsBranding from "../assets/pims-branding.png";
 import { FolderClosed } from "lucide-react";
 import { useListMgmtreportProjects } from "@workspace/api-client-react";
-import { PROJECT_GROUPS, classifyMrProject } from "../data/projects";
+import { PROJECT_GROUPS, classifyMrProject, isTestMrProject } from "../data/projects";
 import { REPORT_YEAR } from "../lib/mgmtreportData";
 
 export type DashboardScope =
@@ -32,6 +32,14 @@ function buildTreeData(mrProjects: { name: string; status?: string }[]): TreeIte
   for (const p of mrProjects) {
     const bucket = p.status === "closed" ? "closed" : "ongoing";
     byDivision[classifyMrProject(p.name)][bucket].push(p.name);
+  }
+  // 테스트 프로젝트는 각 버킷 최상단에 (안정 정렬로 나머지 순서 유지)
+  for (const division of ["시공", "용역"] as const) {
+    for (const bucket of ["ongoing", "closed"] as const) {
+      byDivision[division][bucket].sort(
+        (a, b) => Number(isTestMrProject(b)) - Number(isTestMrProject(a)),
+      );
+    }
   }
   return PROJECT_GROUPS.map((group) => ({
     label: group.label,
