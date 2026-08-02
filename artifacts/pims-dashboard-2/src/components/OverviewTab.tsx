@@ -529,27 +529,23 @@ export function OverviewTab({ projectName }: { projectName: string }) {
             <div style={emptyNote}>실행예산 데이터가 없습니다. 데이터 입력 탭에서 입력해 주세요.</div>
           ) : (
             <>
-              {/* 범례 */}
-              <div style={{ display: "flex", gap: "12px", marginBottom: "8px", justifyContent: "flex-end", flexWrap: "wrap" }}>
-                {[
-                  { label: "총 예산", color: chartTheme.lightGray },
-                  { label: budgetMonth == null ? "집행 계획(누계)" : `집행 계획(${budgetMonth}월)`, color: chartTheme.outflowRed },
-                  { label: budgetMonth == null ? "집행 실적(누계)" : `집행 실적(${budgetMonth}월)`, color: chartTheme.inflowBlue },
-                ].map(({ label, color }) => (
-                  <div key={label} style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                    <div style={{ width: "11px", height: "11px", backgroundColor: color, borderRadius: "2px" }} />
-                    <span style={{ fontSize: "13px", color: "#555" }}>{label}</span>
-                  </div>
-                ))}
+              {/* Direct Cost 총집행율 */}
+              <div style={{ textAlign: "right", fontSize: "13px", color: "#1a2d4d", fontWeight: 700, marginBottom: "2px" }}>
+                Direct Cost : {fmtPct(directCostPct)}
               </div>
-              {/* 항목별 3-bar 그룹 */}
-              <div style={{ display: "flex", justifyContent: "space-around", gap: "8px", marginTop: "4px" }}>
+              {/* 항목별 그룹 막대: 회색(총 예산) 뒤 + 빨강(계획)·파랑(실적) 앞 */}
+              <div style={{ display: "flex", justifyContent: "space-around", gap: "8px", alignItems: "flex-end" }}>
                 {(() => {
-                  const H = 90;
-                  const maxVal = Math.max(...budgetRows.map((r) => r.budget ?? 0), 1);
+                  const H = 130; // 막대 최대 높이
+                  const LABEL_H = 18; // % 라벨 예약 공간 (막대 위)
+                  const maxVal = Math.max(
+                    ...budgetRows.flatMap((r) => [r.budget ?? 0, r.plan ?? 0, r.actual ?? 0]),
+                    1,
+                  );
                   const barH = (v: number | null) =>
-                    v != null && v > 0 ? Math.max((Math.log10(v + 1) / Math.log10(maxVal + 1)) * H, 6) : 0;
-                  const BAR_W = 22;
+                    v != null && v > 0 ? Math.max((v / maxVal) * H, 8) : 0;
+                  const GRAY_W = 44;
+                  const SUB_W = 19;
                   return budgetRows.map((g) => {
                     const bud = g.budget ?? 0;
                     const pln = g.plan ?? 0;
@@ -558,53 +554,72 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                     const bh = barH(bud);
                     const ph = barH(pln);
                     const ah = barH(act);
-                    const bars = [
-                      { h: bh, color: chartTheme.lightGray,  show: true,              val: fmtMoney(bud || null), valColor: "#666" },
-                      { h: ph, color: chartTheme.outflowRed, show: g.plan   != null,  val: g.plan   != null ? fmtMoney(pln || null) : null, valColor: chartTheme.outflowRed },
-                      { h: ah, color: chartTheme.inflowBlue, show: g.actual != null,  val: g.actual != null ? fmtMoney(act || null) : null, valColor: chartTheme.inflowBlue },
-                    ];
+                    const subTop = Math.max(ph, ah);
                     return (
                       <div key={g.item} style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center" }}>
-                        {/* ① 금액 레이블 — 항목별 세로 스택, 한 줄 고정(줄바꿈 없음), 단위가 바뀌어도 3행 높이 고정 */}
-                        <div style={{ display: "flex", flexDirection: "column", gap: "1px", marginBottom: "4px", alignItems: "center", minHeight: "42px", justifyContent: "flex-end", width: "100%" }}>
-                          {bars.map((b, i) =>
-                            b.show && b.val ? (
-                              <div key={i} title={b.val} style={{ display: "flex", alignItems: "center", gap: "3px", whiteSpace: "nowrap", maxWidth: "100%", justifyContent: "center" }}>
-                                <span style={{ width: "7px", height: "7px", backgroundColor: b.color, borderRadius: "2px", flexShrink: 0 }} />
-                                <span style={{ fontSize: "12px", fontWeight: 600, color: b.valColor, lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis" }}>{b.val}</span>
-                              </div>
-                            ) : null,
-                          )}
+                        {/* 예산 금액 (막대 위) */}
+                        <div title={fmtMoney(bud || null)} style={{ fontSize: "12px", fontWeight: 600, color: "#333", marginBottom: "2px", whiteSpace: "nowrap", maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis" }}>
+                          {fmtMoney(bud || null)}
                         </div>
-                        {/* ② 막대 영역 — 고정 높이, 막대는 아래 정렬 */}
-                        <div style={{ display: "flex", alignItems: "flex-end", gap: "3px", height: `${H}px`, width: "100%" , justifyContent: "center" }}>
-                          {bars.map((b, i) => (
-                            <div
-                              key={i}
-                              style={{
-                                width: `${BAR_W}px`,
-                                height: b.show && b.h > 0 ? `${b.h}px` : "2px",
-                                backgroundColor: b.show ? b.color : "transparent",
-                                borderRadius: "2px 2px 0 0",
-                                flexShrink: 0,
-                              }}
-                            />
-                          ))}
-                        </div>
-                        {/* ③ 집행률 + 항목명 */}
-                        <div style={{ borderTop: "1px solid #e8ecf0", width: "100%", marginTop: "2px", paddingTop: "4px", textAlign: "center" }}>
+                        {/* 막대 영역 (% 라벨 공간 포함) */}
+                        <div style={{ position: "relative", height: `${H + LABEL_H}px`, width: `${GRAY_W}px` }}>
+                          {/* 회색: 총 예산 */}
+                          <div style={{ position: "absolute", bottom: 0, left: 0, width: `${GRAY_W}px`, height: `${Math.max(bh, 2)}px`, backgroundColor: chartTheme.lightGray, borderRadius: "2px 2px 0 0" }} />
+                          {/* 집행율 % (계획/실적 막대 위) */}
                           {pct != null && (
-                            <div style={{ fontSize: "13px", color: chartTheme.inflowBlue, fontWeight: 700 }}>{fmtPct(pct)}</div>
+                            <div style={{ position: "absolute", bottom: `${subTop + 2}px`, left: "50%", transform: "translateX(-50%)", fontSize: "12px", fontWeight: 700, color: chartTheme.inflowBlue, whiteSpace: "nowrap" }}>
+                              {fmtPct(pct)}
+                            </div>
                           )}
-                          <div style={{ fontSize: "13px", color: "#1a2d4d", fontWeight: 700, marginTop: "1px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{g.item}</div>
+                          {/* 빨강: 집행 계획 */}
+                          {g.plan != null && ph > 0 && (
+                            <div title={fmtMoney(pln || null)} style={{ position: "absolute", bottom: 0, left: `${GRAY_W / 2 - SUB_W - 1}px`, width: `${SUB_W}px`, height: `${ph}px`, backgroundColor: chartTheme.outflowRed }} />
+                          )}
+                          {/* 파랑: 집행 실적 (금액 라벨 막대 안) */}
+                          {g.actual != null && ah > 0 && (
+                            <div style={{ position: "absolute", bottom: 0, left: `${GRAY_W / 2 + 1}px`, width: `${SUB_W}px`, height: `${ah}px`, backgroundColor: chartTheme.inflowBlue }}>
+                              <span
+                                title={fmtMoney(act || null)}
+                                style={{
+                                  position: "absolute",
+                                  top: "50%",
+                                  left: "50%",
+                                  transform: "translate(-50%, -50%)",
+                                  fontSize: "10px",
+                                  color: "#fff",
+                                  fontWeight: 700,
+                                  whiteSpace: "nowrap",
+                                  maxWidth: `${SUB_W + 4}px`,
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                }}
+                              >
+                                {fmtMoney(act || null)}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        {/* 항목명 */}
+                        <div style={{ fontSize: "13px", color: "#1a2d4d", fontWeight: 700, marginTop: "4px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" }}>
+                          {g.item}
                         </div>
                       </div>
                     );
                   });
                 })()}
               </div>
-              <div style={{ textAlign: "right", fontSize: "12px", color: "#333", fontWeight: 600, marginTop: "4px" }}>
-                Direct Cost 집행 : {fmtMoney(actualTotal)} / {fmtMoney(budgetTotal)} ({fmtPct(directCostPct)})
+              {/* 범례 */}
+              <div style={{ display: "flex", gap: "12px", marginTop: "8px", justifyContent: "flex-end", flexWrap: "wrap" }}>
+                {[
+                  { label: "총 예산", color: chartTheme.lightGray },
+                  { label: budgetMonth == null ? "집행 계획(누계)" : `집행 계획(${budgetMonth}월)`, color: chartTheme.outflowRed },
+                  { label: budgetMonth == null ? "집행 실적(누계)" : `집행 실적(${budgetMonth}월)`, color: chartTheme.inflowBlue },
+                ].map(({ label, color }) => (
+                  <div key={label} style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                    <div style={{ width: "11px", height: "11px", backgroundColor: color, borderRadius: "2px" }} />
+                    <span style={{ fontSize: "12px", color: "#555" }}>{label}</span>
+                  </div>
+                ))}
               </div>
             </>
           )}
