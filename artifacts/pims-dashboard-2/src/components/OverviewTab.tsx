@@ -124,7 +124,17 @@ export function OverviewTab({ projectName }: { projectName: string }) {
   const cfQ = useGetCashflowMonthly(cfParams, {
     query: { enabled: cfRef != null, queryKey: getGetCashflowMonthlyQueryKey(cfParams) },
   });
-  const cfPoints = cfQ.data?.points ?? [];
+  // 데이터 입력 탭에서 저장한 월별 자금(pd_cashflow_monthly)이 있으면 우선 사용
+  const pdCashPoints = (detail?.cashflow ?? [])
+    .filter((c) => c.year === REPORT_YEAR)
+    .map((c) => ({
+      month: `${c.year}-${String(c.month).padStart(2, "0")}`,
+      cashIn: c.cashIn ?? 0,
+      cashOut: c.cashOut ?? 0,
+      equivalent: c.equivalent ?? 0,
+    }));
+  const hasPdCashRows = (detail?.cashflow ?? []).length > 0;
+  const cfPoints = hasPdCashRows ? pdCashPoints : (cfQ.data?.points ?? []);
   // 월 필터: cashMonth 선택 시 해당 월까지 누계
   const cfFiltered = cashMonth == null
     ? cfPoints
@@ -139,7 +149,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
   for (const p of cfFiltered) {
     if (p.cashIn !== 0 || p.cashOut !== 0 || p.equivalent !== 0) balance = p.equivalent;
   }
-  const hasCash = cfRef != null && cfPoints.some((p) => p.cashIn !== 0 || p.cashOut !== 0 || p.equivalent !== 0);
+  const hasCash = (hasPdCashRows || cfRef != null) && cfPoints.some((p) => p.cashIn !== 0 || p.cashOut !== 0 || p.equivalent !== 0);
 
   // ---- 공정 (progress) ----
   const progress = detail?.progress ?? [];
