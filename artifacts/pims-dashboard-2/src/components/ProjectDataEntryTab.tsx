@@ -257,7 +257,13 @@ const EMPTY_OVERVIEW: ProjectDetailOverview = {
   cashCollection: null,
 };
 
-const FIXED_BUDGET_ITEMS = ["Common", "Expense 1"];
+const FIXED_BUDGET_ITEMS = ["Common", "Expense 1", "Expense 2", "Contingency"];
+const BUDGET_ITEM_CATEGORY: Record<string, string> = {
+  Common: "Direct Cost",
+  "Expense 1": "Direct Cost",
+  "Expense 2": "Indirect Cost",
+  Contingency: "Indirect Cost",
+};
 
 const TRADE_GROUPS = ["공통", "토목", "건축", "기계", "전기", "조경"];
 
@@ -345,9 +351,10 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       setCostBudget(
         FIXED_BUDGET_ITEMS.map((item) => {
           const found = detail.costBudget.find((r) => r.item.trim().toLowerCase() === item.toLowerCase());
+          const category = BUDGET_ITEM_CATEGORY[item] ?? "Direct Cost";
           return found
-            ? { ...found, category: "Direct Cost", item }
-            : { category: "Direct Cost", item, budget: null, plan: null, actual: null };
+            ? { ...found, category, item }
+            : { category, item, budget: null, plan: null, actual: null };
         }),
       );
       setCostBudgetMonthly(detail.costBudgetMonthly ?? []);
@@ -1044,7 +1051,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       <div style={cardStyle}>
         {cardHead(service ? "4. 예산 집행 현황 (예산집행 탭)" : "5. 예산 집행 현황 (원가 탭)", "costBudget")}
         <div style={{ fontSize: "12px", color: "#777", marginTop: "4px" }}>
-          Direct Cost 중 Common·Expense 1만 여기서 입력합니다. 외주성 예산·집행 실적은 아래 "외주/자재" 표에서 자동 집계됩니다.
+          Common·Expense 1(Direct Cost)과 Expense 2·Contingency(Indirect Cost)를 여기서 입력합니다. 외주성 예산·집행 실적은 아래 "외주/자재" 표에서 자동 집계됩니다.
         </div>
         <div data-tbl="costBudget" onKeyDown={makeArrowNav("costBudget")}>
         <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "4px" }}>
@@ -1077,7 +1084,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
           <div style={{ fontSize: "11px", color: "#777", marginBottom: "6px" }}>
             선택한 월에 따라 Budget Execution Status 카드에 표시됩니다. 외주성도 입력 가능합니다.
           </div>
-          {(["Common", "Expense 1", "외주성"] as const).map((item) => {
+          {(["Common", "Expense 1", "Expense 2", "외주성"] as const).map((item) => {
             const getCbm = (month: number, field: "plan" | "actual") =>
               costBudgetMonthly.find((r) => r.item === item && r.year === REPORT_YEAR && r.month === month)?.[field] ?? null;
             const setCbm = (month: number, field: "plan" | "actual", value: number | null) =>
