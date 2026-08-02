@@ -1,14 +1,8 @@
 import React from "react";
 import { ProjectCommentPanel } from "./ProjectCommentPanel";
 
-import {
-  useListSalescostSites,
-  getListSalescostSitesQueryKey,
-} from "@workspace/api-client-react";
 import { useProjectDetail, fmtPct, ratioPct } from "../lib/projectDetailData";
 import { useMoney } from "../lib/displayUnit";
-import { useMrProject } from "../data/mrProjectLinks";
-import { REPORT_YEAR } from "../lib/mgmtreportData";
 import { chartTheme } from "../lib/chartTheme";
 
 const cardStyle: React.CSSProperties = {
@@ -232,77 +226,6 @@ function BudgetExecutionStatus({ rows }: { rows: BudgetRow[] }) {
   );
 }
 
-const MONTH_LABELS = ["1월", "2월", "3월", "4월", "5월", "6월", "7월", "8월", "9월", "10월", "11월", "12월"];
-
-/** DB 원가 실적 (sc_monthly cogs 우선, 없으면 mr_monthly cogs 폴백) */
-function DbCostActualCard({ projectName }: { projectName: string }) {
-  const { fmtMoney, unitLabel } = useMoney();
-  const mr = useMrProject(projectName, REPORT_YEAR);
-  const siteCode = mr.project?.siteCode ?? null;
-  const cogsParams = { year: REPORT_YEAR, metric: "cogs" as const };
-  const cogsQ = useListSalescostSites(cogsParams, {
-    query: { enabled: siteCode != null, queryKey: getListSalescostSitesQueryKey(cogsParams) },
-  });
-  const scMonths = cogsQ.data?.sites.find((s) => s.code === siteCode)?.months ?? [];
-  const scHasAny = scMonths.some((v) => (v ?? 0) !== 0);
-  const months = scHasAny ? scMonths : (mr.project?.cogsActual ?? []);
-  const hasAny = months.some((v) => (v ?? 0) !== 0);
-  const loading = mr.isLoading || (siteCode != null && cogsQ.isLoading);
-
-  let cum = 0;
-  const rows = MONTH_LABELS.map((label, i) => {
-    const v = months[i] ?? 0;
-    cum += v;
-    return { label, value: v, cum };
-  });
-
-  return (
-    <div style={cardStyle}>
-      <span style={sectionTitle}>
-        실제 원가 ({REPORT_YEAR}년 · {unitLabel}{hasAny ? (scHasAny ? " · 매출/원가 DB" : " · 경영관리보고회 DB") : ""})
-      </span>
-      {loading ? (
-        <div style={emptyStyle}>불러오는 중…</div>
-      ) : !hasAny ? (
-        <div style={emptyStyle}>DB에 원가 실적 데이터가 없습니다. ( - )</div>
-      ) : (
-        <div style={{ overflowX: "auto", marginTop: "8px" }}>
-          <table style={{ borderCollapse: "collapse", width: "100%", fontSize: "12px" }}>
-            <thead>
-              <tr>
-                <th style={{ border: "1px solid #d0dce8", padding: "4px 6px", backgroundColor: "#eef3f9", color: "#1a2d4d", textAlign: "left" }}>구분</th>
-                {rows.map((r) => (
-                  <th key={r.label} style={{ border: "1px solid #d0dce8", padding: "4px 6px", backgroundColor: "#eef3f9", color: "#1a2d4d", textAlign: "right" }}>
-                    {r.label}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td style={{ border: "1px solid #d0dce8", padding: "4px 6px", fontWeight: 600, color: "#333", whiteSpace: "nowrap" }}>월 원가</td>
-                {rows.map((r) => (
-                  <td key={r.label} style={{ border: "1px solid #d0dce8", padding: "4px 6px", textAlign: "right", color: "#333" }}>
-                    {r.value !== 0 ? fmtMoney(r.value) : "-"}
-                  </td>
-                ))}
-              </tr>
-              <tr>
-                <td style={{ border: "1px solid #d0dce8", padding: "4px 6px", fontWeight: 600, color: chartTheme.planBlue, whiteSpace: "nowrap" }}>누계</td>
-                {rows.map((r) => (
-                  <td key={r.label} style={{ border: "1px solid #d0dce8", padding: "4px 6px", textAlign: "right", color: chartTheme.planBlue, fontWeight: 600 }}>
-                    {r.cum !== 0 ? fmtMoney(r.cum) : "-"}
-                  </td>
-                ))}
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
-  );
-}
-
 export function CostingTab({
   projectName,
   toYear,
@@ -398,7 +321,6 @@ export function CostingTab({
       </div>
 
       {/* Row 2: DB 원가 실적 */}
-      <DbCostActualCard projectName={projectName} />
 
       {/* Row 3: Budget Execution Status */}
       <BudgetExecutionStatus rows={rowsWithSum} />
