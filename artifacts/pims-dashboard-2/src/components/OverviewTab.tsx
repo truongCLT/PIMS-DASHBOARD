@@ -544,8 +544,8 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                   );
                   const barH = (v: number | null) =>
                     v != null && v > 0 ? Math.max((v / maxVal) * H, 8) : 0;
-                  const GRAY_W = 44;
-                  const SUB_W = 19;
+                  const GRAY_W = 68;
+                  const SUB_W = 31;
                   return budgetRows.map((g) => {
                     const bud = g.budget ?? 0;
                     const pln = g.plan ?? 0;
@@ -589,9 +589,6 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                                   color: "#fff",
                                   fontWeight: 700,
                                   whiteSpace: "nowrap",
-                                  maxWidth: `${SUB_W + 4}px`,
-                                  overflow: "hidden",
-                                  textOverflow: "ellipsis",
                                 }}
                               >
                                 {fmtMoney(act || null)}
