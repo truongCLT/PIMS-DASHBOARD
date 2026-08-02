@@ -203,6 +203,14 @@ export function OverviewTab({ projectName }: { projectName: string }) {
   };
   const budgetRows = [
     {
+      item: "외주성",
+      budget: outBudget,
+      plan: budgetMonth == null
+        ? (outRows.some((r) => r.executedBudget != null) ? outRows.reduce((a, r) => a + (r.executedBudget ?? 0), 0) : null)
+        : getCbm("외주성", "plan"),
+      actual: budgetMonth == null ? outActual : getCbm("외주성", "actual"),
+    },
+    {
       item: "Common",
       budget: common?.budget ?? null,
       plan: budgetMonth == null ? (common?.plan ?? null) : getCbm("Common", "plan"),
@@ -213,14 +221,6 @@ export function OverviewTab({ projectName }: { projectName: string }) {
       budget: expense1?.budget ?? null,
       plan: budgetMonth == null ? (expense1?.plan ?? null) : getCbm("Expense 1", "plan"),
       actual: budgetMonth == null ? (expense1?.actual ?? null) : getCbm("Expense 1", "actual"),
-    },
-    {
-      item: "외주성",
-      budget: outBudget,
-      plan: budgetMonth == null
-        ? (outRows.some((r) => r.executedBudget != null) ? outRows.reduce((a, r) => a + (r.executedBudget ?? 0), 0) : null)
-        : getCbm("외주성", "plan"),
-      actual: budgetMonth == null ? outActual : getCbm("외주성", "actual"),
     },
   ].filter((r) => r.budget != null || r.actual != null || r.plan != null);
   // Direct Cost % 는 Common·Expense 1·외주성 기준 (Expense 2·Contingency 제외)
@@ -548,12 +548,8 @@ export function OverviewTab({ projectName }: { projectName: string }) {
             <div style={emptyNote}>실행예산 데이터가 없습니다. 데이터 입력 탭에서 입력해 주세요.</div>
           ) : (
             <>
-              {/* Direct Cost 총집행율 */}
-              <div style={{ textAlign: "right", fontSize: "13px", color: "#1a2d4d", fontWeight: 700, marginBottom: "2px" }}>
-                Direct Cost : {fmtPct(directCostPct)}
-              </div>
               {/* 항목별 그룹 막대: 회색(총 예산) 뒤 + 빨강(계획)·파랑(실적) 앞 */}
-              <div style={{ display: "flex", justifyContent: "space-around", gap: "8px", alignItems: "flex-end" }}>
+              <div style={{ display: "flex", gap: "10px", alignItems: "stretch" }}>
                 {(() => {
                   const H = 130; // 막대 최대 높이
                   const LABEL_H = 18; // % 라벨 예약 공간 (막대 위)
@@ -565,7 +561,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                     v != null && v > 0 ? Math.max((v / maxVal) * H, 8) : 0;
                   const GRAY_W = 68;
                   const SUB_W = 31;
-                  return allBudgetRows.map((g) => {
+                  const renderGroup = (g: (typeof allBudgetRows)[number]) => {
                     const bud = g.budget ?? 0;
                     const pln = g.plan ?? 0;
                     const act = g.actual ?? 0;
@@ -621,7 +617,37 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                         </div>
                       </div>
                     );
-                  });
+                  };
+                  return (
+                    <>
+                      {/* Direct Cost 그룹 박스 (외주성·Common·Expense 1) */}
+                      {budgetRows.length > 0 && (
+                        <div
+                          style={{
+                            flex: budgetRows.length,
+                            minWidth: 0,
+                            backgroundColor: "rgba(214, 226, 240, 0.28)",
+                            border: "1px solid #c8d6e6",
+                            borderRadius: "6px",
+                            padding: "6px 8px 8px",
+                          }}
+                        >
+                          <div style={{ textAlign: "center", fontSize: "13px", color: "#1a2d4d", fontWeight: 700, marginBottom: "4px" }}>
+                            Direct Cost : {fmtPct(directCostPct)}
+                          </div>
+                          <div style={{ display: "flex", justifyContent: "space-around", gap: "8px", alignItems: "flex-end" }}>
+                            {budgetRows.map(renderGroup)}
+                          </div>
+                        </div>
+                      )}
+                      {/* 박스 밖: Expense 2 · Contingency */}
+                      {extraBudgetRows.length > 0 && (
+                        <div style={{ flex: extraBudgetRows.length, minWidth: 0, display: "flex", justifyContent: "space-around", gap: "8px", alignItems: "flex-end", padding: "6px 0 8px" }}>
+                          {extraBudgetRows.map(renderGroup)}
+                        </div>
+                      )}
+                    </>
+                  );
                 })()}
               </div>
               {/* 범례 */}
