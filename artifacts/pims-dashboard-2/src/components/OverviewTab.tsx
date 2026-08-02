@@ -188,6 +188,8 @@ export function OverviewTab({ projectName }: { projectName: string }) {
   const findCb = (name: string) => cb.find((r) => r.item.trim().toLowerCase() === name.toLowerCase()) ?? null;
   const common = findCb("Common");
   const expense1 = findCb("Expense 1");
+  const expense2 = findCb("Expense 2");
+  const contingency = findCb("Contingency");
   const outRows = detail?.outsourcing ?? [];
   const outBudget = outRows.some((r) => r.budget != null) ? outRows.reduce((a, r) => a + (r.budget ?? 0), 0) : null;
   const outActual = outRows.some((r) => r.accum != null || r.resolved != null)
@@ -221,9 +223,26 @@ export function OverviewTab({ projectName }: { projectName: string }) {
       actual: budgetMonth == null ? outActual : getCbm("외주성", "actual"),
     },
   ].filter((r) => r.budget != null || r.actual != null || r.plan != null);
+  // Direct Cost % 는 Common·Expense 1·외주성 기준 (Expense 2·Contingency 제외)
   const budgetTotal = budgetRows.reduce((a, r) => a + (r.budget ?? 0), 0);
   const actualTotal = budgetRows.reduce((a, r) => a + (r.actual ?? 0), 0);
   const directCostPct = ratioPct(actualTotal, budgetTotal);
+  // Direct Cost 외 항목 (첨부 레이아웃: 오른쪽 별도 표시)
+  const extraBudgetRows = [
+    {
+      item: "Expense 2",
+      budget: expense2?.budget ?? null,
+      plan: budgetMonth == null ? (expense2?.plan ?? null) : getCbm("Expense 2", "plan"),
+      actual: budgetMonth == null ? (expense2?.actual ?? null) : getCbm("Expense 2", "actual"),
+    },
+    {
+      item: "Contingency",
+      budget: contingency?.budget ?? null,
+      plan: budgetMonth == null ? (contingency?.plan ?? null) : getCbm("Contingency", "plan"),
+      actual: budgetMonth == null ? (contingency?.actual ?? null) : getCbm("Contingency", "actual"),
+    },
+  ].filter((r) => r.budget != null || r.actual != null || r.plan != null);
+  const allBudgetRows = [...budgetRows, ...extraBudgetRows];
 
   const MAX_H = 110;
 
@@ -525,7 +544,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
               ))}
             </select>
           </div>
-          {budgetRows.length === 0 ? (
+          {allBudgetRows.length === 0 ? (
             <div style={emptyNote}>실행예산 데이터가 없습니다. 데이터 입력 탭에서 입력해 주세요.</div>
           ) : (
             <>
@@ -539,14 +558,14 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                   const H = 130; // 막대 최대 높이
                   const LABEL_H = 18; // % 라벨 예약 공간 (막대 위)
                   const maxVal = Math.max(
-                    ...budgetRows.flatMap((r) => [r.budget ?? 0, r.plan ?? 0, r.actual ?? 0]),
+                    ...allBudgetRows.flatMap((r) => [r.budget ?? 0, r.plan ?? 0, r.actual ?? 0]),
                     1,
                   );
                   const barH = (v: number | null) =>
                     v != null && v > 0 ? Math.max((v / maxVal) * H, 8) : 0;
                   const GRAY_W = 68;
                   const SUB_W = 31;
-                  return budgetRows.map((g) => {
+                  return allBudgetRows.map((g) => {
                     const bud = g.budget ?? 0;
                     const pln = g.plan ?? 0;
                     const act = g.actual ?? 0;
