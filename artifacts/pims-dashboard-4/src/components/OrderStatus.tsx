@@ -22,35 +22,37 @@ export function OrderStatus() {
         <span style={{ fontSize: "14px", fontWeight: "600", color: "var(--color-text-strong)" }}>수주 실적 현황</span>
       </div>
 
-      {/* Progress bar with label */}
-      <div style={{ marginBottom: "12px" }}>
-        <div style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "4px",
-        }}>
-          <span style={{ fontSize: "10px", color: "var(--color-text-muted)" }}>계획 대비 {pct}%</span>
-        </div>
-        <div style={{
-          height: "22px",
-          backgroundColor: "var(--color-blue-tint)",
-          borderRadius: "999px",
-          overflow: "hidden",
-          position: "relative",
-        }}>
-          <div style={{
-            height: "100%",
-            width: `${pct}%`,
-            background: "linear-gradient(90deg, var(--color-primary-blue), var(--color-blue-bright))",
-            borderRadius: "999px",
-            display: "flex",
-            alignItems: "center",
-            paddingLeft: "8px",
-          }}>
-            <span style={{ fontSize: "10px", color: "#fff", fontWeight: "600" }}>계획 대비 {pct}%</span>
-          </div>
-        </div>
+      {/* 도넛 차트: 수주(파랑) vs 잔여(연한 파랑) */}
+      <div style={{ display: "flex", justifyContent: "center", marginBottom: "12px" }}>
+        {(() => {
+          const SIZE = 120;
+          const STROKE = 16;
+          const r = (SIZE - STROKE) / 2;
+          const c = 2 * Math.PI * r;
+          const filled = (pct / 100) * c;
+          return (
+            <div style={{ position: "relative", width: `${SIZE}px`, height: `${SIZE}px` }}>
+              <svg width={SIZE} height={SIZE} style={{ transform: "rotate(-90deg)" }}>
+                <circle
+                  cx={SIZE / 2} cy={SIZE / 2} r={r}
+                  fill="none" stroke="var(--color-blue-tint)" strokeWidth={STROKE}
+                />
+                <circle
+                  cx={SIZE / 2} cy={SIZE / 2} r={r}
+                  fill="none" stroke="var(--color-primary-blue)" strokeWidth={STROKE}
+                  strokeDasharray={`${filled} ${c - filled}`} strokeLinecap="round"
+                />
+              </svg>
+              <div style={{
+                position: "absolute", inset: 0,
+                display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+              }}>
+                <span style={{ fontSize: "20px", fontWeight: "700", color: "var(--color-primary-blue)", lineHeight: 1.1 }}>{pct}%</span>
+                <span style={{ fontSize: "10px", color: "var(--color-text-muted)" }}>계획 대비</span>
+              </div>
+            </div>
+          );
+        })()}
       </div>
 
       {/* Stats row */}
