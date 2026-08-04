@@ -425,7 +425,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
 
                 {/* 연 */}
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                  <div style={{ marginTop: "-32px" }}>
+                  <div style={{ marginTop: "-46px" }}>
                     <Donut
                       percent={ratioPct(cumRev, annualPlanRev) ?? 0}
                       color={chartTheme.planBlue}
@@ -442,7 +442,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
 
                 {/* 누계 */}
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                  <div style={{ marginTop: "-32px" }}>
+                  <div style={{ marginTop: "-46px" }}>
                     <Donut
                       percent={ratioPct(cumRev, overview.contractAmount) ?? 0}
                       color={chartTheme.balanceNavy}
