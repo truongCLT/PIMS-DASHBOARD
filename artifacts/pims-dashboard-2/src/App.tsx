@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { TopNav } from "./components/TopNav";
 import { Sidebar, type DashboardScope } from "./components/Sidebar";
 import { Dashboard } from "./components/Dashboard";
 import { ProjectDashboard } from "./components/ProjectDashboard";
@@ -17,7 +16,6 @@ function App() {
   return (
     <AdminAuthProvider>
       <div style={{ display: "flex", flexDirection: "column", height: "100vh", overflow: "hidden", fontFamily: "'Noto Sans KR', 'Inter', sans-serif" }}>
-        <TopNav />
         <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
           <Sidebar
             selectedProject={selectedProject}
