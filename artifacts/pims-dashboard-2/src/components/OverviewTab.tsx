@@ -420,7 +420,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                       valueLabel={fmtMoney(thisMonthRev)}
                     />
                   </div>
-                  <span style={{ fontSize: "12px", fontWeight: 700, color: "#333", marginTop: "2px" }}>당월</span>
+                  <span style={{ fontSize: "12px", fontWeight: 700, color: "#333", marginTop: "10px" }}>당월</span>
                 </div>
 
                 {/* 연 */}
@@ -436,7 +436,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                     label={fmtPct(ratioPct(cumRev, annualPlanRev))}
                     labelSize={18}
                   />
-                  <div style={{ fontSize: "12px", color: "#1a2d4d", fontWeight: 700, marginTop: "4px" }}>
+                  <div style={{ fontSize: "12px", color: "#1a2d4d", fontWeight: 700, marginTop: "12px" }}>
                     연
                   </div>
                 </div>
@@ -454,7 +454,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                     label={fmtPct(ratioPct(cumRev, overview.contractAmount))}
                     labelSize={18}
                   />
-                  <div style={{ fontSize: "12px", color: "#1a2d4d", fontWeight: 700, marginTop: "4px" }}>
+                  <div style={{ fontSize: "12px", color: "#1a2d4d", fontWeight: 700, marginTop: "12px" }}>
                     누계
                   </div>
                 </div>
