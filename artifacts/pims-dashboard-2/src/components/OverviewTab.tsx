@@ -480,7 +480,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                       <div style={{ borderTop: "1px dashed #c8d4e0", margin: "4px 0" }} />
                     )}
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                      <div style={{ marginTop: "-6px" }}>
+                      <div style={{ marginTop: i === 0 ? "-6px" : "6px" }}>
                         <Donut
                           percent={estPct(c.data) ?? 0}
                           color={c.color}
