@@ -198,8 +198,11 @@ export function OverviewTab({ projectName }: { projectName: string }) {
   const cbm = detail?.costBudgetMonthly ?? [];
   const getCbm = (item: string, field: "plan" | "actual") => {
     if (budgetMonth == null) return null; // 전체: monthly 미사용
-    const row = cbm.find((r) => r.item === item && r.year === REPORT_YEAR && r.month === budgetMonth);
-    return row?.[field] ?? null;
+    // 1월부터 선택월까지 누적 합산
+    const rows = cbm.filter((r) => r.item === item && r.year === REPORT_YEAR && r.month <= budgetMonth);
+    if (rows.length === 0) return null;
+    const total = rows.reduce((a, r) => a + (r[field] ?? 0), 0);
+    return total > 0 ? total : null;
   };
   const budgetRows = [
     {
