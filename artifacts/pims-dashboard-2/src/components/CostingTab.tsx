@@ -107,9 +107,20 @@ function BudgetExecutionStatus({ rows }: { rows: BudgetRow[] }) {
             const planPct = ratioPct(row.plan, row.budget);
             const actualPct = ratioPct(row.actual, row.budget);
             return (
-              <div key={`${row.item}-${i}`} style={{ display: "flex", alignItems: "center" }}>
+              <React.Fragment key={`${row.item}-${i}`}>
+              {showCategory && (
+                <div style={{
+                  fontSize: "12px",
+                  fontWeight: 700,
+                  color: "#333",
+                  marginTop: i === 0 ? 0 : "2px",
+                  marginBottom: "-8px",
+                }}>
+                  {row.category}
+                </div>
+              )}
+              <div style={{ display: "flex", alignItems: "center" }}>
                 <div style={{ width: "110px", minWidth: "110px", fontSize: "12px", color: "#333" }}>
-                  {showCategory && <div style={{ marginBottom: "14px", fontWeight: 700 }}>{row.category}</div>}
                   <span>{row.item}</span>
                 </div>
                 <div style={{ flex: 1, position: "relative" }}>
@@ -218,6 +229,7 @@ function BudgetExecutionStatus({ rows }: { rows: BudgetRow[] }) {
                   )}
                 </div>
               </div>
+              </React.Fragment>
             );
           })}
         </div>
