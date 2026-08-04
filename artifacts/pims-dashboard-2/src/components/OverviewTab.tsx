@@ -425,17 +425,16 @@ export function OverviewTab({ projectName }: { projectName: string }) {
 
                 {/* 연 */}
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                  <div style={{ fontSize: "12px", color: "#555", marginBottom: "2px", textAlign: "center", whiteSpace: "nowrap" }}>
-                    {fmtMoney(cumRev)} / {fmtMoney(annualPlanRev)}
+                  <div style={{ marginTop: "-10px" }}>
+                    <Donut
+                      percent={ratioPct(cumRev, annualPlanRev) ?? 0}
+                      color={chartTheme.planBlue}
+                      size={110}
+                      stroke={13}
+                      label={fmtPct(ratioPct(cumRev, annualPlanRev))}
+                      labelSize={18}
+                    />
                   </div>
-                  <Donut
-                    percent={ratioPct(cumRev, annualPlanRev) ?? 0}
-                    color={chartTheme.planBlue}
-                    size={110}
-                    stroke={13}
-                    label={fmtPct(ratioPct(cumRev, annualPlanRev))}
-                    labelSize={18}
-                  />
                   <div style={{ fontSize: "12px", color: "#1a2d4d", fontWeight: 700, marginTop: "12px" }}>
                     연
                   </div>
@@ -443,17 +442,16 @@ export function OverviewTab({ projectName }: { projectName: string }) {
 
                 {/* 누계 */}
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                  <div style={{ fontSize: "12px", color: "#555", marginBottom: "2px", textAlign: "center", whiteSpace: "nowrap" }}>
-                    {fmtMoney(cumRev)} / {fmtMoney(overview.contractAmount)}
+                  <div style={{ marginTop: "-10px" }}>
+                    <Donut
+                      percent={ratioPct(cumRev, overview.contractAmount) ?? 0}
+                      color={chartTheme.balanceNavy}
+                      size={110}
+                      stroke={13}
+                      label={fmtPct(ratioPct(cumRev, overview.contractAmount))}
+                      labelSize={18}
+                    />
                   </div>
-                  <Donut
-                    percent={ratioPct(cumRev, overview.contractAmount) ?? 0}
-                    color={chartTheme.balanceNavy}
-                    size={110}
-                    stroke={13}
-                    label={fmtPct(ratioPct(cumRev, overview.contractAmount))}
-                    labelSize={18}
-                  />
                   <div style={{ fontSize: "12px", color: "#1a2d4d", fontWeight: 700, marginTop: "12px" }}>
                     누계
                   </div>
@@ -482,17 +480,16 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                       <div style={{ borderTop: "1px dashed #c8d4e0", margin: "4px 0" }} />
                     )}
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                      <div style={{ fontSize: "11px", color: "#777", marginBottom: "1px", whiteSpace: "nowrap" }}>
-                        {fmtMoney(c.data?.costAmount)} / {fmtMoney(c.data?.contractAmount)}
+                      <div style={{ marginTop: "-6px" }}>
+                        <Donut
+                          percent={estPct(c.data) ?? 0}
+                          color={c.color}
+                          size={82}
+                          stroke={9}
+                          label={fmtPct(estPct(c.data))}
+                          labelSize={14}
+                        />
                       </div>
-                      <Donut
-                        percent={estPct(c.data) ?? 0}
-                        color={c.color}
-                        size={82}
-                        stroke={9}
-                        label={fmtPct(estPct(c.data))}
-                        labelSize={14}
-                      />
                       <div style={{ fontSize: "12px", color: "#1a2d4d", fontWeight: 700, marginTop: "3px" }}>{c.title}</div>
                     </div>
                   </div>
@@ -501,9 +498,6 @@ export function OverviewTab({ projectName }: { projectName: string }) {
 
               {/* 우측: 준공추정 대형 도넛 */}
               <div style={{ flex: "0 0 auto", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-                <div style={{ fontSize: "12px", color: "#555", marginBottom: "2px", whiteSpace: "nowrap" }}>
-                  {fmtMoney(completion?.costAmount)} / {fmtMoney(completion?.contractAmount)}
-                </div>
                 <Donut
                   percent={estPct(completion) ?? 0}
                   color={chartTheme.planBlue}
