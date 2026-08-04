@@ -424,8 +424,8 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                 </div>
 
                 {/* 연 */}
-                <div style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: "12px", color: "#555", marginBottom: "2px" }}>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                  <div style={{ fontSize: "12px", color: "#555", marginBottom: "2px", textAlign: "center", whiteSpace: "nowrap" }}>
                     {fmtMoney(cumRev)} / {fmtMoney(annualPlanRev)}
                   </div>
                   <Donut
@@ -442,8 +442,8 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                 </div>
 
                 {/* 누계 */}
-                <div style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: "12px", color: "#555", marginBottom: "2px" }}>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                  <div style={{ fontSize: "12px", color: "#555", marginBottom: "2px", textAlign: "center", whiteSpace: "nowrap" }}>
                     {fmtMoney(cumRev)} / {fmtMoney(overview.contractAmount)}
                   </div>
                   <Donut
@@ -481,7 +481,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                     {i > 0 && (
                       <div style={{ borderTop: "1px dashed #c8d4e0", margin: "4px 0" }} />
                     )}
-                    <div style={{ textAlign: "center" }}>
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
                       <div style={{ fontSize: "11px", color: "#777", marginBottom: "1px", whiteSpace: "nowrap" }}>
                         {fmtMoney(c.data?.costAmount)} / {fmtMoney(c.data?.contractAmount)}
                       </div>
