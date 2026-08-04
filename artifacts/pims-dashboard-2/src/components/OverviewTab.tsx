@@ -420,7 +420,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                       valueLabel={fmtMoney(thisMonthRev)}
                     />
                   </div>
-                  <span style={{ fontSize: "12px", fontWeight: 700, color: "#333", marginTop: "10px" }}>당월</span>
+                  <span style={{ fontSize: "12px", fontWeight: 700, color: "#333", marginTop: "2px" }}>당월</span>
                 </div>
 
                 {/* 연 */}
