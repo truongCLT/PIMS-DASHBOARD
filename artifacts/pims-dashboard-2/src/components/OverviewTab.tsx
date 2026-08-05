@@ -260,7 +260,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
             <span
               style={{
                 fontSize: "11px",
-                backgroundColor: chartTheme.profitGreen,
+                backgroundColor: chartTheme.planBlue,
                 color: "#fff",
                 borderRadius: "3px",
                 padding: "1px 5px",
@@ -287,12 +287,12 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                 {(() => {
                   const bars = [
                     { label: "계획", value: monthlyPlan, color: chartTheme.planBlue },
-                    { label: "실적", value: monthlyActual, color: chartTheme.outflowRed },
+                    { label: "실적", value: monthlyActual, color: chartTheme.actualGreen },
                   ];
                   const gmax = Math.max(...bars.map((b) => b.value ?? 0), 1);
                   return (
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                      <div style={{ fontSize: "14px", color: chartTheme.profitGreen, fontWeight: 800, marginBottom: "6px" }}>
+                      <div style={{ fontSize: "14px", color: chartTheme.planBlue, fontWeight: 800, marginBottom: "6px" }}>
                         달성률 {fmtPct(monthlyAchieveRate)}
                       </div>
                       <div style={{ display: "flex", alignItems: "flex-end", gap: "10px", height: `${MAX_H + 20}px` }}>
@@ -340,7 +340,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                         {/* 빨강: 실적 달성률 (내부 링) */}
                         <circle
                           cx={cx} cy={cy} r={rIn} fill="none"
-                          stroke={chartTheme.outflowRed} strokeWidth={16}
+                          stroke={chartTheme.actualGreen} strokeWidth={16}
                           strokeDasharray={`${(aPct / 100) * cIn} ${cIn}`}
                           transform={`rotate(-90 ${cx} ${cy})`}
                         />
@@ -352,7 +352,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                           strokeLinecap="round"
                           transform={`rotate(-90 ${cx} ${cy})`}
                         />
-                        <text x={cx} y={cy + 2} textAnchor="middle" fontSize={30} fontWeight={800} fill={chartTheme.outflowRed}>
+                        <text x={cx} y={cy + 2} textAnchor="middle" fontSize={30} fontWeight={800} fill={chartTheme.planBlue}>
                           {fmtPct(actualCum)}
                         </text>
                         <text x={cx} y={cy + 22} textAnchor="middle" fontSize={13} fill="#555">
