@@ -29,6 +29,10 @@ export interface Theme {
     valueColor: string;
     accentBorderLeft: string | null; // per-card colored left border (theme B uses this)
     boxShadow: string;
+    /** "solid" = existing dark/white card · "strip" = colored header strip + icon + progress bar */
+    cardStyle?: "solid" | "strip";
+    /** 4 accent colours for strip cards: [매출, 영업이익, 누적매출, 누적영업이익] */
+    stripColors?: [string, string, string, string];
   };
 }
 
@@ -187,6 +191,39 @@ export const THEMES: Theme[] = [
       boxShadow: "0 2px 8px rgba(15,23,42,0.06)",
     },
   },
+
+  /* ── E: Analytics Clean ──────────────────────── */
+  {
+    id: "analytics-clean",
+    label: "E — Analytics Clean",
+    swatch: "#4472ca",
+    sidebar: {
+      bg: "#ffffff",
+      border: "1px solid #dde3ee",
+      topLevelColor: "#1e2a3b",
+      midLevelColor: "#334155",
+      subLevelColor: "#6b7d96",
+      activeItemBg: "rgba(68,114,202,0.10)",
+      activeItemColor: "#4472ca",
+      activeItemAccent: "#4472ca",
+      totalActiveBg: "rgba(68,114,202,0.08)",
+      totalBorderBottom: "1px solid #dde3ee",
+      brandingBorderTop: "1px solid #dde3ee",
+    },
+    dashboard: { bg: "#f2f5fa" },
+    kpi: {
+      cardBg: "#ffffff",
+      cardBorderTop: null,
+      cardBorder: "1px solid #dde3ee",
+      titleColor: "#6b7d96",
+      labelColor: "#9ab0c8",
+      valueColor: "#1e2a3b",
+      accentBorderLeft: null,
+      boxShadow: "0 1px 4px rgba(30,42,59,0.07)",
+      cardStyle: "strip",
+      stripColors: ["#4472ca", "#e67e22", "#0891b2", "#059669"],
+    },
+  },
 ];
 
 interface ThemeContextValue {
@@ -199,9 +236,11 @@ const ThemeContext = createContext<ThemeContextValue>({
   setThemeId: () => {},
 });
 
+const DEFAULT_THEME_ID = "analytics-clean";
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const stored = typeof localStorage !== "undefined" ? localStorage.getItem("pims-theme") : null;
-  const initial = THEMES.find((t) => t.id === stored) ?? THEMES[0];
+  const initial = THEMES.find((t) => t.id === stored) ?? THEMES.find((t) => t.id === DEFAULT_THEME_ID) ?? THEMES[0];
   const [theme, setTheme] = useState<Theme>(initial);
 
   const setThemeId = (id: string) => {
