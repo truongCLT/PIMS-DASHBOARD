@@ -7,7 +7,7 @@ import { chartTheme } from "../lib/chartTheme";
 
 const cardStyle: React.CSSProperties = {
   backgroundColor: "#fff",
-  border: "1px solid #dde3ee",
+  border: "1px solid #e2e9f3",
   borderRadius: "8px",
   padding: "10px 12px",
 };
@@ -108,15 +108,15 @@ export function ServiceBudgetTab({ projectName }: { projectName: string }) {
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
       {/* Budget Execution Status */}
       <div style={{ ...cardStyle, padding: "14px 18px 24px" }}>
-        <span style={{ fontSize: "13px", fontWeight: 600, color: "#4472ca" }}>
+        <span style={{ fontSize: "13px", fontWeight: 600, color: "#2f7cf6" }}>
           예산 <u>집행 현황</u>
-          <span style={{ marginLeft: "8px", fontSize: "12px", fontWeight: 500, color: "#8a97a8" }}>단위: {unitLabel}</span>
+          <span style={{ marginLeft: "8px", fontSize: "12px", fontWeight: 500, color: "#7c8ba3" }}>단위: {unitLabel}</span>
         </span>
 
         {isLoading ? (
-          <div style={{ padding: "50px 20px", textAlign: "center", fontSize: "14px", color: "#8a97a8" }}>불러오는 중…</div>
+          <div style={{ padding: "50px 20px", textAlign: "center", fontSize: "14px", color: "#7c8ba3" }}>불러오는 중…</div>
         ) : rows.length === 0 ? (
-          <div style={{ padding: "50px 20px", textAlign: "center", fontSize: "14px", color: "#8a97a8" }}>
+          <div style={{ padding: "50px 20px", textAlign: "center", fontSize: "14px", color: "#7c8ba3" }}>
             예산 집행 데이터가 없습니다. "데이터 입력" 탭에서 예산 집행 현황을 입력해 주세요.
           </div>
         ) : (

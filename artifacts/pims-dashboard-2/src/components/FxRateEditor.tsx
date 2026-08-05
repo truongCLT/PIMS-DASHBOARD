@@ -72,7 +72,7 @@ export function FxRateEditor() {
   const inputStyle: React.CSSProperties = {
     width: "100%",
     boxSizing: "border-box",
-    border: "1px solid #ccd4dd",
+    border: "1px solid #dde6f1",
     borderRadius: "5px",
     padding: "6px 8px",
     fontSize: "12px",
@@ -81,7 +81,7 @@ export function FxRateEditor() {
   };
   const labelStyle: React.CSSProperties = {
     fontSize: "11px",
-    color: "#5a6a7e",
+    color: "#7c8ba3",
     fontWeight: 600,
     marginBottom: "3px",
   };
@@ -117,14 +117,14 @@ export function FxRateEditor() {
           maxHeight: `calc(100vh - ${popupPos.top + 8}px)`,
           overflowY: "auto",
           backgroundColor: "#fff",
-          border: "1px solid #ccd4dd",
+          border: "1px solid #dde6f1",
           borderRadius: "8px",
           boxShadow: "0 4px 12px rgba(20,40,80,0.15)",
           zIndex: 1000,
           width: "220px",
           padding: "14px",
         }}>
-          <div style={{ fontSize: "12px", fontWeight: 700, color: "#1a2d4d", marginBottom: "10px" }}>
+          <div style={{ fontSize: "12px", fontWeight: 700, color: "#16294a", marginBottom: "10px" }}>
             환율 설정 (USD 기준)
           </div>
           <div style={{ marginBottom: "8px" }}>
@@ -150,7 +150,7 @@ export function FxRateEditor() {
             />
           </div>
           {error && (
-            <div style={{ fontSize: "11px", color: "#c0392b", marginBottom: "8px" }}>{error}</div>
+            <div style={{ fontSize: "11px", color: "#e0655c", marginBottom: "8px" }}>{error}</div>
           )}
           <button
             onClick={save}
@@ -160,7 +160,7 @@ export function FxRateEditor() {
               padding: "8px 0",
               fontSize: "12px",
               fontWeight: 600,
-              backgroundColor: "#2e4568",
+              backgroundColor: "#1e3a6e",
               color: "#fff",
               border: "none",
               borderRadius: "6px",

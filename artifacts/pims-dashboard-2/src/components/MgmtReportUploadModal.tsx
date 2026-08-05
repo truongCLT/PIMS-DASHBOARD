@@ -71,7 +71,7 @@ const statRow: React.CSSProperties = {
   display: "flex",
   gap: "18px",
   flexWrap: "wrap",
-  borderBottom: "1px solid #eef1f5",
+  borderBottom: "1px solid #eef2f7",
 };
 
 export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
@@ -238,12 +238,12 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
             alignItems: "center",
             justifyContent: "space-between",
             padding: "14px 18px",
-            borderBottom: "1px solid #e5eaf0",
+            borderBottom: "1px solid #e2e9f3",
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <FileSpreadsheet size={16} color="#1e7145" />
-            <span style={{ fontSize: "14px", fontWeight: 700, color: "#1a2d4d" }}>
+            <FileSpreadsheet size={16} color="#1c7a5a" />
+            <span style={{ fontSize: "14px", fontWeight: 700, color: "#16294a" }}>
               Excel 업로드
             </span>
           </div>
@@ -257,7 +257,7 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
 
         {/* Body */}
         <div style={{ padding: "16px 18px", overflowY: "auto" }}>
-          <p style={{ margin: "0 0 12px", fontSize: "12px", color: "#5a6579", lineHeight: 1.6 }}>
+          <p style={{ margin: "0 0 12px", fontSize: "12px", color: "#7c8ba3", lineHeight: 1.6 }}>
             {meta.description} 내용을 확인한 뒤 <b>반영</b>을 누르면 대시보드 데이터가 갱신됩니다.
           </p>
 
@@ -273,7 +273,7 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
                   resetResult();
                 }}
                 style={{
-                  border: "1px solid #ccd4dd",
+                  border: "1px solid #dde6f1",
                   borderRadius: "6px",
                   padding: "6px 8px",
                   fontSize: "12px",
@@ -305,7 +305,7 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
                 borderRadius: "8px",
                 padding: "8px 14px",
                 fontSize: "12px",
-                color: "#2e4568",
+                color: "#1e3a6e",
                 backgroundColor: "#f6f9fc",
                 cursor: busy ? "wait" : "pointer",
                 maxWidth: "320px",
@@ -333,7 +333,7 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
                   }}
                   style={{
                     width: "72px",
-                    border: "1px solid #ccd4dd",
+                    border: "1px solid #dde6f1",
                     borderRadius: "6px",
                     padding: "6px 8px",
                     fontSize: "12px",
@@ -345,7 +345,7 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
               onClick={handlePreview}
               disabled={busy || !file}
               style={{
-                backgroundColor: "#2e4568",
+                backgroundColor: "#1e3a6e",
                 color: "#fff",
                 border: "none",
                 borderRadius: "6px",
@@ -363,7 +363,7 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
           {progress && (
             <div style={{ marginBottom: "12px" }}>
               <style>{`@keyframes uploadIndeterminate { 0% { left: -40%; } 100% { left: 100%; } }`}</style>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: "#5a6579", marginBottom: "4px", fontWeight: 600 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: "#7c8ba3", marginBottom: "4px", fontWeight: 600 }}>
                 <span>
                   {progress.phase === "upload"
                     ? "파일 업로드 중..."
@@ -375,13 +375,13 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
                 </span>
                 {progress.phase === "upload" && <span>{progress.percent}%</span>}
               </div>
-              <div style={{ position: "relative", height: "8px", backgroundColor: "#e8edf3", borderRadius: "4px", overflow: "hidden" }}>
+              <div style={{ position: "relative", height: "8px", backgroundColor: "#eef2f7", borderRadius: "4px", overflow: "hidden" }}>
                 {progress.phase === "upload" ? (
                   <div
                     style={{
                       height: "100%",
                       width: `${progress.percent}%`,
-                      backgroundColor: "#2e4568",
+                      backgroundColor: "#1e3a6e",
                       borderRadius: "4px",
                       transition: "width 0.2s ease",
                     }}
@@ -393,7 +393,7 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
                       top: 0,
                       height: "100%",
                       width: "40%",
-                      backgroundColor: "#1e7145",
+                      backgroundColor: "#1c7a5a",
                       borderRadius: "4px",
                       animation: "uploadIndeterminate 1.2s linear infinite",
                     }}
@@ -408,7 +408,7 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
               style={{
                 backgroundColor: "#fdecec",
                 border: "1px solid #f5c2c0",
-                color: "#a94442",
+                color: "#e0655c",
                 borderRadius: "8px",
                 padding: "10px 12px",
                 fontSize: "12px",
@@ -425,7 +425,7 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
               style={{
                 backgroundColor: "#e8f6ee",
                 border: "1px solid #bfe5cf",
-                color: "#1e7145",
+                color: "#1c7a5a",
                 borderRadius: "8px",
                 padding: "10px 12px",
                 fontSize: "12px",
@@ -442,7 +442,7 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
               style={{
                 backgroundColor: "#eef4fd",
                 border: "1px solid #c3d7f2",
-                color: "#2e4568",
+                color: "#1e3a6e",
                 borderRadius: "8px",
                 padding: "10px 12px",
                 fontSize: "12px",
@@ -455,13 +455,13 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
           )}
 
           {dataset === "mgmtreport" && history.length > 0 && (
-            <div style={{ border: "1px solid #dde5ee", borderRadius: "10px", overflow: "hidden", marginBottom: "12px" }}>
+            <div style={{ border: "1px solid #e2e9f3", borderRadius: "10px", overflow: "hidden", marginBottom: "12px" }}>
               <div
                 style={{
                   backgroundColor: "#f2f6fb",
                   padding: "10px 14px",
                   fontSize: "12px",
-                  color: "#1a2d4d",
+                  color: "#16294a",
                   fontWeight: 700,
                   display: "flex",
                   alignItems: "center",
@@ -473,7 +473,7 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
               </div>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "11px" }}>
                 <thead>
-                  <tr style={{ backgroundColor: "#f8fafc", color: "#5a6579" }}>
+                  <tr style={{ backgroundColor: "#f8fafc", color: "#7c8ba3" }}>
                     <th style={thLeft}>반영 일시</th>
                     <th style={thLeft}>파일명</th>
                     <th style={thRight}>연도</th>
@@ -482,8 +482,8 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
                 </thead>
                 <tbody>
                   {history.map((h) => (
-                    <tr key={h.id} style={{ borderTop: "1px solid #eef1f5" }}>
-                      <td style={{ padding: "6px 14px", color: "#5a6579", whiteSpace: "nowrap" }}>
+                    <tr key={h.id} style={{ borderTop: "1px solid #eef2f7" }}>
+                      <td style={{ padding: "6px 14px", color: "#7c8ba3", whiteSpace: "nowrap" }}>
                         {new Date(h.createdAt).toLocaleString("ko-KR", {
                           year: "2-digit",
                           month: "2-digit",
@@ -492,19 +492,19 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
                           minute: "2-digit",
                         })}
                       </td>
-                      <td style={{ padding: "6px 14px", color: "#1a2d4d", wordBreak: "break-all" }}>{h.filename}</td>
+                      <td style={{ padding: "6px 14px", color: "#16294a", wordBreak: "break-all" }}>{h.filename}</td>
                       <td style={tdRight}>{h.year}</td>
                       <td style={{ ...tdRightEdge, whiteSpace: "nowrap" }}>
                         {h.snapshotEmpty ? (
                           <span style={{ color: "#8a94a6" }}>복원 불가(이전 데이터 없음)</span>
                         ) : confirmRevertId === h.id ? (
                           <span style={{ display: "inline-flex", gap: "6px", alignItems: "center" }}>
-                            <span style={{ color: "#a94442", fontWeight: 600 }}>이전 상태로 복원할까요?</span>
+                            <span style={{ color: "#e0655c", fontWeight: 600 }}>이전 상태로 복원할까요?</span>
                             <button
                               onClick={() => handleRevert(h.id)}
                               disabled={busy}
                               style={{
-                                backgroundColor: "#a94442",
+                                backgroundColor: "#e0655c",
                                 color: "#fff",
                                 border: "none",
                                 borderRadius: "5px",
@@ -521,7 +521,7 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
                               disabled={busy}
                               style={{
                                 backgroundColor: "#fff",
-                                border: "1px solid #ccd4dd",
+                                border: "1px solid #dde6f1",
                                 borderRadius: "5px",
                                 padding: "4px 10px",
                                 fontSize: "11px",
@@ -540,11 +540,11 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
                               alignItems: "center",
                               gap: "5px",
                               backgroundColor: "#fff",
-                              border: "1px solid #ccd4dd",
+                              border: "1px solid #dde6f1",
                               borderRadius: "5px",
                               padding: "4px 10px",
                               fontSize: "11px",
-                              color: "#2e4568",
+                              color: "#1e3a6e",
                               fontWeight: 600,
                               cursor: busy ? "wait" : "pointer",
                             }}
@@ -562,8 +562,8 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
           )}
 
           {preview?.kind === "mgmtreport" && (
-            <div style={{ border: "1px solid #dde5ee", borderRadius: "10px", overflow: "hidden" }}>
-              <div style={{ backgroundColor: "#f2f6fb", padding: "10px 14px", fontSize: "12px", color: "#1a2d4d", fontWeight: 700 }}>
+            <div style={{ border: "1px solid #e2e9f3", borderRadius: "10px", overflow: "hidden" }}>
+              <div style={{ backgroundColor: "#f2f6fb", padding: "10px 14px", fontSize: "12px", color: "#16294a", fontWeight: 700 }}>
                 파싱 결과 미리보기 — {preview.data.year}년 (단위: {preview.data.unit})
               </div>
               <div style={statRow}>
@@ -583,7 +583,7 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
               <div style={{ maxHeight: "220px", overflowY: "auto" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "11px" }}>
                   <thead>
-                    <tr style={{ backgroundColor: "#f8fafc", color: "#5a6579" }}>
+                    <tr style={{ backgroundColor: "#f8fafc", color: "#7c8ba3" }}>
                       <th style={thLeft}>프로젝트</th>
                       <th style={thRight}>매출 실적/전망</th>
                       <th style={thRight}>원가 실적/전망</th>
@@ -592,8 +592,8 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
                   </thead>
                   <tbody>
                     {preview.data.projects.map((p) => (
-                      <tr key={p.name} style={{ borderTop: "1px solid #eef1f5", backgroundColor: p.isGroup ? "#fbf7ec" : "#fff" }}>
-                        <td style={{ padding: "6px 14px", color: "#1a2d4d", fontWeight: p.isGroup ? 700 : 400 }}>
+                      <tr key={p.name} style={{ borderTop: "1px solid #eef2f7", backgroundColor: p.isGroup ? "#fbf7ec" : "#fff" }}>
+                        <td style={{ padding: "6px 14px", color: "#16294a", fontWeight: p.isGroup ? 700 : 400 }}>
                           {p.name}
                           {p.siteCode ? ` (${p.siteCode})` : ""}
                         </td>
@@ -609,8 +609,8 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
           )}
 
           {preview?.kind === "cashflow" && (
-            <div style={{ border: "1px solid #dde5ee", borderRadius: "10px", overflow: "hidden" }}>
-              <div style={{ backgroundColor: "#f2f6fb", padding: "10px 14px", fontSize: "12px", color: "#1a2d4d", fontWeight: 700 }}>
+            <div style={{ border: "1px solid #e2e9f3", borderRadius: "10px", overflow: "hidden" }}>
+              <div style={{ backgroundColor: "#f2f6fb", padding: "10px 14px", fontSize: "12px", color: "#16294a", fontWeight: 700 }}>
                 파싱 결과 미리보기 — 자금수지 (단위: {preview.data.unit})
               </div>
               <div style={statRow}>
@@ -624,7 +624,7 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
               <div style={{ maxHeight: "220px", overflowY: "auto" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "11px" }}>
                   <thead>
-                    <tr style={{ backgroundColor: "#f8fafc", color: "#5a6579" }}>
+                    <tr style={{ backgroundColor: "#f8fafc", color: "#7c8ba3" }}>
                       <th style={thLeft}>프로젝트</th>
                       <th style={thLeft}>구분</th>
                       <th style={thRight}>수입 합계</th>
@@ -634,9 +634,9 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
                   </thead>
                   <tbody>
                     {preview.data.projects.map((p) => (
-                      <tr key={p.name} style={{ borderTop: "1px solid #eef1f5" }}>
-                        <td style={{ padding: "6px 14px", color: "#1a2d4d" }}>{p.name}</td>
-                        <td style={{ padding: "6px 14px", color: "#5a6579" }}>{p.division}</td>
+                      <tr key={p.name} style={{ borderTop: "1px solid #eef2f7" }}>
+                        <td style={{ padding: "6px 14px", color: "#16294a" }}>{p.name}</td>
+                        <td style={{ padding: "6px 14px", color: "#7c8ba3" }}>{p.division}</td>
                         <td style={tdRight}>{fmt(p.cashInTotal)}</td>
                         <td style={tdRight}>{fmt(p.cashOutTotal)}</td>
                         <td style={tdRightEdge}>{fmt(p.amountCount)}</td>
@@ -649,8 +649,8 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
           )}
 
           {preview?.kind === "salescost" && (
-            <div style={{ border: "1px solid #dde5ee", borderRadius: "10px", overflow: "hidden" }}>
-              <div style={{ backgroundColor: "#f2f6fb", padding: "10px 14px", fontSize: "12px", color: "#1a2d4d", fontWeight: 700 }}>
+            <div style={{ border: "1px solid #e2e9f3", borderRadius: "10px", overflow: "hidden" }}>
+              <div style={{ backgroundColor: "#f2f6fb", padding: "10px 14px", fontSize: "12px", color: "#16294a", fontWeight: 700 }}>
                 파싱 결과 미리보기 — 매출/원가 {preview.data.year}년 (단위: {preview.data.unit})
               </div>
               <div style={statRow}>
@@ -664,7 +664,7 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
               <div style={{ maxHeight: "220px", overflowY: "auto" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "11px" }}>
                   <thead>
-                    <tr style={{ backgroundColor: "#f8fafc", color: "#5a6579" }}>
+                    <tr style={{ backgroundColor: "#f8fafc", color: "#7c8ba3" }}>
                       <th style={thLeft}>코드</th>
                       <th style={thLeft}>현장명</th>
                       <th style={thRight}>매출 합계</th>
@@ -674,9 +674,9 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
                   </thead>
                   <tbody>
                     {preview.data.sites.map((s) => (
-                      <tr key={s.code} style={{ borderTop: "1px solid #eef1f5" }}>
-                        <td style={{ padding: "6px 14px", color: "#5a6579" }}>{s.code}</td>
-                        <td style={{ padding: "6px 14px", color: "#1a2d4d" }}>{s.name}</td>
+                      <tr key={s.code} style={{ borderTop: "1px solid #eef2f7" }}>
+                        <td style={{ padding: "6px 14px", color: "#7c8ba3" }}>{s.code}</td>
+                        <td style={{ padding: "6px 14px", color: "#16294a" }}>{s.name}</td>
                         <td style={tdRight}>{fmt(s.revenueUsdTotal)}</td>
                         <td style={tdRight}>{fmt(s.cogsUsdTotal)}</td>
                         <td style={tdRightEdge}>{fmt(s.amountCount)}</td>
@@ -696,7 +696,7 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
             justifyContent: "flex-end",
             gap: "10px",
             padding: "12px 18px",
-            borderTop: "1px solid #e5eaf0",
+            borderTop: "1px solid #e2e9f3",
             backgroundColor: "#fafbfd",
           }}
         >
@@ -705,7 +705,7 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
             disabled={loading === "apply"}
             style={{
               backgroundColor: "#fff",
-              border: "1px solid #ccd4dd",
+              border: "1px solid #dde6f1",
               borderRadius: "6px",
               padding: "8px 16px",
               fontSize: "12px",
@@ -719,7 +719,7 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
             onClick={handleApply}
             disabled={busy || !preview || done}
             style={{
-              backgroundColor: "#1e7145",
+              backgroundColor: "#1c7a5a",
               color: "#fff",
               border: "none",
               borderRadius: "6px",

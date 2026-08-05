@@ -103,7 +103,7 @@ export function DashboardHeader({
 
       <div style={{ position: "relative", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <h1 style={{
-          color: "#2e4568",
+          color: "#1e3a6e",
           fontSize: "22px",
           fontWeight: "700",
           margin: "0 0 12px",
@@ -114,7 +114,7 @@ export function DashboardHeader({
           borderRadius: "8px",
           padding: "6px 8px",
           cursor: "pointer",
-          color: "#1e6fdd",
+          color: "#2f7cf6",
           boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
           display: "flex",
           alignItems: "center",
@@ -149,7 +149,7 @@ export function DashboardHeader({
               setProject(value);
             }}
             style={{
-              border: "1px solid #ccd4dd",
+              border: "1px solid #dde6f1",
               borderRadius: "6px",
               padding: "5px 26px 5px 10px",
               fontSize: "12px",
@@ -172,7 +172,7 @@ export function DashboardHeader({
               style={{
                 fontSize: "12px",
                 fontWeight: 700,
-                color: "#1e6fdd",
+                color: "#2f7cf6",
                 backgroundColor: "#eaf2fd",
                 border: "1px solid #c4dbf7",
                 borderRadius: "6px",
@@ -191,7 +191,7 @@ export function DashboardHeader({
           <div style={{
             display: "flex",
             alignItems: "center",
-            border: "1px solid #ccd4dd",
+            border: "1px solid #dde6f1",
             borderRadius: "6px",
             padding: "2px 8px",
             backgroundColor: "#fff",
@@ -239,7 +239,7 @@ export function DashboardHeader({
             value={period}
             onChange={(e) => setPeriod(e.target.value as PeriodMode)}
             style={{
-              border: "1px solid #ccd4dd",
+              border: "1px solid #dde6f1",
               borderRadius: "6px",
               padding: "5px 26px 5px 10px",
               fontSize: "12px",
@@ -261,7 +261,7 @@ export function DashboardHeader({
             value={currency}
             onChange={(e) => setCurrency(e.target.value as CurrencyCode)}
             style={{
-              border: "1px solid #ccd4dd",
+              border: "1px solid #dde6f1",
               borderRadius: "6px",
               padding: "5px 26px 5px 10px",
               fontSize: "12px",
@@ -319,7 +319,7 @@ export function DashboardHeader({
               display: "flex",
               alignItems: "center",
               gap: "6px",
-              backgroundColor: "#1e7145",
+              backgroundColor: "#1c7a5a",
               color: "#fff",
               border: "none",
               borderRadius: "6px",
@@ -343,7 +343,7 @@ export function DashboardHeader({
               display: "flex",
               alignItems: "center",
               gap: "6px",
-              backgroundColor: "#2e4568",
+              backgroundColor: "#1e3a6e",
               color: "#fff",
               border: "none",
               borderRadius: "6px",
@@ -365,7 +365,7 @@ export function DashboardHeader({
               top: "calc(100% + 4px)",
               right: 0,
               backgroundColor: "#fff",
-              border: "1px solid #ccd4dd",
+              border: "1px solid #dde6f1",
               borderRadius: "6px",
               boxShadow: "0 4px 12px rgba(20,40,80,0.15)",
               zIndex: 1000,
@@ -381,7 +381,7 @@ export function DashboardHeader({
                   width: "100%",
                   padding: "9px 14px",
                   fontSize: "12px",
-                  color: "#1a2d4d",
+                  color: "#16294a",
                   backgroundColor: "transparent",
                   border: "none",
                   cursor: "pointer",
@@ -390,7 +390,7 @@ export function DashboardHeader({
                 onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#eef3f9")}
                 onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
               >
-                <FileSpreadsheet size={14} color="#1e7145" />
+                <FileSpreadsheet size={14} color="#1c7a5a" />
                 엑셀 다운로드 (.xlsx)
               </button>
               <button
@@ -402,17 +402,17 @@ export function DashboardHeader({
                   width: "100%",
                   padding: "9px 14px",
                   fontSize: "12px",
-                  color: "#1a2d4d",
+                  color: "#16294a",
                   backgroundColor: "transparent",
                   border: "none",
                   cursor: "pointer",
                   textAlign: "left",
-                  borderTop: "1px solid #eef1f5",
+                  borderTop: "1px solid #eef2f7",
                 }}
                 onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#eef3f9")}
                 onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
               >
-                <FileText size={14} color="#c0392b" />
+                <FileText size={14} color="#e0655c" />
                 PDF 다운로드 (.pdf)
               </button>
             </div>

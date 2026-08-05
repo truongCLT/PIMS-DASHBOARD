@@ -6,7 +6,7 @@ import { useMoney } from "../lib/displayUnit";
 
 const cardStyle: React.CSSProperties = {
   backgroundColor: "#fff",
-  border: "1px solid #dde3ee",
+  border: "1px solid #e2e9f3",
   borderRadius: "8px",
   padding: "10px 12px",
 };
@@ -14,15 +14,15 @@ const cardStyle: React.CSSProperties = {
 const sectionTitle: React.CSSProperties = {
   fontSize: "16px",
   fontWeight: 700,
-  color: "#4472ca",
+  color: "#2f7cf6",
 };
 
 const th: React.CSSProperties = {
   backgroundColor: "#eef2f7",
-  color: "#1e2a3b",
+  color: "#16294a",
   fontSize: "13px",
   fontWeight: 700,
-  border: "1px solid #dde3ee",
+  border: "1px solid #e2e9f3",
   padding: "8px 6px",
   textAlign: "center",
   verticalAlign: "middle",
@@ -31,7 +31,7 @@ const th: React.CSSProperties = {
 };
 
 const td: React.CSSProperties = {
-  border: "1px solid #d5dce6",
+  border: "1px solid #e2e9f3",
   fontSize: "13px",
   color: "#333",
   padding: "8px 6px",
@@ -149,7 +149,7 @@ export function OutsourcingTab({ projectName }: { projectName: string }) {
                 </tr>
               ) : rows.length === 0 ? (
                 <tr>
-                  <td style={{ ...td, color: "#8a97a8" }} colSpan={12}>
+                  <td style={{ ...td, color: "#7c8ba3" }} colSpan={12}>
                     외주/자재 데이터가 없습니다. ( - )
                   </td>
                 </tr>

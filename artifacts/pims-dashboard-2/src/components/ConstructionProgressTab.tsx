@@ -25,7 +25,7 @@ import { chartTheme } from "../lib/chartTheme";
 
 const cardStyle: React.CSSProperties = {
   backgroundColor: "#fff",
-  border: "1px solid #dde3ee",
+  border: "1px solid #e2e9f3",
   borderRadius: "8px",
   padding: "10px 12px",
 };
@@ -33,14 +33,14 @@ const cardStyle: React.CSSProperties = {
 const sectionTitle: React.CSSProperties = {
   fontSize: "16px",
   fontWeight: 700,
-  color: "#4472ca",
+  color: "#2f7cf6",
 };
 
 const emptyStyle: React.CSSProperties = {
   padding: "24px 0",
   textAlign: "center",
   fontSize: "13px",
-  color: "#8a97a8",
+  color: "#7c8ba3",
 };
 
 function Donut({
@@ -98,7 +98,7 @@ function Donut({
           dominantBaseline="central"
           fontSize={labelSize}
           fontWeight={700}
-          fill="#1e2a3b"
+          fill="#16294a"
         >
           {label}
         </text>
@@ -203,7 +203,7 @@ function MilestoneChart({ milestones }: { milestones: ProjectDetail["milestones"
                   display: "flex",
                   alignItems: "flex-start",
                   height: `${ROW_H}px`,
-                  borderBottom: "1px solid #eef1f5",
+                  borderBottom: "1px solid #eef2f7",
                 }}
               >
                 <div
@@ -403,7 +403,7 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
               {fmtPct(planCum)}
             </span>
           </div>
-          <div style={{ textAlign: "center", fontSize: "12px", color: "#1e2a3b", fontWeight: 600 }}>
+          <div style={{ textAlign: "center", fontSize: "12px", color: "#16294a", fontWeight: 600 }}>
             실적 공정 (B)
           </div>
           <div
@@ -413,7 +413,7 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
               color: "#333",
               fontWeight: 700,
               marginTop: "8px",
-              borderTop: "1px solid #eef1f5",
+              borderTop: "1px solid #eef2f7",
               paddingTop: "6px",
             }}
           >

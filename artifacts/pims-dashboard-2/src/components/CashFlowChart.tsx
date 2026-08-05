@@ -225,7 +225,7 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
   return (
     <div style={{
       backgroundColor: "#fff",
-      border: "1px solid #dde3ee",
+      border: "1px solid #e2e9f3",
       borderRadius: "6px",
       padding: "10px 12px",
       height: "100%",
@@ -236,11 +236,11 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
           <span style={{ fontSize: "13px", fontWeight: "600", color: chartTheme.titleNavy }}>자금수지</span>
-          <span style={{ fontSize: "11px", color: "#5a6a7e" }}>
+          <span style={{ fontSize: "11px", color: "#7c8ba3" }}>
             {config.label} · 단위: {unitLabel}
           </span>
         </div>
-        <button style={{ fontSize: "12px", color: "#1e6fdd", background: "none", border: "none", cursor: "pointer" }}>
+        <button style={{ fontSize: "12px", color: "#2f7cf6", background: "none", border: "none", cursor: "pointer" }}>
           상세보기
         </button>
       </div>
@@ -276,7 +276,7 @@ function CenterNote({ text }: { text: string }) {
       alignItems: "center",
       justifyContent: "center",
       fontSize: "13px",
-      color: "#5a6a7e",
+      color: "#7c8ba3",
       textAlign: "center",
     }}>
       {text}

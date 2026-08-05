@@ -224,6 +224,39 @@ export const THEMES: Theme[] = [
       stripColors: ["#4472ca", "#e67e22", "#0891b2", "#059669"],
     },
   },
+
+  /* ── F: Aqua Glass ───────────────────────────── */
+  {
+    id: "aqua-glass",
+    label: "F — Aqua Glass",
+    swatch: "#2f7cf6",
+    sidebar: {
+      bg: "#ffffff",
+      border: "1px solid #e2e9f3",
+      topLevelColor: "#16294a",
+      midLevelColor: "#2a3d55",
+      subLevelColor: "#7c8ba3",
+      activeItemBg: "#e7f1fd",
+      activeItemColor: "#2f7cf6",
+      activeItemAccent: "#2f7cf6",
+      totalActiveBg: "rgba(47,124,246,0.08)",
+      totalBorderBottom: "1px solid #e2e9f3",
+      brandingBorderTop: "1px solid #e2e9f3",
+    },
+    dashboard: { bg: "#eef2f7" },
+    kpi: {
+      cardBg: "#ffffff",
+      cardBorderTop: null,
+      cardBorder: "1px solid #e2e9f3",
+      titleColor: "#7c8ba3",
+      labelColor: "#9ab0c8",
+      valueColor: "#16294a",
+      accentBorderLeft: null,
+      boxShadow: "0 2px 10px rgba(22,41,74,0.06)",
+      cardStyle: "strip",
+      stripColors: ["#2f7cf6", "#35c7c0", "#5fe0a8", "#1e3a6e"],
+    },
+  },
 ];
 
 interface ThemeContextValue {
@@ -236,7 +269,7 @@ const ThemeContext = createContext<ThemeContextValue>({
   setThemeId: () => {},
 });
 
-const DEFAULT_THEME_ID = "analytics-clean";
+const DEFAULT_THEME_ID = "aqua-glass";
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const stored = typeof localStorage !== "undefined" ? localStorage.getItem("pims-theme") : null;

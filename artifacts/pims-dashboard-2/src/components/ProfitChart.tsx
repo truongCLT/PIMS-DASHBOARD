@@ -96,7 +96,7 @@ export function ProfitChart() {
           filter="url(#tip-shadow)"
         />
         {/* 월 헤더 */}
-        <text x={tx + TW / 2} y={ty + 14} textAnchor="middle" fontSize={TF - 1} fontWeight="700" fill="#1a2d4d">
+        <text x={tx + TW / 2} y={ty + 14} textAnchor="middle" fontSize={TF - 1} fontWeight="700" fill="#16294a">
           {d.m}
         </text>
         {/* 항목 줄 */}
@@ -113,16 +113,16 @@ export function ProfitChart() {
   return (
     <div style={{
       backgroundColor: "#fff",
-      border: "1px solid #dde3ee",
+      border: "1px solid #e2e9f3",
       borderRadius: "6px",
       padding: "10px 12px",
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
           <span style={{ fontSize: "12px", fontWeight: "600", color: chartTheme.titleNavy }}>손익현황</span>
-          {derived && <span style={{ fontSize: "10px", color: "#5a6a7e" }}>단위: {derived.unitLabel}</span>}
+          {derived && <span style={{ fontSize: "10px", color: "#7c8ba3" }}>단위: {derived.unitLabel}</span>}
         </div>
-        <button style={{ fontSize: "11px", color: "#1e6fdd", background: "none", border: "none", cursor: "pointer" }}>
+        <button style={{ fontSize: "11px", color: "#2f7cf6", background: "none", border: "none", cursor: "pointer" }}>
           상세보기
         </button>
       </div>

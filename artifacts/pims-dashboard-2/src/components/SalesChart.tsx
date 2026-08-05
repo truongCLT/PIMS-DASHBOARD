@@ -88,8 +88,8 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   const actual = payload.find((p: any) => p.dataKey === "actual");
   const rate = plan?.payload?.rate;
   return (
-    <div style={{ backgroundColor: "#fff", border: "1px solid #dde3ee", borderRadius: "4px", padding: "8px 10px", fontSize: "12px" }}>
-      <div style={{ fontWeight: 700, marginBottom: "4px", color: "#1a2d4d" }}>{label}</div>
+    <div style={{ backgroundColor: "#fff", border: "1px solid #e2e9f3", borderRadius: "4px", padding: "8px 10px", fontSize: "12px" }}>
+      <div style={{ fontWeight: 700, marginBottom: "4px", color: "#16294a" }}>{label}</div>
       {plan && <div style={{ color: PLAN_COLOR }}>매출(계획): {Number(plan.value).toLocaleString("ko-KR")}</div>}
       {actual && <div style={{ color: ACTUAL_COLOR }}>매출(실적 및 전망): {Number(actual.value).toLocaleString("ko-KR")}</div>}
       {rate != null && (
@@ -111,7 +111,7 @@ export function SalesChart() {
   return (
     <div style={{
       backgroundColor: "#fff",
-      border: "1px solid #d0dce8",
+      border: "1px solid #e2e9f3",
       borderRadius: "6px",
       padding: "10px 12px",
       height: "100%",
@@ -123,11 +123,11 @@ export function SalesChart() {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
           <span style={{ fontSize: "13px", fontWeight: "600", color: chartTheme.titleNavy }}>매출 실적 및 전망</span>
-          {derived && <span style={{ fontSize: "11px", color: "#5a6a7e" }}>단위: {derived.unitLabel}</span>}
+          {derived && <span style={{ fontSize: "11px", color: "#7c8ba3" }}>단위: {derived.unitLabel}</span>}
         </div>
         <button style={{
           fontSize: "12px",
-          color: "#1e6fdd",
+          color: "#2f7cf6",
           background: "none",
           border: "none",
           cursor: "pointer",
@@ -208,7 +208,7 @@ export function SalesChart() {
               name="viewType"
               checked={viewType === "net"}
               onChange={() => setViewType("net")}
-              style={{ accentColor: "#1565c0" }}
+              style={{ accentColor: "#2f7cf6" }}
             />
             넷
           </label>
@@ -218,7 +218,7 @@ export function SalesChart() {
               name="viewType"
               checked={viewType === "report"}
               onChange={() => setViewType("report")}
-              style={{ accentColor: "#1565c0" }}
+              style={{ accentColor: "#2f7cf6" }}
             />
             리포트
           </label>

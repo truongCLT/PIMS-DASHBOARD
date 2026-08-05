@@ -28,10 +28,10 @@ export function AdminLoginScreen({ onDone }: { onDone: () => void }) {
   };
 
   return (
-    <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#e8edf3" }}>
+    <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#eef2f7" }}>
       <div style={{
         backgroundColor: "#fff",
-        border: "1px solid #d0dce8",
+        border: "1px solid #e2e9f3",
         borderRadius: "10px",
         padding: "32px 36px",
         width: "340px",
@@ -48,13 +48,13 @@ export function AdminLoginScreen({ onDone }: { onDone: () => void }) {
           justifyContent: "center",
           margin: "0 auto 12px",
         }}>
-          <Lock size={20} color="#2e4568" />
+          <Lock size={20} color="#1e3a6e" />
         </div>
-        <div style={{ fontSize: "16px", fontWeight: 700, color: "#1a2d4d", marginBottom: "4px" }}>관리자 모드</div>
+        <div style={{ fontSize: "16px", fontWeight: 700, color: "#16294a", marginBottom: "4px" }}>관리자 모드</div>
 
         {isAdmin ? (
           <>
-            <div style={{ fontSize: "12px", color: "#3e7d4c", margin: "10px 0 16px" }}>
+            <div style={{ fontSize: "12px", color: "#1c7a5a", margin: "10px 0 16px" }}>
               현재 관리자 모드가 활성화되어 있습니다.
             </div>
             <div style={{ display: "flex", gap: "8px" }}>
@@ -62,7 +62,7 @@ export function AdminLoginScreen({ onDone }: { onDone: () => void }) {
                 onClick={onDone}
                 style={{
                   flex: 1, padding: "9px 0", fontSize: "12px", fontWeight: 600,
-                  backgroundColor: "#2e4568", color: "#fff", border: "none", borderRadius: "6px", cursor: "pointer",
+                  backgroundColor: "#1e3a6e", color: "#fff", border: "none", borderRadius: "6px", cursor: "pointer",
                 }}
               >
                 대시보드로 돌아가기
@@ -71,7 +71,7 @@ export function AdminLoginScreen({ onDone }: { onDone: () => void }) {
                 onClick={() => { logout(); }}
                 style={{
                   flex: 1, padding: "9px 0", fontSize: "12px", fontWeight: 600,
-                  backgroundColor: "#fff", color: "#c0392b", border: "1px solid #e0b4b4", borderRadius: "6px", cursor: "pointer",
+                  backgroundColor: "#fff", color: "#e0655c", border: "1px solid #e0b4b4", borderRadius: "6px", cursor: "pointer",
                 }}
               >
                 로그아웃
@@ -80,7 +80,7 @@ export function AdminLoginScreen({ onDone }: { onDone: () => void }) {
           </>
         ) : (
           <form onSubmit={submit}>
-            <div style={{ fontSize: "12px", color: "#5a6a7e", marginBottom: "16px" }}>
+            <div style={{ fontSize: "12px", color: "#7c8ba3", marginBottom: "16px" }}>
               관리자 비밀번호를 입력해 주세요.
             </div>
             <input
@@ -92,7 +92,7 @@ export function AdminLoginScreen({ onDone }: { onDone: () => void }) {
               style={{
                 width: "100%",
                 boxSizing: "border-box",
-                border: error ? "1px solid #c0392b" : "1px solid #ccd4dd",
+                border: error ? "1px solid #e0655c" : "1px solid #dde6f1",
                 borderRadius: "6px",
                 padding: "9px 12px",
                 fontSize: "13px",
@@ -101,7 +101,7 @@ export function AdminLoginScreen({ onDone }: { onDone: () => void }) {
               }}
             />
             {error && (
-              <div style={{ fontSize: "11px", color: "#c0392b", marginBottom: "8px" }}>{error}</div>
+              <div style={{ fontSize: "11px", color: "#e0655c", marginBottom: "8px" }}>{error}</div>
             )}
             <button
               type="submit"
@@ -111,7 +111,7 @@ export function AdminLoginScreen({ onDone }: { onDone: () => void }) {
                 padding: "10px 0",
                 fontSize: "13px",
                 fontWeight: 600,
-                backgroundColor: "#2e4568",
+                backgroundColor: "#1e3a6e",
                 color: "#fff",
                 border: "none",
                 borderRadius: "6px",
@@ -130,7 +130,7 @@ export function AdminLoginScreen({ onDone }: { onDone: () => void }) {
                 padding: "8px 0",
                 fontSize: "12px",
                 backgroundColor: "transparent",
-                color: "#5a6a7e",
+                color: "#7c8ba3",
                 border: "none",
                 cursor: "pointer",
               }}

@@ -28,7 +28,7 @@ import { getMrCashflowRef } from "../data/mrProjectLinks";
 
 const cardStyle: React.CSSProperties = {
   backgroundColor: "#fff",
-  border: "1px solid #d0dce8",
+  border: "1px solid #e2e9f3",
   borderRadius: "6px",
   padding: "10px 12px",
 };
@@ -36,12 +36,12 @@ const cardStyle: React.CSSProperties = {
 const sectionTitle: React.CSSProperties = {
   fontSize: "16px",
   fontWeight: 700,
-  color: "#4472c4",
+  color: "#2f7cf6",
 };
 
 const th: React.CSSProperties = {
   backgroundColor: "#eef2f7",
-  color: "#1a2d4d",
+  color: "#16294a",
   fontSize: "13px",
   fontWeight: 700,
   border: "1px solid #c8d2de",
@@ -50,7 +50,7 @@ const th: React.CSSProperties = {
 };
 
 const tdCell: React.CSSProperties = {
-  border: "1px solid #d5dce6",
+  border: "1px solid #e2e9f3",
   padding: "2px",
 };
 
@@ -69,7 +69,7 @@ const addBtn: React.CSSProperties = {
   alignItems: "center",
   gap: "4px",
   fontSize: "13px",
-  color: "#1e6fdd",
+  color: "#2f7cf6",
   background: "none",
   border: "1px dashed #9dc3e6",
   borderRadius: "4px",
@@ -236,7 +236,7 @@ function DelBtn({ onClick }: { onClick: () => void }) {
     <button
       onClick={onClick}
       title="행 삭제"
-      style={{ background: "none", border: "none", cursor: "pointer", padding: "4px", color: "#c0392b" }}
+      style={{ background: "none", border: "none", cursor: "pointer", padding: "4px", color: "#e0655c" }}
     >
       <Trash2 size={13} />
     </button>
@@ -531,7 +531,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
 
 
   if (isLoading && !loaded) {
-    return <div style={{ ...cardStyle, textAlign: "center", color: "#8a97a8", fontSize: "14px" }}>불러오는 중…</div>;
+    return <div style={{ ...cardStyle, textAlign: "center", color: "#7c8ba3", fontSize: "14px" }}>불러오는 중…</div>;
   }
 
   const nowYear = new Date().getFullYear();
@@ -542,7 +542,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       <span style={sectionTitle}>{label}</span>
       <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
         {cardMsgs[key] && (
-          <span style={{ fontSize: "13px", color: cardMsgs[key] === "저장되었습니다." ? "#3e7d4c" : "#c0392b" }}>
+          <span style={{ fontSize: "13px", color: cardMsgs[key] === "저장되었습니다." ? "#1c7a5a" : "#e0655c" }}>
             {cardMsgs[key]}
           </span>
         )}
@@ -553,7 +553,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
             padding: "4px 14px",
             fontSize: "13px",
             fontWeight: 600,
-            backgroundColor: "#2e4568",
+            backgroundColor: "#1e3a6e",
             color: "#fff",
             border: "none",
             borderRadius: "4px",
@@ -609,7 +609,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       >
         <Plus size={12} /> 월 추가
       </button>
-      <div style={{ fontSize: "12px", color: "#8a97a8", marginTop: "6px" }}>
+      <div style={{ fontSize: "12px", color: "#7c8ba3", marginTop: "6px" }}>
         매출 탭 차트에 반영됩니다. 입력 데이터가 있으면 메인 대시보드 데이터보다 우선 사용됩니다. VND 기준으로 입력하면 저장 시 천 USD로 자동 변환됩니다.
       </div>
     </div>
@@ -657,7 +657,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       >
         <Plus size={12} /> 월 추가
       </button>
-      <div style={{ fontSize: "12px", color: "#8a97a8", marginTop: "6px" }}>
+      <div style={{ fontSize: "12px", color: "#7c8ba3", marginTop: "6px" }}>
         매출 탭의 Cost(회계 vs 집행 매출원가) 차트에 반영됩니다. VND 기준으로 입력하면 저장 시 천 USD로 자동 변환됩니다.
       </div>
     </div>
@@ -671,7 +671,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           {statusMsg && (
-            <span style={{ fontSize: "13px", color: statusMsg.includes("실패") ? "#c0392b" : "#3e7d4c", fontWeight: 600 }}>
+            <span style={{ fontSize: "13px", color: statusMsg.includes("실패") ? "#e0655c" : "#1c7a5a", fontWeight: 600 }}>
               {statusMsg}
             </span>
           )}
@@ -695,7 +695,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
               style={{
                 fontSize: "13px",
                 fontWeight: 600,
-                color: "#2e4568",
+                color: "#1e3a6e",
                 backgroundColor: "#fff",
                 border: "1px solid #b9c6d8",
                 borderRadius: "6px",
@@ -712,7 +712,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
             </button>
           </div>
           {saveMsg && (
-            <span style={{ fontSize: "13px", color: saveMsg.startsWith("저장되") ? "#3e7d4c" : "#c0392b", fontWeight: 600 }}>
+            <span style={{ fontSize: "13px", color: saveMsg.startsWith("저장되") ? "#1c7a5a" : "#e0655c", fontWeight: 600 }}>
               {saveMsg}
             </span>
           )}
@@ -723,7 +723,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
               display: "flex",
               alignItems: "center",
               gap: "6px",
-              backgroundColor: "#2e4568",
+              backgroundColor: "#1e3a6e",
               color: "#fff",
               border: "none",
               borderRadius: "6px",
@@ -798,7 +798,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
             </tr>
           </tbody>
         </table>
-        <div style={{ fontSize: "12px", color: "#8a97a8", marginTop: "6px" }}>
+        <div style={{ fontSize: "12px", color: "#7c8ba3", marginTop: "6px" }}>
           입찰(Bidding)·실행예산 금액은 아래 "4. 원가율" 표에 입력하면 개요 탭에 함께 반영됩니다.
         </div>
         </div>
@@ -957,7 +957,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
             </tr>
           </tbody>
         </table>
-        <div style={{ fontSize: "12px", color: "#8a97a8", marginTop: "6px" }}>
+        <div style={{ fontSize: "12px", color: "#7c8ba3", marginTop: "6px" }}>
           개요 탭의 프로젝트 정보·Revenue·Cash 카드에 반영됩니다. Outstanding은 (A)-(B)로 자동 계산됩니다.
         </div>
         </div>
@@ -1013,7 +1013,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                     {isCompletion && completionCount > 1 && (
                       <button
                         onClick={() => setCostEstimation((rows) => rows.filter((_, j) => j !== i))}
-                        style={{ border: "none", background: "none", cursor: "pointer", color: "#c0392b", padding: "2px" }}
+                        style={{ border: "none", background: "none", cursor: "pointer", color: "#e0655c", padding: "2px" }}
                         title="삭제"
                       >
                         <Trash2 size={12} />
@@ -1030,7 +1030,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
           onClick={() =>
             setCostEstimation((rows) => [...rows, { kind: "completion", contractAmount: null, costAmount: null, year: null, month: null }])
           }
-          style={{ marginTop: "6px", display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "12px", color: "#4472c4", border: "1px dashed #9db6d8", borderRadius: "4px", padding: "3px 8px", background: "none", cursor: "pointer" }}
+          style={{ marginTop: "6px", display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "12px", color: "#2f7cf6", border: "1px dashed #9db6d8", borderRadius: "4px", padding: "3px 8px", background: "none", cursor: "pointer" }}
         >
           <Plus size={12} /> 준공 전망(월별) 추가
         </button>
@@ -1078,7 +1078,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
 
         {/* 월별 계획/실적 */}
         <div style={{ marginTop: "10px" }}>
-          <div style={{ fontSize: "12px", fontWeight: 600, color: "#4472c4", marginBottom: "4px" }}>
+          <div style={{ fontSize: "12px", fontWeight: 600, color: "#2f7cf6", marginBottom: "4px" }}>
             월별 계획 / 실적 ({REPORT_YEAR}년)
           </div>
           <div style={{ fontSize: "11px", color: "#777", marginBottom: "6px" }}>
@@ -1096,7 +1096,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
             const tblKey = `cbm-${item}`;
             return (
               <div key={item} style={{ marginBottom: "10px" }}>
-                <div style={{ fontSize: "13px", fontWeight: 700, color: "#1a2d4d", marginBottom: "4px" }}>{item}</div>
+                <div style={{ fontSize: "13px", fontWeight: 700, color: "#16294a", marginBottom: "4px" }}>{item}</div>
                 <div data-tbl={tblKey} onKeyDown={makeArrowNav(tblKey)}>
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
                   <thead>
@@ -1231,11 +1231,11 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
         >
           <Plus size={12} /> 월 추가
         </button>
-        <div style={{ fontSize: "12px", color: "#8a97a8", marginTop: "6px" }}>
+        <div style={{ fontSize: "12px", color: "#7c8ba3", marginTop: "6px" }}>
           지출은 양수로 입력하세요(차트에서 자동으로 아래 방향 표시). VND 기준으로 입력하면 저장 시 천 USD로 자동 변환됩니다.
         </div>
         {cfPrefilled && (
-          <div style={{ fontSize: "12px", color: "#1e6fdd", marginTop: "4px", fontWeight: 600 }}>
+          <div style={{ fontSize: "12px", color: "#2f7cf6", marginTop: "4px", fontWeight: 600 }}>
             자금수지 Excel(DB)에 저장된 데이터를 불러왔습니다. 표를 수정하면 이 프로젝트의 자금 데이터로 저장되며, 이후에는 저장된 값이 우선 표시됩니다.
           </div>
         )}

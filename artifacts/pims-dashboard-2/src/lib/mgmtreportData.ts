@@ -251,7 +251,7 @@ export function deriveDashboardData(
   }
 
   const kpiColor = (actual: number, plan: number) =>
-    plan && actual / plan >= 1 ? "#00bcd4" : "#ff5722";
+    plan && actual / plan >= 1 ? "#35c7c0" : "#f2736a";
 
   const kpiOf = (title: string, line: Line | null, monthly: boolean): KpiItem => {
     if (emptyRange || !line || projectScope?.empty) {
@@ -260,7 +260,7 @@ export function deriveDashboardData(
         plan: "-",
         actual: "-",
         achievement: "-",
-        achievementColor: "#9fb0cc",
+        achievementColor: "#9ab0c8",
       };
     }
     const plan = monthly ? line.plan[M - 1] : rangeSum(line.plan, F, M);

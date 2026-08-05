@@ -17,7 +17,7 @@ import { DisplayUnitProvider, formatMoney, moneyUnitLabel } from "../lib/display
 
 const cardStyle: React.CSSProperties = {
   backgroundColor: "#fff",
-  border: "1px solid #dde3ee",
+  border: "1px solid #e2e9f3",
   borderRadius: "8px",
   padding: "10px 12px",
 };
@@ -25,7 +25,7 @@ const cardStyle: React.CSSProperties = {
 const sectionTitle: React.CSSProperties = {
   fontSize: "16px",
   fontWeight: 700,
-  color: "#4472ca",
+  color: "#2f7cf6",
   marginBottom: "6px",
 };
 
@@ -72,7 +72,7 @@ function YearMonthSelect({
         display: "flex",
         alignItems: "center",
         gap: "2px",
-        border: "1px solid #dde3ee",
+        border: "1px solid #e2e9f3",
         borderRadius: "6px",
         padding: "4px 8px",
         backgroundColor: "#fff",
@@ -98,7 +98,7 @@ function YearMonthSelect({
 
 function EmptyHint({ label }: { label: string }) {
   return (
-    <div style={{ padding: "40px 10px", textAlign: "center", fontSize: "13px", color: "#8a97a8" }}>
+    <div style={{ padding: "40px 10px", textAlign: "center", fontSize: "13px", color: "#7c8ba3" }}>
       {label} 데이터가 없습니다. "데이터 입력" 탭에서 입력해 주세요.
     </div>
   );
@@ -215,7 +215,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
 
   return (
     <DisplayUnitProvider currency={currency} unitOn={unitOn}>
-    <div style={{ flex: 1, overflowY: "auto", backgroundColor: "#f2f5fa" }}>
+    <div style={{ flex: 1, overflowY: "auto", backgroundColor: "#eef2f7" }}>
       {/* Filter row */}
       <div
         style={{
@@ -224,13 +224,13 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
           gap: "18px",
           flexWrap: "wrap",
           backgroundColor: "#fff",
-          borderBottom: "1px solid #dde3ee",
+          borderBottom: "1px solid #e2e9f3",
           padding: "8px 20px",
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <span style={{ fontSize: "14px", color: "#333", fontWeight: 600 }}>환율 :</span>
-          <div style={{ display: "flex", border: "1px solid #dde3ee", borderRadius: "6px", overflow: "hidden" }}>
+          <div style={{ display: "flex", border: "1px solid #e2e9f3", borderRadius: "6px", overflow: "hidden" }}>
             {["USD", "KRW", "VND"].map((c) => (
               <button
                 key={c}
@@ -242,8 +242,8 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                   border: "none",
                   cursor: "pointer",
                   backgroundColor: currency === c ? "#fff" : "#f2f5f9",
-                  color: currency === c ? "#4472ca" : "#666",
-                  borderRight: c !== "VND" ? "1px solid #dde3ee" : "none",
+                  color: currency === c ? "#2f7cf6" : "#666",
+                  borderRight: c !== "VND" ? "1px solid #e2e9f3" : "none",
                 }}
               >
                 {c}
@@ -263,7 +263,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
             style={{
               width: "36px",
               height: "20px",
-              backgroundColor: unitOn ? "#4472ca" : "#b0b8c4",
+              backgroundColor: unitOn ? "#2f7cf6" : "#b0b8c4",
               borderRadius: "10px",
               position: "relative",
               cursor: "pointer",
@@ -292,7 +292,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
             display: "flex",
             alignItems: "center",
             gap: "6px",
-            backgroundColor: "#4472ca",
+            backgroundColor: "#2f7cf6",
             color: "#fff",
             border: "none",
             borderRadius: "6px",
@@ -310,23 +310,23 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
       {/* Project info bar — always visible */}
       <div style={{ ...cardStyle, margin: "8px 10px 0", display: "flex", gap: "10px", alignItems: "stretch" }}>
         <div style={{ flex: 1 }}>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 0", fontSize: "14px", color: "#1e2a3b" }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 0", fontSize: "14px", color: "#16294a" }}>
             <span style={{ fontWeight: 700, paddingRight: "14px" }}>Project : {projectName}</span>
             {ov?.asOfMonth && (
-              <span style={{ borderLeft: "1px solid #dde3ee", padding: "0 14px" }}>
+              <span style={{ borderLeft: "1px solid #e2e9f3", padding: "0 14px" }}>
                 작성 기준 : {ov.asOfMonth.slice(0, 4)}년 {Number(ov.asOfMonth.slice(5, 7))}월 말
               </span>
             )}
             {ov?.client && (
-              <span style={{ borderLeft: "1px solid #dde3ee", padding: "0 14px" }}>발주처 : {ov.client}</span>
+              <span style={{ borderLeft: "1px solid #e2e9f3", padding: "0 14px" }}>발주처 : {ov.client}</span>
             )}
             {periodLabel && (
-              <span style={{ borderLeft: "1px solid #dde3ee", padding: "0 14px" }}>수행기간 : {periodLabel}</span>
+              <span style={{ borderLeft: "1px solid #e2e9f3", padding: "0 14px" }}>수행기간 : {periodLabel}</span>
             )}
             {ov?.scope && (
-              <span style={{ borderLeft: "1px solid #dde3ee", padding: "0 14px" }}>수행내용 : {ov.scope}</span>
+              <span style={{ borderLeft: "1px solid #e2e9f3", padding: "0 14px" }}>수행내용 : {ov.scope}</span>
             )}
-            <span style={{ borderLeft: "1px solid #dde3ee", padding: "0 14px" }}>
+            <span style={{ borderLeft: "1px solid #e2e9f3", padding: "0 14px" }}>
               도급액 : {contractAmount != null ? `${formatMoney(contractAmount, currency, unitOn)} ${moneyUnitLabel(currency, unitOn)}` : "-"}
             </span>
           </div>
@@ -339,8 +339,8 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
           display: "flex",
           gap: "4px",
           padding: "8px 10px 0",
-          backgroundColor: "#f2f5fa",
-          borderBottom: "2px solid #dde3ee",
+          backgroundColor: "#eef2f7",
+          borderBottom: "2px solid #e2e9f3",
           marginTop: "8px",
         }}
       >
@@ -354,11 +354,11 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                 padding: "7px 20px",
                 fontSize: "16px",
                 fontWeight: active ? 700 : 500,
-                color: active ? "#1e2a3b" : "#6b7d96",
+                color: active ? "#16294a" : "#7c8ba3",
                 backgroundColor: active ? "#fff" : "transparent",
                 border: "1px solid",
-                borderColor: active ? "#dde3ee" : "transparent",
-                borderBottom: active ? "2px solid #4472ca" : "none",
+                borderColor: active ? "#e2e9f3" : "transparent",
+                borderBottom: active ? "2px solid #2f7cf6" : "none",
                 borderRadius: "4px 4px 0 0",
                 cursor: "pointer",
                 marginBottom: active ? "-2px" : "0",
@@ -405,7 +405,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                   style={{
                     fontSize: "13px",
                     fontWeight: 600,
-                    color: excelMsg.includes("완료") ? "#3e7d4c" : "#e57373",
+                    color: excelMsg.includes("완료") ? "#1c7a5a" : "#f2736a",
                     maxWidth: "360px",
                     whiteSpace: "nowrap",
                     overflow: "hidden",
@@ -427,9 +427,9 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                   padding: "5px 12px",
                   fontSize: "13px",
                   fontWeight: 600,
-                  color: "#1e2a3b",
+                  color: "#16294a",
                   backgroundColor: "#fff",
-                  border: "1px solid #dde3ee",
+                  border: "1px solid #e2e9f3",
                   borderRadius: "4px",
                   cursor: excelBusy ? "wait" : "pointer",
                   opacity: !detail || excelBusy ? 0.6 : 1,
@@ -449,7 +449,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                   fontSize: "13px",
                   fontWeight: 600,
                   color: "#fff",
-                  backgroundColor: "#4472ca",
+                  backgroundColor: "#2f7cf6",
                   border: "none",
                   borderRadius: "4px",
                   cursor: excelBusy ? "wait" : "pointer",
@@ -479,7 +479,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
               <div style={cardStyle}>
                 <span style={sectionTitle}>매출</span>
                 {isLoading ? (
-                  <div style={{ padding: "40px 10px", textAlign: "center", fontSize: "13px", color: "#8a97a8" }}>불러오는 중…</div>
+                  <div style={{ padding: "40px 10px", textAlign: "center", fontSize: "13px", color: "#7c8ba3" }}>불러오는 중…</div>
                 ) : revenueTarget == null && revenueTotal == null ? (
                   <EmptyHint label="매출 목표/실적" />
                 ) : (
@@ -490,13 +490,13 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                       </div>
                       <Donut
                         percent={achievementPct ?? 0}
-                        color="#4472ca"
+                        color="#2f7cf6"
                         size={120}
                         stroke={14}
                         label={fmtPct(achievementPct)}
                         labelSize={20}
                       />
-                      <div style={{ fontSize: "12px", color: "#1e2a3b", fontWeight: 700, marginTop: "5px", textDecoration: "underline" }}>
+                      <div style={{ fontSize: "12px", color: "#16294a", fontWeight: 700, marginTop: "5px", textDecoration: "underline" }}>
                         연간 목표 달성률
                       </div>
                     </div>
@@ -506,13 +506,13 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                       </div>
                       <Donut
                         percent={ratioPct(revenueTotal, contractAmount) ?? 0}
-                        color="#4472ca"
+                        color="#2f7cf6"
                         size={120}
                         stroke={14}
                         label={fmtPct(ratioPct(revenueTotal, contractAmount))}
                         labelSize={20}
                       />
-                      <div style={{ fontSize: "12px", color: "#1e2a3b", fontWeight: 700, marginTop: "5px", textDecoration: "underline" }}>
+                      <div style={{ fontSize: "12px", color: "#16294a", fontWeight: 700, marginTop: "5px", textDecoration: "underline" }}>
                         누계 매출 달성률
                       </div>
                     </div>
@@ -531,7 +531,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                   </span>
                 </div>
                 {isLoading ? (
-                  <div style={{ padding: "40px 10px", textAlign: "center", fontSize: "13px", color: "#8a97a8" }}>불러오는 중…</div>
+                  <div style={{ padding: "40px 10px", textAlign: "center", fontSize: "13px", color: "#7c8ba3" }}>불러오는 중…</div>
                 ) : budgetRows.length === 0 ? (
                   <EmptyHint label="예산 집행" />
                 ) : (
@@ -557,7 +557,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                           <div style={{ height: `${H}px`, display: "flex", alignItems: "flex-end", gap: "3px", justifyContent: "center" }}>
                             <div style={{ width: "24px", height: `${bh}px`, backgroundColor: "#d9dee5" }} />
                             {sh > 0 && (
-                              <div style={{ width: "24px", height: `${sh}px`, backgroundColor: "#4472ca", position: "relative" }}>
+                              <div style={{ width: "24px", height: `${sh}px`, backgroundColor: "#2f7cf6", position: "relative" }}>
                                 <span
                                   style={{
                                     position: "absolute",
@@ -575,7 +575,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                             )}
                           </div>
                           {pct != null && (
-                            <div style={{ fontSize: "11px", color: "#4472ca", fontWeight: 600, marginTop: "2px" }}>{fmtPct(pct)}</div>
+                            <div style={{ fontSize: "11px", color: "#2f7cf6", fontWeight: 600, marginTop: "2px" }}>{fmtPct(pct)}</div>
                           )}
                           <div style={{ fontSize: "11px", color: "#333", fontWeight: 600, marginTop: "2px" }}>{g.item}</div>
                         </div>
@@ -589,7 +589,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
               <div style={cardStyle}>
                 <span style={sectionTitle}>자금</span>
                 {isLoading ? (
-                  <div style={{ padding: "40px 10px", textAlign: "center", fontSize: "13px", color: "#8a97a8" }}>불러오는 중…</div>
+                  <div style={{ padding: "40px 10px", textAlign: "center", fontSize: "13px", color: "#7c8ba3" }}>불러오는 중…</div>
                 ) : revenueTotal == null && cashConfirmed == null && cashCollection == null ? (
                   <EmptyHint label="자금 (매출/확정/수금)" />
                 ) : (
@@ -632,7 +632,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                         <MiniBar
                           value={cashCollection ?? 0}
                           max={cashMax}
-                          color="#4472ca"
+                          color="#2f7cf6"
                           label="수금 (B)"
                           height={150}
                           valueLabel={formatMoney(cashCollection, currency, unitOn)}
@@ -641,7 +641,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                         <MiniBar
                           value={Math.max(cashOutstanding ?? 0, 0)}
                           max={cashMax}
-                          color="#e57373"
+                          color="#f2736a"
                           label="채권 (A)-(B)"
                           height={150}
                           valueLabel={formatMoney(cashOutstanding, currency, unitOn)}
@@ -666,7 +666,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
               padding: "60px 20px",
               textAlign: "center",
               fontSize: "15px",
-              color: "#6b7d96",
+              color: "#7c8ba3",
             }}
           >
             {TAB_LABELS[activeTab] ?? activeTab} 화면은 준비 중입니다.

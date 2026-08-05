@@ -4,11 +4,11 @@ import { useMoney } from "../lib/displayUnit";
 
 const thStyle: React.CSSProperties = {
   backgroundColor: "#eef2f7",
-  color: "#1e2a3b",
+  color: "#16294a",
   fontSize: "13px",
   fontWeight: 700,
   padding: "10px 8px",
-  border: "1px solid #dde3ee",
+  border: "1px solid #e2e9f3",
   textAlign: "center",
   verticalAlign: "middle",
   whiteSpace: "pre-line",
@@ -18,7 +18,7 @@ const tdStyle: React.CSSProperties = {
   fontSize: "13px",
   color: "#222",
   padding: "10px 8px",
-  border: "1px solid #d5dce6",
+  border: "1px solid #e2e9f3",
   verticalAlign: "top",
   backgroundColor: "#fff",
 };
@@ -42,7 +42,7 @@ export function ServiceOutsourcingTab({ projectName }: { projectName: string }) 
     <div
       style={{
         backgroundColor: "#fff",
-        border: "1px solid #dde3ee",
+        border: "1px solid #e2e9f3",
         borderRadius: "8px",
         padding: "12px",
       }}
@@ -69,13 +69,13 @@ export function ServiceOutsourcingTab({ projectName }: { projectName: string }) 
         <tbody>
           {isLoading ? (
             <tr>
-              <td style={{ ...tdCenter, color: "#8a97a8" }} colSpan={11}>
+              <td style={{ ...tdCenter, color: "#7c8ba3" }} colSpan={11}>
                 불러오는 중…
               </td>
             </tr>
           ) : rows.length === 0 ? (
             <tr>
-              <td style={{ ...tdCenter, color: "#8a97a8", padding: "24px 10px" }} colSpan={11}>
+              <td style={{ ...tdCenter, color: "#7c8ba3", padding: "24px 10px" }} colSpan={11}>
                 외주/용역 데이터가 없습니다. 좌측 "데이터 입력" 탭에서 외주 데이터를 입력해 주세요.
               </td>
             </tr>

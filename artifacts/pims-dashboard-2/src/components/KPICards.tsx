@@ -22,7 +22,7 @@ interface KPICardProps {
 
 function KPICard({
   title, plan, actual, achievement,
-  achievementColor = "#00bcd4", compact = false,
+  achievementColor = "#35c7c0", compact = false,
   cardIndex = 0, stripColor,
 }: KPICardProps) {
   const { theme: T } = useTheme();
@@ -189,7 +189,7 @@ export function KPICards() {
   const { theme: T } = useTheme();
 
   const isStrip = T.kpi.cardStyle === "strip";
-  const stripColors = T.kpi.stripColors ?? ["#4472ca", "#e67e22", "#0891b2", "#059669"];
+  const stripColors = T.kpi.stripColors ?? ["#2f7cf6", "#e67e22", "#35c7c0", "#1c7a5a"];
 
   const cards = derived?.kpi ?? PLACEHOLDER_TITLES.map((title) => ({
     title,

@@ -17,12 +17,12 @@ export function OrderStatus() {
     return (
       <div style={{
         backgroundColor: "#fff",
-        border: "1px solid #d0dce8",
+        border: "1px solid #e2e9f3",
         borderRadius: "6px",
         padding: "10px 12px",
       }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
-          <span style={{ fontSize: "13px", fontWeight: "600", color: "#1a3a5c" }}>수주 실적 현황</span>
+          <span style={{ fontSize: "13px", fontWeight: "600", color: "#16294a" }}>수주 실적 현황</span>
         </div>
         <div style={{
           height: "150px",
@@ -43,19 +43,19 @@ export function OrderStatus() {
   }
 
   const donutData = [
-    { name: "수주", value: ordered, color: "#4472ca" },
-    { name: "잔여", value: remaining, color: "#dde3ee" },
+    { name: "수주", value: ordered, color: "#2f7cf6" },
+    { name: "잔여", value: remaining, color: "#e2e9f3" },
   ];
 
   return (
     <div style={{
       backgroundColor: "#fff",
-      border: "1px solid #d0dce8",
+      border: "1px solid #e2e9f3",
       borderRadius: "6px",
       padding: "10px 12px",
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
-        <span style={{ fontSize: "13px", fontWeight: "600", color: "#1a3a5c" }}>수주 실적 현황</span>
+        <span style={{ fontSize: "13px", fontWeight: "600", color: "#16294a" }}>수주 실적 현황</span>
       </div>
 
       {/* Donut chart with center label */}
@@ -95,22 +95,22 @@ export function OrderStatus() {
             pointerEvents: "none",
           }}
         >
-          <div style={{ fontSize: "20px", fontWeight: 700, color: "#1565c0" }}>{pct}%</div>
+          <div style={{ fontSize: "20px", fontWeight: 700, color: "#2f7cf6" }}>{pct}%</div>
           <div style={{ fontSize: "9px", color: "#888" }}>계획 대비</div>
         </div>
       </div>
 
       {/* Stats row */}
       <div style={{ display: "flex", gap: "8px", marginBottom: "8px" }}>
-        <div style={{ flex: 1, textAlign: "center", borderRight: "1px solid #e8f0f8" }}>
+        <div style={{ flex: 1, textAlign: "center", borderRight: "1px solid #e7f1fd" }}>
           <div style={{ fontSize: "11px", color: "#888", marginBottom: "2px" }}>계획</div>
-          <div style={{ fontSize: statFont, fontWeight: "700", color: "#1a3a5c" }}>
+          <div style={{ fontSize: statFont, fontWeight: "700", color: "#16294a" }}>
             {planTotal.toLocaleString()}
           </div>
         </div>
-        <div style={{ flex: 1, textAlign: "center", borderRight: "1px solid #e8f0f8" }}>
+        <div style={{ flex: 1, textAlign: "center", borderRight: "1px solid #e7f1fd" }}>
           <div style={{ fontSize: "11px", color: "#888", marginBottom: "2px" }}>수주</div>
-          <div style={{ fontSize: statFont, fontWeight: "700", color: "#1565c0" }}>
+          <div style={{ fontSize: statFont, fontWeight: "700", color: "#2f7cf6" }}>
             {ordered.toLocaleString()}
           </div>
         </div>
@@ -126,7 +126,7 @@ export function OrderStatus() {
         width: "100%",
         textAlign: "right",
         fontSize: "12px",
-        color: "#1e6fdd",
+        color: "#2f7cf6",
         background: "none",
         border: "none",
         cursor: "pointer",

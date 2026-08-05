@@ -59,7 +59,7 @@ export function DrilldownCard() {
     <div
       style={{
         backgroundColor: "#fff",
-        border: "1px solid #d0dce8",
+        border: "1px solid #e2e9f3",
         borderRadius: "6px",
         overflow: "hidden",
       }}
@@ -92,7 +92,7 @@ export function DrilldownCard() {
             borderRadius: "4px",
             padding: "8px 10px",
             fontSize: "13px",
-            color: "#1a2d4d",
+            color: "#16294a",
             fontWeight: 600,
           }}
         >
@@ -128,9 +128,9 @@ export function DrilldownCard() {
           }}
         >
           {error ? (
-            <span style={{ fontSize: "13px", color: "#1a2d4d", fontWeight: 600 }}>오류</span>
+            <span style={{ fontSize: "13px", color: "#16294a", fontWeight: 600 }}>오류</span>
           ) : loading ? (
-            <span style={{ fontSize: "13px", color: "#1a2d4d", fontWeight: 600 }}>-</span>
+            <span style={{ fontSize: "13px", color: "#16294a", fontWeight: 600 }}>-</span>
           ) : topRevenue.length === 0 ? (
             <span style={{ fontSize: "13px", color: "#6b7c94", fontWeight: 500 }}>당월 매출 없음</span>
           ) : (
@@ -142,7 +142,7 @@ export function DrilldownCard() {
                   alignItems: "center",
                   gap: "6px",
                   fontSize: "13px",
-                  color: "#1a2d4d",
+                  color: "#16294a",
                   fontWeight: 600,
                 }}
               >
@@ -151,7 +151,7 @@ export function DrilldownCard() {
                     width: "4px",
                     height: "4px",
                     borderRadius: "50%",
-                    backgroundColor: "#1a2d4d",
+                    backgroundColor: "#16294a",
                     flexShrink: 0,
                   }}
                 />

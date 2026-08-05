@@ -23,7 +23,7 @@ import { ProjectCommentPanel } from "./ProjectCommentPanel";
 
 const cardStyle: React.CSSProperties = {
   backgroundColor: "#fff",
-  border: "1px solid #dde3ee",
+  border: "1px solid #e2e9f3",
   borderRadius: "8px",
   padding: "10px 12px",
 };
@@ -31,7 +31,7 @@ const cardStyle: React.CSSProperties = {
 const sectionTitle: React.CSSProperties = {
   fontSize: "16px",
   fontWeight: 700,
-  color: "#4472ca",
+  color: "#2f7cf6",
 };
 
 function useSiteMonths(year: number, metric: "revenue" | "cogs", enabled: boolean) {
@@ -48,7 +48,7 @@ function Notice({ children, error }: { children: React.ReactNode; error?: boolea
         padding: "60px 20px",
         textAlign: "center",
         fontSize: "15px",
-        color: error ? "#e57373" : "#6b7d96",
+        color: error ? "#f2736a" : "#7c8ba3",
       }}
     >
       {children}

@@ -28,7 +28,7 @@ function ThemeSwitcher() {
       {open && (
         <div style={{
           backgroundColor: "#ffffff",
-          border: "1px solid #d5dce6",
+          border: "1px solid #e2e9f3",
           borderRadius: "12px",
           padding: "10px 12px",
           boxShadow: "0 8px 24px rgba(0,0,0,0.16)",

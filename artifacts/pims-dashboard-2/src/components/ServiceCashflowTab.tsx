@@ -20,7 +20,7 @@ import { useMoney } from "../lib/displayUnit";
 
 const cardStyle: React.CSSProperties = {
   backgroundColor: "#fff",
-  border: "1px solid #dde3ee",
+  border: "1px solid #e2e9f3",
   borderRadius: "8px",
   padding: "10px 12px",
 };
@@ -114,7 +114,7 @@ export function ServiceCashflowTab({
   const hasData = chartData.some((d) => d.cashIn !== 0 || d.cashOut !== 0 || d.equivalent !== 0);
 
   const entryGuide = (
-    <div style={{ fontSize: "14px", color: "#8a97a8", marginTop: "8px" }}>
+    <div style={{ fontSize: "14px", color: "#7c8ba3", marginTop: "8px" }}>
       관리자 모드로 로그인하면 "데이터 입력" 탭의 "월별 자금" 표에서 자금 데이터를 입력할 수 있습니다.
     </div>
   );
@@ -122,13 +122,13 @@ export function ServiceCashflowTab({
   let body: React.ReactNode;
   if (pdLoading || (cfRef != null && query.isLoading)) {
     body = (
-      <div style={{ padding: "60px 20px", textAlign: "center", fontSize: "15px", color: "#6b7d96" }}>
+      <div style={{ padding: "60px 20px", textAlign: "center", fontSize: "15px", color: "#7c8ba3" }}>
         자금 데이터를 불러오는 중입니다…
       </div>
     );
   } else if (cfRef == null && !hasPdData) {
     body = (
-      <div style={{ padding: "60px 20px", textAlign: "center", fontSize: "15px", color: "#6b7d96" }}>
+      <div style={{ padding: "60px 20px", textAlign: "center", fontSize: "15px", color: "#7c8ba3" }}>
         아직 입력된 자금 데이터가 없습니다.
         {entryGuide}
       </div>
@@ -136,7 +136,7 @@ export function ServiceCashflowTab({
   } else if (!useCf && !hasPdData && query.isError) {
     const status = (query.error as { status?: number } | null)?.status;
     body = (
-      <div style={{ padding: "60px 20px", textAlign: "center", fontSize: "15px", color: status === 404 ? "#6b7d96" : "#e57373" }}>
+      <div style={{ padding: "60px 20px", textAlign: "center", fontSize: "15px", color: status === 404 ? "#7c8ba3" : "#f2736a" }}>
         {status === 404 ? (
           <>
             해당 프로젝트의 자금수지 데이터가 없습니다.
@@ -149,7 +149,7 @@ export function ServiceCashflowTab({
     );
   } else if (!hasData) {
     body = (
-      <div style={{ padding: "60px 20px", textAlign: "center", fontSize: "15px", color: "#6b7d96" }}>
+      <div style={{ padding: "60px 20px", textAlign: "center", fontSize: "15px", color: "#7c8ba3" }}>
         선택한 기간에 자금 데이터가 없습니다.
         {entryGuide}
       </div>
@@ -240,7 +240,7 @@ export function ServiceCashflowTab({
       <div style={cardStyle}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span style={{ fontSize: "15px", fontWeight: 700, color: chartTheme.titleNavy }}>자금수지</span>
-          <span style={{ fontSize: "13px", color: "#6b7d96" }}>
+          <span style={{ fontSize: "13px", color: "#7c8ba3" }}>
             {useCf && query.data
               ? `단위: ${cfConvertible ? unitLabel : query.data.unit}`
               : hasPdData

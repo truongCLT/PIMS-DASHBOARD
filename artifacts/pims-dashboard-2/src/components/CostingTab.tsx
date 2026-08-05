@@ -7,7 +7,7 @@ import { chartTheme } from "../lib/chartTheme";
 
 const cardStyle: React.CSSProperties = {
   backgroundColor: "#fff",
-  border: "1px solid #dde3ee",
+  border: "1px solid #e2e9f3",
   borderRadius: "8px",
   padding: "10px 12px",
 };
@@ -15,14 +15,14 @@ const cardStyle: React.CSSProperties = {
 const sectionTitle: React.CSSProperties = {
   fontSize: "16px",
   fontWeight: 700,
-  color: "#4472ca",
+  color: "#2f7cf6",
 };
 
 const emptyStyle: React.CSSProperties = {
   padding: "24px 0",
   textAlign: "center",
   fontSize: "13px",
-  color: "#8a97a8",
+  color: "#7c8ba3",
 };
 
 function Donut({
@@ -64,7 +64,7 @@ function Donut({
           dominantBaseline="central"
           fontSize={15}
           fontWeight={700}
-          fill="#1e2a3b"
+          fill="#16294a"
         >
           {centerLabel}
         </text>
@@ -321,7 +321,7 @@ export function CostingTab({
                     {cost != null || contract != null ? `${fmtMoney(cost)} / ${fmtMoney(contract)}` : "-"}
                   </div>
                   <Donut percent={pct ?? 0} color={meta.color} size={150} stroke={16} centerLabel={fmtPct(pct)} />
-                  <div style={{ fontSize: "13px", color: "#1e2a3b", fontWeight: 600, marginTop: "4px" }}>
+                  <div style={{ fontSize: "13px", color: "#16294a", fontWeight: 600, marginTop: "4px" }}>
                     {meta.label}
                     {baseMonth}
                   </div>

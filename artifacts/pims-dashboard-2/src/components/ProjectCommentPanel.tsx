@@ -111,8 +111,8 @@ export function ProjectCommentPanel({
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
       {showHeader && (
         <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-          <MessageSquare size={13} color="#1e2a3b" />
-          <span style={{ fontSize: "12px", fontWeight: 700, color: "#1e2a3b" }}>코멘트</span>
+          <MessageSquare size={13} color="#16294a" />
+          <span style={{ fontSize: "12px", fontWeight: 700, color: "#16294a" }}>코멘트</span>
         </div>
       )}
 
@@ -124,7 +124,7 @@ export function ProjectCommentPanel({
           onChange={(e) => setFilterMonth(Number(e.target.value))}
           style={{
             width: "100%",
-            border: "1px solid #ccd4dd",
+            border: "1px solid #dde6f1",
             borderRadius: "8px",
             padding: "7px 10px",
             fontSize: "12px",
@@ -145,7 +145,7 @@ export function ProjectCommentPanel({
           display: "flex",
           alignItems: "flex-end",
           gap: "8px",
-          border: "1px solid #ccd4dd",
+          border: "1px solid #dde6f1",
           borderRadius: "8px",
           padding: "8px 10px",
         }}
@@ -174,7 +174,7 @@ export function ProjectCommentPanel({
             border: "none",
             padding: 0,
             cursor: canSubmit ? "pointer" : "default",
-            color: canSubmit ? "#4472ca" : "#a9c4e8",
+            color: canSubmit ? "#2f7cf6" : "#a9c4e8",
             flexShrink: 0,
           }}
         >
@@ -182,13 +182,13 @@ export function ProjectCommentPanel({
         </button>
       </div>
 
-      {actionError && <div style={{ fontSize: "10px", color: "#e57373" }}>{actionError}</div>}
+      {actionError && <div style={{ fontSize: "10px", color: "#f2736a" }}>{actionError}</div>}
 
       {/* Comment list */}
       {listQuery.isLoading ? (
         <div style={{ fontSize: "11px", color: "#999" }}>불러오는 중...</div>
       ) : listQuery.isError ? (
-        <div style={{ fontSize: "11px", color: "#e57373" }}>코멘트 조회에 실패했습니다.</div>
+        <div style={{ fontSize: "11px", color: "#f2736a" }}>코멘트 조회에 실패했습니다.</div>
       ) : visibleComments.length === 0 ? (
         filterMonth !== 0 ? (
           <div style={{ fontSize: "11px", color: "#999" }}>{filterLabel} 코멘트가 없습니다.</div>
@@ -235,7 +235,7 @@ export function ProjectCommentPanel({
                       }}
                       disabled={editText.trim().length === 0 || updateMutation.isPending}
                       aria-label="수정 저장"
-                      style={{ background: "none", border: "none", cursor: "pointer", color: "#1e7145", padding: 0 }}
+                      style={{ background: "none", border: "none", cursor: "pointer", color: "#1c7a5a", padding: 0 }}
                     >
                       <Check size={14} />
                     </button>
@@ -245,7 +245,7 @@ export function ProjectCommentPanel({
                         setEditText("");
                       }}
                       aria-label="수정 취소"
-                      style={{ background: "none", border: "none", cursor: "pointer", color: "#8aa0b8", padding: 0 }}
+                      style={{ background: "none", border: "none", cursor: "pointer", color: "#7c8ba3", padding: 0 }}
                     >
                       <X size={14} />
                     </button>
@@ -255,7 +255,7 @@ export function ProjectCommentPanel({
                 <>
                   <p style={{ margin: "0 0 4px", whiteSpace: "pre-wrap" }}>{c.body}</p>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <span style={{ color: "#8aa0b8", fontSize: "10px" }}>
+                    <span style={{ color: "#7c8ba3", fontSize: "10px" }}>
                       {new Date(c.createdAt).toLocaleDateString("ko-KR")}
                     </span>
                     {isAdmin && (
@@ -267,7 +267,7 @@ export function ProjectCommentPanel({
                             setActionError(null);
                           }}
                           aria-label="코멘트 수정"
-                          style={{ background: "none", border: "none", cursor: "pointer", color: "#4472ca", padding: 0 }}
+                          style={{ background: "none", border: "none", cursor: "pointer", color: "#2f7cf6", padding: 0 }}
                         >
                           <Pencil size={12} />
                         </button>
@@ -279,7 +279,7 @@ export function ProjectCommentPanel({
                             }
                           }}
                           aria-label="코멘트 삭제"
-                          style={{ background: "none", border: "none", cursor: "pointer", color: "#e57373", padding: 0 }}
+                          style={{ background: "none", border: "none", cursor: "pointer", color: "#f2736a", padding: 0 }}
                         >
                           <Trash2 size={12} />
                         </button>
