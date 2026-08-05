@@ -113,7 +113,7 @@ export function ProfitChart() {
   return (
     <div style={{
       backgroundColor: "#fff",
-      border: "1px solid #d0dce8",
+      border: "1px solid #dde3ee",
       borderRadius: "6px",
       padding: "10px 12px",
     }}>

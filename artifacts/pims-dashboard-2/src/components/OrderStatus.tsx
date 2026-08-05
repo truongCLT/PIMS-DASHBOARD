@@ -43,8 +43,8 @@ export function OrderStatus() {
   }
 
   const donutData = [
-    { name: "수주", value: ordered, color: "#1565c0" },
-    { name: "잔여", value: remaining, color: "#e0e8f0" },
+    { name: "수주", value: ordered, color: "#4472ca" },
+    { name: "잔여", value: remaining, color: "#dde3ee" },
   ];
 
   return (

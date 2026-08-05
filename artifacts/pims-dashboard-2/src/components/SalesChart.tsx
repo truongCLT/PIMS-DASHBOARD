@@ -88,7 +88,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   const actual = payload.find((p: any) => p.dataKey === "actual");
   const rate = plan?.payload?.rate;
   return (
-    <div style={{ backgroundColor: "#fff", border: "1px solid #d0dce8", borderRadius: "4px", padding: "8px 10px", fontSize: "12px" }}>
+    <div style={{ backgroundColor: "#fff", border: "1px solid #dde3ee", borderRadius: "4px", padding: "8px 10px", fontSize: "12px" }}>
       <div style={{ fontWeight: 700, marginBottom: "4px", color: "#1a2d4d" }}>{label}</div>
       {plan && <div style={{ color: PLAN_COLOR }}>매출(계획): {Number(plan.value).toLocaleString("ko-KR")}</div>}
       {actual && <div style={{ color: ACTUAL_COLOR }}>매출(실적 및 전망): {Number(actual.value).toLocaleString("ko-KR")}</div>}
