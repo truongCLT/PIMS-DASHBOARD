@@ -14,6 +14,7 @@ import {
   type DashboardDivision,
   type ProjectStatusFilter,
 } from "../lib/dashboardFilters";
+import { useTheme } from "../lib/theme";
 
 export function Dashboard({
   scope = "전체",
@@ -32,12 +33,13 @@ export function Dashboard({
     : scope.endsWith("-종료")
       ? "closed"
       : null;
+  const { theme: T } = useTheme();
   return (
     <DashboardFilterProvider division={division} statusFilter={statusFilter}>
     <div style={{
       flex: 1,
       overflowY: "auto",
-      backgroundColor: "#e8edf3",
+      backgroundColor: T.dashboard.bg,
       display: "flex",
       flexDirection: "column",
     }}>
@@ -46,7 +48,7 @@ export function Dashboard({
       </div>
 
       {/* Capture area: everything below the filter box */}
-      <div id="dashboard-capture" style={{ backgroundColor: "#e8edf3" }}>
+      <div id="dashboard-capture" style={{ backgroundColor: T.dashboard.bg }}>
         {/* KPI Cards */}
         <div style={{ padding: "8px 10px 4px" }}>
           <KPICards />

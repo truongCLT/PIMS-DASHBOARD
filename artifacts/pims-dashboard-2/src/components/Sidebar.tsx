@@ -4,6 +4,7 @@ import { FolderClosed } from "lucide-react";
 import { useListMgmtreportProjects } from "@workspace/api-client-react";
 import { PROJECT_GROUPS, classifyMrProject, isTestMrProject } from "../data/projects";
 import { REPORT_YEAR } from "../lib/mgmtreportData";
+import { useTheme } from "../lib/theme";
 
 export type DashboardScope =
   | "전체"
@@ -100,11 +101,14 @@ function TreeNode({
   const isScopeSelected =
     item.scope != null && selectedProject == null && selectedScope === item.scope;
 
-  const color = isTopLevel ? "#1a2d4d" : isSubGroup ? "#2a3d55" : "#44546a";
+  const { theme: T } = useTheme();
+  const color = isTopLevel ? T.sidebar.topLevelColor : isSubGroup ? T.sidebar.midLevelColor : T.sidebar.subLevelColor;
   const fontSize = isTopLevel ? "12px" : "11px";
   const fontWeight = isTopLevel ? "700" : isSubGroup ? "600" : isSelected ? "600" : "400";
   const paddingLeft = depth === 0 ? "12px" : depth === 1 ? "20px" : depth === 2 ? "32px" : "44px";
-  const bg = isSelected || isScopeSelected ? "#dbe6f5" : "transparent";
+  const isActive = isSelected || isScopeSelected;
+  const bg = isActive ? T.sidebar.activeItemBg : "transparent";
+  const activeColor = isActive ? T.sidebar.activeItemColor : color;
 
   return (
     <div>
@@ -128,10 +132,11 @@ function TreeNode({
           padding: `6px 10px 6px ${paddingLeft}`,
           cursor: collapsible || item.isProject || item.scope != null ? "pointer" : "default",
           backgroundColor: bg,
-          color,
+          color: activeColor,
           fontSize,
           fontWeight,
           userSelect: "none",
+          borderLeft: isActive ? `2px solid ${T.sidebar.activeItemAccent}` : "2px solid transparent",
         }}
       >
         <div
@@ -194,15 +199,18 @@ export function Sidebar({
     return buildTreeData(projects);
   }, [projectsQuery.data]);
 
+  const { theme: T } = useTheme();
+  const isTotalSelected = selectedProject == null && selectedScope === "전체";
+
   return (
     <div style={{
       width: "170px",
       minWidth: "170px",
-      backgroundColor: "#ffffff",
+      backgroundColor: T.sidebar.bg,
       display: "flex",
       flexDirection: "column",
       overflow: "hidden",
-      borderRight: "1px solid #d5dce6",
+      borderRight: T.sidebar.border,
     }}>
       {/* DECV TOTAL */}
       <div
@@ -212,14 +220,15 @@ export function Sidebar({
         alignItems: "center",
         gap: "8px",
         padding: "10px 12px",
-        color: "#1a2d4d",
+        color: isTotalSelected ? T.sidebar.activeItemColor : T.sidebar.topLevelColor,
         fontSize: "12px",
         fontWeight: "700",
-        borderBottom: "1px solid #eef1f5",
+        borderBottom: T.sidebar.totalBorderBottom,
         cursor: "pointer",
-        backgroundColor: selectedProject == null && selectedScope === "전체" ? "#e8ecf5" : "transparent",
+        backgroundColor: isTotalSelected ? T.sidebar.totalActiveBg : "transparent",
+        borderLeft: isTotalSelected ? `2px solid ${T.sidebar.activeItemAccent}` : "2px solid transparent",
       }}>
-        <FolderClosed size={14} color="#1a2d4d" fill="#1a2d4d" />
+        <FolderClosed size={14} color={isTotalSelected ? T.sidebar.activeItemAccent : T.sidebar.topLevelColor} fill={isTotalSelected ? T.sidebar.activeItemAccent : T.sidebar.topLevelColor} />
         DECV TOTAL
       </div>
 
@@ -241,7 +250,7 @@ export function Sidebar({
       {/* Bottom branding */}
       <div style={{
         padding: "12px 10px",
-        borderTop: "1px solid #e5eaf0",
+        borderTop: T.sidebar.brandingBorderTop,
       }}>
         <img
           src={pimsBranding}

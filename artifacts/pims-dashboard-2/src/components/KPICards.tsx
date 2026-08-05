@@ -1,6 +1,7 @@
 import React from "react";
 import { useDashboardData } from "../lib/mgmtreportData";
 import { useDashboardFilters } from "../lib/dashboardFilters";
+import { useTheme } from "../lib/theme";
 
 interface KPICardProps {
   title: string;
@@ -12,20 +13,25 @@ interface KPICardProps {
 }
 
 function KPICard({ title, plan, actual, achievement, achievementColor = "#00bcd4", compact = false }: KPICardProps) {
+  const { theme: T } = useTheme();
+  const K = T.kpi;
   const numFont = compact ? "clamp(11px, 0.95vw, 16px)" : "clamp(18px, 1.7vw, 30px)";
   return (
     <div style={{
-      backgroundColor: "#33415f",
+      backgroundColor: K.cardBg,
       borderRadius: "8px",
       padding: "12px 16px",
       flex: 1,
       minWidth: 0,
-      boxShadow: "0 1px 4px rgba(20,35,70,0.15)",
+      boxShadow: K.boxShadow,
+      border: K.cardBorder,
+      borderTop: K.cardBorderTop ?? undefined,
+      borderLeft: K.accentBorderLeft ? `4px solid ${K.accentBorderLeft}` : undefined,
     }}>
       <div style={{
         fontSize: "clamp(12px, 0.95vw, 16px)",
         fontWeight: "600",
-        color: "#ffffff",
+        color: K.titleColor,
         marginBottom: "10px",
         lineHeight: 1.35,
       }}>
@@ -39,21 +45,21 @@ function KPICard({ title, plan, actual, achievement, achievementColor = "#00bcd4
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
         {/* Plan */}
         <div>
-          <div style={{ fontSize: "clamp(10px, 0.8vw, 13px)", color: "#9fb0cc", marginBottom: "4px" }}>계획</div>
-          <div style={{ fontSize: numFont, fontWeight: "700", color: "#ffffff" }}>
+          <div style={{ fontSize: "clamp(10px, 0.8vw, 13px)", color: K.labelColor, marginBottom: "4px" }}>계획</div>
+          <div style={{ fontSize: numFont, fontWeight: "700", color: K.valueColor }}>
             {plan.toLocaleString()}
           </div>
         </div>
         {/* Actual */}
         <div>
-          <div style={{ fontSize: "clamp(10px, 0.8vw, 13px)", color: "#9fb0cc", marginBottom: "4px" }}>실적</div>
-          <div style={{ fontSize: numFont, fontWeight: "700", color: "#ffffff" }}>
+          <div style={{ fontSize: "clamp(10px, 0.8vw, 13px)", color: K.labelColor, marginBottom: "4px" }}>실적</div>
+          <div style={{ fontSize: numFont, fontWeight: "700", color: K.valueColor }}>
             {actual.toLocaleString()}
           </div>
         </div>
         {/* Achievement */}
         <div>
-          <div style={{ fontSize: "clamp(10px, 0.8vw, 13px)", color: "#9fb0cc", marginBottom: "4px" }}>달성률</div>
+          <div style={{ fontSize: "clamp(10px, 0.8vw, 13px)", color: K.labelColor, marginBottom: "4px" }}>달성률</div>
           <div style={{ fontSize: compact ? "clamp(12px, 1.05vw, 18px)" : "clamp(18px, 1.7vw, 30px)", fontWeight: "700", color: achievementColor }}>
             {achievement}
           </div>
