@@ -9,9 +9,9 @@ const data = [
   { m: "6월", op: 450, opPct: "13%", non: 40, total: 700, totalPct: "14%", sga: "-250", sgaPct: "10%", ord: 490, ordPct: "13%", con: "80%", svc: "20%" },
 ];
 
-const NAVY = "#3d5a8f";
-const GREEN = "#3e7d4c";
-const LIGHT = "#eef4fb";
+const NAVY   = "#4472ca";   // Analytics Clean mid-blue
+const GREEN  = "#5b9bd5";   // lighter analytic blue
+const LIGHT  = "#eef4fb";
 const ORANGE = "#e07b28";
 
 const Y0 = 400;
@@ -28,13 +28,13 @@ export function ProfitChart() {
   return (
     <div style={{
       backgroundColor: "#fff",
-      border: "1px solid #d0dce8",
+      border: "1px solid #dde3ee",
       borderRadius: "6px",
       padding: "10px 12px",
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
-        <span style={{ fontSize: "12px", fontWeight: "600", color: "#1a3a5c" }}>손익현황</span>
-        <button style={{ fontSize: "11px", color: "#1e6fdd", background: "none", border: "none", cursor: "pointer" }}>
+        <span style={{ fontSize: "12px", fontWeight: "600", color: "#1e2a3b" }}>손익현황</span>
+        <button style={{ fontSize: "11px", color: "#4472ca", background: "none", border: "none", cursor: "pointer" }}>
           상세보기
         </button>
       </div>

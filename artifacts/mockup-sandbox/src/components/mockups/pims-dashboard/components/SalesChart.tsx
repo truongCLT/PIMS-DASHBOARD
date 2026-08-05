@@ -25,7 +25,7 @@ const CustomBar = (props: any) => {
   const { x, y, width, height, value } = props;
   if (!value) return null;
   return (
-    <rect x={x} y={y} width={width} height={height} fill="#1565c0" rx={2} />
+    <rect x={x} y={y} width={width} height={height} fill="#4472ca" rx={2} />
   );
 };
 
@@ -35,16 +35,16 @@ export function SalesChart() {
   return (
     <div style={{
       backgroundColor: "#fff",
-      border: "1px solid #d0dce8",
+      border: "1px solid #dde3ee",
       borderRadius: "6px",
       padding: "10px 12px",
     }}>
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-        <span style={{ fontSize: "12px", fontWeight: "600", color: "#1a3a5c" }}>매출 실적 및 전망</span>
+        <span style={{ fontSize: "12px", fontWeight: "600", color: "#1e2a3b" }}>매출 실적 및 전망</span>
         <button style={{
           fontSize: "11px",
-          color: "#1e6fdd",
+          color: "#4472ca",
           background: "none",
           border: "none",
           cursor: "pointer",
@@ -66,24 +66,24 @@ export function SalesChart() {
               type="monotone"
               dataKey="plan"
               name="매출(계획)"
-              stroke="#1e90ff"
+              stroke="#4472ca"
               strokeWidth={1.5}
-              dot={{ r: 3, fill: "#1e90ff" }}
+              dot={{ r: 3, fill: "#4472ca" }}
               connectNulls
             >
-              <LabelList dataKey="plan" position="top" style={{ fontSize: "9px", fill: "#1e90ff" }} />
+              <LabelList dataKey="plan" position="top" style={{ fontSize: "9px", fill: "#4472ca" }} />
             </Line>
             <Line
               type="monotone"
               dataKey="actual"
               name="매출(실적 및 전망)"
-              stroke="#4caf50"
+              stroke="#5b9bd5"
               strokeWidth={1.5}
-              dot={{ r: 3, fill: "#4caf50" }}
+              dot={{ r: 3, fill: "#5b9bd5" }}
               strokeDasharray="4 2"
               connectNulls
             >
-              <LabelList dataKey="actual" position="top" style={{ fontSize: "9px", fill: "#4caf50" }} />
+              <LabelList dataKey="actual" position="top" style={{ fontSize: "9px", fill: "#5b9bd5" }} />
             </Line>
           </ComposedChart>
         </ResponsiveContainer>
@@ -113,7 +113,7 @@ export function SalesChart() {
         </label>
         <div style={{ display: "flex", alignItems: "center", gap: "12px", marginLeft: "8px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-            <div style={{ width: "20px", height: "2px", backgroundColor: "#1e90ff" }} />
+            <div style={{ width: "20px", height: "2px", backgroundColor: "#4472ca" }} />
             <span style={{ fontSize: "9px", color: "#555" }}>매출(계획)</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>

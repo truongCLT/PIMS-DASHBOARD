@@ -9,12 +9,12 @@ export function OrderStatus() {
   return (
     <div style={{
       backgroundColor: "#fff",
-      border: "1px solid #d0dce8",
+      border: "1px solid #dde3ee",
       borderRadius: "6px",
       padding: "10px 12px",
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
-        <span style={{ fontSize: "12px", fontWeight: "600", color: "#1a3a5c" }}>수주 실적 현황</span>
+        <span style={{ fontSize: "12px", fontWeight: "600", color: "#1e2a3b" }}>수주 실적 현황</span>
       </div>
 
       {/* Progress bar with label */}
@@ -29,7 +29,7 @@ export function OrderStatus() {
         </div>
         <div style={{
           height: "22px",
-          backgroundColor: "#e0e8f0",
+          backgroundColor: "#eef2fa",
           borderRadius: "3px",
           overflow: "hidden",
           position: "relative",
@@ -37,7 +37,7 @@ export function OrderStatus() {
           <div style={{
             height: "100%",
             width: `${pct}%`,
-            backgroundColor: "#1565c0",
+            backgroundColor: "#4472ca",
             borderRadius: "3px",
             display: "flex",
             alignItems: "center",
@@ -58,13 +58,13 @@ export function OrderStatus() {
         </div>
         <div style={{ flex: 1, textAlign: "center", borderRight: "1px solid #e8f0f8" }}>
           <div style={{ fontSize: "10px", color: "#888", marginBottom: "2px" }}>수주</div>
-          <div style={{ fontSize: "18px", fontWeight: "700", color: "#1565c0" }}>
+          <div style={{ fontSize: "18px", fontWeight: "700", color: "#4472ca" }}>
             {ordered.toLocaleString()}
           </div>
         </div>
         <div style={{ flex: 1, textAlign: "center" }}>
           <div style={{ fontSize: "10px", color: "#888", marginBottom: "2px" }}>잔여</div>
-          <div style={{ fontSize: "18px", fontWeight: "700", color: "#ff7043" }}>
+          <div style={{ fontSize: "18px", fontWeight: "700", color: "#e67e22" }}>
             {remaining.toLocaleString()}
           </div>
         </div>
@@ -74,7 +74,7 @@ export function OrderStatus() {
         width: "100%",
         textAlign: "right",
         fontSize: "11px",
-        color: "#1e6fdd",
+        color: "#4472ca",
         background: "none",
         border: "none",
         cursor: "pointer",
