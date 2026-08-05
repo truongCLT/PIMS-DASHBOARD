@@ -19,15 +19,15 @@ const ROW_COLUMNS = "1fr 1.6fr 1.6fr";
 
 const cardStyle: React.CSSProperties = {
   backgroundColor: "#fff",
-  border: "1px solid #d0dce8",
-  borderRadius: "6px",
+  border: "1px solid #dde3ee",
+  borderRadius: "8px",
   padding: "10px 12px",
 };
 
 const sectionTitle: React.CSSProperties = {
   fontSize: "16px",
   fontWeight: 700,
-  color: "#4472c4",
+  color: "#4472ca",
   marginBottom: "6px",
 };
 
@@ -438,7 +438,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                       labelSize={18}
                     />
                   </div>
-                  <div style={{ fontSize: "12px", color: "#1a2d4d", fontWeight: 700, marginTop: "12px" }}>
+                  <div style={{ fontSize: "12px", color: "#1e2a3b", fontWeight: 700, marginTop: "12px" }}>
                     연
                   </div>
                 </div>
@@ -455,7 +455,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                       labelSize={18}
                     />
                   </div>
-                  <div style={{ fontSize: "12px", color: "#1a2d4d", fontWeight: 700, marginTop: "12px" }}>
+                  <div style={{ fontSize: "12px", color: "#1e2a3b", fontWeight: 700, marginTop: "12px" }}>
                     누계
                   </div>
                 </div>
@@ -480,7 +480,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                 ].map((c, i) => (
                   <div key={c.title}>
                     {i > 0 && (
-                      <div style={{ borderTop: "1px dashed #c8d4e0", margin: "4px 0" }} />
+                      <div style={{ borderTop: "1px dashed #dde3ee", margin: "4px 0" }} />
                     )}
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
                       <div style={{ marginTop: i === 0 ? "-6px" : "6px" }}>
@@ -493,7 +493,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                           labelSize={14}
                         />
                       </div>
-                      <div style={{ fontSize: "12px", color: "#1a2d4d", fontWeight: 700, marginTop: "3px" }}>{c.title}</div>
+                      <div style={{ fontSize: "12px", color: "#1e2a3b", fontWeight: 700, marginTop: "3px" }}>{c.title}</div>
                     </div>
                   </div>
                 ))}
@@ -509,7 +509,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                   label={fmtPct(estPct(completion))}
                   labelSize={26}
                 />
-                <div style={{ fontSize: "14px", color: "#1a2d4d", fontWeight: 800, marginTop: "2px" }}>
+                <div style={{ fontSize: "14px", color: "#1e2a3b", fontWeight: 800, marginTop: "2px" }}>
                   준공추정원가율
                 </div>
               </div>
@@ -533,7 +533,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
             <select
               value={budgetMonth ?? ""}
               onChange={(e) => setBudgetMonth(e.target.value === "" ? null : Number(e.target.value))}
-              style={{ fontSize: "12px", border: "1px solid #c8d2de", borderRadius: "4px", padding: "2px 4px", color: "#333", cursor: "pointer" }}
+              style={{ fontSize: "12px", border: "1px solid #dde3ee", borderRadius: "4px", padding: "2px 4px", color: "#333", cursor: "pointer" }}
             >
               <option value="">전체</option>
               {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
@@ -609,7 +609,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                           )}
                         </div>
                         {/* 항목명 */}
-                        <div style={{ fontSize: "13px", color: "#1a2d4d", fontWeight: 700, marginTop: "4px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" }}>
+                        <div style={{ fontSize: "13px", color: "#1e2a3b", fontWeight: 700, marginTop: "4px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" }}>
                           {g.item}
                         </div>
                       </div>
@@ -624,12 +624,12 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                             flex: budgetRows.length,
                             minWidth: 0,
                             backgroundColor: "rgba(214, 226, 240, 0.28)",
-                            border: "1px solid #c8d6e6",
-                            borderRadius: "6px",
+                            border: "1px solid #dde3ee",
+                            borderRadius: "8px",
                             padding: "6px 8px 8px",
                           }}
                         >
-                          <div style={{ textAlign: "center", fontSize: "13px", color: "#1a2d4d", fontWeight: 700, marginBottom: "4px" }}>
+                          <div style={{ textAlign: "center", fontSize: "13px", color: "#1e2a3b", fontWeight: 700, marginBottom: "4px" }}>
                             Direct Cost : {fmtPct(directCostPct)}
                           </div>
                           <div style={{ display: "flex", justifyContent: "space-around", gap: "8px", alignItems: "flex-end" }}>
@@ -680,7 +680,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                 <select
                   value={cashMonth ?? ""}
                   onChange={(e) => setCashMonth(e.target.value === "" ? null : Number(e.target.value))}
-                  style={{ fontSize: "12px", border: "1px solid #c8d2de", borderRadius: "4px", padding: "2px 4px", color: "#333", cursor: "pointer" }}
+                  style={{ fontSize: "12px", border: "1px solid #dde3ee", borderRadius: "4px", padding: "2px 4px", color: "#333", cursor: "pointer" }}
                 >
                   <option value="">전체</option>
                   {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (

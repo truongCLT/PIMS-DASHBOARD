@@ -17,15 +17,15 @@ import { DisplayUnitProvider, formatMoney, moneyUnitLabel } from "../lib/display
 
 const cardStyle: React.CSSProperties = {
   backgroundColor: "#fff",
-  border: "1px solid #d0dce8",
-  borderRadius: "6px",
+  border: "1px solid #dde3ee",
+  borderRadius: "8px",
   padding: "10px 12px",
 };
 
 const sectionTitle: React.CSSProperties = {
   fontSize: "16px",
   fontWeight: 700,
-  color: "#4472c4",
+  color: "#4472ca",
   marginBottom: "6px",
 };
 
@@ -215,7 +215,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
 
   return (
     <DisplayUnitProvider currency={currency} unitOn={unitOn}>
-    <div style={{ flex: 1, overflowY: "auto", backgroundColor: "#e8edf3" }}>
+    <div style={{ flex: 1, overflowY: "auto", backgroundColor: "#f2f5fa" }}>
       {/* Filter row */}
       <div
         style={{
@@ -242,7 +242,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                   border: "none",
                   cursor: "pointer",
                   backgroundColor: currency === c ? "#fff" : "#f2f5f9",
-                  color: currency === c ? "#1e6fdd" : "#666",
+                  color: currency === c ? "#4472ca" : "#666",
                   borderRight: c !== "VND" ? "1px solid #e0e6ee" : "none",
                 }}
               >
@@ -263,7 +263,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
             style={{
               width: "36px",
               height: "20px",
-              backgroundColor: unitOn ? "#5b5fc7" : "#b0b8c4",
+              backgroundColor: unitOn ? "#4472ca" : "#b0b8c4",
               borderRadius: "10px",
               position: "relative",
               cursor: "pointer",
@@ -292,7 +292,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
             display: "flex",
             alignItems: "center",
             gap: "6px",
-            backgroundColor: "#2e4568",
+            backgroundColor: "#4472ca",
             color: "#fff",
             border: "none",
             borderRadius: "6px",
@@ -310,7 +310,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
       {/* Project info bar — always visible */}
       <div style={{ ...cardStyle, margin: "8px 10px 0", display: "flex", gap: "10px", alignItems: "stretch" }}>
         <div style={{ flex: 1 }}>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 0", fontSize: "14px", color: "#1a2d4d" }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 0", fontSize: "14px", color: "#1e2a3b" }}>
             <span style={{ fontWeight: 700, paddingRight: "14px" }}>Project : {projectName}</span>
             {ov?.asOfMonth && (
               <span style={{ borderLeft: "1px solid #d5dce6", padding: "0 14px" }}>
@@ -339,7 +339,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
           display: "flex",
           gap: "4px",
           padding: "8px 10px 0",
-          backgroundColor: "#f0f4f9",
+          backgroundColor: "#f2f5fa",
           borderBottom: "2px solid #c8d2de",
           marginTop: "8px",
         }}
@@ -354,11 +354,11 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                 padding: "7px 20px",
                 fontSize: "16px",
                 fontWeight: active ? 700 : 500,
-                color: active ? "#1a3a6b" : "#5a6a7e",
+                color: active ? "#1e2a3b" : "#6b7d96",
                 backgroundColor: active ? "#fff" : "transparent",
                 border: "1px solid",
-                borderColor: active ? "#c8d2de" : "transparent",
-                borderBottom: active ? "2px solid #fff" : "none",
+                borderColor: active ? "#dde3ee" : "transparent",
+                borderBottom: active ? "2px solid #4472ca" : "none",
                 borderRadius: "4px 4px 0 0",
                 cursor: "pointer",
                 marginBottom: active ? "-2px" : "0",
@@ -405,7 +405,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                   style={{
                     fontSize: "13px",
                     fontWeight: 600,
-                    color: excelMsg.includes("완료") ? "#3e7d4c" : "#c0392b",
+                    color: excelMsg.includes("완료") ? "#3e7d4c" : "#e57373",
                     maxWidth: "360px",
                     whiteSpace: "nowrap",
                     overflow: "hidden",
@@ -427,7 +427,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                   padding: "5px 12px",
                   fontSize: "13px",
                   fontWeight: 600,
-                  color: "#1a3a6b",
+                  color: "#1e2a3b",
                   backgroundColor: "#fff",
                   border: "1px solid #c8d2de",
                   borderRadius: "4px",
@@ -449,7 +449,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                   fontSize: "13px",
                   fontWeight: 600,
                   color: "#fff",
-                  backgroundColor: "#2e4568",
+                  backgroundColor: "#4472ca",
                   border: "none",
                   borderRadius: "4px",
                   cursor: excelBusy ? "wait" : "pointer",
@@ -490,13 +490,13 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                       </div>
                       <Donut
                         percent={achievementPct ?? 0}
-                        color="#2b5cad"
+                        color="#4472ca"
                         size={120}
                         stroke={14}
                         label={fmtPct(achievementPct)}
                         labelSize={20}
                       />
-                      <div style={{ fontSize: "12px", color: "#1a2d4d", fontWeight: 700, marginTop: "5px", textDecoration: "underline" }}>
+                      <div style={{ fontSize: "12px", color: "#1e2a3b", fontWeight: 700, marginTop: "5px", textDecoration: "underline" }}>
                         연간 목표 달성률
                       </div>
                     </div>
@@ -506,13 +506,13 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                       </div>
                       <Donut
                         percent={ratioPct(revenueTotal, contractAmount) ?? 0}
-                        color="#1a3a5c"
+                        color="#4472ca"
                         size={120}
                         stroke={14}
                         label={fmtPct(ratioPct(revenueTotal, contractAmount))}
                         labelSize={20}
                       />
-                      <div style={{ fontSize: "12px", color: "#1a2d4d", fontWeight: 700, marginTop: "5px", textDecoration: "underline" }}>
+                      <div style={{ fontSize: "12px", color: "#1e2a3b", fontWeight: 700, marginTop: "5px", textDecoration: "underline" }}>
                         누계 매출 달성률
                       </div>
                     </div>
@@ -557,7 +557,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                           <div style={{ height: `${H}px`, display: "flex", alignItems: "flex-end", gap: "3px", justifyContent: "center" }}>
                             <div style={{ width: "24px", height: `${bh}px`, backgroundColor: "#d9dee5" }} />
                             {sh > 0 && (
-                              <div style={{ width: "24px", height: `${sh}px`, backgroundColor: "#2b5cad", position: "relative" }}>
+                              <div style={{ width: "24px", height: `${sh}px`, backgroundColor: "#4472ca", position: "relative" }}>
                                 <span
                                   style={{
                                     position: "absolute",
@@ -575,7 +575,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                             )}
                           </div>
                           {pct != null && (
-                            <div style={{ fontSize: "11px", color: "#4a90d9", fontWeight: 600, marginTop: "2px" }}>{fmtPct(pct)}</div>
+                            <div style={{ fontSize: "11px", color: "#4472ca", fontWeight: 600, marginTop: "2px" }}>{fmtPct(pct)}</div>
                           )}
                           <div style={{ fontSize: "11px", color: "#333", fontWeight: 600, marginTop: "2px" }}>{g.item}</div>
                         </div>
@@ -632,7 +632,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                         <MiniBar
                           value={cashCollection ?? 0}
                           max={cashMax}
-                          color="#2b5cad"
+                          color="#4472ca"
                           label="수금 (B)"
                           height={150}
                           valueLabel={formatMoney(cashCollection, currency, unitOn)}
@@ -641,7 +641,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                         <MiniBar
                           value={Math.max(cashOutstanding ?? 0, 0)}
                           max={cashMax}
-                          color="#c0392b"
+                          color="#e57373"
                           label="채권 (A)-(B)"
                           height={150}
                           valueLabel={formatMoney(cashOutstanding, currency, unitOn)}
@@ -666,7 +666,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
               padding: "60px 20px",
               textAlign: "center",
               fontSize: "15px",
-              color: "#5a6a7e",
+              color: "#6b7d96",
             }}
           >
             {TAB_LABELS[activeTab] ?? activeTab} 화면은 준비 중입니다.

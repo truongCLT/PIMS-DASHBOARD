@@ -7,8 +7,8 @@ import { chartTheme } from "../lib/chartTheme";
 
 const cardStyle: React.CSSProperties = {
   backgroundColor: "#fff",
-  border: "1px solid #d0dce8",
-  borderRadius: "6px",
+  border: "1px solid #dde3ee",
+  borderRadius: "8px",
   padding: "10px 12px",
 };
 
@@ -108,7 +108,7 @@ export function ServiceBudgetTab({ projectName }: { projectName: string }) {
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
       {/* Budget Execution Status */}
       <div style={{ ...cardStyle, padding: "14px 18px 24px" }}>
-        <span style={{ fontSize: "13px", fontWeight: 600, color: "#4472c4" }}>
+        <span style={{ fontSize: "13px", fontWeight: 600, color: "#4472ca" }}>
           예산 <u>집행 현황</u>
           <span style={{ marginLeft: "8px", fontSize: "12px", fontWeight: 500, color: "#8a97a8" }}>단위: {unitLabel}</span>
         </span>

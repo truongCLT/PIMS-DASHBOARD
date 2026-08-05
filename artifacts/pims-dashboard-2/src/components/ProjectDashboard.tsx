@@ -20,15 +20,15 @@ export { Donut, MiniBar } from "./charts";
 
 const cardStyle: React.CSSProperties = {
   backgroundColor: "#fff",
-  border: "1px solid #d0dce8",
-  borderRadius: "6px",
+  border: "1px solid #dde3ee",
+  borderRadius: "8px",
   padding: "10px 12px",
 };
 
 const sectionTitle: React.CSSProperties = {
   fontSize: "16px",
   fontWeight: 700,
-  color: "#4472c4",
+  color: "#4472ca",
   marginBottom: "6px",
 };
 
@@ -140,7 +140,7 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
 
   return (
     <DisplayUnitProvider currency={currency} unitOn={unitOn}>
-    <div style={{ flex: 1, overflowY: "auto", backgroundColor: "#e8edf3" }}>
+    <div style={{ flex: 1, overflowY: "auto", backgroundColor: "#f2f5fa" }}>
       {/* Filter row */}
       <div
         style={{
@@ -167,7 +167,7 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
                   border: "none",
                   cursor: "pointer",
                   backgroundColor: currency === c ? "#fff" : "#f2f5f9",
-                  color: currency === c ? "#1e6fdd" : "#666",
+                  color: currency === c ? "#4472ca" : "#666",
                   borderRight: c !== "VND" ? "1px solid #e0e6ee" : "none",
                 }}
               >
@@ -188,7 +188,7 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
             style={{
               width: "36px",
               height: "20px",
-              backgroundColor: unitOn ? "#5b5fc7" : "#b0b8c4",
+              backgroundColor: unitOn ? "#4472ca" : "#b0b8c4",
               borderRadius: "10px",
               position: "relative",
               cursor: "pointer",
@@ -216,14 +216,14 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
       {/* Project info bar — always visible */}
       <div style={{ ...cardStyle, margin: "8px 10px 0", display: "flex", gap: "10px", alignItems: "stretch" }}>
         <div style={{ flex: 1 }}>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 0", fontSize: "12px", color: "#1a2d4d" }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 0", fontSize: "12px", color: "#1e2a3b" }}>
             <span style={{ fontWeight: 700, paddingRight: "14px" }}>프로젝트 : {projectName}</span>
             <span style={{ borderLeft: "1px solid #d5dce6", padding: "0 14px" }}>발주처 : {ov.client ?? "-"}</span>
             <span style={{ borderLeft: "1px solid #d5dce6", padding: "0 14px" }}>
               공사기간 : {periodLabel}
             </span>
           </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 0", fontSize: "12px", color: "#1a2d4d", marginTop: "8px" }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 0", fontSize: "12px", color: "#1e2a3b", marginTop: "8px" }}>
             <span style={{ fontWeight: 700, paddingRight: "14px" }}>
               도급액 : {formatMoney(ov.contractAmount, currency, unitOn)} {moneyUnitLabel(currency, unitOn)}
             </span>
@@ -240,7 +240,7 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
           display: "flex",
           gap: "4px",
           padding: "8px 10px 0",
-          backgroundColor: "#f0f4f9",
+          backgroundColor: "#f2f5fa",
           borderBottom: "2px solid #c8d2de",
           marginTop: "8px",
         }}
@@ -255,11 +255,11 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
                 padding: "7px 20px",
                 fontSize: "12px",
                 fontWeight: active ? 700 : 500,
-                color: active ? "#1a3a6b" : "#5a6a7e",
+                color: active ? "#1e2a3b" : "#6b7d96",
                 backgroundColor: active ? "#fff" : "transparent",
                 border: "1px solid",
-                borderColor: active ? "#c8d2de" : "transparent",
-                borderBottom: active ? "2px solid #fff" : "none",
+                borderColor: active ? "#dde3ee" : "transparent",
+                borderBottom: active ? "2px solid #4472ca" : "none",
                 borderRadius: "4px 4px 0 0",
                 cursor: "pointer",
                 marginBottom: active ? "-2px" : "0",
@@ -299,7 +299,7 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
                 padding: "5px 12px",
                 fontSize: "11px",
                 fontWeight: 600,
-                color: "#1a3a6b",
+                color: "#1e2a3b",
                 backgroundColor: "#fff",
                 border: "1px solid #c8d2de",
                 borderRadius: "4px",
@@ -321,7 +321,7 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
                 fontSize: "11px",
                 fontWeight: 600,
                 color: "#fff",
-                backgroundColor: "#2e4568",
+                backgroundColor: "#4472ca",
                 border: "none",
                 borderRadius: "4px",
                 cursor: excelBusy ? "wait" : "pointer",

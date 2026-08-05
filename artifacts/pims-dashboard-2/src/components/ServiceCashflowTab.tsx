@@ -20,8 +20,8 @@ import { useMoney } from "../lib/displayUnit";
 
 const cardStyle: React.CSSProperties = {
   backgroundColor: "#fff",
-  border: "1px solid #d0dce8",
-  borderRadius: "6px",
+  border: "1px solid #dde3ee",
+  borderRadius: "8px",
   padding: "10px 12px",
 };
 
@@ -122,13 +122,13 @@ export function ServiceCashflowTab({
   let body: React.ReactNode;
   if (pdLoading || (cfRef != null && query.isLoading)) {
     body = (
-      <div style={{ padding: "60px 20px", textAlign: "center", fontSize: "15px", color: "#5a6a7e" }}>
+      <div style={{ padding: "60px 20px", textAlign: "center", fontSize: "15px", color: "#6b7d96" }}>
         자금 데이터를 불러오는 중입니다…
       </div>
     );
   } else if (cfRef == null && !hasPdData) {
     body = (
-      <div style={{ padding: "60px 20px", textAlign: "center", fontSize: "15px", color: "#5a6a7e" }}>
+      <div style={{ padding: "60px 20px", textAlign: "center", fontSize: "15px", color: "#6b7d96" }}>
         아직 입력된 자금 데이터가 없습니다.
         {entryGuide}
       </div>
@@ -136,7 +136,7 @@ export function ServiceCashflowTab({
   } else if (!useCf && !hasPdData && query.isError) {
     const status = (query.error as { status?: number } | null)?.status;
     body = (
-      <div style={{ padding: "60px 20px", textAlign: "center", fontSize: "15px", color: status === 404 ? "#5a6a7e" : "#c0392b" }}>
+      <div style={{ padding: "60px 20px", textAlign: "center", fontSize: "15px", color: status === 404 ? "#6b7d96" : "#e57373" }}>
         {status === 404 ? (
           <>
             해당 프로젝트의 자금수지 데이터가 없습니다.
@@ -149,7 +149,7 @@ export function ServiceCashflowTab({
     );
   } else if (!hasData) {
     body = (
-      <div style={{ padding: "60px 20px", textAlign: "center", fontSize: "15px", color: "#5a6a7e" }}>
+      <div style={{ padding: "60px 20px", textAlign: "center", fontSize: "15px", color: "#6b7d96" }}>
         선택한 기간에 자금 데이터가 없습니다.
         {entryGuide}
       </div>
@@ -240,7 +240,7 @@ export function ServiceCashflowTab({
       <div style={cardStyle}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span style={{ fontSize: "15px", fontWeight: 700, color: chartTheme.titleNavy }}>자금수지</span>
-          <span style={{ fontSize: "13px", color: "#5a6a7e" }}>
+          <span style={{ fontSize: "13px", color: "#6b7d96" }}>
             {useCf && query.data
               ? `단위: ${cfConvertible ? unitLabel : query.data.unit}`
               : hasPdData

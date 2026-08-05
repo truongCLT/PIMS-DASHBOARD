@@ -6,23 +6,23 @@ import { useMoney } from "../lib/displayUnit";
 
 const cardStyle: React.CSSProperties = {
   backgroundColor: "#fff",
-  border: "1px solid #d0dce8",
-  borderRadius: "6px",
+  border: "1px solid #dde3ee",
+  borderRadius: "8px",
   padding: "10px 12px",
 };
 
 const sectionTitle: React.CSSProperties = {
   fontSize: "16px",
   fontWeight: 700,
-  color: "#4472c4",
+  color: "#4472ca",
 };
 
 const th: React.CSSProperties = {
   backgroundColor: "#eef2f7",
-  color: "#1a2d4d",
+  color: "#1e2a3b",
   fontSize: "13px",
   fontWeight: 700,
-  border: "1px solid #c8d2de",
+  border: "1px solid #dde3ee",
   padding: "8px 6px",
   textAlign: "center",
   verticalAlign: "middle",

@@ -4,11 +4,11 @@ import { useMoney } from "../lib/displayUnit";
 
 const thStyle: React.CSSProperties = {
   backgroundColor: "#eef2f7",
-  color: "#1a2d4d",
+  color: "#1e2a3b",
   fontSize: "13px",
   fontWeight: 700,
   padding: "10px 8px",
-  border: "1px solid #c8d2de",
+  border: "1px solid #dde3ee",
   textAlign: "center",
   verticalAlign: "middle",
   whiteSpace: "pre-line",
@@ -42,8 +42,8 @@ export function ServiceOutsourcingTab({ projectName }: { projectName: string }) 
     <div
       style={{
         backgroundColor: "#fff",
-        border: "1px solid #d0dce8",
-        borderRadius: "6px",
+        border: "1px solid #dde3ee",
+        borderRadius: "8px",
         padding: "12px",
       }}
     >

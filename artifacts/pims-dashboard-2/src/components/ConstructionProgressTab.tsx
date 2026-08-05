@@ -25,15 +25,15 @@ import { chartTheme } from "../lib/chartTheme";
 
 const cardStyle: React.CSSProperties = {
   backgroundColor: "#fff",
-  border: "1px solid #d0dce8",
-  borderRadius: "6px",
+  border: "1px solid #dde3ee",
+  borderRadius: "8px",
   padding: "10px 12px",
 };
 
 const sectionTitle: React.CSSProperties = {
   fontSize: "16px",
   fontWeight: 700,
-  color: "#4472c4",
+  color: "#4472ca",
 };
 
 const emptyStyle: React.CSSProperties = {
@@ -98,7 +98,7 @@ function Donut({
           dominantBaseline="central"
           fontSize={labelSize}
           fontWeight={700}
-          fill="#1a2d4d"
+          fill="#1e2a3b"
         >
           {label}
         </text>
@@ -403,7 +403,7 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
               {fmtPct(planCum)}
             </span>
           </div>
-          <div style={{ textAlign: "center", fontSize: "12px", color: "#1a2d4d", fontWeight: 600 }}>
+          <div style={{ textAlign: "center", fontSize: "12px", color: "#1e2a3b", fontWeight: 600 }}>
             실적 공정 (B)
           </div>
           <div

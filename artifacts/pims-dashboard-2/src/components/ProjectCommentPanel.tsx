@@ -111,8 +111,8 @@ export function ProjectCommentPanel({
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
       {showHeader && (
         <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-          <MessageSquare size={13} color="#1a2d4d" />
-          <span style={{ fontSize: "12px", fontWeight: 700, color: "#1a2d4d" }}>코멘트</span>
+          <MessageSquare size={13} color="#1e2a3b" />
+          <span style={{ fontSize: "12px", fontWeight: 700, color: "#1e2a3b" }}>코멘트</span>
         </div>
       )}
 
@@ -125,7 +125,7 @@ export function ProjectCommentPanel({
           style={{
             width: "100%",
             border: "1px solid #ccd4dd",
-            borderRadius: "6px",
+            borderRadius: "8px",
             padding: "7px 10px",
             fontSize: "12px",
             color: "#333",
@@ -146,7 +146,7 @@ export function ProjectCommentPanel({
           alignItems: "flex-end",
           gap: "8px",
           border: "1px solid #ccd4dd",
-          borderRadius: "6px",
+          borderRadius: "8px",
           padding: "8px 10px",
         }}
       >
@@ -174,7 +174,7 @@ export function ProjectCommentPanel({
             border: "none",
             padding: 0,
             cursor: canSubmit ? "pointer" : "default",
-            color: canSubmit ? "#1e6fdd" : "#a9c4e8",
+            color: canSubmit ? "#4472ca" : "#a9c4e8",
             flexShrink: 0,
           }}
         >
@@ -182,13 +182,13 @@ export function ProjectCommentPanel({
         </button>
       </div>
 
-      {actionError && <div style={{ fontSize: "10px", color: "#c0392b" }}>{actionError}</div>}
+      {actionError && <div style={{ fontSize: "10px", color: "#e57373" }}>{actionError}</div>}
 
       {/* Comment list */}
       {listQuery.isLoading ? (
         <div style={{ fontSize: "11px", color: "#999" }}>불러오는 중...</div>
       ) : listQuery.isError ? (
-        <div style={{ fontSize: "11px", color: "#c0392b" }}>코멘트 조회에 실패했습니다.</div>
+        <div style={{ fontSize: "11px", color: "#e57373" }}>코멘트 조회에 실패했습니다.</div>
       ) : visibleComments.length === 0 ? (
         filterMonth !== 0 ? (
           <div style={{ fontSize: "11px", color: "#999" }}>{filterLabel} 코멘트가 없습니다.</div>
@@ -267,7 +267,7 @@ export function ProjectCommentPanel({
                             setActionError(null);
                           }}
                           aria-label="코멘트 수정"
-                          style={{ background: "none", border: "none", cursor: "pointer", color: "#1e6fdd", padding: 0 }}
+                          style={{ background: "none", border: "none", cursor: "pointer", color: "#4472ca", padding: 0 }}
                         >
                           <Pencil size={12} />
                         </button>
@@ -279,7 +279,7 @@ export function ProjectCommentPanel({
                             }
                           }}
                           aria-label="코멘트 삭제"
-                          style={{ background: "none", border: "none", cursor: "pointer", color: "#c0392b", padding: 0 }}
+                          style={{ background: "none", border: "none", cursor: "pointer", color: "#e57373", padding: 0 }}
                         >
                           <Trash2 size={12} />
                         </button>
