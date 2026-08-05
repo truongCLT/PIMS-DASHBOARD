@@ -72,7 +72,7 @@ function YearMonthSelect({
         display: "flex",
         alignItems: "center",
         gap: "2px",
-        border: "1px solid #ccd4dd",
+        border: "1px solid #dde3ee",
         borderRadius: "6px",
         padding: "4px 8px",
         backgroundColor: "#fff",
@@ -224,13 +224,13 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
           gap: "18px",
           flexWrap: "wrap",
           backgroundColor: "#fff",
-          borderBottom: "1px solid #d5dce6",
+          borderBottom: "1px solid #dde3ee",
           padding: "8px 20px",
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <span style={{ fontSize: "14px", color: "#333", fontWeight: 600 }}>환율 :</span>
-          <div style={{ display: "flex", border: "1px solid #ccd4dd", borderRadius: "6px", overflow: "hidden" }}>
+          <div style={{ display: "flex", border: "1px solid #dde3ee", borderRadius: "6px", overflow: "hidden" }}>
             {["USD", "KRW", "VND"].map((c) => (
               <button
                 key={c}
@@ -243,7 +243,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                   cursor: "pointer",
                   backgroundColor: currency === c ? "#fff" : "#f2f5f9",
                   color: currency === c ? "#4472ca" : "#666",
-                  borderRight: c !== "VND" ? "1px solid #e0e6ee" : "none",
+                  borderRight: c !== "VND" ? "1px solid #dde3ee" : "none",
                 }}
               >
                 {c}
@@ -313,20 +313,20 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
           <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 0", fontSize: "14px", color: "#1e2a3b" }}>
             <span style={{ fontWeight: 700, paddingRight: "14px" }}>Project : {projectName}</span>
             {ov?.asOfMonth && (
-              <span style={{ borderLeft: "1px solid #d5dce6", padding: "0 14px" }}>
+              <span style={{ borderLeft: "1px solid #dde3ee", padding: "0 14px" }}>
                 작성 기준 : {ov.asOfMonth.slice(0, 4)}년 {Number(ov.asOfMonth.slice(5, 7))}월 말
               </span>
             )}
             {ov?.client && (
-              <span style={{ borderLeft: "1px solid #d5dce6", padding: "0 14px" }}>발주처 : {ov.client}</span>
+              <span style={{ borderLeft: "1px solid #dde3ee", padding: "0 14px" }}>발주처 : {ov.client}</span>
             )}
             {periodLabel && (
-              <span style={{ borderLeft: "1px solid #d5dce6", padding: "0 14px" }}>수행기간 : {periodLabel}</span>
+              <span style={{ borderLeft: "1px solid #dde3ee", padding: "0 14px" }}>수행기간 : {periodLabel}</span>
             )}
             {ov?.scope && (
-              <span style={{ borderLeft: "1px solid #d5dce6", padding: "0 14px" }}>수행내용 : {ov.scope}</span>
+              <span style={{ borderLeft: "1px solid #dde3ee", padding: "0 14px" }}>수행내용 : {ov.scope}</span>
             )}
-            <span style={{ borderLeft: "1px solid #d5dce6", padding: "0 14px" }}>
+            <span style={{ borderLeft: "1px solid #dde3ee", padding: "0 14px" }}>
               도급액 : {contractAmount != null ? `${formatMoney(contractAmount, currency, unitOn)} ${moneyUnitLabel(currency, unitOn)}` : "-"}
             </span>
           </div>
@@ -340,7 +340,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
           gap: "4px",
           padding: "8px 10px 0",
           backgroundColor: "#f2f5fa",
-          borderBottom: "2px solid #c8d2de",
+          borderBottom: "2px solid #dde3ee",
           marginTop: "8px",
         }}
       >
@@ -429,7 +429,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                   fontWeight: 600,
                   color: "#1e2a3b",
                   backgroundColor: "#fff",
-                  border: "1px solid #c8d2de",
+                  border: "1px solid #dde3ee",
                   borderRadius: "4px",
                   cursor: excelBusy ? "wait" : "pointer",
                   opacity: !detail || excelBusy ? 0.6 : 1,
