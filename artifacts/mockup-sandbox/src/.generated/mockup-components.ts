@@ -2,6 +2,10 @@
 type ModuleMap = Record<string, () => Promise<Record<string, unknown>>>;
 export const modules: ModuleMap = {
   "./components/mockups/pims-dashboard/Current.tsx": () => import("../components/mockups/pims-dashboard/Current.tsx"),
+  "./components/mockups/pims-dashboard/VariantA.tsx": () => import("../components/mockups/pims-dashboard/VariantA.tsx"),
+  "./components/mockups/pims-dashboard/VariantB.tsx": () => import("../components/mockups/pims-dashboard/VariantB.tsx"),
+  "./components/mockups/pims-dashboard/VariantC.tsx": () => import("../components/mockups/pims-dashboard/VariantC.tsx"),
+  "./components/mockups/pims-dashboard/VariantD.tsx": () => import("../components/mockups/pims-dashboard/VariantD.tsx"),
   "./components/mockups/pims-dashboard/components/CashFlowChart.tsx": () => import("../components/mockups/pims-dashboard/components/CashFlowChart.tsx"),
   "./components/mockups/pims-dashboard/components/CommentPanel.tsx": () => import("../components/mockups/pims-dashboard/components/CommentPanel.tsx"),
   "./components/mockups/pims-dashboard/components/Dashboard.tsx": () => import("../components/mockups/pims-dashboard/components/Dashboard.tsx"),
