@@ -62,6 +62,7 @@ export function DashboardHeader({
           `• 매출 및 원가 (Sales & Cost): 신규 ${data.counts?.scSites ?? 0}개 현장 / 월별 ${data.counts?.scMonthly ?? 0}건\n` +
           `• 경영보고서 (Management Report): 신규 ${data.counts?.mrProjects ?? 0}개 프로젝트 / 월별 ${data.counts?.mrMonthly ?? 0}건 / 연간 ${data.counts?.mrAnnual ?? 0}건 / PnL ${data.counts?.mrPnl ?? 0}건\n` +
           `• 상세 공정 (Project Detail): 개요 ${data.counts?.pdOverview ?? 0}개 공사 / 공정 ${data.counts?.pdProgress ?? 0}건 / 외주 ${data.counts?.pdOutsourcing ?? 0}건\n` +
+          `• 상세 자금/매출/예산 (Project Detail Cashflow/Sales/Budget): 자금 ${data.counts?.pdCashflow ?? 0}건 / 매출 ${data.counts?.pdSales ?? 0}건 / 예산 ${data.counts?.pdCostBudget ?? 0}건\n` +
           `• 기준 환율 (FX Rates): ${data.counts?.fxRates ?? 0}개 통화`
         );
         window.location.reload();
