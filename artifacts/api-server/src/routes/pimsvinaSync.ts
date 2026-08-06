@@ -14,6 +14,9 @@ import {
   pdOverviewTable,
   pdProgressMonthlyTable,
   pdOutsourcingTable,
+  pdCashflowMonthlyTable,
+  pdSalesMonthlyTable,
+  pdCostBudgetTable,
   fxRatesTable,
 } from "@workspace/db";
 import { eq, and, isNull } from "drizzle-orm";
@@ -124,6 +127,9 @@ router.post("/sync-pimsvina", async (req, res) => {
       pdOverview: 0,
       pdProgress: 0,
       pdOutsourcing: 0,
+      pdCashflow: 0,
+      pdSales: 0,
+      pdCostBudget: 0,
       fxRates: 0,
     };
 
@@ -443,7 +449,79 @@ router.post("/sync-pimsvina", async (req, res) => {
       }
     }
 
-    // 12. Sync FX Rates
+    // 12. Sync Project Detail Cashflow Monthly (cash in/out per project per month)
+    const pdCashflow = await fetchPimsvinaApi("dashboard_pd_cashflow_1q.jsp");
+    for (const item of pdCashflow) {
+      if (!item.project_name || !item.year || !item.month) continue;
+      const cashIn = item.cash_in != null ? String(item.cash_in) : null;
+      const cashOut = item.cash_out != null ? String(item.cash_out) : null;
+      const equivalent = item.equivalent != null ? String(item.equivalent) : null;
+
+      await db
+        .insert(pdCashflowMonthlyTable)
+        .values({
+          projectName: item.project_name,
+          year: Number(item.year),
+          month: Number(item.month),
+          cashIn,
+          cashOut,
+          equivalent,
+        })
+        .onConflictDoUpdate({
+          target: [pdCashflowMonthlyTable.projectName, pdCashflowMonthlyTable.year, pdCashflowMonthlyTable.month],
+          set: { cashIn, cashOut, equivalent },
+        });
+      counts.pdCashflow++;
+    }
+
+    // 13. Sync Project Detail Sales Monthly (revenue plan/actual per project per month)
+    const pdSales = await fetchPimsvinaApi("dashboard_pd_sales_1q.jsp");
+    for (const item of pdSales) {
+      if (!item.project_name || !item.year || !item.month) continue;
+      const plan = item.plan != null ? String(item.plan) : null;
+      const actual = item.actual != null ? String(item.actual) : null;
+
+      await db
+        .insert(pdSalesMonthlyTable)
+        .values({
+          projectName: item.project_name,
+          year: Number(item.year),
+          month: Number(item.month),
+          plan,
+          actual,
+        })
+        .onConflictDoUpdate({
+          target: [pdSalesMonthlyTable.projectName, pdSalesMonthlyTable.year, pdSalesMonthlyTable.month],
+          set: { plan, actual },
+        });
+      counts.pdSales++;
+    }
+
+    // 14. Sync Project Detail Cost Budget (no natural unique key -> full replace per project)
+    const pdCostBudget = await fetchPimsvinaApi("dashboard_pd_costbudget_1q.jsp");
+    const pdCostBudgetByProject = new Map<string, any[]>();
+    for (const item of pdCostBudget) {
+      if (!item.project_name || !item.item) continue;
+      if (!pdCostBudgetByProject.has(item.project_name)) pdCostBudgetByProject.set(item.project_name, []);
+      pdCostBudgetByProject.get(item.project_name)!.push(item);
+    }
+    for (const [projectName, items] of pdCostBudgetByProject) {
+      await db.delete(pdCostBudgetTable).where(eq(pdCostBudgetTable.projectName, projectName));
+      for (const item of items) {
+        await db.insert(pdCostBudgetTable).values({
+          projectName,
+          category: item.category || null,
+          item: item.item,
+          budget: item.budget != null ? String(item.budget) : null,
+          plan: item.plan != null ? String(item.plan) : null,
+          actual: item.actual != null ? String(item.actual) : null,
+          sortOrder: Number(item.sort_order) || 0,
+        });
+        counts.pdCostBudget++;
+      }
+    }
+
+    // 15. Sync FX Rates
     const fxRates = await fetchPimsvinaApi("dashboard_fxrates_1q.jsp");
     for (const item of fxRates) {
       if (!item.currency || !item.rate) continue;
