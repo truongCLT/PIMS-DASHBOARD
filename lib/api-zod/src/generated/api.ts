@@ -828,13 +828,9 @@ export const ListSalescostSitesResponse = zod.object({
 
 
 /**
- * @summary Corporate P&L lines (수주~경상이익), plan vs actual monthly series
+ * @summary Corporate P&L lines (수주~경상이익), plan vs actual monthly series, for every year with data
  */
-export const GetMgmtreportSummaryQueryParams = zod.object({
-  "year": zod.coerce.number()
-})
-
-export const GetMgmtreportSummaryResponse = zod.object({
+export const GetMgmtreportSummaryResponseItem = zod.object({
   "year": zod.number(),
   "unit": zod.string().describe('Amount unit (천 USD)'),
   "lines": zod.array(zod.object({
@@ -846,6 +842,7 @@ export const GetMgmtreportSummaryResponse = zod.object({
   "actualTotal": zod.number()
 }))
 })
+export const GetMgmtreportSummaryResponse = zod.array(GetMgmtreportSummaryResponseItem)
 
 
 /**

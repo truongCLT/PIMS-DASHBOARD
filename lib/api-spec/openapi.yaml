@@ -758,26 +758,16 @@ paths:
     get:
       operationId: getMgmtreportSummary
       tags: [mgmtreport]
-      summary: Corporate P&L lines (수주~경상이익), plan vs actual monthly series
-      parameters:
-        - name: year
-          in: query
-          required: true
-          schema:
-            type: integer
+      summary: Corporate P&L lines (수주~경상이익), plan vs actual monthly series, for every year with data
       responses:
         "200":
-          description: Corporate P&L lines in 천 USD
+          description: Corporate P&L lines in 천 USD, one entry per year
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/MgmtreportSummary"
-        "404":
-          description: No data for the requested year
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ApiErrorMessage"
+                type: array
+                items:
+                  $ref: "#/components/schemas/MgmtreportSummary"
   /mgmtreport/projects:
     get:
       operationId: listMgmtreportProjects
@@ -798,17 +788,11 @@ paths:
             default: false
       responses:
         "200":
-          description: Per-project series in 천 USD
+          description: Per-project series in 천 USD. Monthly figures are zero-filled when the year has no data yet.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/MgmtreportProjects"
-        "404":
-          description: No data for the requested year
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ApiErrorMessage"
   /mgmtreport/projects/status:
     put:
       operationId: updateMgmtreportProjectStatus

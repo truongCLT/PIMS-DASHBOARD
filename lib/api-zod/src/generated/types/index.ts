@@ -28,7 +28,6 @@ export * from './errorEnvelope';
 export * from './fxRates';
 export * from './getCashflowAggregateParams';
 export * from './getCashflowMonthlyParams';
-export * from './getMgmtreportSummaryParams';
 export * from './getProjectdetailParams';
 export * from './getSalescostSummaryParams';
 export * from './healthStatus';

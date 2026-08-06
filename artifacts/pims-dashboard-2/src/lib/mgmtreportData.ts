@@ -414,7 +414,8 @@ export function getDashboardExportData(): DashboardData {
 
 export function useDashboardData() {
   const filters = useDashboardFilters();
-  const query = useGetMgmtreportSummary({ year: REPORT_YEAR });
+  const query = useGetMgmtreportSummary();
+  const summaryForYear = query.data?.find((s) => s.year === REPORT_YEAR) ?? null;
 
   const projectSelected = filters.project !== "All";
   const divisionSelected = !projectSelected && filters.division != null;
@@ -430,7 +431,7 @@ export function useDashboardData() {
   );
 
   const derived = useMemo(() => {
-    if (!query.data) return null;
+    if (!summaryForYear) return null;
     if (needProjects && !projectsQuery.data) return null;
 
     const { from, to } = resolveMonthWindow(filters.startYm, filters.endYm);
@@ -482,7 +483,7 @@ export function useDashboardData() {
       };
     }
 
-    return deriveDashboardData(query.data, {
+    return deriveDashboardData(summaryForYear, {
       from,
       to,
       bucket: filters.period,
@@ -491,7 +492,7 @@ export function useDashboardData() {
       projectScope,
     });
   }, [
-    query.data,
+    summaryForYear,
     projectsQuery.data,
     projectSelected,
     divisionSelected,
@@ -509,10 +510,10 @@ export function useDashboardData() {
   /* 필터와 무관한 기본 스냅샷 (엑셀 보고서용) */
   const baseline = useMemo(
     () =>
-      query.data
-        ? deriveDashboardData(query.data, defaultDeriveOptions(Math.max(lastClosedMonth(), 1)))
+      summaryForYear
+        ? deriveDashboardData(summaryForYear, defaultDeriveOptions(Math.max(lastClosedMonth(), 1)))
         : null,
-    [query.data],
+    [summaryForYear],
   );
 
   useEffect(() => {

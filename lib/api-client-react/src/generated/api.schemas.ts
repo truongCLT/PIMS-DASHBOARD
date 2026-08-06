@@ -710,10 +710,6 @@ export const ListSalescostSitesMetric = {
   employees: 'employees',
 } as const;
 
-export type GetMgmtreportSummaryParams = {
-year: number;
-};
-
 export type ListMgmtreportProjectsParams = {
 year: number;
 /**

@@ -10,7 +10,6 @@ import {
   mrCommentsTable,
 } from "@workspace/db";
 import {
-  GetMgmtreportSummaryQueryParams,
   GetMgmtreportSummaryResponse,
   ListMgmtreportProjectsQueryParams,
   ListMgmtreportProjectsResponse,
@@ -160,24 +159,11 @@ router.post("/mgmtreport/import/revert", requireAdmin, async (req, res) => {
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
 router.get("/mgmtreport/summary", async (req, res) => {
-  const parsed = GetMgmtreportSummaryQueryParams.safeParse(req.query);
-  if (!parsed.success || !Number.isInteger(parsed.data.year)) {
-    res.status(400).json({ error: "잘못된 요청 파라미터입니다." });
-    return;
-  }
-  const { year } = parsed.data;
-
   try {
     const rows = await db
       .select()
       .from(mrPnlTable)
-      .where(eq(mrPnlTable.year, year))
-      .orderBy(asc(mrPnlTable.sortOrder));
-
-    if (rows.length === 0) {
-      res.status(404).json({ error: "해당 연도의 경영관리보고회 데이터가 없습니다." });
-      return;
-    }
+      .orderBy(asc(mrPnlTable.year), asc(mrPnlTable.sortOrder));
 
     type Line = {
       code: string;
@@ -189,8 +175,13 @@ router.get("/mgmtreport/summary", async (req, res) => {
       planTotalOverride: number | null;
       actualTotalOverride: number | null;
     };
-    const lines = new Map<string, Line>();
+    const linesByYear = new Map<number, Map<string, Line>>();
     for (const r of rows) {
+      let lines = linesByYear.get(r.year);
+      if (!lines) {
+        lines = new Map<string, Line>();
+        linesByYear.set(r.year, lines);
+      }
       let l = lines.get(r.lineCode);
       if (!l) {
         l = {
@@ -216,16 +207,22 @@ router.get("/mgmtreport/summary", async (req, res) => {
       }
     }
 
-    const out = [...lines.values()].map((l) => ({
-      code: l.code,
-      label: l.label,
-      plan: l.plan,
-      actual: l.actual,
-      planTotal: round2(l.planTotalOverride ?? l.plan.reduce((a, b) => a + b, 0)),
-      actualTotal: round2(l.actualTotalOverride ?? l.actual.reduce((a, b) => a + b, 0)),
-    }));
+    const out = [...linesByYear.entries()]
+      .sort(([a], [b]) => a - b)
+      .map(([year, lines]) => ({
+        year,
+        unit: "천 USD",
+        lines: [...lines.values()].map((l) => ({
+          code: l.code,
+          label: l.label,
+          plan: l.plan,
+          actual: l.actual,
+          planTotal: round2(l.planTotalOverride ?? l.plan.reduce((a, b) => a + b, 0)),
+          actualTotal: round2(l.actualTotalOverride ?? l.actual.reduce((a, b) => a + b, 0)),
+        })),
+      }));
 
-    res.json(GetMgmtreportSummaryResponse.parse({ year, unit: "천 USD", lines: out }));
+    res.json(GetMgmtreportSummaryResponse.parse(out));
   } catch (err) {
     req.log.error({ err }, "failed to get mgmtreport summary");
     res.status(500).json({ error: "경영관리보고회 요약 조회에 실패했습니다." });
@@ -250,11 +247,6 @@ router.get("/mgmtreport/projects", async (req, res) => {
       .from(mrMonthlyTable)
       .where(eq(mrMonthlyTable.year, year));
     const annual = await db.select().from(mrAnnualTable);
-
-    if (monthly.length === 0) {
-      res.status(404).json({ error: "해당 연도의 경영관리보고회 데이터가 없습니다." });
-      return;
-    }
 
     type Proj = {
       name: string;

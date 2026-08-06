@@ -37,7 +37,6 @@ import type {
   FxRates,
   GetCashflowAggregateParams,
   GetCashflowMonthlyParams,
-  GetMgmtreportSummaryParams,
   GetProjectdetailParams,
   GetSalescostSummaryParams,
   HealthStatus,
@@ -1845,27 +1844,20 @@ export function useListSalescostSites<TData = Awaited<ReturnType<typeof listSale
 
 
 
-export const getGetMgmtreportSummaryUrl = (params: GetMgmtreportSummaryParams,) => {
-  const normalizedParams = new URLSearchParams();
+export const getGetMgmtreportSummaryUrl = () => {
 
-  Object.entries(params || {}).forEach(([key, value]) => {
 
-    if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
-    }
-  });
 
-  const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0 ? `/api/mgmtreport/summary?${stringifiedParams}` : `/api/mgmtreport/summary`
+  return `/api/mgmtreport/summary`
 }
 
 /**
- * @summary Corporate P&L lines (수주~경상이익), plan vs actual monthly series
+ * @summary Corporate P&L lines (수주~경상이익), plan vs actual monthly series, for every year with data
  */
-export const getMgmtreportSummary = async (params: GetMgmtreportSummaryParams, options?: RequestInit): Promise<MgmtreportSummary> => {
+export const getMgmtreportSummary = async ( options?: RequestInit): Promise<MgmtreportSummary[]> => {
 
-  return customFetch<MgmtreportSummary>(getGetMgmtreportSummaryUrl(params),
+  return customFetch<MgmtreportSummary[]>(getGetMgmtreportSummaryUrl(),
   {
     ...options,
     method: 'GET'
@@ -1878,23 +1870,23 @@ export const getMgmtreportSummary = async (params: GetMgmtreportSummaryParams, o
 
 
 
-export const getGetMgmtreportSummaryQueryKey = (params?: GetMgmtreportSummaryParams,) => {
+export const getGetMgmtreportSummaryQueryKey = () => {
     return [
-    `/api/mgmtreport/summary`, ...(params ? [params] : [])
+    `/api/mgmtreport/summary`
     ] as const;
     }
 
 
-export const getGetMgmtreportSummaryQueryOptions = <TData = Awaited<ReturnType<typeof getMgmtreportSummary>>, TError = ErrorType<ApiErrorMessage>>(params: GetMgmtreportSummaryParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMgmtreportSummary>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetMgmtreportSummaryQueryOptions = <TData = Awaited<ReturnType<typeof getMgmtreportSummary>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMgmtreportSummary>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetMgmtreportSummaryQueryKey(params);
+  const queryKey =  queryOptions?.queryKey ?? getGetMgmtreportSummaryQueryKey();
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMgmtreportSummary>>> = ({ signal }) => getMgmtreportSummary(params, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMgmtreportSummary>>> = ({ signal }) => getMgmtreportSummary({ signal, ...requestOptions });
 
 
 
@@ -1904,19 +1896,19 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type GetMgmtreportSummaryQueryResult = NonNullable<Awaited<ReturnType<typeof getMgmtreportSummary>>>
-export type GetMgmtreportSummaryQueryError = ErrorType<ApiErrorMessage>
+export type GetMgmtreportSummaryQueryError = ErrorType<unknown>
 
 
 /**
- * @summary Corporate P&L lines (수주~경상이익), plan vs actual monthly series
+ * @summary Corporate P&L lines (수주~경상이익), plan vs actual monthly series, for every year with data
  */
 
-export function useGetMgmtreportSummary<TData = Awaited<ReturnType<typeof getMgmtreportSummary>>, TError = ErrorType<ApiErrorMessage>>(
- params: GetMgmtreportSummaryParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMgmtreportSummary>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export function useGetMgmtreportSummary<TData = Awaited<ReturnType<typeof getMgmtreportSummary>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMgmtreportSummary>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetMgmtreportSummaryQueryOptions(params,options)
+  const queryOptions = getGetMgmtreportSummaryQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -1969,7 +1961,7 @@ export const getListMgmtreportProjectsQueryKey = (params?: ListMgmtreportProject
     }
 
 
-export const getListMgmtreportProjectsQueryOptions = <TData = Awaited<ReturnType<typeof listMgmtreportProjects>>, TError = ErrorType<ApiErrorMessage>>(params: ListMgmtreportProjectsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMgmtreportProjects>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getListMgmtreportProjectsQueryOptions = <TData = Awaited<ReturnType<typeof listMgmtreportProjects>>, TError = ErrorType<unknown>>(params: ListMgmtreportProjectsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMgmtreportProjects>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -1988,14 +1980,14 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type ListMgmtreportProjectsQueryResult = NonNullable<Awaited<ReturnType<typeof listMgmtreportProjects>>>
-export type ListMgmtreportProjectsQueryError = ErrorType<ApiErrorMessage>
+export type ListMgmtreportProjectsQueryError = ErrorType<unknown>
 
 
 /**
  * @summary Per-project plan vs actual monthly revenue/cogs series and annual outlook
  */
 
-export function useListMgmtreportProjects<TData = Awaited<ReturnType<typeof listMgmtreportProjects>>, TError = ErrorType<ApiErrorMessage>>(
+export function useListMgmtreportProjects<TData = Awaited<ReturnType<typeof listMgmtreportProjects>>, TError = ErrorType<unknown>>(
  params: ListMgmtreportProjectsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMgmtreportProjects>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
