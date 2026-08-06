@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { ChevronsUp, Download, FileSpreadsheet, FileText, Upload } from "lucide-react";
+import { ChevronsUp, Download, FileSpreadsheet, FileText, RefreshCw, Upload } from "lucide-react";
 import { useListMgmtreportProjects } from "@workspace/api-client-react";
 import { exportDashboardExcel, exportDashboardPdf } from "../lib/exportDashboard";
 import { MgmtReportUploadModal } from "./MgmtReportUploadModal";
@@ -42,7 +42,39 @@ export function DashboardHeader({
   const [downloadOpen, setDownloadOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const downloadRef = useRef<HTMLDivElement>(null);
+
+  const handleSyncPimsvina = async () => {
+    if (syncing) return;
+    setSyncing(true);
+    try {
+      const res = await fetch("/api/sync-pimsvina", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert(
+          `✅ PIMSVINA 데이터 동기화가 완료되었습니다!\n\n` +
+          `업데이트 내역:\n` +
+          `• 자금수지 (Cashflow): 신규 ${data.counts?.cfProjects ?? 0}개 프로젝트 / 월별 ${data.counts?.cfMonthly ?? 0}건\n` +
+          `• 매출 및 원가 (Sales & Cost): 신규 ${data.counts?.scSites ?? 0}개 현장 / 월별 ${data.counts?.scMonthly ?? 0}건\n` +
+          `• 경영보고서 (Management Report): 신규 ${data.counts?.mrProjects ?? 0}개 프로젝트 / 월별 ${data.counts?.mrMonthly ?? 0}건 / 연간 ${data.counts?.mrAnnual ?? 0}건 / PnL ${data.counts?.mrPnl ?? 0}건\n` +
+          `• 상세 공정 (Project Detail): 개요 ${data.counts?.pdOverview ?? 0}개 공사 / 공정 ${data.counts?.pdProgress ?? 0}건 / 외주 ${data.counts?.pdOutsourcing ?? 0}건\n` +
+          `• 기준 환율 (FX Rates): ${data.counts?.fxRates ?? 0}개 통화`
+        );
+        window.location.reload();
+      } else {
+        alert(`❌ 동기화 실패: ${data.error || "PIMSVINA 서버 연결 오류"}`);
+      }
+    } catch (err: any) {
+      console.error("Sync error:", err);
+      alert(`❌ 서버 연결 오류가 발생했습니다: ${err.message}`);
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   useEffect(() => {
     if (!downloadOpen) return;
@@ -309,6 +341,33 @@ export function DashboardHeader({
             {unitOptions[1]}
           </span>
         </div>
+
+        {/* 관리자 전용: PIMSVINA 데이터 동기화 */}
+        {isAdmin && (
+          <button
+            onClick={handleSyncPimsvina}
+            disabled={syncing}
+            title="PIMSVINA 시스템과 실시간 데이터 동기화"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              backgroundColor: syncing ? "#64748b" : "#2563eb",
+              color: "#fff",
+              border: "none",
+              borderRadius: "6px",
+              padding: "7px 14px",
+              fontSize: "12px",
+              cursor: syncing ? "wait" : "pointer",
+              fontWeight: "500",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.12)",
+              transition: "all 0.15s ease",
+            }}
+          >
+            <RefreshCw size={13} style={{ animation: syncing ? "spin 1s linear infinite" : "none" }} />
+            {syncing ? "동기화 중..." : "PIMSVINA 동기화"}
+          </button>
+        )}
 
         {/* 관리자 전용: 환율 설정 + Excel 업로드 */}
         {isAdmin && <FxRateEditor />}

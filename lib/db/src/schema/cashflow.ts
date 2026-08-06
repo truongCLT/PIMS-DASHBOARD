@@ -16,11 +16,15 @@ export const cfProjectsTable = pgTable(
     id: serial("id").primaryKey(),
     name: text("name").notNull(),
     division: text("division").notNull(),
+    code: text("code"), // PIMSVINA project_code (dashboard_cf_projects_1q.jsp), null for Excel-imported rows
     itemNameIn: text("item_name_in"),
     itemNameOut: text("item_name_out"),
     sortOrder: integer("sort_order").notNull().default(0),
   },
-  (t) => [uniqueIndex("cf_projects_name_division_uq").on(t.name, t.division)],
+  (t) => [
+    uniqueIndex("cf_projects_name_division_uq").on(t.name, t.division),
+    uniqueIndex("cf_projects_code_uq").on(t.code),
+  ],
 );
 
 export const cfMonthlyAmountsTable = pgTable(

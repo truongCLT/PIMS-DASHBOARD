@@ -7,6 +7,7 @@ import projectdetailRouter from "./projectdetail";
 import adminRouter from "./admin";
 import fxratesRouter from "./fxrates";
 import storageRouter from "./storage";
+import pimsvinaSyncRouter from "./pimsvinaSync";
 
 const router: IRouter = Router();
 
@@ -18,5 +19,6 @@ router.use(projectdetailRouter);
 router.use(adminRouter);
 router.use(fxratesRouter);
 router.use(storageRouter);
+router.use(pimsvinaSyncRouter);
 
 export default router;

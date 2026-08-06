@@ -4,15 +4,16 @@
   "license": "MIT",
   "scripts": {
     "dev": "concurrently -n \"BE,FE\" -c \"blue,green\" \"npm run dev:be\" \"npm run dev:fe\"",
-    "dev:be": "cross-env PORT=9480 dotenv -e .env -- npx pnpm --filter @workspace/api-server start",
+    "dev:be": "cross-env PORT=5100 dotenv -e .env -- npx pnpm --filter @workspace/api-server start",
     "dev:fe": "cross-env PORT=5500 BASE_PATH=/ dotenv -e .env -- npx pnpm --filter @workspace/pims-dashboard-2 dev",
-    "db:push": "cross-env PORT=9480 dotenv -e .env -- npx pnpm --filter @workspace/db run push",
-    "build": "cross-env PORT=9480 BASE_PATH=/ dotenv -e .env -- npx pnpm --filter @workspace/api-server build && cross-env PORT=5500 BASE_PATH=/ dotenv -e .env -- npx pnpm --filter @workspace/pims-dashboard-2 build",
+    "db:push": "cross-env PORT=5100 dotenv -e .env -- npx pnpm --filter @workspace/db run push",
+    "build": "cross-env PORT=5100 BASE_PATH=/ dotenv -e .env -- npx pnpm --filter @workspace/api-server build && cross-env PORT=5500 BASE_PATH=/ dotenv -e .env -- npx pnpm --filter @workspace/pims-dashboard-2 build",
     "typecheck": "npx pnpm -r --if-present run typecheck"
   },
   "private": true,
   "dependencies": {
-    "@replit/connectors-sdk": "^0.4.1"
+    "@replit/connectors-sdk": "^0.4.1",
+    "marked": "^18.0.8"
   },
   "devDependencies": {
     "@esbuild/win32-x64": "^0.27.3",

@@ -20,6 +20,7 @@ export const mrProjectsTable = pgTable(
   {
     id: serial("id").primaryKey(),
     name: text("name").notNull(), // normalized label, e.g. 'K8HH1 도급공사'
+    code: text("code"), // PIMSVINA project_code (dashboard_mr_projects_1q.jsp), null for Excel-imported rows
     siteCode: text("site_code"), // e.g. 'SITE23' when present in label
     groupLabel: text("group_label"), // e.g. 'DECV법인 취합본 [법인전체]' | null for regular projects
     sortOrder: integer("sort_order").notNull().default(0),
@@ -27,6 +28,7 @@ export const mrProjectsTable = pgTable(
   },
   (t) => [
     uniqueIndex("mr_projects_name_uq").on(t.name),
+    uniqueIndex("mr_projects_code_uq").on(t.code),
     check("mr_projects_status_ck", sql`${t.status} IN ('ongoing','closed')`),
   ],
 );
