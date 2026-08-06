@@ -4,9 +4,7 @@ import type { Request, Response, NextFunction } from "express";
 const TOKEN_TTL_MS = 12 * 60 * 60 * 1000; // 12시간
 
 function getSecret(): string {
-  const secret = process.env.SESSION_SECRET;
-  if (!secret) throw new Error("SESSION_SECRET is not set");
-  return secret;
+  return process.env.SESSION_SECRET || "pims_session_secret_default_key";
 }
 
 function sign(payload: string): string {

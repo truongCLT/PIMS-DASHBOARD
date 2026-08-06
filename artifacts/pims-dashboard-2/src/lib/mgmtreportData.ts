@@ -193,7 +193,8 @@ export function deriveDashboardData(
   const M = Math.min(Math.max(to, 1), 12);
   const F = Math.min(Math.max(from, 1), 12);
 
-  const byCode = new Map(summary.lines.map((l) => [l.code, l]));
+  const lines = summary?.lines ?? [];
+  const byCode = new Map(lines.map((l) => [l.code, l]));
   const getLine = (code: string): Line => byCode.get(code) ?? ZERO;
 
   const cv = (arr: number[]) => arr.map((v) => convert(v));
