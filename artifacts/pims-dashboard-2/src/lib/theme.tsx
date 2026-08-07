@@ -257,6 +257,67 @@ export const THEMES: Theme[] = [
       stripColors: ["#2f7cf6", "#35c7c0", "#5fe0a8", "#1e3a6e"],
     },
   },
+  /* ── G: 대우본사 요청-예시1 ───────────────────── */
+  {
+    id: "daewoo-example-1",
+    label: "G — 대우본사 예시1",
+    swatch: "#4472ca",
+    sidebar: {
+      bg: "#ffffff",
+      border: "1px solid #dde3ee",
+      topLevelColor: "#1a2d4d",
+      midLevelColor: "#2a3d55",
+      subLevelColor: "#44546a",
+      activeItemBg: "#e8ecf5",
+      activeItemColor: "#4472ca",
+      activeItemAccent: "#4472ca",
+      totalActiveBg: "rgba(68,114,202,0.08)",
+      totalBorderBottom: "1px solid #dde3ee",
+      brandingBorderTop: "1px solid #dde3ee",
+    },
+    dashboard: { bg: "#eef1f6" },
+    kpi: {
+      cardBg: "#ffffff",
+      cardBorderTop: null,
+      cardBorder: "1px solid #dde3ee",
+      titleColor: "#5e6e8a",
+      labelColor: "#8a99b5",
+      valueColor: "#1a2d4d",
+      accentBorderLeft: null,
+      boxShadow: "0 1px 4px rgba(26,45,77,0.07)",
+    },
+  },
+
+  /* ── H: 대우본사요청-예시2 ────────────────────── */
+  {
+    id: "daewoo-example-2",
+    label: "H — 대우본사 예시2",
+    swatch: "#2e5bdb",
+    sidebar: {
+      bg: "#ffffff",
+      border: "1px solid #e2e8f0",
+      topLevelColor: "#1a2d4d",
+      midLevelColor: "#2a3d55",
+      subLevelColor: "#44546a",
+      activeItemBg: "#e8edf7",
+      activeItemColor: "#2e5bdb",
+      activeItemAccent: "#2e5bdb",
+      totalActiveBg: "rgba(46,91,219,0.08)",
+      totalBorderBottom: "1px solid #e2e8f0",
+      brandingBorderTop: "1px solid #e2e8f0",
+    },
+    dashboard: { bg: "#f5f7fb" },
+    kpi: {
+      cardBg: "#ffffff",
+      cardBorderTop: null,
+      cardBorder: "1px solid #e2e8f0",
+      titleColor: "#6b7a9b",
+      labelColor: "#93a3bd",
+      valueColor: "#1a2d4d",
+      accentBorderLeft: null,
+      boxShadow: "0 1px 5px rgba(21,36,73,0.07)",
+    },
+  },
 ];
 
 interface ThemeContextValue {
