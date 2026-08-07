@@ -1,0 +1,19 @@
+kind = "design-system"
+previewPath = "/daewoo-hq-example-1/"
+title = "대우본사 요청-예시1"
+description = "대우건설 본사 경영 대시보드 기준 디자인 시스템 — 코퍼릿 블루(#4472ca)·라이트 블루-그레이 배경·네이비 텍스트 체계를 충실히 재현한 첫 번째 예시."
+version = "1.0.0"
+id = "artifacts/daewoo-hq-example-1"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/daewoo-hq-example-1/" ]
+localPort = 21372
+
+[services.development]
+run = "pnpm --filter @workspace/daewoo-hq-example-1 run dev"
+
+[services.env]
+PORT = "21372"
+BASE_PATH = "/daewoo-hq-example-1/"
