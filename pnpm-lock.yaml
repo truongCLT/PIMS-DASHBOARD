@@ -164,15 +164,6 @@ importers:
         specifier: ^18.0.8
         version: 18.0.8
     devDependencies:
-      '@esbuild/win32-x64':
-        specifier: ^0.27.3
-        version: 0.27.7
-      '@rollup/rollup-win32-x64-msvc':
-        specifier: ^4.62.4
-        version: 4.62.4
-      '@tailwindcss/oxide-win32-x64-msvc':
-        specifier: ^4.3.3
-        version: 4.3.3
       concurrently:
         specifier: ^10.0.4
         version: 10.0.4
@@ -182,9 +173,6 @@ importers:
       dotenv-cli:
         specifier: ^11.0.0
         version: 11.0.0
-      lightningcss-win32-x64-msvc:
-        specifier: ^1.33.0
-        version: 1.33.0
       prettier:
         specifier: ^3.9.4
         version: 3.9.4
@@ -1985,12 +1973,6 @@ packages:
     cpu: [x64]
     os: [linux]
 
-  '@esbuild/win32-x64@0.27.7':
-    resolution: {integrity: sha512-56hiAJPhwQ1R4i+21FVF7V8kSD5zZTdHcVuRFMW0hn753vVfQN8xlx4uOPT4xoGH0Z/oVATuR82AiqSTDIpaHg==}
-    engines: {node: '>=18'}
-    cpu: [x64]
-    os: [win32]
-
   '@fast-csv/format@4.3.5':
     resolution: {integrity: sha512-8iRn6QF3I8Ak78lNAa+Gdl5MJJBM5vRHivFtMRUWINdevNo00K7OXxS2PshawLKTejVwieIlPmK5YlLu6w4u8A==}
 
@@ -2753,11 +2735,6 @@ packages:
     os: [linux]
     libc: [glibc]
 
-  '@rollup/rollup-win32-x64-msvc@4.62.4':
-    resolution: {integrity: sha512-zD6NdeWEByGE9QF9vCrlJ5YQB4oq9q91kPZS37Jwj5hOkvR1lTBSpsKhKDw4IJtbQ35LsTS1HD9DZYGKIshU1Q==}
-    cpu: [x64]
-    os: [win32]
-
   '@scalar/helpers@0.9.0':
     resolution: {integrity: sha512-M34CLRCttqC1bXthI/QSzQj0s5C6nrU2PFWf/vOT3RpycbiGDGQbqR+5RfFzpOIQvRqbHfNdcRbeiZBw+vCbkQ==}
     engines: {node: '>=22'}
@@ -2829,12 +2806,6 @@ packages:
       - '@tybys/wasm-util'
       - '@emnapi/wasi-threads'
       - tslib
-
-  '@tailwindcss/oxide-win32-x64-msvc@4.3.3':
-    resolution: {integrity: sha512-yJ0pwIVc/nYeGoV02WtsN8KYyLQv7kyI2wDnkezyJlGGjkd4QLwDGAwl47YpPJeuI0M0ObaXGSPjvWDPeTPggw==}
-    engines: {node: '>= 20'}
-    cpu: [x64]
-    os: [win32]
 
   '@tailwindcss/oxide@4.3.2':
     resolution: {integrity: sha512-z8ZgnzX8gdNoWLBLqBPoh/sjnxkwvf9ZuWjnO0l0yIzbLa5/9S+eC5QxGZKRobVHIC3/1BoMWjHblqWjcgFgag==}
@@ -4044,12 +4015,6 @@ packages:
     os: [linux]
     libc: [glibc]
 
-  lightningcss-win32-x64-msvc@1.33.0:
-    resolution: {integrity: sha512-OlEICDx/Xl0FqSp4bry8zFnCvGpig3Gl4gCquvYwHuqJKEC1+n9NgDniFvqHGmMv1ZkqDJrDqKKSykTDX+ehuA==}
-    engines: {node: '>= 12.0.0'}
-    cpu: [x64]
-    os: [win32]
-
   lightningcss@1.32.0:
     resolution: {integrity: sha512-NXYBzinNrblfraPGyrbPoD19C1h9lfI/1mzgWYvXUTe414Gz/X1FD2XBZSZM7rRTrMA8JL3OtAaGifrIKhQ5yQ==}
     engines: {node: '>= 12.0.0'}
@@ -5249,8 +5214,6 @@ snapshots:
   '@esbuild/linux-x64@0.27.3':
     optional: true
 
-  '@esbuild/win32-x64@0.27.7': {}
-
   '@fast-csv/format@4.3.5':
     dependencies:
       '@types/node': 14.18.63
@@ -6165,8 +6128,6 @@ snapshots:
   '@rollup/rollup-linux-x64-gnu@4.62.2':
     optional: true
 
-  '@rollup/rollup-win32-x64-msvc@4.62.4': {}
-
   '@scalar/helpers@0.9.0': {}
 
   '@scalar/json-magic@0.12.17':
@@ -6237,8 +6198,6 @@ snapshots:
 
   '@tailwindcss/oxide-wasm32-wasi@4.3.2':
     optional: true
-
-  '@tailwindcss/oxide-win32-x64-msvc@4.3.3': {}
 
   '@tailwindcss/oxide@4.3.2':
     optionalDependencies:
@@ -7448,8 +7407,6 @@ snapshots:
 
   lightningcss-linux-x64-gnu@1.32.0:
     optional: true
-
-  lightningcss-win32-x64-msvc@1.33.0: {}
 
   lightningcss@1.32.0:
     dependencies:

@@ -4,3 +4,4 @@
 - [Orval multipart codegen quirks](orval-multipart-codegen.md) — multipart upload endpoints break api-zod typecheck (Blob/File lib, duplicate-export name collisions); fixes documented.
 - [Orval codegen barrels](orval-codegen-barrels.md) — every codegen run appends duplicate barrel exports; dedupe + extend explicit *Body re-exports or typecheck:libs fails.
 - [JSX generics vs metadata plugin](jsx-generic-babel-plugin.md) — `<Comp<T>>` in .tsx crashes vite:react-babel via injected data-component-name; use prop inference instead.
+- [Windows-only deps break publish](win32-deps-deploy.md) — win32-* packages as direct deps make the Linux publish build fail with npm EBADPLATFORM; remove and relock.
