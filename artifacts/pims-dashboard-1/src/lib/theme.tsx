@@ -41,6 +41,8 @@ export interface Theme {
   charts?: {
     /** 매출 실적 및 전망 rendering: default lines · "bars" = grouped bars (예시1) · "area" = area + dashed plan (예시2) */
     salesVariant?: "bars" | "area";
+    /** 손익현황 rendering: default = 기존 스택 · "daewoo" = 예시1 스타일 (영업이익+판관비 스택 + 영업외손익 캡) */
+    profitVariant?: "daewoo";
     planColor?: string;
     actualColor?: string;
     rateColor?: string;
@@ -300,6 +302,7 @@ export const THEMES: Theme[] = [
     },
     charts: {
       salesVariant: "bars",
+      profitVariant: "daewoo",
       planColor: "#c3d4f0",
       actualColor: "#4472ca",
       rateColor: "#e05252",
@@ -355,10 +358,11 @@ const ThemeContext = createContext<ThemeContextValue>({
   setThemeId: () => {},
 });
 
-const DEFAULT_THEME_ID = "aqua-glass";
+const DEFAULT_THEME_ID = "daewoo-example-1";
+const THEME_STORAGE_KEY = "pims1-theme";
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const stored = typeof localStorage !== "undefined" ? localStorage.getItem("pims-theme") : null;
+  const stored = typeof localStorage !== "undefined" ? localStorage.getItem(THEME_STORAGE_KEY) : null;
   const initial = THEMES.find((t) => t.id === stored) ?? THEMES.find((t) => t.id === DEFAULT_THEME_ID) ?? THEMES[0];
   const [theme, setTheme] = useState<Theme>(initial);
 
@@ -366,7 +370,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const t = THEMES.find((th) => th.id === id);
     if (t) {
       setTheme(t);
-      localStorage.setItem("pims-theme", id);
+      localStorage.setItem(THEME_STORAGE_KEY, id);
     }
   };
 

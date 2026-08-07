@@ -56,5 +56,8 @@
   "milestone": "마일스톤",
   "vsPlan": "계획 대비",
   "overPlan": "계획 초과",
-  "underPlan": "계획 미달"
+  "underPlan": "계획 미달",
+  "progressStatus": "진척 상태",
+  "periodRange": "{{from}}~{{to}}월",
+  "periodSingle": "{{month}}월"
 }

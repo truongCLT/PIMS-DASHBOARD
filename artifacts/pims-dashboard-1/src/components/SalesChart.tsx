@@ -122,17 +122,47 @@ export function SalesChart() {
   const PlanRateLabel = makePlanRateLabel(visibleData);
   const ActualRateLabel = makeActualRateLabel(visibleData);
 
-  /* month + 달성률 two-line tick, used by the bars variant (대우 예시1) */
+  /* month + 달성률 pill chip tick, used by the bars variant (대우 예시1) */
   const MonthRateTick = (props: any) => {
     const { x, y, payload } = props;
     const row = visibleData.find((r) => r.month === payload.value);
+    const ok = row?.rate != null && row.rate >= 100;
+    const chipText = row?.rate != null ? `${row.rate}%` : null;
+    const chipW = chipText ? Math.max(34, chipText.length * 6.2 + 12) : 0;
     return (
       <g>
         <text x={x} y={y + 12} textAnchor="middle" fontSize={11} fill={chartTheme.axisText}>{payload.value}</text>
-        {row?.rate != null && (
-          <text x={x} y={y + 26} textAnchor="middle" fontSize={10} fontWeight={700} fill={rateColor}>{row.rate}%</text>
+        {chipText && (
+          <g>
+            <rect x={x - chipW / 2} y={y + 19} width={chipW} height={16} rx={8}
+              fill={ok ? "#e7f5ec" : "#fdecec"} />
+            <text x={x} y={y + 30.5} textAnchor="middle" fontSize={10} fontWeight={700}
+              fill={ok ? "#2e9e5b" : "#cf4d4d"}>{chipText}</text>
+          </g>
         )}
       </g>
+    );
+  };
+
+  /* actual value label above the taller of the two overlapped bars (bars variant) */
+  const BarValueLabel = (props: any) => {
+    const { x, y, width, height, index } = props;
+    if (x == null || index == null) return null;
+    const d = visibleData[index];
+    if (!d || d.actual == null || !Number.isFinite(Number(d.actual))) return null;
+    let topY = y;
+    if (
+      d.plan != null && Number.isFinite(Number(d.plan)) && d.plan > 0 &&
+      height > 0 && d.actual > 0
+    ) {
+      const actualY = y + height - d.actual * (height / d.plan);
+      if (Number.isFinite(actualY)) topY = Math.min(y, actualY);
+    }
+    return (
+      <text x={x + width / 2} y={topY - 7} textAnchor="middle"
+        fontSize={compact ? 9.5 : 11} fontWeight={700} fill="#1a2d4d">
+        {Number(d.actual).toLocaleString("ko-KR")}
+      </text>
     );
   };
 
@@ -177,16 +207,17 @@ export function SalesChart() {
         ) : (
         <ResponsiveContainer width="100%" height="100%">
           {variant === "bars" ? (
-            /* ── 대우 예시1: grouped bars (계획 연한색 · 실적 진한색) + 달성률 under months ── */
-            <ComposedChart data={visibleData} margin={{ top: 24, right: 18, left: -10, bottom: 16 }}>
+            /* ── 대우 예시1: 겹친 막대 (계획 넓고 연한색 · 실적 좁고 진한색) + 달성률 칩 ── */
+            <ComposedChart data={visibleData} margin={{ top: 24, right: 18, left: -10, bottom: 4 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.gridLine} vertical={false} />
               <XAxis
                 dataKey="month"
                 tick={<MonthRateTick />}
                 axisLine={false}
                 tickLine={false}
-                height={34}
+                height={44}
               />
+              <XAxis dataKey="month" xAxisId="overlay" hide />
               <YAxis
                 domain={[0, "auto"]}
                 tick={{ fontSize: compact ? 9 : 11, fill: chartTheme.axisText }}
@@ -200,23 +231,21 @@ export function SalesChart() {
                 dataKey="plan"
                 name={t("salesChart:salesPlan")}
                 fill={planColor}
-                radius={[4, 4, 0, 0]}
-                isAnimationActive={false}
-              />
-              <Bar
-                dataKey="actual"
-                name={t("salesChart:salesActualForecast")}
-                fill={actualColor}
-                radius={[4, 4, 0, 0]}
+                barSize={compact ? 26 : 34}
+                radius={[7, 7, 0, 0]}
                 isAnimationActive={false}
               >
-                <LabelList
-                  dataKey="actual"
-                  position="top"
-                  formatter={(v: number) => (v == null ? "" : v.toLocaleString("ko-KR"))}
-                  style={{ fontSize: compact ? 9 : 10.5, fontWeight: 700, fill: "#1a2d4d" }}
-                />
+                <LabelList dataKey="plan" content={BarValueLabel} />
               </Bar>
+              <Bar
+                dataKey="actual"
+                xAxisId="overlay"
+                name={t("salesChart:salesActualForecast")}
+                fill={actualColor}
+                barSize={compact ? 12 : 16}
+                radius={[6, 6, 0, 0]}
+                isAnimationActive={false}
+              />
             </ComposedChart>
           ) : variant === "area" ? (
             /* ── 대우 예시2: area(실적) + dashed line(계획) ── */
@@ -379,10 +408,14 @@ export function SalesChart() {
             )}
             <span style={{ fontSize: "12px", color: "#555" }}>{t("salesChart:salesActualForecast")}</span>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-            <span style={{ fontSize: "12px", fontWeight: 700, color: rateColor }}>%</span>
-            <span style={{ fontSize: "12px", color: "#555" }}>{t("common:achievementRate")}</span>
-          </div>
+          {variant === "bars" ? (
+            <span style={{ fontSize: "11px", color: "#7c8ba3" }}>{t("salesChart:bottomChipRate")}</span>
+          ) : (
+            <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+              <span style={{ fontSize: "12px", fontWeight: 700, color: rateColor }}>%</span>
+              <span style={{ fontSize: "12px", color: "#555" }}>{t("common:achievementRate")}</span>
+            </div>
+          )}
         </div>
       </div>
 

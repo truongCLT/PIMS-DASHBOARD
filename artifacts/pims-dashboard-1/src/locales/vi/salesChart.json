@@ -8,5 +8,6 @@
   "report": "Báo cáo",
   "salesPlan": "Doanh thu (Kế hoạch)",
   "salesActualForecast": "Doanh thu (Thực hiện & Dự báo)",
-  "month": "Tháng"
+  "month": "Tháng",
+  "bottomChipRate": "Chip dưới = tỷ lệ đạt"
 }

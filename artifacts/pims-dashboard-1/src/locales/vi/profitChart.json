@@ -7,5 +7,7 @@
   "dataLoading": "Đang tải dữ liệu…",
   "sgaArea": "Vùng chi phí quản lý",
   "hoverHint": "※ Di chuột qua cột để xem chi tiết lợi nhuận thường xuyên và chi phí quản lý",
-  "month": "Tháng"
+  "month": "Tháng",
+  "operatingMarginRate": "Tỷ suất LN KD",
+  "barTotalGross": "Cả cột = LN gộp"
 }

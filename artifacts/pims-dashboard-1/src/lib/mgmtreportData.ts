@@ -83,6 +83,8 @@ export interface DashboardData {
   year: number;
   month: number;
   orderMonthActual: number | null;
+  /** 조회 시작 월 (1..12) — 연간 누적 KPI의 실제 시작 월 */
+  fromMonth: number;
   kpi: KpiItem[];
   performanceRows: PerformanceRow[];
   salesData: SalesRow[];
@@ -384,6 +386,7 @@ export function deriveDashboardData(
     year: summary.year,
     month: M,
     orderMonthActual,
+    fromMonth: F,
     kpi,
     performanceRows,
     salesData,

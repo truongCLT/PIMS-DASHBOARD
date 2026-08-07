@@ -56,5 +56,8 @@
   "milestone": "Milestone",
   "vsPlan": "vs Plan",
   "overPlan": "Above Plan",
-  "underPlan": "Below Plan"
+  "underPlan": "Below Plan",
+  "progressStatus": "Progress",
+  "periodRange": "M{{from}}–M{{to}}",
+  "periodSingle": "M{{month}}"
 }

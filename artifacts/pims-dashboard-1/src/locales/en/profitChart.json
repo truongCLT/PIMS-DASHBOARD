@@ -7,5 +7,7 @@
   "dataLoading": "Loading data…",
   "sgaArea": "SG&A Area",
   "hoverHint": "※ Hover over a bar to see ordinary profit and SG&A details",
-  "month": "Month"
+  "month": "Month",
+  "operatingMarginRate": "OP margin",
+  "barTotalGross": "Full bar = Gross profit"
 }

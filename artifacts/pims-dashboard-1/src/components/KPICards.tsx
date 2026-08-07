@@ -27,6 +27,10 @@ interface KPICardProps {
   cardIndex?: number;
   /** Strip-style only: accent colour for this card */
   stripColor?: string;
+  /** Gauge-style: period badge text, e.g. "2026.07" or "1~7월" */
+  periodLabel?: string;
+  /** Gauge-style: unit label, e.g. "천 USD" */
+  unitLabel?: string;
 }
 
 /** parse "9,898" | 9898 | "-" → number or null */
@@ -36,22 +40,27 @@ function toNum(v: string | number): number | null {
 }
 
 /* ── Gauge helpers (대우 예시 themes) ────────────────────────── */
-function RingGauge({ pct, color, size = 52 }: { pct: number; color: string; size?: number }) {
+function RingGauge({ pct, color, size = 52, subLabel }: { pct: number; color: string; size?: number; subLabel?: string }) {
   const r = (size - 8) / 2;
   const c = 2 * Math.PI * r;
   const filled = Math.min(100, Math.max(0, pct)) / 100;
   return (
     <svg width={size} height={size} style={{ flexShrink: 0 }}>
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#e8ecf3" strokeWidth={6} />
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#e8ecf3" strokeWidth={5} />
       <circle
         cx={size / 2} cy={size / 2} r={r} fill="none"
-        stroke={color} strokeWidth={6} strokeLinecap="round"
+        stroke={color} strokeWidth={5} strokeLinecap="round"
         strokeDasharray={`${c * filled} ${c}`}
         transform={`rotate(-90 ${size / 2} ${size / 2})`}
       />
-      <text x="50%" y="50%" textAnchor="middle" dominantBaseline="central" fontSize={12} fontWeight={800} fill={color}>
+      <text x="50%" y={subLabel ? "44%" : "50%"} textAnchor="middle" dominantBaseline="central" fontSize={12} fontWeight={800} fill={color}>
         {Math.round(pct)}%
       </text>
+      {subLabel && (
+        <text x="50%" y="62%" textAnchor="middle" dominantBaseline="central" fontSize={7} fill={color}>
+          {subLabel}
+        </text>
+      )}
     </svg>
   );
 }
@@ -82,7 +91,7 @@ function SemiGauge({ pct, color, width = 108 }: { pct: number; color: string; wi
 function KPICard({
   title, plan, actual, achievement,
   achievementColor = "#35c7c0", compact = false,
-  cardIndex = 0, stripColor,
+  cardIndex = 0, stripColor, periodLabel, unitLabel,
 }: KPICardProps) {
   const { theme: T } = useTheme();
   const { t, i18n } = useTranslation(["kpiCards", "common"]);
@@ -97,7 +106,7 @@ function KPICard({
 
   /* ── Gauge layouts (대우 예시1 · 예시2) ───────────────────── */
   if (isGaugeRing || isGaugeSemi) {
-    const pctNum = parseFloat(achievement);
+    const pctNum = parseFloat(String(achievement).replace(/[,%\s]/g, ""));
     const hasPct = Number.isFinite(pctNum);
     const over = hasPct && pctNum >= 100;
     const gaugeColor = over ? "#2e9e5b" : "#e05252";
@@ -108,7 +117,7 @@ function KPICard({
     const diffColor = diff != null && diff >= 0 ? "#2e9e5b" : "#e05252";
     const isMonthly = title.startsWith("당월");
 
-    /* 예시1: circular ring left · big value right · 계획 + 대비 chip */
+    /* 예시1 (첨부 이미지와 동일): 제목+기간 배지 · 링 게이지+값 · 계획 대비/진척 상태 */
     if (isGaugeRing) {
       return (
         <div style={{
@@ -118,18 +127,36 @@ function KPICard({
           borderRadius: "10px",
           boxShadow: K.boxShadow,
           padding: "10px 14px",
-          display: "flex", flexDirection: "column", gap: "6px",
+          display: "flex", flexDirection: "column", gap: "7px",
         }}>
-          <div style={{ fontSize: "clamp(10px, 0.8vw, 13px)", fontWeight: 600, color: K.titleColor, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-            {label}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "6px" }}>
+            <span style={{ fontSize: "clamp(10px, 0.8vw, 13px)", fontWeight: 600, color: K.titleColor, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              {label}
+            </span>
+            {periodLabel && (
+              <span style={{
+                fontSize: "clamp(8px, 0.65vw, 10px)", fontWeight: 600, color: K.labelColor,
+                backgroundColor: "#f1f4f9", borderRadius: "4px", padding: "2px 7px",
+                whiteSpace: "nowrap", flexShrink: 0,
+              }}>
+                {periodLabel}
+              </span>
+            )}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
             {hasPct
-              ? <RingGauge pct={pctNum} color={gaugeColor} size={compact ? 44 : 52} />
-              : <div style={{ width: 52, textAlign: "center", fontSize: 12, color: K.labelColor }}>{achievement}</div>}
+              ? <RingGauge pct={pctNum} color={gaugeColor} size={compact ? 48 : 56} subLabel={t("common:achievementRate")} />
+              : <div style={{ width: 56, textAlign: "center", fontSize: 12, color: K.labelColor, flexShrink: 0 }}>{achievement}</div>}
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: compact ? "clamp(13px, 1.1vw, 18px)" : "clamp(16px, 1.5vw, 24px)", fontWeight: 800, color: K.valueColor, overflowWrap: "anywhere" }}>
-                {actual.toLocaleString()}
+              <div style={{ display: "flex", alignItems: "baseline", gap: "5px", minWidth: 0 }}>
+                <span style={{ fontSize: compact ? "clamp(13px, 1.1vw, 18px)" : "clamp(16px, 1.5vw, 24px)", fontWeight: 800, color: K.valueColor, overflowWrap: "anywhere" }}>
+                  {actual.toLocaleString()}
+                </span>
+                {unitLabel && (
+                  <span style={{ fontSize: "clamp(8px, 0.65vw, 10px)", color: K.labelColor, whiteSpace: "nowrap" }}>
+                    {unitLabel}
+                  </span>
+                )}
               </div>
               <div style={{ fontSize: "clamp(9px, 0.7vw, 11px)", color: K.labelColor }}>
                 {t("common:plan")} {plan.toLocaleString()}
@@ -137,21 +164,30 @@ function KPICard({
             </div>
           </div>
           <div style={{
-            display: "flex", alignItems: "center", justifyContent: "space-between",
-            borderTop: "1px solid #eef1f6", paddingTop: "6px", gap: "6px",
+            display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px",
+            borderTop: "1px solid #eef1f6", paddingTop: "6px",
           }}>
-            <span style={{ fontSize: "clamp(9px, 0.72vw, 11px)", color: K.labelColor }}>
-              {diff != null ? diffText : "\u00a0"}
-            </span>
-            {diff != null && (
-              <span style={{
-                fontSize: "clamp(9px, 0.72vw, 11px)", fontWeight: 700,
-                color: diffColor, backgroundColor: diffColor + "14",
-                borderRadius: "4px", padding: "2px 8px", whiteSpace: "nowrap",
-              }}>
-                {diff >= 0 ? t("common:overPlan") : t("common:underPlan")}
-              </span>
-            )}
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: "clamp(8px, 0.65vw, 10px)", color: K.labelColor, marginBottom: "2px" }}>{t("common:vsPlan")}</div>
+              <div style={{ fontSize: "clamp(10px, 0.8vw, 12px)", fontWeight: 700, color: diff != null ? diffColor : K.labelColor, overflowWrap: "anywhere" }}>
+                {diff != null ? diffText : "-"}
+              </div>
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: "clamp(8px, 0.65vw, 10px)", color: K.labelColor, marginBottom: "2px" }}>{t("common:progressStatus")}</div>
+              {diff != null ? (
+                <span style={{
+                  display: "inline-block",
+                  fontSize: "clamp(9px, 0.72vw, 11px)", fontWeight: 700,
+                  color: diffColor, backgroundColor: diffColor + "14",
+                  borderRadius: "4px", padding: "2px 8px", whiteSpace: "nowrap",
+                }}>
+                  {diff >= 0 ? t("common:overPlan") : t("common:underPlan")}
+                </span>
+              ) : (
+                <span style={{ fontSize: "clamp(9px, 0.72vw, 11px)", color: K.labelColor }}>-</span>
+              )}
+            </div>
           </div>
         </div>
       );
@@ -372,6 +408,14 @@ export function KPICards() {
   const isStrip = T.kpi.cardStyle === "strip";
   const stripColors = T.kpi.stripColors ?? ["#2f7cf6", "#e67e22", "#35c7c0", "#1c7a5a"];
 
+  const { t: tc } = useTranslation("common");
+  const monthlyPeriod = derived ? `${derived.year}.${String(derived.month).padStart(2, "0")}` : undefined;
+  const annualPeriod = derived
+    ? derived.fromMonth < derived.month
+      ? tc("periodRange", { from: derived.fromMonth, to: derived.month })
+      : tc("periodSingle", { month: derived.month })
+    : undefined;
+
   const cards = derived?.kpi ?? PLACEHOLDER_TITLES.map((title) => ({
     title,
     plan: "-" as const,
@@ -393,6 +437,8 @@ export function KPICards() {
           compact={unitIndex === 1}
           cardIndex={i}
           stripColor={isStrip ? stripColors[i % 4] : undefined}
+          periodLabel={kpi.title.startsWith("당월") ? monthlyPeriod : annualPeriod}
+          unitLabel={derived?.unitLabel}
         />
       ))}
     </div>

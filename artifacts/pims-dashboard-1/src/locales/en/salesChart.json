@@ -8,5 +8,6 @@
   "report": "Report",
   "salesPlan": "Sales (Plan)",
   "salesActualForecast": "Sales (Actual & Forecast)",
-  "month": "Month"
+  "month": "Month",
+  "bottomChipRate": "Bottom chip = achievement"
 }
