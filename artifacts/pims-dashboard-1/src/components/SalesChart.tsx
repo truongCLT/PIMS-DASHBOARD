@@ -193,6 +193,42 @@ export function SalesChart() {
           }}>{t("salesChart:viewDetails")}</button>
       </div>
 
+      {/* Legend (그래프 위) */}
+      <div style={{ display: "flex", alignItems: "center", gap: "14px", marginBottom: "6px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+          {variant === "bars" ? (
+            <svg width="14" height="10"><rect x="1" y="1" width="12" height="8" rx="2" fill={planColor} /></svg>
+          ) : (
+            <svg width="26" height="8">
+              <line x1="0" y1="4" x2="26" y2="4" stroke={planColor} strokeWidth="1.5" strokeDasharray={variant === "area" ? "4 3" : undefined} />
+              <circle cx="6" cy="4" r="2.5" fill={planColor} />
+              <circle cx="20" cy="4" r="2.5" fill={planColor} />
+            </svg>
+          )}
+          <span style={{ fontSize: "12px", color: "#555" }}>{t("salesChart:salesPlan")}</span>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+          {variant === "bars" ? (
+            <svg width="14" height="10"><rect x="1" y="1" width="12" height="8" rx="2" fill={actualColor} /></svg>
+          ) : (
+            <svg width="26" height="8">
+              <line x1="0" y1="4" x2="26" y2="4" stroke={actualColor} strokeWidth="1.5" />
+              <circle cx="6" cy="4" r="2.5" fill={actualColor} />
+              <circle cx="20" cy="4" r="2.5" fill={actualColor} />
+            </svg>
+          )}
+          <span style={{ fontSize: "12px", color: "#555" }}>{t("salesChart:salesActualForecast")}</span>
+        </div>
+        {variant === "bars" ? (
+          <span style={{ fontSize: "11px", color: "#7c8ba3" }}>{t("salesChart:bottomChipRate")}</span>
+        ) : (
+          <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+            <span style={{ fontSize: "12px", fontWeight: 700, color: rateColor }}>%</span>
+            <span style={{ fontSize: "12px", color: "#555" }}>{t("common:achievementRate")}</span>
+          </div>
+        )}
+      </div>
+
       {/* Chart */}
       <div style={{ flex: 1, minHeight: "160px" }}>
         {visibleData.length === 0 ? (
@@ -356,44 +392,6 @@ export function SalesChart() {
           )}
         </ResponsiveContainer>
         )}
-      </div>
-
-      {/* Legend + Toggle */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "4px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-            {variant === "bars" ? (
-              <svg width="14" height="10"><rect x="1" y="1" width="12" height="8" rx="2" fill={planColor} /></svg>
-            ) : (
-              <svg width="26" height="8">
-                <line x1="0" y1="4" x2="26" y2="4" stroke={planColor} strokeWidth="1.5" strokeDasharray={variant === "area" ? "4 3" : undefined} />
-                <circle cx="6" cy="4" r="2.5" fill={planColor} />
-                <circle cx="20" cy="4" r="2.5" fill={planColor} />
-              </svg>
-            )}
-            <span style={{ fontSize: "12px", color: "#555" }}>{t("salesChart:salesPlan")}</span>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-            {variant === "bars" ? (
-              <svg width="14" height="10"><rect x="1" y="1" width="12" height="8" rx="2" fill={actualColor} /></svg>
-            ) : (
-              <svg width="26" height="8">
-                <line x1="0" y1="4" x2="26" y2="4" stroke={actualColor} strokeWidth="1.5" />
-                <circle cx="6" cy="4" r="2.5" fill={actualColor} />
-                <circle cx="20" cy="4" r="2.5" fill={actualColor} />
-              </svg>
-            )}
-            <span style={{ fontSize: "12px", color: "#555" }}>{t("salesChart:salesActualForecast")}</span>
-          </div>
-          {variant === "bars" ? (
-            <span style={{ fontSize: "11px", color: "#7c8ba3" }}>{t("salesChart:bottomChipRate")}</span>
-          ) : (
-            <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-              <span style={{ fontSize: "12px", fontWeight: 700, color: rateColor }}>%</span>
-              <span style={{ fontSize: "12px", color: "#555" }}>{t("common:achievementRate")}</span>
-            </div>
-          )}
-        </div>
       </div>
 
       <DetailModal open={detailOpen} onClose={() => setDetailOpen(false)} title={t("salesChart:title")}>
