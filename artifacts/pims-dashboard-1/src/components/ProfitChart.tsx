@@ -12,9 +12,9 @@ const LIGHT  = chartTheme.profitLight;
 const ORANGE = chartTheme.sgaOrange;
 
 /* 대우 예시1 스타일 색상 (첨부 이미지) */
-const DW_OP  = "#2b4a8b"; // 영업이익
-const DW_SGA = "#5d7fc9"; // 판관비
-const DW_NON = "#a9c3ee"; // 영업외손익 (상단 캡)
+const DW_OP  = "#2b4a8b"; // 영업이익 (진한 남색)
+const DW_SGA = "#a9c4f0"; // 판관비 (연한 파랑 캡)
+const DW_NON = "#3f9e63"; // 영업외손익 (범례 녹색 점)
 const DW_POS = "#2e9e5b";
 const DW_NEG = "#cf4d4d";
 
@@ -144,6 +144,23 @@ export function ProfitChart() {
         </button>
       </div>
 
+      {/* 대우 예시1: 범례를 차트 위에 표시 */}
+      {daewoo && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", margin: "4px 0 6px", alignItems: "center" }}>
+          {[
+            { c: DW_OP, l: t("common:operatingProfit"), round: false },
+            { c: DW_SGA, l: t("common:sga"), round: false },
+            { c: DW_NON, l: t("profitChart:nonOperatingProfitLoss"), round: true },
+          ].map((it) => (
+            <div key={it.l} style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+              <div style={{ width: it.round ? "10px" : "13px", height: it.round ? "10px" : "11px", backgroundColor: it.c, borderRadius: it.round ? "50%" : "3px" }} />
+              <span style={{ fontSize: "11px", color: "#333", fontWeight: 600 }}>{it.l}</span>
+            </div>
+          ))}
+          <span style={{ fontSize: "11px", color: "#5a6c8e", fontWeight: 600 }}>{t("profitChart:barTotalGross")}</span>
+        </div>
+      )}
+
       {data.length === 0 ? (
         <div style={{ height: "200px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", color: "#888", textAlign: "center", padding: "0 20px" }}>
           {isError
@@ -190,29 +207,25 @@ export function ProfitChart() {
           const labelTopY = Math.min(yv(nonTop), yGross, yOrd);
 
           if (daewoo) {
-            /* ── 대우 예시1: 영업이익+판관비 스택 + 영업외손익 캡 ── */
-            const yNonTop = yv(nonTop);
-            const yNonBot = yv(nonBot);
+            /* ── 대우 예시1: 영업이익(진한색)+판관비(연한 캡) = 매출이익 · 영업외손익은 상단 고정 칩 행 ── */
             const chipText = `${d.non >= 0 ? "+" : ""}${d.non.toLocaleString("ko-KR")}`;
             const chipColor = d.non >= 0 ? DW_POS : DW_NEG;
             const chipBg = d.non >= 0 ? "#e7f5ec" : "#fdecec";
-            const chipW = Math.max(44, chipText.length * 8 + 16);
-            const top = Math.min(labelTopY, yNonTop);
+            const chipW = Math.max(48, chipText.length * 8 + 18);
+            const capTop = yGross;               // 막대 전체(매출이익) 상단
+            const opTop = yv(d.op);
             return (
               <g key={d.m}>
-                {/* 판관비: op → gross (음수 op 포함 실제 구간) */}
-                <rect x={bx} y={Math.min(yGross, yv(d.op))} width={barW} height={Math.abs(yv(d.op) - yGross)} fill={DW_SGA} />
                 {/* 영업이익: 0 → op (음수면 0선 아래로) */}
-                <rect x={bx} y={Math.min(yv(0), yv(d.op))} width={barW} height={Math.abs(yv(d.op) - yv(0))} fill={DW_OP} />
-                {/* 영업외손익 캡 (rounded) */}
-                {Math.abs(yNonBot - yNonTop) > 0.5 && (
-                  <rect x={bx} y={yNonTop} width={barW} height={Math.max(yNonBot - yNonTop, 3)} rx={5} fill={DW_NON} />
-                )}
-                {/* 상단 라벨: 영업외손익 칩 → 매출이익 값 → 비율 */}
-                <rect x={cx - chipW / 2} y={top - 78} width={chipW} height={22} rx={11} fill={chipBg} />
-                <text x={cx} y={top - 63} textAnchor="middle" fontSize={fs(14)} fontWeight="700" fill={chipColor}>{chipText}</text>
-                <text x={cx} y={top - 32} textAnchor="middle" fontSize={fs(19)} fontWeight="700" fill="#1a2d4d">{gross.toLocaleString("ko-KR")}</text>
-                <text x={cx} y={top - 12} textAnchor="middle" fontSize={fs(14)} fill="#8a99b5">{d.totalPct}</text>
+                <rect x={bx} y={Math.min(yv(0), opTop)} width={barW} height={Math.abs(opTop - yv(0))} rx={7} fill={DW_OP} />
+                {/* 판관비 캡: op → gross */}
+                <rect x={bx} y={Math.min(capTop, opTop)} width={barW} height={Math.abs(opTop - capTop)} rx={7} fill={DW_SGA} />
+                {/* 매출이익 값 + 비율 (막대 바로 위) */}
+                <text x={cx} y={Math.min(capTop, opTop) - 28} textAnchor="middle" fontSize={fs(19)} fontWeight="700" fill="#1a2d4d">{gross.toLocaleString("ko-KR")}</text>
+                <text x={cx} y={Math.min(capTop, opTop) - 10} textAnchor="middle" fontSize={fs(14)} fill="#64748b">{d.totalPct}</text>
+                {/* 영업외손익 칩 — 상단 고정 행 */}
+                <rect x={cx - chipW / 2} y={-78} width={chipW} height={22} rx={11} fill={chipBg} />
+                <text x={cx} y={-63} textAnchor="middle" fontSize={fs(14)} fontWeight="700" fill={chipColor}>{chipText}</text>
                 {/* 월 + 영업이익률 */}
                 <text x={cx} y={Y0 + 30} textAnchor="middle" fontSize={fs(16)} fontWeight="600" fill="#333">{d.m}</text>
                 <text x={cx} y={Y0 + 56} textAnchor="middle" fontSize={fs(15)} fontWeight="700" fill="#2e5bdb">{d.opPct}</text>
@@ -280,7 +293,7 @@ export function ProfitChart() {
         {/* 대우 예시1: 좌측 행 라벨 */}
         {daewoo && (
           <>
-            <text x={plotLeft - 12} y={-55} textAnchor="end" fontSize={fs(14)} fill="#8a99b5">{t("profitChart:nonOperatingProfitLoss")}</text>
+            <text x={plotLeft - 12} y={-62} textAnchor="end" fontSize={fs(14)} fill="#8a99b5">{t("profitChart:nonOperatingProfitLoss")}</text>
             <text x={plotLeft - 12} y={Y0 + 56} textAnchor="end" fontSize={fs(14)} fill="#8a99b5">{t("profitChart:operatingMarginRate")}</text>
           </>
         )}
@@ -304,22 +317,8 @@ export function ProfitChart() {
       </svg>
       )}
 
-      {/* Legend */}
-      {daewoo ? (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", marginTop: "6px", justifyContent: "center", alignItems: "center" }}>
-          {[
-            { c: DW_OP, l: t("common:operatingProfit") },
-            { c: DW_SGA, l: t("common:sga") },
-            { c: DW_NON, l: t("profitChart:nonOperatingProfitLoss") },
-          ].map((it) => (
-            <div key={it.l} style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-              <div style={{ width: "13px", height: "11px", backgroundColor: it.c, borderRadius: "3px" }} />
-              <span style={{ fontSize: "11px", color: "#333" }}>{it.l}</span>
-            </div>
-          ))}
-          <span style={{ fontSize: "11px", color: "#8a99b5" }}>{t("profitChart:barTotalGross")}</span>
-        </div>
-      ) : (
+      {/* Legend (기존 스타일: 차트 아래) */}
+      {!daewoo && (
       <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginTop: "6px", justifyContent: "center" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
           <div style={{ width: "14px", height: "11px", backgroundColor: LIGHT, border: `1.5px solid ${NAVY}`, borderRadius: "2px" }} />
