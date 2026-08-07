@@ -130,6 +130,10 @@ export function ProfitChart() {
       border: "1px solid #e2e9f3",
       borderRadius: "6px",
       padding: "10px 12px",
+      height: "100%",
+      boxSizing: "border-box",
+      display: "flex",
+      flexDirection: "column",
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
@@ -169,8 +173,11 @@ export function ProfitChart() {
         </div>
       ) : (
       <svg
-        viewBox={daewoo ? "0 -85 1000 560" : "0 0 1000 445"}
-        style={{ width: "100%", display: "block" }}
+        viewBox={daewoo ? "0 -85 1000 545" : "0 0 1000 445"}
+        style={daewoo
+          ? { width: "100%", flex: 1, minHeight: 0, display: "block" }
+          : { width: "100%", display: "block" }}
+        preserveAspectRatio={daewoo ? "xMidYMid meet" : undefined}
         onMouseLeave={() => setHoveredIdx(null)}
       >
         <defs>
