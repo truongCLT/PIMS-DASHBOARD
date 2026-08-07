@@ -8,6 +8,9 @@ import {
   mrAnnualTable,
   mrPnlTable,
   mrCommentsTable,
+  divisionsTable,
+  companiesTable,
+  pdOverviewTable,
 } from "@workspace/db";
 import {
   GetMgmtreportSummaryResponse,
@@ -23,6 +26,8 @@ import {
   RevertMgmtreportImportBody,
   RevertMgmtreportImportResponse,
   UpdateMgmtreportProjectStatusBody,
+  UpdateMgmtreportProjectDivisionBody,
+  UpdateMgmtreportProjectDivisionResponse,
 } from "@workspace/api-zod";
 import {
   parseMgmtreportWorkbook,
@@ -247,6 +252,16 @@ router.get("/mgmtreport/projects", async (req, res) => {
       .from(mrMonthlyTable)
       .where(eq(mrMonthlyTable.year, year));
     const annual = await db.select().from(mrAnnualTable);
+    const divisions = await db.select().from(divisionsTable);
+    const companies = await db.select().from(companiesTable);
+    const pdOverviewNames = await db.select({ projectName: pdOverviewTable.projectName }).from(pdOverviewTable);
+    type DivisionRow = typeof divisionsTable.$inferSelect;
+    type CompanyRow = typeof companiesTable.$inferSelect;
+    const divisionById = new Map<number, DivisionRow>(divisions.map((d: DivisionRow) => [d.id, d]));
+    const companyById = new Map<number, CompanyRow>(companies.map((c: CompanyRow) => [c.id, c]));
+    // pd_overview에 행이 없으면 SPC/본사 등 PIMSVINA 상 실제 현장 계약 데이터가 없는 관리 항목일 가능성이 높음
+    // (FLDDVSCODE IN ('H','S') 제외 - dashboard_pd_overview_1q.jsp 참고). 프론트에서 "데이터 입력 필요" 안내에 사용.
+    const namesWithPdOverview = new Set(pdOverviewNames.map((r: { projectName: string }) => r.projectName));
 
     type Proj = {
       name: string;
@@ -258,10 +273,16 @@ router.get("/mgmtreport/projects", async (req, res) => {
       cogsPlan: number[];
       cogsActual: number[];
       annual: { year: number; scenario: string; revenue: number; cogs: number }[];
+      businessType: "시공" | "용역" | null;
+      companyLabel: string | null;
+      divisionLabel: string | null;
+      hasPimsvinaDetail: boolean;
     };
     const byId = new Map<number, Proj>();
     for (const p of projects) {
       if (!includeGroups && p.groupLabel != null) continue;
+      const division = p.divisionId != null ? divisionById.get(p.divisionId) : undefined;
+      const company = division != null ? companyById.get(division.companyId) : undefined;
       byId.set(p.id, {
         name: p.name,
         siteCode: p.siteCode,
@@ -272,6 +293,10 @@ router.get("/mgmtreport/projects", async (req, res) => {
         cogsPlan: Array(12).fill(0),
         cogsActual: Array(12).fill(0),
         annual: [],
+        businessType: (division?.businessType as "시공" | "용역" | undefined) ?? null,
+        companyLabel: company?.label ?? null,
+        divisionLabel: division?.label ?? null,
+        hasPimsvinaDetail: namesWithPdOverview.has(p.name),
       });
     }
     for (const m of monthly) {
@@ -341,6 +366,56 @@ router.put("/mgmtreport/projects/status", requireAdmin, async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "failed to update mgmtreport project status");
     res.status(500).json({ error: "프로젝트 상태 변경에 실패했습니다." });
+  }
+});
+
+router.patch("/mgmtreport/projects/:name/division", requireAdmin, async (req, res) => {
+  const parsed = UpdateMgmtreportProjectDivisionBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "잘못된 요청 본문입니다." });
+    return;
+  }
+  const { name } = req.params;
+  const { divisionId } = parsed.data;
+  try {
+    const [updated] = await db
+      .update(mrProjectsTable)
+      .set({ divisionId })
+      .where(eq(mrProjectsTable.name, name))
+      .returning();
+    if (!updated) {
+      res.status(404).json({ error: "해당 이름의 프로젝트를 찾을 수 없습니다." });
+      return;
+    }
+
+    const division = divisionId != null ? (await db.select().from(divisionsTable).where(eq(divisionsTable.id, divisionId)))[0] : undefined;
+    const company = division ? (await db.select().from(companiesTable).where(eq(companiesTable.id, division.companyId)))[0] : undefined;
+    const [pdOverviewRow] = await db
+      .select({ projectName: pdOverviewTable.projectName })
+      .from(pdOverviewTable)
+      .where(eq(pdOverviewTable.projectName, updated.name));
+
+    req.log.info({ name, divisionId }, "mgmtreport project division updated");
+    res.json(
+      UpdateMgmtreportProjectDivisionResponse.parse({
+        name: updated.name,
+        siteCode: updated.siteCode,
+        status: updated.status,
+        isGroup: updated.groupLabel != null,
+        revenuePlan: Array(12).fill(0),
+        revenueActual: Array(12).fill(0),
+        cogsPlan: Array(12).fill(0),
+        cogsActual: Array(12).fill(0),
+        annual: [],
+        businessType: division?.businessType ?? null,
+        companyLabel: company?.label ?? null,
+        divisionLabel: division?.label ?? null,
+        hasPimsvinaDetail: pdOverviewRow != null,
+      }),
+    );
+  } catch (err) {
+    req.log.error({ err }, "failed to update mgmtreport project division");
+    res.status(500).json({ error: "프로젝트 부문 매핑 변경에 실패했습니다." });
   }
 });
 

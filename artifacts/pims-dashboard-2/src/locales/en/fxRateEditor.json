@@ -4,5 +4,11 @@
   "popupTitle": "FX Rate Settings (Based on USD)",
   "saveFailed": "Failed to save the exchange rate.",
   "invalidNumber": "Please enter a number greater than 0.",
-  "saving": "Saving…"
+  "saving": "Saving…",
+  "historyTitle": "Monthly FX Rate History",
+  "historyEmpty": "No history saved yet.",
+  "addMonth": "Add / Update Month",
+  "yearLabel": "Year",
+  "monthLabel": "Month",
+  "historySaveFailed": "Failed to save the rate history entry."
 }

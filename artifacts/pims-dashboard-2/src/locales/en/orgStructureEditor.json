@@ -1,0 +1,14 @@
+{
+  "buttonTitle": "Org Structure Settings (Admin)",
+  "buttonLabel": "Org Structure",
+  "popupTitle": "Company / Division Structure",
+  "newCompany": "New Company",
+  "newDivision": "New Division",
+  "addCompany": "Add Company",
+  "addDivision": "Add Division",
+  "saving": "Saving…",
+  "saveFailed": "Failed to save the org structure.",
+  "assignFailed": "Failed to assign the division.",
+  "unmappedTitle": "Unmapped Projects ({{count}})",
+  "selectDivision": "Select division"
+}

@@ -34,6 +34,7 @@ import type {
   CreateMgmtreportComment,
   CreateProjectdetailComment,
   ErrorEnvelope,
+  FxRateHistoryEntry,
   FxRates,
   GetCashflowAggregateParams,
   GetCashflowMonthlyParams,
@@ -49,10 +50,13 @@ import type {
   MgmtreportImportHistoryList,
   MgmtreportImportPreview,
   MgmtreportImportResult,
+  MgmtreportProject,
   MgmtreportProjectStatusUpdate,
   MgmtreportProjects,
   MgmtreportRevertResult,
   MgmtreportSummary,
+  OrgStructure,
+  OrgStructureInput,
   PreviewCashflowImportBody,
   PreviewMgmtreportImportBody,
   PreviewSalescostImportBody,
@@ -65,6 +69,7 @@ import type {
   SalescostSites,
   SalescostSummary,
   UpdateMgmtreportComment,
+  UpdateMgmtreportProjectDivisionBody,
   UpdateProjectdetailComment,
   UploadUrlRequest,
   UploadUrlResponse
@@ -539,6 +544,374 @@ export const usePutFxRates = <TError = ErrorType<ApiErrorMessage>,
         TContext
       > => {
       return useMutation(getPutFxRatesMutationOptions(options));
+    }
+
+export const getGetFxRatesHistoryUrl = () => {
+
+
+
+
+  return `/api/fxrates/history`
+}
+
+/**
+ * @summary Full monthly FX rate history (all currencies, all declared months)
+ */
+export const getFxRatesHistory = async ( options?: RequestInit): Promise<FxRateHistoryEntry[]> => {
+
+  return customFetch<FxRateHistoryEntry[]>(getGetFxRatesHistoryUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetFxRatesHistoryQueryKey = () => {
+    return [
+    `/api/fxrates/history`
+    ] as const;
+    }
+
+
+export const getGetFxRatesHistoryQueryOptions = <TData = Awaited<ReturnType<typeof getFxRatesHistory>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFxRatesHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFxRatesHistoryQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFxRatesHistory>>> = ({ signal }) => getFxRatesHistory({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFxRatesHistory>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetFxRatesHistoryQueryResult = NonNullable<Awaited<ReturnType<typeof getFxRatesHistory>>>
+export type GetFxRatesHistoryQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Full monthly FX rate history (all currencies, all declared months)
+ */
+
+export function useGetFxRatesHistory<TData = Awaited<ReturnType<typeof getFxRatesHistory>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFxRatesHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetFxRatesHistoryQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getPutFxRatesHistoryUrl = () => {
+
+
+
+
+  return `/api/fxrates/history`
+}
+
+/**
+ * @summary Upsert one month's FX rate for one currency (admin only)
+ */
+export const putFxRatesHistory = async (fxRateHistoryEntry: FxRateHistoryEntry, options?: RequestInit): Promise<FxRateHistoryEntry> => {
+
+  return customFetch<FxRateHistoryEntry>(getPutFxRatesHistoryUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(fxRateHistoryEntry)
+  }
+);}
+
+
+
+
+
+export const getPutFxRatesHistoryMutationOptions = <TError = ErrorType<ApiErrorMessage>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putFxRatesHistory>>, TError,{data: BodyType<FxRateHistoryEntry>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof putFxRatesHistory>>, TError,{data: BodyType<FxRateHistoryEntry>}, TContext> => {
+
+const mutationKey = ['putFxRatesHistory'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof putFxRatesHistory>>, {data: BodyType<FxRateHistoryEntry>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  putFxRatesHistory(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PutFxRatesHistoryMutationResult = NonNullable<Awaited<ReturnType<typeof putFxRatesHistory>>>
+    export type PutFxRatesHistoryMutationBody = BodyType<FxRateHistoryEntry>
+    export type PutFxRatesHistoryMutationError = ErrorType<ApiErrorMessage>
+
+    /**
+ * @summary Upsert one month's FX rate for one currency (admin only)
+ */
+export const usePutFxRatesHistory = <TError = ErrorType<ApiErrorMessage>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putFxRatesHistory>>, TError,{data: BodyType<FxRateHistoryEntry>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof putFxRatesHistory>>,
+        TError,
+        {data: BodyType<FxRateHistoryEntry>},
+        TContext
+      > => {
+      return useMutation(getPutFxRatesHistoryMutationOptions(options));
+    }
+
+export const getGetOrgStructureUrl = () => {
+
+
+
+
+  return `/api/orgstructure`
+}
+
+/**
+ * @summary Company/division org structure (companies with nested divisions)
+ */
+export const getOrgStructure = async ( options?: RequestInit): Promise<OrgStructure> => {
+
+  return customFetch<OrgStructure>(getGetOrgStructureUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetOrgStructureQueryKey = () => {
+    return [
+    `/api/orgstructure`
+    ] as const;
+    }
+
+
+export const getGetOrgStructureQueryOptions = <TData = Awaited<ReturnType<typeof getOrgStructure>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOrgStructure>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetOrgStructureQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getOrgStructure>>> = ({ signal }) => getOrgStructure({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getOrgStructure>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetOrgStructureQueryResult = NonNullable<Awaited<ReturnType<typeof getOrgStructure>>>
+export type GetOrgStructureQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Company/division org structure (companies with nested divisions)
+ */
+
+export function useGetOrgStructure<TData = Awaited<ReturnType<typeof getOrgStructure>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOrgStructure>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetOrgStructureQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getPutOrgStructureUrl = () => {
+
+
+
+
+  return `/api/orgstructure`
+}
+
+/**
+ * @summary Replace the whole companies/divisions tree (admin only)
+ */
+export const putOrgStructure = async (orgStructureInput: OrgStructureInput, options?: RequestInit): Promise<OrgStructure> => {
+
+  return customFetch<OrgStructure>(getPutOrgStructureUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(orgStructureInput)
+  }
+);}
+
+
+
+
+
+export const getPutOrgStructureMutationOptions = <TError = ErrorType<ApiErrorMessage>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putOrgStructure>>, TError,{data: BodyType<OrgStructureInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof putOrgStructure>>, TError,{data: BodyType<OrgStructureInput>}, TContext> => {
+
+const mutationKey = ['putOrgStructure'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof putOrgStructure>>, {data: BodyType<OrgStructureInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  putOrgStructure(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PutOrgStructureMutationResult = NonNullable<Awaited<ReturnType<typeof putOrgStructure>>>
+    export type PutOrgStructureMutationBody = BodyType<OrgStructureInput>
+    export type PutOrgStructureMutationError = ErrorType<ApiErrorMessage>
+
+    /**
+ * @summary Replace the whole companies/divisions tree (admin only)
+ */
+export const usePutOrgStructure = <TError = ErrorType<ApiErrorMessage>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putOrgStructure>>, TError,{data: BodyType<OrgStructureInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof putOrgStructure>>,
+        TError,
+        {data: BodyType<OrgStructureInput>},
+        TContext
+      > => {
+      return useMutation(getPutOrgStructureMutationOptions(options));
+    }
+
+export const getUpdateMgmtreportProjectDivisionUrl = (name: string,) => {
+
+
+
+
+  return `/api/mgmtreport/projects/${name}/division`
+}
+
+/**
+ * @summary Assign a project to a division (admin only)
+ */
+export const updateMgmtreportProjectDivision = async (name: string,
+    updateMgmtreportProjectDivisionBody: UpdateMgmtreportProjectDivisionBody, options?: RequestInit): Promise<MgmtreportProject> => {
+
+  return customFetch<MgmtreportProject>(getUpdateMgmtreportProjectDivisionUrl(name),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(updateMgmtreportProjectDivisionBody)
+  }
+);}
+
+
+
+
+
+export const getUpdateMgmtreportProjectDivisionMutationOptions = <TError = ErrorType<ApiErrorMessage>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateMgmtreportProjectDivision>>, TError,{name: string;data: BodyType<UpdateMgmtreportProjectDivisionBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateMgmtreportProjectDivision>>, TError,{name: string;data: BodyType<UpdateMgmtreportProjectDivisionBody>}, TContext> => {
+
+const mutationKey = ['updateMgmtreportProjectDivision'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateMgmtreportProjectDivision>>, {name: string;data: BodyType<UpdateMgmtreportProjectDivisionBody>}> = (props) => {
+          const {name,data} = props ?? {};
+
+          return  updateMgmtreportProjectDivision(name,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateMgmtreportProjectDivisionMutationResult = NonNullable<Awaited<ReturnType<typeof updateMgmtreportProjectDivision>>>
+    export type UpdateMgmtreportProjectDivisionMutationBody = BodyType<UpdateMgmtreportProjectDivisionBody>
+    export type UpdateMgmtreportProjectDivisionMutationError = ErrorType<ApiErrorMessage>
+
+    /**
+ * @summary Assign a project to a division (admin only)
+ */
+export const useUpdateMgmtreportProjectDivision = <TError = ErrorType<ApiErrorMessage>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateMgmtreportProjectDivision>>, TError,{name: string;data: BodyType<UpdateMgmtreportProjectDivisionBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateMgmtreportProjectDivision>>,
+        TError,
+        {name: string;data: BodyType<UpdateMgmtreportProjectDivisionBody>},
+        TContext
+      > => {
+      return useMutation(getUpdateMgmtreportProjectDivisionMutationOptions(options));
     }
 
 export const getUpdateMgmtreportCommentUrl = (id: number,) => {

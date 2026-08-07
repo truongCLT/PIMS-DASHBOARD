@@ -190,6 +190,138 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiErrorMessage"
+  /fxrates/history:
+    get:
+      operationId: getFxRatesHistory
+      tags: [fxrates]
+      summary: Full monthly FX rate history (all currencies, all declared months)
+      responses:
+        "200":
+          description: FX rate history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FxRateHistoryEntry"
+    put:
+      operationId: putFxRatesHistory
+      tags: [fxrates]
+      summary: Upsert one month's FX rate for one currency (admin only)
+      security:
+        - adminBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FxRateHistoryEntry"
+      responses:
+        "200":
+          description: Saved entry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FxRateHistoryEntry"
+        "400":
+          description: Invalid payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorMessage"
+        "401":
+          description: Admin authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorMessage"
+  /orgstructure:
+    get:
+      operationId: getOrgStructure
+      tags: [orgstructure]
+      summary: Company/division org structure (companies with nested divisions)
+      responses:
+        "200":
+          description: Org structure
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrgStructure"
+    put:
+      operationId: putOrgStructure
+      tags: [orgstructure]
+      summary: Replace the whole companies/divisions tree (admin only)
+      security:
+        - adminBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrgStructureInput"
+      responses:
+        "200":
+          description: Saved org structure
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrgStructure"
+        "400":
+          description: Invalid payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorMessage"
+        "401":
+          description: Admin authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorMessage"
+  /mgmtreport/projects/{name}/division:
+    patch:
+      operationId: updateMgmtreportProjectDivision
+      tags: [mgmtreport]
+      summary: Assign a project to a division (admin only)
+      security:
+        - adminBearer: []
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMgmtreportProjectDivisionBody"
+      responses:
+        "200":
+          description: Updated project
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MgmtreportProject"
+        "400":
+          description: Invalid payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorMessage"
+        "401":
+          description: Admin authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorMessage"
+        "404":
+          description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorMessage"
   /mgmtreport/comments/{id}:
     patch:
       operationId: updateMgmtreportComment
@@ -1065,6 +1197,99 @@ components:
           type: number
           exclusiveMinimum: 0
       required: [usd, krw, vnd]
+    FxRateHistoryEntry:
+      type: object
+      description: 특정 통화·연·월의 환율 (1 USD 기준)
+      properties:
+        currency:
+          type: string
+          enum: [USD, KRW, VND]
+        year:
+          type: integer
+        month:
+          type: integer
+          minimum: 1
+          maximum: 12
+        rate:
+          type: number
+          exclusiveMinimum: 0
+      required: [currency, year, month, rate]
+    Division:
+      type: object
+      properties:
+        id:
+          type: integer
+        companyId:
+          type: integer
+        label:
+          type: string
+        businessType:
+          type: string
+          enum: [시공, 용역]
+        sortOrder:
+          type: integer
+      required: [id, companyId, label, businessType, sortOrder]
+    Company:
+      type: object
+      properties:
+        id:
+          type: integer
+        label:
+          type: string
+        sortOrder:
+          type: integer
+        divisions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Division"
+      required: [id, label, sortOrder, divisions]
+    OrgStructure:
+      type: object
+      properties:
+        companies:
+          type: array
+          items:
+            $ref: "#/components/schemas/Company"
+      required: [companies]
+    DivisionInput:
+      type: object
+      properties:
+        label:
+          type: string
+        businessType:
+          type: string
+          enum: [시공, 용역]
+        sortOrder:
+          type: integer
+      required: [label, businessType, sortOrder]
+    CompanyInput:
+      type: object
+      properties:
+        label:
+          type: string
+        sortOrder:
+          type: integer
+        divisions:
+          type: array
+          items:
+            $ref: "#/components/schemas/DivisionInput"
+      required: [label, sortOrder, divisions]
+    OrgStructureInput:
+      type: object
+      properties:
+        companies:
+          type: array
+          items:
+            $ref: "#/components/schemas/CompanyInput"
+      required: [companies]
+    UpdateMgmtreportProjectDivisionBody:
+      type: object
+      properties:
+        divisionId:
+          type: integer
+          nullable: true
+          description: null이면 매핑 해제 (기존 키워드 추정 방식으로 폴백)
+      required: [divisionId]
     ProjectdetailComment:
       type: object
       properties:
@@ -1576,7 +1801,21 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/MgmtreportAnnualPoint"
-      required: [name, isGroup, revenuePlan, revenueActual, cogsPlan, cogsActual, annual]
+        businessType:
+          type: string
+          enum: [시공, 용역]
+          nullable: true
+          description: 회사/부문 구조에 명시적으로 매핑된 경우만 채워짐. null이면 프론트에서 기존 키워드 추정 방식(classifyMrProject)으로 폴백.
+        companyLabel:
+          type: string
+          nullable: true
+        divisionLabel:
+          type: string
+          nullable: true
+        hasPimsvinaDetail:
+          type: boolean
+          description: pd_overview에 이 프로젝트의 행이 있는지 여부. false면 SPC/본사 등 실제 현장 계약 데이터가 PIMSVINA에 없는 관리 항목일 가능성이 높음 - 데이터 입력 탭에서 직접 입력 필요.
+      required: [name, isGroup, revenuePlan, revenueActual, cogsPlan, cogsActual, annual, hasPimsvinaDetail]
     MgmtreportProjects:
       type: object
       properties:

@@ -28,6 +28,86 @@ export interface FxRates {
   vnd: number;
 }
 
+export type FxRateHistoryEntryCurrency = typeof FxRateHistoryEntryCurrency[keyof typeof FxRateHistoryEntryCurrency];
+
+
+export const FxRateHistoryEntryCurrency = {
+  USD: 'USD',
+  KRW: 'KRW',
+  VND: 'VND',
+} as const;
+
+/**
+ * 특정 통화·연·월의 환율 (1 USD 기준)
+ */
+export interface FxRateHistoryEntry {
+  currency: FxRateHistoryEntryCurrency;
+  year: number;
+  /**
+     * @minimum 1
+     * @maximum 12
+     */
+  month: number;
+  /** @exclusiveMinimum 0 */
+  rate: number;
+}
+
+export type DivisionBusinessType = typeof DivisionBusinessType[keyof typeof DivisionBusinessType];
+
+
+export const DivisionBusinessType = {
+  시공: '시공',
+  용역: '용역',
+} as const;
+
+export interface Division {
+  id: number;
+  companyId: number;
+  label: string;
+  businessType: DivisionBusinessType;
+  sortOrder: number;
+}
+
+export interface Company {
+  id: number;
+  label: string;
+  sortOrder: number;
+  divisions: Division[];
+}
+
+export interface OrgStructure {
+  companies: Company[];
+}
+
+export type DivisionInputBusinessType = typeof DivisionInputBusinessType[keyof typeof DivisionInputBusinessType];
+
+
+export const DivisionInputBusinessType = {
+  시공: '시공',
+  용역: '용역',
+} as const;
+
+export interface DivisionInput {
+  label: string;
+  businessType: DivisionInputBusinessType;
+  sortOrder: number;
+}
+
+export interface CompanyInput {
+  label: string;
+  sortOrder: number;
+  divisions: DivisionInput[];
+}
+
+export interface OrgStructureInput {
+  companies: CompanyInput[];
+}
+
+export interface UpdateMgmtreportProjectDivisionBody {
+  /** null이면 매핑 해제 (기존 키워드 추정 방식으로 폴백) */
+  divisionId: number | null;
+}
+
 export type ProjectdetailCommentTab = typeof ProjectdetailCommentTab[keyof typeof ProjectdetailCommentTab];
 
 
@@ -372,6 +452,17 @@ export const MgmtreportProjectStatus = {
   closed: 'closed',
 } as const;
 
+/**
+ * 회사/부문 구조에 명시적으로 매핑된 경우만 채워짐. null이면 프론트에서 기존 키워드 추정 방식(classifyMrProject)으로 폴백.
+ */
+export type MgmtreportProjectBusinessType = typeof MgmtreportProjectBusinessType[keyof typeof MgmtreportProjectBusinessType] | null;
+
+
+export const MgmtreportProjectBusinessType = {
+  시공: '시공',
+  용역: '용역',
+} as const;
+
 export interface MgmtreportProject {
   name: string;
   siteCode?: string | null;
@@ -384,6 +475,10 @@ export interface MgmtreportProject {
   cogsPlan: number[];
   cogsActual: number[];
   annual: MgmtreportAnnualPoint[];
+  /** 회사/부문 구조에 명시적으로 매핑된 경우만 채워짐. null이면 프론트에서 기존 키워드 추정 방식(classifyMrProject)으로 폴백. */
+  businessType?: MgmtreportProjectBusinessType;
+  companyLabel?: string | null;
+  divisionLabel?: string | null;
 }
 
 export interface MgmtreportProjects {

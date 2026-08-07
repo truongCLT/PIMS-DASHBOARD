@@ -16,9 +16,11 @@ import { DetailModal, DetailDataTable } from "./DetailModal";
 import {
   useGetCashflowAggregate,
   getGetCashflowAggregateQueryKey,
+  useListMgmtreportProjects,
+  getListMgmtreportProjectsQueryKey,
 } from "@workspace/api-client-react";
 import type { DashboardScope } from "./Sidebar";
-import { PROJECT_GROUPS } from "../data/projects";
+import { classifyMrProject } from "../data/projects";
 import { getCashflowProjectRef } from "../data/cashflowProjectMap";
 import {
   useDashboardFilters,
@@ -38,11 +40,13 @@ const BASE_SCOPE_PARAMS: Record<string, { division?: string; divisions?: string 
   용역: { division: "용역 사업" },
 };
 
-// 진행중 = 해당 사업부 하위에 나열된 프로젝트들의 자금수지 합산
-function getOngoingRefs(divisionLabel: "시공" | "용역") {
-  const decv = PROJECT_GROUPS.find((g) => g.label === "DECV");
-  const division = decv?.divisions.find((d) => d.label === divisionLabel);
-  const refs = (division?.projects ?? [])
+type MrProjectLite = { name: string; status?: string; isGroup?: boolean; businessType?: "시공" | "용역" | null };
+
+// 진행중 = 해당 사업부(businessType, 서버 매핑 우선·미매핑시 키워드 추정) 진행중 프로젝트들의 자금수지 합산
+function getOngoingRefs(divisionLabel: "시공" | "용역", mrProjects: MrProjectLite[]) {
+  const refs = mrProjects
+    .filter((p) => !p.isGroup && (p.status ?? "ongoing") !== "closed")
+    .filter((p) => (p.businessType ?? classifyMrProject(p.name)) === divisionLabel)
     .map((p) => getCashflowProjectRef(p.name))
     .filter((r): r is NonNullable<typeof r> => r != null);
   return refs;
@@ -79,7 +83,7 @@ function getScopeLabel(scope: DashboardScope, t: TFunc): string {
   }
 }
 
-function getScopeConfig(scope: DashboardScope, t: TFunc): ScopeQueryConfig {
+function getScopeConfig(scope: DashboardScope, t: TFunc, mrProjects: MrProjectLite[]): ScopeQueryConfig {
   if (scope === "시공-종료" || scope === "용역-종료") {
     return {
       label: getScopeLabel(scope, t),
@@ -89,7 +93,7 @@ function getScopeConfig(scope: DashboardScope, t: TFunc): ScopeQueryConfig {
   }
   if (scope === "시공-진행중" || scope === "용역-진행중") {
     const divisionLabel = scope.startsWith("시공") ? "시공" : "용역";
-    const refs = getOngoingRefs(divisionLabel);
+    const refs = getOngoingRefs(divisionLabel, mrProjects);
     if (refs.length === 0) {
       return {
         label: getScopeLabel(scope, t),
@@ -140,13 +144,17 @@ function monthLabel(ym: string, t: TFunc): string {
 export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) {
   const { t } = useTranslation(["cashFlowChart", "common"]);
   const [detailOpen, setDetailOpen] = useState(false);
-  const config = getScopeConfig(scope, t);
+  const mrProjectsQuery = useListMgmtreportProjects(
+    { year: REPORT_YEAR },
+    { query: { queryKey: getListMgmtreportProjectsQueryKey({ year: REPORT_YEAR }) } },
+  );
+  const config = getScopeConfig(scope, t, mrProjectsQuery.data?.projects ?? []);
   const filters = useDashboardFilters();
   const { from, to } = resolveMonthWindow(filters.startYm, filters.endYm);
   const emptyRange = from > to;
   const projectSelected = filters.project !== "All";
   const compact = filters.unitIndex === 1;
-  const convert = makeConverter(filters.currency, filters.unitIndex, filters.fxRates);
+  const convert = makeConverter(filters.currency, filters.unitIndex, filters.fxRateHistory);
   const unitLabel =
     filters.currency === "USD" && filters.unitIndex === 0
       ? t("cashFlowChart:thousandUsd")
@@ -173,9 +181,9 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
   const points = query.data?.points ?? [];
   const chartData = points.map((p) => ({
     month: monthLabel(p.month, t),
-    inflow: convert(p.cashIn),
-    outflow: -convert(p.cashOut),
-    balance: convert(p.equivalent),
+    inflow: convert(p.cashIn, REPORT_YEAR, p.month),
+    outflow: -convert(p.cashOut, REPORT_YEAR, p.month),
+    balance: convert(p.equivalent, REPORT_YEAR, p.month),
   }));
   const hasData = chartData.some((d) => d.inflow !== 0 || d.outflow !== 0 || d.balance !== 0);
 

@@ -125,6 +125,136 @@ export const PutFxRatesResponse = zod.object({
 
 
 /**
+ * @summary Full monthly FX rate history (all currencies, all declared months)
+ */
+export const getFxRatesHistoryResponseMonthMax = 12;
+
+export const getFxRatesHistoryResponseRateExclusiveMin = 0;
+
+
+
+export const GetFxRatesHistoryResponseItem = zod.object({
+  "currency": zod.enum(['USD', 'KRW', 'VND']),
+  "year": zod.number(),
+  "month": zod.number().min(1).max(getFxRatesHistoryResponseMonthMax),
+  "rate": zod.number().gt(getFxRatesHistoryResponseRateExclusiveMin)
+}).describe('특정 통화·연·월의 환율 (1 USD 기준)')
+export const GetFxRatesHistoryResponse = zod.array(GetFxRatesHistoryResponseItem)
+
+
+/**
+ * @summary Upsert one month's FX rate for one currency (admin only)
+ */
+export const putFxRatesHistoryBodyMonthMax = 12;
+
+export const putFxRatesHistoryBodyRateExclusiveMin = 0;
+
+
+
+export const PutFxRatesHistoryBody = zod.object({
+  "currency": zod.enum(['USD', 'KRW', 'VND']),
+  "year": zod.number(),
+  "month": zod.number().min(1).max(putFxRatesHistoryBodyMonthMax),
+  "rate": zod.number().gt(putFxRatesHistoryBodyRateExclusiveMin)
+}).describe('특정 통화·연·월의 환율 (1 USD 기준)')
+
+export const putFxRatesHistoryResponseMonthMax = 12;
+
+export const putFxRatesHistoryResponseRateExclusiveMin = 0;
+
+
+
+export const PutFxRatesHistoryResponse = zod.object({
+  "currency": zod.enum(['USD', 'KRW', 'VND']),
+  "year": zod.number(),
+  "month": zod.number().min(1).max(putFxRatesHistoryResponseMonthMax),
+  "rate": zod.number().gt(putFxRatesHistoryResponseRateExclusiveMin)
+}).describe('특정 통화·연·월의 환율 (1 USD 기준)')
+
+
+/**
+ * @summary Company/division org structure (companies with nested divisions)
+ */
+export const GetOrgStructureResponse = zod.object({
+  "companies": zod.array(zod.object({
+  "id": zod.number(),
+  "label": zod.string(),
+  "sortOrder": zod.number(),
+  "divisions": zod.array(zod.object({
+  "id": zod.number(),
+  "companyId": zod.number(),
+  "label": zod.string(),
+  "businessType": zod.enum(['시공', '용역']),
+  "sortOrder": zod.number()
+}))
+}))
+})
+
+
+/**
+ * @summary Replace the whole companies/divisions tree (admin only)
+ */
+export const PutOrgStructureBody = zod.object({
+  "companies": zod.array(zod.object({
+  "label": zod.string(),
+  "sortOrder": zod.number(),
+  "divisions": zod.array(zod.object({
+  "label": zod.string(),
+  "businessType": zod.enum(['시공', '용역']),
+  "sortOrder": zod.number()
+}))
+}))
+})
+
+export const PutOrgStructureResponse = zod.object({
+  "companies": zod.array(zod.object({
+  "id": zod.number(),
+  "label": zod.string(),
+  "sortOrder": zod.number(),
+  "divisions": zod.array(zod.object({
+  "id": zod.number(),
+  "companyId": zod.number(),
+  "label": zod.string(),
+  "businessType": zod.enum(['시공', '용역']),
+  "sortOrder": zod.number()
+}))
+}))
+})
+
+
+/**
+ * @summary Assign a project to a division (admin only)
+ */
+export const UpdateMgmtreportProjectDivisionParams = zod.object({
+  "name": zod.coerce.string()
+})
+
+export const UpdateMgmtreportProjectDivisionBody = zod.object({
+  "divisionId": zod.number().nullable().describe('null이면 매핑 해제 (기존 키워드 추정 방식으로 폴백)')
+})
+
+export const UpdateMgmtreportProjectDivisionResponse = zod.object({
+  "name": zod.string(),
+  "siteCode": zod.string().nullish(),
+  "status": zod.enum(['ongoing', 'closed']).optional().describe('진행 상태 (ongoing=진행중, closed=종료)'),
+  "isGroup": zod.boolean().describe('True for corporate rollup rows (DECV법인 취합본)'),
+  "revenuePlan": zod.array(zod.number()),
+  "revenueActual": zod.array(zod.number()),
+  "cogsPlan": zod.array(zod.number()),
+  "cogsActual": zod.array(zod.number()),
+  "annual": zod.array(zod.object({
+  "year": zod.number(),
+  "scenario": zod.string().describe('actual (전년 실적) or forecast (전망)'),
+  "revenue": zod.number(),
+  "cogs": zod.number()
+})),
+  "businessType": zod.enum(['시공', '용역']).nullish().describe('회사\/부문 구조에 명시적으로 매핑된 경우만 채워짐. null이면 프론트에서 기존 키워드 추정 방식(classifyMrProject)으로 폴백.'),
+  "companyLabel": zod.string().nullish(),
+  "divisionLabel": zod.string().nullish()
+})
+
+
+/**
  * @summary Update a comment body (admin only)
  */
 export const UpdateMgmtreportCommentParams = zod.object({
@@ -872,7 +1002,10 @@ export const ListMgmtreportProjectsResponse = zod.object({
   "scenario": zod.string().describe('actual (전년 실적) or forecast (전망)'),
   "revenue": zod.number(),
   "cogs": zod.number()
-}))
+})),
+  "businessType": zod.enum(['시공', '용역']).nullish().describe('회사\/부문 구조에 명시적으로 매핑된 경우만 채워짐. null이면 프론트에서 기존 키워드 추정 방식(classifyMrProject)으로 폴백.'),
+  "companyLabel": zod.string().nullish(),
+  "divisionLabel": zod.string().nullish()
 }))
 })
 

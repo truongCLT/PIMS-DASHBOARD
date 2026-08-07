@@ -9,6 +9,7 @@ export {
   PreviewSalescostImportBody,
   ApplySalescostImportBody,
   AdminLoginBody,
+  UpdateMgmtreportProjectDivisionBody,
 } from "./generated/api";
 export * from './generated/api';
 export * from './generated/types';

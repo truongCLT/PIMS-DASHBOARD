@@ -2,8 +2,8 @@ import React, { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import pimsBranding from "../assets/pims-branding.png";
 import { FolderClosed } from "lucide-react";
-import { useListMgmtreportProjects } from "@workspace/api-client-react";
-import { PROJECT_GROUPS, classifyMrProject, isTestMrProject } from "../data/projects";
+import { useListMgmtreportProjects, useGetOrgStructure } from "@workspace/api-client-react";
+import { classifyMrProject, isTestMrProject, type ProjectGroup } from "../data/projects";
 import { REPORT_YEAR } from "../lib/mgmtreportData";
 import { useTheme } from "../lib/theme";
 import { LANGUAGE_LABELS, SUPPORTED_LANGUAGES } from "../lib/i18n";
@@ -47,7 +47,10 @@ function treeLabel(label: string, t: TFn): string {
   return key ? t(key) : label;
 }
 
-function buildTreeData(mrProjects: { name: string; status?: string }[]): TreeItem[] {
+function buildTreeData(
+  mrProjects: { name: string; status?: string; businessType?: "시공" | "용역" | null }[],
+  projectGroups: ProjectGroup[],
+): TreeItem[] {
   const byDivision: Record<
     "시공" | "용역",
     { ongoing: string[]; closed: string[] }
@@ -57,7 +60,7 @@ function buildTreeData(mrProjects: { name: string; status?: string }[]): TreeIte
   };
   for (const p of mrProjects) {
     const bucket = p.status === "closed" ? "closed" : "ongoing";
-    byDivision[classifyMrProject(p.name)][bucket].push(p.name);
+    byDivision[p.businessType ?? classifyMrProject(p.name)][bucket].push(p.name);
   }
   // 테스트 프로젝트는 각 버킷 최상단에 (안정 정렬로 나머지 순서 유지)
   for (const division of ["시공", "용역"] as const) {
@@ -67,7 +70,7 @@ function buildTreeData(mrProjects: { name: string; status?: string }[]): TreeIte
       );
     }
   }
-  return PROJECT_GROUPS.map((group) => ({
+  return projectGroups.map((group) => ({
     label: group.label,
     scope: group.label === "DECV" ? ("전체" as DashboardScope) : undefined,
     children: group.divisions.map((division) => ({
@@ -221,12 +224,20 @@ export function Sidebar({
 }) {
   const { t, i18n } = useTranslation(["sidebar", "common"]);
   const projectsQuery = useListMgmtreportProjects({ year: REPORT_YEAR });
+  const orgQuery = useGetOrgStructure();
+  const projectGroups: ProjectGroup[] = useMemo(() => {
+    const companies = orgQuery.data?.companies ?? [];
+    return companies.map((c) => ({
+      label: c.label,
+      divisions: c.divisions.map((d) => ({ label: d.label })),
+    }));
+  }, [orgQuery.data]);
   const treeData = useMemo(() => {
     const projects = (projectsQuery.data?.projects ?? [])
       .filter((p) => !p.isGroup)
-      .map((p) => ({ name: p.name, status: p.status }));
-    return buildTreeData(projects);
-  }, [projectsQuery.data]);
+      .map((p) => ({ name: p.name, status: p.status, businessType: p.businessType }));
+    return buildTreeData(projects, projectGroups);
+  }, [projectsQuery.data, projectGroups]);
 
   const { theme: T } = useTheme();
   const isTotalSelected = selectedProject == null && selectedScope === "전체";

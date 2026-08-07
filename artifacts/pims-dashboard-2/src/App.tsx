@@ -6,7 +6,7 @@ import { ProjectDashboard } from "./components/ProjectDashboard";
 import { ServiceProjectDashboard } from "./components/ServiceProjectDashboard";
 import { AdminLoginScreen } from "./components/AdminLoginScreen";
 import { AdminAuthProvider } from "./lib/adminAuth";
-import { getProjectDivision } from "./data/projects";
+import { useProjectBusinessType } from "./lib/mgmtreportData";
 import { ThemeProvider, THEMES, useTheme } from "./lib/theme";
 
 /* ── Floating theme switcher ─────────────────────────────────────── */
@@ -109,7 +109,7 @@ function AppInner() {
   const [selectedProject, setSelectedProject] = useState<string | null>(null);
   const [selectedScope, setSelectedScope] = useState<DashboardScope>("전체");
   const [adminLoginOpen, setAdminLoginOpen] = useState(false);
-  const division = selectedProject ? getProjectDivision(selectedProject) : null;
+  const division = useProjectBusinessType(selectedProject);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh", overflow: "hidden", fontFamily: "'Noto Sans KR', 'Inter', sans-serif" }}>

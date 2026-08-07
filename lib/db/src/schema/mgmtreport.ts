@@ -12,6 +12,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
+import { divisionsTable } from "./orgstructure";
 
 // 경영관리보고회 (Management Report) — per-project plan vs actual/forecast, 단위: 천 USD
 
@@ -25,6 +26,8 @@ export const mrProjectsTable = pgTable(
     groupLabel: text("group_label"), // e.g. 'DECV법인 취합본 [법인전체]' | null for regular projects
     sortOrder: integer("sort_order").notNull().default(0),
     status: text("status").notNull().default("ongoing"), // 'ongoing'(진행중) | 'closed'(종료)
+    /** 소속 부문 (회사/부문 구조에서 명시적으로 매핑된 경우만; null이면 기존 키워드 추정 방식으로 폴백) */
+    divisionId: integer("division_id").references(() => divisionsTable.id, { onDelete: "set null" }),
   },
   (t) => [
     uniqueIndex("mr_projects_name_uq").on(t.name),

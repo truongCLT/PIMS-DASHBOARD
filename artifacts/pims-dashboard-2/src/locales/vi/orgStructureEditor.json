@@ -1,0 +1,14 @@
+{
+  "buttonTitle": "Cài đặt cấu trúc tổ chức (Quản trị)",
+  "buttonLabel": "Cấu trúc tổ chức",
+  "popupTitle": "Cấu trúc Công ty / Bộ phận",
+  "newCompany": "Công ty mới",
+  "newDivision": "Bộ phận mới",
+  "addCompany": "Thêm công ty",
+  "addDivision": "Thêm bộ phận",
+  "saving": "Đang lưu…",
+  "saveFailed": "Lưu cấu trúc tổ chức không thành công.",
+  "assignFailed": "Gán bộ phận không thành công.",
+  "unmappedTitle": "Dự án chưa gán bộ phận ({{count}})",
+  "selectDivision": "Chọn bộ phận"
+}

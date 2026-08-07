@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { MgmtreportAnnualPoint } from './mgmtreportAnnualPoint';
+import type { MgmtreportProjectBusinessType } from './mgmtreportProjectBusinessType';
 import type { MgmtreportProjectStatus } from './mgmtreportProjectStatus';
 
 export interface MgmtreportProject {
@@ -20,4 +21,8 @@ export interface MgmtreportProject {
   cogsPlan: number[];
   cogsActual: number[];
   annual: MgmtreportAnnualPoint[];
+  /** 회사/부문 구조에 명시적으로 매핑된 경우만 채워짐. null이면 프론트에서 기존 키워드 추정 방식(classifyMrProject)으로 폴백. */
+  businessType?: MgmtreportProjectBusinessType;
+  companyLabel?: string | null;
+  divisionLabel?: string | null;
 }

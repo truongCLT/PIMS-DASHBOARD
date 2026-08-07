@@ -4,5 +4,11 @@
   "popupTitle": "환율 설정 (USD 기준)",
   "saveFailed": "환율 저장에 실패했습니다.",
   "invalidNumber": "0보다 큰 숫자를 입력해 주세요.",
-  "saving": "저장 중…"
+  "saving": "저장 중…",
+  "historyTitle": "월별 환율 이력",
+  "historyEmpty": "저장된 이력이 없습니다.",
+  "addMonth": "월 추가/수정",
+  "yearLabel": "연도",
+  "monthLabel": "월",
+  "historySaveFailed": "환율 이력 저장에 실패했습니다."
 }

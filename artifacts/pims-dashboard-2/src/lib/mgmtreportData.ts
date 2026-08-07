@@ -17,6 +17,22 @@ import {
 
 export const REPORT_YEAR = new Date().getFullYear();
 
+/**
+ * 프로젝트명으로 시공/용역 부문을 조회한다. 서버가 회사/부문 구조(CATB_COMPANYSTRUCT 동기화)로
+ * 명시적으로 매핑한 businessType을 우선 사용하고, 매핑되지 않은 프로젝트는 기존 키워드 추정
+ * 방식(classifyMrProject)으로 폴백한다 — App.tsx의 시공/용역 대시보드 라우팅에 사용.
+ */
+export function useProjectBusinessType(projectName: string | null): "시공" | "용역" | null {
+  const projectsQuery = useListMgmtreportProjects(
+    { year: REPORT_YEAR },
+    { query: { queryKey: getListMgmtreportProjectsQueryKey({ year: REPORT_YEAR }), enabled: projectName != null } },
+  );
+  if (!projectName) return null;
+  const project = projectsQuery.data?.projects.find((p) => p.name === projectName);
+  if (!project) return null;
+  return project.businessType ?? classifyMrProject(projectName);
+}
+
 interface Line {
   code: string;
   label: string;
@@ -165,7 +181,7 @@ export interface DeriveOptions {
   from: number; // 1..12
   to: number; // 1..12 (from > to → empty range)
   bucket: PeriodMode;
-  convert: (v: number) => number;
+  convert: (v: number, year: number, month: number) => number;
   unitLabel: string;
   projectScope: ProjectScope | null;
   /** 매출 차트 데이터를 조회 기간과 무관하게 12개월 전체로 생성 (엑셀 보고서용) */
@@ -177,7 +193,7 @@ export function defaultDeriveOptions(month: number): DeriveOptions {
     from: 1,
     to: Math.min(Math.max(month, 1), 12),
     bucket: "Month",
-    convert: (v) => v,
+    convert: (v) => v, // identity — 이미 변환된 값이거나 변환 불필요한 컨텍스트에서 사용
     unitLabel: "천 USD",
     projectScope: null,
     salesFullYear: true,
@@ -197,7 +213,8 @@ export function deriveDashboardData(
   const byCode = new Map(lines.map((l) => [l.code, l]));
   const getLine = (code: string): Line => byCode.get(code) ?? ZERO;
 
-  const cv = (arr: number[]) => arr.map((v) => convert(v));
+  // 배열 인덱스 i는 summary.year의 (i+1)월 — 월별 환율을 적용해 변환한다.
+  const cv = (arr: number[]) => arr.map((v, i) => convert(v, summary.year, i + 1));
   const totalOf = (arr: number[]) => arr.reduce((a, b) => a + b, 0);
 
   let revenue: Line;
@@ -212,10 +229,10 @@ export function deriveDashboardData(
     const revPlan = cv(projectScope.revenuePlan);
     const revActual = cv(projectScope.revenueActual);
     const grossPlan = projectScope.revenuePlan.map((v, i) =>
-      convert(v - (projectScope.cogsPlan[i] ?? 0)),
+      convert(v - (projectScope.cogsPlan[i] ?? 0), summary.year, i + 1),
     );
     const grossActual = projectScope.revenueActual.map((v, i) =>
-      convert(v - (projectScope.cogsActual[i] ?? 0)),
+      convert(v - (projectScope.cogsActual[i] ?? 0), summary.year, i + 1),
     );
     revenue = {
       code: "revenue",
@@ -235,12 +252,14 @@ export function deriveDashboardData(
     };
     sga = op1 = op2 = ordinary = orders = null;
   } else {
+    // planTotal/actualTotal은 서버에서 이미 연간 합계로 집계된 단일 값이라 특정 월에 귀속되지 않으므로,
+    // 이 화면의 기준월(M, 조회 종료월)의 환율을 앵커로 사용해 변환한다.
     const conv = (l: Line): Line => ({
       ...l,
       plan: cv(l.plan),
       actual: cv(l.actual),
-      planTotal: convert(l.planTotal),
-      actualTotal: convert(l.actualTotal),
+      planTotal: convert(l.planTotal, summary.year, M),
+      actualTotal: convert(l.actualTotal, summary.year, M),
     });
     revenue = conv(getLine("revenue"));
     gross = conv(getLine("gross_profit"));
@@ -435,7 +454,7 @@ export function useDashboardData() {
     if (needProjects && !projectsQuery.data) return null;
 
     const { from, to } = resolveMonthWindow(filters.startYm, filters.endYm);
-    const convert = makeConverter(filters.currency, filters.unitIndex, filters.fxRates);
+    const convert = makeConverter(filters.currency, filters.unitIndex, filters.fxRateHistory);
     const unitLabel =
       filters.currency === "USD" && filters.unitIndex === 0
         ? "천 USD"
@@ -458,7 +477,7 @@ export function useDashboardData() {
       const members = (projectsQuery.data?.projects ?? []).filter(
         (p) =>
           !p.isGroup &&
-          classifyMrProject(p.name) === filters.division &&
+          (p.businessType ?? classifyMrProject(p.name)) === filters.division &&
           (filters.statusFilter == null || (p.status ?? "ongoing") === filters.statusFilter),
       );
       const sum12 = (pick: (p: (typeof members)[number]) => number[]): number[] => {

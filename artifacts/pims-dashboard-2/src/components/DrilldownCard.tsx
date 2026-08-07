@@ -32,11 +32,11 @@ function NumBadge({ n }: { n: number }) {
 export function DrilldownCard() {
   const { t } = useTranslation(["drilldownCard", "common"]);
   const { derived, isError } = useDashboardData();
-  const { currency, unitIndex, fxRates } = useDashboardFilters();
+  const { currency, unitIndex, fxRateHistory } = useDashboardFilters();
   const projectsQuery = useListMgmtreportProjects({ year: REPORT_YEAR });
 
   const unitLabel = derived?.unitLabel ?? "천 USD";
-  const convert = makeConverter(currency, unitIndex, fxRates);
+  const convert = makeConverter(currency, unitIndex, fxRateHistory);
   const fmtK = (v: number): string => `${roundSmart(v).toLocaleString("ko-KR")} ${unitLabel}`;
 
   const month = derived?.month ?? Math.max(lastClosedMonth(), 1);
@@ -49,7 +49,7 @@ export function DrilldownCard() {
   // 2. 금월 주요 매출: top-3 projects by current-month actual revenue (groups excluded server-side)
   const topRevenue = (projectsQuery.data?.projects ?? [])
     .filter((p) => !p.isGroup)
-    .map((p) => ({ name: p.name, value: month > 0 ? convert(p.revenueActual[month - 1] ?? 0) : 0 }))
+    .map((p) => ({ name: p.name, value: month > 0 ? convert(p.revenueActual[month - 1] ?? 0, REPORT_YEAR, month) : 0 }))
     .filter((p) => p.value > 0)
     .sort((a, b) => b.value - a.value)
     .slice(0, 3);

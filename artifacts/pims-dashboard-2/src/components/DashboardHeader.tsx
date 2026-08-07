@@ -1,11 +1,14 @@
 import React, { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { ChevronsUp, Download, FileSpreadsheet, FileText, RefreshCw, Upload } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useListMgmtreportProjects } from "@workspace/api-client-react";
 import { exportDashboardExcel, exportDashboardPdf } from "../lib/exportDashboard";
 import { MgmtReportUploadModal } from "./MgmtReportUploadModal";
 import { FxRateEditor } from "./FxRateEditor";
-import { useAdminAuth } from "../lib/adminAuth";
+import { OrgStructureEditor } from "./OrgStructureEditor";
+import { PimsvinaSyncPreviewModal, type PimsvinaPreviewData } from "./PimsvinaSyncPreviewModal";
+import { useAdminAuth, readAdminToken } from "../lib/adminAuth";
 import {
   useDashboardFilters,
   UNIT_OPTIONS,
@@ -45,15 +48,55 @@ export function DashboardHeader({
   const [exporting, setExporting] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [syncPreview, setSyncPreview] = useState<PimsvinaPreviewData | null>(null);
+  const [confirming, setConfirming] = useState(false);
   const downloadRef = useRef<HTMLDivElement>(null);
+  const downloadMenuRef = useRef<HTMLDivElement>(null);
+  const [downloadPos, setDownloadPos] = useState<{ top: number; right: number } | null>(null);
 
+  const adminFetch = (path: string) => {
+    const token = readAdminToken();
+    return fetch(path, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+  };
+
+  // 1단계: PIMSVINA에서 데이터를 조회만 하고 미리보기 팝업을 연다 (아직 DB에 저장하지 않음)
   const handleSyncPimsvina = async () => {
     if (syncing) return;
     setSyncing(true);
     try {
-      const res = await fetch("/api/sync-pimsvina", {
+      const res = await adminFetch("/api/sync-pimsvina/preview");
+      const data = await res.json();
+      if (data.success) {
+        setSyncPreview(data.data);
+      } else {
+        alert(t("dashboardHeader:syncFailed", { error: data.error || t("dashboardHeader:syncFailedDefaultError") }));
+      }
+    } catch (err: any) {
+      console.error("Sync preview error:", err);
+      alert(t("dashboardHeader:connectionErrorMessage", { message: err.message }));
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  // 2단계: 미리보기 팝업에서 "확인"을 누르면 실제로 DB에 저장한다
+  const handleConfirmSync = async () => {
+    if (confirming || !syncPreview) return;
+    setConfirming(true);
+    try {
+      const res = await fetch("/api/sync-pimsvina/confirm", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(readAdminToken() ? { Authorization: `Bearer ${readAdminToken()}` } : {}),
+        },
+        body: JSON.stringify({ data: syncPreview }),
       });
       const data = await res.json();
       if (data.success) {
@@ -81,22 +124,36 @@ export function DashboardHeader({
         alert(t("dashboardHeader:syncFailed", { error: data.error || t("dashboardHeader:syncFailedDefaultError") }));
       }
     } catch (err: any) {
-      console.error("Sync error:", err);
+      console.error("Sync confirm error:", err);
       alert(t("dashboardHeader:connectionErrorMessage", { message: err.message }));
     } finally {
-      setSyncing(false);
+      setConfirming(false);
     }
   };
 
   useEffect(() => {
     if (!downloadOpen) return;
+    const updatePos = () => {
+      const btn = downloadRef.current;
+      if (!btn) return;
+      const rect = btn.getBoundingClientRect();
+      setDownloadPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right });
+    };
+    updatePos();
+    window.addEventListener("resize", updatePos);
+    window.addEventListener("scroll", updatePos, true);
     const onClickOutside = (e: MouseEvent) => {
-      if (downloadRef.current && !downloadRef.current.contains(e.target as Node)) {
-        setDownloadOpen(false);
-      }
+      const target = e.target as Node;
+      if (downloadRef.current?.contains(target)) return;
+      if (downloadMenuRef.current?.contains(target)) return;
+      setDownloadOpen(false);
     };
     document.addEventListener("mousedown", onClickOutside);
-    return () => document.removeEventListener("mousedown", onClickOutside);
+    return () => {
+      window.removeEventListener("resize", updatePos);
+      window.removeEventListener("scroll", updatePos, true);
+      document.removeEventListener("mousedown", onClickOutside);
+    };
   }, [downloadOpen]);
 
   const handleExcel = async () => {
@@ -381,7 +438,8 @@ export function DashboardHeader({
           </button>
         )}
 
-        {/* 관리자 전용: 환율 설정 + Excel 업로드 */}
+        {/* 관리자 전용: 조직 구조 + 환율 설정 + Excel 업로드 */}
+        {isAdmin && <OrgStructureEditor />}
         {isAdmin && <FxRateEditor />}
         {isAdmin && (
           <button
@@ -430,75 +488,83 @@ export function DashboardHeader({
             <span style={{ fontSize: "10px", opacity: 0.8 }}>▼</span>
           </button>
 
-          {downloadOpen && (
-            <div
-              onClick={() => setDownloadOpen(false)}
-              style={{ position: "fixed", inset: 0, zIndex: 999 }}
-            />
-          )}
-
-          {downloadOpen && (
-            <div style={{
-              position: "absolute",
-              top: "calc(100% + 4px)",
-              right: 0,
-              backgroundColor: "#fff",
-              border: "1px solid #dde6f1",
-              borderRadius: "6px",
-              boxShadow: "0 4px 12px rgba(20,40,80,0.15)",
-              zIndex: 1000,
-              minWidth: "170px",
-              overflow: "hidden",
-            }}>
-              <button
-                onClick={handleExcel}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  width: "100%",
-                  padding: "9px 14px",
-                  fontSize: "12px",
-                  color: "#16294a",
-                  backgroundColor: "transparent",
-                  border: "none",
-                  cursor: "pointer",
-                  textAlign: "left",
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#eef3f9")}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
-              >
-                <FileSpreadsheet size={14} color="#1c7a5a" />
-                {t("dashboardHeader:excelDownloadOption")}
-              </button>
-              <button
-                onClick={handlePdf}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  width: "100%",
-                  padding: "9px 14px",
-                  fontSize: "12px",
-                  color: "#16294a",
-                  backgroundColor: "transparent",
-                  border: "none",
-                  cursor: "pointer",
-                  textAlign: "left",
-                  borderTop: "1px solid #eef2f7",
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#eef3f9")}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
-              >
-                <FileText size={14} color="#e0655c" />
-                {t("dashboardHeader:pdfDownloadOption")}
-              </button>
-            </div>
+          {downloadOpen && downloadPos && createPortal(
+            <>
+              <div
+                onClick={() => setDownloadOpen(false)}
+                style={{ position: "fixed", inset: 0, zIndex: 999 }}
+              />
+              <div ref={downloadMenuRef} style={{
+                position: "fixed",
+                top: downloadPos.top,
+                right: downloadPos.right,
+                backgroundColor: "#fff",
+                border: "1px solid #dde6f1",
+                borderRadius: "6px",
+                boxShadow: "0 4px 12px rgba(20,40,80,0.15)",
+                zIndex: 1000,
+                minWidth: "170px",
+                overflow: "hidden",
+              }}>
+                <button
+                  onClick={handleExcel}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    width: "100%",
+                    padding: "9px 14px",
+                    fontSize: "12px",
+                    color: "#16294a",
+                    backgroundColor: "transparent",
+                    border: "none",
+                    cursor: "pointer",
+                    textAlign: "left",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#eef3f9")}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                >
+                  <FileSpreadsheet size={14} color="#1c7a5a" />
+                  {t("dashboardHeader:excelDownloadOption")}
+                </button>
+                <button
+                  onClick={handlePdf}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    width: "100%",
+                    padding: "9px 14px",
+                    fontSize: "12px",
+                    color: "#16294a",
+                    backgroundColor: "transparent",
+                    border: "none",
+                    cursor: "pointer",
+                    textAlign: "left",
+                    borderTop: "1px solid #eef2f7",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#eef3f9")}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                >
+                  <FileText size={14} color="#e0655c" />
+                  {t("dashboardHeader:pdfDownloadOption")}
+                </button>
+              </div>
+            </>,
+            document.body,
           )}
         </div>
       </div>
 
       {uploadOpen && <MgmtReportUploadModal onClose={() => setUploadOpen(false)} />}
+      {syncPreview && (
+        <PimsvinaSyncPreviewModal
+          data={syncPreview}
+          confirming={confirming}
+          onConfirm={handleConfirmSync}
+          onClose={() => setSyncPreview(null)}
+        />
+      )}
     </div>
   );
 }

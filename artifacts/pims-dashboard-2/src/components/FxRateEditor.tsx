@@ -28,7 +28,7 @@ export function FxRateEditor() {
       const btn = ref.current;
       if (!btn) return;
       const rect = btn.getBoundingClientRect();
-      const width = 220;
+      const width = 320;
       const left = Math.max(8, Math.min(rect.right - width, window.innerWidth - width - 8));
       setPopupPos({ top: rect.bottom + 4, left });
     };
@@ -123,7 +123,7 @@ export function FxRateEditor() {
           borderRadius: "8px",
           boxShadow: "0 4px 12px rgba(20,40,80,0.15)",
           zIndex: 1000,
-          width: "220px",
+          width: "320px",
           padding: "14px",
         }}>
           <div style={{ fontSize: "12px", fontWeight: 700, color: "#16294a", marginBottom: "10px" }}>
@@ -131,7 +131,7 @@ export function FxRateEditor() {
           </div>
           <div style={{ marginBottom: "8px" }}>
             <div style={labelStyle}>USD</div>
-            <input value="1" disabled style={{ ...inputStyle, backgroundColor: "#f2f5f8", color: "#8a94a3" }} />
+            <input value={String(fxRates.USD)} disabled style={{ ...inputStyle, backgroundColor: "#f2f5f8", color: "#8a94a3" }} />
           </div>
           <div style={{ marginBottom: "8px" }}>
             <div style={labelStyle}>KRW</div>

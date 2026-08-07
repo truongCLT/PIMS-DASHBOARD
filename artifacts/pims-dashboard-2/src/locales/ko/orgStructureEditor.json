@@ -1,0 +1,14 @@
+{
+  "buttonTitle": "조직 구조 설정 (관리자)",
+  "buttonLabel": "조직 구조",
+  "popupTitle": "회사/부문 구조",
+  "newCompany": "새 회사",
+  "newDivision": "새 부문",
+  "addCompany": "회사 추가",
+  "addDivision": "부문 추가",
+  "saving": "저장 중…",
+  "saveFailed": "조직 구조 저장에 실패했습니다.",
+  "assignFailed": "부문 배정에 실패했습니다.",
+  "unmappedTitle": "부문 미배정 프로젝트 ({{count}})",
+  "selectDivision": "부문 선택"
+}
