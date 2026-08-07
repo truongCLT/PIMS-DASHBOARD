@@ -53,5 +53,8 @@
   "select": "Select",
   "inProgress": "In Progress",
   "closed": "Closed",
-  "milestone": "Milestone"
+  "milestone": "Milestone",
+  "vsPlan": "vs Plan",
+  "overPlan": "Above Plan",
+  "underPlan": "Below Plan"
 }

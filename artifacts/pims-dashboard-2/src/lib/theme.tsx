@@ -29,10 +29,21 @@ export interface Theme {
     valueColor: string;
     accentBorderLeft: string | null; // per-card colored left border (theme B uses this)
     boxShadow: string;
-    /** "solid" = existing dark/white card · "strip" = colored header strip + icon + progress bar */
-    cardStyle?: "solid" | "strip";
+    /**
+     * "solid" = existing dark/white card · "strip" = colored header strip + icon + progress bar
+     * "gauge-ring" = small circular ring with % + 계획 대비 chip (대우 예시1)
+     * "gauge-semi" = semicircular gauge with % + 계획/계획 대비 footer (대우 예시2)
+     */
+    cardStyle?: "solid" | "strip" | "gauge-ring" | "gauge-semi";
     /** 4 accent colours for strip cards: [매출, 영업이익, 누적매출, 누적영업이익] */
     stripColors?: [string, string, string, string];
+  };
+  charts?: {
+    /** 매출 실적 및 전망 rendering: default lines · "bars" = grouped bars (예시1) · "area" = area + dashed plan (예시2) */
+    salesVariant?: "bars" | "area";
+    planColor?: string;
+    actualColor?: string;
+    rateColor?: string;
   };
 }
 
@@ -285,6 +296,13 @@ export const THEMES: Theme[] = [
       valueColor: "#1a2d4d",
       accentBorderLeft: null,
       boxShadow: "0 1px 4px rgba(26,45,77,0.07)",
+      cardStyle: "gauge-ring",
+    },
+    charts: {
+      salesVariant: "bars",
+      planColor: "#c3d4f0",
+      actualColor: "#4472ca",
+      rateColor: "#e05252",
     },
   },
 
@@ -316,6 +334,13 @@ export const THEMES: Theme[] = [
       valueColor: "#1a2d4d",
       accentBorderLeft: null,
       boxShadow: "0 1px 5px rgba(21,36,73,0.07)",
+      cardStyle: "gauge-semi",
+    },
+    charts: {
+      salesVariant: "area",
+      planColor: "#b9c9e8",
+      actualColor: "#152449",
+      rateColor: "#2e5bdb",
     },
   },
 ];

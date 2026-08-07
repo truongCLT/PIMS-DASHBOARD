@@ -53,5 +53,8 @@
   "select": "선택",
   "inProgress": "진행중",
   "closed": "종료",
-  "milestone": "마일스톤"
+  "milestone": "마일스톤",
+  "vsPlan": "계획 대비",
+  "overPlan": "계획 초과",
+  "underPlan": "계획 미달"
 }

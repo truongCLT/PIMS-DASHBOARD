@@ -53,5 +53,8 @@
   "select": "Chọn",
   "inProgress": "Đang thực hiện",
   "closed": "Đã kết thúc",
-  "milestone": "Mốc tiến độ"
+  "milestone": "Mốc tiến độ",
+  "vsPlan": "So với kế hoạch",
+  "overPlan": "Vượt kế hoạch",
+  "underPlan": "Dưới kế hoạch"
 }
