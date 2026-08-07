@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { useProjectDetail, fmtPct, ratioPct } from "../lib/projectDetailData";
 import { useMoney } from "../lib/displayUnit";
 
@@ -27,6 +28,7 @@ const tdCenter: React.CSSProperties = { ...tdStyle, textAlign: "center" };
 const tdRight: React.CSSProperties = { ...tdStyle, textAlign: "right" };
 
 export function ServiceOutsourcingTab({ projectName }: { projectName: string }) {
+  const { t } = useTranslation(["serviceOutsourcingTab", "common"]);
   const { detail, isLoading } = useProjectDetail(projectName);
   const { fmtMoney } = useMoney();
   const rows = detail?.outsourcing ?? [];
@@ -50,33 +52,33 @@ export function ServiceOutsourcingTab({ projectName }: { projectName: string }) 
       <table style={{ width: "100%", borderCollapse: "collapse" }}>
         <thead>
           <tr>
-            <th style={{ ...thStyle, width: "13%" }} rowSpan={2}>공종</th>
-            <th style={thStyle} rowSpan={2}>업{"\n"}체{"\n"}명</th>
-            <th style={thStyle} rowSpan={2}>구{"\n"}분</th>
-            <th style={thStyle} rowSpan={2}>최초{"\n"}계약일</th>
-            <th style={thStyle} rowSpan={2}>변경{"\n"}계약{"\n"}차수</th>
-            <th style={thStyle} rowSpan={2}>예산{"\n"}(A)</th>
-            <th style={{ ...thStyle, width: "12%" }} rowSpan={2}>결의금액{"\n"}(B)</th>
-            <th style={thStyle} rowSpan={2}>결의율{"\n"}(B/A)</th>
-            <th style={thStyle} colSpan={3}>기성현황</th>
+            <th style={{ ...thStyle, width: "13%" }} rowSpan={2}>{t("serviceOutsourcingTab:tradeType")}</th>
+            <th style={thStyle} rowSpan={2}>{t("serviceOutsourcingTab:vendorName")}</th>
+            <th style={thStyle} rowSpan={2}>{t("serviceOutsourcingTab:category")}</th>
+            <th style={thStyle} rowSpan={2}>{t("serviceOutsourcingTab:firstContractDate")}</th>
+            <th style={thStyle} rowSpan={2}>{t("serviceOutsourcingTab:changeContractNo")}</th>
+            <th style={thStyle} rowSpan={2}>{t("serviceOutsourcingTab:budgetA")}</th>
+            <th style={{ ...thStyle, width: "12%" }} rowSpan={2}>{t("serviceOutsourcingTab:resolvedAmountB")}</th>
+            <th style={thStyle} rowSpan={2}>{t("serviceOutsourcingTab:resolvedRateBA")}</th>
+            <th style={thStyle} colSpan={3}>{t("serviceOutsourcingTab:progressStatus")}</th>
           </tr>
           <tr>
-            <th style={{ ...thStyle, width: "11%" }}>이번달</th>
-            <th style={{ ...thStyle, width: "11%" }}>누계{"\n"}(C)</th>
-            <th style={{ ...thStyle, width: "11%" }}>비율{"\n"}(C/B)</th>
+            <th style={{ ...thStyle, width: "11%" }}>{t("serviceOutsourcingTab:thisMonth")}</th>
+            <th style={{ ...thStyle, width: "11%" }}>{t("serviceOutsourcingTab:cumulativeC")}</th>
+            <th style={{ ...thStyle, width: "11%" }}>{t("serviceOutsourcingTab:rateCB")}</th>
           </tr>
         </thead>
         <tbody>
           {isLoading ? (
             <tr>
               <td style={{ ...tdCenter, color: "#7c8ba3" }} colSpan={11}>
-                불러오는 중…
+                {t("common:loading")}
               </td>
             </tr>
           ) : rows.length === 0 ? (
             <tr>
               <td style={{ ...tdCenter, color: "#7c8ba3", padding: "24px 10px" }} colSpan={11}>
-                외주/용역 데이터가 없습니다. 좌측 "데이터 입력" 탭에서 외주 데이터를 입력해 주세요.
+                {t("serviceOutsourcingTab:noData")}
               </td>
             </tr>
           ) : (
@@ -99,7 +101,7 @@ export function ServiceOutsourcingTab({ projectName }: { projectName: string }) 
                 </tr>
               ))}
               <tr>
-                <td style={{ ...tdStyle, fontWeight: 600 }}>합계</td>
+                <td style={{ ...tdStyle, fontWeight: 600 }}>{t("common:total")}</td>
                 <td style={tdCenter}></td>
                 <td style={tdCenter}></td>
                 <td style={tdCenter}></td>

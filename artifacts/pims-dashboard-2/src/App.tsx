@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Sidebar, type DashboardScope } from "./components/Sidebar";
 import { Dashboard } from "./components/Dashboard";
 import { ProjectDashboard } from "./components/ProjectDashboard";
@@ -10,6 +11,7 @@ import { ThemeProvider, THEMES, useTheme } from "./lib/theme";
 
 /* ── Floating theme switcher ─────────────────────────────────────── */
 function ThemeSwitcher() {
+  const { t } = useTranslation(["app", "common"]);
   const { theme, setThemeId } = useTheme();
   const [open, setOpen] = useState(false);
 
@@ -38,7 +40,7 @@ function ThemeSwitcher() {
           minWidth: "180px",
         }}>
           <div style={{ fontSize: "11px", fontWeight: "700", color: "#888", marginBottom: "2px", letterSpacing: "0.04em" }}>
-            디자인 테마 선택
+            {t("app:selectDesignTheme")}
           </div>
           {THEMES.map((t) => (
             <button
@@ -80,7 +82,7 @@ function ThemeSwitcher() {
       {/* Toggle button */}
       <button
         onClick={() => setOpen(!open)}
-        title="테마 변경"
+        title={t("app:changeTheme")}
         style={{
           width: "44px",
           height: "44px",

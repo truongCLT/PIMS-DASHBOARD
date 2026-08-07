@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { ProjectDetailPhoto } from "@workspace/api-client-react";
 import {
   useListSalescostSites,
@@ -38,7 +39,13 @@ const emptyNote: React.CSSProperties = {
   color: "#7c8ba3",
 };
 
+/** raw Korean item name (fixed identifier from cost-budget data) → translation key */
+const ITEM_LABEL_KEY: Record<string, string> = {
+  "외주성": "outsourcingItem",
+};
+
 function PhotoCard({ projectName, photos }: { projectName: string; photos: ProjectDetailPhoto[] }) {
+  const { t } = useTranslation(["overviewTab", "common"]);
   const [active, setActive] = useState(0);
 
   useEffect(() => { setActive(0); }, [projectName]);
@@ -55,7 +62,7 @@ function PhotoCard({ projectName, photos }: { projectName: string; photos: Proje
     <div style={{ ...cardStyle, padding: "8px", display: "flex", flexDirection: "column", minHeight: "220px" }}>
       <PhotoPager
         src={src}
-        alt={`${projectName} 현장 사진`}
+        alt={t("overviewTab:sitePhotoAlt", { projectName })}
         total={total}
         current={hasPhotos ? safeIdx : 0}
         onChange={setActive}
@@ -76,6 +83,7 @@ function timeElapsedPct(startDate: string | null, endDate: string | null): numbe
 }
 
 export function OverviewTab({ projectName }: { projectName: string }) {
+  const { t } = useTranslation(["overviewTab", "common"]);
   const { detail } = useProjectDetail(projectName);
   const { fmtMoney } = useMoney();
 
@@ -256,7 +264,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
         {/* Progress */}
         <div style={cardStyle}>
           <div style={{ display: "flex", justifyContent: "space-between" }}>
-            <span style={sectionTitle}>공정</span>
+            <span style={sectionTitle}>{t("common:process")}</span>
             <span
               style={{
                 fontSize: "11px",
@@ -267,11 +275,13 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                 height: "fit-content",
               }}
             >
-              {monthlyActual != null ? `공사 ${monthlyActual >= 0 ? "+" : ""}${monthlyActual.toFixed(1)}%` : "공사 -"}
+              {monthlyActual != null
+                ? `${t("overviewTab:constructionShort")} ${monthlyActual >= 0 ? "+" : ""}${monthlyActual.toFixed(1)}%`
+                : `${t("overviewTab:constructionShort")} -`}
             </span>
           </div>
           {latest == null ? (
-            <div style={emptyNote}>공정 데이터가 없습니다. 데이터 입력 탭에서 입력해 주세요.</div>
+            <div style={emptyNote}>{t("overviewTab:noProcessData")}</div>
           ) : (
             <>
               <div
@@ -286,14 +296,14 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                 {/* 월별 — 2개 막대 + 중앙 상단 달성률 */}
                 {(() => {
                   const bars = [
-                    { label: "계획", value: monthlyPlan, color: chartTheme.planBlue },
-                    { label: "실적", value: monthlyActual, color: chartTheme.actualGreen },
+                    { label: t("common:plan"), value: monthlyPlan, color: chartTheme.planBlue },
+                    { label: t("common:actual"), value: monthlyActual, color: chartTheme.actualGreen },
                   ];
                   const gmax = Math.max(...bars.map((b) => b.value ?? 0), 1);
                   return (
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
                       <div style={{ fontSize: "14px", color: chartTheme.planBlue, fontWeight: 800, marginBottom: "6px" }}>
-                        달성률 {fmtPct(monthlyAchieveRate)}
+                        {t("common:achievementRate")} {fmtPct(monthlyAchieveRate)}
                       </div>
                       <div style={{ display: "flex", alignItems: "flex-end", gap: "10px", height: `${MAX_H + 20}px` }}>
                         {bars.map((b) => (
@@ -316,7 +326,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                           </div>
                         ))}
                       </div>
-                      <div style={{ fontSize: "12px", fontWeight: 700, color: "#333", marginTop: "4px" }}>월별</div>
+                      <div style={{ fontSize: "12px", fontWeight: 700, color: "#333", marginTop: "4px" }}>{t("common:monthly")}</div>
                     </div>
                   );
                 })()}
@@ -331,7 +341,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                   return (
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
                       <div style={{ fontSize: "12px", fontWeight: 700, marginBottom: "4px", whiteSpace: "nowrap" }}>
-                        <span style={{ color: "#777" }}>계획 (A) </span>
+                        <span style={{ color: "#777" }}>{t("overviewTab:planA")}</span>
                         <span style={{ color: chartTheme.planBlue, fontSize: "14px", fontWeight: 800 }}>{fmtPct(planCum)}</span>
                       </div>
                       <svg width={136} height={136} viewBox="0 0 160 160">
@@ -356,10 +366,10 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                           {fmtPct(actualCum)}
                         </text>
                         <text x={cx} y={cy + 22} textAnchor="middle" fontSize={13} fill="#555">
-                          실적 (B)
+                          {t("overviewTab:actualB")}
                         </text>
                       </svg>
-                      <div style={{ fontSize: "12px", fontWeight: 700, color: "#333", marginTop: "2px" }}>누계</div>
+                      <div style={{ fontSize: "12px", fontWeight: 700, color: "#333", marginTop: "2px" }}>{t("common:cumulative")}</div>
                     </div>
                   );
                 })()}
@@ -377,17 +387,17 @@ export function OverviewTab({ projectName }: { projectName: string }) {
               paddingTop: "6px",
             }}
           >
-            공경율 ({fmtPct(elapsed)})
+            {t("overviewTab:elapsedRate", { value: fmtPct(elapsed) })}
           </div>
         </div>
 
         {/* Revenue */}
         <div style={cardStyle}>
-          <span style={sectionTitle}>매출</span>
+          <span style={sectionTitle}>{t("common:revenue")}</span>
           {mr.isLoading || (siteCode != null && (revQ.isLoading || cogsQ.isLoading)) ? (
-            <div style={emptyNote}>매출 데이터를 불러오는 중입니다…</div>
+            <div style={emptyNote}>{t("overviewTab:loadingRevenue")}</div>
           ) : !hasRevenue ? (
-            <div style={emptyNote}>{`${REPORT_YEAR}년 매출 데이터가 없습니다.`}</div>
+            <div style={emptyNote}>{t("overviewTab:noRevenueData", { year: REPORT_YEAR })}</div>
           ) : (
             <>
               <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-evenly", width: "100%", marginTop: "22px" }}>
@@ -410,7 +420,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                       value={thisMonthPlan ?? 0}
                       max={Math.max(thisMonthPlan ?? 0, thisMonthRev ?? 0, 1)}
                       color={chartTheme.neutralGray}
-                      label="계획"
+                      label={t("common:plan")}
                       height={110}
                       valueLabel={fmtMoney(thisMonthPlan)}
                     />
@@ -418,12 +428,12 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                       value={thisMonthRev ?? 0}
                       max={Math.max(thisMonthPlan ?? 0, thisMonthRev ?? 0, 1)}
                       color={chartTheme.planBlue}
-                      label="실적"
+                      label={t("common:actual")}
                       height={110}
                       valueLabel={fmtMoney(thisMonthRev)}
                     />
                   </div>
-                  <span style={{ fontSize: "12px", fontWeight: 700, color: "#333", marginTop: "10px" }}>당월</span>
+                  <span style={{ fontSize: "12px", fontWeight: 700, color: "#333", marginTop: "10px" }}>{t("common:currentMonth")}</span>
                 </div>
 
                 {/* 연 */}
@@ -439,7 +449,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                     />
                   </div>
                   <div style={{ fontSize: "12px", color: "#16294a", fontWeight: 700, marginTop: "12px" }}>
-                    연
+                    {t("overviewTab:annualShort")}
                   </div>
                 </div>
 
@@ -456,7 +466,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                     />
                   </div>
                   <div style={{ fontSize: "12px", color: "#16294a", fontWeight: 700, marginTop: "12px" }}>
-                    누계
+                    {t("common:cumulative")}
                   </div>
                 </div>
               </div>
@@ -466,17 +476,17 @@ export function OverviewTab({ projectName }: { projectName: string }) {
 
         {/* Cost estimation */}
         <div style={cardStyle}>
-          <span style={sectionTitle}>원가율</span>
+          <span style={sectionTitle}>{t("overviewTab:costRate")}</span>
           {bidding == null && execution == null && completion == null ? (
-            <div style={emptyNote}>원가율 데이터가 없습니다. 데이터 입력 탭에서 입력해 주세요.</div>
+            <div style={emptyNote}>{t("overviewTab:noCostRateData")}</div>
           ) : (
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "16px", marginTop: "8px" }}>
 
               {/* 좌측: 입찰 + 실행예산 소형 스택 */}
               <div style={{ display: "flex", flexDirection: "column", gap: "0", flex: "0 0 auto" }}>
                 {[
-                  { title: "입찰", sub: "입찰 원가율", data: bidding, color: chartTheme.neutralGray },
-                  { title: "실행예산 편성", sub: "실행예산 원가율", data: execution, color: chartTheme.balanceNavy },
+                  { title: t("overviewTab:bidding"), sub: "입찰 원가율", data: bidding, color: chartTheme.neutralGray },
+                  { title: t("overviewTab:executionBudgetPlan"), sub: "실행예산 원가율", data: execution, color: chartTheme.balanceNavy },
                 ].map((c, i) => (
                   <div key={c.title}>
                     {i > 0 && (
@@ -510,7 +520,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                   labelSize={26}
                 />
                 <div style={{ fontSize: "14px", color: "#16294a", fontWeight: 800, marginTop: "2px" }}>
-                  준공추정원가율
+                  {t("overviewTab:completionCostRate")}
                 </div>
               </div>
 
@@ -528,21 +538,21 @@ export function OverviewTab({ projectName }: { projectName: string }) {
         <div style={cardStyle}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "4px" }}>
             <span style={sectionTitle}>
-              예산 집행 현황
+              {t("overviewTab:budgetExecutionStatus")}
             </span>
             <select
               value={budgetMonth ?? ""}
               onChange={(e) => setBudgetMonth(e.target.value === "" ? null : Number(e.target.value))}
               style={{ fontSize: "12px", border: "1px solid #e2e9f3", borderRadius: "4px", padding: "2px 4px", color: "#333", cursor: "pointer" }}
             >
-              <option value="">전체</option>
+              <option value="">{t("common:all")}</option>
               {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
-                <option key={m} value={m}>{m}월</option>
+                <option key={m} value={m}>{t("overviewTab:monthOption", { month: m })}</option>
               ))}
             </select>
           </div>
           {allBudgetRows.length === 0 ? (
-            <div style={emptyNote}>실행예산 데이터가 없습니다. 데이터 입력 탭에서 입력해 주세요.</div>
+            <div style={emptyNote}>{t("overviewTab:noBudgetData")}</div>
           ) : (
             <>
               {/* 항목별 그룹 막대: 회색(총 예산) 뒤 + 빨강(계획)·파랑(실적) 앞 */}
@@ -610,7 +620,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                         </div>
                         {/* 항목명 */}
                         <div style={{ fontSize: "13px", color: "#16294a", fontWeight: 700, marginTop: "4px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" }}>
-                          {g.item}
+                          {ITEM_LABEL_KEY[g.item] ? t(`overviewTab:${ITEM_LABEL_KEY[g.item]}`) : g.item}
                         </div>
                       </div>
                     );
@@ -650,9 +660,19 @@ export function OverviewTab({ projectName }: { projectName: string }) {
               {/* 범례 */}
               <div style={{ display: "flex", gap: "12px", marginTop: "8px", justifyContent: "flex-end", flexWrap: "wrap" }}>
                 {[
-                  { label: "총 예산", color: chartTheme.lightGray },
-                  { label: budgetMonth == null ? "집행 계획(누계)" : `집행 계획(${budgetMonth}월)`, color: chartTheme.outflowRed },
-                  { label: budgetMonth == null ? "집행 실적(누계)" : `집행 실적(${budgetMonth}월)`, color: chartTheme.inflowBlue },
+                  { label: t("overviewTab:totalBudget"), color: chartTheme.lightGray },
+                  {
+                    label: budgetMonth == null
+                      ? t("overviewTab:executionPlanCumulative")
+                      : t("overviewTab:executionPlanMonth", { month: budgetMonth }),
+                    color: chartTheme.outflowRed,
+                  },
+                  {
+                    label: budgetMonth == null
+                      ? t("overviewTab:executionActualCumulative")
+                      : t("overviewTab:executionActualMonth", { month: budgetMonth }),
+                    color: chartTheme.inflowBlue,
+                  },
                 ].map(({ label, color }) => (
                   <div key={label} style={{ display: "flex", alignItems: "center", gap: "4px" }}>
                     <div style={{ width: "11px", height: "11px", backgroundColor: color, borderRadius: "2px" }} />
@@ -676,29 +696,29 @@ export function OverviewTab({ projectName }: { projectName: string }) {
           return (
             <div style={cardStyle}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "4px" }}>
-                <span style={sectionTitle}>자금</span>
+                <span style={sectionTitle}>{t("overviewTab:funds")}</span>
                 <select
                   value={cashMonth ?? ""}
                   onChange={(e) => setCashMonth(e.target.value === "" ? null : Number(e.target.value))}
                   style={{ fontSize: "12px", border: "1px solid #e2e9f3", borderRadius: "4px", padding: "2px 4px", color: "#333", cursor: "pointer" }}
                 >
-                  <option value="">전체</option>
+                  <option value="">{t("common:all")}</option>
                   {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
-                    <option key={m} value={m}>{m}월</option>
+                    <option key={m} value={m}>{t("overviewTab:monthOption", { month: m })}</option>
                   ))}
                 </select>
               </div>
               {isLoadingFund ? (
-                <div style={emptyNote}>자금 데이터를 불러오는 중입니다…</div>
+                <div style={emptyNote}>{t("overviewTab:loadingFundData")}</div>
               ) : !hasFundData ? (
-                <div style={emptyNote}>자금 데이터가 없습니다. 데이터 입력 탭에서 입력해 주세요.</div>
+                <div style={emptyNote}>{t("overviewTab:noFundData")}</div>
               ) : (
                 <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-around", marginTop: "10px", height: "170px" }}>
                   <MiniBar
                     value={revenue}
                     max={cashMax}
                     color={chartTheme.neutralGray}
-                    label="매출"
+                    label={t("common:revenue")}
                     height={120}
                     valueLabel={fmtMoney(revenue)}
                     valueOnTop
@@ -708,7 +728,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                     value={confirmed}
                     max={cashMax}
                     color={chartTheme.neutralGray}
-                    label="확정 (A)"
+                    label={t("overviewTab:confirmedA")}
                     height={120}
                     valueLabel={fmtMoney(confirmed)}
                     valueOnTop
@@ -718,7 +738,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                     value={collection}
                     max={cashMax}
                     color={chartTheme.balanceNavy}
-                    label="수금 (B)"
+                    label={t("overviewTab:collectionB")}
                     height={120}
                     valueLabel={fmtMoney(collection)}
                     valueOnTop
@@ -728,7 +748,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                     value={outstanding}
                     max={cashMax}
                     color={chartTheme.outflowRed}
-                    label="채권 (A-B)"
+                    label={t("overviewTab:receivableAB")}
                     height={120}
                     valueLabel={fmtMoney(outstanding)}
                     valueOnTop

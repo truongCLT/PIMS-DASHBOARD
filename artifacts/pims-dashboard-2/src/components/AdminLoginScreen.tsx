@@ -1,9 +1,11 @@
 import React, { useState } from "react";
 import { Lock } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useAdminLogin } from "@workspace/api-client-react";
 import { useAdminAuth } from "../lib/adminAuth";
 
 export function AdminLoginScreen({ onDone }: { onDone: () => void }) {
+  const { t } = useTranslation(["adminLoginScreen", "common"]);
   const { isAdmin, activate, logout } = useAdminAuth();
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -16,7 +18,7 @@ export function AdminLoginScreen({ onDone }: { onDone: () => void }) {
         setError(null);
         onDone();
       },
-      onError: () => setError("비밀번호가 올바르지 않습니다."),
+      onError: () => setError(t("adminLoginScreen:invalidPassword")),
     },
   });
 
@@ -50,12 +52,12 @@ export function AdminLoginScreen({ onDone }: { onDone: () => void }) {
         }}>
           <Lock size={20} color="#1e3a6e" />
         </div>
-        <div style={{ fontSize: "16px", fontWeight: 700, color: "#16294a", marginBottom: "4px" }}>관리자 모드</div>
+        <div style={{ fontSize: "16px", fontWeight: 700, color: "#16294a", marginBottom: "4px" }}>{t("adminLoginScreen:adminMode")}</div>
 
         {isAdmin ? (
           <>
             <div style={{ fontSize: "12px", color: "#1c7a5a", margin: "10px 0 16px" }}>
-              현재 관리자 모드가 활성화되어 있습니다.
+              {t("adminLoginScreen:alreadyActive")}
             </div>
             <div style={{ display: "flex", gap: "8px" }}>
               <button
@@ -65,7 +67,7 @@ export function AdminLoginScreen({ onDone }: { onDone: () => void }) {
                   backgroundColor: "#1e3a6e", color: "#fff", border: "none", borderRadius: "6px", cursor: "pointer",
                 }}
               >
-                대시보드로 돌아가기
+                {t("adminLoginScreen:backToDashboard")}
               </button>
               <button
                 onClick={() => { logout(); }}
@@ -74,20 +76,20 @@ export function AdminLoginScreen({ onDone }: { onDone: () => void }) {
                   backgroundColor: "#fff", color: "#e0655c", border: "1px solid #e0b4b4", borderRadius: "6px", cursor: "pointer",
                 }}
               >
-                로그아웃
+                {t("adminLoginScreen:logout")}
               </button>
             </div>
           </>
         ) : (
           <form onSubmit={submit}>
             <div style={{ fontSize: "12px", color: "#7c8ba3", marginBottom: "16px" }}>
-              관리자 비밀번호를 입력해 주세요.
+              {t("adminLoginScreen:enterPassword")}
             </div>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="비밀번호"
+              placeholder={t("adminLoginScreen:passwordPlaceholder")}
               autoFocus
               style={{
                 width: "100%",
@@ -119,7 +121,7 @@ export function AdminLoginScreen({ onDone }: { onDone: () => void }) {
                 opacity: password.trim().length === 0 ? 0.6 : 1,
               }}
             >
-              {loginMutation.isPending ? "확인 중…" : "로그인"}
+              {loginMutation.isPending ? t("adminLoginScreen:checking") : t("adminLoginScreen:login")}
             </button>
             <button
               type="button"
@@ -135,7 +137,7 @@ export function AdminLoginScreen({ onDone }: { onDone: () => void }) {
                 cursor: "pointer",
               }}
             >
-              취소
+              {t("common:cancel")}
             </button>
           </form>
         )}

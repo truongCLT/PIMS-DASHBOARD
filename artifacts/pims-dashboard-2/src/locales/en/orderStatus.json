@@ -1,0 +1,8 @@
+{
+  "title": "Order Status",
+  "noDataForPeriod": "No data for the selected period.",
+  "noProjectOrderData": "Order data by project is not available.",
+  "remaining": "Remaining",
+  "vsPlan": "vs. Plan",
+  "viewDetails": "View Details"
+}

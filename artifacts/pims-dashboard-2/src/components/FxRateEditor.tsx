@@ -3,9 +3,11 @@ import { createPortal } from "react-dom";
 import { DollarSign } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePutFxRates, getGetFxRatesQueryKey } from "@workspace/api-client-react";
+import { useTranslation } from "react-i18next";
 import { useDashboardFilters } from "../lib/dashboardFilters";
 
 export function FxRateEditor() {
+  const { t } = useTranslation(["fxRateEditor", "common"]);
   const { fxRates } = useDashboardFilters();
   const [open, setOpen] = useState(false);
   const [krw, setKrw] = useState("");
@@ -54,7 +56,7 @@ export function FxRateEditor() {
         await queryClient.invalidateQueries({ queryKey: getGetFxRatesQueryKey() });
         setOpen(false);
       },
-      onError: () => setError("환율 저장에 실패했습니다."),
+      onError: () => setError(t("fxRateEditor:saveFailed")),
     },
   });
 
@@ -62,7 +64,7 @@ export function FxRateEditor() {
     const krwNum = Number(krw);
     const vndNum = Number(vnd);
     if (!Number.isFinite(krwNum) || krwNum <= 0 || !Number.isFinite(vndNum) || vndNum <= 0) {
-      setError("0보다 큰 숫자를 입력해 주세요.");
+      setError(t("fxRateEditor:invalidNumber"));
       return;
     }
     setError(null);
@@ -90,7 +92,7 @@ export function FxRateEditor() {
     <div ref={ref} style={{ position: "relative" }}>
       <button
         onClick={() => setOpen((v) => !v)}
-        title="환율 설정 (관리자)"
+        title={t("fxRateEditor:settingsButtonTitle")}
         style={{
           display: "flex",
           alignItems: "center",
@@ -106,7 +108,7 @@ export function FxRateEditor() {
         }}
       >
         <DollarSign size={13} />
-        환율 설정
+        {t("fxRateEditor:settingsButtonLabel")}
       </button>
 
       {open && popupPos && createPortal(
@@ -125,7 +127,7 @@ export function FxRateEditor() {
           padding: "14px",
         }}>
           <div style={{ fontSize: "12px", fontWeight: 700, color: "#16294a", marginBottom: "10px" }}>
-            환율 설정 (USD 기준)
+            {t("fxRateEditor:popupTitle")}
           </div>
           <div style={{ marginBottom: "8px" }}>
             <div style={labelStyle}>USD</div>
@@ -167,7 +169,7 @@ export function FxRateEditor() {
               cursor: saveMutation.isPending ? "wait" : "pointer",
             }}
           >
-            {saveMutation.isPending ? "저장 중…" : "저장"}
+            {saveMutation.isPending ? t("fxRateEditor:saving") : t("common:save")}
           </button>
         </div>,
         document.body,

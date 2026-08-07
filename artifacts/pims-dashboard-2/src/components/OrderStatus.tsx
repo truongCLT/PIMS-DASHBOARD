@@ -1,9 +1,11 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import { useDashboardData } from "../lib/mgmtreportData";
 import { useDashboardFilters } from "../lib/dashboardFilters";
 
 export function OrderStatus() {
+  const { t } = useTranslation(["orderStatus", "common"]);
   const { derived } = useDashboardData();
   const { unitIndex } = useDashboardFilters();
   const statFont = unitIndex === 1 ? "12px" : "20px";
@@ -22,7 +24,7 @@ export function OrderStatus() {
         padding: "10px 12px",
       }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
-          <span style={{ fontSize: "13px", fontWeight: "600", color: "#16294a" }}>수주 실적 현황</span>
+          <span style={{ fontSize: "13px", fontWeight: "600", color: "#16294a" }}>{t("orderStatus:title")}</span>
         </div>
         <div style={{
           height: "150px",
@@ -35,16 +37,16 @@ export function OrderStatus() {
           padding: "0 10px",
         }}>
           {derived?.emptyRange
-            ? "선택한 기간에 데이터가 없습니다."
-            : "프로젝트별 수주 데이터는 제공되지 않습니다."}
+            ? t("orderStatus:noDataForPeriod")
+            : t("orderStatus:noProjectOrderData")}
         </div>
       </div>
     );
   }
 
   const donutData = [
-    { name: "수주", value: ordered, color: "#2f7cf6" },
-    { name: "잔여", value: remaining, color: "#e2e9f3" },
+    { name: t("common:orderReceived"), value: ordered, color: "#2f7cf6" },
+    { name: t("orderStatus:remaining"), value: remaining, color: "#e2e9f3" },
   ];
 
   return (
@@ -55,7 +57,7 @@ export function OrderStatus() {
       padding: "10px 12px",
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
-        <span style={{ fontSize: "13px", fontWeight: "600", color: "#16294a" }}>수주 실적 현황</span>
+        <span style={{ fontSize: "13px", fontWeight: "600", color: "#16294a" }}>{t("orderStatus:title")}</span>
       </div>
 
       {/* Donut chart with center label */}
@@ -96,26 +98,26 @@ export function OrderStatus() {
           }}
         >
           <div style={{ fontSize: "20px", fontWeight: 700, color: "#2f7cf6" }}>{pct}%</div>
-          <div style={{ fontSize: "9px", color: "#888" }}>계획 대비</div>
+          <div style={{ fontSize: "9px", color: "#888" }}>{t("orderStatus:vsPlan")}</div>
         </div>
       </div>
 
       {/* Stats row */}
       <div style={{ display: "flex", gap: "8px", marginBottom: "8px" }}>
         <div style={{ flex: 1, textAlign: "center", borderRight: "1px solid #e7f1fd" }}>
-          <div style={{ fontSize: "11px", color: "#888", marginBottom: "2px" }}>계획</div>
+          <div style={{ fontSize: "11px", color: "#888", marginBottom: "2px" }}>{t("common:plan")}</div>
           <div style={{ fontSize: statFont, fontWeight: "700", color: "#16294a" }}>
             {planTotal.toLocaleString()}
           </div>
         </div>
         <div style={{ flex: 1, textAlign: "center", borderRight: "1px solid #e7f1fd" }}>
-          <div style={{ fontSize: "11px", color: "#888", marginBottom: "2px" }}>수주</div>
+          <div style={{ fontSize: "11px", color: "#888", marginBottom: "2px" }}>{t("common:orderReceived")}</div>
           <div style={{ fontSize: statFont, fontWeight: "700", color: "#2f7cf6" }}>
             {ordered.toLocaleString()}
           </div>
         </div>
         <div style={{ flex: 1, textAlign: "center" }}>
-          <div style={{ fontSize: "11px", color: "#888", marginBottom: "2px" }}>잔여</div>
+          <div style={{ fontSize: "11px", color: "#888", marginBottom: "2px" }}>{t("orderStatus:remaining")}</div>
           <div style={{ fontSize: statFont, fontWeight: "700", color: "#ff7043" }}>
             {remaining.toLocaleString()}
           </div>
@@ -132,7 +134,7 @@ export function OrderStatus() {
         cursor: "pointer",
         padding: "0",
       }}>
-        상세보기
+        {t("orderStatus:viewDetails")}
       </button>
     </div>
   );

@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import {
   ComposedChart,
   Bar,
@@ -67,6 +68,7 @@ export function SaleProfitTab({
   fromMonth: number;
   months: number;
 }) {
+  const { t } = useTranslation(["saleProfitTab", "common"]);
   const { convert, unitLabel } = useMoney();
   const { detail: pdDetail, isLoading: pdLoading } = useProjectDetail(projectName);
   // Build the requested (year, month) list from the period filter
@@ -228,21 +230,21 @@ export function SaleProfitTab({
   if (isLoading || pdLoading) {
     return (
       <div style={cardStyle}>
-        <Notice>매출/원가 데이터를 불러오는 중입니다…</Notice>
+        <Notice>{t("saleProfitTab:loadingNotice")}</Notice>
       </div>
     );
   }
   if (hardError) {
     return (
       <div style={cardStyle}>
-        <Notice error>매출/원가 데이터 조회에 실패했습니다. 잠시 후 다시 시도해 주세요.</Notice>
+        <Notice error>{t("saleProfitTab:errorNotice")}</Notice>
       </div>
     );
   }
   if (!hasData && !hasCogs) {
     return (
       <div style={cardStyle}>
-        <Notice>선택한 기간에 매출 데이터가 없습니다.</Notice>
+        <Notice>{t("saleProfitTab:noRevenueDataNotice")}</Notice>
       </div>
     );
   }
@@ -256,7 +258,7 @@ export function SaleProfitTab({
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
       {/* Monthly Revenue */}
       <div style={cardStyle}>
-        <span style={sectionTitle}>당월 매출 ({unitLabel})</span>
+        <span style={sectionTitle}>{t("saleProfitTab:monthlyRevenueTitle", { unit: unitLabel })}</span>
         <div style={{ width: "100%", height: "260px", marginTop: "8px" }}>
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart data={chartData} margin={{ top: 30, right: 40, left: 40, bottom: 0 }}>
@@ -275,7 +277,7 @@ export function SaleProfitTab({
               />
               <Legend wrapperStyle={{ fontSize: "12px" }} />
               {pdSalesHasAny && (
-                <Bar dataKey="plan" name="월 계획" fill="#c9d2dd" barSize={14} isAnimationActive={false}>
+                <Bar dataKey="plan" name={t("saleProfitTab:monthlyPlan")} fill="#c9d2dd" barSize={14} isAnimationActive={false}>
                   <LabelList
                     dataKey="plan"
                     position="top"
@@ -286,7 +288,7 @@ export function SaleProfitTab({
               )}
               <Bar
                 dataKey="revenue"
-                name="월 매출"
+                name={t("saleProfitTab:monthlyRevenue")}
                 fill={chartTheme.planBlue}
                 barSize={pdSalesHasAny ? 14 : 22}
                 isAnimationActive={false}
@@ -301,7 +303,7 @@ export function SaleProfitTab({
               <Line
                 yAxisId="cum"
                 dataKey="cumulative"
-                name="누계"
+                name={t("common:cumulative")}
                 type="monotone"
                 stroke={chartTheme.outflowRed}
                 strokeWidth={2}
@@ -323,10 +325,10 @@ export function SaleProfitTab({
 
       {/* Cost — 회계 vs 집행(WIP) 매출원가 */}
       <div style={cardStyle}>
-        <span style={sectionTitle}>원가 ({unitLabel})</span>
+        <span style={sectionTitle}>{t("saleProfitTab:costTitle", { unit: unitLabel })}</span>
         {!hasCogs ? (
           <Notice>
-            선택한 기간에 매출원가 데이터가 없습니다. 관리자 모드로 로그인하면 "데이터 입력" 탭의 "월별 매출원가" 표에서 입력할 수 있습니다.
+            {t("saleProfitTab:noCogsDataNotice")}
           </Notice>
         ) : (
           <div style={{ width: "100%", height: "260px", marginTop: "8px" }}>
@@ -352,7 +354,7 @@ export function SaleProfitTab({
                   formatter={(v: number, name: string) => [`${Math.round(v).toLocaleString()} ${unitLabel}`, name]}
                 />
                 <Legend wrapperStyle={{ fontSize: "12px" }} />
-                <Bar dataKey="acctCogs" name="회계 매출원가" fill={chartTheme.planBlue} barSize={14} isAnimationActive={false}>
+                <Bar dataKey="acctCogs" name={t("saleProfitTab:acctCogs")} fill={chartTheme.planBlue} barSize={14} isAnimationActive={false}>
                   <LabelList
                     dataKey="acctCogs"
                     position="top"
@@ -360,7 +362,7 @@ export function SaleProfitTab({
                     formatter={(v: number) => (v !== 0 ? Math.round(v).toLocaleString() : "")}
                   />
                 </Bar>
-                <Bar dataKey="wipCogs" name="집행 매출원가 (WIP)" fill={chartTheme.actualGreen} barSize={14} isAnimationActive={false}>
+                <Bar dataKey="wipCogs" name={t("saleProfitTab:wipCogs")} fill={chartTheme.actualGreen} barSize={14} isAnimationActive={false}>
                   <LabelList
                     dataKey="wipCogs"
                     position="top"
@@ -371,7 +373,7 @@ export function SaleProfitTab({
                 <Line
                   yAxisId="cum"
                   dataKey="acctCum"
-                  name="회계 매출원가 누계"
+                  name={t("saleProfitTab:acctCogsCum")}
                   type="monotone"
                   stroke={chartTheme.outflowRed}
                   strokeWidth={2}
@@ -381,7 +383,7 @@ export function SaleProfitTab({
                 <Line
                   yAxisId="cum"
                   dataKey="wipCum"
-                  name="집행 매출원가 (WIP) 누계"
+                  name={t("saleProfitTab:wipCogsCum")}
                   type="monotone"
                   stroke={chartTheme.sgaOrange}
                   strokeWidth={2}
@@ -396,9 +398,9 @@ export function SaleProfitTab({
 
       {/* Cost ratio */}
       <div style={cardStyle}>
-        <span style={sectionTitle}>원가율 (%)</span>
+        <span style={sectionTitle}>{t("saleProfitTab:costRatioTitle")}</span>
         {ratios.length === 0 ? (
-          <Notice>선택한 기간에 원가율을 계산할 매출 데이터가 없습니다.</Notice>
+          <Notice>{t("saleProfitTab:noCostRatioDataNotice")}</Notice>
         ) : (
           <div style={{ width: "100%", height: "220px", marginTop: "8px" }}>
             <ResponsiveContainer width="100%" height="100%">
@@ -416,7 +418,7 @@ export function SaleProfitTab({
                 />
                 <Line
                   dataKey="ratio"
-                  name="누계 원가율"
+                  name={t("saleProfitTab:cumulativeCostRatio")}
                   type="monotone"
                   stroke={chartTheme.profitGreen}
                   strokeWidth={2}

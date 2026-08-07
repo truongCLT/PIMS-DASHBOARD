@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ProjectCommentPanel } from "./ProjectCommentPanel";
 
 import {
@@ -25,9 +26,11 @@ const cardStyle: React.CSSProperties = {
   padding: "10px 12px",
 };
 
-function monthLabel(ym: string): string {
+type TFn = ReturnType<typeof useTranslation>["t"];
+
+function monthLabel(ym: string, t: TFn): string {
   const m = Number(ym.slice(5, 7));
-  return `${m}월'${ym.slice(2, 4)}`;
+  return t("serviceCashflowTab:monthLabel", { month: m, yy: ym.slice(2, 4) });
 }
 
 function niceStep(range: number): number {
@@ -50,6 +53,7 @@ export function ServiceCashflowTab({
   fromMonth: number;
   months: number;
 }) {
+  const { t } = useTranslation(["serviceCashflowTab", "common"]);
   const { convert, unitLabel } = useMoney();
 
   // 보조: 데이터 입력 탭에서 저장한 프로젝트별 자금 데이터 (pd_cashflow_monthly)
@@ -96,7 +100,7 @@ export function ServiceCashflowTab({
   const applyConvert = hasPdRows || cfConvertible;
   const cv = (v: number) => (applyConvert ? convert(v) : v);
   const chartData = points.map((p) => ({
-    month: monthLabel(p.month),
+    month: monthLabel(p.month, t),
     cashIn: cv(p.cashIn),
     cashOut: -cv(p.cashOut),
     equivalent: cv(p.equivalent),
@@ -115,7 +119,7 @@ export function ServiceCashflowTab({
 
   const entryGuide = (
     <div style={{ fontSize: "14px", color: "#7c8ba3", marginTop: "8px" }}>
-      관리자 모드로 로그인하면 "데이터 입력" 탭의 "월별 자금" 표에서 자금 데이터를 입력할 수 있습니다.
+      {t("serviceCashflowTab:entryGuide")}
     </div>
   );
 
@@ -123,13 +127,13 @@ export function ServiceCashflowTab({
   if (pdLoading || (cfRef != null && query.isLoading)) {
     body = (
       <div style={{ padding: "60px 20px", textAlign: "center", fontSize: "15px", color: "#7c8ba3" }}>
-        자금 데이터를 불러오는 중입니다…
+        {t("serviceCashflowTab:loadingCashflow")}
       </div>
     );
   } else if (cfRef == null && !hasPdData) {
     body = (
       <div style={{ padding: "60px 20px", textAlign: "center", fontSize: "15px", color: "#7c8ba3" }}>
-        아직 입력된 자금 데이터가 없습니다.
+        {t("serviceCashflowTab:noCashflowDataYet")}
         {entryGuide}
       </div>
     );
@@ -139,18 +143,18 @@ export function ServiceCashflowTab({
       <div style={{ padding: "60px 20px", textAlign: "center", fontSize: "15px", color: status === 404 ? "#7c8ba3" : "#f2736a" }}>
         {status === 404 ? (
           <>
-            해당 프로젝트의 자금수지 데이터가 없습니다.
+            {t("serviceCashflowTab:noProjectCashflowData")}
             {entryGuide}
           </>
         ) : (
-          "자금수지 데이터 조회에 실패했습니다. 잠시 후 다시 시도해 주세요."
+          t("serviceCashflowTab:fetchFailed")
         )}
       </div>
     );
   } else if (!hasData) {
     body = (
       <div style={{ padding: "60px 20px", textAlign: "center", fontSize: "15px", color: "#7c8ba3" }}>
-        선택한 기간에 자금 데이터가 없습니다.
+        {t("serviceCashflowTab:noDataInPeriod")}
         {entryGuide}
       </div>
     );
@@ -188,7 +192,7 @@ export function ServiceCashflowTab({
             <ReferenceLine y={0} stroke={chartTheme.sgaOrange} strokeDasharray="3 3" />
             <Bar
               dataKey="cashIn"
-              name="수금"
+              name={t("serviceCashflowTab:cashIn")}
               fill={chartTheme.inflowBlue}
               barSize={barSize}
               stackId="cash"
@@ -204,7 +208,7 @@ export function ServiceCashflowTab({
             </Bar>
             <Bar
               dataKey="cashOut"
-              name="지출"
+              name={t("serviceCashflowTab:cashOut")}
               fill={chartTheme.actualGreen}
               barSize={barSize}
               stackId="cash"
@@ -220,7 +224,7 @@ export function ServiceCashflowTab({
             </Bar>
             <Line
               dataKey="equivalent"
-              name="잔액"
+              name={t("serviceCashflowTab:balance")}
               type="linear"
               stroke={chartTheme.actualGreen}
               strokeWidth={2}
@@ -239,12 +243,12 @@ export function ServiceCashflowTab({
       {/* Cashflow */}
       <div style={cardStyle}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span style={{ fontSize: "15px", fontWeight: 700, color: chartTheme.titleNavy }}>자금수지</span>
+          <span style={{ fontSize: "15px", fontWeight: 700, color: chartTheme.titleNavy }}>{t("common:cashFlow")}</span>
           <span style={{ fontSize: "13px", color: "#7c8ba3" }}>
             {useCf && query.data
-              ? `단위: ${cfConvertible ? unitLabel : query.data.unit}`
+              ? `${t("common:unit")}: ${cfConvertible ? unitLabel : query.data.unit}`
               : hasPdData
-                ? `단위: ${unitLabel}`
+                ? `${t("common:unit")}: ${unitLabel}`
                 : ""}
           </span>
         </div>

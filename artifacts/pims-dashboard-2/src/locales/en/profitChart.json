@@ -1,0 +1,11 @@
+{
+  "nonOperatingProfitLoss": "Non-Operating Profit/Loss",
+  "ordinaryProfit": "Ordinary Profit",
+  "profitLossStatus": "Profit & Loss Status",
+  "viewDetails": "View Details",
+  "dataLoadFailed": "Failed to load data.",
+  "dataLoading": "Loading data…",
+  "sgaArea": "SG&A Area",
+  "hoverHint": "※ Hover over a bar to see ordinary profit and SG&A details",
+  "month": "Month"
+}

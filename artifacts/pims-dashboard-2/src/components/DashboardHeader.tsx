@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { ChevronsUp, Download, FileSpreadsheet, FileText, RefreshCw, Upload } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useListMgmtreportProjects } from "@workspace/api-client-react";
 import { exportDashboardExcel, exportDashboardPdf } from "../lib/exportDashboard";
 import { MgmtReportUploadModal } from "./MgmtReportUploadModal";
@@ -34,6 +35,7 @@ export function DashboardHeader({
     setUnitIndex,
   } = useDashboardFilters();
 
+  const { t } = useTranslation(["dashboardHeader", "common"]);
   const { isAdmin } = useAdminAuth();
   const projectsQuery = useListMgmtreportProjects({ year: REPORT_YEAR });
   const projectOptions = (projectsQuery.data?.projects ?? []).filter((p) => !p.isGroup);
@@ -56,22 +58,31 @@ export function DashboardHeader({
       const data = await res.json();
       if (data.success) {
         alert(
-          `✅ PIMSVINA 데이터 동기화가 완료되었습니다!\n\n` +
-          `업데이트 내역:\n` +
-          `• 자금수지 (Cashflow): 신규 ${data.counts?.cfProjects ?? 0}개 프로젝트 / 월별 ${data.counts?.cfMonthly ?? 0}건\n` +
-          `• 매출 및 원가 (Sales & Cost): 신규 ${data.counts?.scSites ?? 0}개 현장 / 월별 ${data.counts?.scMonthly ?? 0}건\n` +
-          `• 경영보고서 (Management Report): 신규 ${data.counts?.mrProjects ?? 0}개 프로젝트 / 월별 ${data.counts?.mrMonthly ?? 0}건 / 연간 ${data.counts?.mrAnnual ?? 0}건 / PnL ${data.counts?.mrPnl ?? 0}건\n` +
-          `• 상세 공정 (Project Detail): 개요 ${data.counts?.pdOverview ?? 0}개 공사 / 공정 ${data.counts?.pdProgress ?? 0}건 / 외주 ${data.counts?.pdOutsourcing ?? 0}건\n` +
-          `• 상세 자금/매출/예산 (Project Detail Cashflow/Sales/Budget): 자금 ${data.counts?.pdCashflow ?? 0}건 / 매출 ${data.counts?.pdSales ?? 0}건 / 예산 ${data.counts?.pdCostBudget ?? 0}건\n` +
-          `• 기준 환율 (FX Rates): ${data.counts?.fxRates ?? 0}개 통화`
+          t("dashboardHeader:syncSuccessMessage", {
+            cfProjects: data.counts?.cfProjects ?? 0,
+            cfMonthly: data.counts?.cfMonthly ?? 0,
+            scSites: data.counts?.scSites ?? 0,
+            scMonthly: data.counts?.scMonthly ?? 0,
+            mrProjects: data.counts?.mrProjects ?? 0,
+            mrMonthly: data.counts?.mrMonthly ?? 0,
+            mrAnnual: data.counts?.mrAnnual ?? 0,
+            mrPnl: data.counts?.mrPnl ?? 0,
+            pdOverview: data.counts?.pdOverview ?? 0,
+            pdProgress: data.counts?.pdProgress ?? 0,
+            pdOutsourcing: data.counts?.pdOutsourcing ?? 0,
+            pdCashflow: data.counts?.pdCashflow ?? 0,
+            pdSales: data.counts?.pdSales ?? 0,
+            pdCostBudget: data.counts?.pdCostBudget ?? 0,
+            fxRates: data.counts?.fxRates ?? 0,
+          })
         );
         window.location.reload();
       } else {
-        alert(`❌ 동기화 실패: ${data.error || "PIMSVINA 서버 연결 오류"}`);
+        alert(t("dashboardHeader:syncFailed", { error: data.error || t("dashboardHeader:syncFailedDefaultError") }));
       }
     } catch (err: any) {
       console.error("Sync error:", err);
-      alert(`❌ 서버 연결 오류가 발생했습니다: ${err.message}`);
+      alert(t("dashboardHeader:connectionErrorMessage", { message: err.message }));
     } finally {
       setSyncing(false);
     }
@@ -94,7 +105,7 @@ export function DashboardHeader({
       await exportDashboardExcel();
     } catch (err) {
       console.error("Excel export failed", err);
-      alert("엑셀 다운로드 중 오류가 발생했습니다.");
+      alert(t("dashboardHeader:excelExportError"));
     }
   };
 
@@ -105,7 +116,7 @@ export function DashboardHeader({
       await exportDashboardPdf();
     } catch (err) {
       console.error("PDF export failed", err);
-      alert("PDF 다운로드 중 오류가 발생했습니다.");
+      alert(t("dashboardHeader:pdfExportError"));
     } finally {
       setExporting(false);
     }
@@ -140,7 +151,7 @@ export function DashboardHeader({
           fontSize: "22px",
           fontWeight: "700",
           margin: "0 0 12px",
-        }}>대시보드</h1>
+        }}>{t("dashboardHeader:title")}</h1>
         <button style={{
           backgroundColor: "#ffffff",
           border: "1px solid #d5dfe9",
@@ -170,7 +181,7 @@ export function DashboardHeader({
       }}>
         {/* Project filter */}
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span style={{ fontSize: "12px", color: "#333", fontWeight: "600" }}>프로젝트:</span>
+          <span style={{ fontSize: "12px", color: "#333", fontWeight: "600" }}>{t("common:project")}:</span>
           <select
             value={project}
             onChange={(e) => {
@@ -193,7 +204,7 @@ export function DashboardHeader({
               maxWidth: "260px",
             }}
           >
-            <option value="All">전체</option>
+            <option value="All">{t("common:all")}</option>
             {projectOptions.map((p) => (
               <option key={p.name} value={p.name}>
                 {p.name}
@@ -213,14 +224,14 @@ export function DashboardHeader({
                 whiteSpace: "nowrap",
               }}
             >
-              {division} 부문 합계
+              {t("dashboardHeader:divisionTotalSuffix", { division })}
             </span>
           )}
         </div>
 
         {/* Date filter */}
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span style={{ fontSize: "12px", color: "#333", fontWeight: "600" }}>조회 기간:</span>
+          <span style={{ fontSize: "12px", color: "#333", fontWeight: "600" }}>{t("dashboardHeader:periodRangeLabel")}</span>
           <div style={{
             display: "flex",
             alignItems: "center",
@@ -267,7 +278,7 @@ export function DashboardHeader({
 
         {/* View period */}
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span style={{ fontSize: "12px", color: "#333", fontWeight: "600" }}>조회 기준:</span>
+          <span style={{ fontSize: "12px", color: "#333", fontWeight: "600" }}>{t("dashboardHeader:periodModeLabel")}</span>
           <select
             value={period}
             onChange={(e) => setPeriod(e.target.value as PeriodMode)}
@@ -281,15 +292,15 @@ export function DashboardHeader({
               cursor: "pointer",
             }}
           >
-            <option value="Month">월</option>
-            <option value="Quarter">분기</option>
-            <option value="Year">연간</option>
+            <option value="Month">{t("dashboardHeader:periodOptionMonth")}</option>
+            <option value="Quarter">{t("dashboardHeader:periodOptionQuarter")}</option>
+            <option value="Year">{t("common:annual")}</option>
           </select>
         </div>
 
         {/* Currency */}
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span style={{ fontSize: "12px", color: "#333", fontWeight: "600" }}>환율:</span>
+          <span style={{ fontSize: "12px", color: "#333", fontWeight: "600" }}>{t("common:exchangeRate")}:</span>
           <select
             value={currency}
             onChange={(e) => setCurrency(e.target.value as CurrencyCode)}
@@ -311,7 +322,7 @@ export function DashboardHeader({
 
         {/* Unit toggle */}
         <div style={{ display: "flex", alignItems: "center", gap: "8px", marginLeft: "auto" }}>
-          <span style={{ fontSize: "12px", color: "#333", fontWeight: "600" }}>단위:</span>
+          <span style={{ fontSize: "12px", color: "#333", fontWeight: "600" }}>{t("common:unit")}:</span>
           <span style={{ fontSize: "12px", color: unitIndex === 0 ? "#333" : "#999", fontWeight: "600" }}>
             {unitOptions[0]}
           </span>
@@ -348,7 +359,7 @@ export function DashboardHeader({
           <button
             onClick={handleSyncPimsvina}
             disabled={syncing}
-            title="PIMSVINA 시스템과 실시간 데이터 동기화"
+            title={t("dashboardHeader:syncButtonTitle")}
             style={{
               display: "flex",
               alignItems: "center",
@@ -366,7 +377,7 @@ export function DashboardHeader({
             }}
           >
             <RefreshCw size={13} style={{ animation: syncing ? "spin 1s linear infinite" : "none" }} />
-            {syncing ? "동기화 중..." : "PIMSVINA 동기화"}
+            {syncing ? t("dashboardHeader:syncing") : t("dashboardHeader:syncButtonLabel")}
           </button>
         )}
 
@@ -390,7 +401,7 @@ export function DashboardHeader({
             }}
           >
             <Upload size={13} />
-            Excel 업로드
+            Excel {t("common:upload")}
           </button>
         )}
 
@@ -415,9 +426,16 @@ export function DashboardHeader({
             }}
           >
             <Download size={13} />
-            {exporting ? "생성 중..." : "다운로드"}
+            {exporting ? t("dashboardHeader:generatingLabel") : t("common:download")}
             <span style={{ fontSize: "10px", opacity: 0.8 }}>▼</span>
           </button>
+
+          {downloadOpen && (
+            <div
+              onClick={() => setDownloadOpen(false)}
+              style={{ position: "fixed", inset: 0, zIndex: 999 }}
+            />
+          )}
 
           {downloadOpen && (
             <div style={{
@@ -451,7 +469,7 @@ export function DashboardHeader({
                 onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
               >
                 <FileSpreadsheet size={14} color="#1c7a5a" />
-                엑셀 다운로드 (.xlsx)
+                {t("dashboardHeader:excelDownloadOption")}
               </button>
               <button
                 onClick={handlePdf}
@@ -473,7 +491,7 @@ export function DashboardHeader({
                 onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
               >
                 <FileText size={14} color="#e0655c" />
-                PDF 다운로드 (.pdf)
+                {t("dashboardHeader:pdfDownloadOption")}
               </button>
             </div>
           )}

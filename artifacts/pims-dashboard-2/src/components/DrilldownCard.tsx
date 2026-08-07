@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { useListMgmtreportProjects } from "@workspace/api-client-react";
 import { useDashboardData, REPORT_YEAR } from "../lib/mgmtreportData";
 import { lastClosedMonth } from "../lib/monthRange";
@@ -29,6 +30,7 @@ function NumBadge({ n }: { n: number }) {
 }
 
 export function DrilldownCard() {
+  const { t } = useTranslation(["drilldownCard", "common"]);
   const { derived, isError } = useDashboardData();
   const { currency, unitIndex, fxRates } = useDashboardFilters();
   const projectsQuery = useListMgmtreportProjects({ year: REPORT_YEAR });
@@ -75,7 +77,7 @@ export function DrilldownCard() {
           padding: "7px 8px",
         }}
       >
-        상세 정보 (드릴다운)
+        {t("drilldownCard:header")}
       </div>
 
       <div style={{ padding: "10px 12px" }}>
@@ -83,7 +85,7 @@ export function DrilldownCard() {
         <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
           <NumBadge n={1} />
           <span style={{ fontSize: "13px", fontWeight: 700, color: NAVY }}>
-            수주 실적{month ? ` (${month}월)` : ""}
+            {t("drilldownCard:orderResultTitle")}{month ? t("drilldownCard:orderResultMonthSuffix", { month }) : ""}
           </span>
         </div>
         <div
@@ -97,15 +99,15 @@ export function DrilldownCard() {
           }}
         >
           {error ? (
-            "오류"
+            t("drilldownCard:error")
           ) : loading ? (
             "-"
           ) : orderMonthActual != null && orderMonthActual !== 0 ? (
-            `당월 수주  ${fmtK(orderMonthActual)}`
+            t("drilldownCard:currentMonthOrder", { value: fmtK(orderMonthActual) })
           ) : (
             <>
-              <div style={{ color: "#6b7c94", fontWeight: 500, marginBottom: "3px" }}>당월 수주 없음</div>
-              <div>누적 수주  {orderCumActual != null ? fmtK(orderCumActual) : "-"}</div>
+              <div style={{ color: "#6b7c94", fontWeight: 500, marginBottom: "3px" }}>{t("drilldownCard:noCurrentMonthOrder")}</div>
+              <div>{t("drilldownCard:cumulativeOrder", { value: orderCumActual != null ? fmtK(orderCumActual) : "-" })}</div>
             </>
           )}
         </div>
@@ -115,7 +117,7 @@ export function DrilldownCard() {
         {/* 2. 금월 주요 매출 */}
         <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
           <NumBadge n={2} />
-          <span style={{ fontSize: "13px", fontWeight: 700, color: NAVY }}>금월 주요 매출</span>
+          <span style={{ fontSize: "13px", fontWeight: 700, color: NAVY }}>{t("drilldownCard:topRevenueTitle")}</span>
         </div>
         <div
           style={{
@@ -128,11 +130,11 @@ export function DrilldownCard() {
           }}
         >
           {error ? (
-            <span style={{ fontSize: "13px", color: "#16294a", fontWeight: 600 }}>오류</span>
+            <span style={{ fontSize: "13px", color: "#16294a", fontWeight: 600 }}>{t("drilldownCard:error")}</span>
           ) : loading ? (
             <span style={{ fontSize: "13px", color: "#16294a", fontWeight: 600 }}>-</span>
           ) : topRevenue.length === 0 ? (
-            <span style={{ fontSize: "13px", color: "#6b7c94", fontWeight: 500 }}>당월 매출 없음</span>
+            <span style={{ fontSize: "13px", color: "#6b7c94", fontWeight: 500 }}>{t("drilldownCard:noCurrentMonthRevenue")}</span>
           ) : (
             topRevenue.map((p) => (
               <div

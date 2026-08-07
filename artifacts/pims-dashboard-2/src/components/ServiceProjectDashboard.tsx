@@ -1,4 +1,5 @@
 import React, { useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePutProjectdetail } from "@workspace/api-client-react";
 import { ProjectCommentPanel } from "./ProjectCommentPanel";
@@ -31,13 +32,14 @@ const sectionTitle: React.CSSProperties = {
 
 const TABS = ["Overview", "Sale & Profit", "Budget Execution", "Outsourcing", "Cashflow", "Data entry"];
 
-const TAB_LABELS: Record<string, string> = {
-  Overview: "개요",
-  "Sale & Profit": "매출",
-  "Budget Execution": "예산집행",
-  Outsourcing: "외주",
-  Cashflow: "자금",
-  "Data entry": "데이터 입력",
+/** tab id → fully-qualified i18next key (may reference the shared "common" namespace) */
+const TAB_LABEL_KEYS: Record<string, string> = {
+  Overview: "common:overview",
+  "Sale & Profit": "common:revenue",
+  "Budget Execution": "serviceProjectDashboard:budgetExecutionTab",
+  Outsourcing: "common:outsourcing",
+  Cashflow: "serviceProjectDashboard:cashLabel",
+  "Data entry": "serviceProjectDashboard:dataEntryTab",
 };
 
 const YEARS = Array.from({ length: 21 }, (_, i) => 2015 + i); // 2015 ~ 2035
@@ -66,6 +68,7 @@ function YearMonthSelect({
   onYear: (y: number) => void;
   onMonth: (m: string) => void;
 }) {
+  const { t } = useTranslation(["serviceProjectDashboard", "common"]);
   return (
     <div
       style={{
@@ -84,27 +87,29 @@ function YearMonthSelect({
         </select>
         <span style={{ position: "absolute", right: 0, fontSize: "11px", color: "#888", pointerEvents: "none" }}>▼</span>
       </div>
-      <span style={{ fontSize: "14px", color: "#aab2bc", margin: "0 1px" }}>년</span>
+      <span style={{ fontSize: "14px", color: "#aab2bc", margin: "0 1px" }}>{t("serviceProjectDashboard:yearSuffix")}</span>
       <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
         <select value={month} onChange={(e) => onMonth(e.target.value)} style={selectStyle}>
           {MONTHS.map((m) => <option key={m} value={m}>{m}</option>)}
         </select>
         <span style={{ position: "absolute", right: 0, fontSize: "11px", color: "#888", pointerEvents: "none" }}>▼</span>
       </div>
-      <span style={{ fontSize: "14px", color: "#aab2bc", margin: "0 1px" }}>월</span>
+      <span style={{ fontSize: "14px", color: "#aab2bc", margin: "0 1px" }}>{t("serviceProjectDashboard:monthSuffix")}</span>
     </div>
   );
 }
 
 function EmptyHint({ label }: { label: string }) {
+  const { t } = useTranslation(["serviceProjectDashboard", "common"]);
   return (
     <div style={{ padding: "40px 10px", textAlign: "center", fontSize: "13px", color: "#7c8ba3" }}>
-      {label} 데이터가 없습니다. "데이터 입력" 탭에서 입력해 주세요.
+      {t("serviceProjectDashboard:emptyDataHint", { label })}
     </div>
   );
 }
 
 export function ServiceProjectDashboard({ projectName }: { projectName: string }) {
+  const { t } = useTranslation(["serviceProjectDashboard", "common"]);
   const [currency, setCurrency] = useState("USD");
   const [unitOn, setUnitOn] = useState(true);
   const [activeTab, setActiveTab] = useState("Overview");
@@ -124,17 +129,20 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
   const putMutation = usePutProjectdetail();
   const excelFileRef = useRef<HTMLInputElement>(null);
   const [excelMsg, setExcelMsg] = useState<string | null>(null);
+  const [excelMsgIsSuccess, setExcelMsgIsSuccess] = useState(false);
   const [excelBusy, setExcelBusy] = useState(false);
 
   const handleTemplateDownload = async () => {
     if (!detail || excelBusy) return;
     setExcelBusy(true);
     setExcelMsg(null);
+    setExcelMsgIsSuccess(false);
     try {
       await downloadProjectDetailTemplate(projectName, detail);
     } catch (err) {
       console.error("Excel template download failed", err);
-      setExcelMsg("양식 다운로드에 실패했습니다.");
+      setExcelMsg(t("serviceProjectDashboard:templateDownloadFailed"));
+      setExcelMsgIsSuccess(false);
     } finally {
       setExcelBusy(false);
     }
@@ -144,15 +152,17 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
     if (!detail || excelBusy) return;
     setExcelBusy(true);
     setExcelMsg(null);
+    setExcelMsgIsSuccess(false);
     try {
       const parsed = await parseProjectDetailWorkbook(file, detail);
-      if (!window.confirm("업로드한 Excel 내용으로 이 프로젝트의 데이터를 교체합니다. 계속할까요?")) {
+      if (!window.confirm(t("serviceProjectDashboard:uploadConfirm"))) {
         setExcelBusy(false);
         return;
       }
       await putMutation.mutateAsync({ data: { ...parsed, projectName } });
       queryClient.invalidateQueries({ queryKey: getGetProjectdetailQueryKey({ projectName }) });
-      setExcelMsg("업로드가 완료되었습니다.");
+      setExcelMsg(t("serviceProjectDashboard:uploadCompleted"));
+      setExcelMsgIsSuccess(true);
     } catch (err) {
       console.error("Excel upload failed", err);
       if (err instanceof ExcelParseError) setExcelMsg(err.message);
@@ -161,8 +171,9 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
           typeof err === "object" && err != null && "data" in err
             ? (err as { data?: { error?: string } | null }).data?.error
             : undefined;
-        setExcelMsg(serverMsg || "업로드에 실패했습니다. 파일 양식을 확인해 주세요.");
+        setExcelMsg(serverMsg || t("serviceProjectDashboard:uploadFailed"));
       }
+      setExcelMsgIsSuccess(false);
     } finally {
       setExcelBusy(false);
       if (excelFileRef.current) excelFileRef.current.value = "";
@@ -201,7 +212,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
       const e = new Date(ov.endDate);
       months = Math.max(1, Math.round((e.getTime() - s.getTime()) / (30.44 * 24 * 3600 * 1000)));
     }
-    return `${fmt(ov?.startDate)} ~ ${fmt(ov?.endDate)}${months != null ? ` (${months}개월)` : ""}`;
+    return `${fmt(ov?.startDate)} ~ ${fmt(ov?.endDate)}${months != null ? ` (${t("serviceProjectDashboard:monthsSuffix", { months })})` : ""}`;
   })();
 
   // Revenue / Cash 카드 값
@@ -229,7 +240,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span style={{ fontSize: "14px", color: "#333", fontWeight: 600 }}>환율 :</span>
+          <span style={{ fontSize: "14px", color: "#333", fontWeight: 600 }}>{t("common:exchangeRate")} :</span>
           <div style={{ display: "flex", border: "1px solid #e2e9f3", borderRadius: "6px", overflow: "hidden" }}>
             {["USD", "KRW", "VND"].map((c) => (
               <button
@@ -253,7 +264,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span style={{ fontSize: "14px", color: "#333", fontWeight: 600 }}>단위 :</span>
+          <span style={{ fontSize: "14px", color: "#333", fontWeight: 600 }}>{t("common:unit")} :</span>
           <div
             onClick={() => {
               const sy = window.scrollY;
@@ -314,20 +325,20 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
             <span style={{ fontWeight: 700, paddingRight: "14px" }}>Project : {projectName}</span>
             {ov?.asOfMonth && (
               <span style={{ borderLeft: "1px solid #e2e9f3", padding: "0 14px" }}>
-                작성 기준 : {ov.asOfMonth.slice(0, 4)}년 {Number(ov.asOfMonth.slice(5, 7))}월 말
+                {t("serviceProjectDashboard:asOfMonth", { year: ov.asOfMonth.slice(0, 4), month: Number(ov.asOfMonth.slice(5, 7)) })}
               </span>
             )}
             {ov?.client && (
-              <span style={{ borderLeft: "1px solid #e2e9f3", padding: "0 14px" }}>발주처 : {ov.client}</span>
+              <span style={{ borderLeft: "1px solid #e2e9f3", padding: "0 14px" }}>{t("serviceProjectDashboard:clientLabel")} : {ov.client}</span>
             )}
             {periodLabel && (
-              <span style={{ borderLeft: "1px solid #e2e9f3", padding: "0 14px" }}>수행기간 : {periodLabel}</span>
+              <span style={{ borderLeft: "1px solid #e2e9f3", padding: "0 14px" }}>{t("serviceProjectDashboard:periodLabel")} : {periodLabel}</span>
             )}
             {ov?.scope && (
-              <span style={{ borderLeft: "1px solid #e2e9f3", padding: "0 14px" }}>수행내용 : {ov.scope}</span>
+              <span style={{ borderLeft: "1px solid #e2e9f3", padding: "0 14px" }}>{t("serviceProjectDashboard:scopeLabel")} : {ov.scope}</span>
             )}
             <span style={{ borderLeft: "1px solid #e2e9f3", padding: "0 14px" }}>
-              도급액 : {contractAmount != null ? `${formatMoney(contractAmount, currency, unitOn)} ${moneyUnitLabel(currency, unitOn)}` : "-"}
+              {t("common:contractAmount")} : {contractAmount != null ? `${formatMoney(contractAmount, currency, unitOn)} ${moneyUnitLabel(currency, unitOn)}` : "-"}
             </span>
           </div>
         </div>
@@ -365,7 +376,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                 whiteSpace: "nowrap",
               }}
             >
-              {TAB_LABELS[tab] ?? tab}
+              {t(TAB_LABEL_KEYS[tab] ?? tab)}
             </button>
           );
         })}
@@ -405,7 +416,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                   style={{
                     fontSize: "13px",
                     fontWeight: 600,
-                    color: excelMsg.includes("완료") ? "#1c7a5a" : "#f2736a",
+                    color: excelMsgIsSuccess ? "#1c7a5a" : "#f2736a",
                     maxWidth: "360px",
                     whiteSpace: "nowrap",
                     overflow: "hidden",
@@ -419,7 +430,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
               <button
                 onClick={handleTemplateDownload}
                 disabled={!detail || excelBusy}
-                title="현재 데이터가 담긴 Excel 양식을 내려받아 수정 후 업로드하세요."
+                title={t("serviceProjectDashboard:templateDownloadTitle")}
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -435,12 +446,12 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                   opacity: !detail || excelBusy ? 0.6 : 1,
                 }}
               >
-                <FileSpreadsheet size={13} /> Excel 다운로드
+                <FileSpreadsheet size={13} /> {t("serviceProjectDashboard:excelDownloadButton")}
               </button>
               <button
                 onClick={() => excelFileRef.current?.click()}
                 disabled={!detail || excelBusy}
-                title="다운로드한 양식에 데이터를 입력해 업로드하면 전체 데이터가 교체됩니다."
+                title={t("serviceProjectDashboard:templateUploadTitle")}
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -456,7 +467,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                   opacity: !detail || excelBusy ? 0.6 : 1,
                 }}
               >
-                <Upload size={13} /> Excel 업로드
+                <Upload size={13} /> {t("serviceProjectDashboard:excelUploadButton")}
               </button>
               <input
                 ref={excelFileRef}
@@ -477,11 +488,11 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
             <div style={{ display: "grid", gridTemplateColumns: "1.3fr 1fr 1fr", gap: "8px" }}>
               {/* Revenue — 도넛 2개 */}
               <div style={cardStyle}>
-                <span style={sectionTitle}>매출</span>
+                <span style={sectionTitle}>{t("common:revenue")}</span>
                 {isLoading ? (
-                  <div style={{ padding: "40px 10px", textAlign: "center", fontSize: "13px", color: "#7c8ba3" }}>불러오는 중…</div>
+                  <div style={{ padding: "40px 10px", textAlign: "center", fontSize: "13px", color: "#7c8ba3" }}>{t("common:loading")}</div>
                 ) : revenueTarget == null && revenueTotal == null ? (
-                  <EmptyHint label="매출 목표/실적" />
+                  <EmptyHint label={t("serviceProjectDashboard:revenueTargetActualLabel")} />
                 ) : (
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-evenly", padding: "14px 0 6px" }}>
                     <div style={{ textAlign: "center" }}>
@@ -497,7 +508,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                         labelSize={20}
                       />
                       <div style={{ fontSize: "12px", color: "#16294a", fontWeight: 700, marginTop: "5px", textDecoration: "underline" }}>
-                        연간 목표 달성률
+                        {t("serviceProjectDashboard:annualTargetAchievementRate")}
                       </div>
                     </div>
                     <div style={{ textAlign: "center" }}>
@@ -513,7 +524,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                         labelSize={20}
                       />
                       <div style={{ fontSize: "12px", color: "#16294a", fontWeight: 700, marginTop: "5px", textDecoration: "underline" }}>
-                        누계 매출 달성률
+                        {t("serviceProjectDashboard:cumulativeRevenueAchievementRate")}
                       </div>
                     </div>
                   </div>
@@ -524,16 +535,16 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
               <div style={cardStyle}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                   <span style={sectionTitle}>
-                    예산 <u>집행 현황</u>
+                    {t("common:budget")} <u>{t("serviceProjectDashboard:executionStatusLabel")}</u>
                   </span>
                   <span style={{ fontSize: "12px", color: "#333", fontWeight: 600 }}>
-                    총 집행률 : {fmtPct(ratioPct(totalActual, totalBudget))}
+                    {t("serviceProjectDashboard:totalExecutionRate")} : {fmtPct(ratioPct(totalActual, totalBudget))}
                   </span>
                 </div>
                 {isLoading ? (
-                  <div style={{ padding: "40px 10px", textAlign: "center", fontSize: "13px", color: "#7c8ba3" }}>불러오는 중…</div>
+                  <div style={{ padding: "40px 10px", textAlign: "center", fontSize: "13px", color: "#7c8ba3" }}>{t("common:loading")}</div>
                 ) : budgetRows.length === 0 ? (
-                  <EmptyHint label="예산 집행" />
+                  <EmptyHint label={t("serviceProjectDashboard:budgetExecutionEmptyLabel")} />
                 ) : (
                   <div
                     style={{
@@ -587,11 +598,11 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
 
               {/* Cash — 매출·확정·수금·채권 */}
               <div style={cardStyle}>
-                <span style={sectionTitle}>자금</span>
+                <span style={sectionTitle}>{t("serviceProjectDashboard:cashLabel")}</span>
                 {isLoading ? (
-                  <div style={{ padding: "40px 10px", textAlign: "center", fontSize: "13px", color: "#7c8ba3" }}>불러오는 중…</div>
+                  <div style={{ padding: "40px 10px", textAlign: "center", fontSize: "13px", color: "#7c8ba3" }}>{t("common:loading")}</div>
                 ) : revenueTotal == null && cashConfirmed == null && cashCollection == null ? (
-                  <EmptyHint label="자금 (매출/확정/수금)" />
+                  <EmptyHint label={t("serviceProjectDashboard:cashEmptyLabel")} />
                 ) : (
                   (() => {
                     const cashMax = Math.max(
@@ -615,7 +626,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                           value={revenueTotal ?? 0}
                           max={cashMax}
                           color="#c9d2dd"
-                          label="매출"
+                          label={t("common:revenue")}
                           height={150}
                           valueLabel={formatMoney(revenueTotal, currency, unitOn)}
                           width={24}
@@ -624,7 +635,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                           value={cashConfirmed ?? 0}
                           max={cashMax}
                           color="#c9d2dd"
-                          label="확정 (A)"
+                          label={t("serviceProjectDashboard:confirmedA")}
                           height={150}
                           valueLabel={formatMoney(cashConfirmed, currency, unitOn)}
                           width={24}
@@ -633,7 +644,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                           value={cashCollection ?? 0}
                           max={cashMax}
                           color="#2f7cf6"
-                          label="수금 (B)"
+                          label={t("serviceProjectDashboard:collectionB")}
                           height={150}
                           valueLabel={formatMoney(cashCollection, currency, unitOn)}
                           width={24}
@@ -642,7 +653,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                           value={Math.max(cashOutstanding ?? 0, 0)}
                           max={cashMax}
                           color="#f2736a"
-                          label="채권 (A)-(B)"
+                          label={t("serviceProjectDashboard:receivableAB")}
                           height={150}
                           valueLabel={formatMoney(cashOutstanding, currency, unitOn)}
                           width={24}
@@ -669,7 +680,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
               color: "#7c8ba3",
             }}
           >
-            {TAB_LABELS[activeTab] ?? activeTab} 화면은 준비 중입니다.
+            {t("serviceProjectDashboard:comingSoon", { label: t(TAB_LABEL_KEYS[activeTab] ?? activeTab) })}
           </div>
         )}
       </div>

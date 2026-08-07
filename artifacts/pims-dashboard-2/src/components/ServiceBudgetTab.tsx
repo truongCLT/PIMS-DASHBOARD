@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ProjectCommentPanel } from "./ProjectCommentPanel";
 
 import { useProjectDetail, fmtPct, ratioPct } from "../lib/projectDetailData";
@@ -93,6 +94,7 @@ function HBar({
 }
 
 export function ServiceBudgetTab({ projectName }: { projectName: string }) {
+  const { t } = useTranslation(["serviceBudgetTab", "common"]);
   const { detail, isLoading } = useProjectDetail(projectName);
   const { fmtMoney, unitLabel } = useMoney();
 
@@ -109,15 +111,15 @@ export function ServiceBudgetTab({ projectName }: { projectName: string }) {
       {/* Budget Execution Status */}
       <div style={{ ...cardStyle, padding: "14px 18px 24px" }}>
         <span style={{ fontSize: "13px", fontWeight: 600, color: "#2f7cf6" }}>
-          예산 <u>집행 현황</u>
-          <span style={{ marginLeft: "8px", fontSize: "12px", fontWeight: 500, color: "#7c8ba3" }}>단위: {unitLabel}</span>
+          {t("common:budget")} <u>{t("serviceBudgetTab:executionStatusLabel")}</u>
+          <span style={{ marginLeft: "8px", fontSize: "12px", fontWeight: 500, color: "#7c8ba3" }}>{t("common:unit")}: {unitLabel}</span>
         </span>
 
         {isLoading ? (
-          <div style={{ padding: "50px 20px", textAlign: "center", fontSize: "14px", color: "#7c8ba3" }}>불러오는 중…</div>
+          <div style={{ padding: "50px 20px", textAlign: "center", fontSize: "14px", color: "#7c8ba3" }}>{t("common:loading")}</div>
         ) : rows.length === 0 ? (
           <div style={{ padding: "50px 20px", textAlign: "center", fontSize: "14px", color: "#7c8ba3" }}>
-            예산 집행 데이터가 없습니다. "데이터 입력" 탭에서 예산 집행 현황을 입력해 주세요.
+            {t("serviceBudgetTab:noBudgetDataNotice")}
           </div>
         ) : (
           <div style={{ marginTop: "18px", display: "flex", flexDirection: "column", gap: "26px" }}>
@@ -137,7 +139,7 @@ export function ServiceBudgetTab({ projectName }: { projectName: string }) {
               );
             })}
             <HBar
-              label="합계"
+              label={t("common:total")}
               totalWidth={widthPct(totalBudget)}
               execRatio={totalBudget != null && totalBudget > 0 && totalActual != null ? totalActual / totalBudget : 0}
               execLabel={totalActual != null ? fmtMoney(totalActual) : undefined}

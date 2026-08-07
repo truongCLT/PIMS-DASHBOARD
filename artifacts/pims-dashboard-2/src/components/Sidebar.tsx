@@ -1,10 +1,12 @@
 import React, { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import pimsBranding from "../assets/pims-branding.png";
 import { FolderClosed } from "lucide-react";
 import { useListMgmtreportProjects } from "@workspace/api-client-react";
 import { PROJECT_GROUPS, classifyMrProject, isTestMrProject } from "../data/projects";
 import { REPORT_YEAR } from "../lib/mgmtreportData";
 import { useTheme } from "../lib/theme";
+import { LANGUAGE_LABELS, SUPPORTED_LANGUAGES } from "../lib/i18n";
 
 export type DashboardScope =
   | "전체"
@@ -20,6 +22,29 @@ interface TreeItem {
   children?: TreeItem[];
   isProject?: boolean;
   scope?: DashboardScope;
+}
+
+type TFn = ReturnType<typeof useTranslation>["t"];
+
+/**
+ * Raw Korean tree label (division/bucket names built in buildTreeData) → translated
+ * display text. Project names and top-level group labels (DECV/TCC/DE HEIM) are not
+ * in this map and pass through unchanged — they are data, not UI copy.
+ * IMPORTANT: this only affects what is rendered; item.label/item.scope (used for
+ * selection state and DashboardScope comparisons) are never modified.
+ */
+const TREE_LABEL_KEY: Record<string, string> = {
+  "시공": "common:construction",
+  "용역": "common:service",
+  "진행중": "common:inProgress",
+  "종료": "common:closed",
+  "자체개발": "sidebar:selfDevelopmentDivision",
+  "용지매각": "sidebar:landSaleDivision",
+};
+
+function treeLabel(label: string, t: TFn): string {
+  const key = TREE_LABEL_KEY[label];
+  return key ? t(key) : label;
 }
 
 function buildTreeData(mrProjects: { name: string; status?: string }[]): TreeItem[] {
@@ -91,6 +116,7 @@ function TreeNode({
   onSelectProject: (name: string) => void;
   onSelectScope: (scope: DashboardScope) => void;
 }) {
+  const { t } = useTranslation(["sidebar", "common"]);
   const [open, setOpen] = useState(false);
   const hasChildren = item.children && item.children.length > 0;
   const isTopLevel = depth === 0;
@@ -109,6 +135,8 @@ function TreeNode({
   const isActive = isSelected || isScopeSelected;
   const bg = isActive ? T.sidebar.activeItemBg : "transparent";
   const activeColor = isActive ? T.sidebar.activeItemColor : color;
+  // Project names / group labels (DECV, TCC, DE HEIM) are data and pass through unchanged.
+  const displayLabel = item.isProject ? item.label : treeLabel(item.label, t);
 
   return (
     <div>
@@ -140,7 +168,7 @@ function TreeNode({
         }}
       >
         <div
-          title={item.label}
+          title={displayLabel}
           style={{
             flex: 1,
             minWidth: 0,
@@ -149,7 +177,7 @@ function TreeNode({
             whiteSpace: "nowrap",
           }}
         >
-          {item.label}
+          {displayLabel}
         </div>
         {collapsible && (
           <span style={{ fontSize: "10px", color: "#44546a" }}>
@@ -191,6 +219,7 @@ export function Sidebar({
   onSelectTotal: () => void;
   onLogoClick?: () => void;
 }) {
+  const { t, i18n } = useTranslation(["sidebar", "common"]);
   const projectsQuery = useListMgmtreportProjects({ year: REPORT_YEAR });
   const treeData = useMemo(() => {
     const projects = (projectsQuery.data?.projects ?? [])
@@ -247,16 +276,48 @@ export function Sidebar({
         ))}
       </div>
 
+      {/* Language switcher */}
+      <div style={{ padding: "10px 10px 0", borderTop: T.sidebar.brandingBorderTop }}>
+        <div style={{
+          display: "flex",
+          borderRadius: "6px",
+          overflow: "hidden",
+          border: "1px solid #dde6f1",
+        }}>
+          {SUPPORTED_LANGUAGES.map((lng, i) => {
+            const active = i18n.language === lng;
+            return (
+              <button
+                key={lng}
+                onClick={() => i18n.changeLanguage(lng)}
+                style={{
+                  flex: 1,
+                  padding: "6px 2px",
+                  fontSize: "11px",
+                  fontWeight: active ? "700" : "500",
+                  border: "none",
+                  borderLeft: i === 0 ? "none" : "1px solid #dde6f1",
+                  backgroundColor: active ? T.sidebar.activeItemAccent : "#ffffff",
+                  color: active ? "#ffffff" : "#556",
+                  cursor: "pointer",
+                }}
+              >
+                {LANGUAGE_LABELS[lng]}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Bottom branding */}
       <div style={{
         padding: "12px 10px",
-        borderTop: T.sidebar.brandingBorderTop,
       }}>
         <img
           src={pimsBranding}
           alt="PIMS System For DAEWOO E&C VINA"
           onClick={onLogoClick}
-          title="관리자 모드"
+          title={t("sidebar:adminModeTooltip")}
           style={{
             width: "100%",
             borderRadius: "8px",

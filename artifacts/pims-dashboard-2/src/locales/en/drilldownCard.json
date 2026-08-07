@@ -1,0 +1,11 @@
+{
+  "header": "Detail Info (Drilldown)",
+  "orderResultTitle": "Order Result",
+  "orderResultMonthSuffix": " (Month {{month}})",
+  "error": "Error",
+  "currentMonthOrder": "Current month orders  {{value}}",
+  "noCurrentMonthOrder": "No orders this month",
+  "cumulativeOrder": "Cumulative orders  {{value}}",
+  "topRevenueTitle": "Top Revenue This Month",
+  "noCurrentMonthRevenue": "No revenue this month"
+}

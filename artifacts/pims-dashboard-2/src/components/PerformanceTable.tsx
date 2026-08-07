@@ -1,11 +1,15 @@
-import React from "react";
-import { useDashboardData } from "../lib/mgmtreportData";
+import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { useDashboardData, type PerformanceRow } from "../lib/mgmtreportData";
 import { useDashboardFilters } from "../lib/dashboardFilters";
+import { DetailModal, DetailDataTable } from "./DetailModal";
 
 export function PerformanceTable() {
+  const { t } = useTranslation(["performanceTable", "common"]);
   const { derived, isError } = useDashboardData();
   const { unitIndex } = useDashboardFilters();
   const rows = derived?.performanceRows ?? [];
+  const [detailOpen, setDetailOpen] = useState(false);
 
   return (
     <div style={{
@@ -17,11 +21,14 @@ export function PerformanceTable() {
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
-          <span style={{ fontSize: "13px", fontWeight: "600", color: "#16294a" }}>경영실적 현황</span>
-          {derived && <span style={{ fontSize: "11px", color: "#7c8ba3" }}>단위: {derived.unitLabel}</span>}
+          <span style={{ fontSize: "13px", fontWeight: "600", color: "#16294a" }}>{t("performanceTable:managementPerformanceStatus")}</span>
+          {derived && <span style={{ fontSize: "11px", color: "#7c8ba3" }}>{t("common:unit")}: {derived.unitLabel}</span>}
         </div>
-        <button style={{ fontSize: "12px", color: "#2f7cf6", background: "none", border: "none", cursor: "pointer" }}>
-          상세보기
+        <button
+          onClick={() => setDetailOpen(true)}
+          style={{ fontSize: "12px", color: "#2f7cf6", background: "none", border: "none", cursor: "pointer" }}
+        >
+          {t("performanceTable:viewDetails")}
         </button>
       </div>
 
@@ -29,16 +36,16 @@ export function PerformanceTable() {
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: unitIndex === 1 ? "9.5px" : "11px" }}>
           <thead>
             <tr style={{ backgroundColor: "#e7f1fd" }}>
-              <th style={{ padding: "4px 6px", textAlign: "left", color: "#555", fontWeight: "600", borderBottom: "1px solid #e2e9f3" }} rowSpan={2}>구분</th>
-              <th style={{ padding: "4px 6px", textAlign: "center", color: "#555", fontWeight: "600", borderBottom: "1px solid #e2e9f3", borderLeft: "1px solid #e2e9f3" }} colSpan={3}>당월 누적</th>
-              <th style={{ padding: "4px 6px", textAlign: "center", color: "#555", fontWeight: "600", borderBottom: "1px solid #e2e9f3", borderLeft: "1px solid #e2e9f3" }} colSpan={3}>연간</th>
+              <th style={{ padding: "4px 6px", textAlign: "left", color: "#555", fontWeight: "600", borderBottom: "1px solid #e2e9f3" }} rowSpan={2}>{t("performanceTable:category")}</th>
+              <th style={{ padding: "4px 6px", textAlign: "center", color: "#555", fontWeight: "600", borderBottom: "1px solid #e2e9f3", borderLeft: "1px solid #e2e9f3" }} colSpan={3}>{t("performanceTable:currentMonthCumulative")}</th>
+              <th style={{ padding: "4px 6px", textAlign: "center", color: "#555", fontWeight: "600", borderBottom: "1px solid #e2e9f3", borderLeft: "1px solid #e2e9f3" }} colSpan={3}>{t("common:annual")}</th>
             </tr>
             <tr style={{ backgroundColor: "#eef4fa" }}>
-              {["계획", "실적", "달성률"].map((h) => (
-                <th key={h} style={{ padding: "3px 6px", textAlign: "right", color: "#666", fontWeight: "500", borderBottom: "1px solid #e2e9f3", borderLeft: "1px solid #e2e9f3" }}>{h}</th>
+              {[t("common:plan"), t("common:actual"), t("common:achievementRate")].map((h, idx) => (
+                <th key={`m-${idx}`} style={{ padding: "3px 6px", textAlign: "right", color: "#666", fontWeight: "500", borderBottom: "1px solid #e2e9f3", borderLeft: "1px solid #e2e9f3" }}>{h}</th>
               ))}
-              {["계획", "전망", "달성률"].map((h) => (
-                <th key={h} style={{ padding: "3px 6px", textAlign: "right", color: "#666", fontWeight: "500", borderBottom: "1px solid #e2e9f3", borderLeft: "1px solid #e2e9f3" }}>{h}</th>
+              {[t("common:plan"), t("common:forecast"), t("common:achievementRate")].map((h, idx) => (
+                <th key={`y-${idx}`} style={{ padding: "3px 6px", textAlign: "right", color: "#666", fontWeight: "500", borderBottom: "1px solid #e2e9f3", borderLeft: "1px solid #e2e9f3" }}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -46,7 +53,7 @@ export function PerformanceTable() {
             {rows.length === 0 && (
               <tr>
                 <td colSpan={7} style={{ padding: "12px 6px", textAlign: "center", color: "#888" }}>
-                  {isError ? "데이터를 불러오지 못했습니다." : "데이터 로딩 중…"}
+                  {isError ? t("performanceTable:loadFailed") : t("performanceTable:dataLoading")}
                 </td>
               </tr>
             )}
@@ -77,6 +84,26 @@ export function PerformanceTable() {
           </tbody>
         </table>
       </div>
+
+      <DetailModal
+        open={detailOpen}
+        onClose={() => setDetailOpen(false)}
+        title={t("performanceTable:managementPerformanceStatus")}
+      >
+        <DetailDataTable<PerformanceRow>
+          rowKey={(row) => row.label}
+          columns={[
+            { key: "label", label: t("performanceTable:category"), align: "left" },
+            { key: "planM", label: `${t("performanceTable:currentMonthCumulative")} ${t("common:plan")}` },
+            { key: "actualM", label: `${t("performanceTable:currentMonthCumulative")} ${t("common:actual")}` },
+            { key: "achM", label: `${t("performanceTable:currentMonthCumulative")} ${t("common:achievementRate")}` },
+            { key: "planY", label: `${t("common:annual")} ${t("common:plan")}` },
+            { key: "forecastY", label: `${t("common:annual")} ${t("common:forecast")}` },
+            { key: "achY", label: `${t("common:annual")} ${t("common:achievementRate")}` },
+          ]}
+          rows={rows}
+        />
+      </DetailModal>
     </div>
   );
 }

@@ -1,0 +1,15 @@
+{
+  "tradeType": "공종",
+  "vendorName": "업\n체\n명",
+  "category": "구\n분",
+  "firstContractDate": "최초\n계약일",
+  "changeContractNo": "변경\n계약\n차수",
+  "budgetA": "예산\n(A)",
+  "resolvedAmountB": "결의금액\n(B)",
+  "resolvedRateBA": "결의율\n(B/A)",
+  "progressStatus": "기성현황",
+  "thisMonth": "이번달",
+  "cumulativeC": "누계\n(C)",
+  "rateCB": "비율\n(C/B)",
+  "noData": "외주/용역 데이터가 없습니다. 좌측 \"데이터 입력\" 탭에서 외주 데이터를 입력해 주세요."
+}

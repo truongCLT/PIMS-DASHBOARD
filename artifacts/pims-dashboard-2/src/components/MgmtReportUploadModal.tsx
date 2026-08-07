@@ -1,4 +1,5 @@
 import React, { useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { FileSpreadsheet, History, RotateCcw, Upload, X } from "lucide-react";
 import {
@@ -22,25 +23,22 @@ type Dataset = "mgmtreport" | "cashflow" | "salescost";
 
 const DATASET_META: Record<
   Dataset,
-  { label: string; needsYear: boolean; description: string }
+  { labelKey: string; needsYear: boolean; descriptionKey: string }
 > = {
   mgmtreport: {
-    label: "경영관리보고회",
+    labelKey: "datasetLabelMgmtreport",
     needsYear: true,
-    description:
-      "매월 취합된 경영관리보고회 Excel(.xlsx)을 업로드하면 자동으로 파싱하여 미리보기를 보여드립니다. 반영 시 기존 경영관리보고회 데이터가 새 파일 내용으로 교체됩니다.",
+    descriptionKey: "datasetDescMgmtreport",
   },
   cashflow: {
-    label: "자금수지",
+    labelKey: "datasetLabelCashflow",
     needsYear: false,
-    description:
-      "법인 자금수지 Excel(.xlsx)을 업로드하면 자동으로 파싱하여 미리보기를 보여드립니다. 반영 시 기존 자금수지 데이터가 새 파일 내용으로 교체됩니다.",
+    descriptionKey: "datasetDescCashflow",
   },
   salescost: {
-    label: "매출/원가",
+    labelKey: "datasetLabelSalescost",
     needsYear: true,
-    description:
-      "Summary of Sales+costs Excel(.xlsx)을 업로드하면 자동으로 파싱하여 미리보기를 보여드립니다. 반영 시 해당 연도의 매출/원가 데이터가 새 파일 내용으로 교체됩니다.",
+    descriptionKey: "datasetDescSalescost",
   },
 };
 
@@ -49,11 +47,11 @@ type PreviewState =
   | { kind: "cashflow"; data: CashflowImportPreview }
   | { kind: "salescost"; data: SalescostImportPreview };
 
-function errorMessage(err: unknown): string {
+function errorMessage(err: unknown, t: (key: string) => string): string {
   const data = (err as { data?: { error?: string } } | null)?.data;
   if (data?.error) return data.error;
   if (err instanceof Error && err.message) return err.message;
-  return "요청 처리 중 오류가 발생했습니다. 다시 시도해 주세요.";
+  return t("mgmtReportUploadModal:genericError");
 }
 
 const fmt = (n: number) =>
@@ -75,6 +73,7 @@ const statRow: React.CSSProperties = {
 };
 
 export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
+  const { t } = useTranslation(["mgmtReportUploadModal", "common"]);
   const queryClient = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
   const [dataset, setDataset] = useState<Dataset>("mgmtreport");
@@ -88,7 +87,12 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
   const [revertDone, setRevertDone] = useState<string | null>(null);
   const [confirmRevertId, setConfirmRevertId] = useState<number | null>(null);
 
-  const meta = DATASET_META[dataset];
+  const metaFor = (key: Dataset) => ({
+    needsYear: DATASET_META[key].needsYear,
+    label: t(`mgmtReportUploadModal:${DATASET_META[key].labelKey}`),
+    description: t(`mgmtReportUploadModal:${DATASET_META[key].descriptionKey}`),
+  });
+  const meta = metaFor(dataset);
 
   const historyQuery = useListMgmtreportImportHistory({
     query: {
@@ -105,14 +109,18 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
     try {
       const res = await revertMgmtreportImport({ historyId });
       setRevertDone(
-        `"${res.filename}" 반영 이전 상태로 되돌렸습니다. (프로젝트 ${res.restoredProjects}개, 월별 데이터 ${fmt(res.restoredMonthly)}건 복원)`,
+        t("mgmtReportUploadModal:revertDoneMessage", {
+          filename: res.filename,
+          restoredProjects: res.restoredProjects,
+          restoredMonthly: fmt(res.restoredMonthly),
+        }),
       );
       setConfirmRevertId(null);
       setPreview(null);
       setDone(false);
       await queryClient.invalidateQueries();
     } catch (err) {
-      setError(errorMessage(err));
+      setError(errorMessage(err, t));
     } finally {
       setLoading(null);
     }
@@ -131,11 +139,11 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
 
   const handlePreview = async () => {
     if (!file) {
-      setError("Excel(.xlsx) 파일을 먼저 선택해 주세요.");
+      setError(t("mgmtReportUploadModal:selectFileFirst"));
       return;
     }
     if (!file.name.toLowerCase().endsWith(".xlsx")) {
-      setError("xlsx 형식의 Excel 파일만 업로드할 수 있습니다.");
+      setError(t("mgmtReportUploadModal:xlsxOnly"));
       return;
     }
     setLoading("preview");
@@ -169,7 +177,7 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
       }
     } catch (err) {
       setPreview(null);
-      setError(errorMessage(err));
+      setError(errorMessage(err, t));
     } finally {
       setLoading(null);
       setProgress(null);
@@ -195,7 +203,7 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
       setDone(true);
       await queryClient.invalidateQueries();
     } catch (err) {
-      setError(errorMessage(err));
+      setError(errorMessage(err, t));
     } finally {
       setLoading(null);
       setProgress(null);
@@ -244,7 +252,7 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <FileSpreadsheet size={16} color="#1c7a5a" />
             <span style={{ fontSize: "14px", fontWeight: 700, color: "#16294a" }}>
-              Excel 업로드
+              {t("mgmtReportUploadModal:modalTitle")}
             </span>
           </div>
           <button
@@ -258,13 +266,13 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
         {/* Body */}
         <div style={{ padding: "16px 18px", overflowY: "auto" }}>
           <p style={{ margin: "0 0 12px", fontSize: "12px", color: "#7c8ba3", lineHeight: 1.6 }}>
-            {meta.description} 내용을 확인한 뒤 <b>반영</b>을 누르면 대시보드 데이터가 갱신됩니다.
+            {meta.description} {t("mgmtReportUploadModal:descConfirmBefore")}<b>{t("mgmtReportUploadModal:apply")}</b>{t("mgmtReportUploadModal:descConfirmAfter")}
           </p>
 
           {/* Controls */}
           <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap", marginBottom: "12px" }}>
             <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: "#333", fontWeight: 600 }}>
-              데이터 종류:
+              {t("mgmtReportUploadModal:datasetTypeLabel")}
               <select
                 value={dataset}
                 disabled={busy}
@@ -282,7 +290,7 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
               >
                 {(Object.keys(DATASET_META) as Dataset[]).map((key) => (
                   <option key={key} value={key}>
-                    {DATASET_META[key].label}
+                    {metaFor(key).label}
                   </option>
                 ))}
               </select>
@@ -315,11 +323,11 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
               }}
             >
               <Upload size={13} />
-              {file ? file.name : "Excel 파일 선택 (.xlsx)"}
+              {file ? file.name : t("mgmtReportUploadModal:selectExcelFilePlaceholder")}
             </button>
             {meta.needsYear && (
               <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: "#333", fontWeight: 600 }}>
-                대상 연도:
+                {t("mgmtReportUploadModal:targetYearLabel")}
                 <input
                   type="number"
                   value={year}
@@ -356,7 +364,7 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
                 opacity: busy || !file ? 0.6 : 1,
               }}
             >
-              {loading === "preview" ? "분석 중..." : "미리보기"}
+              {loading === "preview" ? t("mgmtReportUploadModal:previewAnalyzing") : t("mgmtReportUploadModal:previewButton")}
             </button>
           </div>
 
@@ -366,12 +374,12 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: "#7c8ba3", marginBottom: "4px", fontWeight: 600 }}>
                 <span>
                   {progress.phase === "upload"
-                    ? "파일 업로드 중..."
+                    ? t("mgmtReportUploadModal:uploadingFile")
                     : loading === "apply"
                       ? dataset === "cashflow"
-                        ? "서버에서 데이터 반영 중... (자금수지는 20초 정도 걸릴 수 있습니다)"
-                        : "서버에서 데이터 반영 중..."
-                      : "서버에서 파일 분석 중..."}
+                        ? t("mgmtReportUploadModal:applyingCashflowNote")
+                        : t("mgmtReportUploadModal:applyingData")
+                      : t("mgmtReportUploadModal:analyzingFile")}
                 </span>
                 {progress.phase === "upload" && <span>{progress.percent}%</span>}
               </div>
@@ -433,7 +441,7 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
                 fontWeight: 600,
               }}
             >
-              반영이 완료되었습니다. 대시보드가 새 데이터로 갱신되었습니다.
+              {t("mgmtReportUploadModal:applyCompleteMessage")}
             </div>
           )}
 
@@ -469,14 +477,14 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
                 }}
               >
                 <History size={13} />
-                최근 반영 내역 (되돌리면 해당 반영 이전 상태로 복원됩니다)
+                {t("mgmtReportUploadModal:recentHistoryTitle")}
               </div>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "11px" }}>
                 <thead>
                   <tr style={{ backgroundColor: "#f8fafc", color: "#7c8ba3" }}>
-                    <th style={thLeft}>반영 일시</th>
-                    <th style={thLeft}>파일명</th>
-                    <th style={thRight}>연도</th>
+                    <th style={thLeft}>{t("mgmtReportUploadModal:colAppliedAt")}</th>
+                    <th style={thLeft}>{t("mgmtReportUploadModal:colFilename")}</th>
+                    <th style={thRight}>{t("common:year")}</th>
                     <th style={thRightEdge}></th>
                   </tr>
                 </thead>
@@ -496,10 +504,10 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
                       <td style={tdRight}>{h.year}</td>
                       <td style={{ ...tdRightEdge, whiteSpace: "nowrap" }}>
                         {h.snapshotEmpty ? (
-                          <span style={{ color: "#8a94a6" }}>복원 불가(이전 데이터 없음)</span>
+                          <span style={{ color: "#8a94a6" }}>{t("mgmtReportUploadModal:cannotRestore")}</span>
                         ) : confirmRevertId === h.id ? (
                           <span style={{ display: "inline-flex", gap: "6px", alignItems: "center" }}>
-                            <span style={{ color: "#e0655c", fontWeight: 600 }}>이전 상태로 복원할까요?</span>
+                            <span style={{ color: "#e0655c", fontWeight: 600 }}>{t("mgmtReportUploadModal:confirmRestorePrompt")}</span>
                             <button
                               onClick={() => handleRevert(h.id)}
                               disabled={busy}
@@ -514,7 +522,7 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
                                 cursor: busy ? "wait" : "pointer",
                               }}
                             >
-                              {loading === "revert" ? "복원 중..." : "확인"}
+                              {loading === "revert" ? t("mgmtReportUploadModal:restoring") : t("common:confirm")}
                             </button>
                             <button
                               onClick={() => setConfirmRevertId(null)}
@@ -528,7 +536,7 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
                                 cursor: "pointer",
                               }}
                             >
-                              취소
+                              {t("common:cancel")}
                             </button>
                           </span>
                         ) : (
@@ -550,7 +558,7 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
                             }}
                           >
                             <RotateCcw size={11} />
-                            이전 데이터로 되돌리기
+                            {t("mgmtReportUploadModal:revertToPreviousData")}
                           </button>
                         )}
                       </td>
@@ -564,30 +572,30 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
           {preview?.kind === "mgmtreport" && (
             <div style={{ border: "1px solid #e2e9f3", borderRadius: "10px", overflow: "hidden" }}>
               <div style={{ backgroundColor: "#f2f6fb", padding: "10px 14px", fontSize: "12px", color: "#16294a", fontWeight: 700 }}>
-                파싱 결과 미리보기 — {preview.data.year}년 (단위: {preview.data.unit})
+                {t("mgmtReportUploadModal:previewHeaderMgmtreport", { year: preview.data.year, unit: preview.data.unit })}
               </div>
               <div style={statRow}>
-                <span>프로젝트 <b>{preview.data.projectCount}</b>개</span>
-                <span>월별 데이터 <b>{fmt(preview.data.monthlyCount)}</b>건</span>
-                <span>연간 전망 <b>{fmt(preview.data.annualCount)}</b>건</span>
-                <span>손익 라인 <b>{fmt(preview.data.pnlCount)}</b>건</span>
+                <span>{t("mgmtReportUploadModal:statProjectPrefix")}<b>{preview.data.projectCount}</b>{t("mgmtReportUploadModal:countSuffixGae")}</span>
+                <span>{t("mgmtReportUploadModal:statMonthlyDataPrefix")}<b>{fmt(preview.data.monthlyCount)}</b>{t("mgmtReportUploadModal:countSuffixGeon")}</span>
+                <span>{t("mgmtReportUploadModal:statAnnualForecastPrefix")}<b>{fmt(preview.data.annualCount)}</b>{t("mgmtReportUploadModal:countSuffixGeon")}</span>
+                <span>{t("mgmtReportUploadModal:statPnlLinePrefix")}<b>{fmt(preview.data.pnlCount)}</b>{t("mgmtReportUploadModal:countSuffixGeon")}</span>
                 <span>
-                  실적 입력 월: <b>{preview.data.monthsWithActual.length > 0 ? `${Math.min(...preview.data.monthsWithActual)}~${Math.max(...preview.data.monthsWithActual)}월` : "-"}</b>
+                  {t("mgmtReportUploadModal:statActualMonthLabel")}<b>{preview.data.monthsWithActual.length > 0 ? t("mgmtReportUploadModal:monthRange", { min: Math.min(...preview.data.monthsWithActual), max: Math.max(...preview.data.monthsWithActual) }) : "-"}</b>
                 </span>
               </div>
               <div style={statRow}>
-                <span>매출 계획 합계 <b>{fmt(preview.data.totals.revenuePlan)}</b></span>
-                <span>매출 실적/전망 합계 <b>{fmt(preview.data.totals.revenueActual)}</b></span>
-                <span>원가 실적/전망 합계 <b>{fmt(preview.data.totals.cogsActual)}</b></span>
+                <span>{t("mgmtReportUploadModal:statRevenuePlanTotalPrefix")}<b>{fmt(preview.data.totals.revenuePlan)}</b></span>
+                <span>{t("mgmtReportUploadModal:statRevenueActualTotalPrefix")}<b>{fmt(preview.data.totals.revenueActual)}</b></span>
+                <span>{t("mgmtReportUploadModal:statCogsActualTotalPrefix")}<b>{fmt(preview.data.totals.cogsActual)}</b></span>
               </div>
               <div style={{ maxHeight: "220px", overflowY: "auto" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "11px" }}>
                   <thead>
                     <tr style={{ backgroundColor: "#f8fafc", color: "#7c8ba3" }}>
-                      <th style={thLeft}>프로젝트</th>
-                      <th style={thRight}>매출 실적/전망</th>
-                      <th style={thRight}>원가 실적/전망</th>
-                      <th style={thRightEdge}>데이터 건수</th>
+                      <th style={thLeft}>{t("common:project")}</th>
+                      <th style={thRight}>{t("mgmtReportUploadModal:colRevenueActualForecast")}</th>
+                      <th style={thRight}>{t("mgmtReportUploadModal:colCogsActualForecast")}</th>
+                      <th style={thRightEdge}>{t("mgmtReportUploadModal:colDataCount")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -611,25 +619,25 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
           {preview?.kind === "cashflow" && (
             <div style={{ border: "1px solid #e2e9f3", borderRadius: "10px", overflow: "hidden" }}>
               <div style={{ backgroundColor: "#f2f6fb", padding: "10px 14px", fontSize: "12px", color: "#16294a", fontWeight: 700 }}>
-                파싱 결과 미리보기 — 자금수지 (단위: {preview.data.unit})
+                {t("mgmtReportUploadModal:previewHeaderCashflow", { unit: preview.data.unit })}
               </div>
               <div style={statRow}>
-                <span>프로젝트 <b>{preview.data.projectCount}</b>개</span>
-                <span>월별 데이터 <b>{fmt(preview.data.amountCount)}</b>건</span>
+                <span>{t("mgmtReportUploadModal:statProjectPrefix")}<b>{preview.data.projectCount}</b>{t("mgmtReportUploadModal:countSuffixGae")}</span>
+                <span>{t("mgmtReportUploadModal:statMonthlyDataPrefix")}<b>{fmt(preview.data.amountCount)}</b>{t("mgmtReportUploadModal:countSuffixGeon")}</span>
               </div>
               <div style={statRow}>
-                <span>수입 합계 <b>{fmt(preview.data.totals.cashIn)}</b></span>
-                <span>지출 합계 <b>{fmt(preview.data.totals.cashOut)}</b></span>
+                <span>{t("mgmtReportUploadModal:statCashInTotalPrefix")}<b>{fmt(preview.data.totals.cashIn)}</b></span>
+                <span>{t("mgmtReportUploadModal:statCashOutTotalPrefix")}<b>{fmt(preview.data.totals.cashOut)}</b></span>
               </div>
               <div style={{ maxHeight: "220px", overflowY: "auto" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "11px" }}>
                   <thead>
                     <tr style={{ backgroundColor: "#f8fafc", color: "#7c8ba3" }}>
-                      <th style={thLeft}>프로젝트</th>
-                      <th style={thLeft}>구분</th>
-                      <th style={thRight}>수입 합계</th>
-                      <th style={thRight}>지출 합계</th>
-                      <th style={thRightEdge}>데이터 건수</th>
+                      <th style={thLeft}>{t("common:project")}</th>
+                      <th style={thLeft}>{t("mgmtReportUploadModal:colDivision")}</th>
+                      <th style={thRight}>{t("mgmtReportUploadModal:colIncomeTotal")}</th>
+                      <th style={thRight}>{t("mgmtReportUploadModal:colExpenseTotal")}</th>
+                      <th style={thRightEdge}>{t("mgmtReportUploadModal:colDataCount")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -651,25 +659,25 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
           {preview?.kind === "salescost" && (
             <div style={{ border: "1px solid #e2e9f3", borderRadius: "10px", overflow: "hidden" }}>
               <div style={{ backgroundColor: "#f2f6fb", padding: "10px 14px", fontSize: "12px", color: "#16294a", fontWeight: 700 }}>
-                파싱 결과 미리보기 — 매출/원가 {preview.data.year}년 (단위: {preview.data.unit})
+                {t("mgmtReportUploadModal:previewHeaderSalescost", { year: preview.data.year, unit: preview.data.unit })}
               </div>
               <div style={statRow}>
-                <span>현장 <b>{preview.data.siteCount}</b>개</span>
-                <span>월별 데이터 <b>{fmt(preview.data.amountCount)}</b>건</span>
+                <span>{t("mgmtReportUploadModal:statSiteCountPrefix")}<b>{preview.data.siteCount}</b>{t("mgmtReportUploadModal:countSuffixGae")}</span>
+                <span>{t("mgmtReportUploadModal:statMonthlyDataPrefix")}<b>{fmt(preview.data.amountCount)}</b>{t("mgmtReportUploadModal:countSuffixGeon")}</span>
               </div>
               <div style={statRow}>
-                <span>매출 합계 <b>{fmt(preview.data.totals.revenueUsd)}</b></span>
-                <span>원가 합계 <b>{fmt(preview.data.totals.cogsUsd)}</b></span>
+                <span>{t("mgmtReportUploadModal:statRevenueTotalPrefix")}<b>{fmt(preview.data.totals.revenueUsd)}</b></span>
+                <span>{t("mgmtReportUploadModal:statCogsTotalPrefix")}<b>{fmt(preview.data.totals.cogsUsd)}</b></span>
               </div>
               <div style={{ maxHeight: "220px", overflowY: "auto" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "11px" }}>
                   <thead>
                     <tr style={{ backgroundColor: "#f8fafc", color: "#7c8ba3" }}>
-                      <th style={thLeft}>코드</th>
-                      <th style={thLeft}>현장명</th>
-                      <th style={thRight}>매출 합계</th>
-                      <th style={thRight}>원가 합계</th>
-                      <th style={thRightEdge}>데이터 건수</th>
+                      <th style={thLeft}>{t("mgmtReportUploadModal:colCode")}</th>
+                      <th style={thLeft}>{t("mgmtReportUploadModal:colSiteName")}</th>
+                      <th style={thRight}>{t("mgmtReportUploadModal:colRevenueTotal")}</th>
+                      <th style={thRight}>{t("mgmtReportUploadModal:colCogsTotal")}</th>
+                      <th style={thRightEdge}>{t("mgmtReportUploadModal:colDataCount")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -713,7 +721,7 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
               cursor: "pointer",
             }}
           >
-            닫기
+            {t("common:close")}
           </button>
           <button
             onClick={handleApply}
@@ -730,7 +738,7 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
               opacity: busy || !preview || done ? 0.55 : 1,
             }}
           >
-            {loading === "apply" ? "반영 중..." : "반영"}
+            {loading === "apply" ? t("mgmtReportUploadModal:applying") : t("mgmtReportUploadModal:apply")}
           </button>
         </div>
       </div>

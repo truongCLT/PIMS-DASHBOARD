@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ComposedChart,
   Line,
@@ -12,6 +13,7 @@ import {
 import { useDashboardData, type SalesRow } from "../lib/mgmtreportData";
 import { useDashboardFilters } from "../lib/dashboardFilters";
 import { chartTheme } from "../lib/chartTheme";
+import { DetailModal, DetailDataTable } from "./DetailModal";
 
 const PLAN_COLOR = chartTheme.planBlue;
 const ACTUAL_COLOR = chartTheme.actualGreen;
@@ -83,6 +85,7 @@ const makeActualRateLabel = (chartData: SalesRow[]) => (props: any) => {
 
 /* Custom Tooltip */
 const CustomTooltip = ({ active, payload, label }: any) => {
+  const { t } = useTranslation(["salesChart", "common"]);
   if (!active || !payload || !payload.length) return null;
   const plan = payload.find((p: any) => p.dataKey === "plan");
   const actual = payload.find((p: any) => p.dataKey === "actual");
@@ -90,17 +93,19 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return (
     <div style={{ backgroundColor: "#fff", border: "1px solid #e2e9f3", borderRadius: "4px", padding: "8px 10px", fontSize: "12px" }}>
       <div style={{ fontWeight: 700, marginBottom: "4px", color: "#16294a" }}>{label}</div>
-      {plan && <div style={{ color: PLAN_COLOR }}>매출(계획): {Number(plan.value).toLocaleString("ko-KR")}</div>}
-      {actual && <div style={{ color: ACTUAL_COLOR }}>매출(실적 및 전망): {Number(actual.value).toLocaleString("ko-KR")}</div>}
+      {plan && <div style={{ color: PLAN_COLOR }}>{t("salesChart:salesPlan")}: {Number(plan.value).toLocaleString("ko-KR")}</div>}
+      {actual && <div style={{ color: ACTUAL_COLOR }}>{t("salesChart:salesActualForecast")}: {Number(actual.value).toLocaleString("ko-KR")}</div>}
       {rate != null && (
-        <div style={{ color: RATE_COLOR, fontWeight: 700, marginTop: "4px" }}>달성률: {rate}%</div>
+        <div style={{ color: RATE_COLOR, fontWeight: 700, marginTop: "4px" }}>{t("common:achievementRate")}: {rate}%</div>
       )}
     </div>
   );
 };
 
 export function SalesChart() {
+  const { t } = useTranslation(["salesChart", "common"]);
   const [viewType, setViewType] = useState<"net" | "report">("net");
+  const [detailOpen, setDetailOpen] = useState(false);
   const { derived, isError } = useDashboardData();
   const { unitIndex } = useDashboardFilters();
   const compact = unitIndex === 1;
@@ -122,16 +127,18 @@ export function SalesChart() {
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
-          <span style={{ fontSize: "13px", fontWeight: "600", color: chartTheme.titleNavy }}>매출 실적 및 전망</span>
-          {derived && <span style={{ fontSize: "11px", color: "#7c8ba3" }}>단위: {derived.unitLabel}</span>}
+          <span style={{ fontSize: "13px", fontWeight: "600", color: chartTheme.titleNavy }}>{t("salesChart:title")}</span>
+          {derived && <span style={{ fontSize: "11px", color: "#7c8ba3" }}>{t("common:unit")}: {derived.unitLabel}</span>}
         </div>
-        <button style={{
-          fontSize: "12px",
-          color: "#2f7cf6",
-          background: "none",
-          border: "none",
-          cursor: "pointer",
-        }}>상세보기</button>
+        <button
+          onClick={() => setDetailOpen(true)}
+          style={{
+            fontSize: "12px",
+            color: "#2f7cf6",
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+          }}>{t("salesChart:viewDetails")}</button>
       </div>
 
       {/* Chart */}
@@ -139,10 +146,10 @@ export function SalesChart() {
         {visibleData.length === 0 ? (
           <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", color: "#888" }}>
             {isError
-              ? "데이터를 불러오지 못했습니다."
+              ? t("salesChart:errorLoadFailed")
               : derived?.emptyRange
-                ? "선택한 기간에 데이터가 없습니다."
-                : "데이터 로딩 중…"}
+                ? t("salesChart:noDataForPeriod")
+                : t("salesChart:loadingData")}
           </div>
         ) : (
         <ResponsiveContainer width="100%" height="100%">
@@ -169,7 +176,7 @@ export function SalesChart() {
             <Line
               type="linear"
               dataKey="actual"
-              name="매출(실적 및 전망)"
+              name={t("salesChart:salesActualForecast")}
               stroke={ACTUAL_COLOR}
               strokeWidth={1.5}
               dot={{ r: 2.5, fill: ACTUAL_COLOR, stroke: ACTUAL_COLOR }}
@@ -184,7 +191,7 @@ export function SalesChart() {
             <Line
               type="linear"
               dataKey="plan"
-              name="매출(계획)"
+              name={t("salesChart:salesPlan")}
               stroke={PLAN_COLOR}
               strokeWidth={1.5}
               dot={{ r: 2.5, fill: PLAN_COLOR, stroke: PLAN_COLOR }}
@@ -210,7 +217,7 @@ export function SalesChart() {
               onChange={() => setViewType("net")}
               style={{ accentColor: "#2f7cf6" }}
             />
-            넷
+            {t("salesChart:net")}
           </label>
           <label style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11px", color: "#555", cursor: "pointer" }}>
             <input
@@ -220,7 +227,7 @@ export function SalesChart() {
               onChange={() => setViewType("report")}
               style={{ accentColor: "#2f7cf6" }}
             />
-            리포트
+            {t("salesChart:report")}
           </label>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
@@ -230,7 +237,7 @@ export function SalesChart() {
               <circle cx="6" cy="4" r="2.5" fill={PLAN_COLOR} />
               <circle cx="20" cy="4" r="2.5" fill={PLAN_COLOR} />
             </svg>
-            <span style={{ fontSize: "12px", color: "#555" }}>매출(계획)</span>
+            <span style={{ fontSize: "12px", color: "#555" }}>{t("salesChart:salesPlan")}</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
             <svg width="26" height="8">
@@ -238,14 +245,27 @@ export function SalesChart() {
               <circle cx="6" cy="4" r="2.5" fill={ACTUAL_COLOR} />
               <circle cx="20" cy="4" r="2.5" fill={ACTUAL_COLOR} />
             </svg>
-            <span style={{ fontSize: "12px", color: "#555" }}>매출(실적 및 전망)</span>
+            <span style={{ fontSize: "12px", color: "#555" }}>{t("salesChart:salesActualForecast")}</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
             <span style={{ fontSize: "12px", fontWeight: 700, color: RATE_COLOR }}>%</span>
-            <span style={{ fontSize: "12px", color: "#555" }}>달성률</span>
+            <span style={{ fontSize: "12px", color: "#555" }}>{t("common:achievementRate")}</span>
           </div>
         </div>
       </div>
+
+      <DetailModal open={detailOpen} onClose={() => setDetailOpen(false)} title={t("salesChart:title")}>
+        <DetailDataTable<SalesRow>
+          rowKey={(row) => String(row.month)}
+          columns={[
+            { key: "month", label: t("salesChart:month"), align: "left" },
+            { key: "plan", label: t("salesChart:salesPlan") },
+            { key: "actual", label: t("salesChart:salesActualForecast") },
+            { key: "rate", label: t("common:achievementRate"), format: (v) => (v == null ? "-" : `${v}%`) },
+          ]}
+          rows={visibleData}
+        />
+      </DetailModal>
     </div>
   );
 }

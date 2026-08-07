@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { ProjectCommentPanel } from "./ProjectCommentPanel";
 import {
   ComposedChart,
@@ -126,6 +127,7 @@ function dateRange(s: string | null | undefined, e: string | null | undefined): 
 }
 
 function MilestoneChart({ milestones }: { milestones: ProjectDetail["milestones"] }) {
+  const { t } = useTranslation(["constructionProgressTab", "common"]);
   // 축 범위 계산 (계획/실적 시작~종료 월 전체)
   const idxs: number[] = [];
   for (const m of milestones) {
@@ -162,20 +164,20 @@ function MilestoneChart({ milestones }: { milestones: ProjectDetail["milestones"
   return (
     <div style={cardStyle}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-        <span style={{ ...sectionTitle }}>마일스톤</span>
+        <span style={{ ...sectionTitle }}>{t("common:milestone")}</span>
         <div style={{ display: "flex", flexDirection: "column", gap: "4px", fontSize: "11px", color: "#333" }}>
           <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
             <span style={{ width: "26px", height: "5px", backgroundColor: chartTheme.outflowRed, display: "inline-block" }} />
-            <u>계획</u>
+            <u>{t("common:plan")}</u>
           </span>
           <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
             <span style={{ width: "26px", height: "5px", backgroundColor: chartTheme.planBlue, display: "inline-block" }} />
-            실적
+            {t("common:actual")}
           </span>
         </div>
       </div>
       {milestones.length === 0 ? (
-        <div style={emptyStyle}>마일스톤 데이터가 없습니다. ( - )</div>
+        <div style={emptyStyle}>{t("constructionProgressTab:noMilestoneData")}</div>
       ) : (
         <div style={{ position: "relative", marginTop: "8px" }}>
           {/* 오늘 날짜 기준선 */}
@@ -318,6 +320,7 @@ function MilestoneChart({ milestones }: { milestones: ProjectDetail["milestones"
 }
 
 export function ConstructionProgressTab({ projectName }: { projectName: string }) {
+  const { t } = useTranslation(["constructionProgressTab", "common"]);
   const { detail, isLoading } = useProjectDetail(projectName);
   const [photoIdx, setPhotoIdx] = useState(0);
   useEffect(() => { setPhotoIdx(0); }, [projectName]);
@@ -346,7 +349,7 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
         {/* Construction site progress */}
         <div style={{ ...cardStyle, display: "flex", flexDirection: "column" }}>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
-            <span style={sectionTitle}>현장 공정 현황</span>
+            <span style={sectionTitle}>{t("constructionProgressTab:siteProgressStatus")}</span>
           </div>
           <div style={{ flex: 1, minHeight: 0 }}>
             {(() => {
@@ -357,7 +360,7 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
               return (
                 <PhotoPager
                   src={src}
-                  alt={`${projectName} 공사 현장`}
+                  alt={t("constructionProgressTab:sitePhotoAlt", { projectName })}
                   total={hasPhotos ? photos.length : 1}
                   current={hasPhotos ? safeIdx : 0}
                   onChange={setPhotoIdx}
@@ -371,7 +374,7 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
         {/* Progress */}
         <div style={{ ...cardStyle, display: "flex", flexDirection: "column" }}>
           <div style={{ display: "flex", justifyContent: "space-between" }}>
-            <span style={sectionTitle}>공정</span>
+            <span style={sectionTitle}>{t("common:process")}</span>
             <span
               style={{
                 fontSize: "11px",
@@ -387,7 +390,7 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
             </span>
           </div>
           <div style={{ textAlign: "center", fontSize: "12px", color: "#333", marginTop: "4px" }}>
-            계획 공정 (A)
+            {t("constructionProgressTab:planProcessA")}
           </div>
           <div style={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "center", margin: "4px 0 2px", position: "relative", minHeight: 0 }}>
             <Donut
@@ -404,7 +407,7 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
             </span>
           </div>
           <div style={{ textAlign: "center", fontSize: "12px", color: "#16294a", fontWeight: 600 }}>
-            실적 공정 (B)
+            {t("constructionProgressTab:actualProcessB")}
           </div>
           <div
             style={{
@@ -417,7 +420,7 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
               paddingTop: "6px",
             }}
           >
-            기준월 : {latest ? `${latest.year}년 ${latest.month}월` : "-"}
+            {t("common:baseMonth")} : {latest ? t("constructionProgressTab:yearMonth", { year: latest.year, month: latest.month }) : "-"}
           </div>
         </div>
       </div>
@@ -425,12 +428,12 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
       {/* Row 2: Project lifecycle progress */}
       <div style={cardStyle}>
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
-          <span style={sectionTitle}>프로젝트 생애주기 공정</span>
+          <span style={sectionTitle}>{t("constructionProgressTab:projectLifecycleProcess")}</span>
         </div>
         {isLoading ? (
-          <div style={emptyStyle}>불러오는 중…</div>
+          <div style={emptyStyle}>{t("common:loading")}</div>
         ) : lifecycleData.length === 0 ? (
-          <div style={emptyStyle}>월별 공정 데이터가 없습니다. ( - )</div>
+          <div style={emptyStyle}>{t("constructionProgressTab:noMonthlyProcessData")}</div>
         ) : (
           <div style={{ width: "100%", height: "240px" }}>
             <ResponsiveContainer width="100%" height="100%">
@@ -454,10 +457,10 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
                 />
                 <Tooltip contentStyle={{ fontSize: "13px" }} formatter={(v) => (v == null ? "-" : `${Number(v).toLocaleString()}%`)} />
                 <Legend wrapperStyle={{ fontSize: "14px" }} iconSize={12} />
-                <Bar yAxisId="left" dataKey="plan" name="월 계획" fill={chartTheme.planBlue} barSize={12} isAnimationActive={false} />
-                <Bar yAxisId="left" dataKey="actual" name="월 실적" fill={chartTheme.lightBlue} barSize={12} isAnimationActive={false} />
-                <Line yAxisId="right" dataKey="planAccum" name="누계 계획" stroke={chartTheme.profitGreen} strokeWidth={2} dot={{ r: 2 }} isAnimationActive={false} connectNulls />
-                <Line yAxisId="right" dataKey="actualAccum" name="누계 실적" stroke={chartTheme.sgaOrange} strokeWidth={2} dot={{ r: 2 }} isAnimationActive={false} connectNulls />
+                <Bar yAxisId="left" dataKey="plan" name={t("constructionProgressTab:monthlyPlan")} fill={chartTheme.planBlue} barSize={12} isAnimationActive={false} />
+                <Bar yAxisId="left" dataKey="actual" name={t("constructionProgressTab:monthlyActual")} fill={chartTheme.lightBlue} barSize={12} isAnimationActive={false} />
+                <Line yAxisId="right" dataKey="planAccum" name={t("constructionProgressTab:cumulativePlan")} stroke={chartTheme.profitGreen} strokeWidth={2} dot={{ r: 2 }} isAnimationActive={false} connectNulls />
+                <Line yAxisId="right" dataKey="actualAccum" name={t("constructionProgressTab:cumulativeActual")} stroke={chartTheme.sgaOrange} strokeWidth={2} dot={{ r: 2 }} isAnimationActive={false} connectNulls />
               </ComposedChart>
             </ResponsiveContainer>
           </div>

@@ -1,0 +1,10 @@
+{
+  "estBidding": "입찰",
+  "estExecutionBudget": "실행예산 편성",
+  "estCompletionCostRatio": "준공추정원가율",
+  "budgetExecutionStatusTitle": "예산 집행 현황",
+  "noBudgetDataNotice": "예산 집행 데이터가 없습니다. ( - )",
+  "costEstimationTitle": "원가 견적",
+  "noCostRatioDataNotice": "원가율 데이터가 없습니다. ( - )",
+  "asOfBasis": " ('{{ym}} 기준)"
+}

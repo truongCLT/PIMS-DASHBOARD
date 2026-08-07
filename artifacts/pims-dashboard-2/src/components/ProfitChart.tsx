@@ -1,7 +1,9 @@
 import React, { useState } from "react";
-import { useDashboardData } from "../lib/mgmtreportData";
+import { useTranslation } from "react-i18next";
+import { useDashboardData, type ProfitRow } from "../lib/mgmtreportData";
 import { useDashboardFilters } from "../lib/dashboardFilters";
 import { chartTheme } from "../lib/chartTheme";
+import { DetailModal, DetailDataTable } from "./DetailModal";
 
 const NAVY   = chartTheme.profitNavy;
 const GREEN  = chartTheme.profitGreen;
@@ -24,7 +26,9 @@ function niceStep(raw: number): number {
 interface TipLine { label: string; value: string; color: string }
 
 export function ProfitChart() {
+  const { t } = useTranslation(["profitChart", "common"]);
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
 
   const { derived, isError } = useDashboardData();
   const { unitIndex } = useDashboardFilters();
@@ -78,10 +82,10 @@ export function ProfitChart() {
     const ty  = YTOP + 2;
 
     const lines: TipLine[] = [
-      { label: "영업이익",   value: `${d.op.toLocaleString("ko-KR")} (${d.opPct})`,                   color: NAVY   },
-      { label: "영업외손익", value: `${d.non >= 0 ? "+" : ""}${d.non.toLocaleString("ko-KR")}`,        color: GREEN  },
-      { label: "경상이익",   value: `${d.ord.toLocaleString("ko-KR")} (${d.ordPct})`,                  color: GREEN  },
-      { label: "판관비",     value: `${d.sga} (${d.sgaPct})`,                                           color: ORANGE },
+      { label: t("common:operatingProfit"),          value: `${d.op.toLocaleString("ko-KR")} (${d.opPct})`,                   color: NAVY   },
+      { label: t("profitChart:nonOperatingProfitLoss"), value: `${d.non >= 0 ? "+" : ""}${d.non.toLocaleString("ko-KR")}`,     color: GREEN  },
+      { label: t("profitChart:ordinaryProfit"),      value: `${d.ord.toLocaleString("ko-KR")} (${d.ordPct})`,                  color: GREEN  },
+      { label: t("common:sga"),                      value: `${d.sga} (${d.sgaPct})`,                                          color: ORANGE },
     ];
 
     return (
@@ -119,19 +123,22 @@ export function ProfitChart() {
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
-          <span style={{ fontSize: "12px", fontWeight: "600", color: chartTheme.titleNavy }}>손익현황</span>
-          {derived && <span style={{ fontSize: "10px", color: "#7c8ba3" }}>단위: {derived.unitLabel}</span>}
+          <span style={{ fontSize: "12px", fontWeight: "600", color: chartTheme.titleNavy }}>{t("profitChart:profitLossStatus")}</span>
+          {derived && <span style={{ fontSize: "10px", color: "#7c8ba3" }}>{t("common:unit")}: {derived.unitLabel}</span>}
         </div>
-        <button style={{ fontSize: "11px", color: "#2f7cf6", background: "none", border: "none", cursor: "pointer" }}>
-          상세보기
+        <button
+          onClick={() => setDetailOpen(true)}
+          style={{ fontSize: "11px", color: "#2f7cf6", background: "none", border: "none", cursor: "pointer" }}
+        >
+          {t("profitChart:viewDetails")}
         </button>
       </div>
 
       {data.length === 0 ? (
         <div style={{ height: "200px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", color: "#888", textAlign: "center", padding: "0 20px" }}>
           {isError
-            ? "데이터를 불러오지 못했습니다."
-            : derived?.profitNote ?? "데이터 로딩 중…"}
+            ? t("profitChart:dataLoadFailed")
+            : derived?.profitNote ?? t("profitChart:dataLoading")}
         </div>
       ) : (
       <svg
@@ -206,7 +213,7 @@ export function ProfitChart() {
               {!isCondensed && (
                 <>
                   <path d={`M ${brX} ${yGross} h 7 V ${yOpTop} h -7`} fill="none" stroke={ORANGE} strokeWidth="2" />
-                  <text x={brX + 13} y={(yGross + yOpTop) / 2 - 4}  fontSize={fs(14)} fill={ORANGE}>판관비</text>
+                  <text x={brX + 13} y={(yGross + yOpTop) / 2 - 4}  fontSize={fs(14)} fill={ORANGE}>{t("common:sga")}</text>
                   <text x={brX + 13} y={(yGross + yOpTop) / 2 + 13} fontSize={fs(14)} fill={ORANGE}>{d.sga}({d.sgaPct})</text>
                 </>
               )}
@@ -252,15 +259,15 @@ export function ProfitChart() {
       <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginTop: "6px", justifyContent: "center" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
           <div style={{ width: "14px", height: "11px", backgroundColor: LIGHT, border: `1.5px solid ${NAVY}`, borderRadius: "2px" }} />
-          <span style={{ fontSize: "11px", color: "#333" }}>판관비 영역</span>
+          <span style={{ fontSize: "11px", color: "#333" }}>{t("profitChart:sgaArea")}</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
           <div style={{ width: "14px", height: "11px", backgroundColor: NAVY, borderRadius: "2px" }} />
-          <span style={{ fontSize: "11px", color: "#333" }}>영업이익</span>
+          <span style={{ fontSize: "11px", color: "#333" }}>{t("common:operatingProfit")}</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
           <div style={{ width: "14px", height: "11px", backgroundColor: GREEN, borderRadius: "2px" }} />
-          <span style={{ fontSize: "11px", color: "#333" }}>영업외손익</span>
+          <span style={{ fontSize: "11px", color: "#333" }}>{t("profitChart:nonOperatingProfitLoss")}</span>
         </div>
         {/* 6개 미만일 때만 판관비·경상이익 범례 표시 */}
         {!isCondensed && (
@@ -269,7 +276,7 @@ export function ProfitChart() {
               <svg width="10" height="14" viewBox="0 0 10 14">
                 <path d="M 2 1 h 6 V 13 h -6" fill="none" stroke={ORANGE} strokeWidth="2" />
               </svg>
-              <span style={{ fontSize: "11px", color: "#333" }}>판관비</span>
+              <span style={{ fontSize: "11px", color: "#333" }}>{t("common:sga")}</span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
               <svg width="24" height="8" viewBox="0 0 24 8">
@@ -277,17 +284,32 @@ export function ProfitChart() {
                 <circle cx="4" cy="4" r="3" fill={GREEN} />
                 <circle cx="20" cy="4" r="3" fill={GREEN} />
               </svg>
-              <span style={{ fontSize: "11px", color: "#333" }}>경상이익</span>
+              <span style={{ fontSize: "11px", color: "#333" }}>{t("profitChart:ordinaryProfit")}</span>
             </div>
           </>
         )}
         {/* 6개 이상일 때 툴팁 안내 */}
         {isCondensed && (
           <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-            <span style={{ fontSize: "10px", color: "#888" }}>※ 막대에 마우스를 올리면 경상이익·판관비 상세를 볼 수 있습니다</span>
+            <span style={{ fontSize: "10px", color: "#888" }}>{t("profitChart:hoverHint")}</span>
           </div>
         )}
       </div>
+
+      <DetailModal open={detailOpen} onClose={() => setDetailOpen(false)} title={t("profitChart:profitLossStatus")}>
+        <DetailDataTable<ProfitRow>
+          rowKey={(row) => String(row.m)}
+          columns={[
+            { key: "m", label: t("profitChart:month"), align: "left" },
+            { key: "op", label: t("common:operatingProfit"), format: (_v, row) => `${row.op.toLocaleString()} (${row.opPct})` },
+            { key: "non", label: t("profitChart:nonOperatingProfitLoss"), format: (_v, row) => `${row.non >= 0 ? "+" : ""}${row.non.toLocaleString()}` },
+            { key: "ord", label: t("profitChart:ordinaryProfit"), format: (_v, row) => `${row.ord.toLocaleString()} (${row.ordPct})` },
+            { key: "total", label: t("common:grossProfit"), format: (_v, row) => `${row.total.toLocaleString()} (${row.totalPct})` },
+            { key: "sga", label: t("common:sga"), format: (_v, row) => `${row.sga} (${row.sgaPct})` },
+          ]}
+          rows={data}
+        />
+      </DetailModal>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { Plus, Trash2, Save } from "lucide-react";
 import {
   usePutProjectdetail,
@@ -232,10 +233,11 @@ function DateInput({ value, onChange }: { value: string | null | undefined; onCh
 }
 
 function DelBtn({ onClick }: { onClick: () => void }) {
+  const { t } = useTranslation(["projectDataEntryTab", "common"]);
   return (
     <button
       onClick={onClick}
-      title="행 삭제"
+      title={t("projectDataEntryTab:deleteRow")}
       style={{ background: "none", border: "none", cursor: "pointer", padding: "4px", color: "#e0655c" }}
     >
       <Trash2 size={13} />
@@ -266,14 +268,24 @@ const BUDGET_ITEM_CATEGORY: Record<string, string> = {
 };
 
 const TRADE_GROUPS = ["공통", "토목", "건축", "기계", "전기", "조경"];
+/** raw Korean trade group (fixed identifier stored as data) → translation key, for display only */
+const TRADE_GROUP_LABEL_KEY: Record<string, string> = {
+  "공통": "tradeGroupCommon",
+  "토목": "tradeGroupCivil",
+  "건축": "tradeGroupArchitecture",
+  "기계": "tradeGroupMechanical",
+  "전기": "tradeGroupElectrical",
+  "조경": "tradeGroupLandscape",
+};
 
 const EST_KINDS: { kind: "bidding" | "execution" | "completion"; label: string }[] = [
-  { kind: "bidding", label: "입찰" },
-  { kind: "execution", label: "실행예산 편성" },
-  { kind: "completion", label: "준공추정원가율 (준공 전망)" },
+  { kind: "bidding", label: "estKindBidding" },
+  { kind: "execution", label: "estKindExecution" },
+  { kind: "completion", label: "estKindCompletion" },
 ];
 
 export function ProjectDataEntryTab({ projectName, service = false }: { projectName: string; service?: boolean }) {
+  const { t } = useTranslation(["projectDataEntryTab", "common"]);
   const { detail, isLoading } = useProjectDetail(projectName);
   const queryClient = useQueryClient();
   const mutation = usePutProjectdetail();
@@ -291,10 +303,10 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       { data: { name: projectName, status: next } },
       {
         onSuccess: () => {
-          setStatusMsg(next === "closed" ? "종료로 변경되었습니다." : "진행중으로 변경되었습니다.");
+          setStatusMsg(next === "closed" ? t("projectDataEntryTab:statusChangedToClosed") : t("projectDataEntryTab:statusChangedToOngoing"));
           queryClient.invalidateQueries({ queryKey: getListMgmtreportProjectsQueryKey() });
         },
-        onError: () => setStatusMsg("상태 변경에 실패했습니다."),
+        onError: () => setStatusMsg(t("projectDataEntryTab:statusChangeFailed")),
       },
     );
   };
@@ -397,30 +409,30 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
     rows.forEach((p, i) => {
       const rowNo = i + 1;
       if (!Number.isInteger(p.year) || p.year < 2000 || p.year > 2100) {
-        errors.push(`공정률 ${rowNo}번째 행: 연도(${p.year})는 2000~2100 사이여야 합니다.`);
+        errors.push(t("projectDataEntryTab:progressRowYearRange", { rowNo, year: p.year }));
       }
       if (!Number.isInteger(p.month) || p.month < 1 || p.month > 12) {
-        errors.push(`공정률 ${rowNo}번째 행: 월(${p.month})은 1~12 사이여야 합니다.`);
+        errors.push(t("projectDataEntryTab:progressRowMonthRange", { rowNo, month: p.month }));
       } else {
         const key = `${p.year}-${p.month}`;
         const prev = seen.get(key);
         if (prev != null) {
-          errors.push(`공정률 ${rowNo}번째 행: ${p.year}년 ${p.month}월이 ${prev}번째 행과 중복됩니다.`);
+          errors.push(t("projectDataEntryTab:progressRowDuplicate", { rowNo, year: p.year, month: p.month, prev }));
         } else {
           seen.set(key, rowNo);
         }
       }
       (
         [
-          ["planPct", "월간 계획"],
-          ["actualPct", "월간 실적"],
-          ["planCumPct", "누계 계획"],
-          ["actualCumPct", "누계 실적"],
+          ["planPct", t("projectDataEntryTab:monthlyPlanLabel")],
+          ["actualPct", t("projectDataEntryTab:monthlyActualLabel")],
+          ["planCumPct", t("projectDataEntryTab:cumulativePlanLabel")],
+          ["actualCumPct", t("projectDataEntryTab:cumulativeActualLabel")],
         ] as const
       ).forEach(([field, label]) => {
         const v = p[field];
         if (v != null && (v < 0 || v > 100)) {
-          errors.push(`공정률 ${rowNo}번째 행: ${label}(${v}%)은 0~100 사이여야 합니다.`);
+          errors.push(t("projectDataEntryTab:progressRowPercentRange", { rowNo, label, value: v }));
         }
       });
     });
@@ -456,7 +468,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       const completions = estRows.filter((e) => e.kind === "completion");
       const undated = completions.filter((e) => e.year == null || e.month == null);
       if (undated.length > 1) {
-        report("준공추정원가율(준공 전망)에서 기준월이 없는 행은 1건만 입력할 수 있습니다. 기준월을 지정해 주세요.");
+        report(t("projectDataEntryTab:completionMissingMonthLimit"));
         return;
       }
       const seen = new Set<string>();
@@ -464,7 +476,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
         if (c.year == null || c.month == null) continue;
         const key = `${c.year}-${c.month}`;
         if (seen.has(key)) {
-          report(`준공추정원가율(준공 전망)에 같은 기준월(${c.year}.${String(c.month).padStart(2, "0")})이 중복 입력되었습니다.`);
+          report(t("projectDataEntryTab:completionDuplicateMonth", { year: c.year, month: String(c.month).padStart(2, "0") }));
           return;
         }
         seen.add(key);
@@ -498,7 +510,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
           }
         },
         onSuccess: () => {
-          report("저장되었습니다.");
+          report(t("common:saveSucceeded"));
           queryClient.invalidateQueries({ queryKey: getGetProjectdetailQueryKey({ projectName }) });
         },
         onError: (err: unknown) => {
@@ -506,7 +518,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
             typeof err === "object" && err != null && "data" in err
               ? (err as { data?: { error?: string } | null }).data?.error
               : undefined;
-          report(serverMsg || "저장에 실패했습니다. 다시 시도해 주세요.");
+          report(serverMsg || t("projectDataEntryTab:saveFailedRetry"));
         },
       },
     );
@@ -531,7 +543,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
 
 
   if (isLoading && !loaded) {
-    return <div style={{ ...cardStyle, textAlign: "center", color: "#7c8ba3", fontSize: "14px" }}>불러오는 중…</div>;
+    return <div style={{ ...cardStyle, textAlign: "center", color: "#7c8ba3", fontSize: "14px" }}>{t("common:loading")}</div>;
   }
 
   const nowYear = new Date().getFullYear();
@@ -542,7 +554,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       <span style={sectionTitle}>{label}</span>
       <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
         {cardMsgs[key] && (
-          <span style={{ fontSize: "13px", color: cardMsgs[key] === "저장되었습니다." ? "#1c7a5a" : "#e0655c" }}>
+          <span style={{ fontSize: "13px", color: cardMsgs[key] === t("common:saveSucceeded") ? "#1c7a5a" : "#e0655c" }}>
             {cardMsgs[key]}
           </span>
         )}
@@ -561,7 +573,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
             opacity: mutation.isPending ? 0.6 : 1,
           }}
         >
-          저장
+          {t("common:save")}
         </button>
       </span>
     </div>
@@ -570,15 +582,15 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
   // 공통: 월별 매출 (매출 탭) — 표시 순서가 시공/용역 탭 순서에 따라 달라 별도 정의
   const salesMonthlyCard = (
     <div style={cardStyle}>
-      {cardHead(service ? "2. 월별 매출 (매출 탭)" : "3. 월별 매출 (매출 탭)", "salesMonthly")}
+      {cardHead(service ? t("projectDataEntryTab:salesMonthlyTitleService") : t("projectDataEntryTab:salesMonthlyTitleConstruction"), "salesMonthly")}
       <div data-tbl="salesMonthly" onKeyDown={makeArrowNav("salesMonthly")}>
       <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px" }}>
         <thead>
           <tr>
-            <th style={th}>연도</th>
-            <th style={th}>월</th>
-            <th style={th}>매출 계획 (VND)</th>
-            <th style={th}>매출 실적 (VND)</th>
+            <th style={th}>{t("common:year")}</th>
+            <th style={th}>{t("projectDataEntryTab:monthColumn")}</th>
+            <th style={th}>{t("projectDataEntryTab:salesPlanVnd")}</th>
+            <th style={th}>{t("projectDataEntryTab:salesActualVnd")}</th>
             <th style={{ ...th, width: "36px" }}></th>
           </tr>
         </thead>
@@ -607,10 +619,10 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
           setSalesMonthly((rows) => [...rows, { ...next, plan: null, actual: null }]);
         }}
       >
-        <Plus size={12} /> 월 추가
+        <Plus size={12} /> {t("projectDataEntryTab:addMonth")}
       </button>
       <div style={{ fontSize: "12px", color: "#7c8ba3", marginTop: "6px" }}>
-        매출 탭 차트에 반영됩니다. 입력 데이터가 있으면 메인 대시보드 데이터보다 우선 사용됩니다. VND 기준으로 입력하면 저장 시 천 USD로 자동 변환됩니다.
+        {t("projectDataEntryTab:salesMonthlyNote")}
       </div>
     </div>
   );
@@ -618,15 +630,15 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
   // 용역: 월별 매출원가 (매출 탭)
   const cogsMonthlyCard = (
     <div style={cardStyle}>
-      {cardHead("3. 월별 매출원가 (매출 탭)", "cogsMonthly")}
+      {cardHead(t("projectDataEntryTab:cogsMonthlyTitle"), "cogsMonthly")}
       <div data-tbl="cogsMonthly" onKeyDown={makeArrowNav("cogsMonthly")}>
       <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px" }}>
         <thead>
           <tr>
-            <th style={th}>연도</th>
-            <th style={th}>월</th>
-            <th style={th}>회계 매출원가 (VND)</th>
-            <th style={th}>집행 매출원가 (WIP) (VND)</th>
+            <th style={th}>{t("common:year")}</th>
+            <th style={th}>{t("projectDataEntryTab:monthColumn")}</th>
+            <th style={th}>{t("projectDataEntryTab:acctCogsVnd")}</th>
+            <th style={th}>{t("projectDataEntryTab:wipCogsVnd")}</th>
             <th style={{ ...th, width: "36px" }}></th>
           </tr>
         </thead>
@@ -655,10 +667,10 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
           setCogsMonthly((rows) => [...rows, { ...next, acctCogs: null, wipCogs: null }]);
         }}
       >
-        <Plus size={12} /> 월 추가
+        <Plus size={12} /> {t("projectDataEntryTab:addMonth")}
       </button>
       <div style={{ fontSize: "12px", color: "#7c8ba3", marginTop: "6px" }}>
-        매출 탭의 Cost(회계 vs 집행 매출원가) 차트에 반영됩니다. VND 기준으로 입력하면 저장 시 천 USD로 자동 변환됩니다.
+        {t("projectDataEntryTab:cogsMonthlyNote")}
       </div>
     </div>
   );
@@ -667,11 +679,11 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
       <div style={{ ...cardStyle, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ fontSize: "14px", color: "#333" }}>
-          <b>{projectName}</b> 프로젝트의 공정/원가/외주 데이터를 입력합니다. 금액 입력: <b>VND</b> (저장 시 천 USD 자동 변환), 공정률 단위: <b>%</b>
+          <b>{projectName}</b> {t("projectDataEntryTab:headerDescPart1")} <b>VND</b> {t("projectDataEntryTab:headerDescPart2")} <b>%</b>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           {statusMsg && (
-            <span style={{ fontSize: "13px", color: statusMsg.includes("실패") ? "#e0655c" : "#1c7a5a", fontWeight: 600 }}>
+            <span style={{ fontSize: "13px", color: statusMsg === t("projectDataEntryTab:statusChangeFailed") ? "#e0655c" : "#1c7a5a", fontWeight: 600 }}>
               {statusMsg}
             </span>
           )}
@@ -686,12 +698,12 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                 color: currentStatus === "closed" ? "#a83a2a" : "#2f6b3d",
               }}
             >
-              {currentStatus === "closed" ? "종료" : "진행중"}
+              {currentStatus === "closed" ? t("common:closed") : t("common:inProgress")}
             </span>
             <button
               onClick={toggleStatus}
               disabled={statusMutation.isPending || mrProjectsQuery.isLoading}
-              title="프로젝트 진행 상태 전환"
+              title={t("projectDataEntryTab:statusToggleTooltip")}
               style={{
                 fontSize: "13px",
                 fontWeight: 600,
@@ -705,14 +717,14 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
               }}
             >
               {statusMutation.isPending
-                ? "변경 중…"
+                ? t("projectDataEntryTab:changingStatus")
                 : currentStatus === "closed"
-                  ? "진행중으로 변경"
-                  : "종료로 변경"}
+                  ? t("projectDataEntryTab:changeToOngoing")
+                  : t("projectDataEntryTab:changeToClosed")}
             </button>
           </div>
           {saveMsg && (
-            <span style={{ fontSize: "13px", color: saveMsg.startsWith("저장되") ? "#1c7a5a" : "#e0655c", fontWeight: 600 }}>
+            <span style={{ fontSize: "13px", color: saveMsg === t("common:saveSucceeded") ? "#1c7a5a" : "#e0655c", fontWeight: 600 }}>
               {saveMsg}
             </span>
           )}
@@ -735,7 +747,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
             }}
           >
             <Save size={13} />
-            {mutation.isPending ? "저장 중…" : "전체 저장"}
+            {mutation.isPending ? t("projectDataEntryTab:savingInProgress") : t("projectDataEntryTab:saveAll")}
           </button>
         </div>
       </div>
@@ -744,16 +756,16 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       {!service && (
       <>
       <div style={cardStyle}>
-        <span style={sectionTitle}>0. 개요 정보 (개요 탭)</span>
+        <span style={sectionTitle}>{t("projectDataEntryTab:overviewTitle")}</span>
         <div data-tbl="overview" onKeyDown={makeArrowNav("overview")}>
         <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px" }}>
           <thead>
             <tr>
-              <th style={th}>도급액 (VND)</th>
-              <th style={th}>공사 시작일</th>
-              <th style={th}>공사 종료일</th>
-              <th style={th}>발주처</th>
-              <th style={th}>공사규모</th>
+              <th style={th}>{t("projectDataEntryTab:contractAmountVnd")}</th>
+              <th style={th}>{t("projectDataEntryTab:constructionStartDate")}</th>
+              <th style={th}>{t("projectDataEntryTab:constructionEndDate")}</th>
+              <th style={th}>{t("projectDataEntryTab:client")}</th>
+              <th style={th}>{t("projectDataEntryTab:scale")}</th>
             </tr>
           </thead>
           <tbody>
@@ -781,7 +793,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                 <input
                   type="text"
                   value={overview.client ?? ""}
-                  placeholder="예: OO개발(주)"
+                  placeholder={t("projectDataEntryTab:clientPlaceholder")}
                   onChange={(e) => setOverview((o) => ({ ...o, client: e.target.value === "" ? null : e.target.value }))}
                   style={inputStyle}
                 />
@@ -790,7 +802,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                 <input
                   type="text"
                   value={overview.scale ?? ""}
-                  placeholder="예: B2~35F 3개동, 공동주택 500세대"
+                  placeholder={t("projectDataEntryTab:scalePlaceholder")}
                   onChange={(e) => setOverview((o) => ({ ...o, scale: e.target.value === "" ? null : e.target.value }))}
                   style={inputStyle}
                 />
@@ -799,24 +811,24 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
           </tbody>
         </table>
         <div style={{ fontSize: "12px", color: "#7c8ba3", marginTop: "6px" }}>
-          입찰(Bidding)·실행예산 금액은 아래 "4. 원가율" 표에 입력하면 개요 탭에 함께 반영됩니다.
+          {t("projectDataEntryTab:overviewCostRateNote")}
         </div>
         </div>
       </div>
 
       {/* 1. 월별 공정률 */}
       <div style={cardStyle}>
-        {cardHead("1. 월별 공정률 (공정 탭)", "progress")}
+        {cardHead(t("projectDataEntryTab:progressTitle"), "progress")}
         <div data-tbl="progress" onKeyDown={makeArrowNav("progress")}>
         <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px" }}>
           <thead>
             <tr>
-              <th style={th}>연도</th>
-              <th style={th}>월</th>
-              <th style={th}>월간 계획(%)</th>
-              <th style={th}>월간 실적(%)</th>
-              <th style={th}>누계 계획(%)</th>
-              <th style={th}>누계 실적(%)</th>
+              <th style={th}>{t("common:year")}</th>
+              <th style={th}>{t("projectDataEntryTab:monthColumn")}</th>
+              <th style={th}>{t("projectDataEntryTab:monthlyPlanPercent")}</th>
+              <th style={th}>{t("projectDataEntryTab:monthlyActualPercent")}</th>
+              <th style={th}>{t("projectDataEntryTab:cumulativePlanPercent")}</th>
+              <th style={th}>{t("projectDataEntryTab:cumulativeActualPercent")}</th>
               <th style={{ ...th, width: "36px" }}></th>
             </tr>
           </thead>
@@ -847,29 +859,29 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
             setProgress((rows) => [...rows, { ...next, planPct: null, actualPct: null, planCumPct: null, actualCumPct: null }]);
           }}
         >
-          <Plus size={12} /> 월 추가
+          <Plus size={12} /> {t("projectDataEntryTab:addMonth")}
         </button>
       </div>
 
       {/* 2. 마일스톤 */}
       <div style={cardStyle}>
-        {cardHead("2. 마일스톤 (공정 탭)", "milestones")}
+        {cardHead(t("projectDataEntryTab:milestonesTitle"), "milestones")}
         <div data-tbl="milestones" onKeyDown={makeArrowNav("milestones")}>
         <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px" }}>
           <thead>
             <tr>
-              <th style={th}>항목명</th>
-              <th style={th}>계획 시작</th>
-              <th style={th}>계획 종료</th>
-              <th style={th}>실적 시작</th>
-              <th style={th}>실적 종료</th>
+              <th style={th}>{t("projectDataEntryTab:itemNameColumn")}</th>
+              <th style={th}>{t("projectDataEntryTab:planStartColumn")}</th>
+              <th style={th}>{t("projectDataEntryTab:planEndColumn")}</th>
+              <th style={th}>{t("projectDataEntryTab:actualStartColumn")}</th>
+              <th style={th}>{t("projectDataEntryTab:actualEndColumn")}</th>
               <th style={{ ...th, width: "36px" }}></th>
             </tr>
           </thead>
           <tbody>
             {milestones.map((m, i) => (
               <tr key={i}>
-                <td style={tdCell}><TextInput value={m.label} onChange={(v) => updateAt(setMilestones, i, { label: v ?? "" })} placeholder="예: 착공" data-row={i} data-col={0} /></td>
+                <td style={tdCell}><TextInput value={m.label} onChange={(v) => updateAt(setMilestones, i, { label: v ?? "" })} placeholder={t("projectDataEntryTab:milestoneLabelPlaceholder")} data-row={i} data-col={0} /></td>
                 <td style={tdCell}><DateInput value={m.planStart} onChange={(v) => updateAt(setMilestones, i, { planStart: v })} /></td>
                 <td style={tdCell}><DateInput value={m.planEnd} onChange={(v) => updateAt(setMilestones, i, { planEnd: v })} /></td>
                 <td style={tdCell}><DateInput value={m.actualStart} onChange={(v) => updateAt(setMilestones, i, { actualStart: v })} /></td>
@@ -884,7 +896,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
           style={addBtn}
           onClick={() => setMilestones((rows) => [...rows, { label: "", planStart: null, planEnd: null, actualStart: null, actualEnd: null }])}
         >
-          <Plus size={12} /> 마일스톤 추가
+          <Plus size={12} /> {t("projectDataEntryTab:addMilestone")}
         </button>
       </div>
       {/* 시공: 매출 탭 순서(공정 다음) */}
@@ -895,17 +907,17 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       {/* 용역: 개요 정보 */}
       {service && (
       <div style={cardStyle}>
-        {cardHead("0. 개요 정보 (개요 탭)", "overview")}
+        {cardHead(t("projectDataEntryTab:overviewTitle"), "overview")}
         <div data-tbl="svcOverview" onKeyDown={makeArrowNav("svcOverview")}>
         <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px" }}>
           <thead>
             <tr>
-              <th style={th}>도급액 (VND)</th>
-              <th style={th}>수행 시작일</th>
-              <th style={th}>수행 종료일</th>
-              <th style={th}>발주처</th>
-              <th style={th}>수행내용</th>
-              <th style={th}>작성 기준월</th>
+              <th style={th}>{t("projectDataEntryTab:contractAmountVnd")}</th>
+              <th style={th}>{t("projectDataEntryTab:performanceStartDate")}</th>
+              <th style={th}>{t("projectDataEntryTab:performanceEndDate")}</th>
+              <th style={th}>{t("projectDataEntryTab:client")}</th>
+              <th style={th}>{t("projectDataEntryTab:scopeOfWork")}</th>
+              <th style={th}>{t("projectDataEntryTab:baseMonthOfRecord")}</th>
             </tr>
           </thead>
           <tbody>
@@ -920,10 +932,10 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                 <DateInput value={overview.endDate} onChange={(v) => setOverview((o) => ({ ...o, endDate: v }))} />
               </td>
               <td style={tdCell}>
-                <TextInput value={overview.client} placeholder="예: DAEWOO NHON TRACH" onChange={(v) => setOverview((o) => ({ ...o, client: v }))} data-row={0} data-col={1} />
+                <TextInput value={overview.client} placeholder={t("projectDataEntryTab:clientPlaceholderService")} onChange={(v) => setOverview((o) => ({ ...o, client: v }))} data-row={0} data-col={1} />
               </td>
               <td style={tdCell}>
-                <TextInput value={overview.scope} placeholder="예: 인허가, 프리콘 보고서 제출" onChange={(v) => setOverview((o) => ({ ...o, scope: v }))} data-row={0} data-col={2} />
+                <TextInput value={overview.scope} placeholder={t("projectDataEntryTab:scopePlaceholder")} onChange={(v) => setOverview((o) => ({ ...o, scope: v }))} data-row={0} data-col={2} />
               </td>
               <td style={tdCell}>
                 <MonthInput value={overview.asOfMonth} onChange={(v) => setOverview((o) => ({ ...o, asOfMonth: v }))} />
@@ -934,8 +946,8 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
         <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "10px" }}>
           <thead>
             <tr>
-              <th style={th}>연간 매출 목표 (VND)</th>
-              <th style={th}>누계 매출 실적 (VND)</th>
+              <th style={th}>{t("projectDataEntryTab:annualRevenueTargetVnd")}</th>
+              <th style={th}>{t("projectDataEntryTab:cumulativeRevenueActualVnd")}</th>
               <th style={th}>Cash Confirmed (A) (VND)</th>
               <th style={th}>Cash Collection (B) (VND)</th>
             </tr>
@@ -958,7 +970,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
           </tbody>
         </table>
         <div style={{ fontSize: "12px", color: "#7c8ba3", marginTop: "6px" }}>
-          개요 탭의 프로젝트 정보·Revenue·Cash 카드에 반영됩니다. Outstanding은 (A)-(B)로 자동 계산됩니다.
+          {t("projectDataEntryTab:overviewCashNote")}
         </div>
         </div>
       </div>
@@ -966,15 +978,15 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
 
       {/* 3. 원가율 */}
       <div style={cardStyle}>
-        {cardHead(service ? "1. 도급액·원가 (개요)" : "4. 원가율 (원가 탭)", "costEstimation")}
+        {cardHead(service ? t("projectDataEntryTab:costEstimationTitleService") : t("projectDataEntryTab:costEstimationTitleConstruction"), "costEstimation")}
         <div data-tbl="costEst" onKeyDown={makeArrowNav("costEst")}>
         <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px" }}>
           <thead>
             <tr>
-              <th style={th}>구분</th>
-              <th style={th}>기준월</th>
-              <th style={th}>도급액 (VND)</th>
-              <th style={th}>원가 (VND)</th>
+              <th style={th}>{t("projectDataEntryTab:categoryColumn")}</th>
+              <th style={th}>{t("common:baseMonth")}</th>
+              <th style={th}>{t("projectDataEntryTab:contractAmountVnd")}</th>
+              <th style={th}>{t("projectDataEntryTab:costVnd")}</th>
               <th style={{ ...th, width: "30px" }}></th>
             </tr>
           </thead>
@@ -985,7 +997,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
               return (
                 <tr key={`${e.kind}-${i}`}>
                   <td style={{ ...tdCell, fontSize: "13px", padding: "5px 6px", color: "#333" }}>
-                    {EST_KINDS.find((k) => k.kind === e.kind)?.label ?? e.kind}
+                    {t(`projectDataEntryTab:${EST_KINDS.find((k) => k.kind === e.kind)?.label ?? e.kind}`)}
                   </td>
                   <td style={{ ...tdCell, textAlign: "center" }}>
                     {isCompletion ? (
@@ -1014,7 +1026,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                       <button
                         onClick={() => setCostEstimation((rows) => rows.filter((_, j) => j !== i))}
                         style={{ border: "none", background: "none", cursor: "pointer", color: "#e0655c", padding: "2px" }}
-                        title="삭제"
+                        title={t("common:delete")}
                       >
                         <Trash2 size={12} />
                       </button>
@@ -1032,10 +1044,10 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
           }
           style={{ marginTop: "6px", display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "12px", color: "#2f7cf6", border: "1px dashed #9db6d8", borderRadius: "4px", padding: "3px 8px", background: "none", cursor: "pointer" }}
         >
-          <Plus size={12} /> 준공 전망(월별) 추가
+          <Plus size={12} /> {t("projectDataEntryTab:addCompletionForecast")}
         </button>
         <div style={{ fontSize: "12px", color: "#777", marginTop: "4px" }}>
-          준공추정원가율은 기준월별로 여러 건 입력할 수 있습니다. 원가 탭에서는 조회 기간 마지막 월 이하의 가장 최근 기준월 값이 표시됩니다.
+          {t("projectDataEntryTab:costEstimationNote")}
         </div>
       </div>
 
@@ -1049,18 +1061,18 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
 
       {/* 예산 집행 현황 */}
       <div style={cardStyle}>
-        {cardHead(service ? "4. 예산 집행 현황 (예산집행 탭)" : "5. 예산 집행 현황 (원가 탭)", "costBudget")}
+        {cardHead(service ? t("projectDataEntryTab:costBudgetTitleService") : t("projectDataEntryTab:costBudgetTitleConstruction"), "costBudget")}
         <div style={{ fontSize: "12px", color: "#777", marginTop: "4px" }}>
-          Common·Expense 1(Direct Cost)과 Expense 2·Contingency(Indirect Cost)를 여기서 입력합니다. 외주성 예산·집행 실적은 아래 "외주/자재" 표에서 자동 집계됩니다.
+          {t("projectDataEntryTab:costBudgetNote")}
         </div>
         <div data-tbl="costBudget" onKeyDown={makeArrowNav("costBudget")}>
         <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "4px" }}>
           <thead>
             <tr>
-              <th style={th}>항목</th>
-              <th style={th}>예산 (VND)</th>
-              <th style={th}>기성 계획 (VND)</th>
-              <th style={th}>기성 실적 (VND)</th>
+              <th style={th}>{t("projectDataEntryTab:itemColumn")}</th>
+              <th style={th}>{t("projectDataEntryTab:budgetVnd")}</th>
+              <th style={th}>{t("projectDataEntryTab:progressPaymentPlanVnd")}</th>
+              <th style={th}>{t("projectDataEntryTab:progressPaymentActualVnd")}</th>
             </tr>
           </thead>
           <tbody>
@@ -1079,10 +1091,10 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
         {/* 월별 계획/실적 */}
         <div style={{ marginTop: "10px" }}>
           <div style={{ fontSize: "12px", fontWeight: 600, color: "#2f7cf6", marginBottom: "4px" }}>
-            월별 계획 / 실적 ({REPORT_YEAR}년)
+            {t("projectDataEntryTab:monthlyPlanActualYear", { year: REPORT_YEAR })}
           </div>
           <div style={{ fontSize: "11px", color: "#777", marginBottom: "6px" }}>
-            선택한 월에 따라 Budget Execution Status 카드에 표시됩니다. 외주성도 입력 가능합니다.
+            {t("projectDataEntryTab:monthlyPlanActualNote")}
           </div>
           {(["Common", "Expense 1", "Expense 2", "외주성"] as const).map((item) => {
             const getCbm = (month: number, field: "plan" | "actual") =>
@@ -1096,20 +1108,22 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
             const tblKey = `cbm-${item}`;
             return (
               <div key={item} style={{ marginBottom: "10px" }}>
-                <div style={{ fontSize: "13px", fontWeight: 700, color: "#16294a", marginBottom: "4px" }}>{item}</div>
+                <div style={{ fontSize: "13px", fontWeight: 700, color: "#16294a", marginBottom: "4px" }}>
+                  {item === "외주성" ? t("projectDataEntryTab:outsourcingItem") : item}
+                </div>
                 <div data-tbl={tblKey} onKeyDown={makeArrowNav(tblKey)}>
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
                   <thead>
                     <tr>
-                      <th style={{ ...th, width: "44px" }}>월</th>
-                      <th style={th}>계획 Plan (VND)</th>
-                      <th style={th}>실적 Actual (VND)</th>
+                      <th style={{ ...th, width: "44px" }}>{t("projectDataEntryTab:monthColumn")}</th>
+                      <th style={th}>{t("projectDataEntryTab:planVndLabel")}</th>
+                      <th style={th}>{t("projectDataEntryTab:actualVndLabel")}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {Array.from({ length: 12 }, (_, i) => i + 1).map((month) => (
                       <tr key={month}>
-                        <td style={{ ...tdCell, textAlign: "center", fontSize: "13px", color: "#555", padding: "3px 4px" }}>{month}월</td>
+                        <td style={{ ...tdCell, textAlign: "center", fontSize: "13px", color: "#555", padding: "3px 4px" }}>{t("projectDataEntryTab:monthSuffix", { month })}</td>
                         <td style={tdCell}><VndInput valueKUsd={getCbm(month, "plan")} onChange={(v) => setCbm(month, "plan", v)} data-row={month - 1} data-col={0} /></td>
                         <td style={tdCell}><VndInput valueKUsd={getCbm(month, "actual")} onChange={(v) => setCbm(month, "actual", v)} data-row={month - 1} data-col={1} /></td>
                       </tr>
@@ -1125,22 +1139,22 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
 
       {/* 5. 외주/자재 */}
       <div style={cardStyle}>
-        {cardHead(service ? "5. 외주/자재 (외주 탭)" : "6. 외주/자재 (외주 탭)", "outsourcing")}
+        {cardHead(service ? t("projectDataEntryTab:outsourcingTitleService") : t("projectDataEntryTab:outsourcingTitleConstruction"), "outsourcing")}
         <div data-tbl="outsourcing" onKeyDown={makeArrowNav("outsourcing")}>
         <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px" }}>
           <thead>
             <tr>
-              <th style={th}>대공종</th>
-              <th style={th}>세부공종</th>
-              <th style={th}>업체명</th>
-              <th style={th}>구분</th>
-              <th style={th}>최초 계약일</th>
-              <th style={th}>변경 차수</th>
-              <th style={th}>예산(A) (VND)</th>
-              <th style={th}>집행예산 (VND)</th>
-              <th style={th}>결의금액(B) (VND)</th>
-              <th style={th}>기성 이번달 (VND)</th>
-              <th style={th}>기성 누계(C) (VND)</th>
+              <th style={th}>{t("projectDataEntryTab:tradeGroupColumn")}</th>
+              <th style={th}>{t("projectDataEntryTab:tradeColumn")}</th>
+              <th style={th}>{t("projectDataEntryTab:vendorColumn")}</th>
+              <th style={th}>{t("projectDataEntryTab:categoryColumn")}</th>
+              <th style={th}>{t("projectDataEntryTab:contractDateColumn")}</th>
+              <th style={th}>{t("projectDataEntryTab:changeNoColumn")}</th>
+              <th style={th}>{t("projectDataEntryTab:budgetAVnd")}</th>
+              <th style={th}>{t("projectDataEntryTab:executedBudgetVnd")}</th>
+              <th style={th}>{t("projectDataEntryTab:resolvedBVnd")}</th>
+              <th style={th}>{t("projectDataEntryTab:thisMonthVnd")}</th>
+              <th style={th}>{t("projectDataEntryTab:accumCVnd")}</th>
               <th style={{ ...th, width: "36px" }}></th>
             </tr>
           </thead>
@@ -1155,13 +1169,13 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                   >
                     <option value="">-</option>
                     {TRADE_GROUPS.map((g) => (
-                      <option key={g} value={g}>{g}</option>
+                      <option key={g} value={g}>{t(`projectDataEntryTab:${TRADE_GROUP_LABEL_KEY[g]}`)}</option>
                     ))}
                   </select>
                 </td>
-                <td style={tdCell}><TextInput value={o.trade} onChange={(v) => updateAt(setOutsourcing, i, { trade: v ?? "" })} placeholder="예: 토공사" data-row={i} data-col={0} /></td>
+                <td style={tdCell}><TextInput value={o.trade} onChange={(v) => updateAt(setOutsourcing, i, { trade: v ?? "" })} placeholder={t("projectDataEntryTab:tradePlaceholder")} data-row={i} data-col={0} /></td>
                 <td style={tdCell}><TextInput value={o.vendor} onChange={(v) => updateAt(setOutsourcing, i, { vendor: v })} data-row={i} data-col={1} /></td>
-                <td style={tdCell}><TextInput value={o.category} onChange={(v) => updateAt(setOutsourcing, i, { category: v })} placeholder="용역/외주" data-row={i} data-col={2} /></td>
+                <td style={tdCell}><TextInput value={o.category} onChange={(v) => updateAt(setOutsourcing, i, { category: v })} placeholder={t("projectDataEntryTab:categoryPlaceholder")} data-row={i} data-col={2} /></td>
                 <td style={tdCell}><TextInput value={o.contractDate} onChange={(v) => updateAt(setOutsourcing, i, { contractDate: v })} placeholder="'24.12.31" data-row={i} data-col={3} /></td>
                 <td style={tdCell}><TextInput value={o.changeNo} onChange={(v) => updateAt(setOutsourcing, i, { changeNo: v })} data-row={i} data-col={4} /></td>
                 <td style={tdCell}><VndInput valueKUsd={o.budget} onChange={(v) => updateAt(setOutsourcing, i, { budget: v })} data-row={i} data-col={5} /></td>
@@ -1184,22 +1198,22 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
             ])
           }
         >
-          <Plus size={12} /> 공종 추가
+          <Plus size={12} /> {t("projectDataEntryTab:addTrade")}
         </button>
       </div>
 
       {/* 6. 월별 자금 */}
       <div style={cardStyle}>
-        {cardHead(service ? "6. 월별 자금 (자금 탭)" : "7. 월별 자금 (자금 탭)", "cashflow")}
+        {cardHead(service ? t("projectDataEntryTab:cashflowTitleService") : t("projectDataEntryTab:cashflowTitleConstruction"), "cashflow")}
         <div data-tbl="cashflow" onKeyDown={makeArrowNav("cashflow")}>
         <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px" }}>
           <thead>
             <tr>
-              <th style={th}>연도</th>
-              <th style={th}>월</th>
-              <th style={th}>수입 Cash in (VND)</th>
-              <th style={th}>지출 Cash out (VND)</th>
-              <th style={th}>보유 현금 Equivalent (VND)</th>
+              <th style={th}>{t("common:year")}</th>
+              <th style={th}>{t("projectDataEntryTab:monthColumn")}</th>
+              <th style={th}>{t("projectDataEntryTab:cashInVnd")}</th>
+              <th style={th}>{t("projectDataEntryTab:cashOutVnd")}</th>
+              <th style={th}>{t("projectDataEntryTab:equivalentVnd")}</th>
               <th style={{ ...th, width: "36px" }}></th>
             </tr>
           </thead>
@@ -1229,14 +1243,14 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
             editCashflow((rows) => [...rows, { ...next, cashIn: null, cashOut: null, equivalent: null }]);
           }}
         >
-          <Plus size={12} /> 월 추가
+          <Plus size={12} /> {t("projectDataEntryTab:addMonth")}
         </button>
         <div style={{ fontSize: "12px", color: "#7c8ba3", marginTop: "6px" }}>
-          지출은 양수로 입력하세요(차트에서 자동으로 아래 방향 표시). VND 기준으로 입력하면 저장 시 천 USD로 자동 변환됩니다.
+          {t("projectDataEntryTab:cashflowNote")}
         </div>
         {cfPrefilled && (
           <div style={{ fontSize: "12px", color: "#2f7cf6", marginTop: "4px", fontWeight: 600 }}>
-            자금수지 Excel(DB)에 저장된 데이터를 불러왔습니다. 표를 수정하면 이 프로젝트의 자금 데이터로 저장되며, 이후에는 저장된 값이 우선 표시됩니다.
+            {t("projectDataEntryTab:cashflowPrefilledNote")}
           </div>
         )}
       </div>

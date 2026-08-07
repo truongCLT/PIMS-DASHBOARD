@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   ComposedChart,
   Bar,
@@ -11,6 +11,8 @@ import {
   LabelList,
   ReferenceLine,
 } from "recharts";
+import { useTranslation } from "react-i18next";
+import { DetailModal, DetailDataTable } from "./DetailModal";
 import {
   useGetCashflowAggregate,
   getGetCashflowAggregateQueryKey,
@@ -26,6 +28,8 @@ import {
   REPORT_YEAR,
 } from "../lib/dashboardFilters";
 import { chartTheme } from "../lib/chartTheme";
+
+type TFunc = ReturnType<typeof useTranslation>["t"];
 
 // DECV 전체 = 시공(도급 사업) + 용역(용역 사업) 합산
 const BASE_SCOPE_PARAMS: Record<string, { division?: string; divisions?: string }> = {
@@ -53,12 +57,34 @@ interface ScopeQueryConfig {
   emptyMessage?: string;
 }
 
-function getScopeConfig(scope: DashboardScope): ScopeQueryConfig {
+/** 화면에 표시할 scope 라벨 (scope 값 자체는 비교/조회용 식별자이므로 변경하지 않음) */
+function getScopeLabel(scope: DashboardScope, t: TFunc): string {
+  switch (scope) {
+    case "전체":
+      return t("cashFlowChart:scopeAllDecv");
+    case "시공":
+      return t("common:construction");
+    case "용역":
+      return t("common:service");
+    case "시공-진행중":
+      return `${t("common:construction")} ${t("common:inProgress")}`;
+    case "시공-종료":
+      return `${t("common:construction")} ${t("common:closed")}`;
+    case "용역-진행중":
+      return `${t("common:service")} ${t("common:inProgress")}`;
+    case "용역-종료":
+      return `${t("common:service")} ${t("common:closed")}`;
+    default:
+      return scope;
+  }
+}
+
+function getScopeConfig(scope: DashboardScope, t: TFunc): ScopeQueryConfig {
   if (scope === "시공-종료" || scope === "용역-종료") {
     return {
-      label: scope.replace("-", " "),
+      label: getScopeLabel(scope, t),
       enabled: false,
-      emptyMessage: "종료된 프로젝트가 없어 집계 데이터가 없습니다.",
+      emptyMessage: t("cashFlowChart:noClosedProjectData"),
     };
   }
   if (scope === "시공-진행중" || scope === "용역-진행중") {
@@ -66,20 +92,20 @@ function getScopeConfig(scope: DashboardScope): ScopeQueryConfig {
     const refs = getOngoingRefs(divisionLabel);
     if (refs.length === 0) {
       return {
-        label: scope.replace("-", " "),
+        label: getScopeLabel(scope, t),
         enabled: false,
-        emptyMessage: "진행중 프로젝트의 자금수지 데이터가 없습니다.",
+        emptyMessage: t("cashFlowChart:noOngoingCashflowData"),
       };
     }
     return {
-      label: scope.replace("-", " "),
+      label: getScopeLabel(scope, t),
       enabled: true,
       division: refs[0].division,
       names: refs.map((r) => r.name).join(","),
     };
   }
   return {
-    label: scope === "전체" ? "DECV 전체" : scope,
+    label: getScopeLabel(scope, t),
     enabled: true,
     ...BASE_SCOPE_PARAMS[scope],
   };
@@ -106,13 +132,15 @@ const makeOutflowLabel = (compact: boolean) => (props: any) => {
   );
 };
 
-function monthLabel(ym: string): string {
+function monthLabel(ym: string, t: TFunc): string {
   const m = Number(ym.slice(5, 7));
-  return `${m}월`;
+  return t("cashFlowChart:monthLabel", { month: m });
 }
 
 export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) {
-  const config = getScopeConfig(scope);
+  const { t } = useTranslation(["cashFlowChart", "common"]);
+  const [detailOpen, setDetailOpen] = useState(false);
+  const config = getScopeConfig(scope, t);
   const filters = useDashboardFilters();
   const { from, to } = resolveMonthWindow(filters.startYm, filters.endYm);
   const emptyRange = from > to;
@@ -121,7 +149,7 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
   const convert = makeConverter(filters.currency, filters.unitIndex, filters.fxRates);
   const unitLabel =
     filters.currency === "USD" && filters.unitIndex === 0
-      ? "천 USD"
+      ? t("cashFlowChart:thousandUsd")
       : unitLabelOf(filters.currency, filters.unitIndex);
 
   // 기간 필터 미설정 시 기존 기본값(1월부터 6개월) 유지
@@ -144,31 +172,35 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
 
   const points = query.data?.points ?? [];
   const chartData = points.map((p) => ({
-    month: monthLabel(p.month),
+    month: monthLabel(p.month, t),
     inflow: convert(p.cashIn),
     outflow: -convert(p.cashOut),
     balance: convert(p.equivalent),
   }));
   const hasData = chartData.some((d) => d.inflow !== 0 || d.outflow !== 0 || d.balance !== 0);
 
+  const inflowName = t("cashFlowChart:cashInflow");
+  const outflowName = t("cashFlowChart:cashOutflow");
+  const balanceName = t("cashFlowChart:cumulativeCashBalance");
+
   let body: React.ReactNode;
   if (projectSelected) {
-    body = <CenterNote text="프로젝트별 자금수지 집계는 제공되지 않습니다." />;
+    body = <CenterNote text={t("cashFlowChart:noProjectCashflowAggregate")} />;
   } else if (emptyRange) {
-    body = <CenterNote text="선택한 기간에 데이터가 없습니다." />;
+    body = <CenterNote text={t("cashFlowChart:noDataForPeriod")} />;
   } else if (!config.enabled) {
-    body = <CenterNote text={config.emptyMessage ?? "집계 데이터가 없습니다."} />;
+    body = <CenterNote text={config.emptyMessage ?? t("cashFlowChart:noAggregateData")} />;
   } else if (query.isLoading) {
-    body = <CenterNote text="자금수지 데이터를 불러오는 중..." />;
+    body = <CenterNote text={t("cashFlowChart:loadingCashflow")} />;
   } else if (query.isError) {
     const status = (query.error as { response?: { status?: number } })?.response?.status;
     body = (
       <CenterNote
-        text={status === 404 ? "해당 범위의 자금수지 데이터가 없습니다." : "자금수지 데이터 조회 중 오류가 발생했습니다."}
+        text={status === 404 ? t("cashFlowChart:noCashflowDataForRange") : t("cashFlowChart:cashflowFetchError")}
       />
     );
   } else if (!hasData) {
-    body = <CenterNote text="선택한 기간에 자금수지 데이터가 없습니다." />;
+    body = <CenterNote text={t("cashFlowChart:noCashflowDataForPeriod")} />;
   } else {
     body = (
       <ResponsiveContainer width="100%" height="100%">
@@ -196,15 +228,15 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
             contentStyle={{ fontSize: "12px" }}
             formatter={(value: number | string, name: string) => {
               const n = typeof value === "number" ? value : Number(value);
-              const shown = name === "자금 유출" ? Math.abs(n) : n;
+              const shown = name === outflowName ? Math.abs(n) : n;
               return [`${Math.round(shown).toLocaleString()} ${unitLabel}`, name];
             }}
           />
           <ReferenceLine y={0} yAxisId="flow" stroke={chartTheme.zeroLine} />
-          <Bar isAnimationActive={false} yAxisId="flow" dataKey="inflow" name="자금 유입" fill={chartTheme.inflowBlue} barSize={16} radius={[2, 2, 0, 0]}>
+          <Bar isAnimationActive={false} yAxisId="flow" dataKey="inflow" name={inflowName} fill={chartTheme.inflowBlue} barSize={16} radius={[2, 2, 0, 0]}>
             <LabelList dataKey="inflow" content={makeInflowLabel(compact)} />
           </Bar>
-          <Bar isAnimationActive={false} yAxisId="flow" dataKey="outflow" name="자금 유출" fill={chartTheme.outflowRed} barSize={16} radius={[0, 0, 2, 2]}>
+          <Bar isAnimationActive={false} yAxisId="flow" dataKey="outflow" name={outflowName} fill={chartTheme.outflowRed} barSize={16} radius={[0, 0, 2, 2]}>
             <LabelList dataKey="outflow" content={makeOutflowLabel(compact)} />
           </Bar>
           <Line
@@ -212,7 +244,7 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
             yAxisId="balance"
             type="monotone"
             dataKey="balance"
-            name="누적 현금 잔액"
+            name={balanceName}
             stroke={chartTheme.balanceNavy}
             strokeWidth={2}
             dot={{ r: 3, fill: chartTheme.balanceNavy }}
@@ -235,13 +267,16 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
-          <span style={{ fontSize: "13px", fontWeight: "600", color: chartTheme.titleNavy }}>자금수지</span>
+          <span style={{ fontSize: "13px", fontWeight: "600", color: chartTheme.titleNavy }}>{t("common:cashFlow")}</span>
           <span style={{ fontSize: "11px", color: "#7c8ba3" }}>
-            {config.label} · 단위: {unitLabel}
+            {config.label} · {t("common:unit")}: {unitLabel}
           </span>
         </div>
-        <button style={{ fontSize: "12px", color: "#2f7cf6", background: "none", border: "none", cursor: "pointer" }}>
-          상세보기
+        <button
+          onClick={() => setDetailOpen(true)}
+          style={{ fontSize: "12px", color: "#2f7cf6", background: "none", border: "none", cursor: "pointer" }}
+        >
+          {t("cashFlowChart:viewDetails")}
         </button>
       </div>
 
@@ -250,9 +285,9 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
       {/* Legend */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginTop: "4px" }}>
         {[
-          { color: chartTheme.inflowBlue, label: "자금 유입", type: "rect" },
-          { color: chartTheme.outflowRed, label: "자금 유출", type: "rect" },
-          { color: chartTheme.balanceNavy, label: "누적 현금 잔액 (우측 축)", type: "line" },
+          { color: chartTheme.inflowBlue, label: inflowName, type: "rect" },
+          { color: chartTheme.outflowRed, label: outflowName, type: "rect" },
+          { color: chartTheme.balanceNavy, label: t("cashFlowChart:cumulativeCashBalanceRightAxis"), type: "line" },
         ].map((item) => (
           <div key={item.label} style={{ display: "flex", alignItems: "center", gap: "4px" }}>
             {item.type === "rect" ? (
@@ -264,6 +299,24 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
           </div>
         ))}
       </div>
+
+      <DetailModal
+        open={detailOpen}
+        onClose={() => setDetailOpen(false)}
+        title={t("common:cashFlow")}
+        subtitle={`${config.label} · ${t("common:unit")}: ${unitLabel}`}
+      >
+        <DetailDataTable<{ month: string; inflow: number; outflow: number; balance: number }>
+          rowKey={(row) => String(row.month)}
+          columns={[
+            { key: "month", label: t("common:period"), align: "left" },
+            { key: "inflow", label: inflowName },
+            { key: "outflow", label: outflowName },
+            { key: "balance", label: balanceName },
+          ]}
+          rows={chartData}
+        />
+      </DetailModal>
     </div>
   );
 }

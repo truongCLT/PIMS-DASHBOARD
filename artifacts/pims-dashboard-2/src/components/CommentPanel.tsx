@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Send, Pencil, Trash2, Check, X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useListMgmtreportComments,
@@ -20,6 +21,7 @@ export function CommentPanel({
   title: string;
   section: CommentSection;
 }) {
+  const { t } = useTranslation(["commentPanel", "common"]);
   const [inputText, setInputText] = useState("");
   const { derived } = useDashboardData();
   const latestMonth = derived?.month ?? new Date().getMonth() + 1;
@@ -56,7 +58,7 @@ export function CommentPanel({
         setActionError(null);
         invalidateList();
       },
-      onError: () => setActionError("코멘트 수정에 실패했습니다."),
+      onError: () => setActionError(t("commentPanel:editFailed")),
     },
   });
   const deleteMutation = useDeleteMgmtreportComment({
@@ -65,7 +67,7 @@ export function CommentPanel({
         setActionError(null);
         invalidateList();
       },
-      onError: () => setActionError("코멘트 삭제에 실패했습니다."),
+      onError: () => setActionError(t("commentPanel:deleteFailed")),
     },
   });
 
@@ -96,7 +98,7 @@ export function CommentPanel({
 
       {/* Month selector */}
       <div>
-        <div style={{ fontSize: "10px", color: "#888", marginBottom: "3px" }}>월:</div>
+        <div style={{ fontSize: "10px", color: "#888", marginBottom: "3px" }}>{t("commentPanel:monthLabel")}</div>
         <select
           value={month}
           onChange={(e) => setSelectedMonth(Number(e.target.value))}
@@ -112,7 +114,7 @@ export function CommentPanel({
           }}
         >
           {monthOptions.map((m) => (
-            <option key={m} value={m}>{m}월</option>
+            <option key={m} value={m}>{t("commentPanel:monthOption", { month: m })}</option>
           ))}
         </select>
       </div>
@@ -122,7 +124,7 @@ export function CommentPanel({
         <textarea
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
-          placeholder="의견을 입력하세요..."
+          placeholder={t("commentPanel:inputPlaceholder")}
           style={{
             width: "100%",
             border: "1px solid #ccc",
@@ -139,7 +141,7 @@ export function CommentPanel({
         <button
           onClick={submit}
           disabled={!canSubmit}
-          aria-label="코멘트 저장"
+          aria-label={t("commentPanel:saveCommentAriaLabel")}
           style={{
             position: "absolute",
             right: "8px",
@@ -157,7 +159,7 @@ export function CommentPanel({
 
       {createMutation.isError && (
         <div style={{ fontSize: "10px", color: "#e0655c" }}>
-          코멘트 저장에 실패했습니다. 다시 시도해 주세요.
+          {t("commentPanel:saveFailedRetry")}
         </div>
       )}
 
@@ -167,11 +169,11 @@ export function CommentPanel({
       {/* Comment list */}
       <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
         {listQuery.isLoading ? (
-          <div style={{ fontSize: "11px", color: "#999" }}>불러오는 중...</div>
+          <div style={{ fontSize: "11px", color: "#999" }}>{t("commentPanel:loadingComments")}</div>
         ) : listQuery.isError ? (
-          <div style={{ fontSize: "11px", color: "#e0655c" }}>코멘트 조회에 실패했습니다.</div>
+          <div style={{ fontSize: "11px", color: "#e0655c" }}>{t("commentPanel:fetchFailed")}</div>
         ) : comments.length === 0 ? (
-          <div style={{ fontSize: "11px", color: "#999" }}>{month}월 코멘트가 없습니다.</div>
+          <div style={{ fontSize: "11px", color: "#999" }}>{t("commentPanel:noCommentsForMonth", { month })}</div>
         ) : (
           comments.map((c) => (
             <div key={c.id} style={{
@@ -209,14 +211,14 @@ export function CommentPanel({
                         updateMutation.mutate({ id: c.id, data: { body } });
                       }}
                       disabled={editText.trim().length === 0 || updateMutation.isPending}
-                      aria-label="수정 저장"
+                      aria-label={t("commentPanel:saveEditAriaLabel")}
                       style={{ background: "none", border: "none", cursor: "pointer", color: "#1c7a5a", padding: 0 }}
                     >
                       <Check size={14} />
                     </button>
                     <button
                       onClick={() => { setEditingId(null); setEditText(""); }}
-                      aria-label="수정 취소"
+                      aria-label={t("commentPanel:cancelEditAriaLabel")}
                       style={{ background: "none", border: "none", cursor: "pointer", color: "#7c8ba3", padding: 0 }}
                     >
                       <X size={14} />
@@ -234,7 +236,7 @@ export function CommentPanel({
                       <span style={{ display: "flex", gap: "8px" }}>
                         <button
                           onClick={() => { setEditingId(c.id); setEditText(c.body); setActionError(null); }}
-                          aria-label="코멘트 수정"
+                          aria-label={t("commentPanel:editCommentAriaLabel")}
                           style={{ background: "none", border: "none", cursor: "pointer", color: "#2f7cf6", padding: 0 }}
                         >
                           <Pencil size={12} />
@@ -242,11 +244,11 @@ export function CommentPanel({
                         <button
                           onClick={() => {
                             if (deleteMutation.isPending) return;
-                            if (window.confirm("이 코멘트를 삭제하시겠습니까?")) {
+                            if (window.confirm(t("commentPanel:deleteConfirm"))) {
                               deleteMutation.mutate({ id: c.id });
                             }
                           }}
-                          aria-label="코멘트 삭제"
+                          aria-label={t("commentPanel:deleteCommentAriaLabel")}
                           style={{ background: "none", border: "none", cursor: "pointer", color: "#e0655c", padding: 0 }}
                         >
                           <Trash2 size={12} />

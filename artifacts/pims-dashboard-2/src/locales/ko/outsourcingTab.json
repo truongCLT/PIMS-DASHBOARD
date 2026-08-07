@@ -1,0 +1,20 @@
+{
+  "outsourcingAndMaterials": "외주 및 자재",
+  "dragToResize": "드래그하여 열 너비 조절",
+  "tradeType": "공종",
+  "vendorName": "업체명",
+  "first": "최초",
+  "contractDate": "계약일",
+  "change": "변경",
+  "contract": "계약",
+  "round": "차수",
+  "executedBudget": "집행예산",
+  "resolvedAmount": "결의금액",
+  "resolvedRate": "결의율",
+  "progressBillingStatus": "기성현황",
+  "category": "구분",
+  "detailedTrade": "세부공종",
+  "thisMonth": "이번달",
+  "ratio": "비율",
+  "noOutsourcingData": "외주/자재 데이터가 없습니다. ( - )"
+}

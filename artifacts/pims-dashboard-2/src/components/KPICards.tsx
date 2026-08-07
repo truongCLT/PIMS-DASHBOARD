@@ -1,11 +1,20 @@
 import React from "react";
 import { TrendingUp, DollarSign, BarChart2, Activity } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useDashboardData } from "../lib/mgmtreportData";
 import { useDashboardFilters } from "../lib/dashboardFilters";
 import { useTheme } from "../lib/theme";
 
 /* ── Strip-style icons per card position ────────────────────── */
 const STRIP_ICONS = [TrendingUp, DollarSign, BarChart2, Activity];
+
+/** raw Korean title (fixed set produced by mgmtreportData.ts) → translation key */
+const KPI_TITLE_KEY: Record<string, string> = {
+  "당월 매출": "currentMonthRevenue",
+  "당월 영업이익": "currentMonthOperatingProfit",
+  "연간 누적 매출": "annualCumulativeRevenue",
+  "연간 누적 영업이익": "annualCumulativeOperatingProfit",
+};
 
 interface KPICardProps {
   title: string;
@@ -26,9 +35,13 @@ function KPICard({
   cardIndex = 0, stripColor,
 }: KPICardProps) {
   const { theme: T } = useTheme();
+  const { t, i18n } = useTranslation(["kpiCards", "common"]);
   const K = T.kpi;
   const isStrip = K.cardStyle === "strip" && !!stripColor;
-  const numFont = compact ? "clamp(11px, 0.95vw, 16px)" : "clamp(18px, 1.7vw, 30px)";
+  const numFont = compact ? "clamp(10px, 0.85vw, 13px)" : "clamp(13px, 1.2vw, 19px)";
+  const titleKey = KPI_TITLE_KEY[title];
+  const label = titleKey ? t(`kpiCards:${titleKey}`) : title;
+  const showAnnualSplit = i18n.language === "ko" && title.startsWith("연간 ");
 
   /* ── Strip layout ─────────────────────────────────────────── */
   if (isStrip) {
@@ -63,9 +76,9 @@ function KPICard({
             color: K.titleColor,
             lineHeight: 1.3,
           }}>
-            {title.startsWith("연간 ") ? (
-              <><span style={{ opacity: 0.7 }}>연간 </span>{title.slice(3)}</>
-            ) : title}
+            {showAnnualSplit ? (
+              <><span style={{ opacity: 0.7 }}>연간 </span>{label.slice(3)}</>
+            ) : label}
           </span>
           <div style={{
             width: "22px", height: "22px", borderRadius: "6px",
@@ -83,26 +96,27 @@ function KPICard({
             display: "flex",
             justifyContent: "space-between",
             alignItems: "flex-end",
+            gap: "6px",
             marginBottom: "8px",
           }}>
             {/* Plan */}
-            <div>
-              <div style={{ fontSize: "clamp(9px, 0.7vw, 11px)", color: K.labelColor, marginBottom: "2px" }}>계획</div>
-              <div style={{ fontSize: numFont, fontWeight: "700", color: K.valueColor }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: "clamp(9px, 0.7vw, 11px)", color: K.labelColor, marginBottom: "2px" }}>{t("common:plan")}</div>
+              <div style={{ fontSize: numFont, fontWeight: "700", color: K.valueColor, overflowWrap: "anywhere" }}>
                 {plan.toLocaleString()}
               </div>
             </div>
             {/* Actual */}
-            <div>
-              <div style={{ fontSize: "clamp(9px, 0.7vw, 11px)", color: K.labelColor, marginBottom: "2px" }}>실적</div>
-              <div style={{ fontSize: numFont, fontWeight: "700", color: K.valueColor }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: "clamp(9px, 0.7vw, 11px)", color: K.labelColor, marginBottom: "2px" }}>{t("common:actual")}</div>
+              <div style={{ fontSize: numFont, fontWeight: "700", color: K.valueColor, overflowWrap: "anywhere" }}>
                 {actual.toLocaleString()}
               </div>
             </div>
             {/* Achievement */}
-            <div style={{ textAlign: "right" }}>
-              <div style={{ fontSize: "clamp(9px, 0.7vw, 11px)", color: K.labelColor, marginBottom: "2px" }}>달성률</div>
-              <div style={{ fontSize: numFont, fontWeight: "800", color: achievementColor }}>
+            <div style={{ flex: "0 0 auto", textAlign: "right" }}>
+              <div style={{ fontSize: "clamp(9px, 0.7vw, 11px)", color: K.labelColor, marginBottom: "2px" }}>{t("common:achievementRate")}</div>
+              <div style={{ fontSize: numFont, fontWeight: "800", color: achievementColor, overflowWrap: "anywhere" }}>
                 {achievement}
               </div>
             </div>
@@ -143,35 +157,36 @@ function KPICard({
         marginBottom: "10px",
         lineHeight: 1.35,
       }}>
-        {title.startsWith("연간 ") ? (
+        {showAnnualSplit ? (
           <>
             <div>연간</div>
-            <div>{title.slice(3)}</div>
+            <div>{label.slice(3)}</div>
           </>
-        ) : title}
+        ) : label}
       </div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: "8px" }}>
         {/* Plan */}
-        <div>
-          <div style={{ fontSize: "clamp(10px, 0.8vw, 13px)", color: K.labelColor, marginBottom: "4px" }}>계획</div>
-          <div style={{ fontSize: numFont, fontWeight: "700", color: K.valueColor }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: "clamp(10px, 0.8vw, 13px)", color: K.labelColor, marginBottom: "4px" }}>{t("common:plan")}</div>
+          <div style={{ fontSize: numFont, fontWeight: "700", color: K.valueColor, overflowWrap: "anywhere" }}>
             {plan.toLocaleString()}
           </div>
         </div>
         {/* Actual */}
-        <div>
-          <div style={{ fontSize: "clamp(10px, 0.8vw, 13px)", color: K.labelColor, marginBottom: "4px" }}>실적</div>
-          <div style={{ fontSize: numFont, fontWeight: "700", color: K.valueColor }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: "clamp(10px, 0.8vw, 13px)", color: K.labelColor, marginBottom: "4px" }}>{t("common:actual")}</div>
+          <div style={{ fontSize: numFont, fontWeight: "700", color: K.valueColor, overflowWrap: "anywhere" }}>
             {actual.toLocaleString()}
           </div>
         </div>
         {/* Achievement */}
-        <div>
-          <div style={{ fontSize: "clamp(10px, 0.8vw, 13px)", color: K.labelColor, marginBottom: "4px" }}>달성률</div>
+        <div style={{ flex: "0 0 auto", textAlign: "right" }}>
+          <div style={{ fontSize: "clamp(10px, 0.8vw, 13px)", color: K.labelColor, marginBottom: "4px" }}>{t("common:achievementRate")}</div>
           <div style={{
-            fontSize: compact ? "clamp(12px, 1.05vw, 18px)" : "clamp(18px, 1.7vw, 30px)",
+            fontSize: compact ? "clamp(11px, 0.95vw, 15px)" : "clamp(14px, 1.25vw, 20px)",
             fontWeight: "700",
             color: achievementColor,
+            overflowWrap: "anywhere",
           }}>
             {achievement}
           </div>
@@ -184,6 +199,7 @@ function KPICard({
 const PLACEHOLDER_TITLES = ["당월 매출", "당월 영업이익", "연간 누적 매출", "연간 누적 영업이익"];
 
 export function KPICards() {
+  const { t } = useTranslation("kpiCards");
   const { derived, isError } = useDashboardData();
   const { unitIndex } = useDashboardFilters();
   const { theme: T } = useTheme();
@@ -195,7 +211,7 @@ export function KPICards() {
     title,
     plan: "-" as const,
     actual: "-" as const,
-    achievement: isError ? "오류" : "…",
+    achievement: isError ? t("errorShort") : "…",
     achievementColor: "#9fb0cc",
   }));
 

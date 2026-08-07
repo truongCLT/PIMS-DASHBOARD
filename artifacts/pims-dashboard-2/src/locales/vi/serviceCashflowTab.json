@@ -1,0 +1,12 @@
+{
+  "monthLabel": "Th{{month}}/{{yy}}",
+  "entryGuide": "Đăng nhập với quyền quản trị để nhập dữ liệu thu chi trong bảng \"Thu chi theo tháng\" ở tab \"Nhập dữ liệu\".",
+  "loadingCashflow": "Đang tải dữ liệu thu chi…",
+  "noCashflowDataYet": "Chưa có dữ liệu thu chi được nhập.",
+  "noProjectCashflowData": "Không có dữ liệu thu chi cho dự án này.",
+  "fetchFailed": "Tải dữ liệu thu chi không thành công. Vui lòng thử lại sau.",
+  "noDataInPeriod": "Không có dữ liệu thu chi trong khoảng thời gian đã chọn.",
+  "cashIn": "Thu tiền",
+  "cashOut": "Chi tiền",
+  "balance": "Số dư"
+}

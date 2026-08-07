@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 
 interface Props {
   src: string;
@@ -45,6 +46,7 @@ const NAV_BTN: React.CSSProperties = {
 };
 
 export function PhotoPager({ src, alt, total, current, onChange, imgStyle }: Props) {
+  const { t } = useTranslation(["photoPager", "common"]);
   const pages = buildPages(total, current);
 
   return (
@@ -53,7 +55,7 @@ export function PhotoPager({ src, alt, total, current, onChange, imgStyle }: Pro
       <div style={{ flex: 1, minHeight: 0 }}>
         <img
           src={src}
-          alt={alt ?? "사진"}
+          alt={alt ?? t("photoPager:defaultAlt")}
           style={{
             width: "100%",
             height: "100%",
@@ -87,7 +89,7 @@ export function PhotoPager({ src, alt, total, current, onChange, imgStyle }: Pro
               opacity: current === 0 ? 0.35 : 1,
               cursor: current === 0 ? "default" : "pointer",
             }}
-            aria-label="이전 사진"
+            aria-label={t("photoPager:prevPhoto")}
           >
             ‹
           </button>
@@ -101,7 +103,7 @@ export function PhotoPager({ src, alt, total, current, onChange, imgStyle }: Pro
               <button
                 key={p}
                 onClick={() => onChange((p as number) - 1)}
-                aria-label={`사진 ${p}`}
+                aria-label={t("photoPager:photoNumber", { number: p })}
                 aria-current={p === current + 1 ? "page" : undefined}
                 style={{
                   ...NAV_BTN,
@@ -126,7 +128,7 @@ export function PhotoPager({ src, alt, total, current, onChange, imgStyle }: Pro
               opacity: current === total - 1 ? 0.35 : 1,
               cursor: current === total - 1 ? "default" : "pointer",
             }}
-            aria-label="다음 사진"
+            aria-label={t("photoPager:nextPhoto")}
           >
             ›
           </button>

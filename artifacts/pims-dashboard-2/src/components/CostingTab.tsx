@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { ProjectCommentPanel } from "./ProjectCommentPanel";
 
 import { useProjectDetail, fmtPct, ratioPct } from "../lib/projectDetailData";
@@ -79,6 +80,13 @@ const EST_META: { kind: "bidding" | "execution" | "completion"; label: string; c
   { kind: "completion", label: "준공추정원가율", color: chartTheme.headingNavy },
 ];
 
+/** raw Korean label (fixed set above) → translation key */
+const EST_LABEL_KEY: Record<string, string> = {
+  "입찰": "estBidding",
+  "실행예산 편성": "estExecutionBudget",
+  "준공추정원가율": "estCompletionCostRatio",
+};
+
 type BudgetRow = {
   category: string | null;
   item: string;
@@ -88,14 +96,15 @@ type BudgetRow = {
 };
 
 function BudgetExecutionStatus({ rows }: { rows: BudgetRow[] }) {
+  const { t } = useTranslation(["costingTab", "common"]);
   const { fmtMoney } = useMoney();
   const maxBudget = Math.max(...rows.map((r) => r.budget ?? 0), 1);
   let lastCategory: string | null = null;
   return (
     <div style={cardStyle}>
-      <span style={sectionTitle}>예산 집행 현황</span>
+      <span style={sectionTitle}>{t("costingTab:budgetExecutionStatusTitle")}</span>
       {rows.length === 0 ? (
-        <div style={emptyStyle}>예산 집행 데이터가 없습니다. ( - )</div>
+        <div style={emptyStyle}>{t("costingTab:noBudgetDataNotice")}</div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "18px", marginTop: "14px" }}>
           {rows.map((row, i) => {
@@ -247,6 +256,7 @@ export function CostingTab({
   toYear: number;
   toMonth: number;
 }) {
+  const { t } = useTranslation(["costingTab", "common"]);
   const { fmtMoney } = useMoney();
   const { detail, isLoading } = useProjectDetail(projectName);
 
@@ -276,7 +286,7 @@ export function CostingTab({
           ...budgetRows,
           {
             category: null,
-            item: "합계",
+            item: t("common:total"),
             budget: budgetRows.reduce((a, r) => a + (r.budget ?? 0), 0),
             plan: budgetRows.some((r) => r.plan != null) ? budgetRows.reduce((a, r) => a + (r.plan ?? 0), 0) : null,
             actual: budgetRows.some((r) => r.actual != null) ? budgetRows.reduce((a, r) => a + (r.actual ?? 0), 0) : null,
@@ -288,11 +298,11 @@ export function CostingTab({
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
       {/* Row 1: Cost estimation donuts */}
       <div style={cardStyle}>
-        <span style={sectionTitle}>원가 견적</span>
+        <span style={sectionTitle}>{t("costingTab:costEstimationTitle")}</span>
         {isLoading ? (
-          <div style={emptyStyle}>불러오는 중…</div>
+          <div style={emptyStyle}>{t("common:loading")}</div>
         ) : estimation.length === 0 ? (
-          <div style={emptyStyle}>원가율 데이터가 없습니다. ( - )</div>
+          <div style={emptyStyle}>{t("costingTab:noCostRatioDataNotice")}</div>
         ) : (
           <div
             style={{
@@ -313,7 +323,9 @@ export function CostingTab({
               const pct = ratioPct(cost, contract);
               const baseMonth =
                 meta.kind === "completion" && row?.year != null && row?.month != null
-                  ? ` ('${String(row.year).slice(2)}.${String(row.month).padStart(2, "0")} 기준)`
+                  ? t("costingTab:asOfBasis", {
+                      ym: `${String(row.year).slice(2)}.${String(row.month).padStart(2, "0")}`,
+                    })
                   : "";
               return (
                 <div key={meta.kind} style={{ textAlign: "center" }}>
@@ -322,7 +334,7 @@ export function CostingTab({
                   </div>
                   <Donut percent={pct ?? 0} color={meta.color} size={150} stroke={16} centerLabel={fmtPct(pct)} />
                   <div style={{ fontSize: "13px", color: "#16294a", fontWeight: 600, marginTop: "4px" }}>
-                    {meta.label}
+                    {t(`costingTab:${EST_LABEL_KEY[meta.label]}`)}
                     {baseMonth}
                   </div>
                 </div>

@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { DashboardHeader } from "./DashboardHeader";
 import { KPICards } from "./KPICards";
 import { SalesChart } from "./SalesChart";
@@ -34,6 +35,7 @@ export function Dashboard({
       ? "closed"
       : null;
   const { theme: T } = useTheme();
+  const { t } = useTranslation(["dashboard", "common"]);
   return (
     <DashboardFilterProvider division={division} statusFilter={statusFilter}>
     <div style={{
@@ -85,8 +87,8 @@ export function Dashboard({
           gap: "6px",
           padding: "4px 10px 10px",
         }}>
-          <CommentPanel title="실적" section="analysis" />
-          <CommentPanel title="전망" section="outlook" />
+          <CommentPanel title={t("common:actual")} section="analysis" />
+          <CommentPanel title={t("common:forecast")} section="outlook" />
         </div>
       </div>
     </div>
