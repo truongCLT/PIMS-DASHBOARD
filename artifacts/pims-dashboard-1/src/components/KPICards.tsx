@@ -53,11 +53,11 @@ function RingGauge({ pct, color, size = 52, subLabel }: { pct: number; color: st
         strokeDasharray={`${c * filled} ${c}`}
         transform={`rotate(-90 ${size / 2} ${size / 2})`}
       />
-      <text x="50%" y={subLabel ? "44%" : "50%"} textAnchor="middle" dominantBaseline="central" fontSize={12} fontWeight={800} fill={color}>
+      <text x="50%" y={subLabel ? "44%" : "50%"} textAnchor="middle" dominantBaseline="central" fontSize={size * 0.23} fontWeight={800} fill={color}>
         {Math.round(pct)}%
       </text>
       {subLabel && (
-        <text x="50%" y="62%" textAnchor="middle" dominantBaseline="central" fontSize={7} fill={color}>
+        <text x="50%" y="62%" textAnchor="middle" dominantBaseline="central" fontSize={size * 0.135} fill={color}>
           {subLabel}
         </text>
       )}
@@ -145,7 +145,7 @@ function KPICard({
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
             {hasPct
-              ? <RingGauge pct={pctNum} color={gaugeColor} size={compact ? 48 : 56} subLabel={t("common:achievementRate")} />
+              ? <RingGauge pct={pctNum} color={gaugeColor} size={compact ? 72 : 84} subLabel={t("common:achievementRate")} />
               : <div style={{ width: 56, textAlign: "center", fontSize: 12, color: K.labelColor, flexShrink: 0 }}>{achievement}</div>}
             <div style={{ minWidth: 0 }}>
               <div style={{ display: "flex", alignItems: "baseline", gap: "5px", minWidth: 0 }}>
