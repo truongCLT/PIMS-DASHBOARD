@@ -50,13 +50,13 @@ export function ProfitChart() {
 
   // ≤5개 버킷이면 매출 실적 및 전망 차트와 비슷한 실제 크기로 텍스트 확대
   // (SVG viewBox 1000 → 카드 폭으로 축소 렌더링되므로 약 1.7배 보정)
-  const scaleUp = data.length > 0 && !isCondensed ? 1.4 : 1;
+  const scaleUp = daewoo ? 1.8 : data.length > 0 && !isCondensed ? 1.4 : 1;
   const fs = (n: number) => {
     const base = compact ? Math.max(9, Math.round(n * 0.6)) : n;
     return Math.round(base * scaleUp);
   };
 
-  const plotLeft  = compact ? 130 : 80;
+  const plotLeft  = daewoo ? (compact ? 160 : 115) : compact ? 130 : 80;
   const plotRight = 950;
   const slot = data.length > 0 ? (plotRight - plotLeft) / data.length : 0;
   const barW = 58;
@@ -173,7 +173,7 @@ export function ProfitChart() {
         </div>
       ) : (
       <svg
-        viewBox={daewoo ? "0 -85 1000 545" : "0 0 1000 445"}
+        viewBox={daewoo ? "0 -90 1000 575" : "0 0 1000 445"}
         style={daewoo
           ? { width: "100%", flex: 1, minHeight: 0, display: "block" }
           : { width: "100%", display: "block" }}
@@ -218,7 +218,9 @@ export function ProfitChart() {
             const chipText = `${d.non >= 0 ? "+" : ""}${d.non.toLocaleString("ko-KR")}`;
             const chipColor = d.non >= 0 ? DW_POS : DW_NEG;
             const chipBg = d.non >= 0 ? "#e7f5ec" : "#fdecec";
-            const chipW = Math.max(48, chipText.length * 8 + 18);
+            const chipFs = fs(13);
+            const chipH = chipFs + 12;
+            const chipW = Math.max(56, chipText.length * chipFs * 0.62 + 22);
             const capTop = yGross;               // 막대 전체(매출이익) 상단
             const opTop = yv(d.op);
             return (
@@ -228,14 +230,14 @@ export function ProfitChart() {
                 {/* 판관비 캡: op → gross */}
                 <rect x={bx} y={Math.min(capTop, opTop)} width={barW} height={Math.abs(opTop - capTop)} rx={7} fill={DW_SGA} />
                 {/* 매출이익 값 + 비율 (막대 바로 위) */}
-                <text x={cx} y={Math.min(capTop, opTop) - 28} textAnchor="middle" fontSize={fs(19)} fontWeight="700" fill="#1a2d4d">{gross.toLocaleString("ko-KR")}</text>
-                <text x={cx} y={Math.min(capTop, opTop) - 10} textAnchor="middle" fontSize={fs(14)} fill="#64748b">{d.totalPct}</text>
+                <text x={cx} y={Math.min(capTop, opTop) - 34} textAnchor="middle" fontSize={fs(17)} fontWeight="700" fill="#1a2d4d">{gross.toLocaleString("ko-KR")}</text>
+                <text x={cx} y={Math.min(capTop, opTop) - 10} textAnchor="middle" fontSize={fs(12)} fill="#64748b">{d.totalPct}</text>
                 {/* 영업외손익 칩 — 상단 고정 행 */}
-                <rect x={cx - chipW / 2} y={-78} width={chipW} height={22} rx={11} fill={chipBg} />
-                <text x={cx} y={-63} textAnchor="middle" fontSize={fs(14)} fontWeight="700" fill={chipColor}>{chipText}</text>
+                <rect x={cx - chipW / 2} y={-80} width={chipW} height={chipH} rx={chipH / 2} fill={chipBg} />
+                <text x={cx} y={-80 + chipH / 2} textAnchor="middle" dominantBaseline="central" fontSize={chipFs} fontWeight="700" fill={chipColor}>{chipText}</text>
                 {/* 월 + 영업이익률 */}
-                <text x={cx} y={Y0 + 30} textAnchor="middle" fontSize={fs(16)} fontWeight="600" fill="#333">{d.m}</text>
-                <text x={cx} y={Y0 + 56} textAnchor="middle" fontSize={fs(15)} fontWeight="700" fill="#2e5bdb">{d.opPct}</text>
+                <text x={cx} y={Y0 + 34} textAnchor="middle" fontSize={fs(13)} fontWeight="600" fill="#333">{d.m}</text>
+                <text x={cx} y={Y0 + 66} textAnchor="middle" fontSize={fs(13)} fontWeight="700" fill="#2e5bdb">{d.opPct}</text>
               </g>
             );
           }
@@ -300,8 +302,8 @@ export function ProfitChart() {
         {/* 대우 예시1: 좌측 행 라벨 */}
         {daewoo && (
           <>
-            <text x={plotLeft - 12} y={-62} textAnchor="end" fontSize={fs(14)} fill="#8a99b5">{t("profitChart:nonOperatingProfitLoss")}</text>
-            <text x={plotLeft - 12} y={Y0 + 56} textAnchor="end" fontSize={fs(14)} fill="#8a99b5">{t("profitChart:operatingMarginRate")}</text>
+            <text x={plotLeft - 12} y={-62} textAnchor="end" fontSize={fs(10)} fill="#8a99b5">{t("profitChart:nonOperatingProfitLoss")}</text>
+            <text x={plotLeft - 12} y={Y0 + 66} textAnchor="end" fontSize={fs(10)} fill="#8a99b5">{t("profitChart:operatingMarginRate")}</text>
           </>
         )}
 
@@ -310,9 +312,9 @@ export function ProfitChart() {
           <rect
             key={`hover-${i}`}
             x={plotLeft + slot * i}
-            y={daewoo ? -85 : YTOP}
+            y={daewoo ? -90 : YTOP}
             width={slot}
-            height={daewoo ? Y0 + 85 + 60 : Y0 - YTOP + 38}
+            height={daewoo ? Y0 + 90 + 85 : Y0 - YTOP + 38}
             fill="transparent"
             onMouseEnter={() => setHoveredIdx(i)}
             style={{ cursor: "crosshair" }}
