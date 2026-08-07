@@ -11,6 +11,7 @@ import {
   Tooltip,
   ResponsiveContainer,
   LabelList,
+  Cell,
 } from "recharts";
 import { useDashboardData, type SalesRow } from "../lib/mgmtreportData";
 import { useDashboardFilters } from "../lib/dashboardFilters";
@@ -280,7 +281,18 @@ export function SalesChart() {
                 barSize={compact ? 12 : 16}
                 radius={[6, 6, 0, 0]}
                 isAnimationActive={false}
-              />
+              >
+                {visibleData.map((d, i) => (
+                  <Cell
+                    key={`actual-${i}`}
+                    fill={d.isForecast ? "#ffffff" : actualColor}
+                    fillOpacity={d.isForecast ? 0.55 : 1}
+                    stroke={d.isForecast ? actualColor : undefined}
+                    strokeWidth={d.isForecast ? 1.6 : 0}
+                    strokeDasharray={d.isForecast ? "5 3" : undefined}
+                  />
+                ))}
+              </Bar>
             </ComposedChart>
           ) : variant === "area" ? (
             /* ── 대우 예시2: area(실적) + dashed line(계획) ── */

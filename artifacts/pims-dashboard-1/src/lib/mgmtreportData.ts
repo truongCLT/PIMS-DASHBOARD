@@ -55,6 +55,8 @@ export interface SalesRow {
   plan: number | null;
   actual: number | null;
   rate: number | null;
+  /** 조회 종료월 이후(전망) 구간 여부 */
+  isForecast?: boolean;
 }
 
 export interface ProfitRow {
@@ -338,6 +340,7 @@ export function deriveDashboardData(
       plan,
       actual,
       rate: plan ? Math.round((actual / plan) * 100) : null,
+      isForecast: (b.months[0] ?? 0) > M,
     };
   });
 
@@ -493,6 +496,7 @@ export function useDashboardData() {
       convert,
       unitLabel,
       projectScope,
+      salesFullYear: true,
     });
   }, [
     summaryForYear,
