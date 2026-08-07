@@ -108,7 +108,6 @@ const CustomTooltip = ({ active, payload, label, colors }: any) => {
 
 export function SalesChart() {
   const { t } = useTranslation(["salesChart", "common"]);
-  const [viewType, setViewType] = useState<"net" | "report">("net");
   const [detailOpen, setDetailOpen] = useState(false);
   const { derived, isError } = useDashboardData();
   const { unitIndex } = useDashboardFilters();
@@ -361,28 +360,6 @@ export function SalesChart() {
 
       {/* Legend + Toggle */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "4px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <label style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11px", color: "#555", cursor: "pointer" }}>
-            <input
-              type="radio"
-              name="viewType"
-              checked={viewType === "net"}
-              onChange={() => setViewType("net")}
-              style={{ accentColor: "#2f7cf6" }}
-            />
-            {t("salesChart:net")}
-          </label>
-          <label style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11px", color: "#555", cursor: "pointer" }}>
-            <input
-              type="radio"
-              name="viewType"
-              checked={viewType === "report"}
-              onChange={() => setViewType("report")}
-              style={{ accentColor: "#2f7cf6" }}
-            />
-            {t("salesChart:report")}
-          </label>
-        </div>
         <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
             {variant === "bars" ? (
