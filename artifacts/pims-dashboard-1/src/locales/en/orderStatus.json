@@ -4,5 +4,9 @@
   "noProjectOrderData": "Order data by project is not available.",
   "remaining": "Remaining",
   "vsPlan": "vs. Plan",
-  "viewDetails": "View Details"
+  "viewDetails": "View Details",
+  "orderActual": "Orders received",
+  "remainingUnordered": "Remaining (unordered)",
+  "annualOrderPlan": "Annual order plan",
+  "vsAnnualPlan": "vs. annual order plan"
 }
