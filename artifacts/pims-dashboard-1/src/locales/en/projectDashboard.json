@@ -1,0 +1,15 @@
+{
+  "costing": "Costing",
+  "cashflow": "Cashflow",
+  "dataEntry": "Data Entry",
+  "templateDownloadFailed": "Failed to download the template.",
+  "confirmReplaceData": "This will replace this project's data with the uploaded Excel content. Continue?",
+  "uploadCompleted": "Upload completed.",
+  "uploadFailedCheckFormat": "Upload failed. Please check the file format.",
+  "monthsSuffix": "{{count}} months",
+  "client": "Client",
+  "constructionPeriod": "Construction Period",
+  "constructionScale": "Construction Scale",
+  "downloadTemplateTooltip": "Download an Excel template containing the current data, edit it, and upload it.",
+  "uploadTemplateTooltip": "Enter data into the downloaded template and upload it to replace all data."
+}

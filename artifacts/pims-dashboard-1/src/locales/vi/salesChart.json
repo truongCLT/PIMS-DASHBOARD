@@ -1,0 +1,12 @@
+{
+  "title": "Doanh thu thực hiện & dự báo",
+  "viewDetails": "Xem chi tiết",
+  "errorLoadFailed": "Không thể tải dữ liệu.",
+  "noDataForPeriod": "Không có dữ liệu cho khoảng thời gian đã chọn.",
+  "loadingData": "Đang tải dữ liệu…",
+  "net": "Ròng",
+  "report": "Báo cáo",
+  "salesPlan": "Doanh thu (Kế hoạch)",
+  "salesActualForecast": "Doanh thu (Thực hiện & Dự báo)",
+  "month": "Tháng"
+}

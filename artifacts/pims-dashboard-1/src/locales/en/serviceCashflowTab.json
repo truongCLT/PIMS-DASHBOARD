@@ -1,0 +1,12 @@
+{
+  "monthLabel": "{{month}}/{{yy}}",
+  "entryGuide": "Log in as an administrator to enter cash flow data in the \"Monthly Cash\" table under the \"Data Entry\" tab.",
+  "loadingCashflow": "Loading cash flow data…",
+  "noCashflowDataYet": "No cash flow data has been entered yet.",
+  "noProjectCashflowData": "No cash flow data is available for this project.",
+  "fetchFailed": "Failed to load cash flow data. Please try again later.",
+  "noDataInPeriod": "No cash flow data for the selected period.",
+  "cashIn": "Cash In",
+  "cashOut": "Cash Out",
+  "balance": "Balance"
+}

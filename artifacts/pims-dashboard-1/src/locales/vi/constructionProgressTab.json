@@ -1,0 +1,14 @@
+{
+  "noMilestoneData": "Không có dữ liệu mốc tiến độ. ( - )",
+  "siteProgressStatus": "Hiện trạng tiến độ công trường",
+  "sitePhotoAlt": "Công trường {{projectName}}",
+  "planProcessA": "Tiến độ kế hoạch (A)",
+  "actualProcessB": "Tiến độ thực hiện (B)",
+  "yearMonth": "Tháng {{month}}/{{year}}",
+  "projectLifecycleProcess": "Tiến độ theo vòng đời dự án",
+  "noMonthlyProcessData": "Không có dữ liệu tiến độ theo tháng. ( - )",
+  "monthlyPlan": "Kế hoạch tháng",
+  "monthlyActual": "Thực hiện tháng",
+  "cumulativePlan": "Lũy kế kế hoạch",
+  "cumulativeActual": "Lũy kế thực hiện"
+}

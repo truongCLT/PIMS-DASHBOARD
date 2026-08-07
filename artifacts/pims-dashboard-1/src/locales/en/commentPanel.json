@@ -1,0 +1,17 @@
+{
+  "editFailed": "Failed to edit the comment.",
+  "deleteFailed": "Failed to delete the comment.",
+  "monthLabel": "Month:",
+  "monthOption": "Month {{month}}",
+  "inputPlaceholder": "Enter your comment...",
+  "saveCommentAriaLabel": "Save comment",
+  "saveFailedRetry": "Failed to save the comment. Please try again.",
+  "loadingComments": "Loading...",
+  "fetchFailed": "Failed to load comments.",
+  "noCommentsForMonth": "No comments for month {{month}}.",
+  "saveEditAriaLabel": "Save edit",
+  "cancelEditAriaLabel": "Cancel edit",
+  "editCommentAriaLabel": "Edit comment",
+  "deleteConfirm": "Are you sure you want to delete this comment?",
+  "deleteCommentAriaLabel": "Delete comment"
+}

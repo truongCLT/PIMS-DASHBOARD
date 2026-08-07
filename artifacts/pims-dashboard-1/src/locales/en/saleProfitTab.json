@@ -1,0 +1,17 @@
+{
+  "loadingNotice": "Loading revenue/cost data…",
+  "errorNotice": "Failed to load revenue/cost data. Please try again shortly.",
+  "noRevenueDataNotice": "No revenue data for the selected period.",
+  "monthlyRevenueTitle": "Monthly Revenue ({{unit}})",
+  "monthlyPlan": "Monthly Plan",
+  "monthlyRevenue": "Monthly Revenue",
+  "costTitle": "Cost ({{unit}})",
+  "noCogsDataNotice": "No cost of revenue data for the selected period. Log in as an admin to enter it in the \"Monthly Cost of Revenue\" table under the \"Data Entry\" tab.",
+  "acctCogs": "Accounting Cost of Revenue",
+  "wipCogs": "Executed Cost of Revenue (WIP)",
+  "acctCogsCum": "Accounting Cost of Revenue (Cumulative)",
+  "wipCogsCum": "Executed Cost of Revenue (WIP, Cumulative)",
+  "costRatioTitle": "Cost Ratio (%)",
+  "noCostRatioDataNotice": "No revenue data available to calculate the cost ratio for the selected period.",
+  "cumulativeCostRatio": "Cumulative Cost Ratio"
+}

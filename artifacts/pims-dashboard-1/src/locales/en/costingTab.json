@@ -1,0 +1,10 @@
+{
+  "estBidding": "Bidding",
+  "estExecutionBudget": "Execution Budget Setup",
+  "estCompletionCostRatio": "Estimated Cost Ratio at Completion",
+  "budgetExecutionStatusTitle": "Budget Execution Status",
+  "noBudgetDataNotice": "No budget execution data. ( - )",
+  "costEstimationTitle": "Cost Estimation",
+  "noCostRatioDataNotice": "No cost ratio data. ( - )",
+  "asOfBasis": " (as of '{{ym}})"
+}

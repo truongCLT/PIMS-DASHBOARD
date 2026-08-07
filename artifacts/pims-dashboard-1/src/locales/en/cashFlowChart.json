@@ -1,0 +1,19 @@
+{
+  "scopeAllDecv": "DECV Total",
+  "noClosedProjectData": "No aggregate data available because there are no closed projects.",
+  "noOngoingCashflowData": "No cash flow data available for ongoing projects.",
+  "thousandUsd": "Thousand USD",
+  "monthLabel": "Month {{month}}",
+  "noProjectCashflowAggregate": "Cash flow aggregation by project is not available.",
+  "noDataForPeriod": "No data available for the selected period.",
+  "noAggregateData": "No aggregate data available.",
+  "loadingCashflow": "Loading cash flow data...",
+  "noCashflowDataForRange": "No cash flow data available for the selected range.",
+  "cashflowFetchError": "An error occurred while retrieving cash flow data.",
+  "noCashflowDataForPeriod": "No cash flow data available for the selected period.",
+  "cashInflow": "Cash Inflow",
+  "cashOutflow": "Cash Outflow",
+  "cumulativeCashBalance": "Cumulative Cash Balance",
+  "cumulativeCashBalanceRightAxis": "Cumulative Cash Balance (right axis)",
+  "viewDetails": "View Details"
+}

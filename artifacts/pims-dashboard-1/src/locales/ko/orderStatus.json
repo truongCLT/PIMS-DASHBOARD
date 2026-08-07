@@ -1,0 +1,8 @@
+{
+  "title": "수주 실적 현황",
+  "noDataForPeriod": "선택한 기간에 데이터가 없습니다.",
+  "noProjectOrderData": "프로젝트별 수주 데이터는 제공되지 않습니다.",
+  "remaining": "잔여",
+  "vsPlan": "계획 대비",
+  "viewDetails": "상세보기"
+}

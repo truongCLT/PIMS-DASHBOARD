@@ -1,0 +1,14 @@
+{
+  "noMilestoneData": "No milestone data available. ( - )",
+  "siteProgressStatus": "Site Progress Status",
+  "sitePhotoAlt": "{{projectName}} construction site",
+  "planProcessA": "Planned Progress (A)",
+  "actualProcessB": "Actual Progress (B)",
+  "yearMonth": "{{year}}-{{month}}",
+  "projectLifecycleProcess": "Project Lifecycle Progress",
+  "noMonthlyProcessData": "No monthly progress data available. ( - )",
+  "monthlyPlan": "Monthly Plan",
+  "monthlyActual": "Monthly Actual",
+  "cumulativePlan": "Cumulative Plan",
+  "cumulativeActual": "Cumulative Actual"
+}

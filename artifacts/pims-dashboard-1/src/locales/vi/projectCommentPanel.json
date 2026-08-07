@@ -1,0 +1,17 @@
+{
+  "saveFailed": "Không thể lưu bình luận.",
+  "editFailed": "Không thể sửa bình luận.",
+  "deleteFailed": "Không thể xóa bình luận.",
+  "monthLabel": "Tháng:",
+  "monthOption": "Tháng {{month}}",
+  "inputPlaceholder": "Nhập bình luận...",
+  "saveCommentAriaLabel": "Lưu bình luận",
+  "loadingComments": "Đang tải...",
+  "fetchFailed": "Không thể tải bình luận.",
+  "noCommentsForFilter": "Không có bình luận cho {{filter}}.",
+  "saveEditAriaLabel": "Lưu chỉnh sửa",
+  "cancelEditAriaLabel": "Hủy chỉnh sửa",
+  "editCommentAriaLabel": "Sửa bình luận",
+  "deleteConfirm": "Bạn có chắc chắn muốn xóa bình luận này không?",
+  "deleteCommentAriaLabel": "Xóa bình luận"
+}

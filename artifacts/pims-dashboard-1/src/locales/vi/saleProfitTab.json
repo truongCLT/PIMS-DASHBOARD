@@ -1,0 +1,17 @@
+{
+  "loadingNotice": "Đang tải dữ liệu doanh thu/chi phí…",
+  "errorNotice": "Không thể tải dữ liệu doanh thu/chi phí. Vui lòng thử lại sau.",
+  "noRevenueDataNotice": "Không có dữ liệu doanh thu trong khoảng thời gian đã chọn.",
+  "monthlyRevenueTitle": "Doanh thu tháng ({{unit}})",
+  "monthlyPlan": "Kế hoạch tháng",
+  "monthlyRevenue": "Doanh thu tháng",
+  "costTitle": "Chi phí ({{unit}})",
+  "noCogsDataNotice": "Không có dữ liệu giá vốn hàng bán trong khoảng thời gian đã chọn. Đăng nhập với quyền quản trị để nhập tại bảng \"Giá vốn hàng bán theo tháng\" trong tab \"Nhập dữ liệu\".",
+  "acctCogs": "Giá vốn hàng bán (kế toán)",
+  "wipCogs": "Giá vốn hàng bán thực hiện (WIP)",
+  "acctCogsCum": "Giá vốn hàng bán (kế toán) lũy kế",
+  "wipCogsCum": "Giá vốn hàng bán thực hiện (WIP) lũy kế",
+  "costRatioTitle": "Tỷ lệ giá vốn (%)",
+  "noCostRatioDataNotice": "Không có dữ liệu doanh thu để tính tỷ lệ giá vốn trong khoảng thời gian đã chọn.",
+  "cumulativeCostRatio": "Tỷ lệ giá vốn lũy kế"
+}
