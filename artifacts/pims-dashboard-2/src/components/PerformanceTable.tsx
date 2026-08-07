@@ -90,7 +90,7 @@ export function PerformanceTable() {
         onClose={() => setDetailOpen(false)}
         title={t("performanceTable:managementPerformanceStatus")}
       >
-        <DetailDataTable<PerformanceRow>
+        <DetailDataTable
           rowKey={(row) => row.label}
           columns={[
             { key: "label", label: t("performanceTable:category"), align: "left" },

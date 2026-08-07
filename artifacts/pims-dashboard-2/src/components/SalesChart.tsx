@@ -255,7 +255,7 @@ export function SalesChart() {
       </div>
 
       <DetailModal open={detailOpen} onClose={() => setDetailOpen(false)} title={t("salesChart:title")}>
-        <DetailDataTable<SalesRow>
+        <DetailDataTable
           rowKey={(row) => String(row.month)}
           columns={[
             { key: "month", label: t("salesChart:month"), align: "left" },
