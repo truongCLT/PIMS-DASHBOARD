@@ -1,0 +1,11 @@
+{
+  "adminMode": "Chế độ quản trị",
+  "alreadyActive": "Chế độ quản trị hiện đang được kích hoạt.",
+  "backToDashboard": "Quay lại trang tổng quan",
+  "logout": "Đăng xuất",
+  "enterPassword": "Vui lòng nhập mật khẩu quản trị.",
+  "passwordPlaceholder": "Mật khẩu",
+  "checking": "Đang kiểm tra…",
+  "login": "Đăng nhập",
+  "invalidPassword": "Mật khẩu không đúng."
+}

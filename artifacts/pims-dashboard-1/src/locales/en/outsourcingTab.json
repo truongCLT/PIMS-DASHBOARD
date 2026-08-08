@@ -1,0 +1,20 @@
+{
+  "outsourcingAndMaterials": "Outsourcing & Materials",
+  "dragToResize": "Drag to resize column width",
+  "tradeType": "Trade",
+  "vendorName": "Vendor Name",
+  "first": "Initial",
+  "contractDate": "Contract Date",
+  "change": "Change",
+  "contract": "Contract",
+  "round": "Round",
+  "executedBudget": "Executed Budget",
+  "resolvedAmount": "Resolved Amount",
+  "resolvedRate": "Resolved Rate",
+  "progressBillingStatus": "Progress Billing Status",
+  "category": "Category",
+  "detailedTrade": "Detailed Trade",
+  "thisMonth": "This Month",
+  "ratio": "Ratio",
+  "noOutsourcingData": "No outsourcing/material data available. ( - )"
+}

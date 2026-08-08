@@ -1,0 +1,8 @@
+{
+  "settingsButtonTitle": "환율 설정 (관리자)",
+  "settingsButtonLabel": "환율 설정",
+  "popupTitle": "환율 설정 (USD 기준)",
+  "saveFailed": "환율 저장에 실패했습니다.",
+  "invalidNumber": "0보다 큰 숫자를 입력해 주세요.",
+  "saving": "저장 중…"
+}

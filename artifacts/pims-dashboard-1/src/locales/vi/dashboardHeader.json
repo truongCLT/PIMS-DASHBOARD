@@ -1,0 +1,20 @@
+{
+  "title": "Bảng điều khiển",
+  "syncSuccessMessage": "✅ Đồng bộ dữ liệu PIMSVINA đã hoàn tất!\n\nChi tiết cập nhật:\n• Thu chi (Cashflow): {{cfProjects}} dự án mới / {{cfMonthly}} bản ghi theo tháng\n• Doanh thu & Chi phí (Sales & Cost): {{scSites}} công trường mới / {{scMonthly}} bản ghi theo tháng\n• Báo cáo quản trị (Management Report): {{mrProjects}} dự án mới / {{mrMonthly}} bản ghi theo tháng / {{mrAnnual}} bản ghi theo năm / {{mrPnl}} bản ghi PnL\n• Chi tiết dự án (Project Detail): {{pdOverview}} tổng quan công trình / {{pdProgress}} bản ghi tiến độ / {{pdOutsourcing}} bản ghi thuê ngoài\n• Chi tiết thu chi/doanh thu/dự toán (Project Detail Cashflow/Sales/Budget): {{pdCashflow}} bản ghi thu chi / {{pdSales}} bản ghi doanh thu / {{pdCostBudget}} bản ghi dự toán\n• Tỷ giá cơ sở (FX Rates): {{fxRates}} loại tiền tệ",
+  "syncFailed": "❌ Đồng bộ thất bại: {{error}}",
+  "syncFailedDefaultError": "Lỗi kết nối máy chủ PIMSVINA",
+  "connectionErrorMessage": "❌ Đã xảy ra lỗi kết nối máy chủ: {{message}}",
+  "excelExportError": "Đã xảy ra lỗi khi tải xuống tệp Excel.",
+  "pdfExportError": "Đã xảy ra lỗi khi tải xuống tệp PDF.",
+  "divisionTotalSuffix": "Tổng {{division}}",
+  "periodRangeLabel": "Khoảng thời gian:",
+  "periodModeLabel": "Xem theo:",
+  "periodOptionMonth": "Tháng",
+  "periodOptionQuarter": "Quý",
+  "syncButtonTitle": "Đồng bộ dữ liệu thời gian thực với hệ thống PIMSVINA",
+  "syncing": "Đang đồng bộ...",
+  "syncButtonLabel": "Đồng bộ PIMSVINA",
+  "generatingLabel": "Đang tạo...",
+  "excelDownloadOption": "Tải Excel (.xlsx)",
+  "pdfDownloadOption": "Tải PDF (.pdf)"
+}

@@ -1,0 +1,8 @@
+{
+  "managementPerformanceStatus": "Tình hình kết quả kinh doanh",
+  "viewDetails": "Xem chi tiết",
+  "category": "Phân loại",
+  "currentMonthCumulative": "Lũy kế tháng hiện tại",
+  "loadFailed": "Không thể tải dữ liệu.",
+  "dataLoading": "Đang tải dữ liệu…"
+}

@@ -1,0 +1,14 @@
+{
+  "noMilestoneData": "마일스톤 데이터가 없습니다. ( - )",
+  "siteProgressStatus": "현장 공정 현황",
+  "sitePhotoAlt": "{{projectName}} 공사 현장",
+  "planProcessA": "계획 공정 (A)",
+  "actualProcessB": "실적 공정 (B)",
+  "yearMonth": "{{year}}년 {{month}}월",
+  "projectLifecycleProcess": "프로젝트 생애주기 공정",
+  "noMonthlyProcessData": "월별 공정 데이터가 없습니다. ( - )",
+  "monthlyPlan": "월 계획",
+  "monthlyActual": "월 실적",
+  "cumulativePlan": "누계 계획",
+  "cumulativeActual": "누계 실적"
+}

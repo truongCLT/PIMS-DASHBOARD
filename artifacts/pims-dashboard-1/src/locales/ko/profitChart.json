@@ -1,0 +1,13 @@
+{
+  "nonOperatingProfitLoss": "영업외손익",
+  "ordinaryProfit": "경상이익",
+  "profitLossStatus": "손익현황",
+  "viewDetails": "상세보기",
+  "dataLoadFailed": "데이터를 불러오지 못했습니다.",
+  "dataLoading": "데이터 로딩 중…",
+  "sgaArea": "판관비 영역",
+  "hoverHint": "※ 막대에 마우스를 올리면 경상이익·판관비 상세를 볼 수 있습니다",
+  "month": "월",
+  "operatingMarginRate": "영업이익률",
+  "barTotalGross": "막대 전체 = 매출이익"
+}

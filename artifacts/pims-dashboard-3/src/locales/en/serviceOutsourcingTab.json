@@ -1,0 +1,15 @@
+{
+  "tradeType": "Trade",
+  "vendorName": "Vendor",
+  "category": "Type",
+  "firstContractDate": "Initial\nContract Date",
+  "changeContractNo": "Contract\nChange No.",
+  "budgetA": "Budget\n(A)",
+  "resolvedAmountB": "Resolved\nAmount (B)",
+  "resolvedRateBA": "Resolved\nRate (B/A)",
+  "progressStatus": "Progress Status",
+  "thisMonth": "This Month",
+  "cumulativeC": "Cumulative\n(C)",
+  "rateCB": "Rate\n(C/B)",
+  "noData": "No outsourcing/service data available. Please enter outsourcing data in the \"Data entry\" tab on the left."
+}

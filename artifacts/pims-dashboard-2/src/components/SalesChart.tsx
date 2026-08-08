@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next";
 import {
   ComposedChart,
   Line,
+  Bar,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -13,6 +15,7 @@ import {
 import { useDashboardData, type SalesRow } from "../lib/mgmtreportData";
 import { useDashboardFilters } from "../lib/dashboardFilters";
 import { chartTheme } from "../lib/chartTheme";
+import { useTheme } from "../lib/theme";
 import { DetailModal, DetailDataTable } from "./DetailModal";
 
 const PLAN_COLOR = chartTheme.planBlue;
@@ -84,19 +87,20 @@ const makeActualRateLabel = (chartData: SalesRow[]) => (props: any) => {
 };
 
 /* Custom Tooltip */
-const CustomTooltip = ({ active, payload, label }: any) => {
+const CustomTooltip = ({ active, payload, label, colors }: any) => {
   const { t } = useTranslation(["salesChart", "common"]);
   if (!active || !payload || !payload.length) return null;
+  const c = colors ?? { plan: PLAN_COLOR, actual: ACTUAL_COLOR, rate: RATE_COLOR };
   const plan = payload.find((p: any) => p.dataKey === "plan");
   const actual = payload.find((p: any) => p.dataKey === "actual");
-  const rate = plan?.payload?.rate;
+  const rate = plan?.payload?.rate ?? actual?.payload?.rate;
   return (
     <div style={{ backgroundColor: "#fff", border: "1px solid #e2e9f3", borderRadius: "4px", padding: "8px 10px", fontSize: "12px" }}>
       <div style={{ fontWeight: 700, marginBottom: "4px", color: "#16294a" }}>{label}</div>
-      {plan && <div style={{ color: PLAN_COLOR }}>{t("salesChart:salesPlan")}: {Number(plan.value).toLocaleString("ko-KR")}</div>}
-      {actual && <div style={{ color: ACTUAL_COLOR }}>{t("salesChart:salesActualForecast")}: {Number(actual.value).toLocaleString("ko-KR")}</div>}
+      {plan && <div style={{ color: c.plan }}>{t("salesChart:salesPlan")}: {Number(plan.value).toLocaleString("ko-KR")}</div>}
+      {actual && <div style={{ color: c.actual }}>{t("salesChart:salesActualForecast")}: {Number(actual.value).toLocaleString("ko-KR")}</div>}
       {rate != null && (
-        <div style={{ color: RATE_COLOR, fontWeight: 700, marginTop: "4px" }}>{t("common:achievementRate")}: {rate}%</div>
+        <div style={{ color: c.rate, fontWeight: 700, marginTop: "4px" }}>{t("common:achievementRate")}: {rate}%</div>
       )}
     </div>
   );
@@ -108,10 +112,29 @@ export function SalesChart() {
   const [detailOpen, setDetailOpen] = useState(false);
   const { derived, isError } = useDashboardData();
   const { unitIndex } = useDashboardFilters();
+  const { theme } = useTheme();
+  const variant = theme.charts?.salesVariant;
+  const planColor = theme.charts?.planColor ?? PLAN_COLOR;
+  const actualColor = theme.charts?.actualColor ?? ACTUAL_COLOR;
+  const rateColor = theme.charts?.rateColor ?? RATE_COLOR;
   const compact = unitIndex === 1;
   const visibleData = derived?.salesData ?? [];
   const PlanRateLabel = makePlanRateLabel(visibleData);
   const ActualRateLabel = makeActualRateLabel(visibleData);
+
+  /* month + 달성률 two-line tick, used by the bars variant (대우 예시1) */
+  const MonthRateTick = (props: any) => {
+    const { x, y, payload } = props;
+    const row = visibleData.find((r) => r.month === payload.value);
+    return (
+      <g>
+        <text x={x} y={y + 12} textAnchor="middle" fontSize={11} fill={chartTheme.axisText}>{payload.value}</text>
+        {row?.rate != null && (
+          <text x={x} y={y + 26} textAnchor="middle" fontSize={10} fontWeight={700} fill={rateColor}>{row.rate}%</text>
+        )}
+      </g>
+    );
+  };
 
   return (
     <div style={{
@@ -153,6 +176,106 @@ export function SalesChart() {
           </div>
         ) : (
         <ResponsiveContainer width="100%" height="100%">
+          {variant === "bars" ? (
+            /* ── 대우 예시1: grouped bars (계획 연한색 · 실적 진한색) + 달성률 under months ── */
+            <ComposedChart data={visibleData} margin={{ top: 24, right: 18, left: -10, bottom: 16 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.gridLine} vertical={false} />
+              <XAxis
+                dataKey="month"
+                tick={<MonthRateTick />}
+                axisLine={false}
+                tickLine={false}
+                height={34}
+              />
+              <YAxis
+                domain={[0, "auto"]}
+                tick={{ fontSize: compact ? 9 : 11, fill: chartTheme.axisText }}
+                width={compact ? 88 : 60}
+                tickFormatter={(v: number) => v.toLocaleString("ko-KR")}
+                axisLine={false}
+                tickLine={false}
+              />
+              <Tooltip content={<CustomTooltip colors={{ plan: planColor, actual: actualColor, rate: rateColor }} />} cursor={{ fill: "rgba(68,114,202,0.06)" }} />
+              <Bar
+                dataKey="plan"
+                name={t("salesChart:salesPlan")}
+                fill={planColor}
+                radius={[4, 4, 0, 0]}
+                isAnimationActive={false}
+              />
+              <Bar
+                dataKey="actual"
+                name={t("salesChart:salesActualForecast")}
+                fill={actualColor}
+                radius={[4, 4, 0, 0]}
+                isAnimationActive={false}
+              >
+                <LabelList
+                  dataKey="actual"
+                  position="top"
+                  formatter={(v: number) => (v == null ? "" : v.toLocaleString("ko-KR"))}
+                  style={{ fontSize: compact ? 9 : 10.5, fontWeight: 700, fill: "#1a2d4d" }}
+                />
+              </Bar>
+            </ComposedChart>
+          ) : variant === "area" ? (
+            /* ── 대우 예시2: area(실적) + dashed line(계획) ── */
+            <ComposedChart data={visibleData} margin={{ top: 30, right: 18, left: -10, bottom: 4 }}>
+              <defs>
+                <linearGradient id="salesAreaFill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={actualColor} stopOpacity={0.22} />
+                  <stop offset="100%" stopColor={actualColor} stopOpacity={0.02} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.gridLine} vertical={false} />
+              <XAxis
+                dataKey="month"
+                tick={{ fontSize: 11, fill: chartTheme.axisText }}
+                axisLine={false}
+                tickLine={false}
+                padding={{ left: 18, right: 6 }}
+              />
+              <YAxis
+                domain={[0, "auto"]}
+                tick={{ fontSize: compact ? 9 : 11, fill: chartTheme.axisText }}
+                width={compact ? 88 : 60}
+                tickFormatter={(v: number) => v.toLocaleString("ko-KR")}
+                axisLine={false}
+                tickLine={false}
+              />
+              <Tooltip content={<CustomTooltip colors={{ plan: planColor, actual: actualColor, rate: rateColor }} />} />
+              <Line
+                type="monotone"
+                dataKey="plan"
+                name={t("salesChart:salesPlan")}
+                stroke={planColor}
+                strokeWidth={1.5}
+                strokeDasharray="5 4"
+                dot={{ r: 2.5, fill: "#fff", stroke: planColor }}
+                connectNulls
+                isAnimationActive={false}
+              />
+              <Area
+                type="monotone"
+                dataKey="actual"
+                name={t("salesChart:salesActualForecast")}
+                stroke={actualColor}
+                strokeWidth={2}
+                fill="url(#salesAreaFill)"
+                dot={{ r: 3, fill: actualColor, stroke: actualColor }}
+                connectNulls
+                isAnimationActive={false}
+              >
+                <LabelList
+                  dataKey="actual"
+                  position="top"
+                  offset={10}
+                  formatter={(v: number) => (v == null ? "" : v.toLocaleString("ko-KR"))}
+                  style={{ fontSize: compact ? 9 : 10.5, fontWeight: 700, fill: actualColor }}
+                />
+              </Area>
+            </ComposedChart>
+          ) : (
           <ComposedChart data={visibleData} margin={{ top: 36, right: 18, left: -10, bottom: 4 }}>
             <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.gridLine} vertical={false} />
             <XAxis
@@ -202,6 +325,7 @@ export function SalesChart() {
               <LabelList dataKey="plan" content={PlanRateLabel} />
             </Line>
           </ComposedChart>
+          )}
         </ResponsiveContainer>
         )}
       </div>
@@ -232,30 +356,38 @@ export function SalesChart() {
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-            <svg width="26" height="8">
-              <line x1="0" y1="4" x2="26" y2="4" stroke={PLAN_COLOR} strokeWidth="1.5" />
-              <circle cx="6" cy="4" r="2.5" fill={PLAN_COLOR} />
-              <circle cx="20" cy="4" r="2.5" fill={PLAN_COLOR} />
-            </svg>
+            {variant === "bars" ? (
+              <svg width="14" height="10"><rect x="1" y="1" width="12" height="8" rx="2" fill={planColor} /></svg>
+            ) : (
+              <svg width="26" height="8">
+                <line x1="0" y1="4" x2="26" y2="4" stroke={planColor} strokeWidth="1.5" strokeDasharray={variant === "area" ? "4 3" : undefined} />
+                <circle cx="6" cy="4" r="2.5" fill={planColor} />
+                <circle cx="20" cy="4" r="2.5" fill={planColor} />
+              </svg>
+            )}
             <span style={{ fontSize: "12px", color: "#555" }}>{t("salesChart:salesPlan")}</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-            <svg width="26" height="8">
-              <line x1="0" y1="4" x2="26" y2="4" stroke={ACTUAL_COLOR} strokeWidth="1.5" />
-              <circle cx="6" cy="4" r="2.5" fill={ACTUAL_COLOR} />
-              <circle cx="20" cy="4" r="2.5" fill={ACTUAL_COLOR} />
-            </svg>
+            {variant === "bars" ? (
+              <svg width="14" height="10"><rect x="1" y="1" width="12" height="8" rx="2" fill={actualColor} /></svg>
+            ) : (
+              <svg width="26" height="8">
+                <line x1="0" y1="4" x2="26" y2="4" stroke={actualColor} strokeWidth="1.5" />
+                <circle cx="6" cy="4" r="2.5" fill={actualColor} />
+                <circle cx="20" cy="4" r="2.5" fill={actualColor} />
+              </svg>
+            )}
             <span style={{ fontSize: "12px", color: "#555" }}>{t("salesChart:salesActualForecast")}</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-            <span style={{ fontSize: "12px", fontWeight: 700, color: RATE_COLOR }}>%</span>
+            <span style={{ fontSize: "12px", fontWeight: 700, color: rateColor }}>%</span>
             <span style={{ fontSize: "12px", color: "#555" }}>{t("common:achievementRate")}</span>
           </div>
         </div>
       </div>
 
       <DetailModal open={detailOpen} onClose={() => setDetailOpen(false)} title={t("salesChart:title")}>
-        <DetailDataTable<SalesRow>
+        <DetailDataTable
           rowKey={(row) => String(row.month)}
           columns={[
             { key: "month", label: t("salesChart:month"), align: "left" },

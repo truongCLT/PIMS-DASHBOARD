@@ -29,10 +29,21 @@ export interface Theme {
     valueColor: string;
     accentBorderLeft: string | null; // per-card colored left border (theme B uses this)
     boxShadow: string;
-    /** "solid" = existing dark/white card · "strip" = colored header strip + icon + progress bar */
-    cardStyle?: "solid" | "strip";
+    /**
+     * "solid" = existing dark/white card · "strip" = colored header strip + icon + progress bar
+     * "gauge-ring" = small circular ring with % + 계획 대비 chip (대우 예시1)
+     * "gauge-semi" = semicircular gauge with % + 계획/계획 대비 footer (대우 예시2)
+     */
+    cardStyle?: "solid" | "strip" | "gauge-ring" | "gauge-semi";
     /** 4 accent colours for strip cards: [매출, 영업이익, 누적매출, 누적영업이익] */
     stripColors?: [string, string, string, string];
+  };
+  charts?: {
+    /** 매출 실적 및 전망 rendering: default lines · "bars" = grouped bars (예시1) · "area" = area + dashed plan (예시2) */
+    salesVariant?: "bars" | "area";
+    planColor?: string;
+    actualColor?: string;
+    rateColor?: string;
   };
 }
 
@@ -255,6 +266,81 @@ export const THEMES: Theme[] = [
       boxShadow: "0 2px 10px rgba(22,41,74,0.06)",
       cardStyle: "strip",
       stripColors: ["#2f7cf6", "#35c7c0", "#5fe0a8", "#1e3a6e"],
+    },
+  },
+  /* ── G: 대우본사 요청-예시1 ───────────────────── */
+  {
+    id: "daewoo-example-1",
+    label: "G — 대우본사 예시1",
+    swatch: "#4472ca",
+    sidebar: {
+      bg: "#ffffff",
+      border: "1px solid #dde3ee",
+      topLevelColor: "#1a2d4d",
+      midLevelColor: "#2a3d55",
+      subLevelColor: "#44546a",
+      activeItemBg: "#e8ecf5",
+      activeItemColor: "#4472ca",
+      activeItemAccent: "#4472ca",
+      totalActiveBg: "rgba(68,114,202,0.08)",
+      totalBorderBottom: "1px solid #dde3ee",
+      brandingBorderTop: "1px solid #dde3ee",
+    },
+    dashboard: { bg: "#eef1f6" },
+    kpi: {
+      cardBg: "#ffffff",
+      cardBorderTop: null,
+      cardBorder: "1px solid #dde3ee",
+      titleColor: "#5e6e8a",
+      labelColor: "#8a99b5",
+      valueColor: "#1a2d4d",
+      accentBorderLeft: null,
+      boxShadow: "0 1px 4px rgba(26,45,77,0.07)",
+      cardStyle: "gauge-ring",
+    },
+    charts: {
+      salesVariant: "bars",
+      planColor: "#c3d4f0",
+      actualColor: "#4472ca",
+      rateColor: "#e05252",
+    },
+  },
+
+  /* ── H: 대우본사요청-예시2 ────────────────────── */
+  {
+    id: "daewoo-example-2",
+    label: "H — 대우본사 예시2",
+    swatch: "#2e5bdb",
+    sidebar: {
+      bg: "#ffffff",
+      border: "1px solid #e2e8f0",
+      topLevelColor: "#1a2d4d",
+      midLevelColor: "#2a3d55",
+      subLevelColor: "#44546a",
+      activeItemBg: "#e8edf7",
+      activeItemColor: "#2e5bdb",
+      activeItemAccent: "#2e5bdb",
+      totalActiveBg: "rgba(46,91,219,0.08)",
+      totalBorderBottom: "1px solid #e2e8f0",
+      brandingBorderTop: "1px solid #e2e8f0",
+    },
+    dashboard: { bg: "#f5f7fb" },
+    kpi: {
+      cardBg: "#ffffff",
+      cardBorderTop: null,
+      cardBorder: "1px solid #e2e8f0",
+      titleColor: "#6b7a9b",
+      labelColor: "#93a3bd",
+      valueColor: "#1a2d4d",
+      accentBorderLeft: null,
+      boxShadow: "0 1px 5px rgba(21,36,73,0.07)",
+      cardStyle: "gauge-semi",
+    },
+    charts: {
+      salesVariant: "area",
+      planColor: "#b9c9e8",
+      actualColor: "#152449",
+      rateColor: "#2e5bdb",
     },
   },
 ];

@@ -1,0 +1,17 @@
+{
+  "loadingNotice": "매출/원가 데이터를 불러오는 중입니다…",
+  "errorNotice": "매출/원가 데이터 조회에 실패했습니다. 잠시 후 다시 시도해 주세요.",
+  "noRevenueDataNotice": "선택한 기간에 매출 데이터가 없습니다.",
+  "monthlyRevenueTitle": "당월 매출 ({{unit}})",
+  "monthlyPlan": "월 계획",
+  "monthlyRevenue": "월 매출",
+  "costTitle": "원가 ({{unit}})",
+  "noCogsDataNotice": "선택한 기간에 매출원가 데이터가 없습니다. 관리자 모드로 로그인하면 \"데이터 입력\" 탭의 \"월별 매출원가\" 표에서 입력할 수 있습니다.",
+  "acctCogs": "회계 매출원가",
+  "wipCogs": "집행 매출원가 (WIP)",
+  "acctCogsCum": "회계 매출원가 누계",
+  "wipCogsCum": "집행 매출원가 (WIP) 누계",
+  "costRatioTitle": "원가율 (%)",
+  "noCostRatioDataNotice": "선택한 기간에 원가율을 계산할 매출 데이터가 없습니다.",
+  "cumulativeCostRatio": "누계 원가율"
+}

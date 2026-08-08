@@ -297,7 +297,7 @@ export function ProfitChart() {
       </div>
 
       <DetailModal open={detailOpen} onClose={() => setDetailOpen(false)} title={t("profitChart:profitLossStatus")}>
-        <DetailDataTable<ProfitRow>
+        <DetailDataTable
           rowKey={(row) => String(row.m)}
           columns={[
             { key: "m", label: t("profitChart:month"), align: "left" },

@@ -1,0 +1,19 @@
+{
+  "scopeAllDecv": "Tổng DECV",
+  "noClosedProjectData": "Không có dữ liệu tổng hợp vì không có dự án đã kết thúc.",
+  "noOngoingCashflowData": "Không có dữ liệu thu chi cho các dự án đang triển khai.",
+  "thousandUsd": "Nghìn USD",
+  "monthLabel": "Tháng {{month}}",
+  "noProjectCashflowAggregate": "Không hỗ trợ tổng hợp thu chi theo từng dự án.",
+  "noDataForPeriod": "Không có dữ liệu cho khoảng thời gian đã chọn.",
+  "noAggregateData": "Không có dữ liệu tổng hợp.",
+  "loadingCashflow": "Đang tải dữ liệu thu chi...",
+  "noCashflowDataForRange": "Không có dữ liệu thu chi cho phạm vi đã chọn.",
+  "cashflowFetchError": "Đã xảy ra lỗi khi tải dữ liệu thu chi.",
+  "noCashflowDataForPeriod": "Không có dữ liệu thu chi cho khoảng thời gian đã chọn.",
+  "cashInflow": "Dòng tiền vào",
+  "cashOutflow": "Dòng tiền ra",
+  "cumulativeCashBalance": "Số dư tiền mặt lũy kế",
+  "cumulativeCashBalanceRightAxis": "Số dư tiền mặt lũy kế (trục phải)",
+  "viewDetails": "Xem chi tiết"
+}

@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/pims-dashboard-1/"
+title = "PIMS Dashboard 1"
+description = "PIMS Dashboard 2의 복사본으로 만든 경영 대시보드 웹앱. 동일한 KPI 카드, 매출/손익/수주 차트와 테마 선택 기능을 제공하며, 별도 변형을 실험할 수 있는 두 번째 대시보드입니다."
+version = "1.0.0"
+id = "artifacts/pims-dashboard-1"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/pims-dashboard-1/" ]
+localPort = 22281
+
+[services.development]
+run = "pnpm --filter @workspace/pims-dashboard-1 run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/pims-dashboard-1", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/pims-dashboard-1/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22281"
+BASE_PATH = "/pims-dashboard-1/"

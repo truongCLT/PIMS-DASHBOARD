@@ -1,0 +1,15 @@
+{
+  "tradeType": "Hạng mục",
+  "vendorName": "Nhà thầu",
+  "category": "Loại",
+  "firstContractDate": "Ngày HĐ\nban đầu",
+  "changeContractNo": "Lần sửa đổi\nHĐ",
+  "budgetA": "Dự toán\n(A)",
+  "resolvedAmountB": "Số tiền\nquyết toán (B)",
+  "resolvedRateBA": "Tỷ lệ\nquyết toán (B/A)",
+  "progressStatus": "Tình trạng thực hiện",
+  "thisMonth": "Tháng này",
+  "cumulativeC": "Lũy kế\n(C)",
+  "rateCB": "Tỷ lệ\n(C/B)",
+  "noData": "Không có dữ liệu thầu phụ/dịch vụ. Vui lòng nhập dữ liệu thầu phụ tại tab \"Nhập dữ liệu\" bên trái."
+}

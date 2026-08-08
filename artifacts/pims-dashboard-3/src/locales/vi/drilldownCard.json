@@ -1,0 +1,11 @@
+{
+  "header": "Thông tin chi tiết (Drilldown)",
+  "orderResultTitle": "Kết quả nhận đơn hàng",
+  "orderResultMonthSuffix": " (tháng {{month}})",
+  "error": "Lỗi",
+  "currentMonthOrder": "Nhận đơn hàng tháng này  {{value}}",
+  "noCurrentMonthOrder": "Không có đơn hàng trong tháng",
+  "cumulativeOrder": "Nhận đơn hàng lũy kế  {{value}}",
+  "topRevenueTitle": "Doanh thu chính trong tháng",
+  "noCurrentMonthRevenue": "Không có doanh thu trong tháng"
+}

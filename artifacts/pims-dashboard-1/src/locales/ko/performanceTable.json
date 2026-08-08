@@ -1,0 +1,8 @@
+{
+  "managementPerformanceStatus": "경영실적 현황",
+  "viewDetails": "상세보기",
+  "category": "구분",
+  "currentMonthCumulative": "당월 누적",
+  "loadFailed": "데이터를 불러오지 못했습니다.",
+  "dataLoading": "데이터 로딩 중…"
+}

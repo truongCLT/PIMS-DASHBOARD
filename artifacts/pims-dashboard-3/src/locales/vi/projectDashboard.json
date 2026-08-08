@@ -1,0 +1,15 @@
+{
+  "costing": "Chi phí",
+  "cashflow": "Thu chi",
+  "dataEntry": "Nhập dữ liệu",
+  "templateDownloadFailed": "Tải mẫu xuống không thành công.",
+  "confirmReplaceData": "Thao tác này sẽ thay thế dữ liệu của dự án bằng nội dung Excel đã tải lên. Tiếp tục?",
+  "uploadCompleted": "Tải lên hoàn tất.",
+  "uploadFailedCheckFormat": "Tải lên không thành công. Vui lòng kiểm tra định dạng tệp.",
+  "monthsSuffix": "{{count}} tháng",
+  "client": "Chủ đầu tư",
+  "constructionPeriod": "Thời gian thi công",
+  "constructionScale": "Quy mô công trình",
+  "downloadTemplateTooltip": "Tải xuống mẫu Excel chứa dữ liệu hiện tại, chỉnh sửa rồi tải lên.",
+  "uploadTemplateTooltip": "Nhập dữ liệu vào mẫu đã tải xuống và tải lên để thay thế toàn bộ dữ liệu."
+}

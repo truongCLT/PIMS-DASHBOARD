@@ -29,6 +29,56 @@ interface KPICardProps {
   stripColor?: string;
 }
 
+/** parse "9,898" | 9898 | "-" → number or null */
+function toNum(v: string | number): number | null {
+  const n = typeof v === "number" ? v : parseFloat(String(v).replace(/,/g, ""));
+  return Number.isFinite(n) ? n : null;
+}
+
+/* ── Gauge helpers (대우 예시 themes) ────────────────────────── */
+function RingGauge({ pct, color, size = 52 }: { pct: number; color: string; size?: number }) {
+  const r = (size - 8) / 2;
+  const c = 2 * Math.PI * r;
+  const filled = Math.min(100, Math.max(0, pct)) / 100;
+  return (
+    <svg width={size} height={size} style={{ flexShrink: 0 }}>
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#e8ecf3" strokeWidth={6} />
+      <circle
+        cx={size / 2} cy={size / 2} r={r} fill="none"
+        stroke={color} strokeWidth={6} strokeLinecap="round"
+        strokeDasharray={`${c * filled} ${c}`}
+        transform={`rotate(-90 ${size / 2} ${size / 2})`}
+      />
+      <text x="50%" y="50%" textAnchor="middle" dominantBaseline="central" fontSize={12} fontWeight={800} fill={color}>
+        {Math.round(pct)}%
+      </text>
+    </svg>
+  );
+}
+
+function SemiGauge({ pct, color, width = 108 }: { pct: number; color: string; width?: number }) {
+  const h = width / 2;
+  const sw = 10;
+  const r = h - sw / 2 - 2;
+  const cx = width / 2;
+  const cy = h;
+  const semiLen = Math.PI * r;
+  const filled = Math.min(100, Math.max(0, pct)) / 100;
+  const d = `M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`;
+  return (
+    <svg width={width} height={h + 4} style={{ display: "block" }}>
+      <path d={d} fill="none" stroke="#e8ecf3" strokeWidth={sw} strokeLinecap="round" />
+      <path
+        d={d} fill="none" stroke={color} strokeWidth={sw} strokeLinecap="round"
+        strokeDasharray={`${semiLen * filled} ${semiLen}`}
+      />
+      <text x={cx} y={cy - 4} textAnchor="middle" fontSize={15} fontWeight={800} fill={color}>
+        {Math.round(pct)}%
+      </text>
+    </svg>
+  );
+}
+
 function KPICard({
   title, plan, actual, achievement,
   achievementColor = "#35c7c0", compact = false,
@@ -38,10 +88,125 @@ function KPICard({
   const { t, i18n } = useTranslation(["kpiCards", "common"]);
   const K = T.kpi;
   const isStrip = K.cardStyle === "strip" && !!stripColor;
+  const isGaugeRing = K.cardStyle === "gauge-ring";
+  const isGaugeSemi = K.cardStyle === "gauge-semi";
   const numFont = compact ? "clamp(10px, 0.85vw, 13px)" : "clamp(13px, 1.2vw, 19px)";
   const titleKey = KPI_TITLE_KEY[title];
   const label = titleKey ? t(`kpiCards:${titleKey}`) : title;
   const showAnnualSplit = i18n.language === "ko" && title.startsWith("연간 ");
+
+  /* ── Gauge layouts (대우 예시1 · 예시2) ───────────────────── */
+  if (isGaugeRing || isGaugeSemi) {
+    const pctNum = parseFloat(achievement);
+    const hasPct = Number.isFinite(pctNum);
+    const over = hasPct && pctNum >= 100;
+    const gaugeColor = over ? "#2e9e5b" : "#e05252";
+    const planN = toNum(plan);
+    const actualN = toNum(actual);
+    const diff = planN != null && actualN != null ? actualN - planN : null;
+    const diffText = diff != null ? `${diff > 0 ? "+" : diff < 0 ? "-" : ""}${Math.abs(diff).toLocaleString()}` : "-";
+    const diffColor = diff != null && diff >= 0 ? "#2e9e5b" : "#e05252";
+    const isMonthly = title.startsWith("당월");
+
+    /* 예시1: circular ring left · big value right · 계획 + 대비 chip */
+    if (isGaugeRing) {
+      return (
+        <div style={{
+          flex: 1, minWidth: 0,
+          backgroundColor: K.cardBg,
+          border: K.cardBorder,
+          borderRadius: "10px",
+          boxShadow: K.boxShadow,
+          padding: "10px 14px",
+          display: "flex", flexDirection: "column", gap: "6px",
+        }}>
+          <div style={{ fontSize: "clamp(10px, 0.8vw, 13px)", fontWeight: 600, color: K.titleColor, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            {label}
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
+            {hasPct
+              ? <RingGauge pct={pctNum} color={gaugeColor} size={compact ? 44 : 52} />
+              : <div style={{ width: 52, textAlign: "center", fontSize: 12, color: K.labelColor }}>{achievement}</div>}
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: compact ? "clamp(13px, 1.1vw, 18px)" : "clamp(16px, 1.5vw, 24px)", fontWeight: 800, color: K.valueColor, overflowWrap: "anywhere" }}>
+                {actual.toLocaleString()}
+              </div>
+              <div style={{ fontSize: "clamp(9px, 0.7vw, 11px)", color: K.labelColor }}>
+                {t("common:plan")} {plan.toLocaleString()}
+              </div>
+            </div>
+          </div>
+          <div style={{
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            borderTop: "1px solid #eef1f6", paddingTop: "6px", gap: "6px",
+          }}>
+            <span style={{ fontSize: "clamp(9px, 0.72vw, 11px)", color: K.labelColor }}>
+              {diff != null ? diffText : "\u00a0"}
+            </span>
+            {diff != null && (
+              <span style={{
+                fontSize: "clamp(9px, 0.72vw, 11px)", fontWeight: 700,
+                color: diffColor, backgroundColor: diffColor + "14",
+                borderRadius: "4px", padding: "2px 8px", whiteSpace: "nowrap",
+              }}>
+                {diff >= 0 ? t("common:overPlan") : t("common:underPlan")}
+              </span>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    /* 예시2: semicircular gauge · big value · 계획/계획 대비 footer */
+    return (
+      <div style={{
+        flex: 1, minWidth: 0,
+        backgroundColor: K.cardBg,
+        border: K.cardBorder,
+        borderRadius: "12px",
+        boxShadow: K.boxShadow,
+        padding: "10px 14px 12px",
+        display: "flex", flexDirection: "column",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "6px", marginBottom: "4px" }}>
+          <span style={{ fontSize: "clamp(10px, 0.8vw, 13px)", fontWeight: 600, color: K.valueColor, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            {label}
+          </span>
+          <span style={{
+            fontSize: "clamp(8px, 0.65vw, 10px)", fontWeight: 600, color: "#2e5bdb",
+            backgroundColor: "#e8edf7", borderRadius: "9px", padding: "2px 8px", whiteSpace: "nowrap", flexShrink: 0,
+          }}>
+            {isMonthly ? t("common:currentMonth", { defaultValue: "당월" }) : t("common:annual", { defaultValue: "연간" })}
+          </span>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "2px", flex: 1, justifyContent: "center" }}>
+          {hasPct
+            ? <SemiGauge pct={pctNum} color={gaugeColor} width={compact ? 88 : 104} />
+            : <div style={{ fontSize: 12, color: K.labelColor, padding: "10px 0" }}>{achievement}</div>}
+          <div style={{ fontSize: "clamp(8px, 0.65vw, 10px)", color: K.labelColor, marginTop: "-2px" }}>{t("common:achievementRate")}</div>
+          <div style={{ fontSize: compact ? "clamp(13px, 1.1vw, 18px)" : "clamp(16px, 1.5vw, 24px)", fontWeight: 800, color: K.valueColor, overflowWrap: "anywhere", textAlign: "center" }}>
+            {actual.toLocaleString()}
+          </div>
+        </div>
+        <div style={{
+          display: "grid", gridTemplateColumns: "1fr 1fr",
+          backgroundColor: "#f4f7fc", borderRadius: "8px",
+          marginTop: "8px", padding: "6px 0",
+        }}>
+          <div style={{ textAlign: "center", borderRight: "1px solid #e2e8f0" }}>
+            <div style={{ fontSize: "clamp(8px, 0.65vw, 10px)", color: K.labelColor }}>{t("common:plan")}</div>
+            <div style={{ fontSize: "clamp(10px, 0.85vw, 13px)", fontWeight: 700, color: K.valueColor, overflowWrap: "anywhere" }}>{plan.toLocaleString()}</div>
+          </div>
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: "clamp(8px, 0.65vw, 10px)", color: K.labelColor }}>{t("common:vsPlan")}</div>
+            <div style={{ fontSize: "clamp(10px, 0.85vw, 13px)", fontWeight: 700, color: diff != null ? diffColor : K.labelColor, overflowWrap: "anywhere" }}>
+              {diff != null ? diffText : "-"}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   /* ── Strip layout ─────────────────────────────────────────── */
   if (isStrip) {

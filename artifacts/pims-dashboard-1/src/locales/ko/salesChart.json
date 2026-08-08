@@ -1,0 +1,13 @@
+{
+  "title": "매출 실적 및 전망",
+  "viewDetails": "상세보기",
+  "errorLoadFailed": "데이터를 불러오지 못했습니다.",
+  "noDataForPeriod": "선택한 기간에 데이터가 없습니다.",
+  "loadingData": "데이터 로딩 중…",
+  "net": "넷",
+  "report": "리포트",
+  "salesPlan": "매출(계획)",
+  "salesActualForecast": "매출(실적 및 전망)",
+  "month": "월",
+  "bottomChipRate": "하단 칩 = 달성률"
+}

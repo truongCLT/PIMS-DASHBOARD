@@ -1,0 +1,11 @@
+{
+  "adminMode": "관리자 모드",
+  "alreadyActive": "현재 관리자 모드가 활성화되어 있습니다.",
+  "backToDashboard": "대시보드로 돌아가기",
+  "logout": "로그아웃",
+  "enterPassword": "관리자 비밀번호를 입력해 주세요.",
+  "passwordPlaceholder": "비밀번호",
+  "checking": "확인 중…",
+  "login": "로그인",
+  "invalidPassword": "비밀번호가 올바르지 않습니다."
+}
