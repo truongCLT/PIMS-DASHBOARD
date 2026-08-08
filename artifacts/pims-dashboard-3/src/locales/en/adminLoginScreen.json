@@ -1,0 +1,11 @@
+{
+  "adminMode": "Admin Mode",
+  "alreadyActive": "Admin mode is currently active.",
+  "backToDashboard": "Back to Dashboard",
+  "logout": "Log Out",
+  "enterPassword": "Please enter the admin password.",
+  "passwordPlaceholder": "Password",
+  "checking": "Checking…",
+  "login": "Log In",
+  "invalidPassword": "The password is incorrect."
+}

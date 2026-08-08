@@ -1,0 +1,11 @@
+{
+  "header": "상세 정보 (드릴다운)",
+  "orderResultTitle": "수주 실적",
+  "orderResultMonthSuffix": " ({{month}}월)",
+  "error": "오류",
+  "currentMonthOrder": "당월 수주  {{value}}",
+  "noCurrentMonthOrder": "당월 수주 없음",
+  "cumulativeOrder": "누적 수주  {{value}}",
+  "topRevenueTitle": "금월 주요 매출",
+  "noCurrentMonthRevenue": "당월 매출 없음"
+}

@@ -1,0 +1,15 @@
+{
+  "costing": "원가",
+  "cashflow": "자금",
+  "dataEntry": "데이터 입력",
+  "templateDownloadFailed": "양식 다운로드에 실패했습니다.",
+  "confirmReplaceData": "업로드한 Excel 내용으로 이 프로젝트의 데이터를 교체합니다. 계속할까요?",
+  "uploadCompleted": "업로드가 완료되었습니다.",
+  "uploadFailedCheckFormat": "업로드에 실패했습니다. 파일 양식을 확인해 주세요.",
+  "monthsSuffix": "{{count}}개월",
+  "client": "발주처",
+  "constructionPeriod": "공사기간",
+  "constructionScale": "공사규모",
+  "downloadTemplateTooltip": "현재 데이터가 담긴 Excel 양식을 내려받아 수정 후 업로드하세요.",
+  "uploadTemplateTooltip": "다운로드한 양식에 데이터를 입력해 업로드하면 전체 데이터가 교체됩니다."
+}

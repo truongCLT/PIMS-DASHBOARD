@@ -1,0 +1,13 @@
+{
+  "nonOperatingProfitLoss": "Lãi/lỗ ngoài hoạt động",
+  "ordinaryProfit": "Lợi nhuận thường xuyên",
+  "profitLossStatus": "Tình hình lãi/lỗ",
+  "viewDetails": "Xem chi tiết",
+  "dataLoadFailed": "Không thể tải dữ liệu.",
+  "dataLoading": "Đang tải dữ liệu…",
+  "sgaArea": "Vùng chi phí quản lý",
+  "hoverHint": "※ Di chuột qua cột để xem chi tiết lợi nhuận thường xuyên và chi phí quản lý",
+  "month": "Tháng",
+  "operatingMarginRate": "Tỷ suất LN KD",
+  "barTotalGross": "Cả cột = LN gộp"
+}

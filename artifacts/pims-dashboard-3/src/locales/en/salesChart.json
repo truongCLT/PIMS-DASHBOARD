@@ -1,0 +1,13 @@
+{
+  "title": "Sales Actual & Forecast",
+  "viewDetails": "View Details",
+  "errorLoadFailed": "Failed to load data.",
+  "noDataForPeriod": "No data available for the selected period.",
+  "loadingData": "Loading data…",
+  "net": "Net",
+  "report": "Report",
+  "salesPlan": "Sales (Plan)",
+  "salesActualForecast": "Sales (Actual & Forecast)",
+  "month": "Month",
+  "bottomChipRate": "Bottom chip = achievement"
+}

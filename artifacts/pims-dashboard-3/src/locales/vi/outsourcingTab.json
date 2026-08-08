@@ -1,0 +1,20 @@
+{
+  "outsourcingAndMaterials": "Thầu phụ & Vật tư",
+  "dragToResize": "Kéo để đổi độ rộng cột",
+  "tradeType": "Loại công tác",
+  "vendorName": "Tên nhà cung cấp",
+  "first": "Ban đầu",
+  "contractDate": "Ngày hợp đồng",
+  "change": "Thay đổi",
+  "contract": "Hợp đồng",
+  "round": "Lần",
+  "executedBudget": "Ngân sách đã thực hiện",
+  "resolvedAmount": "Số tiền đã quyết toán",
+  "resolvedRate": "Tỷ lệ quyết toán",
+  "progressBillingStatus": "Hiện trạng thanh toán theo tiến độ",
+  "category": "Phân loại",
+  "detailedTrade": "Công tác chi tiết",
+  "thisMonth": "Tháng này",
+  "ratio": "Tỷ lệ",
+  "noOutsourcingData": "Không có dữ liệu thầu phụ/vật tư. ( - )"
+}

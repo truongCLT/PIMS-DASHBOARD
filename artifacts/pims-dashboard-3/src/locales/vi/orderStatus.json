@@ -1,0 +1,12 @@
+{
+  "title": "Tình hình nhận thầu",
+  "noDataForPeriod": "Không có dữ liệu cho khoảng thời gian đã chọn.",
+  "noProjectOrderData": "Dữ liệu nhận thầu theo dự án không được cung cấp.",
+  "remaining": "Còn lại",
+  "vsPlan": "So với kế hoạch",
+  "viewDetails": "Xem chi tiết",
+  "orderActual": "Thực tế nhận thầu",
+  "remainingUnordered": "Còn lại (chưa nhận)",
+  "annualOrderPlan": "Kế hoạch nhận thầu năm",
+  "vsAnnualPlan": "So với kế hoạch năm"
+}
