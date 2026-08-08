@@ -65,25 +65,38 @@ function RingGauge({ pct, color, size = 52, subLabel }: { pct: number; color: st
   );
 }
 
-function SemiGauge({ pct, color, width = 108 }: { pct: number; color: string; width?: number }) {
+function SemiGauge({ pct, color, width = 108, subLabel }: { pct: number; color: string; width?: number; subLabel?: string }) {
   const h = width / 2;
-  const sw = 10;
+  const sw = Math.max(8, Math.round(width * 0.09));
   const r = h - sw / 2 - 2;
   const cx = width / 2;
   const cy = h;
   const semiLen = Math.PI * r;
   const filled = Math.min(100, Math.max(0, pct)) / 100;
   const d = `M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`;
+  const gradId = React.useId();
   return (
-    <svg width={width} height={h + 4} style={{ display: "block" }}>
+    <svg width={width} height={h + 6} style={{ display: "block", overflow: "visible" }}>
+      <defs>
+        <linearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="#1e3a8a" />
+          <stop offset="65%" stopColor="#2e5bdb" />
+          <stop offset="100%" stopColor={color} />
+        </linearGradient>
+      </defs>
       <path d={d} fill="none" stroke="#e8ecf3" strokeWidth={sw} strokeLinecap="round" />
       <path
-        d={d} fill="none" stroke={color} strokeWidth={sw} strokeLinecap="round"
+        d={d} fill="none" stroke={`url(#${gradId})`} strokeWidth={sw} strokeLinecap="round"
         strokeDasharray={`${semiLen * filled} ${semiLen}`}
       />
-      <text x={cx} y={cy - 4} textAnchor="middle" fontSize={15} fontWeight={800} fill={color}>
+      <text x={cx} y={cy - (subLabel ? width * 0.13 : 4)} textAnchor="middle" fontSize={width * 0.17} fontWeight={800} fill={color}>
         {Math.round(pct)}%
       </text>
+      {subLabel && (
+        <text x={cx} y={cy - 2} textAnchor="middle" fontSize={width * 0.085} fill="#8a99b5">
+          {subLabel}
+        </text>
+      )}
     </svg>
   );
 }
@@ -212,16 +225,22 @@ function KPICard({
             fontSize: "clamp(8px, 0.65vw, 10px)", fontWeight: 600, color: "#2e5bdb",
             backgroundColor: "#e8edf7", borderRadius: "9px", padding: "2px 8px", whiteSpace: "nowrap", flexShrink: 0,
           }}>
-            {isMonthly ? t("common:currentMonth", { defaultValue: "당월" }) : t("common:annual", { defaultValue: "연간" })}
+            {periodLabel ?? (isMonthly ? t("common:currentMonth", { defaultValue: "당월" }) : t("common:annual", { defaultValue: "연간" }))}
           </span>
         </div>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "2px", flex: 1, justifyContent: "center" }}>
           {hasPct
-            ? <SemiGauge pct={pctNum} color={gaugeColor} width={compact ? 88 : 104} />
+            ? <SemiGauge pct={pctNum} color={gaugeColor} width={compact ? 104 : 124} subLabel={t("common:achievementRate")} />
             : <div style={{ fontSize: 12, color: K.labelColor, padding: "10px 0" }}>{achievement}</div>}
-          <div style={{ fontSize: "clamp(8px, 0.65vw, 10px)", color: K.labelColor, marginTop: "-2px" }}>{t("common:achievementRate")}</div>
-          <div style={{ fontSize: compact ? "clamp(13px, 1.1vw, 18px)" : "clamp(16px, 1.5vw, 24px)", fontWeight: 800, color: K.valueColor, overflowWrap: "anywhere", textAlign: "center" }}>
-            {actual.toLocaleString()}
+          <div style={{ display: "flex", alignItems: "baseline", gap: "5px", marginTop: "2px" }}>
+            <span style={{ fontSize: compact ? "clamp(13px, 1.1vw, 18px)" : "clamp(16px, 1.5vw, 24px)", fontWeight: 800, color: K.valueColor, overflowWrap: "anywhere", textAlign: "center" }}>
+              {actual.toLocaleString()}
+            </span>
+            {unitLabel && (
+              <span style={{ fontSize: "clamp(8px, 0.65vw, 10px)", color: K.labelColor, whiteSpace: "nowrap" }}>
+                {unitLabel}
+              </span>
+            )}
           </div>
         </div>
         <div style={{

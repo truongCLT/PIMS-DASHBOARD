@@ -306,10 +306,11 @@ export function SalesChart() {
               <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.gridLine} vertical={false} />
               <XAxis
                 dataKey="month"
-                tick={{ fontSize: 11, fill: chartTheme.axisText }}
+                tick={<MonthRateTick />}
                 axisLine={false}
                 tickLine={false}
-                padding={{ left: 18, right: 6 }}
+                height={44}
+                padding={{ left: 18, right: 10 }}
               />
               <YAxis
                 domain={[0, "auto"]}
@@ -321,33 +322,33 @@ export function SalesChart() {
               />
               <Tooltip content={<CustomTooltip colors={{ plan: planColor, actual: actualColor, rate: rateColor }} />} />
               <Line
-                type="monotone"
+                type="natural"
                 dataKey="plan"
                 name={t("salesChart:salesPlan")}
                 stroke={planColor}
-                strokeWidth={1.5}
-                strokeDasharray="5 4"
-                dot={{ r: 2.5, fill: "#fff", stroke: planColor }}
+                strokeWidth={1.8}
+                strokeDasharray="6 5"
+                dot={{ r: 3.5, fill: "#fff", stroke: planColor, strokeWidth: 1.6 }}
                 connectNulls
                 isAnimationActive={false}
               />
               <Area
-                type="monotone"
+                type="natural"
                 dataKey="actual"
                 name={t("salesChart:salesActualForecast")}
                 stroke={actualColor}
-                strokeWidth={2}
+                strokeWidth={2.6}
                 fill="url(#salesAreaFill)"
-                dot={{ r: 3, fill: actualColor, stroke: actualColor }}
+                dot={{ r: 4, fill: actualColor, stroke: "#fff", strokeWidth: 1.5 }}
                 connectNulls
                 isAnimationActive={false}
               >
                 <LabelList
                   dataKey="actual"
                   position="top"
-                  offset={10}
+                  offset={12}
                   formatter={(v: number) => (v == null ? "" : v.toLocaleString("ko-KR"))}
-                  style={{ fontSize: compact ? 9 : 10.5, fontWeight: 700, fill: actualColor }}
+                  style={{ fontSize: compact ? 9 : 11, fontWeight: 700, fill: actualColor }}
                 />
               </Area>
             </ComposedChart>
