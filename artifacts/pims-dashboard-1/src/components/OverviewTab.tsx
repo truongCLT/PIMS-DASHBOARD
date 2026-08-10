@@ -15,30 +15,12 @@ import { useMoney } from "../lib/displayUnit";
 import { getMrCashflowRef, useMrProject } from "../data/mrProjectLinks";
 import { REPORT_YEAR } from "../lib/mgmtreportData";
 import { chartTheme } from "../lib/chartTheme";
+import { cardStyle, sectionTitle, ACHIEVE_GREEN, ACHIEVE_RED, rateColor } from "../lib/uiTokens";
 
 const ROW_COLUMNS = "1fr 1.6fr 1.6fr";
 
-const cardStyle: React.CSSProperties = {
-  backgroundColor: "#fff",
-  border: "1px solid #e2e9f3",
-  borderRadius: "8px",
-  padding: "10px 12px",
-};
-
-const sectionTitle: React.CSSProperties = {
-  fontSize: "16px",
-  fontWeight: 700,
-  color: "#2f7cf6",
-  marginBottom: "6px",
-};
-
-/** 달성률 색 규칙: 100% 이상 녹색, 미만 빨간색 (디자인 의견서) */
-export const ACHIEVE_GREEN = "#1c9e6e";
-export const ACHIEVE_RED = "#e0655c";
-export function rateColor(pct: number | null | undefined): string {
-  if (pct == null || Number.isNaN(pct)) return "#7c8ba3";
-  return pct >= 100 ? ACHIEVE_GREEN : ACHIEVE_RED;
-}
+/** 달성률 색 규칙: 100% 이상 녹색, 미만 빨간색 (디자인 의견서) — 공통 토큰 재수출 */
+export { ACHIEVE_GREEN, ACHIEVE_RED, rateColor };
 
 /** 카드 공통 헤더 — 제목 + 단위 표기 + 우측 상단 핵심 결과값 배지 */
 export function CardHeader({

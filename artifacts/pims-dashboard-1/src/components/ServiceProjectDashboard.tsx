@@ -17,20 +17,7 @@ import { useAdminAuth } from "../lib/adminAuth";
 import { DisplayUnitProvider, formatMoney, moneyUnitLabel } from "../lib/displayUnit";
 import { CardHeader, rateColor } from "./OverviewTab";
 import { chartTheme } from "../lib/chartTheme";
-
-const cardStyle: React.CSSProperties = {
-  backgroundColor: "#fff",
-  border: "1px solid #e2e9f3",
-  borderRadius: "8px",
-  padding: "10px 12px",
-};
-
-const sectionTitle: React.CSSProperties = {
-  fontSize: "16px",
-  fontWeight: 700,
-  color: "#2f7cf6",
-  marginBottom: "6px",
-};
+import { cardStyle, sectionTitle } from "../lib/uiTokens";
 
 const TABS = ["Overview", "Sale & Profit", "Budget Execution", "Outsourcing", "Cashflow", "Data entry"];
 
@@ -50,7 +37,7 @@ const MONTHS = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11"
 const selectStyle: React.CSSProperties = {
   border: "none",
   outline: "none",
-  fontSize: "16px",
+  fontSize: "12px",
   color: "#333",
   backgroundColor: "transparent",
   cursor: "pointer",
@@ -89,14 +76,14 @@ function YearMonthSelect({
         </select>
         <span style={{ position: "absolute", right: 0, fontSize: "11px", color: "#888", pointerEvents: "none" }}>▼</span>
       </div>
-      <span style={{ fontSize: "14px", color: "#aab2bc", margin: "0 1px" }}>{t("serviceProjectDashboard:yearSuffix")}</span>
+      <span style={{ fontSize: "12px", color: "#aab2bc", margin: "0 1px" }}>{t("serviceProjectDashboard:yearSuffix")}</span>
       <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
         <select value={month} onChange={(e) => onMonth(e.target.value)} style={selectStyle}>
           {MONTHS.map((m) => <option key={m} value={m}>{m}</option>)}
         </select>
         <span style={{ position: "absolute", right: 0, fontSize: "11px", color: "#888", pointerEvents: "none" }}>▼</span>
       </div>
-      <span style={{ fontSize: "14px", color: "#aab2bc", margin: "0 1px" }}>{t("serviceProjectDashboard:monthSuffix")}</span>
+      <span style={{ fontSize: "12px", color: "#aab2bc", margin: "0 1px" }}>{t("serviceProjectDashboard:monthSuffix")}</span>
     </div>
   );
 }
@@ -242,7 +229,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span style={{ fontSize: "14px", color: "#333", fontWeight: 600 }}>{t("common:exchangeRate")} :</span>
+          <span style={{ fontSize: "12px", color: "#333", fontWeight: 600 }}>{t("common:exchangeRate")} :</span>
           <div style={{ display: "flex", border: "1px solid #e2e9f3", borderRadius: "6px", overflow: "hidden" }}>
             {["USD", "KRW", "VND"].map((c) => (
               <button
@@ -250,7 +237,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                 onClick={() => setCurrency(c)}
                 style={{
                   padding: "5px 12px",
-                  fontSize: "16px",
+                  fontSize: "12px",
                   fontWeight: 600,
                   border: "none",
                   cursor: "pointer",
@@ -266,7 +253,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span style={{ fontSize: "14px", color: "#333", fontWeight: 600 }}>{t("common:unit")} :</span>
+          <span style={{ fontSize: "12px", color: "#333", fontWeight: 600 }}>{t("common:unit")} :</span>
           <div
             onClick={() => {
               const sy = window.scrollY;
@@ -296,7 +283,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
               }}
             />
           </div>
-          <span style={{ fontSize: "14px", color: "#333", fontWeight: 600 }}>1K {currency}</span>
+          <span style={{ fontSize: "12px", color: "#333", fontWeight: 600 }}>1K {currency}</span>
         </div>
 
         <button
@@ -310,7 +297,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
             border: "none",
             borderRadius: "6px",
             padding: "7px 14px",
-            fontSize: "16px",
+            fontSize: "12px",
             fontWeight: 500,
             cursor: "pointer",
           }}
@@ -323,7 +310,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
       {/* Project info bar — always visible */}
       <div style={{ ...cardStyle, margin: "8px 10px 0", display: "flex", gap: "10px", alignItems: "stretch" }}>
         <div style={{ flex: 1 }}>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 0", fontSize: "14px", color: "#16294a" }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 0", fontSize: "12px", color: "#16294a" }}>
             <span style={{ fontWeight: 700, paddingRight: "14px" }}>Project : {projectName}</span>
             {ov?.asOfMonth && (
               <span style={{ borderLeft: "1px solid #e2e9f3", padding: "0 14px" }}>
@@ -365,7 +352,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
               onClick={() => setActiveTab(tab)}
               style={{
                 padding: "7px 20px",
-                fontSize: "16px",
+                fontSize: "12px",
                 fontWeight: active ? 700 : 500,
                 color: active ? "#16294a" : "#7c8ba3",
                 backgroundColor: active ? "#fff" : "transparent",
@@ -416,7 +403,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
               {excelMsg && (
                 <span
                   style={{
-                    fontSize: "13px",
+                    fontSize: "11px",
                     fontWeight: 600,
                     color: excelMsgIsSuccess ? "#1c7a5a" : "#f2736a",
                     maxWidth: "360px",
@@ -438,7 +425,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                   alignItems: "center",
                   gap: "5px",
                   padding: "5px 12px",
-                  fontSize: "13px",
+                  fontSize: "11px",
                   fontWeight: 600,
                   color: "#16294a",
                   backgroundColor: "#fff",
@@ -459,7 +446,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                   alignItems: "center",
                   gap: "5px",
                   padding: "5px 12px",
-                  fontSize: "13px",
+                  fontSize: "11px",
                   fontWeight: 600,
                   color: "#fff",
                   backgroundColor: "#2f7cf6",
