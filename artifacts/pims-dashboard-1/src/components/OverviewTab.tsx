@@ -41,7 +41,7 @@ export function rateColor(pct: number | null | undefined): string {
 }
 
 /** 카드 공통 헤더 — 제목 + 단위 표기 + 우측 상단 핵심 결과값 배지 */
-function CardHeader({
+export function CardHeader({
   title,
   unit,
   badgeLabel,
