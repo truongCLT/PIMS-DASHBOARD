@@ -237,10 +237,10 @@ export function ProfitChart() {
                   <line x1={bx} y1={opTop} x2={bx + barW} y2={opTop} stroke="#fff" strokeWidth={4} />
                 </g>
                 {/* 매출이익 값 (캡슐/점 위) */}
-                <text x={cx} y={labelY} textAnchor="middle" fontSize={fs(16)} fontWeight="700" fill="#1a2d4d">{gross.toLocaleString("ko-KR")}</text>
+                <text x={cx} y={labelY} textAnchor="middle" fontSize={fs(17)} fontWeight="700" fill="#1a2d4d">{gross.toLocaleString("ko-KR")}</text>
                 {/* 월 + 영업이익률 */}
-                <text x={cx} y={Y0 + 34} textAnchor="middle" fontSize={fs(13)} fontWeight="600" fill="#333">{d.m}</text>
-                <text x={cx} y={Y0 + 66} textAnchor="middle" fontSize={fs(13)} fontWeight="700" fill="#2e5bdb">{d.opPct}</text>
+                <text x={cx} y={Y0 + 34} textAnchor="middle" fontSize={fs(17)} fontWeight="600" fill="#333">{d.m}</text>
+                <text x={cx} y={Y0 + 66} textAnchor="middle" fontSize={fs(15)} fontWeight="700" fill="#2e5bdb">{d.opPct}</text>
               </g>
             );
           }
@@ -328,7 +328,7 @@ export function ProfitChart() {
 
         {/* 대우 예시1: 좌측 행 라벨 */}
         {daewoo && (
-          <text x={plotLeft - 12} y={Y0 + 66} textAnchor="end" fontSize={fs(10)} fill="#8a99b5">{t("profitChart:operatingMarginRate")}</text>
+          <text x={plotLeft - 12} y={Y0 + 66} textAnchor="end" fontSize={fs(12)} fill="#8a99b5">{t("profitChart:operatingMarginRate")}</text>
         )}
 
         {/* 호버 오버레이 — 모든 바 위에 올려서 마우스 이벤트 독점 */}
