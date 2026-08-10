@@ -45,9 +45,9 @@ const td: React.CSSProperties = {
   whiteSpace: "nowrap",
 };
 
-// 컬럼: 대공종, 세부공종, 업체명, 계약일, 차수, 예산, 집행예산, 결의금액, 결의율, 이번달, 누계, 비율
-// 이번달(9), 누계(10), 비율(11) 동일 너비
-const DEFAULT_WIDTHS = [64, 90, 90, 70, 46, 92, 92, 92, 60, 80, 80, 80];
+// 컬럼: 대공종, 세부공종, 업체명, 계약일, 차수, 예산, 집행예산, 집행율, 결의금액, 결의율, 이번달, 누계, 비율
+// 이번달(10), 누계(11), 비율(12) 동일 너비
+const DEFAULT_WIDTHS = [64, 90, 90, 70, 46, 92, 92, 60, 92, 60, 80, 80, 80];
 
 function ResizeHandle({ onDrag }: { onDrag: (dx: number) => void }) {
   const { t } = useTranslation(["outsourcingTab", "common"]);
@@ -133,28 +133,29 @@ export function OutsourcingTab({ projectName }: { projectName: string }) {
                 <th style={th} rowSpan={2}>{t("outsourcingTab:change")}<br />{t("outsourcingTab:contract")}<br />{t("outsourcingTab:round")}<ResizeHandle onDrag={resize(4)} /></th>
                 <th style={th} rowSpan={2}>{t("common:budget")}<br />(A)<ResizeHandle onDrag={resize(5)} /></th>
                 <th style={th} rowSpan={2}>{t("outsourcingTab:executedBudget")}<ResizeHandle onDrag={resize(6)} /></th>
-                <th style={th} rowSpan={2}>{t("outsourcingTab:resolvedAmount")}<br />(B)<ResizeHandle onDrag={resize(7)} /></th>
-                <th style={th} rowSpan={2}>{t("outsourcingTab:resolvedRate")}<br />(B/A)<ResizeHandle onDrag={resize(8)} /></th>
+                <th style={th} rowSpan={2}>{t("outsourcingTab:executedRate")}<br />(집행예산/A)<ResizeHandle onDrag={resize(7)} /></th>
+                <th style={th} rowSpan={2}>{t("outsourcingTab:resolvedAmount")}<br />(B)<ResizeHandle onDrag={resize(8)} /></th>
+                <th style={th} rowSpan={2}>{t("outsourcingTab:resolvedRate")}<br />(B/A)<ResizeHandle onDrag={resize(9)} /></th>
                 <th style={th} colSpan={3}>{t("outsourcingTab:progressBillingStatus")}</th>
               </tr>
               <tr>
                 <th style={th}>{t("outsourcingTab:category")}<ResizeHandle onDrag={resize(0)} /></th>
                 <th style={th}>{t("outsourcingTab:detailedTrade")}<ResizeHandle onDrag={resize(1)} /></th>
-                <th style={th}>{t("outsourcingTab:thisMonth")}<ResizeHandle onDrag={resize(9)} /></th>
-                <th style={th}>{t("common:cumulative")}<br />(C)<ResizeHandle onDrag={resize(10)} /></th>
-                <th style={th}>{t("outsourcingTab:ratio")}<br />(C/B)<ResizeHandle onDrag={resize(11)} /></th>
+                <th style={th}>{t("outsourcingTab:thisMonth")}<ResizeHandle onDrag={resize(10)} /></th>
+                <th style={th}>{t("common:cumulative")}<br />(C)<ResizeHandle onDrag={resize(11)} /></th>
+                <th style={th}>{t("outsourcingTab:ratio")}<br />(C/B)<ResizeHandle onDrag={resize(12)} /></th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td style={td} colSpan={12}>
+                  <td style={td} colSpan={13}>
                     {t("common:loading")}
                   </td>
                 </tr>
               ) : rows.length === 0 ? (
                 <tr>
-                  <td style={{ ...td, color: AG.mutedForeground }} colSpan={12}>
+                  <td style={{ ...td, color: AG.mutedForeground }} colSpan={13}>
                     {t("outsourcingTab:noOutsourcingData")}
                   </td>
                 </tr>
@@ -169,6 +170,7 @@ export function OutsourcingTab({ projectName }: { projectName: string }) {
                       <td style={td}>{r.changeNo ?? "-"}</td>
                       <td style={td}>{fmtMoney(r.budget)}</td>
                       <td style={td}>{fmtMoney(r.executedBudget)}</td>
+                      <td style={td}>{fmtPct(ratioPct(r.executedBudget, r.budget))}</td>
                       <td style={td}>{fmtMoney(r.resolved)}</td>
                       <td style={td}>{fmtPct(ratioPct(r.resolved, r.budget))}</td>
                       <td style={td}>{fmtMoney(r.thisMonth)}</td>
@@ -183,6 +185,7 @@ export function OutsourcingTab({ projectName }: { projectName: string }) {
                     <td style={td} />
                     <td style={{ ...td, fontWeight: 600 }}>{fmtMoney(sum.budget)}</td>
                     <td style={{ ...td, fontWeight: 600 }}>{fmtMoney(sum.executedBudget)}</td>
+                    <td style={{ ...td, fontWeight: 600 }}>{fmtPct(ratioPct(sum.executedBudget, sum.budget))}</td>
                     <td style={{ ...td, fontWeight: 600 }}>{fmtMoney(sum.resolved)}</td>
                     <td style={{ ...td, fontWeight: 600 }}>{fmtPct(ratioPct(sum.resolved, sum.budget))}</td>
                     <td style={{ ...td, fontWeight: 600 }}>{fmtMoney(sum.thisMonth)}</td>

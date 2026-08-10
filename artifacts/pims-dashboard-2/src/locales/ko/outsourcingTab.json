@@ -9,6 +9,7 @@
   "contract": "계약",
   "round": "차수",
   "executedBudget": "집행예산",
+  "executedRate": "집행율",
   "resolvedAmount": "결의금액",
   "resolvedRate": "결의율",
   "progressBillingStatus": "기성현황",

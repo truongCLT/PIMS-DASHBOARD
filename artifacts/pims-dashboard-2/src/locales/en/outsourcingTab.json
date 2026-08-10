@@ -9,6 +9,7 @@
   "contract": "Contract",
   "round": "Round",
   "executedBudget": "Executed Budget",
+  "executedRate": "Exec. Rate",
   "resolvedAmount": "Resolved Amount",
   "resolvedRate": "Resolved Rate",
   "progressBillingStatus": "Progress Billing Status",
