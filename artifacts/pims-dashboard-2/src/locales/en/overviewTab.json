@@ -27,5 +27,11 @@
   "confirmedA": "Confirmed (A)",
   "collectionB": "Collection (B)",
   "receivableAB": "Receivable (A-B)",
-  "sitePhotoAlt": "{{projectName}} site photo"
+  "sitePhotoAlt": "{{projectName}} site photo",
+  "elapsedLabel": "Elapsed rate",
+  "contractBase": "vs contract {{amount}}",
+  "vsBidding": "vs bid",
+  "collectionRate": "Collection rate",
+  "directCost": "Direct Cost",
+  "latestMonth": "Latest month"
 }

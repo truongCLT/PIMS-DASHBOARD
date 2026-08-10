@@ -18,15 +18,9 @@ import { getMrCashflowRef } from "../data/mrProjectLinks";
 import { useProjectDetail } from "../lib/projectDetailData";
 import { chartTheme } from "../lib/chartTheme";
 import { useMoney } from "../lib/displayUnit";
+import { cardStyle } from "../lib/uiTokens";
 import { tokens as aquaTokens } from "@workspace/aqua-glass";
 const AG = aquaTokens.color.light;
-
-const cardStyle: React.CSSProperties = {
-  backgroundColor: "#fff",
-  border: `1px solid ${AG.border}`,
-  borderRadius: "8px",
-  padding: "10px 12px",
-};
 
 type TFn = ReturnType<typeof useTranslation>["t"];
 

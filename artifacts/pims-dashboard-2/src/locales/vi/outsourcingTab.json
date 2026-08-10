@@ -16,5 +16,6 @@
   "detailedTrade": "Công tác chi tiết",
   "thisMonth": "Tháng này",
   "ratio": "Tỷ lệ",
-  "noOutsourcingData": "Không có dữ liệu thầu phụ/vật tư. ( - )"
+  "noOutsourcingData": "Không có dữ liệu thầu phụ/vật tư. ( - )",
+  "executedRate": "Tỷ lệ thực hiện"
 }

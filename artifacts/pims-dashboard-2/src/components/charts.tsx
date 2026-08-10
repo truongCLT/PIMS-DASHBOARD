@@ -12,6 +12,7 @@ export function Donut({
   track = chartTheme.trackGray,
   label,
   labelSize = 20,
+  labelColor,
   extraArc,
 }: {
   percent: number;
@@ -21,6 +22,7 @@ export function Donut({
   track?: string;
   label?: string;
   labelSize?: number;
+  labelColor?: string;
   extraArc?: { percent: number; color: string };
 }) {
   const r = (size - stroke) / 2;
@@ -60,7 +62,7 @@ export function Donut({
           dominantBaseline="central"
           fontSize={labelSize}
           fontWeight={700}
-          fill={chartTheme.headingNavy}
+          fill={labelColor ?? chartTheme.headingNavy}
         >
           {label}
         </text>

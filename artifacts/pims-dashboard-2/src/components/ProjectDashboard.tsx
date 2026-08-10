@@ -16,24 +16,11 @@ import { useProjectDetail, getGetProjectdetailQueryKey } from "../lib/projectDet
 import { downloadProjectDetailTemplate, parseProjectDetailWorkbook, ExcelParseError } from "../lib/projectDetailExcel";
 import { DisplayUnitProvider, formatMoney, moneyUnitLabel } from "../lib/displayUnit";
 import { useAdminAuth } from "../lib/adminAuth";
+import { cardStyle } from "../lib/uiTokens";
 import { tokens as aquaTokens } from "@workspace/aqua-glass";
 const AG = aquaTokens.color.light;
 export { Donut, MiniBar } from "./charts";
 
-
-const cardStyle: React.CSSProperties = {
-  backgroundColor: "#fff",
-  border: `1px solid ${AG.border}`,
-  borderRadius: "8px",
-  padding: "10px 12px",
-};
-
-const sectionTitle: React.CSSProperties = {
-  fontSize: "16px",
-  fontWeight: 700,
-  color: AG.primary,
-  marginBottom: "6px",
-};
 
 const SIDE_TABS = ["Overview", "Construction progress", "Sale & Profit", "Costing", "Outsourcing", "Cashflow", "Data entry"];
 
@@ -233,7 +220,7 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
             </span>
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 0", fontSize: "12px", color: AG.foreground, marginTop: "8px" }}>
-            <span style={{ fontWeight: 700, paddingRight: "14px" }}>
+            <span style={{ paddingRight: "14px" }}>
               {t("common:contractAmount")} : {formatMoney(ov.contractAmount, currency, unitOn)} {moneyUnitLabel(currency, unitOn)}
             </span>
             <span style={{ borderLeft: `1px solid ${AG.border}`, padding: "0 14px" }}>

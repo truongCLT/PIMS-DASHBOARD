@@ -28,5 +28,12 @@
   "excelDownloadButton": "Download Excel",
   "excelUploadButton": "Upload Excel",
   "templateDownloadTitle": "Download the Excel template with current data, edit it, then upload it.",
-  "templateUploadTitle": "Enter data into the downloaded template and upload it to replace all data."
+  "templateUploadTitle": "Enter data into the downloaded template and upload it to replace all data.",
+  "annualShortLabel": "Annual",
+  "annualTargetLabel": "Target",
+  "directCostLabel": "Direct Cost",
+  "indirectCostLabel": "Indirect Cost",
+  "totalRowLabel": "Total",
+  "revenueProgressLabel": "Revenue progress",
+  "collectionRateLabel": "Collection rate"
 }

@@ -27,5 +27,11 @@
   "confirmedA": "Xác nhận (A)",
   "collectionB": "Thu tiền (B)",
   "receivableAB": "Phải thu (A-B)",
-  "sitePhotoAlt": "Ảnh công trình {{projectName}}"
+  "sitePhotoAlt": "Ảnh công trình {{projectName}}",
+  "elapsedLabel": "Tỷ lệ thời gian",
+  "contractBase": "so với giá HĐ {{amount}}",
+  "vsBidding": "so với đấu thầu",
+  "collectionRate": "Tỷ lệ thu tiền",
+  "directCost": "Chi phí trực tiếp",
+  "latestMonth": "Tháng mới nhất"
 }

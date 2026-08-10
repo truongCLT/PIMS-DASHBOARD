@@ -28,5 +28,12 @@
   "excelDownloadButton": "Excel 다운로드",
   "excelUploadButton": "Excel 업로드",
   "templateDownloadTitle": "현재 데이터가 담긴 Excel 양식을 내려받아 수정 후 업로드하세요.",
-  "templateUploadTitle": "다운로드한 양식에 데이터를 입력해 업로드하면 전체 데이터가 교체됩니다."
+  "templateUploadTitle": "다운로드한 양식에 데이터를 입력해 업로드하면 전체 데이터가 교체됩니다.",
+  "annualShortLabel": "연간",
+  "annualTargetLabel": "목표",
+  "directCostLabel": "Direct Cost",
+  "indirectCostLabel": "Indirect Cost",
+  "totalRowLabel": "합계",
+  "revenueProgressLabel": "매출 진도",
+  "collectionRateLabel": "수금률"
 }

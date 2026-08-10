@@ -27,5 +27,11 @@
   "confirmedA": "확정 (A)",
   "collectionB": "수금 (B)",
   "receivableAB": "채권 (A-B)",
-  "sitePhotoAlt": "{{projectName}} 현장 사진"
+  "sitePhotoAlt": "{{projectName}} 현장 사진",
+  "elapsedLabel": "공경율",
+  "contractBase": "도급액 {{amount}} 기준",
+  "vsBidding": "입찰 대비",
+  "collectionRate": "수금률",
+  "directCost": "Direct Cost",
+  "latestMonth": "최신월"
 }
