@@ -5,10 +5,12 @@ import { ProjectCommentPanel } from "./ProjectCommentPanel";
 import { useProjectDetail, fmtPct, ratioPct } from "../lib/projectDetailData";
 import { useMoney } from "../lib/displayUnit";
 import { chartTheme } from "../lib/chartTheme";
+import { tokens as aquaTokens } from "@workspace/aqua-glass";
+const AG = aquaTokens.color.light;
 
 const cardStyle: React.CSSProperties = {
   backgroundColor: "#fff",
-  border: "1px solid #e2e9f3",
+  border: `1px solid ${AG.border}`,
   borderRadius: "8px",
   padding: "10px 12px",
 };
@@ -110,15 +112,15 @@ export function ServiceBudgetTab({ projectName }: { projectName: string }) {
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
       {/* Budget Execution Status */}
       <div style={{ ...cardStyle, padding: "14px 18px 24px" }}>
-        <span style={{ fontSize: "13px", fontWeight: 600, color: "#2f7cf6" }}>
+        <span style={{ fontSize: "13px", fontWeight: 600, color: AG.primary }}>
           {t("common:budget")} <u>{t("serviceBudgetTab:executionStatusLabel")}</u>
-          <span style={{ marginLeft: "8px", fontSize: "12px", fontWeight: 500, color: "#7c8ba3" }}>{t("common:unit")}: {unitLabel}</span>
+          <span style={{ marginLeft: "8px", fontSize: "12px", fontWeight: 500, color: AG.mutedForeground }}>{t("common:unit")}: {unitLabel}</span>
         </span>
 
         {isLoading ? (
-          <div style={{ padding: "50px 20px", textAlign: "center", fontSize: "14px", color: "#7c8ba3" }}>{t("common:loading")}</div>
+          <div style={{ padding: "50px 20px", textAlign: "center", fontSize: "14px", color: AG.mutedForeground }}>{t("common:loading")}</div>
         ) : rows.length === 0 ? (
-          <div style={{ padding: "50px 20px", textAlign: "center", fontSize: "14px", color: "#7c8ba3" }}>
+          <div style={{ padding: "50px 20px", textAlign: "center", fontSize: "14px", color: AG.mutedForeground }}>
             {t("serviceBudgetTab:noBudgetDataNotice")}
           </div>
         ) : (

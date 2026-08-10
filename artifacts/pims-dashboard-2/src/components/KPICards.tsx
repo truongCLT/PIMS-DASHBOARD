@@ -4,6 +4,8 @@ import { useTranslation } from "react-i18next";
 import { useDashboardData } from "../lib/mgmtreportData";
 import { useDashboardFilters } from "../lib/dashboardFilters";
 import { useTheme } from "../lib/theme";
+import { tokens as aquaTokens } from "@workspace/aqua-glass";
+const AG = aquaTokens.color.light;
 
 /* ── Strip-style icons per card position ────────────────────── */
 const STRIP_ICONS = [TrendingUp, DollarSign, BarChart2, Activity];
@@ -81,7 +83,7 @@ function SemiGauge({ pct, color, width = 108 }: { pct: number; color: string; wi
 
 function KPICard({
   title, plan, actual, achievement,
-  achievementColor = "#35c7c0", compact = false,
+  achievementColor = AG.chart2, compact = false,
   cardIndex = 0, stripColor,
 }: KPICardProps) {
   const { theme: T } = useTheme();
@@ -370,7 +372,7 @@ export function KPICards() {
   const { theme: T } = useTheme();
 
   const isStrip = T.kpi.cardStyle === "strip";
-  const stripColors = T.kpi.stripColors ?? ["#2f7cf6", "#e67e22", "#35c7c0", "#1c7a5a"];
+  const stripColors = T.kpi.stripColors ?? ["#2f7cf6", "#e67e22", "#35c7c0", "#1c7a5a"] // per-theme fallback — must not track any one palette;
 
   const cards = derived?.kpi ?? PLACEHOLDER_TITLES.map((title) => ({
     title,

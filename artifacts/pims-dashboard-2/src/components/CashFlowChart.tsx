@@ -30,6 +30,8 @@ import {
   REPORT_YEAR,
 } from "../lib/dashboardFilters";
 import { chartTheme } from "../lib/chartTheme";
+import { tokens as aquaTokens } from "@workspace/aqua-glass";
+const AG = aquaTokens.color.light;
 
 type TFunc = ReturnType<typeof useTranslation>["t"];
 
@@ -265,7 +267,7 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
   return (
     <div style={{
       backgroundColor: "#fff",
-      border: "1px solid #e2e9f3",
+      border: `1px solid ${AG.border}`,
       borderRadius: "6px",
       padding: "10px 12px",
       height: "100%",
@@ -276,13 +278,13 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
           <span style={{ fontSize: "13px", fontWeight: "600", color: chartTheme.titleNavy }}>{t("common:cashFlow")}</span>
-          <span style={{ fontSize: "11px", color: "#7c8ba3" }}>
+          <span style={{ fontSize: "11px", color: AG.mutedForeground }}>
             {config.label} · {t("common:unit")}: {unitLabel}
           </span>
         </div>
         <button
           onClick={() => setDetailOpen(true)}
-          style={{ fontSize: "12px", color: "#2f7cf6", background: "none", border: "none", cursor: "pointer" }}
+          style={{ fontSize: "12px", color: AG.primary, background: "none", border: "none", cursor: "pointer" }}
         >
           {t("cashFlowChart:viewDetails")}
         </button>
@@ -337,7 +339,7 @@ function CenterNote({ text }: { text: string }) {
       alignItems: "center",
       justifyContent: "center",
       fontSize: "13px",
-      color: "#7c8ba3",
+      color: AG.mutedForeground,
       textAlign: "center",
     }}>
       {text}

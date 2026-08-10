@@ -4,6 +4,8 @@ import { useDashboardData, type ProfitRow } from "../lib/mgmtreportData";
 import { useDashboardFilters } from "../lib/dashboardFilters";
 import { chartTheme } from "../lib/chartTheme";
 import { DetailModal, DetailDataTable } from "./DetailModal";
+import { tokens as aquaTokens } from "@workspace/aqua-glass";
+const AG = aquaTokens.color.light;
 
 const NAVY   = chartTheme.profitNavy;
 const GREEN  = chartTheme.profitGreen;
@@ -100,7 +102,7 @@ export function ProfitChart() {
           filter="url(#tip-shadow)"
         />
         {/* 월 헤더 */}
-        <text x={tx + TW / 2} y={ty + 14} textAnchor="middle" fontSize={TF - 1} fontWeight="700" fill="#16294a">
+        <text x={tx + TW / 2} y={ty + 14} textAnchor="middle" fontSize={TF - 1} fontWeight="700" fill={AG.foreground}>
           {d.m}
         </text>
         {/* 항목 줄 */}
@@ -117,18 +119,18 @@ export function ProfitChart() {
   return (
     <div style={{
       backgroundColor: "#fff",
-      border: "1px solid #e2e9f3",
+      border: `1px solid ${AG.border}`,
       borderRadius: "6px",
       padding: "10px 12px",
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
           <span style={{ fontSize: "12px", fontWeight: "600", color: chartTheme.titleNavy }}>{t("profitChart:profitLossStatus")}</span>
-          {derived && <span style={{ fontSize: "10px", color: "#7c8ba3" }}>{t("common:unit")}: {derived.unitLabel}</span>}
+          {derived && <span style={{ fontSize: "10px", color: AG.mutedForeground }}>{t("common:unit")}: {derived.unitLabel}</span>}
         </div>
         <button
           onClick={() => setDetailOpen(true)}
-          style={{ fontSize: "11px", color: "#2f7cf6", background: "none", border: "none", cursor: "pointer" }}
+          style={{ fontSize: "11px", color: AG.primary, background: "none", border: "none", cursor: "pointer" }}
         >
           {t("profitChart:viewDetails")}
         </button>

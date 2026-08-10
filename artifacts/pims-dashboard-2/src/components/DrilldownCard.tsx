@@ -4,6 +4,8 @@ import { useListMgmtreportProjects } from "@workspace/api-client-react";
 import { useDashboardData, REPORT_YEAR } from "../lib/mgmtreportData";
 import { lastClosedMonth } from "../lib/monthRange";
 import { useDashboardFilters, makeConverter, roundSmart } from "../lib/dashboardFilters";
+import { tokens as aquaTokens } from "@workspace/aqua-glass";
+const AG = aquaTokens.color.light;
 
 const NAVY = "#1a3a6b";
 
@@ -61,7 +63,7 @@ export function DrilldownCard() {
     <div
       style={{
         backgroundColor: "#fff",
-        border: "1px solid #e2e9f3",
+        border: `1px solid ${AG.border}`,
         borderRadius: "6px",
         overflow: "hidden",
       }}
@@ -94,7 +96,7 @@ export function DrilldownCard() {
             borderRadius: "4px",
             padding: "8px 10px",
             fontSize: "13px",
-            color: "#16294a",
+            color: AG.foreground,
             fontWeight: 600,
           }}
         >
@@ -130,9 +132,9 @@ export function DrilldownCard() {
           }}
         >
           {error ? (
-            <span style={{ fontSize: "13px", color: "#16294a", fontWeight: 600 }}>{t("drilldownCard:error")}</span>
+            <span style={{ fontSize: "13px", color: AG.foreground, fontWeight: 600 }}>{t("drilldownCard:error")}</span>
           ) : loading ? (
-            <span style={{ fontSize: "13px", color: "#16294a", fontWeight: 600 }}>-</span>
+            <span style={{ fontSize: "13px", color: AG.foreground, fontWeight: 600 }}>-</span>
           ) : topRevenue.length === 0 ? (
             <span style={{ fontSize: "13px", color: "#6b7c94", fontWeight: 500 }}>{t("drilldownCard:noCurrentMonthRevenue")}</span>
           ) : (
@@ -144,7 +146,7 @@ export function DrilldownCard() {
                   alignItems: "center",
                   gap: "6px",
                   fontSize: "13px",
-                  color: "#16294a",
+                  color: AG.foreground,
                   fontWeight: 600,
                 }}
               >
@@ -153,7 +155,7 @@ export function DrilldownCard() {
                     width: "4px",
                     height: "4px",
                     borderRadius: "50%",
-                    backgroundColor: "#16294a",
+                    backgroundColor: AG.foreground,
                     flexShrink: 0,
                   }}
                 />

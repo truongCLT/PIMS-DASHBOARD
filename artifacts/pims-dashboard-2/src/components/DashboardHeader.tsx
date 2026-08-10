@@ -16,6 +16,8 @@ import {
   type PeriodMode,
   type CurrencyCode,
 } from "../lib/dashboardFilters";
+import { tokens as aquaTokens } from "@workspace/aqua-glass";
+const AG = aquaTokens.color.light;
 
 export function DashboardHeader({
   onSelectProject,
@@ -204,7 +206,7 @@ export function DashboardHeader({
 
       <div style={{ position: "relative", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <h1 style={{
-          color: "#1e3a6e",
+          color: AG.secondary,
           fontSize: "22px",
           fontWeight: "700",
           margin: "0 0 12px",
@@ -215,7 +217,7 @@ export function DashboardHeader({
           borderRadius: "8px",
           padding: "6px 8px",
           cursor: "pointer",
-          color: "#2f7cf6",
+          color: AG.primary,
           boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
           display: "flex",
           alignItems: "center",
@@ -250,7 +252,7 @@ export function DashboardHeader({
               setProject(value);
             }}
             style={{
-              border: "1px solid #dde6f1",
+              border: `1px solid ${AG.input}`,
               borderRadius: "6px",
               padding: "5px 26px 5px 10px",
               fontSize: "12px",
@@ -273,7 +275,7 @@ export function DashboardHeader({
               style={{
                 fontSize: "12px",
                 fontWeight: 700,
-                color: "#2f7cf6",
+                color: AG.primary,
                 backgroundColor: "#eaf2fd",
                 border: "1px solid #c4dbf7",
                 borderRadius: "6px",
@@ -292,7 +294,7 @@ export function DashboardHeader({
           <div style={{
             display: "flex",
             alignItems: "center",
-            border: "1px solid #dde6f1",
+            border: `1px solid ${AG.input}`,
             borderRadius: "6px",
             padding: "2px 8px",
             backgroundColor: "#fff",
@@ -340,7 +342,7 @@ export function DashboardHeader({
             value={period}
             onChange={(e) => setPeriod(e.target.value as PeriodMode)}
             style={{
-              border: "1px solid #dde6f1",
+              border: `1px solid ${AG.input}`,
               borderRadius: "6px",
               padding: "5px 26px 5px 10px",
               fontSize: "12px",
@@ -362,7 +364,7 @@ export function DashboardHeader({
             value={currency}
             onChange={(e) => setCurrency(e.target.value as CurrencyCode)}
             style={{
-              border: "1px solid #dde6f1",
+              border: `1px solid ${AG.input}`,
               borderRadius: "6px",
               padding: "5px 26px 5px 10px",
               fontSize: "12px",
@@ -448,7 +450,7 @@ export function DashboardHeader({
               display: "flex",
               alignItems: "center",
               gap: "6px",
-              backgroundColor: "#1c7a5a",
+              backgroundColor: AG.accentForeground,
               color: "#fff",
               border: "none",
               borderRadius: "6px",
@@ -472,7 +474,7 @@ export function DashboardHeader({
               display: "flex",
               alignItems: "center",
               gap: "6px",
-              backgroundColor: "#1e3a6e",
+              backgroundColor: AG.secondary,
               color: "#fff",
               border: "none",
               borderRadius: "6px",
@@ -499,7 +501,7 @@ export function DashboardHeader({
                 top: downloadPos.top,
                 right: downloadPos.right,
                 backgroundColor: "#fff",
-                border: "1px solid #dde6f1",
+                border: `1px solid ${AG.input}`,
                 borderRadius: "6px",
                 boxShadow: "0 4px 12px rgba(20,40,80,0.15)",
                 zIndex: 1000,
@@ -515,7 +517,7 @@ export function DashboardHeader({
                     width: "100%",
                     padding: "9px 14px",
                     fontSize: "12px",
-                    color: "#16294a",
+                    color: AG.foreground,
                     backgroundColor: "transparent",
                     border: "none",
                     cursor: "pointer",
@@ -524,7 +526,7 @@ export function DashboardHeader({
                   onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#eef3f9")}
                   onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
                 >
-                  <FileSpreadsheet size={14} color="#1c7a5a" />
+                  <FileSpreadsheet size={14} color={AG.accentForeground} />
                   {t("dashboardHeader:excelDownloadOption")}
                 </button>
                 <button
@@ -536,12 +538,12 @@ export function DashboardHeader({
                     width: "100%",
                     padding: "9px 14px",
                     fontSize: "12px",
-                    color: "#16294a",
+                    color: AG.foreground,
                     backgroundColor: "transparent",
                     border: "none",
                     cursor: "pointer",
                     textAlign: "left",
-                    borderTop: "1px solid #eef2f7",
+                    borderTop: `1px solid ${AG.background}`,
                   }}
                   onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#eef3f9")}
                   onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}

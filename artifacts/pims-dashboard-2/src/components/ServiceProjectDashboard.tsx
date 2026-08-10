@@ -15,10 +15,12 @@ import { ProjectDataEntryTab } from "./ProjectDataEntryTab";
 import { useProjectDetail, getGetProjectdetailQueryKey, fmtPct, ratioPct } from "../lib/projectDetailData";
 import { useAdminAuth } from "../lib/adminAuth";
 import { DisplayUnitProvider, formatMoney, moneyUnitLabel } from "../lib/displayUnit";
+import { tokens as aquaTokens } from "@workspace/aqua-glass";
+const AG = aquaTokens.color.light;
 
 const cardStyle: React.CSSProperties = {
   backgroundColor: "#fff",
-  border: "1px solid #e2e9f3",
+  border: `1px solid ${AG.border}`,
   borderRadius: "8px",
   padding: "10px 12px",
 };
@@ -26,7 +28,7 @@ const cardStyle: React.CSSProperties = {
 const sectionTitle: React.CSSProperties = {
   fontSize: "16px",
   fontWeight: 700,
-  color: "#2f7cf6",
+  color: AG.primary,
   marginBottom: "6px",
 };
 
@@ -75,7 +77,7 @@ function YearMonthSelect({
         display: "flex",
         alignItems: "center",
         gap: "2px",
-        border: "1px solid #e2e9f3",
+        border: `1px solid ${AG.border}`,
         borderRadius: "6px",
         padding: "4px 8px",
         backgroundColor: "#fff",
@@ -102,7 +104,7 @@ function YearMonthSelect({
 function EmptyHint({ label }: { label: string }) {
   const { t } = useTranslation(["serviceProjectDashboard", "common"]);
   return (
-    <div style={{ padding: "40px 10px", textAlign: "center", fontSize: "13px", color: "#7c8ba3" }}>
+    <div style={{ padding: "40px 10px", textAlign: "center", fontSize: "13px", color: AG.mutedForeground }}>
       {t("serviceProjectDashboard:emptyDataHint", { label })}
     </div>
   );
@@ -226,7 +228,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
 
   return (
     <DisplayUnitProvider currency={currency} unitOn={unitOn}>
-    <div style={{ flex: 1, overflowY: "auto", backgroundColor: "#eef2f7" }}>
+    <div style={{ flex: 1, overflowY: "auto", backgroundColor: AG.background }}>
       {/* Filter row */}
       <div
         style={{
@@ -235,13 +237,13 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
           gap: "18px",
           flexWrap: "wrap",
           backgroundColor: "#fff",
-          borderBottom: "1px solid #e2e9f3",
+          borderBottom: `1px solid ${AG.border}`,
           padding: "8px 20px",
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <span style={{ fontSize: "14px", color: "#333", fontWeight: 600 }}>{t("common:exchangeRate")} :</span>
-          <div style={{ display: "flex", border: "1px solid #e2e9f3", borderRadius: "6px", overflow: "hidden" }}>
+          <div style={{ display: "flex", border: `1px solid ${AG.border}`, borderRadius: "6px", overflow: "hidden" }}>
             {["USD", "KRW", "VND"].map((c) => (
               <button
                 key={c}
@@ -253,8 +255,8 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                   border: "none",
                   cursor: "pointer",
                   backgroundColor: currency === c ? "#fff" : "#f2f5f9",
-                  color: currency === c ? "#2f7cf6" : "#666",
-                  borderRight: c !== "VND" ? "1px solid #e2e9f3" : "none",
+                  color: currency === c ? AG.primary : "#666",
+                  borderRight: c !== "VND" ? `1px solid ${AG.border}` : "none",
                 }}
               >
                 {c}
@@ -274,7 +276,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
             style={{
               width: "36px",
               height: "20px",
-              backgroundColor: unitOn ? "#2f7cf6" : "#b0b8c4",
+              backgroundColor: unitOn ? AG.primary : "#b0b8c4",
               borderRadius: "10px",
               position: "relative",
               cursor: "pointer",
@@ -303,7 +305,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
             display: "flex",
             alignItems: "center",
             gap: "6px",
-            backgroundColor: "#2f7cf6",
+            backgroundColor: AG.primary,
             color: "#fff",
             border: "none",
             borderRadius: "6px",
@@ -321,23 +323,23 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
       {/* Project info bar — always visible */}
       <div style={{ ...cardStyle, margin: "8px 10px 0", display: "flex", gap: "10px", alignItems: "stretch" }}>
         <div style={{ flex: 1 }}>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 0", fontSize: "14px", color: "#16294a" }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 0", fontSize: "14px", color: AG.foreground }}>
             <span style={{ fontWeight: 700, paddingRight: "14px" }}>Project : {projectName}</span>
             {ov?.asOfMonth && (
-              <span style={{ borderLeft: "1px solid #e2e9f3", padding: "0 14px" }}>
+              <span style={{ borderLeft: `1px solid ${AG.border}`, padding: "0 14px" }}>
                 {t("serviceProjectDashboard:asOfMonth", { year: ov.asOfMonth.slice(0, 4), month: Number(ov.asOfMonth.slice(5, 7)) })}
               </span>
             )}
             {ov?.client && (
-              <span style={{ borderLeft: "1px solid #e2e9f3", padding: "0 14px" }}>{t("serviceProjectDashboard:clientLabel")} : {ov.client}</span>
+              <span style={{ borderLeft: `1px solid ${AG.border}`, padding: "0 14px" }}>{t("serviceProjectDashboard:clientLabel")} : {ov.client}</span>
             )}
             {periodLabel && (
-              <span style={{ borderLeft: "1px solid #e2e9f3", padding: "0 14px" }}>{t("serviceProjectDashboard:periodLabel")} : {periodLabel}</span>
+              <span style={{ borderLeft: `1px solid ${AG.border}`, padding: "0 14px" }}>{t("serviceProjectDashboard:periodLabel")} : {periodLabel}</span>
             )}
             {ov?.scope && (
-              <span style={{ borderLeft: "1px solid #e2e9f3", padding: "0 14px" }}>{t("serviceProjectDashboard:scopeLabel")} : {ov.scope}</span>
+              <span style={{ borderLeft: `1px solid ${AG.border}`, padding: "0 14px" }}>{t("serviceProjectDashboard:scopeLabel")} : {ov.scope}</span>
             )}
-            <span style={{ borderLeft: "1px solid #e2e9f3", padding: "0 14px" }}>
+            <span style={{ borderLeft: `1px solid ${AG.border}`, padding: "0 14px" }}>
               {t("common:contractAmount")} : {contractAmount != null ? `${formatMoney(contractAmount, currency, unitOn)} ${moneyUnitLabel(currency, unitOn)}` : "-"}
             </span>
           </div>
@@ -350,8 +352,8 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
           display: "flex",
           gap: "4px",
           padding: "8px 10px 0",
-          backgroundColor: "#eef2f7",
-          borderBottom: "2px solid #e2e9f3",
+          backgroundColor: AG.background,
+          borderBottom: `2px solid ${AG.border}`,
           marginTop: "8px",
         }}
       >
@@ -365,11 +367,11 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                 padding: "7px 20px",
                 fontSize: "16px",
                 fontWeight: active ? 700 : 500,
-                color: active ? "#16294a" : "#7c8ba3",
+                color: active ? AG.foreground : AG.mutedForeground,
                 backgroundColor: active ? "#fff" : "transparent",
                 border: "1px solid",
-                borderColor: active ? "#e2e9f3" : "transparent",
-                borderBottom: active ? "2px solid #2f7cf6" : "none",
+                borderColor: active ? AG.border : "transparent",
+                borderBottom: active ? `2px solid ${AG.primary}` : "none",
                 borderRadius: "4px 4px 0 0",
                 cursor: "pointer",
                 marginBottom: active ? "-2px" : "0",
@@ -416,7 +418,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                   style={{
                     fontSize: "13px",
                     fontWeight: 600,
-                    color: excelMsgIsSuccess ? "#1c7a5a" : "#f2736a",
+                    color: excelMsgIsSuccess ? AG.accentForeground : AG.destructive,
                     maxWidth: "360px",
                     whiteSpace: "nowrap",
                     overflow: "hidden",
@@ -438,9 +440,9 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                   padding: "5px 12px",
                   fontSize: "13px",
                   fontWeight: 600,
-                  color: "#16294a",
+                  color: AG.foreground,
                   backgroundColor: "#fff",
-                  border: "1px solid #e2e9f3",
+                  border: `1px solid ${AG.border}`,
                   borderRadius: "4px",
                   cursor: excelBusy ? "wait" : "pointer",
                   opacity: !detail || excelBusy ? 0.6 : 1,
@@ -460,7 +462,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                   fontSize: "13px",
                   fontWeight: 600,
                   color: "#fff",
-                  backgroundColor: "#2f7cf6",
+                  backgroundColor: AG.primary,
                   border: "none",
                   borderRadius: "4px",
                   cursor: excelBusy ? "wait" : "pointer",
@@ -490,7 +492,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
               <div style={cardStyle}>
                 <span style={sectionTitle}>{t("common:revenue")}</span>
                 {isLoading ? (
-                  <div style={{ padding: "40px 10px", textAlign: "center", fontSize: "13px", color: "#7c8ba3" }}>{t("common:loading")}</div>
+                  <div style={{ padding: "40px 10px", textAlign: "center", fontSize: "13px", color: AG.mutedForeground }}>{t("common:loading")}</div>
                 ) : revenueTarget == null && revenueTotal == null ? (
                   <EmptyHint label={t("serviceProjectDashboard:revenueTargetActualLabel")} />
                 ) : (
@@ -501,13 +503,13 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                       </div>
                       <Donut
                         percent={achievementPct ?? 0}
-                        color="#2f7cf6"
+                        color={AG.primary}
                         size={120}
                         stroke={14}
                         label={fmtPct(achievementPct)}
                         labelSize={20}
                       />
-                      <div style={{ fontSize: "12px", color: "#16294a", fontWeight: 700, marginTop: "5px", textDecoration: "underline" }}>
+                      <div style={{ fontSize: "12px", color: AG.foreground, fontWeight: 700, marginTop: "5px", textDecoration: "underline" }}>
                         {t("serviceProjectDashboard:annualTargetAchievementRate")}
                       </div>
                     </div>
@@ -517,13 +519,13 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                       </div>
                       <Donut
                         percent={ratioPct(revenueTotal, contractAmount) ?? 0}
-                        color="#2f7cf6"
+                        color={AG.primary}
                         size={120}
                         stroke={14}
                         label={fmtPct(ratioPct(revenueTotal, contractAmount))}
                         labelSize={20}
                       />
-                      <div style={{ fontSize: "12px", color: "#16294a", fontWeight: 700, marginTop: "5px", textDecoration: "underline" }}>
+                      <div style={{ fontSize: "12px", color: AG.foreground, fontWeight: 700, marginTop: "5px", textDecoration: "underline" }}>
                         {t("serviceProjectDashboard:cumulativeRevenueAchievementRate")}
                       </div>
                     </div>
@@ -542,7 +544,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                   </span>
                 </div>
                 {isLoading ? (
-                  <div style={{ padding: "40px 10px", textAlign: "center", fontSize: "13px", color: "#7c8ba3" }}>{t("common:loading")}</div>
+                  <div style={{ padding: "40px 10px", textAlign: "center", fontSize: "13px", color: AG.mutedForeground }}>{t("common:loading")}</div>
                 ) : budgetRows.length === 0 ? (
                   <EmptyHint label={t("serviceProjectDashboard:budgetExecutionEmptyLabel")} />
                 ) : (
@@ -568,7 +570,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                           <div style={{ height: `${H}px`, display: "flex", alignItems: "flex-end", gap: "3px", justifyContent: "center" }}>
                             <div style={{ width: "24px", height: `${bh}px`, backgroundColor: "#d9dee5" }} />
                             {sh > 0 && (
-                              <div style={{ width: "24px", height: `${sh}px`, backgroundColor: "#2f7cf6", position: "relative" }}>
+                              <div style={{ width: "24px", height: `${sh}px`, backgroundColor: AG.primary, position: "relative" }}>
                                 <span
                                   style={{
                                     position: "absolute",
@@ -586,7 +588,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                             )}
                           </div>
                           {pct != null && (
-                            <div style={{ fontSize: "11px", color: "#2f7cf6", fontWeight: 600, marginTop: "2px" }}>{fmtPct(pct)}</div>
+                            <div style={{ fontSize: "11px", color: AG.primary, fontWeight: 600, marginTop: "2px" }}>{fmtPct(pct)}</div>
                           )}
                           <div style={{ fontSize: "11px", color: "#333", fontWeight: 600, marginTop: "2px" }}>{g.item}</div>
                         </div>
@@ -600,7 +602,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
               <div style={cardStyle}>
                 <span style={sectionTitle}>{t("serviceProjectDashboard:cashLabel")}</span>
                 {isLoading ? (
-                  <div style={{ padding: "40px 10px", textAlign: "center", fontSize: "13px", color: "#7c8ba3" }}>{t("common:loading")}</div>
+                  <div style={{ padding: "40px 10px", textAlign: "center", fontSize: "13px", color: AG.mutedForeground }}>{t("common:loading")}</div>
                 ) : revenueTotal == null && cashConfirmed == null && cashCollection == null ? (
                   <EmptyHint label={t("serviceProjectDashboard:cashEmptyLabel")} />
                 ) : (
@@ -643,7 +645,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                         <MiniBar
                           value={cashCollection ?? 0}
                           max={cashMax}
-                          color="#2f7cf6"
+                          color={AG.primary}
                           label={t("serviceProjectDashboard:collectionB")}
                           height={150}
                           valueLabel={formatMoney(cashCollection, currency, unitOn)}
@@ -652,7 +654,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                         <MiniBar
                           value={Math.max(cashOutstanding ?? 0, 0)}
                           max={cashMax}
-                          color="#f2736a"
+                          color={AG.destructive}
                           label={t("serviceProjectDashboard:receivableAB")}
                           height={150}
                           valueLabel={formatMoney(cashOutstanding, currency, unitOn)}
@@ -677,7 +679,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
               padding: "60px 20px",
               textAlign: "center",
               fontSize: "15px",
-              color: "#7c8ba3",
+              color: AG.mutedForeground,
             }}
           >
             {t("serviceProjectDashboard:comingSoon", { label: t(TAB_LABEL_KEYS[activeTab] ?? activeTab) })}

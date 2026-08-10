@@ -12,6 +12,8 @@ import {
 } from "@workspace/api-client-react";
 import { useTranslation } from "react-i18next";
 import { REPORT_YEAR } from "../lib/mgmtreportData";
+import { tokens as aquaTokens } from "@workspace/aqua-glass";
+const AG = aquaTokens.color.light;
 
 interface DivisionRow {
   label: string;
@@ -148,7 +150,7 @@ export function OrgStructureEditor() {
   const orgCompanies = orgQuery.data?.companies ?? [];
 
   const inputStyle: React.CSSProperties = {
-    border: "1px solid #dde6f1",
+    border: `1px solid ${AG.input}`,
     borderRadius: "5px",
     padding: "4px 6px",
     fontSize: "11px",
@@ -186,19 +188,19 @@ export function OrgStructureEditor() {
           maxHeight: `calc(100vh - ${popupPos.top + 8}px)`,
           overflowY: "auto",
           backgroundColor: "#fff",
-          border: "1px solid #dde6f1",
+          border: `1px solid ${AG.input}`,
           borderRadius: "8px",
           boxShadow: "0 4px 12px rgba(20,40,80,0.15)",
           zIndex: 1000,
           width: "380px",
           padding: "14px",
         }}>
-          <div style={{ fontSize: "12px", fontWeight: 700, color: "#16294a", marginBottom: "10px" }}>
+          <div style={{ fontSize: "12px", fontWeight: 700, color: AG.foreground, marginBottom: "10px" }}>
             {t("orgStructureEditor:popupTitle")}
           </div>
 
           {draft.map((company, ci) => (
-            <div key={ci} style={{ border: "1px solid #eef2f7", borderRadius: "6px", padding: "8px", marginBottom: "8px" }}>
+            <div key={ci} style={{ border: `1px solid ${AG.background}`, borderRadius: "6px", padding: "8px", marginBottom: "8px" }}>
               <div style={{ display: "flex", gap: "4px", marginBottom: "6px" }}>
                 <input
                   value={company.label}
@@ -231,13 +233,13 @@ export function OrgStructureEditor() {
               ))}
               <button
                 onClick={() => addDivision(ci)}
-                style={{ ...inputStyle, marginTop: "4px", marginLeft: "10px", cursor: "pointer", color: "#2f7cf6" }}
+                style={{ ...inputStyle, marginTop: "4px", marginLeft: "10px", cursor: "pointer", color: AG.primary }}
               >
                 + {t("orgStructureEditor:addDivision")}
               </button>
             </div>
           ))}
-          <button onClick={addCompany} style={{ ...inputStyle, width: "100%", cursor: "pointer", color: "#2f7cf6", marginBottom: "10px" }}>
+          <button onClick={addCompany} style={{ ...inputStyle, width: "100%", cursor: "pointer", color: AG.primary, marginBottom: "10px" }}>
             + {t("orgStructureEditor:addCompany")}
           </button>
 
@@ -250,7 +252,7 @@ export function OrgStructureEditor() {
               padding: "8px 0",
               fontSize: "12px",
               fontWeight: 600,
-              backgroundColor: "#1e3a6e",
+              backgroundColor: AG.secondary,
               color: "#fff",
               border: "none",
               borderRadius: "6px",
@@ -262,8 +264,8 @@ export function OrgStructureEditor() {
           </button>
 
           {unmappedProjects.length > 0 && (
-            <div style={{ borderTop: "1px solid #eef2f7", paddingTop: "10px" }}>
-              <div style={{ fontSize: "11px", fontWeight: 700, color: "#7c8ba3", marginBottom: "6px" }}>
+            <div style={{ borderTop: `1px solid ${AG.background}`, paddingTop: "10px" }}>
+              <div style={{ fontSize: "11px", fontWeight: 700, color: AG.mutedForeground, marginBottom: "6px" }}>
                 {t("orgStructureEditor:unmappedTitle", { count: unmappedProjects.length })}
               </div>
               {unmappedProjects.map((p) => (

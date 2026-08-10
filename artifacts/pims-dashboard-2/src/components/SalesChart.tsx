@@ -17,6 +17,8 @@ import { useDashboardFilters } from "../lib/dashboardFilters";
 import { chartTheme } from "../lib/chartTheme";
 import { useTheme } from "../lib/theme";
 import { DetailModal, DetailDataTable } from "./DetailModal";
+import { tokens as aquaTokens } from "@workspace/aqua-glass";
+const AG = aquaTokens.color.light;
 
 const PLAN_COLOR = chartTheme.planBlue;
 const ACTUAL_COLOR = chartTheme.actualGreen;
@@ -95,8 +97,8 @@ const CustomTooltip = ({ active, payload, label, colors }: any) => {
   const actual = payload.find((p: any) => p.dataKey === "actual");
   const rate = plan?.payload?.rate ?? actual?.payload?.rate;
   return (
-    <div style={{ backgroundColor: "#fff", border: "1px solid #e2e9f3", borderRadius: "4px", padding: "8px 10px", fontSize: "12px" }}>
-      <div style={{ fontWeight: 700, marginBottom: "4px", color: "#16294a" }}>{label}</div>
+    <div style={{ backgroundColor: "#fff", border: `1px solid ${AG.border}`, borderRadius: "4px", padding: "8px 10px", fontSize: "12px" }}>
+      <div style={{ fontWeight: 700, marginBottom: "4px", color: AG.foreground }}>{label}</div>
       {plan && <div style={{ color: c.plan }}>{t("salesChart:salesPlan")}: {Number(plan.value).toLocaleString("ko-KR")}</div>}
       {actual && <div style={{ color: c.actual }}>{t("salesChart:salesActualForecast")}: {Number(actual.value).toLocaleString("ko-KR")}</div>}
       {rate != null && (
@@ -139,7 +141,7 @@ export function SalesChart() {
   return (
     <div style={{
       backgroundColor: "#fff",
-      border: "1px solid #e2e9f3",
+      border: `1px solid ${AG.border}`,
       borderRadius: "6px",
       padding: "10px 12px",
       height: "100%",
@@ -151,13 +153,13 @@ export function SalesChart() {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
           <span style={{ fontSize: "13px", fontWeight: "600", color: chartTheme.titleNavy }}>{t("salesChart:title")}</span>
-          {derived && <span style={{ fontSize: "11px", color: "#7c8ba3" }}>{t("common:unit")}: {derived.unitLabel}</span>}
+          {derived && <span style={{ fontSize: "11px", color: AG.mutedForeground }}>{t("common:unit")}: {derived.unitLabel}</span>}
         </div>
         <button
           onClick={() => setDetailOpen(true)}
           style={{
             fontSize: "12px",
-            color: "#2f7cf6",
+            color: AG.primary,
             background: "none",
             border: "none",
             cursor: "pointer",
@@ -339,7 +341,7 @@ export function SalesChart() {
               name="viewType"
               checked={viewType === "net"}
               onChange={() => setViewType("net")}
-              style={{ accentColor: "#2f7cf6" }}
+              style={{ accentColor: AG.primary }}
             />
             {t("salesChart:net")}
           </label>
@@ -349,7 +351,7 @@ export function SalesChart() {
               name="viewType"
               checked={viewType === "report"}
               onChange={() => setViewType("report")}
-              style={{ accentColor: "#2f7cf6" }}
+              style={{ accentColor: AG.primary }}
             />
             {t("salesChart:report")}
           </label>

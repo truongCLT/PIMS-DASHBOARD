@@ -1,5 +1,7 @@
 import React from "react";
 import { chartTheme } from "../lib/chartTheme";
+import { tokens as aquaTokens } from "@workspace/aqua-glass";
+const AG = aquaTokens.color.light;
 
 /* ---------- small SVG donut ---------- */
 export function Donut({
@@ -92,7 +94,7 @@ export function MiniBar({
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "3px" }}>
       <div style={{ height: `${height}px`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end" }}>
         {valueOnTop && valueLabel != null && (
-          <span style={{ fontSize: "11px", color: "#16294a", fontWeight: 700, whiteSpace: "nowrap", marginBottom: "3px" }}>
+          <span style={{ fontSize: "11px", color: AG.foreground, fontWeight: 700, whiteSpace: "nowrap", marginBottom: "3px" }}>
             {valueLabel}
           </span>
         )}

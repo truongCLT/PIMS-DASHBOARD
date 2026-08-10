@@ -1,5 +1,7 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
+import { tokens as aquaTokens } from "@workspace/aqua-glass";
+const AG = aquaTokens.color.light;
 
 interface Props {
   src: string;
@@ -34,7 +36,7 @@ const NAV_BTN: React.CSSProperties = {
   minWidth: "24px",
   height: "24px",
   padding: "0 4px",
-  border: "1px solid #e2e9f3",
+  border: `1px solid ${AG.border}`,
   borderRadius: "4px",
   background: "#fff",
   color: "#4a6080",
@@ -108,10 +110,10 @@ export function PhotoPager({ src, alt, total, current, onChange, imgStyle }: Pro
                 style={{
                   ...NAV_BTN,
                   minWidth: "24px",
-                  backgroundColor: p === current + 1 ? "#16294a" : "#eef2f7",
+                  backgroundColor: p === current + 1 ? AG.foreground : AG.background,
                   color: p === current + 1 ? "#fff" : "#4a6080",
                   fontWeight: p === current + 1 ? 700 : 400,
-                  border: p === current + 1 ? "1px solid #16294a" : "1px solid #e2e9f3",
+                  border: p === current + 1 ? `1px solid ${AG.foreground}` : `1px solid ${AG.border}`,
                 }}
               >
                 {p}

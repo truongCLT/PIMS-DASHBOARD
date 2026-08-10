@@ -21,10 +21,12 @@ import { chartTheme } from "../lib/chartTheme";
 import { useMoney } from "../lib/displayUnit";
 import { useProjectDetail } from "../lib/projectDetailData";
 import { ProjectCommentPanel } from "./ProjectCommentPanel";
+import { tokens as aquaTokens } from "@workspace/aqua-glass";
+const AG = aquaTokens.color.light;
 
 const cardStyle: React.CSSProperties = {
   backgroundColor: "#fff",
-  border: "1px solid #e2e9f3",
+  border: `1px solid ${AG.border}`,
   borderRadius: "8px",
   padding: "10px 12px",
 };
@@ -32,7 +34,7 @@ const cardStyle: React.CSSProperties = {
 const sectionTitle: React.CSSProperties = {
   fontSize: "16px",
   fontWeight: 700,
-  color: "#2f7cf6",
+  color: AG.primary,
 };
 
 function useSiteMonths(year: number, metric: "revenue" | "cogs", enabled: boolean) {
@@ -49,7 +51,7 @@ function Notice({ children, error }: { children: React.ReactNode; error?: boolea
         padding: "60px 20px",
         textAlign: "center",
         fontSize: "15px",
-        color: error ? "#f2736a" : "#7c8ba3",
+        color: error ? AG.destructive : AG.mutedForeground,
       }}
     >
       {children}

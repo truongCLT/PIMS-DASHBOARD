@@ -7,6 +7,8 @@ import { classifyMrProject, isTestMrProject, type ProjectGroup } from "../data/p
 import { REPORT_YEAR } from "../lib/mgmtreportData";
 import { useTheme } from "../lib/theme";
 import { LANGUAGE_LABELS, SUPPORTED_LANGUAGES } from "../lib/i18n";
+import { tokens as aquaTokens } from "@workspace/aqua-glass";
+const AG = aquaTokens.color.light;
 
 export type DashboardScope =
   | "전체"
@@ -183,7 +185,7 @@ function TreeNode({
           {displayLabel}
         </div>
         {collapsible && (
-          <span style={{ fontSize: "10px", color: "#44546a" }}>
+          <span style={{ fontSize: "10px", color: "#44546a" /* theme-neutral glyph — keep fixed across themes */ }}>
             {!open ? "∨" : "∧"}
           </span>
         )}
@@ -293,7 +295,7 @@ export function Sidebar({
           display: "flex",
           borderRadius: "6px",
           overflow: "hidden",
-          border: "1px solid #dde6f1",
+          border: `1px solid ${AG.input}`,
         }}>
           {SUPPORTED_LANGUAGES.map((lng, i) => {
             const active = i18n.language === lng;
@@ -307,7 +309,7 @@ export function Sidebar({
                   fontSize: "11px",
                   fontWeight: active ? "700" : "500",
                   border: "none",
-                  borderLeft: i === 0 ? "none" : "1px solid #dde6f1",
+                  borderLeft: i === 0 ? "none" : `1px solid ${AG.input}`,
                   backgroundColor: active ? T.sidebar.activeItemAccent : "#ffffff",
                   color: active ? "#ffffff" : "#556",
                   cursor: "pointer",

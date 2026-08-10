@@ -11,6 +11,8 @@ import {
 } from "@workspace/api-client-react";
 import { useDashboardData, REPORT_YEAR } from "../lib/mgmtreportData";
 import { useAdminAuth } from "../lib/adminAuth";
+import { tokens as aquaTokens } from "@workspace/aqua-glass";
+const AG = aquaTokens.color.light;
 
 export type CommentSection = "analysis" | "outlook";
 
@@ -84,7 +86,7 @@ export function CommentPanel({
   return (
     <div style={{
       backgroundColor: "#fff",
-      border: "1px solid #e2e9f3",
+      border: `1px solid ${AG.border}`,
       borderRadius: "6px",
       padding: "10px 12px",
       display: "flex",
@@ -93,7 +95,7 @@ export function CommentPanel({
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
         <span style={{ fontSize: "12px", color: "#555" }}>💬</span>
-        <span style={{ fontSize: "12px", fontWeight: "600", color: "#16294a" }}>{title}</span>
+        <span style={{ fontSize: "12px", fontWeight: "600", color: AG.foreground }}>{title}</span>
       </div>
 
       {/* Month selector */}
@@ -149,7 +151,7 @@ export function CommentPanel({
             background: "none",
             border: "none",
             cursor: canSubmit ? "pointer" : "default",
-            color: canSubmit ? "#2f7cf6" : "#a9c4e8",
+            color: canSubmit ? AG.primary : "#a9c4e8",
             padding: "0",
           }}
         >
@@ -164,7 +166,7 @@ export function CommentPanel({
       )}
 
       {/* Separator */}
-      <div style={{ height: "1px", backgroundColor: "#e7f1fd" }} />
+      <div style={{ height: "1px", backgroundColor: AG.sidebarAccent }} />
 
       {/* Comment list */}
       <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -212,14 +214,14 @@ export function CommentPanel({
                       }}
                       disabled={editText.trim().length === 0 || updateMutation.isPending}
                       aria-label={t("commentPanel:saveEditAriaLabel")}
-                      style={{ background: "none", border: "none", cursor: "pointer", color: "#1c7a5a", padding: 0 }}
+                      style={{ background: "none", border: "none", cursor: "pointer", color: AG.accentForeground, padding: 0 }}
                     >
                       <Check size={14} />
                     </button>
                     <button
                       onClick={() => { setEditingId(null); setEditText(""); }}
                       aria-label={t("commentPanel:cancelEditAriaLabel")}
-                      style={{ background: "none", border: "none", cursor: "pointer", color: "#7c8ba3", padding: 0 }}
+                      style={{ background: "none", border: "none", cursor: "pointer", color: AG.mutedForeground, padding: 0 }}
                     >
                       <X size={14} />
                     </button>
@@ -229,7 +231,7 @@ export function CommentPanel({
                 <>
                   <p style={{ margin: "0 0 4px", whiteSpace: "pre-wrap" }}>{c.body}</p>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <span style={{ color: "#7c8ba3", fontSize: "10px" }}>
+                    <span style={{ color: AG.mutedForeground, fontSize: "10px" }}>
                       {new Date(c.createdAt).toLocaleDateString("ko-KR")}
                     </span>
                     {isAdmin && (
@@ -237,7 +239,7 @@ export function CommentPanel({
                         <button
                           onClick={() => { setEditingId(c.id); setEditText(c.body); setActionError(null); }}
                           aria-label={t("commentPanel:editCommentAriaLabel")}
-                          style={{ background: "none", border: "none", cursor: "pointer", color: "#2f7cf6", padding: 0 }}
+                          style={{ background: "none", border: "none", cursor: "pointer", color: AG.primary, padding: 0 }}
                         >
                           <Pencil size={12} />
                         </button>

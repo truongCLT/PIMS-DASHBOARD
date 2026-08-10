@@ -2,6 +2,8 @@ import React, { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { X, Check } from "lucide-react";
 import { DetailDataTable, type DetailColumn } from "./DetailModal";
+import { tokens as aquaTokens } from "@workspace/aqua-glass";
+const AG = aquaTokens.color.light;
 
 export type PimsvinaPreviewData = Record<string, Array<Record<string, unknown>>>;
 
@@ -84,21 +86,21 @@ export function PimsvinaSyncPreviewModal({
             alignItems: "center",
             justifyContent: "space-between",
             padding: "14px 18px",
-            borderBottom: "1px solid #e2e9f3",
+            borderBottom: `1px solid ${AG.border}`,
             flexShrink: 0,
           }}
         >
           <div>
-            <div style={{ fontSize: "15px", fontWeight: 700, color: "#16294a" }}>
+            <div style={{ fontSize: "15px", fontWeight: 700, color: AG.foreground }}>
               {t("pimsvinaSyncPreview:title")}
             </div>
-            <div style={{ fontSize: "11px", color: "#7c8ba3", marginTop: "2px" }}>
+            <div style={{ fontSize: "11px", color: AG.mutedForeground, marginTop: "2px" }}>
               {t("pimsvinaSyncPreview:subtitle", { count: totalRows })}
             </div>
           </div>
           <button
             onClick={onClose}
-            style={{ background: "none", border: "none", cursor: "pointer", color: "#7c8ba3", padding: "4px", display: "flex" }}
+            style={{ background: "none", border: "none", cursor: "pointer", color: AG.mutedForeground, padding: "4px", display: "flex" }}
           >
             <X size={18} />
           </button>
@@ -111,7 +113,7 @@ export function PimsvinaSyncPreviewModal({
             flexWrap: "wrap",
             gap: "4px",
             padding: "10px 14px",
-            borderBottom: "1px solid #e2e9f3",
+            borderBottom: `1px solid ${AG.border}`,
             flexShrink: 0,
             overflowX: "auto",
           }}
@@ -127,10 +129,10 @@ export function PimsvinaSyncPreviewModal({
                   padding: "5px 10px",
                   fontSize: "11.5px",
                   fontWeight: active ? 700 : 500,
-                  border: `1px solid ${active ? "#2f7cf6" : "#dde6f1"}`,
+                  border: `1px solid ${active ? AG.primary : AG.input}`,
                   borderRadius: "6px",
                   backgroundColor: active ? "#eaf2fd" : "#fff",
-                  color: active ? "#1e3a6e" : "#556",
+                  color: active ? AG.secondary : "#556",
                   cursor: "pointer",
                   whiteSpace: "nowrap",
                 }}
@@ -166,7 +168,7 @@ export function PimsvinaSyncPreviewModal({
             justifyContent: "flex-end",
             gap: "8px",
             padding: "12px 18px",
-            borderTop: "1px solid #e2e9f3",
+            borderTop: `1px solid ${AG.border}`,
             flexShrink: 0,
           }}
         >
@@ -179,7 +181,7 @@ export function PimsvinaSyncPreviewModal({
               fontWeight: 600,
               backgroundColor: "#fff",
               color: "#556",
-              border: "1px solid #dde6f1",
+              border: `1px solid ${AG.input}`,
               borderRadius: "6px",
               cursor: confirming ? "wait" : "pointer",
             }}
@@ -196,7 +198,7 @@ export function PimsvinaSyncPreviewModal({
               padding: "8px 16px",
               fontSize: "13px",
               fontWeight: 600,
-              backgroundColor: "#1e3a6e",
+              backgroundColor: AG.secondary,
               color: "#fff",
               border: "none",
               borderRadius: "6px",

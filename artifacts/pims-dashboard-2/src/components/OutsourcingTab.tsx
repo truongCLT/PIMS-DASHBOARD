@@ -4,10 +4,12 @@ import { ProjectCommentPanel } from "./ProjectCommentPanel";
 
 import { useProjectDetail, fmtPct, ratioPct } from "../lib/projectDetailData";
 import { useMoney } from "../lib/displayUnit";
+import { tokens as aquaTokens } from "@workspace/aqua-glass";
+const AG = aquaTokens.color.light;
 
 const cardStyle: React.CSSProperties = {
   backgroundColor: "#fff",
-  border: "1px solid #e2e9f3",
+  border: `1px solid ${AG.border}`,
   borderRadius: "8px",
   padding: "10px 12px",
 };
@@ -15,15 +17,15 @@ const cardStyle: React.CSSProperties = {
 const sectionTitle: React.CSSProperties = {
   fontSize: "16px",
   fontWeight: 700,
-  color: "#2f7cf6",
+  color: AG.primary,
 };
 
 const th: React.CSSProperties = {
-  backgroundColor: "#eef2f7",
-  color: "#16294a",
+  backgroundColor: AG.background,
+  color: AG.foreground,
   fontSize: "13px",
   fontWeight: 700,
-  border: "1px solid #e2e9f3",
+  border: `1px solid ${AG.border}`,
   padding: "8px 6px",
   textAlign: "center",
   verticalAlign: "middle",
@@ -32,7 +34,7 @@ const th: React.CSSProperties = {
 };
 
 const td: React.CSSProperties = {
-  border: "1px solid #e2e9f3",
+  border: `1px solid ${AG.border}`,
   fontSize: "13px",
   color: "#333",
   padding: "8px 6px",
@@ -152,7 +154,7 @@ export function OutsourcingTab({ projectName }: { projectName: string }) {
                 </tr>
               ) : rows.length === 0 ? (
                 <tr>
-                  <td style={{ ...td, color: "#7c8ba3" }} colSpan={12}>
+                  <td style={{ ...td, color: AG.mutedForeground }} colSpan={12}>
                     {t("outsourcingTab:noOutsourcingData")}
                   </td>
                 </tr>

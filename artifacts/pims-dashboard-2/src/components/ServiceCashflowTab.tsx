@@ -18,10 +18,12 @@ import { getMrCashflowRef } from "../data/mrProjectLinks";
 import { useProjectDetail } from "../lib/projectDetailData";
 import { chartTheme } from "../lib/chartTheme";
 import { useMoney } from "../lib/displayUnit";
+import { tokens as aquaTokens } from "@workspace/aqua-glass";
+const AG = aquaTokens.color.light;
 
 const cardStyle: React.CSSProperties = {
   backgroundColor: "#fff",
-  border: "1px solid #e2e9f3",
+  border: `1px solid ${AG.border}`,
   borderRadius: "8px",
   padding: "10px 12px",
 };
@@ -118,7 +120,7 @@ export function ServiceCashflowTab({
   const hasData = chartData.some((d) => d.cashIn !== 0 || d.cashOut !== 0 || d.equivalent !== 0);
 
   const entryGuide = (
-    <div style={{ fontSize: "14px", color: "#7c8ba3", marginTop: "8px" }}>
+    <div style={{ fontSize: "14px", color: AG.mutedForeground, marginTop: "8px" }}>
       {t("serviceCashflowTab:entryGuide")}
     </div>
   );
@@ -126,13 +128,13 @@ export function ServiceCashflowTab({
   let body: React.ReactNode;
   if (pdLoading || (cfRef != null && query.isLoading)) {
     body = (
-      <div style={{ padding: "60px 20px", textAlign: "center", fontSize: "15px", color: "#7c8ba3" }}>
+      <div style={{ padding: "60px 20px", textAlign: "center", fontSize: "15px", color: AG.mutedForeground }}>
         {t("serviceCashflowTab:loadingCashflow")}
       </div>
     );
   } else if (cfRef == null && !hasPdData) {
     body = (
-      <div style={{ padding: "60px 20px", textAlign: "center", fontSize: "15px", color: "#7c8ba3" }}>
+      <div style={{ padding: "60px 20px", textAlign: "center", fontSize: "15px", color: AG.mutedForeground }}>
         {t("serviceCashflowTab:noCashflowDataYet")}
         {entryGuide}
       </div>
@@ -140,7 +142,7 @@ export function ServiceCashflowTab({
   } else if (!useCf && !hasPdData && query.isError) {
     const status = (query.error as { status?: number } | null)?.status;
     body = (
-      <div style={{ padding: "60px 20px", textAlign: "center", fontSize: "15px", color: status === 404 ? "#7c8ba3" : "#f2736a" }}>
+      <div style={{ padding: "60px 20px", textAlign: "center", fontSize: "15px", color: status === 404 ? AG.mutedForeground : AG.destructive }}>
         {status === 404 ? (
           <>
             {t("serviceCashflowTab:noProjectCashflowData")}
@@ -153,7 +155,7 @@ export function ServiceCashflowTab({
     );
   } else if (!hasData) {
     body = (
-      <div style={{ padding: "60px 20px", textAlign: "center", fontSize: "15px", color: "#7c8ba3" }}>
+      <div style={{ padding: "60px 20px", textAlign: "center", fontSize: "15px", color: AG.mutedForeground }}>
         {t("serviceCashflowTab:noDataInPeriod")}
         {entryGuide}
       </div>
@@ -244,7 +246,7 @@ export function ServiceCashflowTab({
       <div style={cardStyle}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span style={{ fontSize: "15px", fontWeight: 700, color: chartTheme.titleNavy }}>{t("common:cashFlow")}</span>
-          <span style={{ fontSize: "13px", color: "#7c8ba3" }}>
+          <span style={{ fontSize: "13px", color: AG.mutedForeground }}>
             {useCf && query.data
               ? `${t("common:unit")}: ${cfConvertible ? unitLabel : query.data.unit}`
               : hasPdData

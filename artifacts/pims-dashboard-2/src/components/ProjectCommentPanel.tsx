@@ -10,6 +10,8 @@ import {
   getListProjectdetailCommentsQueryKey,
 } from "@workspace/api-client-react";
 import { useAdminAuth } from "../lib/adminAuth";
+import { tokens as aquaTokens } from "@workspace/aqua-glass";
+const AG = aquaTokens.color.light;
 
 export type ProjectCommentTab =
   | "overview"
@@ -111,8 +113,8 @@ export function ProjectCommentPanel({
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
       {showHeader && (
         <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-          <MessageSquare size={13} color="#16294a" />
-          <span style={{ fontSize: "12px", fontWeight: 700, color: "#16294a" }}>{t("common:comment")}</span>
+          <MessageSquare size={13} color={AG.foreground} />
+          <span style={{ fontSize: "12px", fontWeight: 700, color: AG.foreground }}>{t("common:comment")}</span>
         </div>
       )}
 
@@ -124,7 +126,7 @@ export function ProjectCommentPanel({
           onChange={(e) => setFilterMonth(Number(e.target.value))}
           style={{
             width: "100%",
-            border: "1px solid #dde6f1",
+            border: `1px solid ${AG.input}`,
             borderRadius: "8px",
             padding: "7px 10px",
             fontSize: "12px",
@@ -145,7 +147,7 @@ export function ProjectCommentPanel({
           display: "flex",
           alignItems: "flex-end",
           gap: "8px",
-          border: "1px solid #dde6f1",
+          border: `1px solid ${AG.input}`,
           borderRadius: "8px",
           padding: "8px 10px",
         }}
@@ -174,7 +176,7 @@ export function ProjectCommentPanel({
             border: "none",
             padding: 0,
             cursor: canSubmit ? "pointer" : "default",
-            color: canSubmit ? "#2f7cf6" : "#a9c4e8",
+            color: canSubmit ? AG.primary : "#a9c4e8",
             flexShrink: 0,
           }}
         >
@@ -182,13 +184,13 @@ export function ProjectCommentPanel({
         </button>
       </div>
 
-      {actionError && <div style={{ fontSize: "10px", color: "#f2736a" }}>{actionError}</div>}
+      {actionError && <div style={{ fontSize: "10px", color: AG.destructive }}>{actionError}</div>}
 
       {/* Comment list */}
       {listQuery.isLoading ? (
         <div style={{ fontSize: "11px", color: "#999" }}>{t("projectCommentPanel:loadingComments")}</div>
       ) : listQuery.isError ? (
-        <div style={{ fontSize: "11px", color: "#f2736a" }}>{t("projectCommentPanel:fetchFailed")}</div>
+        <div style={{ fontSize: "11px", color: AG.destructive }}>{t("projectCommentPanel:fetchFailed")}</div>
       ) : visibleComments.length === 0 ? (
         filterMonth !== 0 ? (
           <div style={{ fontSize: "11px", color: "#999" }}>{t("projectCommentPanel:noCommentsForFilter", { filter: filterLabel })}</div>
@@ -235,7 +237,7 @@ export function ProjectCommentPanel({
                       }}
                       disabled={editText.trim().length === 0 || updateMutation.isPending}
                       aria-label={t("projectCommentPanel:saveEditAriaLabel")}
-                      style={{ background: "none", border: "none", cursor: "pointer", color: "#1c7a5a", padding: 0 }}
+                      style={{ background: "none", border: "none", cursor: "pointer", color: AG.accentForeground, padding: 0 }}
                     >
                       <Check size={14} />
                     </button>
@@ -245,7 +247,7 @@ export function ProjectCommentPanel({
                         setEditText("");
                       }}
                       aria-label={t("projectCommentPanel:cancelEditAriaLabel")}
-                      style={{ background: "none", border: "none", cursor: "pointer", color: "#7c8ba3", padding: 0 }}
+                      style={{ background: "none", border: "none", cursor: "pointer", color: AG.mutedForeground, padding: 0 }}
                     >
                       <X size={14} />
                     </button>
@@ -255,7 +257,7 @@ export function ProjectCommentPanel({
                 <>
                   <p style={{ margin: "0 0 4px", whiteSpace: "pre-wrap" }}>{c.body}</p>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <span style={{ color: "#7c8ba3", fontSize: "10px" }}>
+                    <span style={{ color: AG.mutedForeground, fontSize: "10px" }}>
                       {new Date(c.createdAt).toLocaleDateString("ko-KR")}
                     </span>
                     {isAdmin && (
@@ -267,7 +269,7 @@ export function ProjectCommentPanel({
                             setActionError(null);
                           }}
                           aria-label={t("projectCommentPanel:editCommentAriaLabel")}
-                          style={{ background: "none", border: "none", cursor: "pointer", color: "#2f7cf6", padding: 0 }}
+                          style={{ background: "none", border: "none", cursor: "pointer", color: AG.primary, padding: 0 }}
                         >
                           <Pencil size={12} />
                         </button>
@@ -279,7 +281,7 @@ export function ProjectCommentPanel({
                             }
                           }}
                           aria-label={t("projectCommentPanel:deleteCommentAriaLabel")}
-                          style={{ background: "none", border: "none", cursor: "pointer", color: "#f2736a", padding: 0 }}
+                          style={{ background: "none", border: "none", cursor: "pointer", color: AG.destructive, padding: 0 }}
                         >
                           <Trash2 size={12} />
                         </button>

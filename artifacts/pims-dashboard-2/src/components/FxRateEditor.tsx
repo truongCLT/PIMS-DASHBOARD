@@ -5,6 +5,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { usePutFxRates, getGetFxRatesQueryKey } from "@workspace/api-client-react";
 import { useTranslation } from "react-i18next";
 import { useDashboardFilters } from "../lib/dashboardFilters";
+import { tokens as aquaTokens } from "@workspace/aqua-glass";
+const AG = aquaTokens.color.light;
 
 export function FxRateEditor() {
   const { t } = useTranslation(["fxRateEditor", "common"]);
@@ -74,7 +76,7 @@ export function FxRateEditor() {
   const inputStyle: React.CSSProperties = {
     width: "100%",
     boxSizing: "border-box",
-    border: "1px solid #dde6f1",
+    border: `1px solid ${AG.input}`,
     borderRadius: "5px",
     padding: "6px 8px",
     fontSize: "12px",
@@ -83,7 +85,7 @@ export function FxRateEditor() {
   };
   const labelStyle: React.CSSProperties = {
     fontSize: "11px",
-    color: "#7c8ba3",
+    color: AG.mutedForeground,
     fontWeight: 600,
     marginBottom: "3px",
   };
@@ -119,14 +121,14 @@ export function FxRateEditor() {
           maxHeight: `calc(100vh - ${popupPos.top + 8}px)`,
           overflowY: "auto",
           backgroundColor: "#fff",
-          border: "1px solid #dde6f1",
+          border: `1px solid ${AG.input}`,
           borderRadius: "8px",
           boxShadow: "0 4px 12px rgba(20,40,80,0.15)",
           zIndex: 1000,
           width: "320px",
           padding: "14px",
         }}>
-          <div style={{ fontSize: "12px", fontWeight: 700, color: "#16294a", marginBottom: "10px" }}>
+          <div style={{ fontSize: "12px", fontWeight: 700, color: AG.foreground, marginBottom: "10px" }}>
             {t("fxRateEditor:popupTitle")}
           </div>
           <div style={{ marginBottom: "8px" }}>
@@ -162,7 +164,7 @@ export function FxRateEditor() {
               padding: "8px 0",
               fontSize: "12px",
               fontWeight: 600,
-              backgroundColor: "#1e3a6e",
+              backgroundColor: AG.secondary,
               color: "#fff",
               border: "none",
               borderRadius: "6px",

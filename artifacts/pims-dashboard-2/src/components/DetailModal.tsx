@@ -1,5 +1,7 @@
 import React from "react";
 import { X } from "lucide-react";
+import { tokens as aquaTokens } from "@workspace/aqua-glass";
+const AG = aquaTokens.color.light;
 
 export function DetailModal({
   open,
@@ -49,14 +51,14 @@ export function DetailModal({
             alignItems: "center",
             justifyContent: "space-between",
             padding: "14px 18px",
-            borderBottom: "1px solid #e2e9f3",
+            borderBottom: `1px solid ${AG.border}`,
             flexShrink: 0,
           }}
         >
           <div>
-            <div style={{ fontSize: "14px", fontWeight: 700, color: "#16294a" }}>{title}</div>
+            <div style={{ fontSize: "14px", fontWeight: 700, color: AG.foreground }}>{title}</div>
             {subtitle && (
-              <div style={{ fontSize: "11px", color: "#7c8ba3", marginTop: "2px" }}>{subtitle}</div>
+              <div style={{ fontSize: "11px", color: AG.mutedForeground, marginTop: "2px" }}>{subtitle}</div>
             )}
           </div>
           <button
@@ -65,7 +67,7 @@ export function DetailModal({
               background: "none",
               border: "none",
               cursor: "pointer",
-              color: "#7c8ba3",
+              color: AG.mutedForeground,
               padding: "4px",
               display: "flex",
             }}
@@ -101,7 +103,7 @@ export function DetailDataTable<T extends object>({
     <div style={{ overflowX: "auto" }}>
       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
         <thead>
-          <tr style={{ backgroundColor: "#e7f1fd" }}>
+          <tr style={{ backgroundColor: AG.sidebarAccent }}>
             {columns.map((c) => (
               <th
                 key={c.key}
@@ -110,7 +112,7 @@ export function DetailDataTable<T extends object>({
                   textAlign: c.align ?? "right",
                   color: "#555",
                   fontWeight: 600,
-                  borderBottom: "1px solid #e2e9f3",
+                  borderBottom: `1px solid ${AG.border}`,
                   whiteSpace: "nowrap",
                 }}
               >
@@ -143,7 +145,7 @@ export function DetailDataTable<T extends object>({
                         padding: "5px 10px",
                         textAlign: c.align ?? "right",
                         color: "#333",
-                        borderBottom: "1px solid #eef2f7",
+                        borderBottom: `1px solid ${AG.background}`,
                         whiteSpace: "nowrap",
                       }}
                     >

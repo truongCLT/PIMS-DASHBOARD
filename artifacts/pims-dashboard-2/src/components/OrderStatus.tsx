@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import { useDashboardData } from "../lib/mgmtreportData";
 import { useDashboardFilters } from "../lib/dashboardFilters";
+import { tokens as aquaTokens } from "@workspace/aqua-glass";
+const AG = aquaTokens.color.light;
 
 export function OrderStatus() {
   const { t } = useTranslation(["orderStatus", "common"]);
@@ -19,12 +21,12 @@ export function OrderStatus() {
     return (
       <div style={{
         backgroundColor: "#fff",
-        border: "1px solid #e2e9f3",
+        border: `1px solid ${AG.border}`,
         borderRadius: "6px",
         padding: "10px 12px",
       }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
-          <span style={{ fontSize: "13px", fontWeight: "600", color: "#16294a" }}>{t("orderStatus:title")}</span>
+          <span style={{ fontSize: "13px", fontWeight: "600", color: AG.foreground }}>{t("orderStatus:title")}</span>
         </div>
         <div style={{
           height: "150px",
@@ -45,19 +47,19 @@ export function OrderStatus() {
   }
 
   const donutData = [
-    { name: t("common:orderReceived"), value: ordered, color: "#2f7cf6" },
-    { name: t("orderStatus:remaining"), value: remaining, color: "#e2e9f3" },
+    { name: t("common:orderReceived"), value: ordered, color: AG.primary },
+    { name: t("orderStatus:remaining"), value: remaining, color: AG.border },
   ];
 
   return (
     <div style={{
       backgroundColor: "#fff",
-      border: "1px solid #e2e9f3",
+      border: `1px solid ${AG.border}`,
       borderRadius: "6px",
       padding: "10px 12px",
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
-        <span style={{ fontSize: "13px", fontWeight: "600", color: "#16294a" }}>{t("orderStatus:title")}</span>
+        <span style={{ fontSize: "13px", fontWeight: "600", color: AG.foreground }}>{t("orderStatus:title")}</span>
       </div>
 
       {/* Donut chart with center label */}
@@ -97,22 +99,22 @@ export function OrderStatus() {
             pointerEvents: "none",
           }}
         >
-          <div style={{ fontSize: "20px", fontWeight: 700, color: "#2f7cf6" }}>{pct}%</div>
+          <div style={{ fontSize: "20px", fontWeight: 700, color: AG.primary }}>{pct}%</div>
           <div style={{ fontSize: "9px", color: "#888" }}>{t("orderStatus:vsPlan")}</div>
         </div>
       </div>
 
       {/* Stats row */}
       <div style={{ display: "flex", gap: "8px", marginBottom: "8px" }}>
-        <div style={{ flex: 1, textAlign: "center", borderRight: "1px solid #e7f1fd" }}>
+        <div style={{ flex: 1, textAlign: "center", borderRight: `1px solid ${AG.sidebarAccent}` }}>
           <div style={{ fontSize: "11px", color: "#888", marginBottom: "2px" }}>{t("common:plan")}</div>
-          <div style={{ fontSize: statFont, fontWeight: "700", color: "#16294a" }}>
+          <div style={{ fontSize: statFont, fontWeight: "700", color: AG.foreground }}>
             {planTotal.toLocaleString()}
           </div>
         </div>
-        <div style={{ flex: 1, textAlign: "center", borderRight: "1px solid #e7f1fd" }}>
+        <div style={{ flex: 1, textAlign: "center", borderRight: `1px solid ${AG.sidebarAccent}` }}>
           <div style={{ fontSize: "11px", color: "#888", marginBottom: "2px" }}>{t("common:orderReceived")}</div>
-          <div style={{ fontSize: statFont, fontWeight: "700", color: "#2f7cf6" }}>
+          <div style={{ fontSize: statFont, fontWeight: "700", color: AG.primary }}>
             {ordered.toLocaleString()}
           </div>
         </div>
@@ -128,7 +130,7 @@ export function OrderStatus() {
         width: "100%",
         textAlign: "right",
         fontSize: "12px",
-        color: "#2f7cf6",
+        color: AG.primary,
         background: "none",
         border: "none",
         cursor: "pointer",

@@ -5,10 +5,12 @@ import { ProjectCommentPanel } from "./ProjectCommentPanel";
 import { useProjectDetail, fmtPct, ratioPct } from "../lib/projectDetailData";
 import { useMoney } from "../lib/displayUnit";
 import { chartTheme } from "../lib/chartTheme";
+import { tokens as aquaTokens } from "@workspace/aqua-glass";
+const AG = aquaTokens.color.light;
 
 const cardStyle: React.CSSProperties = {
   backgroundColor: "#fff",
-  border: "1px solid #e2e9f3",
+  border: `1px solid ${AG.border}`,
   borderRadius: "8px",
   padding: "10px 12px",
 };
@@ -16,14 +18,14 @@ const cardStyle: React.CSSProperties = {
 const sectionTitle: React.CSSProperties = {
   fontSize: "16px",
   fontWeight: 700,
-  color: "#2f7cf6",
+  color: AG.primary,
 };
 
 const emptyStyle: React.CSSProperties = {
   padding: "24px 0",
   textAlign: "center",
   fontSize: "13px",
-  color: "#7c8ba3",
+  color: AG.mutedForeground,
 };
 
 function Donut({
@@ -65,7 +67,7 @@ function Donut({
           dominantBaseline="central"
           fontSize={15}
           fontWeight={700}
-          fill="#16294a"
+          fill={AG.foreground}
         >
           {centerLabel}
         </text>
@@ -333,7 +335,7 @@ export function CostingTab({
                     {cost != null || contract != null ? `${fmtMoney(cost)} / ${fmtMoney(contract)}` : "-"}
                   </div>
                   <Donut percent={pct ?? 0} color={meta.color} size={150} stroke={16} centerLabel={fmtPct(pct)} />
-                  <div style={{ fontSize: "13px", color: "#16294a", fontWeight: 600, marginTop: "4px" }}>
+                  <div style={{ fontSize: "13px", color: AG.foreground, fontWeight: 600, marginTop: "4px" }}>
                     {t(`costingTab:${EST_LABEL_KEY[meta.label]}`)}
                     {baseMonth}
                   </div>

@@ -26,10 +26,12 @@ import type {
 import { useProjectDetail, getGetProjectdetailQueryKey } from "../lib/projectDetailData";
 import { REPORT_YEAR } from "../lib/mgmtreportData";
 import { getMrCashflowRef } from "../data/mrProjectLinks";
+import { tokens as aquaTokens } from "@workspace/aqua-glass";
+const AG = aquaTokens.color.light;
 
 const cardStyle: React.CSSProperties = {
   backgroundColor: "#fff",
-  border: "1px solid #e2e9f3",
+  border: `1px solid ${AG.border}`,
   borderRadius: "6px",
   padding: "10px 12px",
 };
@@ -37,12 +39,12 @@ const cardStyle: React.CSSProperties = {
 const sectionTitle: React.CSSProperties = {
   fontSize: "16px",
   fontWeight: 700,
-  color: "#2f7cf6",
+  color: AG.primary,
 };
 
 const th: React.CSSProperties = {
-  backgroundColor: "#eef2f7",
-  color: "#16294a",
+  backgroundColor: AG.background,
+  color: AG.foreground,
   fontSize: "13px",
   fontWeight: 700,
   border: "1px solid #c8d2de",
@@ -51,7 +53,7 @@ const th: React.CSSProperties = {
 };
 
 const tdCell: React.CSSProperties = {
-  border: "1px solid #e2e9f3",
+  border: `1px solid ${AG.border}`,
   padding: "2px",
 };
 
@@ -70,7 +72,7 @@ const addBtn: React.CSSProperties = {
   alignItems: "center",
   gap: "4px",
   fontSize: "13px",
-  color: "#2f7cf6",
+  color: AG.primary,
   background: "none",
   border: "1px dashed #9dc3e6",
   borderRadius: "4px",
@@ -543,7 +545,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
 
 
   if (isLoading && !loaded) {
-    return <div style={{ ...cardStyle, textAlign: "center", color: "#7c8ba3", fontSize: "14px" }}>{t("common:loading")}</div>;
+    return <div style={{ ...cardStyle, textAlign: "center", color: AG.mutedForeground, fontSize: "14px" }}>{t("common:loading")}</div>;
   }
 
   const nowYear = new Date().getFullYear();
@@ -554,7 +556,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       <span style={sectionTitle}>{label}</span>
       <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
         {cardMsgs[key] && (
-          <span style={{ fontSize: "13px", color: cardMsgs[key] === t("common:saveSucceeded") ? "#1c7a5a" : "#e0655c" }}>
+          <span style={{ fontSize: "13px", color: cardMsgs[key] === t("common:saveSucceeded") ? AG.accentForeground : "#e0655c" }}>
             {cardMsgs[key]}
           </span>
         )}
@@ -565,7 +567,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
             padding: "4px 14px",
             fontSize: "13px",
             fontWeight: 600,
-            backgroundColor: "#1e3a6e",
+            backgroundColor: AG.secondary,
             color: "#fff",
             border: "none",
             borderRadius: "4px",
@@ -621,7 +623,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       >
         <Plus size={12} /> {t("projectDataEntryTab:addMonth")}
       </button>
-      <div style={{ fontSize: "12px", color: "#7c8ba3", marginTop: "6px" }}>
+      <div style={{ fontSize: "12px", color: AG.mutedForeground, marginTop: "6px" }}>
         {t("projectDataEntryTab:salesMonthlyNote")}
       </div>
     </div>
@@ -669,7 +671,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       >
         <Plus size={12} /> {t("projectDataEntryTab:addMonth")}
       </button>
-      <div style={{ fontSize: "12px", color: "#7c8ba3", marginTop: "6px" }}>
+      <div style={{ fontSize: "12px", color: AG.mutedForeground, marginTop: "6px" }}>
         {t("projectDataEntryTab:cogsMonthlyNote")}
       </div>
     </div>
@@ -683,7 +685,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           {statusMsg && (
-            <span style={{ fontSize: "13px", color: statusMsg === t("projectDataEntryTab:statusChangeFailed") ? "#e0655c" : "#1c7a5a", fontWeight: 600 }}>
+            <span style={{ fontSize: "13px", color: statusMsg === t("projectDataEntryTab:statusChangeFailed") ? "#e0655c" : AG.accentForeground, fontWeight: 600 }}>
               {statusMsg}
             </span>
           )}
@@ -707,7 +709,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
               style={{
                 fontSize: "13px",
                 fontWeight: 600,
-                color: "#1e3a6e",
+                color: AG.secondary,
                 backgroundColor: "#fff",
                 border: "1px solid #b9c6d8",
                 borderRadius: "6px",
@@ -724,7 +726,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
             </button>
           </div>
           {saveMsg && (
-            <span style={{ fontSize: "13px", color: saveMsg === t("common:saveSucceeded") ? "#1c7a5a" : "#e0655c", fontWeight: 600 }}>
+            <span style={{ fontSize: "13px", color: saveMsg === t("common:saveSucceeded") ? AG.accentForeground : "#e0655c", fontWeight: 600 }}>
               {saveMsg}
             </span>
           )}
@@ -735,7 +737,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
               display: "flex",
               alignItems: "center",
               gap: "6px",
-              backgroundColor: "#1e3a6e",
+              backgroundColor: AG.secondary,
               color: "#fff",
               border: "none",
               borderRadius: "6px",
@@ -810,7 +812,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
             </tr>
           </tbody>
         </table>
-        <div style={{ fontSize: "12px", color: "#7c8ba3", marginTop: "6px" }}>
+        <div style={{ fontSize: "12px", color: AG.mutedForeground, marginTop: "6px" }}>
           {t("projectDataEntryTab:overviewCostRateNote")}
         </div>
         </div>
@@ -969,7 +971,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
             </tr>
           </tbody>
         </table>
-        <div style={{ fontSize: "12px", color: "#7c8ba3", marginTop: "6px" }}>
+        <div style={{ fontSize: "12px", color: AG.mutedForeground, marginTop: "6px" }}>
           {t("projectDataEntryTab:overviewCashNote")}
         </div>
         </div>
@@ -1042,7 +1044,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
           onClick={() =>
             setCostEstimation((rows) => [...rows, { kind: "completion", contractAmount: null, costAmount: null, year: null, month: null }])
           }
-          style={{ marginTop: "6px", display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "12px", color: "#2f7cf6", border: "1px dashed #9db6d8", borderRadius: "4px", padding: "3px 8px", background: "none", cursor: "pointer" }}
+          style={{ marginTop: "6px", display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "12px", color: AG.primary, border: "1px dashed #9db6d8", borderRadius: "4px", padding: "3px 8px", background: "none", cursor: "pointer" }}
         >
           <Plus size={12} /> {t("projectDataEntryTab:addCompletionForecast")}
         </button>
@@ -1090,7 +1092,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
 
         {/* 월별 계획/실적 */}
         <div style={{ marginTop: "10px" }}>
-          <div style={{ fontSize: "12px", fontWeight: 600, color: "#2f7cf6", marginBottom: "4px" }}>
+          <div style={{ fontSize: "12px", fontWeight: 600, color: AG.primary, marginBottom: "4px" }}>
             {t("projectDataEntryTab:monthlyPlanActualYear", { year: REPORT_YEAR })}
           </div>
           <div style={{ fontSize: "11px", color: "#777", marginBottom: "6px" }}>
@@ -1108,7 +1110,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
             const tblKey = `cbm-${item}`;
             return (
               <div key={item} style={{ marginBottom: "10px" }}>
-                <div style={{ fontSize: "13px", fontWeight: 700, color: "#16294a", marginBottom: "4px" }}>
+                <div style={{ fontSize: "13px", fontWeight: 700, color: AG.foreground, marginBottom: "4px" }}>
                   {item === "외주성" ? t("projectDataEntryTab:outsourcingItem") : item}
                 </div>
                 <div data-tbl={tblKey} onKeyDown={makeArrowNav(tblKey)}>
@@ -1245,11 +1247,11 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
         >
           <Plus size={12} /> {t("projectDataEntryTab:addMonth")}
         </button>
-        <div style={{ fontSize: "12px", color: "#7c8ba3", marginTop: "6px" }}>
+        <div style={{ fontSize: "12px", color: AG.mutedForeground, marginTop: "6px" }}>
           {t("projectDataEntryTab:cashflowNote")}
         </div>
         {cfPrefilled && (
-          <div style={{ fontSize: "12px", color: "#2f7cf6", marginTop: "4px", fontWeight: 600 }}>
+          <div style={{ fontSize: "12px", color: AG.primary, marginTop: "4px", fontWeight: 600 }}>
             {t("projectDataEntryTab:cashflowPrefilledNote")}
           </div>
         )}

@@ -2,14 +2,16 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { useProjectDetail, fmtPct, ratioPct } from "../lib/projectDetailData";
 import { useMoney } from "../lib/displayUnit";
+import { tokens as aquaTokens } from "@workspace/aqua-glass";
+const AG = aquaTokens.color.light;
 
 const thStyle: React.CSSProperties = {
-  backgroundColor: "#eef2f7",
-  color: "#16294a",
+  backgroundColor: AG.background,
+  color: AG.foreground,
   fontSize: "13px",
   fontWeight: 700,
   padding: "10px 8px",
-  border: "1px solid #e2e9f3",
+  border: `1px solid ${AG.border}`,
   textAlign: "center",
   verticalAlign: "middle",
   whiteSpace: "pre-line",
@@ -19,7 +21,7 @@ const tdStyle: React.CSSProperties = {
   fontSize: "13px",
   color: "#222",
   padding: "10px 8px",
-  border: "1px solid #e2e9f3",
+  border: `1px solid ${AG.border}`,
   verticalAlign: "top",
   backgroundColor: "#fff",
 };
@@ -44,7 +46,7 @@ export function ServiceOutsourcingTab({ projectName }: { projectName: string }) 
     <div
       style={{
         backgroundColor: "#fff",
-        border: "1px solid #e2e9f3",
+        border: `1px solid ${AG.border}`,
         borderRadius: "8px",
         padding: "12px",
       }}
@@ -71,13 +73,13 @@ export function ServiceOutsourcingTab({ projectName }: { projectName: string }) 
         <tbody>
           {isLoading ? (
             <tr>
-              <td style={{ ...tdCenter, color: "#7c8ba3" }} colSpan={11}>
+              <td style={{ ...tdCenter, color: AG.mutedForeground }} colSpan={11}>
                 {t("common:loading")}
               </td>
             </tr>
           ) : rows.length === 0 ? (
             <tr>
-              <td style={{ ...tdCenter, color: "#7c8ba3", padding: "24px 10px" }} colSpan={11}>
+              <td style={{ ...tdCenter, color: AG.mutedForeground, padding: "24px 10px" }} colSpan={11}>
                 {t("serviceOutsourcingTab:noData")}
               </td>
             </tr>

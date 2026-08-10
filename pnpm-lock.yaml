@@ -1684,9 +1684,15 @@ importers:
       '@vitejs/plugin-react':
         specifier: 'catalog:'
         version: 5.2.0(vite@7.3.6(@types/node@25.9.4)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.23.0)(yaml@2.9.0))
+      '@workspace/analytics-clean':
+        specifier: workspace:*
+        version: link:../analytics-clean
       '@workspace/api-client-react':
         specifier: workspace:*
         version: link:../../lib/api-client-react
+      '@workspace/aqua-glass':
+        specifier: workspace:*
+        version: link:../aqua-glass
       class-variance-authority:
         specifier: 'catalog:'
         version: 0.7.1

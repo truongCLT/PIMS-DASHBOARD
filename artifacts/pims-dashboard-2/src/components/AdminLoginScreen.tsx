@@ -3,6 +3,8 @@ import { Lock } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAdminLogin } from "@workspace/api-client-react";
 import { useAdminAuth } from "../lib/adminAuth";
+import { tokens as aquaTokens } from "@workspace/aqua-glass";
+const AG = aquaTokens.color.light;
 
 export function AdminLoginScreen({ onDone }: { onDone: () => void }) {
   const { t } = useTranslation(["adminLoginScreen", "common"]);
@@ -30,10 +32,10 @@ export function AdminLoginScreen({ onDone }: { onDone: () => void }) {
   };
 
   return (
-    <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#eef2f7" }}>
+    <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: AG.background }}>
       <div style={{
         backgroundColor: "#fff",
-        border: "1px solid #e2e9f3",
+        border: `1px solid ${AG.border}`,
         borderRadius: "10px",
         padding: "32px 36px",
         width: "340px",
@@ -50,13 +52,13 @@ export function AdminLoginScreen({ onDone }: { onDone: () => void }) {
           justifyContent: "center",
           margin: "0 auto 12px",
         }}>
-          <Lock size={20} color="#1e3a6e" />
+          <Lock size={20} color={AG.secondary} />
         </div>
-        <div style={{ fontSize: "16px", fontWeight: 700, color: "#16294a", marginBottom: "4px" }}>{t("adminLoginScreen:adminMode")}</div>
+        <div style={{ fontSize: "16px", fontWeight: 700, color: AG.foreground, marginBottom: "4px" }}>{t("adminLoginScreen:adminMode")}</div>
 
         {isAdmin ? (
           <>
-            <div style={{ fontSize: "12px", color: "#1c7a5a", margin: "10px 0 16px" }}>
+            <div style={{ fontSize: "12px", color: AG.accentForeground, margin: "10px 0 16px" }}>
               {t("adminLoginScreen:alreadyActive")}
             </div>
             <div style={{ display: "flex", gap: "8px" }}>
@@ -64,7 +66,7 @@ export function AdminLoginScreen({ onDone }: { onDone: () => void }) {
                 onClick={onDone}
                 style={{
                   flex: 1, padding: "9px 0", fontSize: "12px", fontWeight: 600,
-                  backgroundColor: "#1e3a6e", color: "#fff", border: "none", borderRadius: "6px", cursor: "pointer",
+                  backgroundColor: AG.secondary, color: "#fff", border: "none", borderRadius: "6px", cursor: "pointer",
                 }}
               >
                 {t("adminLoginScreen:backToDashboard")}
@@ -82,7 +84,7 @@ export function AdminLoginScreen({ onDone }: { onDone: () => void }) {
           </>
         ) : (
           <form onSubmit={submit}>
-            <div style={{ fontSize: "12px", color: "#7c8ba3", marginBottom: "16px" }}>
+            <div style={{ fontSize: "12px", color: AG.mutedForeground, marginBottom: "16px" }}>
               {t("adminLoginScreen:enterPassword")}
             </div>
             <input
@@ -94,7 +96,7 @@ export function AdminLoginScreen({ onDone }: { onDone: () => void }) {
               style={{
                 width: "100%",
                 boxSizing: "border-box",
-                border: error ? "1px solid #e0655c" : "1px solid #dde6f1",
+                border: error ? "1px solid #e0655c" : `1px solid ${AG.input}`,
                 borderRadius: "6px",
                 padding: "9px 12px",
                 fontSize: "13px",
@@ -113,7 +115,7 @@ export function AdminLoginScreen({ onDone }: { onDone: () => void }) {
                 padding: "10px 0",
                 fontSize: "13px",
                 fontWeight: 600,
-                backgroundColor: "#1e3a6e",
+                backgroundColor: AG.secondary,
                 color: "#fff",
                 border: "none",
                 borderRadius: "6px",
@@ -132,7 +134,7 @@ export function AdminLoginScreen({ onDone }: { onDone: () => void }) {
                 padding: "8px 0",
                 fontSize: "12px",
                 backgroundColor: "transparent",
-                color: "#7c8ba3",
+                color: AG.mutedForeground,
                 border: "none",
                 cursor: "pointer",
               }}

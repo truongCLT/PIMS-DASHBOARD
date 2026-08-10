@@ -16,12 +16,14 @@ import { useProjectDetail, getGetProjectdetailQueryKey } from "../lib/projectDet
 import { downloadProjectDetailTemplate, parseProjectDetailWorkbook, ExcelParseError } from "../lib/projectDetailExcel";
 import { DisplayUnitProvider, formatMoney, moneyUnitLabel } from "../lib/displayUnit";
 import { useAdminAuth } from "../lib/adminAuth";
+import { tokens as aquaTokens } from "@workspace/aqua-glass";
+const AG = aquaTokens.color.light;
 export { Donut, MiniBar } from "./charts";
 
 
 const cardStyle: React.CSSProperties = {
   backgroundColor: "#fff",
-  border: "1px solid #e2e9f3",
+  border: `1px solid ${AG.border}`,
   borderRadius: "8px",
   padding: "10px 12px",
 };
@@ -29,7 +31,7 @@ const cardStyle: React.CSSProperties = {
 const sectionTitle: React.CSSProperties = {
   fontSize: "16px",
   fontWeight: 700,
-  color: "#2f7cf6",
+  color: AG.primary,
   marginBottom: "6px",
 };
 
@@ -147,7 +149,7 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
 
   return (
     <DisplayUnitProvider currency={currency} unitOn={unitOn}>
-    <div style={{ flex: 1, overflowY: "auto", backgroundColor: "#eef2f7" }}>
+    <div style={{ flex: 1, overflowY: "auto", backgroundColor: AG.background }}>
       {/* Filter row */}
       <div
         style={{
@@ -156,13 +158,13 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
           gap: "18px",
           flexWrap: "wrap",
           backgroundColor: "#fff",
-          borderBottom: "1px solid #e2e9f3",
+          borderBottom: `1px solid ${AG.border}`,
           padding: "8px 20px",
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <span style={{ fontSize: "12px", color: "#333", fontWeight: 600 }}>{t("common:exchangeRate")} :</span>
-          <div style={{ display: "flex", border: "1px solid #e2e9f3", borderRadius: "6px", overflow: "hidden" }}>
+          <div style={{ display: "flex", border: `1px solid ${AG.border}`, borderRadius: "6px", overflow: "hidden" }}>
             {["USD", "KRW", "VND"].map((c) => (
               <button
                 key={c}
@@ -174,8 +176,8 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
                   border: "none",
                   cursor: "pointer",
                   backgroundColor: currency === c ? "#fff" : "#f2f5f9",
-                  color: currency === c ? "#2f7cf6" : "#666",
-                  borderRight: c !== "VND" ? "1px solid #e2e9f3" : "none",
+                  color: currency === c ? AG.primary : "#666",
+                  borderRight: c !== "VND" ? `1px solid ${AG.border}` : "none",
                 }}
               >
                 {c}
@@ -195,7 +197,7 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
             style={{
               width: "36px",
               height: "20px",
-              backgroundColor: unitOn ? "#2f7cf6" : "#b0b8c4",
+              backgroundColor: unitOn ? AG.primary : "#b0b8c4",
               borderRadius: "10px",
               position: "relative",
               cursor: "pointer",
@@ -223,18 +225,18 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
       {/* Project info bar — always visible */}
       <div style={{ ...cardStyle, margin: "8px 10px 0", display: "flex", gap: "10px", alignItems: "stretch" }}>
         <div style={{ flex: 1 }}>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 0", fontSize: "12px", color: "#16294a" }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 0", fontSize: "12px", color: AG.foreground }}>
             <span style={{ fontWeight: 700, paddingRight: "14px" }}>{t("common:project")} : {projectName}</span>
-            <span style={{ borderLeft: "1px solid #e2e9f3", padding: "0 14px" }}>{t("projectDashboard:client")} : {ov.client ?? "-"}</span>
-            <span style={{ borderLeft: "1px solid #e2e9f3", padding: "0 14px" }}>
+            <span style={{ borderLeft: `1px solid ${AG.border}`, padding: "0 14px" }}>{t("projectDashboard:client")} : {ov.client ?? "-"}</span>
+            <span style={{ borderLeft: `1px solid ${AG.border}`, padding: "0 14px" }}>
               {t("projectDashboard:constructionPeriod")} : {periodLabel}
             </span>
           </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 0", fontSize: "12px", color: "#16294a", marginTop: "8px" }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 0", fontSize: "12px", color: AG.foreground, marginTop: "8px" }}>
             <span style={{ fontWeight: 700, paddingRight: "14px" }}>
               {t("common:contractAmount")} : {formatMoney(ov.contractAmount, currency, unitOn)} {moneyUnitLabel(currency, unitOn)}
             </span>
-            <span style={{ borderLeft: "1px solid #e2e9f3", padding: "0 14px" }}>
+            <span style={{ borderLeft: `1px solid ${AG.border}`, padding: "0 14px" }}>
               {t("projectDashboard:constructionScale")} : {ov.scale ?? "-"}
             </span>
           </div>
@@ -247,8 +249,8 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
           display: "flex",
           gap: "4px",
           padding: "8px 10px 0",
-          backgroundColor: "#eef2f7",
-          borderBottom: "2px solid #e2e9f3",
+          backgroundColor: AG.background,
+          borderBottom: `2px solid ${AG.border}`,
           marginTop: "8px",
         }}
       >
@@ -262,11 +264,11 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
                 padding: "7px 20px",
                 fontSize: "12px",
                 fontWeight: active ? 700 : 500,
-                color: active ? "#16294a" : "#7c8ba3",
+                color: active ? AG.foreground : AG.mutedForeground,
                 backgroundColor: active ? "#fff" : "transparent",
                 border: "1px solid",
-                borderColor: active ? "#e2e9f3" : "transparent",
-                borderBottom: active ? "2px solid #2f7cf6" : "none",
+                borderColor: active ? AG.border : "transparent",
+                borderBottom: active ? `2px solid ${AG.primary}` : "none",
                 borderRadius: "4px 4px 0 0",
                 cursor: "pointer",
                 marginBottom: active ? "-2px" : "0",
@@ -284,7 +286,7 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
                 style={{
                   fontSize: "11px",
                   fontWeight: 600,
-                  color: excelStatus === "success" ? "#1c7a5a" : "#e0655c",
+                  color: excelStatus === "success" ? AG.accentForeground : "#e0655c",
                   maxWidth: "360px",
                   whiteSpace: "nowrap",
                   overflow: "hidden",
@@ -306,9 +308,9 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
                 padding: "5px 12px",
                 fontSize: "11px",
                 fontWeight: 600,
-                color: "#16294a",
+                color: AG.foreground,
                 backgroundColor: "#fff",
-                border: "1px solid #e2e9f3",
+                border: `1px solid ${AG.border}`,
                 borderRadius: "4px",
                 cursor: excelBusy ? "wait" : "pointer",
                 opacity: !detail || excelBusy ? 0.6 : 1,
@@ -328,7 +330,7 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
                 fontSize: "11px",
                 fontWeight: 600,
                 color: "#fff",
-                backgroundColor: "#2f7cf6",
+                backgroundColor: AG.primary,
                 border: "none",
                 borderRadius: "4px",
                 cursor: excelBusy ? "wait" : "pointer",

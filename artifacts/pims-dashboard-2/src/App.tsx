@@ -8,6 +8,8 @@ import { AdminLoginScreen } from "./components/AdminLoginScreen";
 import { AdminAuthProvider } from "./lib/adminAuth";
 import { useProjectBusinessType } from "./lib/mgmtreportData";
 import { ThemeProvider, THEMES, useTheme } from "./lib/theme";
+import { tokens as aquaTokens } from "@workspace/aqua-glass";
+const AG = aquaTokens.color.light;
 
 /* ── Floating theme switcher ─────────────────────────────────────── */
 function ThemeSwitcher() {
@@ -30,7 +32,7 @@ function ThemeSwitcher() {
       {open && (
         <div style={{
           backgroundColor: "#ffffff",
-          border: "1px solid #e2e9f3",
+          border: `1px solid ${AG.border}`,
           borderRadius: "12px",
           padding: "10px 12px",
           boxShadow: "0 8px 24px rgba(0,0,0,0.16)",

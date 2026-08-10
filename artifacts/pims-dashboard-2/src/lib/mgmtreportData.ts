@@ -14,6 +14,8 @@ import {
   roundSmart,
   type PeriodMode,
 } from "./dashboardFilters";
+import { tokens as aquaTokens } from "@workspace/aqua-glass";
+const AG = aquaTokens.color.light;
 
 export const REPORT_YEAR = new Date().getFullYear();
 
@@ -271,7 +273,7 @@ export function deriveDashboardData(
   }
 
   const kpiColor = (actual: number, plan: number) =>
-    plan && actual / plan >= 1 ? "#35c7c0" : "#f2736a";
+    plan && actual / plan >= 1 ? AG.chart2 : AG.destructive;
 
   const kpiOf = (title: string, line: Line | null, monthly: boolean): KpiItem => {
     if (emptyRange || !line || projectScope?.empty) {
