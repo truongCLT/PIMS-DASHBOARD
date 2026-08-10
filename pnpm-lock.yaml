@@ -164,6 +164,9 @@ importers:
         specifier: ^18.0.8
         version: 18.0.8
     devDependencies:
+      '@rollup/rollup-win32-x64-msvc':
+        specifier: ^4.62.4
+        version: 4.62.4
       concurrently:
         specifier: ^10.0.4
         version: 10.0.4
@@ -173,6 +176,9 @@ importers:
       dotenv-cli:
         specifier: ^11.0.0
         version: 11.0.0
+      lightningcss-win32-x64-msvc:
+        specifier: ^1.33.0
+        version: 1.33.0
       prettier:
         specifier: ^3.9.4
         version: 3.9.4
@@ -2943,6 +2949,11 @@ packages:
     os: [linux]
     libc: [glibc]
 
+  '@rollup/rollup-win32-x64-msvc@4.62.4':
+    resolution: {integrity: sha512-zD6NdeWEByGE9QF9vCrlJ5YQB4oq9q91kPZS37Jwj5hOkvR1lTBSpsKhKDw4IJtbQ35LsTS1HD9DZYGKIshU1Q==}
+    cpu: [x64]
+    os: [win32]
+
   '@scalar/helpers@0.9.0':
     resolution: {integrity: sha512-M34CLRCttqC1bXthI/QSzQj0s5C6nrU2PFWf/vOT3RpycbiGDGQbqR+5RfFzpOIQvRqbHfNdcRbeiZBw+vCbkQ==}
     engines: {node: '>=22'}
@@ -4222,6 +4233,12 @@ packages:
     cpu: [x64]
     os: [linux]
     libc: [glibc]
+
+  lightningcss-win32-x64-msvc@1.33.0:
+    resolution: {integrity: sha512-OlEICDx/Xl0FqSp4bry8zFnCvGpig3Gl4gCquvYwHuqJKEC1+n9NgDniFvqHGmMv1ZkqDJrDqKKSykTDX+ehuA==}
+    engines: {node: '>= 12.0.0'}
+    cpu: [x64]
+    os: [win32]
 
   lightningcss@1.32.0:
     resolution: {integrity: sha512-NXYBzinNrblfraPGyrbPoD19C1h9lfI/1mzgWYvXUTe414Gz/X1FD2XBZSZM7rRTrMA8JL3OtAaGifrIKhQ5yQ==}
@@ -6336,6 +6353,8 @@ snapshots:
   '@rollup/rollup-linux-x64-gnu@4.62.2':
     optional: true
 
+  '@rollup/rollup-win32-x64-msvc@4.62.4': {}
+
   '@scalar/helpers@0.9.0': {}
 
   '@scalar/json-magic@0.12.17':
@@ -7615,6 +7634,8 @@ snapshots:
 
   lightningcss-linux-x64-gnu@1.32.0:
     optional: true
+
+  lightningcss-win32-x64-msvc@1.33.0: {}
 
   lightningcss@1.32.0:
     dependencies:

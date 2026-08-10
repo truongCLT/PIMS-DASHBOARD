@@ -42,7 +42,7 @@ const TAB_LABEL_KEYS: Record<string, string> = {
   "Data entry": "serviceProjectDashboard:dataEntryTab",
 };
 
-const YEARS = Array.from({ length: 21 }, (_, i) => 2015 + i); // 2015 ~ 2035
+const YEARS = Array.from({ length: 47 }, (_, i) => 1990 + i); // 1990 ~ 2036
 const MONTHS = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"];
 
 const selectStyle: React.CSSProperties = {

@@ -103,7 +103,16 @@ router.get("/cashflow/monthly", async (req, res) => {
       .orderBy(asc(cfProjectsTable.sortOrder))
       .limit(1);
     if (!project) {
-      res.status(404).json({ error: "해당 프로젝트의 자금수지 데이터가 없습니다." });
+      const requested: string[] = [];
+      let y = fromYear;
+      let m = fromMonth;
+      for (let i = 0; i < months; i++) {
+        requested.push(`${y}-${String(m).padStart(2, "0")}`);
+        m++;
+        if (m > 12) { m = 1; y++; }
+      }
+      const points = requested.map((key) => ({ month: key, cashIn: 0, cashOut: 0, equivalent: 0 }));
+      res.json(GetCashflowMonthlyResponse.parse({ projectName, unit: "천 USD", points }));
       return;
     }
 
@@ -222,7 +231,16 @@ router.get("/cashflow/aggregate", async (req, res) => {
       .orderBy(asc(cfMonthlyAmountsTable.month));
 
     if (amounts.length === 0) {
-      res.status(404).json({ error: "해당 범위의 자금수지 데이터가 없습니다." });
+      const requested: string[] = [];
+      let y = fromYear;
+      let m = fromMonth;
+      for (let i = 0; i < months; i++) {
+        requested.push(`${y}-${String(m).padStart(2, "0")}`);
+        m++;
+        if (m > 12) { m = 1; y++; }
+      }
+      const points = requested.map((key) => ({ month: key, cashIn: 0, cashOut: 0, equivalent: 0 }));
+      res.json(GetCashflowAggregateResponse.parse({ unit: "천 USD", points }));
       return;
     }
 

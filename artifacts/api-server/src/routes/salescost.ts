@@ -82,7 +82,17 @@ router.get("/salescost/summary", async (req, res) => {
       .where(eq(scMonthlyTable.year, year));
 
     if (rows.length === 0) {
-      res.status(404).json({ error: "해당 연도의 매출/원가 데이터가 없습니다." });
+      const points = Array.from({ length: 12 }, (_, i) => ({
+        month: i + 1,
+        revenue: 0,
+        cogs: 0,
+        grossProfit: 0,
+        sga: 0,
+        opProfit: 0,
+        grossProfitMargin: 0,
+        opMargin: 0,
+      }));
+      res.json(GetSalescostSummaryResponse.parse({ year, unit: "천 USD", points }));
       return;
     }
 
@@ -166,7 +176,7 @@ router.get("/salescost/sites", async (req, res) => {
     }
 
     if (!any) {
-      res.status(404).json({ error: "해당 조건의 매출/원가 데이터가 없습니다." });
+      res.json(ListSalescostSitesResponse.parse({ year, metric, unit: "천 USD", sites: [] }));
       return;
     }
 
