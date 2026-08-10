@@ -137,12 +137,12 @@ export function ProfitChart() {
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
-          <span style={{ fontSize: "12px", fontWeight: "600", color: chartTheme.titleNavy }}>{t("profitChart:profitLossStatus")}</span>
-          {derived && <span style={{ fontSize: "10px", color: "#7c8ba3" }}>{t("common:unit")}: {derived.unitLabel}</span>}
+          <span style={{ fontSize: "13px", fontWeight: "600", color: chartTheme.titleNavy }}>{t("profitChart:profitLossStatus")}</span>
+          {derived && <span style={{ fontSize: "11px", color: "#7c8ba3" }}>{t("common:unit")}: {derived.unitLabel}</span>}
         </div>
         <button
           onClick={() => setDetailOpen(true)}
-          style={{ fontSize: "11px", color: "#2f7cf6", background: "none", border: "none", cursor: "pointer" }}
+          style={{ fontSize: "12px", color: "#2f7cf6", background: "none", border: "none", cursor: "pointer" }}
         >
           {t("profitChart:viewDetails")}
         </button>
@@ -158,10 +158,10 @@ export function ProfitChart() {
           ].map((it) => (
             <div key={it.l} style={{ display: "flex", alignItems: "center", gap: "4px" }}>
               <div style={{ width: "10px", height: "10px", backgroundColor: it.c, borderRadius: "50%" }} />
-              <span style={{ fontSize: "11px", color: "#333", fontWeight: 600 }}>{it.l}</span>
+              <span style={{ fontSize: "12px", color: "#555" }}>{it.l}</span>
             </div>
           ))}
-          <span style={{ fontSize: "11px", color: "#5a6c8e", fontWeight: 600 }}>{t("profitChart:barTotalGross")}</span>
+          <span style={{ fontSize: "12px", color: "#5a6c8e", fontWeight: 600 }}>{t("profitChart:barTotalGross")}</span>
         </div>
       )}
 
