@@ -28,5 +28,12 @@
   "excelDownloadButton": "Tải Excel",
   "excelUploadButton": "Tải lên Excel",
   "templateDownloadTitle": "Tải mẫu Excel chứa dữ liệu hiện tại, chỉnh sửa rồi tải lên.",
-  "templateUploadTitle": "Nhập dữ liệu vào mẫu đã tải xuống và tải lên để thay thế toàn bộ dữ liệu."
+  "templateUploadTitle": "Nhập dữ liệu vào mẫu đã tải xuống và tải lên để thay thế toàn bộ dữ liệu.",
+  "annualShortLabel": "Năm",
+  "annualTargetLabel": "Mục tiêu",
+  "directCostLabel": "Chi phí trực tiếp",
+  "indirectCostLabel": "Chi phí gián tiếp",
+  "totalRowLabel": "Tổng cộng",
+  "revenueProgressLabel": "Tiến độ doanh thu",
+  "collectionRateLabel": "Tỷ lệ thu tiền"
 }

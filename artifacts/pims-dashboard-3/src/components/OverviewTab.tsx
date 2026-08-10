@@ -15,21 +15,65 @@ import { useMoney } from "../lib/displayUnit";
 import { getMrCashflowRef, useMrProject } from "../data/mrProjectLinks";
 import { REPORT_YEAR } from "../lib/mgmtreportData";
 import { chartTheme } from "../lib/chartTheme";
+import { cardStyle, sectionTitle, ACHIEVE_GREEN, ACHIEVE_RED, rateColor } from "../lib/uiTokens";
 
 const ROW_COLUMNS = "1fr 1.6fr 1.6fr";
 
-const cardStyle: React.CSSProperties = {
-  backgroundColor: "#fff",
-  border: "1px solid #e2e9f3",
-  borderRadius: "8px",
-  padding: "10px 12px",
-};
+/** 달성률 색 규칙: 100% 이상 녹색, 미만 빨간색 (디자인 의견서) — 공통 토큰 재수출 */
+export { ACHIEVE_GREEN, ACHIEVE_RED, rateColor };
 
-const sectionTitle: React.CSSProperties = {
-  fontSize: "16px",
-  fontWeight: 700,
-  color: "#2f7cf6",
-  marginBottom: "6px",
+/** 카드 공통 헤더 — 제목 + 단위 표기 + 우측 상단 핵심 결과값 배지 */
+export function CardHeader({
+  title,
+  unit,
+  badgeLabel,
+  badgeValue,
+  badgeColor,
+  right,
+}: {
+  title: string;
+  unit?: string;
+  badgeLabel?: string;
+  badgeValue?: string;
+  badgeColor?: string;
+  right?: React.ReactNode;
+}) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "4px", gap: "8px" }}>
+      <span style={{ display: "flex", alignItems: "baseline", gap: "6px", minWidth: 0 }}>
+        <span style={{ ...sectionTitle, marginBottom: 0 }}>{title}</span>
+        {unit && <span style={{ fontSize: "11px", color: "#7c8ba3", whiteSpace: "nowrap" }}>{unit}</span>}
+      </span>
+      <span style={{ display: "flex", alignItems: "center", gap: "6px", flexShrink: 0 }}>
+        {badgeValue != null && (
+          <span
+            style={{
+              fontSize: "11px",
+              fontWeight: 700,
+              color: badgeColor ?? "#16294a",
+              backgroundColor: `${badgeColor ?? "#16294a"}14`,
+              border: `1px solid ${badgeColor ?? "#16294a"}33`,
+              borderRadius: "10px",
+              padding: "2px 8px",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {badgeLabel ? `${badgeLabel} ` : ""}{badgeValue}
+          </span>
+        )}
+        {right}
+      </span>
+    </div>
+  );
+}
+
+const monthSelectStyle: React.CSSProperties = {
+  fontSize: "12px",
+  border: "1px solid #e2e9f3",
+  borderRadius: "4px",
+  padding: "2px 4px",
+  color: "#333",
+  cursor: "pointer",
 };
 
 const emptyNote: React.CSSProperties = {
@@ -85,7 +129,7 @@ function timeElapsedPct(startDate: string | null, endDate: string | null): numbe
 export function OverviewTab({ projectName }: { projectName: string }) {
   const { t } = useTranslation(["overviewTab", "common"]);
   const { detail } = useProjectDetail(projectName);
-  const { fmtMoney } = useMoney();
+  const { fmtMoney, unitLabel } = useMoney();
 
   // ---- 매출 (salescost — mr_projects.site_code 로 자동 연결, 없으면 mr_monthly 폴백) ----
   const mr = useMrProject(projectName, REPORT_YEAR);
@@ -162,10 +206,11 @@ export function OverviewTab({ projectName }: { projectName: string }) {
   // ---- 공정 (progress) ----
   const progress = detail?.progress ?? [];
   const sorted = [...progress].sort((a, b) => a.year * 12 + a.month - (b.year * 12 + b.month));
-  let latest: (typeof sorted)[number] | null = null;
-  for (const p of sorted) {
-    if (p.planCumPct != null || p.actualCumPct != null) latest = p;
-  }
+  const progRows = sorted.filter((p) => p.planCumPct != null || p.actualCumPct != null || p.planPct != null || p.actualPct != null);
+  const [progKey, setProgKey] = useState<string>(""); // "" = 최신월
+  const latest = progKey
+    ? progRows.find((p) => `${p.year}-${p.month}` === progKey) ?? null
+    : (progRows.length > 0 ? progRows[progRows.length - 1] : null);
   const planCum = latest?.planCumPct ?? null;
   const actualCum = latest?.actualCumPct ?? null;
   const monthlyPlan = latest?.planPct ?? null;
@@ -263,23 +308,29 @@ export function OverviewTab({ projectName }: { projectName: string }) {
       <div style={{ display: "grid", gridTemplateColumns: ROW_COLUMNS, gap: "8px" }}>
         {/* Progress */}
         <div style={cardStyle}>
-          <div style={{ display: "flex", justifyContent: "space-between" }}>
-            <span style={sectionTitle}>{t("common:process")}</span>
-            <span
-              style={{
-                fontSize: "11px",
-                backgroundColor: chartTheme.planBlue,
-                color: "#fff",
-                borderRadius: "3px",
-                padding: "1px 5px",
-                height: "fit-content",
-              }}
-            >
-              {monthlyActual != null
-                ? `${t("overviewTab:constructionShort")} ${monthlyActual >= 0 ? "+" : ""}${monthlyActual.toFixed(1)}%`
-                : `${t("overviewTab:constructionShort")} -`}
-            </span>
-          </div>
+          <CardHeader
+            title={t("common:process")}
+            unit="%"
+            badgeLabel={t("common:achievementRate")}
+            badgeValue={fmtPct(achieveRate)}
+            badgeColor={rateColor(achieveRate)}
+            right={
+              progRows.length > 0 ? (
+                <select
+                  value={progKey}
+                  onChange={(e) => setProgKey(e.target.value)}
+                  style={monthSelectStyle}
+                >
+                  <option value="">{t("overviewTab:latestMonth")}</option>
+                  {progRows.map((p) => (
+                    <option key={`${p.year}-${p.month}`} value={`${p.year}-${p.month}`}>
+                      {`'${String(p.year).slice(2)}.${String(p.month).padStart(2, "0")}`}
+                    </option>
+                  ))}
+                </select>
+              ) : undefined
+            }
+          />
           {latest == null ? (
             <div style={emptyNote}>{t("overviewTab:noProcessData")}</div>
           ) : (
@@ -302,7 +353,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                   const gmax = Math.max(...bars.map((b) => b.value ?? 0), 1);
                   return (
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                      <div style={{ fontSize: "14px", color: chartTheme.planBlue, fontWeight: 800, marginBottom: "6px" }}>
+                      <div style={{ fontSize: "14px", color: rateColor(monthlyAchieveRate), fontWeight: 800, marginBottom: "6px" }}>
                         {t("common:achievementRate")} {fmtPct(monthlyAchieveRate)}
                       </div>
                       <div style={{ display: "flex", alignItems: "flex-end", gap: "10px", height: `${MAX_H + 20}px` }}>
@@ -362,7 +413,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                           strokeLinecap="round"
                           transform={`rotate(-90 ${cx} ${cy})`}
                         />
-                        <text x={cx} y={cy + 2} textAnchor="middle" fontSize={30} fontWeight={800} fill={chartTheme.planBlue}>
+                        <text x={cx} y={cy + 2} textAnchor="middle" fontSize={30} fontWeight={800} fill={rateColor(achieveRate)}>
                           {fmtPct(actualCum)}
                         </text>
                         <text x={cx} y={cy + 22} textAnchor="middle" fontSize={13} fill="#555">
@@ -376,24 +427,38 @@ export function OverviewTab({ projectName }: { projectName: string }) {
               </div>
             </>
           )}
-          <div
-            style={{
-              textAlign: "center",
-              fontSize: "12px",
-              color: "#333",
-              fontWeight: 700,
-              marginTop: "8px",
-              borderTop: "1px solid #eef2f7",
-              paddingTop: "6px",
-            }}
-          >
-            {t("overviewTab:elapsedRate", { value: fmtPct(elapsed) })}
+          {/* 공기율 — 공정율과 유사한 그래프 표현 (수평 진행 바) */}
+          <div style={{ marginTop: "8px", borderTop: "1px solid #eef2f7", paddingTop: "8px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <span style={{ fontSize: "12px", color: "#333", fontWeight: 700, whiteSpace: "nowrap" }}>
+                {t("overviewTab:elapsedLabel")}
+              </span>
+              <div style={{ flex: 1, height: "10px", backgroundColor: "#e2e7ee", borderRadius: "5px", overflow: "hidden" }}>
+                <div
+                  style={{
+                    width: `${Math.max(0, Math.min(elapsed ?? 0, 100))}%`,
+                    height: "100%",
+                    backgroundColor: chartTheme.planBlue,
+                    borderRadius: "5px",
+                  }}
+                />
+              </div>
+              <span style={{ fontSize: "13px", fontWeight: 800, color: chartTheme.planBlue, whiteSpace: "nowrap" }}>
+                {fmtPct(elapsed)}
+              </span>
+            </div>
           </div>
         </div>
 
         {/* Revenue */}
         <div style={cardStyle}>
-          <span style={sectionTitle}>{t("common:revenue")}</span>
+          <CardHeader
+            title={t("common:revenue")}
+            unit={unitLabel}
+            badgeLabel={t("overviewTab:annualShort")}
+            badgeValue={fmtPct(ratioPct(cumRev, annualPlanRev))}
+            badgeColor={rateColor(ratioPct(cumRev, annualPlanRev))}
+          />
           {mr.isLoading || (siteCode != null && (revQ.isLoading || cogsQ.isLoading)) ? (
             <div style={emptyNote}>{t("overviewTab:loadingRevenue")}</div>
           ) : !hasRevenue ? (
@@ -407,7 +472,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                     <span style={{
                       fontSize: "15px",
                       fontWeight: 800,
-                      color: (thisMonthRev / thisMonthPlan) >= 1 ? chartTheme.planBlue : chartTheme.outflowRed,
+                      color: rateColor((thisMonthRev / thisMonthPlan) * 100),
                       whiteSpace: "nowrap",
                     }}>
                       {fmtPct((thisMonthRev / thisMonthPlan) * 100)}
@@ -436,97 +501,120 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                   <span style={{ fontSize: "12px", fontWeight: 700, color: "#333", marginTop: "10px" }}>{t("common:currentMonth")}</span>
                 </div>
 
-                {/* 연 */}
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                  <div style={{ marginTop: "-46px" }}>
-                    <Donut
-                      percent={ratioPct(cumRev, annualPlanRev) ?? 0}
-                      color={chartTheme.planBlue}
-                      size={110}
-                      stroke={13}
-                      label={fmtPct(ratioPct(cumRev, annualPlanRev))}
-                      labelSize={18}
-                    />
-                  </div>
-                  <div style={{ fontSize: "12px", color: "#16294a", fontWeight: 700, marginTop: "12px" }}>
-                    {t("overviewTab:annualShort")}
-                  </div>
-                </div>
+                {/* 연 — 연간 계획 대비 누계 실적 */}
+                {(() => {
+                  const annualPct = ratioPct(cumRev, annualPlanRev);
+                  return (
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                      <div style={{ marginTop: "-46px" }}>
+                        <Donut
+                          percent={annualPct ?? 0}
+                          color={rateColor(annualPct)}
+                          size={110}
+                          stroke={13}
+                          label={fmtPct(annualPct)}
+                          labelSize={18}
+                          labelColor={rateColor(annualPct)}
+                        />
+                      </div>
+                      <div style={{ fontSize: "12px", color: "#16294a", fontWeight: 700, marginTop: "12px" }}>
+                        {t("overviewTab:annualShort")}
+                      </div>
+                      <div style={{ fontSize: "11px", color: "#555", marginTop: "2px", whiteSpace: "nowrap" }}>
+                        {t("common:actual")} <b style={{ color: "#16294a" }}>{fmtMoney(cumRev)}</b>
+                        {" / "}{t("common:plan")} {fmtMoney(annualPlanRev || null)}
+                      </div>
+                    </div>
+                  );
+                })()}
 
-                {/* 누계 */}
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                  <div style={{ marginTop: "-46px" }}>
-                    <Donut
-                      percent={ratioPct(cumRev, overview.contractAmount) ?? 0}
-                      color={chartTheme.balanceNavy}
-                      size={110}
-                      stroke={13}
-                      label={fmtPct(ratioPct(cumRev, overview.contractAmount))}
-                      labelSize={18}
-                    />
-                  </div>
-                  <div style={{ fontSize: "12px", color: "#16294a", fontWeight: 700, marginTop: "12px" }}>
-                    {t("common:cumulative")}
-                  </div>
-                </div>
+                {/* 누계 — 도급액 대비 */}
+                {(() => {
+                  const totalPct = ratioPct(cumRev, overview.contractAmount);
+                  return (
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                      <div style={{ marginTop: "-46px" }}>
+                        <Donut
+                          percent={totalPct ?? 0}
+                          color={rateColor(totalPct)}
+                          size={110}
+                          stroke={13}
+                          label={fmtPct(totalPct)}
+                          labelSize={18}
+                          labelColor={rateColor(totalPct)}
+                        />
+                      </div>
+                      <div style={{ fontSize: "12px", color: "#16294a", fontWeight: 700, marginTop: "12px" }}>
+                        {t("common:cumulative")}
+                      </div>
+                      <div style={{ fontSize: "11px", color: "#555", marginTop: "2px", whiteSpace: "nowrap" }}>
+                        {t("common:actual")} <b style={{ color: "#16294a" }}>{fmtMoney(cumRev)}</b>
+                        {" / "}{t("common:contractAmount")} {fmtMoney(overview.contractAmount)}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             </>
           )}
         </div>
 
-        {/* Cost estimation */}
-        <div style={cardStyle}>
-          <span style={sectionTitle}>{t("overviewTab:costRate")}</span>
-          {bidding == null && execution == null && completion == null ? (
-            <div style={emptyNote}>{t("overviewTab:noCostRateData")}</div>
-          ) : (
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "16px", marginTop: "8px" }}>
-
-              {/* 좌측: 입찰 + 실행예산 소형 스택 */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "0", flex: "0 0 auto" }}>
-                {[
-                  { title: t("overviewTab:bidding"), sub: "입찰 원가율", data: bidding, color: chartTheme.neutralGray },
-                  { title: t("overviewTab:executionBudgetPlan"), sub: "실행예산 원가율", data: execution, color: chartTheme.balanceNavy },
-                ].map((c, i) => (
-                  <div key={c.title}>
-                    {i > 0 && (
-                      <div style={{ borderTop: "1px dashed #e2e9f3", margin: "4px 0" }} />
-                    )}
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                      <div style={{ marginTop: i === 0 ? "-6px" : "6px" }}>
-                        <Donut
-                          percent={estPct(c.data) ?? 0}
-                          color={c.color}
-                          size={82}
-                          stroke={9}
-                          label={fmtPct(estPct(c.data))}
-                          labelSize={14}
+        {/* Cost estimation — 입찰→실행예산→준공추정 3단계 막대 + 개선폭 */}
+        {(() => {
+          const stages = [
+            { key: "bidding", title: t("overviewTab:bidding"), data: bidding, color: chartTheme.paleBlue },
+            { key: "execution", title: t("overviewTab:executionBudgetPlan"), data: execution, color: chartTheme.planBlue },
+            { key: "completion", title: t("overviewTab:completionCostRate"), data: completion, color: ACHIEVE_GREEN },
+          ];
+          const biddingPct = estPct(bidding);
+          const completionPct = estPct(completion);
+          const improve = biddingPct != null && completionPct != null ? biddingPct - completionPct : null;
+          const improveColor = improve == null ? "#7c8ba3" : improve >= 0 ? ACHIEVE_GREEN : ACHIEVE_RED;
+          const H = 150;
+          const maxPct = Math.max(...stages.map((s) => estPct(s.data) ?? 0), 1);
+          return (
+            <div style={cardStyle}>
+              <CardHeader
+                title={t("overviewTab:costRate")}
+                unit={overview.contractAmount != null ? t("overviewTab:contractBase", { amount: fmtMoney(overview.contractAmount) }) : "%"}
+                badgeValue={improve != null ? `${improve >= 0 ? "-" : "+"}${Math.abs(improve).toFixed(1)}%p` : undefined}
+                badgeLabel={improve != null ? t("overviewTab:vsBidding") : undefined}
+                badgeColor={improveColor}
+              />
+              {bidding == null && execution == null && completion == null ? (
+                <div style={emptyNote}>{t("overviewTab:noCostRateData")}</div>
+              ) : (
+                <div style={{ position: "relative", display: "flex", alignItems: "flex-end", justifyContent: "space-around", gap: "12px", marginTop: "14px", padding: "0 8px" }}>
+                  {stages.map((s) => {
+                    const pct = estPct(s.data);
+                    const bh = pct != null ? Math.max((pct / maxPct) * H, 8) : 0;
+                    return (
+                      <div key={s.key} style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center" }}>
+                        <div style={{ fontSize: "16px", fontWeight: 800, color: "#16294a", marginBottom: "2px" }}>
+                          {fmtPct(pct)}
+                        </div>
+                        <div style={{ fontSize: "10px", color: "#7c8ba3", marginBottom: "4px", whiteSpace: "nowrap", maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis" }}>
+                          {s.data ? `${fmtMoney(s.data.costAmount ?? null)} / ${fmtMoney(s.data.contractAmount ?? null)}` : "-"}
+                        </div>
+                        <div
+                          style={{
+                            width: "46px",
+                            height: `${bh}px`,
+                            backgroundColor: s.color,
+                            borderRadius: "8px 8px 3px 3px",
+                          }}
                         />
+                        <div style={{ fontSize: "12px", color: "#16294a", fontWeight: 700, marginTop: "5px", whiteSpace: "nowrap", maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis" }}>
+                          {s.title}
+                        </div>
                       </div>
-                      <div style={{ fontSize: "12px", color: "#16294a", fontWeight: 700, marginTop: "3px" }}>{c.title}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* 우측: 준공추정 대형 도넛 */}
-              <div style={{ flex: "0 0 auto", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-                <Donut
-                  percent={estPct(completion) ?? 0}
-                  color={chartTheme.planBlue}
-                  size={148}
-                  stroke={16}
-                  label={fmtPct(estPct(completion))}
-                  labelSize={26}
-                />
-                <div style={{ fontSize: "14px", color: "#16294a", fontWeight: 800, marginTop: "2px" }}>
-                  {t("overviewTab:completionCostRate")}
+                    );
+                  })}
                 </div>
-              </div>
-
+              )}
             </div>
-          )}
-        </div>
+          );
+        })()}
       </div>
 
       {/* Row 2: Photo / Budget Execution Status / Cash */}
@@ -536,21 +624,25 @@ export function OverviewTab({ projectName }: { projectName: string }) {
 
         {/* Budget Execution Status */}
         <div style={cardStyle}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "4px" }}>
-            <span style={sectionTitle}>
-              {t("overviewTab:budgetExecutionStatus")}
-            </span>
-            <select
-              value={budgetMonth ?? ""}
-              onChange={(e) => setBudgetMonth(e.target.value === "" ? null : Number(e.target.value))}
-              style={{ fontSize: "12px", border: "1px solid #e2e9f3", borderRadius: "4px", padding: "2px 4px", color: "#333", cursor: "pointer" }}
-            >
-              <option value="">{t("common:all")}</option>
-              {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
-                <option key={m} value={m}>{t("overviewTab:monthOption", { month: m })}</option>
-              ))}
-            </select>
-          </div>
+          <CardHeader
+            title={t("overviewTab:budgetExecutionStatus")}
+            unit={unitLabel}
+            badgeLabel={t("overviewTab:directCost")}
+            badgeValue={fmtPct(directCostPct)}
+            badgeColor={chartTheme.planBlue}
+            right={
+              <select
+                value={budgetMonth ?? ""}
+                onChange={(e) => setBudgetMonth(e.target.value === "" ? null : Number(e.target.value))}
+                style={monthSelectStyle}
+              >
+                <option value="">{t("common:all")}</option>
+                {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+                  <option key={m} value={m}>{t("overviewTab:monthOption", { month: m })}</option>
+                ))}
+              </select>
+            }
+          />
           {allBudgetRows.length === 0 ? (
             <div style={emptyNote}>{t("overviewTab:noBudgetData")}</div>
           ) : (
@@ -640,7 +732,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                           }}
                         >
                           <div style={{ textAlign: "center", fontSize: "13px", color: "#16294a", fontWeight: 700, marginBottom: "4px" }}>
-                            Direct Cost : {fmtPct(directCostPct)}
+                            {t("overviewTab:directCost")} : {fmtPct(directCostPct)}
                           </div>
                           <div style={{ display: "flex", justifyContent: "space-around", gap: "8px", alignItems: "flex-end" }}>
                             {budgetRows.map(renderGroup)}
@@ -695,19 +787,25 @@ export function OverviewTab({ projectName }: { projectName: string }) {
           const isLoadingFund = (cfRef != null && cfQ.isLoading) || mr.isLoading;
           return (
             <div style={cardStyle}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "4px" }}>
-                <span style={sectionTitle}>{t("overviewTab:funds")}</span>
-                <select
-                  value={cashMonth ?? ""}
-                  onChange={(e) => setCashMonth(e.target.value === "" ? null : Number(e.target.value))}
-                  style={{ fontSize: "12px", border: "1px solid #e2e9f3", borderRadius: "4px", padding: "2px 4px", color: "#333", cursor: "pointer" }}
-                >
-                  <option value="">{t("common:all")}</option>
-                  {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
-                    <option key={m} value={m}>{t("overviewTab:monthOption", { month: m })}</option>
-                  ))}
-                </select>
-              </div>
+              <CardHeader
+                title={t("overviewTab:funds")}
+                unit={unitLabel}
+                badgeLabel={t("overviewTab:collectionRate")}
+                badgeValue={confirmed > 0 ? fmtPct((collection / confirmed) * 100) : undefined}
+                badgeColor={confirmed > 0 ? rateColor((collection / confirmed) * 100) : undefined}
+                right={
+                  <select
+                    value={cashMonth ?? ""}
+                    onChange={(e) => setCashMonth(e.target.value === "" ? null : Number(e.target.value))}
+                    style={monthSelectStyle}
+                  >
+                    <option value="">{t("common:all")}</option>
+                    {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+                      <option key={m} value={m}>{t("overviewTab:monthOption", { month: m })}</option>
+                    ))}
+                  </select>
+                }
+              />
               {isLoadingFund ? (
                 <div style={emptyNote}>{t("overviewTab:loadingFundData")}</div>
               ) : !hasFundData ? (

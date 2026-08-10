@@ -5,19 +5,7 @@ import { ProjectCommentPanel } from "./ProjectCommentPanel";
 import { useProjectDetail, fmtPct, ratioPct } from "../lib/projectDetailData";
 import { useMoney } from "../lib/displayUnit";
 import { chartTheme } from "../lib/chartTheme";
-
-const cardStyle: React.CSSProperties = {
-  backgroundColor: "#fff",
-  border: "1px solid #e2e9f3",
-  borderRadius: "8px",
-  padding: "10px 12px",
-};
-
-const sectionTitle: React.CSSProperties = {
-  fontSize: "16px",
-  fontWeight: 700,
-  color: "#2f7cf6",
-};
+import { cardStyle, sectionTitle } from "../lib/uiTokens";
 
 const emptyStyle: React.CSSProperties = {
   padding: "24px 0",

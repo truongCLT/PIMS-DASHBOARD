@@ -5,13 +5,7 @@ import { ProjectCommentPanel } from "./ProjectCommentPanel";
 import { useProjectDetail, fmtPct, ratioPct } from "../lib/projectDetailData";
 import { useMoney } from "../lib/displayUnit";
 import { chartTheme } from "../lib/chartTheme";
-
-const cardStyle: React.CSSProperties = {
-  backgroundColor: "#fff",
-  border: "1px solid #e2e9f3",
-  borderRadius: "8px",
-  padding: "10px 12px",
-};
+import { cardStyle } from "../lib/uiTokens";
 
 function HBar({
   label,
