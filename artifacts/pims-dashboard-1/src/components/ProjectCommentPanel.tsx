@@ -154,13 +154,14 @@ export function ProjectCommentPanel({
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
           placeholder={t("projectCommentPanel:inputPlaceholder")}
-          rows={2}
+          rows={4}
           style={{
             flex: 1,
             border: "none",
             outline: "none",
-            resize: "none",
-            fontSize: "11px",
+            resize: "vertical",
+            minHeight: "64px",
+            fontSize: "12px",
             color: "#333",
             fontFamily: "inherit",
           }}

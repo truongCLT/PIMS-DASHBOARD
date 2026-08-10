@@ -231,7 +231,7 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
             </span>
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 0", fontSize: "12px", color: "#16294a", marginTop: "8px" }}>
-            <span style={{ fontWeight: 700, paddingRight: "14px" }}>
+            <span style={{ paddingRight: "14px" }}>
               {t("common:contractAmount")} : {formatMoney(ov.contractAmount, currency, unitOn)} {moneyUnitLabel(currency, unitOn)}
             </span>
             <span style={{ borderLeft: "1px solid #e2e9f3", padding: "0 14px" }}>
