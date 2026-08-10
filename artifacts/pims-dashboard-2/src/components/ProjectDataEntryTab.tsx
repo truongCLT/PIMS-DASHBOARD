@@ -111,6 +111,13 @@ function VndInput({
       onChange={(e) => {
         const digits = e.target.value.replace(/[^\d]/g, "");
         setRawStr(digits === "" ? "" : Number(digits).toLocaleString("en-US"));
+        // Propagate immediately so totals update in real-time while typing
+        if (digits === "" || digits === "0") {
+          onChange(null);
+        } else {
+          const vnd = parseFloat(digits);
+          onChange(isNaN(vnd) ? null : vnd / VND_PER_K_USD);
+        }
       }}
       onBlur={() => {
         setEditing(false);
@@ -1075,6 +1082,19 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
               </tr>
             ))}
           </tbody>
+          <tfoot>
+            <tr style={{ backgroundColor: AG.background }}>
+              <td style={{ ...tdCell, fontSize: "13px", padding: "5px 6px", fontWeight: 700, color: AG.foreground }}>{t("common:total")}</td>
+              {(["budget", "plan", "actual"] as const).map((field) => {
+                const sum = costBudget.reduce((acc, c) => acc + (c[field] ?? 0), 0);
+                return (
+                  <td key={field} style={{ ...tdCell, textAlign: "right", fontSize: "13px", fontWeight: 700, color: AG.foreground, padding: "5px 6px" }}>
+                    {fmtVnd(sum * VND_PER_K_USD)}
+                  </td>
+                );
+              })}
+            </tr>
+          </tfoot>
         </table>
         </div>
 
@@ -1177,6 +1197,22 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
               </tr>
             ))}
           </tbody>
+          <tfoot>
+            <tr style={{ backgroundColor: AG.background }}>
+              <td colSpan={6} style={{ ...tdCell, fontSize: "13px", padding: "5px 6px", fontWeight: 700, color: AG.foreground, textAlign: "right" }}>
+                {t("common:total")}
+              </td>
+              {(["budget", "executedBudget", "resolved", "thisMonth", "accum"] as const).map((field) => {
+                const sum = outsourcing.reduce((acc, o) => acc + (o[field] ?? 0), 0);
+                return (
+                  <td key={field} style={{ ...tdCell, textAlign: "right", fontSize: "13px", fontWeight: 700, color: AG.foreground, padding: "5px 6px" }}>
+                    {fmtVnd(sum * VND_PER_K_USD)}
+                  </td>
+                );
+              })}
+              <td style={tdCell} />
+            </tr>
+          </tfoot>
         </table>
         </div>
         <button
