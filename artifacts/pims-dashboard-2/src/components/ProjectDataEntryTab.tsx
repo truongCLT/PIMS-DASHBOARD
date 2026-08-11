@@ -338,7 +338,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
   useEffect(() => {
     setLoaded(false);
     setCfPrefilled(false);
-  }, [projectName]);
+  }, [projectName, detail]);
 
   useEffect(() => {
     if (detail && !loaded && !(cfRef != null && cfQuery.isLoading)) {

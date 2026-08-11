@@ -413,32 +413,7 @@ export function DashboardHeader({
           </span>
         </div>
 
-        {/* 관리자 전용: PIMSVINA 데이터 동기화 */}
-        {isAdmin && (
-          <button
-            onClick={handleSyncPimsvina}
-            disabled={syncing}
-            title={t("dashboardHeader:syncButtonTitle")}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              backgroundColor: syncing ? "#64748b" : "#2563eb",
-              color: "#fff",
-              border: "none",
-              borderRadius: "6px",
-              padding: "7px 14px",
-              fontSize: "12px",
-              cursor: syncing ? "wait" : "pointer",
-              fontWeight: "500",
-              boxShadow: "0 1px 3px rgba(0,0,0,0.12)",
-              transition: "all 0.15s ease",
-            }}
-          >
-            <RefreshCw size={13} style={{ animation: syncing ? "spin 1s linear infinite" : "none" }} />
-            {syncing ? t("dashboardHeader:syncing") : t("dashboardHeader:syncButtonLabel")}
-          </button>
-        )}
+
 
         {/* 관리자 전용: 조직 구조 + 환율 설정 + Excel 업로드 */}
         {isAdmin && <OrgStructureEditor />}

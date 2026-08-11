@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePutProjectdetail } from "@workspace/api-client-react";
 import { ProjectCommentPanel } from "./ProjectCommentPanel";
-import { Upload, FileSpreadsheet } from "lucide-react";
+import { Upload, FileSpreadsheet, RefreshCw } from "lucide-react";
 import projectPhoto from "../assets/project-photo.png";
 import { ConstructionProgressTab } from "./ConstructionProgressTab";
 import { CostingTab } from "./CostingTab";
@@ -12,10 +12,11 @@ import { ServiceCashflowTab } from "./ServiceCashflowTab";
 import { ProjectDataEntryTab } from "./ProjectDataEntryTab";
 import { SaleProfitTab } from "./SaleProfitTab";
 import { OverviewTab } from "./OverviewTab";
+import { PimsvinaSyncPreviewModal, type PimsvinaPreviewData } from "./PimsvinaSyncPreviewModal";
 import { useProjectDetail, getGetProjectdetailQueryKey } from "../lib/projectDetailData";
 import { downloadProjectDetailTemplate, parseProjectDetailWorkbook, ExcelParseError } from "../lib/projectDetailExcel";
 import { DisplayUnitProvider, formatMoney, moneyUnitLabel } from "../lib/displayUnit";
-import { useAdminAuth } from "../lib/adminAuth";
+import { useAdminAuth, readAdminToken } from "../lib/adminAuth";
 import { cardStyle } from "../lib/uiTokens";
 import { tokens as aquaTokens } from "@workspace/aqua-glass";
 const AG = aquaTokens.color.light;
@@ -54,6 +55,9 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
   const [unitOn, setUnitOn] = useState(true);
   const [activeTab, setActiveTab] = useState("Overview");
   const { isAdmin } = useAdminAuth();
+  const [syncing, setSyncing] = useState(false);
+  const [syncPreview, setSyncPreview] = useState<PimsvinaPreviewData | null>(null);
+  const [confirming, setConfirming] = useState(false);
   // 기본 기간: 올해 1월 ~ 직전월
   const now = new Date();
   const prevMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
@@ -207,7 +211,92 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
           <span style={{ fontSize: "12px", color: "#333", fontWeight: 600 }}>{moneyUnitLabel(currency, unitOn)}</span>
         </div>
 
+        {/* Sync PIMSVINA Button for Project View */}
+        {isAdmin && (
+          <button
+            onClick={async () => {
+              if (syncing) return;
+              setSyncing(true);
+              try {
+                const token = readAdminToken();
+                const res = await fetch("/api/sync-pimsvina/preview", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                  },
+                });
+                const data = await res.json();
+                if (data.success) {
+                  setSyncPreview(data.data);
+                } else {
+                  alert(t("dashboardHeader:syncFailed", { error: data.error || t("dashboardHeader:syncFailedDefaultError") }));
+                }
+              } catch (err: any) {
+                console.error("Sync preview error:", err);
+                alert(t("dashboardHeader:connectionErrorMessage", { message: err.message }));
+              } finally {
+                setSyncing(false);
+              }
+            }}
+            disabled={syncing}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              backgroundColor: syncing ? "#64748b" : "#2563eb",
+              color: "#fff",
+              border: "none",
+              borderRadius: "6px",
+              padding: "5px 12px",
+              fontSize: "12px",
+              cursor: syncing ? "wait" : "pointer",
+              fontWeight: "600",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.12)",
+              marginLeft: "12px",
+            }}
+          >
+            <RefreshCw size={13} style={{ animation: syncing ? "spin 1s linear infinite" : "none" }} />
+            {syncing ? t("dashboardHeader:syncing") : t("dashboardHeader:syncButtonLabel")}
+          </button>
+        )}
       </div>
+
+      {syncPreview && (
+        <PimsvinaSyncPreviewModal
+          data={syncPreview}
+          confirming={confirming}
+          onConfirm={async () => {
+            if (confirming || !syncPreview) return;
+            setConfirming(true);
+            try {
+              const token = readAdminToken();
+              const res = await fetch("/api/sync-pimsvina/confirm", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                },
+                body: JSON.stringify({ data: syncPreview }),
+              });
+              const data = await res.json();
+              if (data.success) {
+                setSyncPreview(null);
+                await queryClient.invalidateQueries({ queryKey: getGetProjectdetailQueryKey({ projectName }) });
+                await queryClient.refetchQueries({ queryKey: getGetProjectdetailQueryKey({ projectName }) });
+              } else {
+                alert(t("dashboardHeader:syncFailed", { error: data.error || t("dashboardHeader:syncFailedDefaultError") }));
+              }
+            } catch (err: any) {
+              console.error("Sync confirm error:", err);
+              alert(t("dashboardHeader:connectionErrorMessage", { message: err.message }));
+            } finally {
+              setConfirming(false);
+            }
+          }}
+          onClose={() => setSyncPreview(null)}
+        />
+      )}
 
       {/* Project info bar — always visible */}
       <div style={{ ...cardStyle, margin: "8px 10px 0", display: "flex", gap: "10px", alignItems: "stretch" }}>

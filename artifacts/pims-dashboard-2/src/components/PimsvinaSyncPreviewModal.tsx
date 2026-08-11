@@ -8,24 +8,14 @@ const AG = aquaTokens.color.light;
 export type PimsvinaPreviewData = Record<string, Array<Record<string, unknown>>>;
 
 export const PIMSVINA_TABLE_KEYS = [
-  "cfProjects",
-  "cfMonthly",
-  "scSites",
-  "scMonthly",
-  "mrProjects",
-  "mrMonthly",
-  "mrAnnual",
-  "mrPnl",
   "pdOverview",
   "pdProgress",
+  "pdMilestones",
+  "pdSales",
+  "pdCogs",
+  "pdCostBudget",
   "pdOutsourcing",
   "pdCashflow",
-  "pdSales",
-  "pdCostBudget",
-  "pdMilestones",
-  "fxRates",
-  "orgStructure",
-  "orgProjectLinks",
 ] as const;
 
 const MAX_ROWS = 300;

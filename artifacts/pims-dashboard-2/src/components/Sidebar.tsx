@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import pimsBranding from "../assets/pims-branding.png";
-import { FolderClosed } from "lucide-react";
+import { FolderClosed, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { useListMgmtreportProjects, useGetOrgStructure } from "@workspace/api-client-react";
 import { classifyMrProject, isTestMrProject, type ProjectGroup } from "../data/projects";
 import { REPORT_YEAR } from "../lib/mgmtreportData";
@@ -108,40 +108,71 @@ function buildTreeData(
 
 function TreeNode({
   item,
-  depth = 0,
+  depth,
   selectedProject,
   selectedScope,
   onSelectProject,
   onSelectScope,
+  collapsed,
 }: {
   item: TreeItem;
-  depth?: number;
+  depth: number;
   selectedProject: string | null;
   selectedScope: DashboardScope;
   onSelectProject: (name: string) => void;
   onSelectScope: (scope: DashboardScope) => void;
+  collapsed?: boolean;
 }) {
   const { t } = useTranslation(["sidebar", "common"]);
-  const [open, setOpen] = useState(false);
-  const hasChildren = item.children && item.children.length > 0;
-  const isTopLevel = depth === 0;
-  const isSubGroup = depth === 1;
-  const collapsible = hasChildren && !isTopLevel;
-  const expanded = isTopLevel || open;
-  const isSelected = item.isProject && item.label === selectedProject;
-  const isScopeSelected =
-    item.scope != null && selectedProject == null && selectedScope === item.scope;
-
+  const [open, setOpen] = useState(true);
   const { theme: T } = useTheme();
-  const color = isTopLevel ? T.sidebar.topLevelColor : isSubGroup ? T.sidebar.midLevelColor : T.sidebar.subLevelColor;
-  const fontSize = isTopLevel ? "12px" : "11px";
-  const fontWeight = isTopLevel ? "700" : isSubGroup ? "600" : isSelected ? "600" : "400";
-  const paddingLeft = depth === 0 ? "12px" : depth === 1 ? "20px" : depth === 2 ? "32px" : "44px";
-  const isActive = isSelected || isScopeSelected;
-  const bg = isActive ? T.sidebar.activeItemBg : "transparent";
-  const activeColor = isActive ? T.sidebar.activeItemColor : color;
-  // Project names / group labels (DECV, TCC, DE HEIM) are data and pass through unchanged.
-  const displayLabel = item.isProject ? item.label : treeLabel(item.label, t);
+
+  const isProjectActive = item.isProject && selectedProject === item.label;
+  const isScopeActive =
+    !item.isProject &&
+    item.scope != null &&
+    selectedProject == null &&
+    selectedScope === item.scope;
+  const isActive = isProjectActive || isScopeActive;
+
+  const collapsible = Boolean(item.children && item.children.length > 0);
+  const expanded = collapsible && open;
+
+  let paddingLeft = `${12 + depth * 14}px`;
+  let fontSize = "12px";
+  let fontWeight: React.CSSProperties["fontWeight"] = "400";
+  let activeColor = T.sidebar.itemColor;
+
+  if (depth === 0) {
+    fontSize = "13px";
+    fontWeight = "700";
+    activeColor = T.sidebar.topLevelColor;
+  } else if (depth === 1) {
+    fontSize = "12px";
+    fontWeight = "600";
+    activeColor = T.sidebar.subLevelColor;
+  } else if (item.isProject) {
+    fontSize = "11px";
+    fontWeight = "400";
+    activeColor = T.sidebar.itemColor;
+  }
+
+  if (isActive) {
+    activeColor = T.sidebar.activeItemColor;
+    fontWeight = "700";
+  }
+
+  const bg = isActive
+    ? T.sidebar.activeBg
+    : depth === 0
+      ? T.sidebar.topLevelBg
+      : "transparent";
+
+  const displayLabel = treeLabel(item.label, t);
+
+  if (collapsed) {
+    return null;
+  }
 
   return (
     <div>
@@ -185,7 +216,7 @@ function TreeNode({
           {displayLabel}
         </div>
         {collapsible && (
-          <span style={{ fontSize: "10px", color: "#44546a" /* theme-neutral glyph — keep fixed across themes */ }}>
+          <span style={{ fontSize: "10px", color: "#44546a" }}>
             {!open ? "∨" : "∧"}
           </span>
         )}
@@ -201,6 +232,7 @@ function TreeNode({
               selectedScope={selectedScope}
               onSelectProject={onSelectProject}
               onSelectScope={onSelectScope}
+              collapsed={collapsed}
             />
           ))}
         </div>
@@ -225,6 +257,7 @@ export function Sidebar({
   onLogoClick?: () => void;
 }) {
   const { t, i18n } = useTranslation(["sidebar", "common"]);
+  const [collapsed, setCollapsed] = useState(false);
   const projectsQuery = useListMgmtreportProjects({ year: REPORT_YEAR });
   const orgQuery = useGetOrgStructure();
   const projectGroups: ProjectGroup[] = useMemo(() => {
@@ -243,102 +276,147 @@ export function Sidebar({
 
   const { theme: T } = useTheme();
   const isTotalSelected = selectedProject == null && selectedScope === "전체";
+  const width = collapsed ? "54px" : "240px";
 
   return (
     <div style={{
-      width: "170px",
-      minWidth: "170px",
+      width,
+      minWidth: width,
       backgroundColor: T.sidebar.bg,
       display: "flex",
       flexDirection: "column",
       overflow: "hidden",
       borderRight: T.sidebar.border,
+      transition: "width 0.2s ease, min-width 0.2s ease",
     }}>
-      {/* DECV TOTAL */}
+      {/* DECV TOTAL & Collapse Toggle Header */}
       <div
-        onClick={onSelectTotal}
         style={{
-        display: "flex",
-        alignItems: "center",
-        gap: "8px",
-        padding: "10px 12px",
-        color: isTotalSelected ? T.sidebar.activeItemColor : T.sidebar.topLevelColor,
-        fontSize: "12px",
-        fontWeight: "700",
-        borderBottom: T.sidebar.totalBorderBottom,
-        cursor: "pointer",
-        backgroundColor: isTotalSelected ? T.sidebar.totalActiveBg : "transparent",
-        borderLeft: isTotalSelected ? `2px solid ${T.sidebar.activeItemAccent}` : "2px solid transparent",
-      }}>
-        <FolderClosed size={14} color={isTotalSelected ? T.sidebar.activeItemAccent : T.sidebar.topLevelColor} fill={isTotalSelected ? T.sidebar.activeItemAccent : T.sidebar.topLevelColor} />
-        DECV TOTAL
+          display: "flex",
+          alignItems: "center",
+          justifyContent: collapsed ? "center" : "space-between",
+          padding: "10px 12px",
+          borderBottom: T.sidebar.totalBorderBottom,
+          backgroundColor: isTotalSelected ? T.sidebar.totalActiveBg : "transparent",
+          borderLeft: isTotalSelected ? `2px solid ${T.sidebar.activeItemAccent}` : "2px solid transparent",
+        }}
+      >
+        <div
+          onClick={onSelectTotal}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            color: isTotalSelected ? T.sidebar.activeItemColor : T.sidebar.topLevelColor,
+            fontSize: "12px",
+            fontWeight: "700",
+            cursor: "pointer",
+            overflow: "hidden",
+            whiteSpace: "nowrap",
+          }}
+          title="DECV TOTAL"
+        >
+          <FolderClosed
+            size={16}
+            color={isTotalSelected ? T.sidebar.activeItemAccent : T.sidebar.topLevelColor}
+            fill={isTotalSelected ? T.sidebar.activeItemAccent : T.sidebar.topLevelColor}
+          />
+          {!collapsed && <span>DECV TOTAL</span>}
+        </div>
+
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          title={collapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+          style={{
+            border: "none",
+            backgroundColor: "transparent",
+            cursor: "pointer",
+            color: T.sidebar.topLevelColor,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "4px",
+            borderRadius: "4px",
+          }}
+        >
+          {collapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+        </button>
       </div>
 
       {/* Tree */}
-      <div style={{ flex: 1, overflowY: "auto" }}>
-        {treeData.map((item, i) => (
-          <TreeNode
-            key={i}
-            item={item}
-            depth={0}
-            selectedProject={selectedProject}
-            selectedScope={selectedScope}
-            onSelectProject={onSelectProject}
-            onSelectScope={onSelectScope}
-          />
-        ))}
-      </div>
+      {!collapsed && (
+        <div style={{ flex: 1, overflowY: "auto" }}>
+          {treeData.map((item, i) => (
+            <TreeNode
+              key={i}
+              item={item}
+              depth={0}
+              selectedProject={selectedProject}
+              selectedScope={selectedScope}
+              onSelectProject={onSelectProject}
+              onSelectScope={onSelectScope}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Empty space filler when collapsed */}
+      {collapsed && <div style={{ flex: 1 }} />}
 
       {/* Language switcher */}
-      <div style={{ padding: "10px 10px 0", borderTop: T.sidebar.brandingBorderTop }}>
-        <div style={{
-          display: "flex",
-          borderRadius: "6px",
-          overflow: "hidden",
-          border: `1px solid ${AG.input}`,
-        }}>
-          {SUPPORTED_LANGUAGES.map((lng, i) => {
-            const active = i18n.language === lng;
-            return (
-              <button
-                key={lng}
-                onClick={() => i18n.changeLanguage(lng)}
-                style={{
-                  flex: 1,
-                  padding: "6px 2px",
-                  fontSize: "11px",
-                  fontWeight: active ? "700" : "500",
-                  border: "none",
-                  borderLeft: i === 0 ? "none" : `1px solid ${AG.input}`,
-                  backgroundColor: active ? T.sidebar.activeItemAccent : "#ffffff",
-                  color: active ? "#ffffff" : "#556",
-                  cursor: "pointer",
-                }}
-              >
-                {LANGUAGE_LABELS[lng]}
-              </button>
-            );
-          })}
+      {!collapsed && (
+        <div style={{ padding: "10px 10px 0", borderTop: T.sidebar.brandingBorderTop }}>
+          <div style={{
+            display: "flex",
+            borderRadius: "6px",
+            overflow: "hidden",
+            border: `1px solid ${AG.input}`,
+          }}>
+            {SUPPORTED_LANGUAGES.map((lng, i) => {
+              const active = i18n.language === lng;
+              return (
+                <button
+                  key={lng}
+                  onClick={() => i18n.changeLanguage(lng)}
+                  style={{
+                    flex: 1,
+                    padding: "6px 2px",
+                    fontSize: "11px",
+                    fontWeight: active ? "700" : "500",
+                    border: "none",
+                    borderLeft: i === 0 ? "none" : `1px solid ${AG.input}`,
+                    backgroundColor: active ? T.sidebar.activeItemAccent : "#ffffff",
+                    color: active ? "#ffffff" : "#556",
+                    cursor: "pointer",
+                  }}
+                >
+                  {LANGUAGE_LABELS[lng]}
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Bottom branding */}
-      <div style={{
-        padding: "12px 10px",
-      }}>
-        <img
-          src={pimsBranding}
-          alt="PIMS System For DAEWOO E&C VINA"
-          onClick={onLogoClick}
-          title={t("sidebar:adminModeTooltip")}
-          style={{
-            width: "100%",
-            borderRadius: "8px",
-            display: "block",
-            cursor: onLogoClick ? "pointer" : "default",
-          }}
-        />
-      </div>
+      {!collapsed && (
+        <div style={{
+          padding: "12px 10px",
+        }}>
+          <img
+            src={pimsBranding}
+            alt="PIMS System For DAEWOO E&C VINA"
+            onClick={onLogoClick}
+            title={t("sidebar:adminModeTooltip")}
+            style={{
+              width: "100%",
+              borderRadius: "8px",
+              display: "block",
+              cursor: onLogoClick ? "pointer" : "default",
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 }
