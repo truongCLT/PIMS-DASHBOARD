@@ -26,18 +26,28 @@ function currentYearMonth(): { year: number; month: number } {
 
 router.get("/fxrates", async (req, res) => {
   try {
-    const { year, month } = currentYearMonth();
     const rows = await db.select().from(fxRatesTable);
-    const map = new Map(
-      rows
-        .filter((r: typeof fxRatesTable.$inferSelect) => r.year === year && r.month === month)
-        .map((r: typeof fxRatesTable.$inferSelect): [string, number] => [r.currency, r.rate]),
-    );
+
+    const { year: curYear, month: curMonth } = currentYearMonth();
+    const getLatestRate = (curr: "USD" | "KRW" | "VND"): number => {
+      const filtered = rows.filter(
+        (r) => r.currency === curr && (r.year < curYear || (r.year === curYear && r.month <= curMonth)),
+      );
+      if (filtered.length === 0) {
+        const anyFiltered = rows.filter((r) => r.currency === curr);
+        if (anyFiltered.length === 0) return DEFAULT_RATES[curr];
+        anyFiltered.sort((a, b) => b.year - a.year || b.month - a.month || b.updatedAt.getTime() - a.updatedAt.getTime());
+        return anyFiltered[0].rate;
+      }
+      filtered.sort((a, b) => b.year - a.year || b.month - a.month || b.updatedAt.getTime() - a.updatedAt.getTime());
+      return filtered[0].rate;
+    };
+
     res.json(
       GetFxRatesResponse.parse({
-        usd: map.get("USD") ?? DEFAULT_RATES.USD,
-        krw: map.get("KRW") ?? DEFAULT_RATES.KRW,
-        vnd: map.get("VND") ?? DEFAULT_RATES.VND,
+        usd: getLatestRate("USD"),
+        krw: getLatestRate("KRW"),
+        vnd: getLatestRate("VND"),
       }),
     );
   } catch (err) {
@@ -56,9 +66,9 @@ router.put("/fxrates", requireAdmin, async (req, res) => {
   const { year, month } = currentYearMonth();
   try {
     const entries: Array<{ currency: "USD" | "KRW" | "VND"; rate: number }> = [
-      { currency: "USD", rate: usd },
-      { currency: "KRW", rate: krw },
-      { currency: "VND", rate: vnd },
+      { currency: "USD", rate: Math.round(usd * 100) / 100 },
+      { currency: "KRW", rate: Math.round(krw * 100) / 100 },
+      { currency: "VND", rate: Math.round(vnd * 100) / 100 },
     ];
     for (const e of entries) {
       await db
@@ -69,7 +79,11 @@ router.put("/fxrates", requireAdmin, async (req, res) => {
           set: { rate: e.rate, updatedAt: new Date() },
         });
     }
-    res.json(PutFxRatesResponse.parse({ usd, krw, vnd }));
+    res.json(PutFxRatesResponse.parse({
+      usd: Math.round(usd * 100) / 100,
+      krw: Math.round(krw * 100) / 100,
+      vnd: Math.round(vnd * 100) / 100,
+    }));
   } catch (err) {
     req.log.error({ err }, "failed to save fx rates");
     res.status(500).json({ error: "환율 저장에 실패했습니다." });
@@ -104,7 +118,8 @@ router.put("/fxrates/history", requireAdmin, async (req, res) => {
     res.status(400).json({ error: "환율 값이 올바르지 않습니다. 통화·연·월·환율을 확인해 주세요." });
     return;
   }
-  const { currency, year, month, rate } = parsed.data;
+  const { currency, year, month, rate: rawRate } = parsed.data;
+  const rate = Math.round(rawRate * 100) / 100;
   try {
     await db
       .insert(fxRatesTable)
