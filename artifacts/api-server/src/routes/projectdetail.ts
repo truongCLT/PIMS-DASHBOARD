@@ -97,13 +97,22 @@ async function loadDetail(projectName: string) {
   ]);
 
   const ov = overviewRows[0];
+  const formatDateStr = (d: string | null | undefined) => {
+    if (!d) return null;
+    const clean = d.trim();
+    if (/^\d{8}$/.test(clean)) {
+      return `${clean.slice(0, 4)}-${clean.slice(4, 6)}-${clean.slice(6, 8)}`;
+    }
+    return clean;
+  };
+
   return {
     projectName,
     unit: "천 USD",
     overview: {
       contractAmount: ov ? num(ov.contractAmount) : null,
-      startDate: ov?.startDate ?? null,
-      endDate: ov?.endDate ?? null,
+      startDate: formatDateStr(ov?.startDate),
+      endDate: formatDateStr(ov?.endDate),
       client: ov?.client ?? null,
       scale: ov?.scale ?? null,
       asOfMonth: ov?.asOfMonth ?? null,
@@ -113,14 +122,17 @@ async function loadDetail(projectName: string) {
       cashConfirmed: ov ? num(ov.cashConfirmed) : null,
       cashCollection: ov ? num(ov.cashCollection) : null,
     },
-    progress: progress.map((p) => ({
-      year: p.year,
-      month: p.month,
-      planPct: num(p.planPct),
-      actualPct: num(p.actualPct),
-      planCumPct: num(p.planCumPct),
-      actualCumPct: num(p.actualCumPct),
-    })),
+    progress: progress.map((p) => {
+      const clamp100 = (v: number | null) => (v == null ? null : Math.min(100, Math.max(0, v)));
+      return {
+        year: p.year,
+        month: p.month,
+        planPct: clamp100(num(p.planPct)),
+        actualPct: clamp100(num(p.actualPct)),
+        planCumPct: clamp100(num(p.planCumPct)),
+        actualCumPct: clamp100(num(p.actualCumPct)),
+      };
+    }),
     milestones: milestones.map((m) => ({
       label: m.label,
       planStart: m.planStart,

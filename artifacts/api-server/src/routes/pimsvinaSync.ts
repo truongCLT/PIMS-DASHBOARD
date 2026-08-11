@@ -439,17 +439,17 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
       await db
         .update(pdOverviewTable)
         .set({
-          contractAmount: item.contract_amount != null ? String(item.contract_amount) : null,
-          startDate: item.start_date || null,
-          endDate: item.end_date || null,
-          client: item.client || null,
-          scale: item.scale || null,
-          asOfMonth: item.as_of_month || null,
-          scope: item.scope || null,
-          revenueAnnualTarget: item.revenue_annual_target != null ? String(item.revenue_annual_target) : null,
-          revenueTotal: item.revenue_total != null ? String(item.revenue_total) : null,
-          cashConfirmed: item.cash_confirmed != null ? String(item.cash_confirmed) : null,
-          cashCollection: item.cash_collection != null ? String(item.cash_collection) : null,
+          contractAmount: item.contract_amount != null ? String(item.contract_amount) : existing.contractAmount,
+          startDate: item.start_date || existing.startDate,
+          endDate: item.end_date || existing.endDate,
+          client: item.client || existing.client,
+          scale: item.scale || existing.scale,
+          asOfMonth: item.as_of_month || existing.asOfMonth,
+          scope: item.scope || existing.scope,
+          revenueAnnualTarget: item.revenue_annual_target != null ? String(item.revenue_annual_target) : existing.revenueAnnualTarget,
+          revenueTotal: item.revenue_total != null ? String(item.revenue_total) : existing.revenueTotal,
+          cashConfirmed: item.cash_confirmed != null ? String(item.cash_confirmed) : existing.cashConfirmed,
+          cashCollection: item.cash_collection != null ? String(item.cash_collection) : existing.cashCollection,
         })
         .where(eq(pdOverviewTable.projectName, item.project_name));
     } else {
@@ -635,49 +635,31 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
   // 오면(아직 실제로 온 적은 없음) 마찬가지로 "1 KRW당 VND"일 것으로 추정 - 같은 달의 USD당VND 값과
   // 나눠서 "1 USD당 KRW" 교차환율을 계산해야 하므로, 월별로 먼저 모은 뒤 한 번에 변환한다.
   const syncNow = new Date();
-  const vndPerUnitByMonth = new Map<string, { year: number; month: number; vndPerUsd?: number; vndPerKrw?: number }>();
   for (const item of fetched.fxRates) {
-    if (!item.currency || !item.rate) continue;
-    const curr = String(item.currency).toUpperCase();
-    if (curr !== "USD" && curr !== "KRW") continue; // CURRENCY='VND'가 오면 의미가 불확실하므로 버림(추측 금지)
+    if (!item.currency || item.rate == null) continue;
+    const rawCurr = String(item.currency).toUpperCase().trim();
+    if (rawCurr !== "USD" && rawCurr !== "KRW" && rawCurr !== "VND") continue;
+    const curr = rawCurr as "USD" | "KRW" | "VND";
 
     let fxYear = syncNow.getFullYear();
     let fxMonth = syncNow.getMonth() + 1;
-    // 컬럼 별칭은 EFFECTIVE_DATE -> resultSetToJsonArray가 소문자화하면 "effective_date"(밑줄 포함)가
-    // 된다. 게다가 CFTB_CFEXCHANGERATE.EFFECTIVEDATE는 DATE가 아니라 'YYYYMMDD' 형식의 VARCHAR2다
-    // (cf_usdrate_by_yymm_1q.jsp, cf_set_cfexchange_rate_e_1q.jsp에서도 문자열로 다룸).
-    const effectiveDateMatch = /^(\d{4})(\d{2})(\d{2})$/.exec(String(item.effective_date ?? "").trim());
+    const effectiveDateStr = String(item.effective_date ?? "").trim();
+    const effectiveDateMatch = /^(\d{4})(\d{2})/.exec(effectiveDateStr);
     if (effectiveDateMatch) {
       fxYear = Number(effectiveDateMatch[1]);
       fxMonth = Number(effectiveDateMatch[2]);
     }
 
-    const key = `${fxYear}-${fxMonth}`;
-    const entry = vndPerUnitByMonth.get(key) ?? { year: fxYear, month: fxMonth };
-    if (curr === "USD") entry.vndPerUsd = Number(item.rate);
-    else entry.vndPerKrw = Number(item.rate);
-    vndPerUnitByMonth.set(key, entry);
-  }
+    const rate = Number(item.rate);
 
-  for (const { year: fxYear, month: fxMonth, vndPerUsd, vndPerKrw } of vndPerUnitByMonth.values()) {
-    if (vndPerUsd == null) continue; // USD당VND 없이는 KRW 교차환율도 계산 불가
-    const entries: Array<{ currency: "USD" | "KRW" | "VND"; rate: number }> = [
-      { currency: "USD", rate: 1 },
-      { currency: "VND", rate: vndPerUsd },
-    ];
-    if (vndPerKrw != null && vndPerKrw > 0) {
-      entries.push({ currency: "KRW", rate: vndPerUsd / vndPerKrw });
-    }
-    for (const e of entries) {
-      await db
-        .insert(fxRatesTable)
-        .values({ currency: e.currency, year: fxYear, month: fxMonth, rate: e.rate, updatedAt: new Date() })
-        .onConflictDoUpdate({
-          target: [fxRatesTable.currency, fxRatesTable.year, fxRatesTable.month],
-          set: { rate: e.rate, updatedAt: new Date() },
-        });
-      counts.fxRates++;
-    }
+    await db
+      .insert(fxRatesTable)
+      .values({ currency: curr, year: fxYear, month: fxMonth, rate, updatedAt: new Date() })
+      .onConflictDoUpdate({
+        target: [fxRatesTable.currency, fxRatesTable.year, fxRatesTable.month],
+        set: { rate, updatedAt: new Date() },
+      });
+    counts.fxRates++;
   }
 
   // 17. Sync Org Structure (회사/부문) — CATB_COMPANYSTRUCT + CATB_BUSILINE
