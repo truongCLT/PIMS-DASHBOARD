@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import pimsBranding from "../assets/pims-branding.png";
 import { FolderClosed, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { useListMgmtreportProjects, useGetOrgStructure } from "@workspace/api-client-react";
-import { classifyMrProject, isTestMrProject, type ProjectGroup } from "../data/projects";
+import { classifyMrProject, isTestMrProject, DEFAULT_PROJECT_GROUPS, type ProjectGroup } from "../data/projects";
 import { REPORT_YEAR } from "../lib/mgmtreportData";
 import { useTheme } from "../lib/theme";
 import { LANGUAGE_LABELS, SUPPORTED_LANGUAGES } from "../lib/i18n";
@@ -260,8 +260,12 @@ export function Sidebar({
   const [collapsed, setCollapsed] = useState(false);
   const projectsQuery = useListMgmtreportProjects({ year: REPORT_YEAR });
   const orgQuery = useGetOrgStructure();
+  // 조직 구조(DB)가 비어 있거나 조회에 실패해도 좌측 메뉴가 통째로 사라지지 않도록
+  // 기본 구조로 대체한다. 조직도 편집으로 저장된 구조가 있으면 그 값이 우선.
+  const orgIsEmpty = orgQuery.isSuccess && (orgQuery.data?.companies ?? []).length === 0;
   const projectGroups: ProjectGroup[] = useMemo(() => {
     const companies = orgQuery.data?.companies ?? [];
+    if (companies.length === 0) return DEFAULT_PROJECT_GROUPS;
     return companies.map((c) => ({
       label: c.label,
       divisions: c.divisions.map((d) => ({ label: d.label })),
@@ -346,6 +350,21 @@ export function Sidebar({
       {/* Tree */}
       {!collapsed && (
         <div style={{ flex: 1, overflowY: "auto" }}>
+          {orgIsEmpty && (
+            <div
+              style={{
+                margin: "8px 10px",
+                padding: "6px 8px",
+                fontSize: "10.5px",
+                lineHeight: 1.4,
+                color: AG.mutedForeground,
+                backgroundColor: "rgba(63,95,138,0.08)",
+                borderRadius: "6px",
+              }}
+            >
+              {t("sidebar:orgStructureEmptyNotice")}
+            </div>
+          )}
           {treeData.map((item, i) => (
             <TreeNode
               key={i}

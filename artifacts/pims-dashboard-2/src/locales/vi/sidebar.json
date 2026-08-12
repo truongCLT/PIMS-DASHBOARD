@@ -1,5 +1,6 @@
 {
   "selfDevelopmentDivision": "Tự phát triển",
   "landSaleDivision": "Bán đất",
-  "adminModeTooltip": "Chế độ quản trị"
+  "adminModeTooltip": "Chế độ quản trị",
+  "orgStructureEmptyNotice": "Cơ cấu tổ chức chưa được thiết lập; đang hiển thị menu mặc định. Bạn có thể thiết lập trong phần Chỉnh sửa sơ đồ tổ chức ở chế độ quản trị."
 }

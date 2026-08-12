@@ -7,6 +7,16 @@ export interface ProjectGroup {
   divisions: ProjectDivision[];
 }
 
+/**
+ * 조직 구조(DB)가 비어 있을 때 좌측 메뉴가 통째로 사라지지 않도록 쓰는 기본 구조.
+ * 관리자 조직도 편집으로 저장하면 DB 값이 우선한다.
+ */
+export const DEFAULT_PROJECT_GROUPS: ProjectGroup[] = [
+  { label: "DECV", divisions: [{ label: "시공" }, { label: "용역" }] },
+  { label: "TCC", divisions: [{ label: "자체개발" }, { label: "용지매각" }] },
+  { label: "DE HEIM", divisions: [{ label: "자체개발" }, { label: "용지매각" }] },
+];
+
 const SERVICE_KEYWORDS = [
   "용역",
   "프리콘",
