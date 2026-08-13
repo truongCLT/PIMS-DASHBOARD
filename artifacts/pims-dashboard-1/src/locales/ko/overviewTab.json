@@ -33,5 +33,6 @@
   "vsBidding": "입찰 대비",
   "collectionRate": "수금률",
   "directCost": "Direct Cost",
-  "latestMonth": "최신월"
+  "latestMonth": "최신월",
+  "referenceMonth": "기준월"
 }

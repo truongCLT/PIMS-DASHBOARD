@@ -33,5 +33,6 @@
   "vsBidding": "vs bid",
   "collectionRate": "Collection rate",
   "directCost": "Direct Cost",
-  "latestMonth": "Latest month"
+  "latestMonth": "Latest month",
+  "referenceMonth": "Reference month"
 }

@@ -160,11 +160,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
   const hasRevenue = lastMonthIdx >= 0;
 
   // ---- 자금 (cashflow) ----
-  const [cashMonth, setCashMonth] = useState<number | null>(null); // null = 전체(누계)
-  // 월 필터용: cashMonth 선택 시 해당 월(0-based index = cashMonth-1)까지 누계
-  const cumRevFiltered = cashMonth == null
-    ? cumRev
-    : revMonths.slice(0, cashMonth).reduce((a, b) => a + (b ?? 0), 0);
+  // cumRevFiltered 는 resolvedMonth 확정 후 아래에서 계산
   const cfRef = getMrCashflowRef(projectName);
   const cfParams = {
     projectName: cfRef?.name ?? "",
@@ -187,13 +183,31 @@ export function OverviewTab({ projectName }: { projectName: string }) {
     }));
   const hasPdCashRows = (detail?.cashflow ?? []).length > 0;
   const cfPoints = hasPdCashRows ? pdCashPoints : (cfQ.data?.points ?? []);
-  // 월 필터: cashMonth 선택 시 해당 월까지 누계
-  const cfFiltered = cashMonth == null
+  const hasCash = (hasPdCashRows || cfRef != null) && cfPoints.some((p) => p.cashIn !== 0 || p.cashOut !== 0 || p.equivalent !== 0);
+  // cfFiltered·cashIn·cashOut·balance 는 resolvedMonth 확정 후 아래에서 계산
+
+  // ---- 공정 (progress) ----
+  const progress = detail?.progress ?? [];
+  const sorted = [...progress].sort((a, b) => a.year * 12 + a.month - (b.year * 12 + b.month));
+  const progRows = sorted.filter((p) => p.planCumPct != null || p.actualCumPct != null || p.planPct != null || p.actualPct != null);
+
+  // ---- 전역 기준월 ----
+  // "직전 실적이 있는 월" = revMonths 기준 최신 실적 월, 없으면 progress 마지막 월
+  const latestActualMonth: number | null = lastMonthIdx >= 0
+    ? lastMonthIdx + 1
+    : (progRows.length > 0 ? progRows[progRows.length - 1].month : null);
+  const [selectedMonth, setSelectedMonth] = useState<number | null>(null); // null = 최신월
+  const resolvedMonth = selectedMonth ?? latestActualMonth ?? null;
+  // cumRevFiltered: resolvedMonth 기준 누계
+  const cumRevFiltered = resolvedMonth == null
+    ? cumRev
+    : revMonths.slice(0, resolvedMonth).reduce((a, b) => a + (b ?? 0), 0);
+  // cfFiltered·cashIn·cashOut·balance: resolvedMonth 기준 필터
+  const cfFiltered = resolvedMonth == null
     ? cfPoints
     : cfPoints.filter((p) => {
-        const ym = p.month; // "YYYY-MM"
-        const cutoff = `${REPORT_YEAR}-${String(cashMonth).padStart(2, "0")}`;
-        return ym <= cutoff;
+        const cutoff = `${REPORT_YEAR}-${String(resolvedMonth).padStart(2, "0")}`;
+        return p.month <= cutoff;
       });
   const cashIn = cfFiltered.reduce((a, p) => a + (p.cashIn ?? 0), 0);
   const cashOut = cfFiltered.reduce((a, p) => a + (p.cashOut ?? 0), 0);
@@ -201,15 +215,9 @@ export function OverviewTab({ projectName }: { projectName: string }) {
   for (const p of cfFiltered) {
     if (p.cashIn !== 0 || p.cashOut !== 0 || p.equivalent !== 0) balance = p.equivalent;
   }
-  const hasCash = (hasPdCashRows || cfRef != null) && cfPoints.some((p) => p.cashIn !== 0 || p.cashOut !== 0 || p.equivalent !== 0);
 
-  // ---- 공정 (progress) ----
-  const progress = detail?.progress ?? [];
-  const sorted = [...progress].sort((a, b) => a.year * 12 + a.month - (b.year * 12 + b.month));
-  const progRows = sorted.filter((p) => p.planCumPct != null || p.actualCumPct != null || p.planPct != null || p.actualPct != null);
-  const [progKey, setProgKey] = useState<string>(""); // "" = 최신월
-  const latest = progKey
-    ? progRows.find((p) => `${p.year}-${p.month}` === progKey) ?? null
+  const latest = resolvedMonth != null
+    ? (progRows.find((p) => p.year === REPORT_YEAR && p.month === resolvedMonth) ?? (progRows.length > 0 ? progRows[progRows.length - 1] : null))
     : (progRows.length > 0 ? progRows[progRows.length - 1] : null);
   const planCum = latest?.planCumPct ?? null;
   const actualCum = latest?.actualCumPct ?? null;
@@ -236,7 +244,6 @@ export function OverviewTab({ projectName }: { projectName: string }) {
     e ? ratioPct(e.costAmount ?? null, e.contractAmount ?? null) : null;
 
   // ---- 실행예산 집행 (Direct Cost = Common + Expense 1 + 외주성) ----
-  const [budgetMonth, setBudgetMonth] = useState<number | null>(null); // null = 전체
   const cb = detail?.costBudget ?? [];
   const findCb = (name: string) => cb.find((r) => r.item.trim().toLowerCase() === name.toLowerCase()) ?? null;
   const common = findCb("Common");
@@ -250,9 +257,9 @@ export function OverviewTab({ projectName }: { projectName: string }) {
     : null;
   const cbm = detail?.costBudgetMonthly ?? [];
   const getCbm = (item: string, field: "plan" | "actual") => {
-    if (budgetMonth == null) return null; // 전체: monthly 미사용
+    if (resolvedMonth == null) return null; // 최신월/전체: monthly 미사용
     // 1월부터 선택월까지 누적 합산
-    const rows = cbm.filter((r) => r.item === item && r.year === REPORT_YEAR && r.month <= budgetMonth);
+    const rows = cbm.filter((r) => r.item === item && r.year === REPORT_YEAR && r.month <= resolvedMonth);
     if (rows.length === 0) return null;
     const total = rows.reduce((a, r) => a + (r[field] ?? 0), 0);
     return total > 0 ? total : null;
@@ -261,22 +268,22 @@ export function OverviewTab({ projectName }: { projectName: string }) {
     {
       item: "외주성",
       budget: outBudget,
-      plan: budgetMonth == null
+      plan: resolvedMonth == null
         ? (outRows.some((r) => r.executedBudget != null) ? outRows.reduce((a, r) => a + (r.executedBudget ?? 0), 0) : null)
         : getCbm("외주성", "plan"),
-      actual: budgetMonth == null ? outActual : getCbm("외주성", "actual"),
+      actual: resolvedMonth == null ? outActual : getCbm("외주성", "actual"),
     },
     {
       item: "Common",
       budget: common?.budget ?? null,
-      plan: budgetMonth == null ? (common?.plan ?? null) : getCbm("Common", "plan"),
-      actual: budgetMonth == null ? (common?.actual ?? null) : getCbm("Common", "actual"),
+      plan: resolvedMonth == null ? (common?.plan ?? null) : getCbm("Common", "plan"),
+      actual: resolvedMonth == null ? (common?.actual ?? null) : getCbm("Common", "actual"),
     },
     {
       item: "Expense 1",
       budget: expense1?.budget ?? null,
-      plan: budgetMonth == null ? (expense1?.plan ?? null) : getCbm("Expense 1", "plan"),
-      actual: budgetMonth == null ? (expense1?.actual ?? null) : getCbm("Expense 1", "actual"),
+      plan: resolvedMonth == null ? (expense1?.plan ?? null) : getCbm("Expense 1", "plan"),
+      actual: resolvedMonth == null ? (expense1?.actual ?? null) : getCbm("Expense 1", "actual"),
     },
   ].filter((r) => r.budget != null || r.actual != null || r.plan != null);
   // Direct Cost % 는 Common·Expense 1·외주성 기준 (Expense 2·Contingency 제외)
@@ -288,22 +295,45 @@ export function OverviewTab({ projectName }: { projectName: string }) {
     {
       item: "Expense 2",
       budget: expense2?.budget ?? null,
-      plan: budgetMonth == null ? (expense2?.plan ?? null) : getCbm("Expense 2", "plan"),
-      actual: budgetMonth == null ? (expense2?.actual ?? null) : getCbm("Expense 2", "actual"),
+      plan: resolvedMonth == null ? (expense2?.plan ?? null) : getCbm("Expense 2", "plan"),
+      actual: resolvedMonth == null ? (expense2?.actual ?? null) : getCbm("Expense 2", "actual"),
     },
     {
       item: "Contingency",
       budget: contingency?.budget ?? null,
-      plan: budgetMonth == null ? (contingency?.plan ?? null) : getCbm("Contingency", "plan"),
-      actual: budgetMonth == null ? (contingency?.actual ?? null) : getCbm("Contingency", "actual"),
+      plan: resolvedMonth == null ? (contingency?.plan ?? null) : getCbm("Contingency", "plan"),
+      actual: resolvedMonth == null ? (contingency?.actual ?? null) : getCbm("Contingency", "actual"),
     },
   ].filter((r) => r.budget != null || r.actual != null || r.plan != null);
   const allBudgetRows = [...budgetRows, ...extraBudgetRows];
 
   const MAX_H = 110;
 
+  const latestMonthLabel = latestActualMonth != null
+    ? `'${String(REPORT_YEAR).slice(2)}.${String(latestActualMonth).padStart(2, "0")}`
+    : null;
+
   return (
     <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: "8px" }}>
+      {/* 전역 기준월 선택기 */}
+      <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "6px 0 0" }}>
+        <span style={{ fontSize: "12px", color: "#333", fontWeight: 600 }}>{t("overviewTab:referenceMonth")} :</span>
+        <select
+          value={selectedMonth ?? ""}
+          onChange={(e) => setSelectedMonth(e.target.value === "" ? null : Number(e.target.value))}
+          style={monthSelectStyle}
+        >
+          <option value="">
+            {t("overviewTab:latestMonth")}{latestMonthLabel ? ` (${latestMonthLabel})` : ""}
+          </option>
+          {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+            <option key={m} value={m}>
+              {`'${String(REPORT_YEAR).slice(2)}.${String(m).padStart(2, "0")}`}
+            </option>
+          ))}
+        </select>
+      </div>
+
       {/* Row 1: Progress / Revenue / Cost estimation */}
       <div style={{ display: "grid", gridTemplateColumns: ROW_COLUMNS, gap: "8px" }}>
         {/* Progress */}
@@ -314,22 +344,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
             badgeLabel={t("common:achievementRate")}
             badgeValue={fmtPct(achieveRate)}
             badgeColor={rateColor(achieveRate)}
-            right={
-              progRows.length > 0 ? (
-                <select
-                  value={progKey}
-                  onChange={(e) => setProgKey(e.target.value)}
-                  style={monthSelectStyle}
-                >
-                  <option value="">{t("overviewTab:latestMonth")}</option>
-                  {progRows.map((p) => (
-                    <option key={`${p.year}-${p.month}`} value={`${p.year}-${p.month}`}>
-                      {`'${String(p.year).slice(2)}.${String(p.month).padStart(2, "0")}`}
-                    </option>
-                  ))}
-                </select>
-              ) : undefined
-            }
+            right={undefined}
           />
           {latest == null ? (
             <div style={emptyNote}>{t("overviewTab:noProcessData")}</div>
@@ -630,18 +645,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
             badgeLabel={t("overviewTab:directCost")}
             badgeValue={fmtPct(directCostPct)}
             badgeColor={chartTheme.planBlue}
-            right={
-              <select
-                value={budgetMonth ?? ""}
-                onChange={(e) => setBudgetMonth(e.target.value === "" ? null : Number(e.target.value))}
-                style={monthSelectStyle}
-              >
-                <option value="">{t("common:all")}</option>
-                {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
-                  <option key={m} value={m}>{t("overviewTab:monthOption", { month: m })}</option>
-                ))}
-              </select>
-            }
+            right={undefined}
           />
           {allBudgetRows.length === 0 ? (
             <div style={emptyNote}>{t("overviewTab:noBudgetData")}</div>
@@ -754,15 +758,15 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                 {[
                   { label: t("overviewTab:totalBudget"), color: chartTheme.lightGray },
                   {
-                    label: budgetMonth == null
+                    label: resolvedMonth == null
                       ? t("overviewTab:executionPlanCumulative")
-                      : t("overviewTab:executionPlanMonth", { month: budgetMonth }),
+                      : t("overviewTab:executionPlanMonth", { month: resolvedMonth }),
                     color: chartTheme.outflowRed,
                   },
                   {
-                    label: budgetMonth == null
+                    label: resolvedMonth == null
                       ? t("overviewTab:executionActualCumulative")
-                      : t("overviewTab:executionActualMonth", { month: budgetMonth }),
+                      : t("overviewTab:executionActualMonth", { month: resolvedMonth }),
                     color: chartTheme.inflowBlue,
                   },
                 ].map(({ label, color }) => (
@@ -793,18 +797,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                 badgeLabel={t("overviewTab:collectionRate")}
                 badgeValue={confirmed > 0 ? fmtPct((collection / confirmed) * 100) : undefined}
                 badgeColor={confirmed > 0 ? rateColor((collection / confirmed) * 100) : undefined}
-                right={
-                  <select
-                    value={cashMonth ?? ""}
-                    onChange={(e) => setCashMonth(e.target.value === "" ? null : Number(e.target.value))}
-                    style={monthSelectStyle}
-                  >
-                    <option value="">{t("common:all")}</option>
-                    {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
-                      <option key={m} value={m}>{t("overviewTab:monthOption", { month: m })}</option>
-                    ))}
-                  </select>
-                }
+                right={undefined}
               />
               {isLoadingFund ? (
                 <div style={emptyNote}>{t("overviewTab:loadingFundData")}</div>
