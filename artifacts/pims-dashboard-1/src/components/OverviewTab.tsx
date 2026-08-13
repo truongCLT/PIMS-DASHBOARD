@@ -610,11 +610,8 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                     const bh = pct != null ? Math.max((pct / maxPct) * H, 8) : 0;
                     return (
                       <div key={s.key} style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center" }}>
-                        <div style={{ fontSize: "16px", fontWeight: 800, color: "#16294a", marginBottom: "2px" }}>
+                        <div style={{ fontSize: "16px", fontWeight: 800, color: "#16294a", marginBottom: "6px" }}>
                           {fmtPct(pct)}
-                        </div>
-                        <div style={{ fontSize: "10px", color: "#7c8ba3", marginBottom: "4px", whiteSpace: "nowrap", maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis" }}>
-                          {s.data ? `${fmtMoney(s.data.costAmount ?? null)} / ${fmtMoney(s.data.contractAmount ?? null)}` : "-"}
                         </div>
                         <div
                           style={{
