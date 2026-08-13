@@ -762,15 +762,11 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                 {[
                   { label: t("overviewTab:totalBudget"), color: chartTheme.lightGray },
                   {
-                    label: resolvedMonth == null
-                      ? t("overviewTab:executionPlanCumulative")
-                      : t("overviewTab:executionPlanMonth", { month: resolvedMonth }),
+                    label: t("overviewTab:executionPlanCumulative"),
                     color: chartTheme.outflowRed,
                   },
                   {
-                    label: resolvedMonth == null
-                      ? t("overviewTab:executionActualCumulative")
-                      : t("overviewTab:executionActualMonth", { month: resolvedMonth }),
+                    label: t("overviewTab:executionActualCumulative"),
                     color: chartTheme.inflowBlue,
                   },
                 ].map(({ label, color }) => (
