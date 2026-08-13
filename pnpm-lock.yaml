@@ -164,9 +164,6 @@ importers:
         specifier: ^18.0.8
         version: 18.0.8
     devDependencies:
-      '@rollup/rollup-win32-x64-msvc':
-        specifier: ^4.62.4
-        version: 4.62.4
       concurrently:
         specifier: ^10.0.4
         version: 10.0.4
@@ -2957,11 +2954,6 @@ packages:
     cpu: [x64]
     os: [linux]
     libc: [glibc]
-
-  '@rollup/rollup-win32-x64-msvc@4.62.4':
-    resolution: {integrity: sha512-zD6NdeWEByGE9QF9vCrlJ5YQB4oq9q91kPZS37Jwj5hOkvR1lTBSpsKhKDw4IJtbQ35LsTS1HD9DZYGKIshU1Q==}
-    cpu: [x64]
-    os: [win32]
 
   '@scalar/helpers@0.9.0':
     resolution: {integrity: sha512-M34CLRCttqC1bXthI/QSzQj0s5C6nrU2PFWf/vOT3RpycbiGDGQbqR+5RfFzpOIQvRqbHfNdcRbeiZBw+vCbkQ==}
@@ -6487,8 +6479,6 @@ snapshots:
 
   '@rollup/rollup-linux-x64-gnu@4.62.2':
     optional: true
-
-  '@rollup/rollup-win32-x64-msvc@4.62.4': {}
 
   '@scalar/helpers@0.9.0': {}
 
