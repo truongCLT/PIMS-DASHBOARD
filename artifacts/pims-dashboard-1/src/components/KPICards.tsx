@@ -164,7 +164,7 @@ function KPICard({
             </div>
           </div>
           <div style={{
-            display: "flex", alignItems: "center", gap: "6px",
+            display: "flex", alignItems: "center", justifyContent: "space-between", gap: "6px",
             borderTop: "1px solid #eef1f6", paddingTop: "6px",
           }}>
             <span style={{ fontSize: "clamp(8px, 0.65vw, 10px)", color: K.labelColor, whiteSpace: "nowrap" }}>{t("common:vsPlan")}</span>
