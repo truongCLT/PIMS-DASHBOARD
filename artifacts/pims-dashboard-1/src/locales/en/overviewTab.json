@@ -12,7 +12,7 @@
   "bidding": "Bid",
   "executionBudgetPlan": "Execution Budget Plan",
   "completionCostRate": "Estimated Completion Cost Rate",
-  "budgetExecutionStatus": "Budget Execution Status",
+  "budgetExecutionStatus": "Budget Execution Status (Cumulative)",
   "monthOption": "Month {{month}}",
   "noBudgetData": "No execution budget data available. Please enter it in the Data Entry tab.",
   "outsourcingItem": "Outsourcing",

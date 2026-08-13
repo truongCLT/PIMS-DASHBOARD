@@ -12,7 +12,7 @@
   "bidding": "Đấu thầu",
   "executionBudgetPlan": "Lập dự toán thực hiện",
   "completionCostRate": "Tỷ lệ chi phí ước tính khi hoàn thành",
-  "budgetExecutionStatus": "Tình hình thực hiện dự toán",
+  "budgetExecutionStatus": "Tình hình thực hiện dự toán (Lũy kế)",
   "monthOption": "Tháng {{month}}",
   "noBudgetData": "Không có dữ liệu dự toán thực hiện. Vui lòng nhập dữ liệu trong tab Nhập dữ liệu.",
   "outsourcingItem": "Thuê ngoài",
