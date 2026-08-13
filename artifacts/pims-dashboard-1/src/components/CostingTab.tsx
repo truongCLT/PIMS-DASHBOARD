@@ -81,6 +81,7 @@ type BudgetRow = {
   budget: number | null;
   plan: number | null;
   actual: number | null;
+  bold?: boolean;
 };
 
 function BudgetExecutionStatus({ rows }: { rows: BudgetRow[] }) {
@@ -117,7 +118,7 @@ function BudgetExecutionStatus({ rows }: { rows: BudgetRow[] }) {
                 </div>
               )}
               <div style={{ display: "flex", alignItems: "center" }}>
-                <div style={{ width: "110px", minWidth: "110px", fontSize: "12px", color: "#333" }}>
+                <div style={{ width: "110px", minWidth: "110px", fontSize: "12px", color: "#333", fontWeight: row.bold ? 700 : 400 }}>
                   <span>{row.item}</span>
                 </div>
                 <div style={{ flex: 1, position: "relative" }}>
@@ -265,6 +266,7 @@ export function CostingTab({
     budget: r.budget ?? null,
     plan: r.plan ?? null,
     actual: r.actual ?? null,
+    bold: r.category == null, // category 없는 단독 항목(Contingency 등)은 굵게
   }));
 
   // 합계 행 (예산 데이터가 있을 때만)
@@ -278,6 +280,7 @@ export function CostingTab({
             budget: budgetRows.reduce((a, r) => a + (r.budget ?? 0), 0),
             plan: budgetRows.some((r) => r.plan != null) ? budgetRows.reduce((a, r) => a + (r.plan ?? 0), 0) : null,
             actual: budgetRows.some((r) => r.actual != null) ? budgetRows.reduce((a, r) => a + (r.actual ?? 0), 0) : null,
+            bold: true,
           },
         ]
       : [];
