@@ -80,9 +80,9 @@ export function ProfitChart() {
   const yZero = yv(0);
 
   // ── 툴팁 렌더링 ──────────────────────────────────────────────────
-  const TW = 230;   // SVG 단위 툴팁 너비
-  const TH = 86;    // SVG 단위 툴팁 높이
-  const TF = 15;    // 툴팁 내부 폰트 크기
+  const TW = 460;   // SVG 단위 툴팁 너비
+  const TH = 175;   // SVG 단위 툴팁 높이
+  const TF = 28;    // 툴팁 내부 폰트 크기
 
   function renderTooltip(idx: number) {
     const d   = data[idx];
@@ -110,14 +110,14 @@ export function ProfitChart() {
           filter="url(#tip-shadow)"
         />
         {/* 월 헤더 */}
-        <text x={tx + TW / 2} y={ty + 14} textAnchor="middle" fontSize={TF - 1} fontWeight="700" fill="#16294a">
+        <text x={tx + TW / 2} y={ty + 26} textAnchor="middle" fontSize={TF} fontWeight="700" fill="#16294a">
           {d.m}
         </text>
         {/* 항목 줄 */}
         {lines.map((l, i) => (
           <g key={l.label}>
-            <text x={tx + 10}       y={ty + 30 + i * (TF + 3)} fontSize={TF} fill="#666">{l.label}</text>
-            <text x={tx + TW - 10}  y={ty + 30 + i * (TF + 3)} fontSize={TF} fontWeight="600" fill={l.color} textAnchor="end">{l.value}</text>
+            <text x={tx + 18}       y={ty + 56 + i * (TF + 3)} fontSize={TF} fill="#666">{l.label}</text>
+            <text x={tx + TW - 18}  y={ty + 56 + i * (TF + 3)} fontSize={TF} fontWeight="600" fill={l.color} textAnchor="end">{l.value}</text>
           </g>
         ))}
       </g>
