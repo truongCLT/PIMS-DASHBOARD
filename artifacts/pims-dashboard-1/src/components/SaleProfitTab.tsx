@@ -214,6 +214,12 @@ export function SaleProfitTab({
     };
   });
   const hasCogs = cogsChartData.some((d) => d.acctCogs !== 0 || d.wipCogs !== 0);
+  // 데이터가 있는 첫 월 ~ 마지막 월로 범위 축소
+  const firstCogsIdx = cogsChartData.findIndex((d) => d.acctCogs !== 0 || d.wipCogs !== 0);
+  const lastCogsIdx = cogsChartData.reduce((acc, d, i) => (d.acctCogs !== 0 || d.wipCogs !== 0 ? i : acc), -1);
+  const cogsChartDataTrimmed = firstCogsIdx >= 0
+    ? cogsChartData.slice(firstCogsIdx, lastCogsIdx + 1)
+    : cogsChartData;
 
   const hasData = chartData.some((d) => d.revenue !== 0 || d.cumulative !== 0 || d.plan !== 0);
   if (isLoading || pdLoading) {
@@ -324,7 +330,7 @@ export function SaleProfitTab({
         ) : (
           <div style={{ width: "100%", height: "260px", marginTop: "8px" }}>
             <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={cogsChartData} margin={{ top: 30, right: 40, left: 40, bottom: 0 }}>
+              <ComposedChart data={cogsChartDataTrimmed} margin={{ top: 30, right: 40, left: 40, bottom: 0 }}>
                 <XAxis
                   dataKey="label"
                   tick={{ fontSize: 10, fill: chartTheme.axisText }}
@@ -333,12 +339,12 @@ export function SaleProfitTab({
                 />
                 <YAxis
                   hide
-                  domain={[0, Math.max(...cogsChartData.map((d) => Math.max(d.acctCogs, d.wipCogs)), 1) * 2.4]}
+                  domain={[0, Math.max(...cogsChartDataTrimmed.map((d) => Math.max(d.acctCogs, d.wipCogs)), 1) * 2.4]}
                 />
                 <YAxis
                   yAxisId="cum"
                   hide
-                  domain={[0, Math.max(...cogsChartData.map((d) => Math.max(d.acctCum, d.wipCum)), 1) * 1.1]}
+                  domain={[0, Math.max(...cogsChartDataTrimmed.map((d) => Math.max(d.acctCum, d.wipCum)), 1) * 1.1]}
                 />
                 <Tooltip
                   contentStyle={{ fontSize: "13px" }}
