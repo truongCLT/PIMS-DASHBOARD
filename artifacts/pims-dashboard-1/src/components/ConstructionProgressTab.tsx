@@ -11,6 +11,7 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
+  LabelList,
 } from "recharts";
 
 import projectPhoto from "../assets/project-photo.png";
@@ -330,6 +331,24 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
   const actualCum = latest?.actualCumPct ?? null;
   const diff = planCum != null && actualCum != null ? actualCum - planCum : null;
 
+  // 기준월 당월 공정률
+  const planMonth = latest != null
+    ? (progress.find((p) => p.year === latest.year && p.month === latest.month)?.planPct ?? null)
+    : null;
+  const actualMonth = latest != null
+    ? (progress.find((p) => p.year === latest.year && p.month === latest.month)?.actualPct ?? null)
+    : null;
+
+  // 연간 공정률 합계 (기준월 연도)
+  const latestYear = latest?.year ?? null;
+  const annualRows = latestYear != null ? progress.filter((p) => p.year === latestYear) : [];
+  const planAnnual = annualRows.some((p) => p.planPct != null)
+    ? Math.min(annualRows.reduce((s, p) => s + (p.planPct ?? 0), 0), 100)
+    : null;
+  const actualAnnual = annualRows.some((p) => p.actualPct != null)
+    ? Math.min(annualRows.reduce((s, p) => s + (p.actualPct ?? 0), 0), 100)
+    : null;
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
       {/* Row 1: Construction site progress + Progress */}
@@ -378,30 +397,91 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
               (B-A) {diff != null ? `${diff >= 0 ? "+" : ""}${diff.toFixed(1)}%` : "-"}
             </span>
           </div>
-          <div style={{ textAlign: "center", fontSize: "12px", color: "#333", marginTop: "4px" }}>
-            {t("constructionProgressTab:planProcessA")}
+          {/* 3-column: 월(막대) / 연(도넛) / 누계(도넛) */}
+          <div style={{ display: "flex", flex: 1, gap: "0", marginTop: "6px" }}>
+            {/* 월 막대 */}
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
+              <div style={{ width: "100%", height: "130px" }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart
+                    data={[{ plan: planMonth ?? 0, actual: actualMonth ?? 0 }]}
+                    margin={{ top: 22, right: 6, left: 6, bottom: 0 }}
+                  >
+                    <YAxis hide domain={[0, 100]} />
+                    <Bar dataKey="plan" name={t("common:plan")} fill={chartTheme.planBlue} barSize={20} isAnimationActive={false}>
+                      <LabelList
+                        dataKey="plan"
+                        position="top"
+                        style={{ fontSize: "10px", fill: chartTheme.planBlue, fontWeight: 600 }}
+                        formatter={(v: number) => planMonth != null ? `${v.toFixed(1)}%` : "-"}
+                      />
+                    </Bar>
+                    <Bar dataKey="actual" name={t("common:actual")} fill={chartTheme.outflowRed} barSize={20} isAnimationActive={false}>
+                      <LabelList
+                        dataKey="actual"
+                        position="top"
+                        style={{ fontSize: "10px", fill: chartTheme.outflowRed, fontWeight: 600 }}
+                        formatter={(v: number) => actualMonth != null ? `${v.toFixed(1)}%` : "-"}
+                      />
+                    </Bar>
+                    <Legend wrapperStyle={{ fontSize: "10px" }} />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
+              <span style={{ fontSize: "12px", color: "#555", fontWeight: 600, marginTop: "2px" }}>
+                {t("common:monthly").replace("별", "")}
+              </span>
+            </div>
+
+            <div style={{ width: "1px", backgroundColor: "#eef2f7", alignSelf: "stretch", margin: "0 4px" }} />
+
+            {/* 연 도넛 */}
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+              <div style={{ position: "relative", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+                <Donut
+                  percent={actualAnnual ?? 0}
+                  color={chartTheme.outflowRed}
+                  extraArc={planAnnual != null ? { percent: planAnnual, color: chartTheme.planBlue } : undefined}
+                  label={actualAnnual != null ? fmtPct(actualAnnual) : "-"}
+                  size={110}
+                  stroke={14}
+                  labelSize={17}
+                />
+              </div>
+              <div style={{ display: "flex", gap: "6px", fontSize: "10px", marginTop: "4px" }}>
+                <span style={{ color: chartTheme.planBlue, fontWeight: 600 }}>{t("common:plan")} {planAnnual != null ? fmtPct(planAnnual) : "-"}</span>
+                <span style={{ color: chartTheme.outflowRed, fontWeight: 600 }}>{t("common:actual")} {actualAnnual != null ? fmtPct(actualAnnual) : "-"}</span>
+              </div>
+              <span style={{ fontSize: "12px", color: "#555", fontWeight: 600, marginTop: "2px" }}>연</span>
+            </div>
+
+            <div style={{ width: "1px", backgroundColor: "#eef2f7", alignSelf: "stretch", margin: "0 4px" }} />
+
+            {/* 누계 도넛 */}
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+              <div style={{ position: "relative", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+                <Donut
+                  percent={actualCum ?? 0}
+                  color={chartTheme.outflowRed}
+                  extraArc={planCum != null ? { percent: planCum, color: chartTheme.planBlue } : undefined}
+                  label={actualCum != null ? fmtPct(actualCum) : "-"}
+                  size={110}
+                  stroke={14}
+                  labelSize={17}
+                />
+              </div>
+              <div style={{ display: "flex", gap: "6px", fontSize: "10px", marginTop: "4px" }}>
+                <span style={{ color: chartTheme.planBlue, fontWeight: 600 }}>{t("common:plan")} {fmtPct(planCum)}</span>
+                <span style={{ color: chartTheme.outflowRed, fontWeight: 600 }}>{t("common:actual")} {fmtPct(actualCum)}</span>
+              </div>
+              <span style={{ fontSize: "12px", color: "#555", fontWeight: 600, marginTop: "2px" }}>{t("common:cumulative")}</span>
+            </div>
           </div>
-          <div style={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "center", margin: "4px 0 2px", position: "relative", minHeight: 0 }}>
-            <Donut
-              percent={actualCum ?? 0}
-              color={chartTheme.outflowRed}
-              extraArc={planCum != null ? { percent: planCum, color: chartTheme.planBlue } : undefined}
-              label={fmtPct(actualCum)}
-              size={230}
-              stroke={26}
-              labelSize={34}
-            />
-            <span style={{ position: "absolute", right: "6px", bottom: "10px", fontSize: "12px", color: chartTheme.planBlue, fontWeight: 700 }}>
-              {fmtPct(planCum)}
-            </span>
-          </div>
-          <div style={{ textAlign: "center", fontSize: "12px", color: "#16294a", fontWeight: 600 }}>
-            {t("constructionProgressTab:actualProcessB")}
-          </div>
+
           <div
             style={{
               textAlign: "center",
-              fontSize: "13px",
+              fontSize: "12px",
               color: "#333",
               fontWeight: 700,
               marginTop: "8px",
