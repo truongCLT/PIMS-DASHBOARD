@@ -173,7 +173,7 @@ export function ProfitChart() {
         </div>
       ) : (
       <svg
-        viewBox={daewoo ? "0 -90 1000 575" : "0 0 1000 445"}
+        viewBox={daewoo ? "0 0 1000 510" : "0 0 1000 445"}
         style={daewoo
           ? { width: "100%", flex: 1, minHeight: 0, display: "block" }
           : { width: "100%", display: "block" }}
@@ -233,11 +233,11 @@ export function ProfitChart() {
                 {/* 매출이익 값 + 비율 (막대 바로 위) */}
                 <text x={cx} y={Math.min(capTop, opTop) - 34} textAnchor="middle" fontSize={fs(17)} fontWeight="700" fill="#1a2d4d">{gross.toLocaleString("ko-KR")}</text>
                 <text x={cx} y={Math.min(capTop, opTop) - 10} textAnchor="middle" fontSize={fs(12)} fill="#64748b">{d.totalPct}</text>
-                {/* 영업외손익 칩 — 상단 고정 행 */}
-                <rect x={cx - chipW / 2} y={-80} width={chipW} height={chipH} rx={chipH / 2} fill={chipBg} />
-                <text x={cx} y={-80 + chipH / 2} textAnchor="middle" dominantBaseline="central" fontSize={chipFs} fontWeight="700" fill={chipColor}>{chipText}</text>
                 {/* 월 라벨 */}
                 <text x={cx} y={Y0 + 34} textAnchor="middle" fontSize={fs(13)} fontWeight="600" fill="#333">{d.m}</text>
+                {/* 영업외손익 칩 — 월 라벨 하단 */}
+                <rect x={cx - chipW / 2} y={Y0 + 46} width={chipW} height={chipH} rx={chipH / 2} fill={chipBg} />
+                <text x={cx} y={Y0 + 46 + chipH / 2} textAnchor="middle" dominantBaseline="central" fontSize={chipFs} fontWeight="700" fill={chipColor}>{chipText}</text>
               </g>
             );
           }
@@ -296,22 +296,15 @@ export function ProfitChart() {
         {/* zero baseline */}
         <line x1={plotLeft} y1={yZero} x2={plotRight} y2={yZero} stroke="#9aa8ba" strokeWidth={1.5} />
 
-        {/* 대우 예시1: 좌측 행 라벨 */}
-        {daewoo && (
-          <>
-            <text x={plotLeft - 12} y={-62} textAnchor="end" fontSize={fs(10)} fill="#8a99b5">{t("profitChart:nonOperatingProfitLoss")}</text>
-            <text x={plotLeft - 12} y={Y0 + 66} textAnchor="end" fontSize={fs(10)} fill="#8a99b5">{t("profitChart:operatingMarginRate")}</text>
-          </>
-        )}
 
         {/* 호버 오버레이 — 모든 바 위에 올려서 마우스 이벤트 독점 */}
         {data.map((_, i) => (
           <rect
             key={`hover-${i}`}
             x={plotLeft + slot * i}
-            y={daewoo ? -90 : YTOP}
+            y={daewoo ? YTOP : YTOP}
             width={slot}
-            height={daewoo ? Y0 + 90 + 85 : Y0 - YTOP + 38}
+            height={daewoo ? Y0 - YTOP + 110 : Y0 - YTOP + 38}
             fill="transparent"
             onMouseEnter={() => setHoveredIdx(i)}
             style={{ cursor: "crosshair" }}
