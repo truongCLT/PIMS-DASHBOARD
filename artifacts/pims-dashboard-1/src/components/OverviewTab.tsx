@@ -306,6 +306,10 @@ export function OverviewTab({ projectName }: { projectName: string }) {
     },
   ].filter((r) => r.budget != null || r.actual != null || r.plan != null);
   const allBudgetRows = [...budgetRows, ...extraBudgetRows];
+  // Total Cost % = 전체 항목(Expense 2·Contingency 포함) 기준
+  const totalBudgetSum = allBudgetRows.reduce((a, r) => a + (r.budget ?? 0), 0);
+  const totalActualSum = allBudgetRows.reduce((a, r) => a + (r.actual ?? 0), 0);
+  const totalCostPct = ratioPct(totalActualSum, totalBudgetSum);
 
   const MAX_H = 110;
 
@@ -642,8 +646,8 @@ export function OverviewTab({ projectName }: { projectName: string }) {
           <CardHeader
             title={t("overviewTab:budgetExecutionStatus")}
             unit={unitLabel}
-            badgeLabel={t("overviewTab:directCost")}
-            badgeValue={fmtPct(directCostPct)}
+            badgeLabel={t("overviewTab:totalCost")}
+            badgeValue={fmtPct(totalCostPct)}
             badgeColor={chartTheme.planBlue}
             right={undefined}
           />
