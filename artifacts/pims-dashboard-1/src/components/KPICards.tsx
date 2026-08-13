@@ -10,10 +10,10 @@ const STRIP_ICONS = [TrendingUp, DollarSign, BarChart2, Activity];
 
 /** raw Korean title (fixed set produced by mgmtreportData.ts) → translation key */
 const KPI_TITLE_KEY: Record<string, string> = {
-  "당월 매출": "currentMonthRevenue",
-  "당월 영업이익": "currentMonthOperatingProfit",
-  "연간 누적 매출": "annualCumulativeRevenue",
-  "연간 누적 영업이익": "annualCumulativeOperatingProfit",
+  "당월 누적 매출":     "ytdRevenue",
+  "당월 누적 영업이익": "ytdOperatingProfit",
+  "연간 합계 매출":     "fullYearRevenue",
+  "연간 합계 영업이익": "fullYearOperatingProfit",
 };
 
 interface KPICardProps {
@@ -115,7 +115,7 @@ function KPICard({
     const diff = planN != null && actualN != null ? actualN - planN : null;
     const diffText = diff != null ? `${diff > 0 ? "+" : diff < 0 ? "-" : ""}${Math.abs(diff).toLocaleString()}` : "-";
     const diffColor = diff != null && diff >= 0 ? "#2e9e5b" : "#e05252";
-    const isMonthly = title.startsWith("당월");
+    const isMonthly = title.startsWith("당월 누적");
 
     /* 예시1 (첨부 이미지와 동일): 제목+기간 배지 · 링 게이지+값 · 계획 대비/진척 상태 */
     if (isGaugeRing) {
@@ -195,7 +195,7 @@ function KPICard({
             fontSize: "clamp(8px, 0.65vw, 10px)", fontWeight: 600, color: "#2e5bdb",
             backgroundColor: "#e8edf7", borderRadius: "9px", padding: "2px 8px", whiteSpace: "nowrap", flexShrink: 0,
           }}>
-            {isMonthly ? t("common:currentMonth", { defaultValue: "당월" }) : t("common:annual", { defaultValue: "연간" })}
+            {periodLabel ?? (isMonthly ? t("common:currentMonth", { defaultValue: "당월" }) : t("common:annual", { defaultValue: "연간" }))}
           </span>
         </div>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "2px", flex: 1, justifyContent: "center" }}>
@@ -380,7 +380,7 @@ function KPICard({
   );
 }
 
-const PLACEHOLDER_TITLES = ["당월 매출", "당월 영업이익", "연간 누적 매출", "연간 누적 영업이익"];
+const PLACEHOLDER_TITLES = ["당월 누적 매출", "당월 누적 영업이익", "연간 합계 매출", "연간 합계 영업이익"];
 
 export function KPICards() {
   const { t } = useTranslation("kpiCards");
@@ -392,12 +392,14 @@ export function KPICards() {
   const stripColors = T.kpi.stripColors ?? ["#2f7cf6", "#e67e22", "#35c7c0", "#1c7a5a"];
 
   const { t: tc } = useTranslation("common");
-  const monthlyPeriod = derived ? `${derived.year}.${String(derived.month).padStart(2, "0")}` : undefined;
-  const annualPeriod = derived
-    ? derived.fromMonth < derived.month
-      ? tc("periodRange", { from: derived.fromMonth, to: derived.month })
+  /** 당월 누적: "1~M월" */
+  const ytdPeriod = derived
+    ? derived.month > 1
+      ? tc("periodRange", { from: 1, to: derived.month })
       : tc("periodSingle", { month: derived.month })
     : undefined;
+  /** 연간 누적: "1~12월" */
+  const fullYearPeriod = derived ? tc("periodRange", { from: 1, to: 12 }) : undefined;
 
   const cards = derived?.kpi ?? PLACEHOLDER_TITLES.map((title) => ({
     title,
@@ -420,7 +422,7 @@ export function KPICards() {
           compact={unitIndex === 1}
           cardIndex={i}
           stripColor={isStrip ? stripColors[i % 4] : undefined}
-          periodLabel={kpi.title.startsWith("당월") ? monthlyPeriod : annualPeriod}
+          periodLabel={kpi.title.startsWith("당월 누적") ? ytdPeriod : fullYearPeriod}
           unitLabel={derived?.unitLabel}
         />
       ))}

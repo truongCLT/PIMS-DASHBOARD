@@ -1,7 +1,7 @@
 {
-  "currentMonthRevenue": "당월 매출",
-  "currentMonthOperatingProfit": "당월 영업이익",
-  "annualCumulativeRevenue": "연간 누적 매출",
-  "annualCumulativeOperatingProfit": "연간 누적 영업이익",
+  "ytdRevenue": "누적 매출",
+  "ytdOperatingProfit": "누적 영업이익",
+  "fullYearRevenue": "연간 합계 매출",
+  "fullYearOperatingProfit": "연간 합계 영업이익",
   "errorShort": "오류"
 }

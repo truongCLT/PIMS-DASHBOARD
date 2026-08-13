@@ -258,7 +258,7 @@ export function deriveDashboardData(
   const kpiColor = (actual: number, plan: number) =>
     plan && actual / plan >= 1 ? "#35c7c0" : "#f2736a";
 
-  const kpiOf = (title: string, line: Line | null, monthly: boolean): KpiItem => {
+  const kpiOf = (title: string, line: Line | null, mode: "monthly" | "ytd" | "fullYear"): KpiItem => {
     if (emptyRange || !line || projectScope?.empty) {
       return {
         title,
@@ -268,8 +268,14 @@ export function deriveDashboardData(
         achievementColor: "#9ab0c8",
       };
     }
-    const plan = monthly ? line.plan[M - 1] : rangeSum(line.plan, F, M);
-    const actual = monthly ? line.actual[M - 1] : rangeSum(line.actual, F, M);
+    const plan =
+      mode === "monthly" ? line.plan[M - 1]
+      : mode === "ytd"   ? rangeSum(line.plan, 1, M)
+      :                    line.planTotal;
+    const actual =
+      mode === "monthly" ? line.actual[M - 1]
+      : mode === "ytd"   ? rangeSum(line.actual, 1, M)
+      :                    line.actualTotal;
     return {
       title,
       plan: roundSmart(plan),
@@ -280,10 +286,10 @@ export function deriveDashboardData(
   };
 
   const kpi: KpiItem[] = [
-    kpiOf("당월 매출", revenue, true),
-    kpiOf("당월 영업이익", op1, true),
-    kpiOf("연간 누적 매출", revenue, false),
-    kpiOf("연간 누적 영업이익", op1, false),
+    kpiOf("당월 누적 매출",     revenue, "ytd"),
+    kpiOf("당월 누적 영업이익", op1,     "ytd"),
+    kpiOf("연간 합계 매출",     revenue, "fullYear"),
+    kpiOf("연간 합계 영업이익", op1,     "fullYear"),
   ];
 
   const perfRow = (label: string, line: Line | null, withSub: boolean): PerformanceRow => {
