@@ -164,30 +164,13 @@ function KPICard({
             </div>
           </div>
           <div style={{
-            display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px",
+            display: "flex", alignItems: "center", gap: "6px",
             borderTop: "1px solid #eef1f6", paddingTop: "6px",
           }}>
-            <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: "clamp(8px, 0.65vw, 10px)", color: K.labelColor, marginBottom: "2px" }}>{t("common:vsPlan")}</div>
-              <div style={{ fontSize: "clamp(10px, 0.8vw, 12px)", fontWeight: 700, color: diff != null ? diffColor : K.labelColor, overflowWrap: "anywhere" }}>
-                {diff != null ? diffText : "-"}
-              </div>
-            </div>
-            <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: "clamp(8px, 0.65vw, 10px)", color: K.labelColor, marginBottom: "2px" }}>{t("common:progressStatus")}</div>
-              {diff != null ? (
-                <span style={{
-                  display: "inline-block",
-                  fontSize: "clamp(9px, 0.72vw, 11px)", fontWeight: 700,
-                  color: diffColor, backgroundColor: diffColor + "14",
-                  borderRadius: "4px", padding: "2px 8px", whiteSpace: "nowrap",
-                }}>
-                  {diff >= 0 ? t("common:overPlan") : t("common:underPlan")}
-                </span>
-              ) : (
-                <span style={{ fontSize: "clamp(9px, 0.72vw, 11px)", color: K.labelColor }}>-</span>
-              )}
-            </div>
+            <span style={{ fontSize: "clamp(8px, 0.65vw, 10px)", color: K.labelColor, whiteSpace: "nowrap" }}>{t("common:vsPlan")}</span>
+            <span style={{ fontSize: "clamp(10px, 0.8vw, 12px)", fontWeight: 700, color: diff != null ? diffColor : K.labelColor, overflowWrap: "anywhere" }}>
+              {diff != null ? diffText : "-"}
+            </span>
           </div>
         </div>
       );
