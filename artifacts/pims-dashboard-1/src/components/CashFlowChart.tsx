@@ -111,22 +111,11 @@ function getScopeConfig(scope: DashboardScope, t: TFunc): ScopeQueryConfig {
   };
 }
 
-const makeInflowLabel = (compact: boolean) => (props: any) => {
-  const { x, y, width, value } = props;
-  if (!value) return null;
+const makeBalanceLabel = (compact: boolean) => (props: any) => {
+  const { x, y, value } = props;
+  if (value === undefined || value === null) return null;
   return (
-    <text x={x + width / 2} y={y - 3} fill={chartTheme.inflowBlue} textAnchor="middle" fontSize={compact ? 9 : 13} fontWeight="600">
-      +{Math.round(value).toLocaleString()}
-    </text>
-  );
-};
-
-const makeOutflowLabel = (compact: boolean) => (props: any) => {
-  const { x, y, width, height, value } = props;
-  if (!value) return null;
-  const bottom = Math.max(y, y + height);
-  return (
-    <text x={x + width / 2} y={bottom + 9} fill={chartTheme.outflowRed} textAnchor="middle" fontSize={compact ? 9 : 13} fontWeight="600">
+    <text x={x} y={y - 7} fill={chartTheme.balanceNavy} textAnchor="middle" fontSize={compact ? 9 : 11} fontWeight="600">
       {Math.round(value).toLocaleString()}
     </text>
   );
@@ -233,12 +222,8 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
             }}
           />
           <ReferenceLine y={0} yAxisId="flow" stroke={chartTheme.zeroLine} />
-          <Bar isAnimationActive={false} yAxisId="flow" dataKey="inflow" name={inflowName} fill={chartTheme.inflowBlue} barSize={16} radius={[2, 2, 0, 0]}>
-            <LabelList dataKey="inflow" content={makeInflowLabel(compact)} />
-          </Bar>
-          <Bar isAnimationActive={false} yAxisId="flow" dataKey="outflow" name={outflowName} fill={chartTheme.outflowRed} barSize={16} radius={[0, 0, 2, 2]}>
-            <LabelList dataKey="outflow" content={makeOutflowLabel(compact)} />
-          </Bar>
+          <Bar isAnimationActive={false} yAxisId="flow" dataKey="inflow" name={inflowName} fill={chartTheme.inflowBlue} barSize={16} radius={[2, 2, 0, 0]} />
+          <Bar isAnimationActive={false} yAxisId="flow" dataKey="outflow" name={outflowName} fill={chartTheme.outflowRed} barSize={16} radius={[0, 0, 2, 2]} />
           <Line
             isAnimationActive={false}
             yAxisId="balance"
@@ -248,7 +233,9 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
             stroke={chartTheme.balanceNavy}
             strokeWidth={2}
             dot={{ r: 3, fill: chartTheme.balanceNavy }}
-          />
+          >
+            <LabelList dataKey="balance" content={makeBalanceLabel(compact)} />
+          </Line>
         </ComposedChart>
       </ResponsiveContainer>
     );
