@@ -5,7 +5,7 @@
   "planProcessA": "Planned Progress (A)",
   "actualProcessB": "Actual Progress (B)",
   "yearMonth": "{{year}}-{{month}}",
-  "projectLifecycleProcess": "Project Lifecycle Progress",
+  "projectLifecycleProcess": "Monthly Progress Plan & Actual",
   "noMonthlyProcessData": "No monthly progress data available. ( - )",
   "monthlyPlan": "Monthly Plan",
   "monthlyActual": "Monthly Actual",

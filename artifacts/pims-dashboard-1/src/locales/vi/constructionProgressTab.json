@@ -5,7 +5,7 @@
   "planProcessA": "Tiến độ kế hoạch (A)",
   "actualProcessB": "Tiến độ thực hiện (B)",
   "yearMonth": "Tháng {{month}}/{{year}}",
-  "projectLifecycleProcess": "Tiến độ theo vòng đời dự án",
+  "projectLifecycleProcess": "Kế hoạch & thực tế tiến độ hàng tháng",
   "noMonthlyProcessData": "Không có dữ liệu tiến độ theo tháng. ( - )",
   "monthlyPlan": "Kế hoạch tháng",
   "monthlyActual": "Thực hiện tháng",
