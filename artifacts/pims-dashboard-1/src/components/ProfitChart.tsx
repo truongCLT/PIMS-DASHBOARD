@@ -92,10 +92,10 @@ export function ProfitChart() {
     const ty  = YTOP + 2;
 
     const lines: TipLine[] = [
-      { label: t("common:operatingProfit"),          value: `${d.op.toLocaleString("ko-KR")} (${d.opPct})`,                   color: NAVY   },
-      { label: t("profitChart:nonOperatingProfitLoss"), value: `${d.non >= 0 ? "+" : ""}${d.non.toLocaleString("ko-KR")}`,     color: GREEN  },
-      { label: t("profitChart:ordinaryProfit"),      value: `${d.ord.toLocaleString("ko-KR")} (${d.ordPct})`,                  color: GREEN  },
-      { label: t("common:sga"),                      value: `${d.sga} (${d.sgaPct})`,                                          color: ORANGE },
+      { label: t("common:operatingProfit"),             value: d.op.toLocaleString("ko-KR"),                                       color: NAVY   },
+      { label: t("profitChart:ordinaryProfit"),         value: `${d.ord.toLocaleString("ko-KR")} (${d.ordPct})`,                   color: GREEN  },
+      { label: t("common:sga"),                         value: `${d.sga} (${d.sgaPct})`,                                           color: ORANGE },
+      { label: t("profitChart:nonOperatingProfitLoss"), value: `${d.non >= 0 ? "+" : ""}${d.non.toLocaleString("ko-KR")}`,         color: GREEN  },
     ];
 
     return (
