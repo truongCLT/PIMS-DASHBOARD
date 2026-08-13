@@ -224,7 +224,16 @@ export function ServiceCashflowTab({
               strokeWidth={2}
               dot={{ r: 3, fill: "#fff", stroke: chartTheme.actualGreen }}
               isAnimationActive={false}
-            />
+            >
+              <LabelList
+                dataKey="equivalent"
+                position="top"
+                style={{ fontSize: "12px", fill: chartTheme.actualGreen, fontWeight: 700 }}
+                formatter={(v: number) =>
+                  v !== 0 ? v.toLocaleString(undefined, { maximumFractionDigits: 0 }) : ""
+                }
+              />
+            </Line>
           </ComposedChart>
         </ResponsiveContainer>
         </div>
