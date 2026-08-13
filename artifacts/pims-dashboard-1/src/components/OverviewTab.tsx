@@ -88,7 +88,7 @@ const ITEM_LABEL_KEY: Record<string, string> = {
   "외주성": "outsourcingItem",
 };
 
-function PhotoCard({ projectName, photos }: { projectName: string; photos: ProjectDetailPhoto[] }) {
+function PhotoCard({ projectName, photos, slideshowIntervalSeconds = 0 }: { projectName: string; photos: ProjectDetailPhoto[]; slideshowIntervalSeconds?: number }) {
   const { t } = useTranslation(["overviewTab", "common"]);
   const [active, setActive] = useState(0);
 
@@ -111,6 +111,7 @@ function PhotoCard({ projectName, photos }: { projectName: string; photos: Proje
         current={hasPhotos ? safeIdx : 0}
         onChange={setActive}
         imgStyle={{ minHeight: "170px" }}
+        autoPlayIntervalSeconds={slideshowIntervalSeconds}
       />
     </div>
   );
@@ -639,7 +640,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
       {/* Row 2: Photo / Budget Execution Status / Cash */}
       <div style={{ display: "grid", gridTemplateColumns: ROW_COLUMNS, gap: "8px" }}>
         {/* Photo */}
-        <PhotoCard projectName={projectName} photos={detail?.photos ?? []} />
+        <PhotoCard projectName={projectName} photos={detail?.photos ?? []} slideshowIntervalSeconds={detail?.overview?.slideshowIntervalSeconds ?? 0} />
 
         {/* Budget Execution Status */}
         <div style={cardStyle}>

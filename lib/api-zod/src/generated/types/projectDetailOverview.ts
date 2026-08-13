@@ -29,4 +29,9 @@ export interface ProjectDetailOverview {
   cashConfirmed?: number | null;
   /** Cash Collection (B) (천 USD) */
   cashCollection?: number | null;
+  /**
+     * 슬라이드쇼 자동 전환 간격(초), 0=꺼짐
+     * @minimum 0
+     */
+  slideshowIntervalSeconds?: number | null;
 }

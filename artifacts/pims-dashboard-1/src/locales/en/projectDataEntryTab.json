@@ -113,5 +113,13 @@
   "cashOutVnd": "Cash Out (VND)",
   "equivalentVnd": "Cash Equivalent (VND)",
   "cashflowNote": "Enter cash out as a positive number (the chart automatically displays it downward). VND amounts are automatically converted to thousand USD on save.",
-  "cashflowPrefilledNote": "Data saved in the Cash Flow Excel (DB) has been loaded. If you edit the table, it will be saved as this project's cash flow data, and the saved values will take priority afterward."
+  "cashflowPrefilledNote": "Data saved in the Cash Flow Excel (DB) has been loaded. If you edit the table, it will be saved as this project's cash flow data, and the saved values will take priority afterward.",
+  "photoSection": "Site Photos",
+  "photoUploadBtn": "Select Photos",
+  "photoUploading": "Uploading...",
+  "photoUploadFailed": "Upload failed: {{files}}",
+  "slideshowIntervalLabel": "Slideshow interval (sec)",
+  "slideshowIntervalOff": "0 = off",
+  "photoEmpty": "No photos registered. Upload using the button above.",
+  "photoDeleteBtn": "Delete"
 }

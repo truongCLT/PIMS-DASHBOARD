@@ -479,6 +479,8 @@ export interface MgmtreportProject {
   businessType?: MgmtreportProjectBusinessType;
   companyLabel?: string | null;
   divisionLabel?: string | null;
+  /** pd_overview에 이 프로젝트의 행이 있는지 여부. false면 SPC/본사 등 실제 현장 계약 데이터가 PIMSVINA에 없는 관리 항목일 가능성이 높음 - 데이터 입력 탭에서 직접 입력 필요. */
+  hasPimsvinaDetail: boolean;
 }
 
 export interface MgmtreportProjects {
@@ -510,6 +512,11 @@ export interface ProjectDetailOverview {
   cashConfirmed?: number | null;
   /** Cash Collection (B) (천 USD) */
   cashCollection?: number | null;
+  /**
+     * 슬라이드쇼 자동 전환 간격(초), 0=꺼짐
+     * @minimum 0
+     */
+  slideshowIntervalSeconds?: number | null;
 }
 
 export interface ProjectDetailProgressPoint {

@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { Plus, Trash2, Save } from "lucide-react";
+import { Plus, Trash2, Save, Upload, X } from "lucide-react";
+import { readAdminToken } from "../lib/adminAuth";
 import {
   usePutProjectdetail,
   useListMgmtreportProjects,
@@ -309,6 +310,11 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
   const [cashflow, setCashflow] = useState<ProjectDetailCashflowPoint[]>([]);
   const [cogsMonthly, setCogsMonthly] = useState<ProjectDetailCogsPoint[]>([]);
   const [salesMonthly, setSalesMonthly] = useState<ProjectDetailSalesPoint[]>([]);
+  const [photos, setPhotos] = useState<{ objectPath: string }[]>([]);
+  const [slideshowIntervalSeconds, setSlideshowIntervalSeconds] = useState(0);
+  const [uploadingPhotos, setUploadingPhotos] = useState(false);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
   const [loaded, setLoaded] = useState(false);
   const [cfPrefilled, setCfPrefilled] = useState(false);
 
@@ -377,6 +383,8 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       }
       setCogsMonthly(detail.cogsMonthly ?? []);
       setSalesMonthly(detail.salesMonthly ?? []);
+      setPhotos(detail.photos ?? []);
+      setSlideshowIntervalSeconds(detail.overview?.slideshowIntervalSeconds ?? 0);
       setLoaded(true);
     }
   }, [detail, loaded, cfRef, cfQuery.isLoading, cfQuery.data]);
@@ -427,6 +435,42 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
     return errors.length > 0 ? errors.join(" ") : null;
   };
 
+  // 사진 업로드: presigned URL 발급 → 직접 PUT
+  const handlePhotoUpload = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    setUploadingPhotos(true);
+    setPhotoError(null);
+    const newPaths: { objectPath: string }[] = [];
+    const failed: string[] = [];
+    for (const file of Array.from(files)) {
+      try {
+        const token = readAdminToken();
+        const headers: Record<string, string> = { "Content-Type": "application/json" };
+        if (token) headers["Authorization"] = `Bearer ${token}`;
+        const urlRes = await fetch("/api/storage/uploads/request-url", {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ name: file.name, size: file.size, contentType: file.type || "image/jpeg" }),
+        });
+        if (!urlRes.ok) throw new Error(`URL 발급 실패: ${urlRes.status}`);
+        const { uploadURL, objectPath } = (await urlRes.json()) as { uploadURL: string; objectPath: string };
+        const putRes = await fetch(uploadURL, {
+          method: "PUT",
+          headers: { "Content-Type": file.type || "image/jpeg" },
+          body: file,
+        });
+        if (!putRes.ok) throw new Error(`업로드 실패: ${putRes.status}`);
+        newPaths.push({ objectPath });
+      } catch {
+        failed.push(file.name);
+      }
+    }
+    if (newPaths.length > 0) setPhotos((prev) => [...prev, ...newPaths]);
+    if (failed.length > 0) setPhotoError(t("projectDataEntryTab:photoUploadFailed", { files: failed.join(", ") }));
+    setUploadingPhotos(false);
+    if (photoInputRef.current) photoInputRef.current.value = "";
+  };
+
   const pendingRef = useRef(false);
   const queuedRef = useRef(false);
   const [cardMsgs, setCardMsgs] = useState<Record<string, string | null>>({});
@@ -473,7 +517,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
     const body: ProjectDetail = {
       projectName,
       unit: "천 USD",
-      overview,
+      overview: { ...overview, slideshowIntervalSeconds },
       progress: progressRows,
       milestones: milestones.filter((m) => m.label.trim() !== ""),
       costEstimation: estRows,
@@ -484,7 +528,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       cashflow: cfPrefilled ? [] : cashflow.filter((c) => c.year > 0 && c.month >= 1 && c.month <= 12),
       cogsMonthly: cogsMonthly.filter((c) => c.year > 0 && c.month >= 1 && c.month <= 12),
       salesMonthly: salesMonthly.filter((s) => s.year > 0 && s.month >= 1 && s.month <= 12),
-      photos: [],
+      photos,
     };
     pendingRef.current = true;
     mutation.mutate(
@@ -527,7 +571,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
     }
     const t = setTimeout(() => saveRef.current(), 1000);
     return () => clearTimeout(t);
-  }, [loaded, overview, progress, milestones, costEstimation, costBudget, costBudgetMonthly, outsourcing, cashflow, cogsMonthly, salesMonthly]);
+  }, [loaded, overview, progress, milestones, costEstimation, costBudget, costBudgetMonthly, outsourcing, cashflow, cogsMonthly, salesMonthly, photos, slideshowIntervalSeconds]);
 
 
   if (isLoading && !loaded) {
@@ -1241,6 +1285,90 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
             {t("projectDataEntryTab:cashflowPrefilledNote")}
           </div>
         )}
+      </div>
+
+      {/* 7. 현장 사진 */}
+      <div style={cardStyle}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
+          <span style={sectionTitle}>{t("projectDataEntryTab:photoSection")}</span>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <label style={{ fontSize: "13px", color: "#4a6080", display: "flex", alignItems: "center", gap: "6px" }}>
+              {t("projectDataEntryTab:slideshowIntervalLabel")}
+              <input
+                type="number"
+                min={0}
+                max={300}
+                step={1}
+                value={slideshowIntervalSeconds}
+                onChange={(e) => setSlideshowIntervalSeconds(Math.max(0, Math.round(Number(e.target.value) || 0)))}
+                style={{ width: "60px", border: "1px solid #c8d2de", borderRadius: "4px", padding: "3px 6px", fontSize: "13px" }}
+              />
+              <span style={{ fontSize: "11px", color: "#7c8ba3" }}>{t("projectDataEntryTab:slideshowIntervalOff")}</span>
+            </label>
+            <button
+              onClick={() => photoInputRef.current?.click()}
+              disabled={uploadingPhotos}
+              style={{
+                display: "inline-flex", alignItems: "center", gap: "5px",
+                fontSize: "13px", fontWeight: 600,
+                background: "#1e3a6e", color: "#fff",
+                border: "none", borderRadius: "5px", padding: "5px 12px",
+                cursor: uploadingPhotos ? "wait" : "pointer",
+                opacity: uploadingPhotos ? 0.7 : 1,
+              }}
+            >
+              <Upload size={13} />
+              {uploadingPhotos ? t("projectDataEntryTab:photoUploading") : t("projectDataEntryTab:photoUploadBtn")}
+            </button>
+            <input
+              ref={photoInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              style={{ display: "none" }}
+              onChange={(e) => handlePhotoUpload(e.target.files)}
+            />
+          </div>
+        </div>
+        {photoError && (
+          <div style={{ fontSize: "12px", color: "#e0655c", marginBottom: "8px" }}>{photoError}</div>
+        )}
+        {photos.length === 0 && !uploadingPhotos && (
+          <div style={{ fontSize: "13px", color: "#7c8ba3", textAlign: "center", padding: "24px 0" }}>
+            {t("projectDataEntryTab:photoEmpty")}
+          </div>
+        )}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: "8px" }}>
+          {photos.map((p, i) => (
+            <div key={p.objectPath} style={{ position: "relative", borderRadius: "6px", overflow: "hidden", aspectRatio: "4/3", background: "#eef2f7" }}>
+              <img
+                src={`/api/storage${p.objectPath}`}
+                alt={`photo-${i + 1}`}
+                style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+              />
+              <button
+                onClick={() => setPhotos((prev) => prev.filter((_, j) => j !== i))}
+                title={t("projectDataEntryTab:photoDeleteBtn")}
+                style={{
+                  position: "absolute", top: "4px", right: "4px",
+                  background: "rgba(0,0,0,0.55)", border: "none", borderRadius: "50%",
+                  width: "22px", height: "22px",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  cursor: "pointer", color: "#fff", padding: 0,
+                }}
+              >
+                <X size={13} />
+              </button>
+              <div style={{
+                position: "absolute", bottom: 0, left: 0, right: 0,
+                background: "rgba(0,0,0,0.35)", color: "#fff",
+                fontSize: "10px", textAlign: "center", padding: "2px 0",
+              }}>
+                {i + 1}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
     </div>

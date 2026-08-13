@@ -353,6 +353,7 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
                   current={hasPhotos ? safeIdx : 0}
                   onChange={setPhotoIdx}
                   imgStyle={{ minHeight: "230px" }}
+                  autoPlayIntervalSeconds={detail?.overview?.slideshowIntervalSeconds ?? 0}
                 />
               );
             })()}

@@ -113,5 +113,13 @@
   "cashOutVnd": "Chi Cash out (VND)",
   "equivalentVnd": "Tiền mặt tương đương Equivalent (VND)",
   "cashflowNote": "Nhập số chi bằng số dương (biểu đồ sẽ tự động hiển thị theo hướng xuống). Nếu nhập theo VND, khi lưu sẽ tự động chuyển đổi sang nghìn USD.",
-  "cashflowPrefilledNote": "Đã tải dữ liệu được lưu trong Excel(DB) thu chi. Nếu bạn sửa bảng, dữ liệu sẽ được lưu thành dữ liệu thu chi của dự án này, và từ đó các giá trị đã lưu sẽ được ưu tiên hiển thị."
+  "cashflowPrefilledNote": "Đã tải dữ liệu được lưu trong Excel(DB) thu chi. Nếu bạn sửa bảng, dữ liệu sẽ được lưu thành dữ liệu thu chi của dự án này, và từ đó các giá trị đã lưu sẽ được ưu tiên hiển thị.",
+  "photoSection": "Ảnh công trường",
+  "photoUploadBtn": "Chọn ảnh",
+  "photoUploading": "Đang tải lên...",
+  "photoUploadFailed": "Tải lên thất bại: {{files}}",
+  "slideshowIntervalLabel": "Khoảng cách trình chiếu (giây)",
+  "slideshowIntervalOff": "0 = tắt",
+  "photoEmpty": "Chưa có ảnh nào. Hãy tải lên bằng nút phía trên.",
+  "photoDeleteBtn": "Xóa"
 }

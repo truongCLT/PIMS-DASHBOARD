@@ -121,6 +121,7 @@ async function loadDetail(projectName: string) {
       revenueTotal: ov ? num(ov.revenueTotal) : null,
       cashConfirmed: ov ? num(ov.cashConfirmed) : null,
       cashCollection: ov ? num(ov.cashCollection) : null,
+      slideshowIntervalSeconds: ov?.slideshowIntervalSeconds ?? 0,
     },
     progress: progress.map((p) => {
       const clamp100 = (v: number | null) => (v == null ? null : Math.min(100, Math.max(0, v)));
@@ -312,6 +313,10 @@ router.put("/projectdetail", requireAdmin, async (req, res) => {
       const cashConfirmed = ov.cashConfirmed === undefined ? (prevOv?.cashConfirmed ?? null) : str(ov.cashConfirmed);
       const cashCollection =
         ov.cashCollection === undefined ? (prevOv?.cashCollection ?? null) : str(ov.cashCollection);
+      const slideshowIntervalSeconds =
+        ov.slideshowIntervalSeconds !== undefined
+          ? (ov.slideshowIntervalSeconds ?? 0)
+          : (prevOv?.slideshowIntervalSeconds ?? 0);
       if (
         ov.contractAmount != null ||
         ov.startDate != null ||
@@ -323,7 +328,8 @@ router.put("/projectdetail", requireAdmin, async (req, res) => {
         revenueAnnualTarget != null ||
         revenueTotal != null ||
         cashConfirmed != null ||
-        cashCollection != null
+        cashCollection != null ||
+        slideshowIntervalSeconds > 0
       ) {
         await tx.insert(pdOverviewTable).values({
           projectName,
@@ -338,6 +344,7 @@ router.put("/projectdetail", requireAdmin, async (req, res) => {
           revenueTotal,
           cashConfirmed,
           cashCollection,
+          slideshowIntervalSeconds,
         });
       }
       if (body.progress.length > 0) {

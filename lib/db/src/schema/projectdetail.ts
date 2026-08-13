@@ -33,6 +33,7 @@ export const pdOverviewTable = pgTable(
     revenueTotal: numeric("revenue_total", { precision: 18, scale: 4 }), // 누계 매출 실적 (천 USD)
     cashConfirmed: numeric("cash_confirmed", { precision: 18, scale: 4 }), // Cash Confirmed (A) (천 USD)
     cashCollection: numeric("cash_collection", { precision: 18, scale: 4 }), // Cash Collection (B) (천 USD)
+    slideshowIntervalSeconds: integer("slideshow_interval_seconds").notNull().default(0), // 슬라이드쇼 자동 전환 간격(초), 0=꺼짐
   },
   (t) => [uniqueIndex("pd_overview_uq").on(t.projectName)],
 );

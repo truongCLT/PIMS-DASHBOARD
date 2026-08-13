@@ -1875,6 +1875,11 @@ components:
           type: number
           nullable: true
           description: Cash Collection (B) (천 USD)
+        slideshowIntervalSeconds:
+          type: integer
+          minimum: 0
+          nullable: true
+          description: 슬라이드쇼 자동 전환 간격(초), 0=꺼짐
       required: [contractAmount, startDate, endDate, client, scale]
     ProjectDetailProgressPoint:
       type: object

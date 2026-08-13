@@ -113,5 +113,13 @@
   "cashOutVnd": "지출 Cash out (VND)",
   "equivalentVnd": "보유 현금 Equivalent (VND)",
   "cashflowNote": "지출은 양수로 입력하세요(차트에서 자동으로 아래 방향 표시). VND 기준으로 입력하면 저장 시 천 USD로 자동 변환됩니다.",
-  "cashflowPrefilledNote": "자금수지 Excel(DB)에 저장된 데이터를 불러왔습니다. 표를 수정하면 이 프로젝트의 자금 데이터로 저장되며, 이후에는 저장된 값이 우선 표시됩니다."
+  "cashflowPrefilledNote": "자금수지 Excel(DB)에 저장된 데이터를 불러왔습니다. 표를 수정하면 이 프로젝트의 자금 데이터로 저장되며, 이후에는 저장된 값이 우선 표시됩니다.",
+  "photoSection": "현장 사진",
+  "photoUploadBtn": "사진 선택",
+  "photoUploading": "업로드 중...",
+  "photoUploadFailed": "업로드 실패: {{files}}",
+  "slideshowIntervalLabel": "슬라이드쇼 간격 (초)",
+  "slideshowIntervalOff": "0 = 꺼짐",
+  "photoEmpty": "등록된 사진이 없습니다. 위 버튼으로 업로드하세요.",
+  "photoDeleteBtn": "삭제"
 }

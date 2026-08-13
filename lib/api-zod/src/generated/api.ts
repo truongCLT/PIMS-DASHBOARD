@@ -250,7 +250,8 @@ export const UpdateMgmtreportProjectDivisionResponse = zod.object({
 })),
   "businessType": zod.enum(['시공', '용역']).nullish().describe('회사\/부문 구조에 명시적으로 매핑된 경우만 채워짐. null이면 프론트에서 기존 키워드 추정 방식(classifyMrProject)으로 폴백.'),
   "companyLabel": zod.string().nullish(),
-  "divisionLabel": zod.string().nullish()
+  "divisionLabel": zod.string().nullish(),
+  "hasPimsvinaDetail": zod.boolean().describe('pd_overview에 이 프로젝트의 행이 있는지 여부. false면 SPC\/본사 등 실제 현장 계약 데이터가 PIMSVINA에 없는 관리 항목일 가능성이 높음 - 데이터 입력 탭에서 직접 입력 필요.')
 })
 
 
@@ -296,6 +297,8 @@ export const GetProjectdetailQueryParams = zod.object({
   "projectName": zod.coerce.string()
 })
 
+export const getProjectdetailResponseOverviewSlideshowIntervalSecondsMin = 0;
+
 export const getProjectdetailResponseProgressItemYearMin = 2000;
 export const getProjectdetailResponseProgressItemYearMax = 2100;
 
@@ -339,7 +342,8 @@ export const GetProjectdetailResponse = zod.object({
   "revenueAnnualTarget": zod.number().nullish().describe('연간 매출 목표 (천 USD)'),
   "revenueTotal": zod.number().nullish().describe('누계 매출 실적 (천 USD)'),
   "cashConfirmed": zod.number().nullish().describe('Cash Confirmed (A) (천 USD)'),
-  "cashCollection": zod.number().nullish().describe('Cash Collection (B) (천 USD)')
+  "cashCollection": zod.number().nullish().describe('Cash Collection (B) (천 USD)'),
+  "slideshowIntervalSeconds": zod.number().min(getProjectdetailResponseOverviewSlideshowIntervalSecondsMin).nullish().describe('슬라이드쇼 자동 전환 간격(초), 0=꺼짐')
 }),
   "progress": zod.array(zod.object({
   "year": zod.number().min(getProjectdetailResponseProgressItemYearMin).max(getProjectdetailResponseProgressItemYearMax),
@@ -418,6 +422,8 @@ export const GetProjectdetailResponse = zod.object({
 /**
  * @summary Replace all project detail data for a project
  */
+export const putProjectdetailBodyOverviewSlideshowIntervalSecondsMin = 0;
+
 export const putProjectdetailBodyProgressItemYearMin = 2000;
 export const putProjectdetailBodyProgressItemYearMax = 2100;
 
@@ -461,7 +467,8 @@ export const PutProjectdetailBody = zod.object({
   "revenueAnnualTarget": zod.number().nullish().describe('연간 매출 목표 (천 USD)'),
   "revenueTotal": zod.number().nullish().describe('누계 매출 실적 (천 USD)'),
   "cashConfirmed": zod.number().nullish().describe('Cash Confirmed (A) (천 USD)'),
-  "cashCollection": zod.number().nullish().describe('Cash Collection (B) (천 USD)')
+  "cashCollection": zod.number().nullish().describe('Cash Collection (B) (천 USD)'),
+  "slideshowIntervalSeconds": zod.number().min(putProjectdetailBodyOverviewSlideshowIntervalSecondsMin).nullish().describe('슬라이드쇼 자동 전환 간격(초), 0=꺼짐')
 }),
   "progress": zod.array(zod.object({
   "year": zod.number().min(putProjectdetailBodyProgressItemYearMin).max(putProjectdetailBodyProgressItemYearMax),
@@ -536,6 +543,8 @@ export const PutProjectdetailBody = zod.object({
 }))
 })
 
+export const putProjectdetailResponseOverviewSlideshowIntervalSecondsMin = 0;
+
 export const putProjectdetailResponseProgressItemYearMin = 2000;
 export const putProjectdetailResponseProgressItemYearMax = 2100;
 
@@ -579,7 +588,8 @@ export const PutProjectdetailResponse = zod.object({
   "revenueAnnualTarget": zod.number().nullish().describe('연간 매출 목표 (천 USD)'),
   "revenueTotal": zod.number().nullish().describe('누계 매출 실적 (천 USD)'),
   "cashConfirmed": zod.number().nullish().describe('Cash Confirmed (A) (천 USD)'),
-  "cashCollection": zod.number().nullish().describe('Cash Collection (B) (천 USD)')
+  "cashCollection": zod.number().nullish().describe('Cash Collection (B) (천 USD)'),
+  "slideshowIntervalSeconds": zod.number().min(putProjectdetailResponseOverviewSlideshowIntervalSecondsMin).nullish().describe('슬라이드쇼 자동 전환 간격(초), 0=꺼짐')
 }),
   "progress": zod.array(zod.object({
   "year": zod.number().min(putProjectdetailResponseProgressItemYearMin).max(putProjectdetailResponseProgressItemYearMax),
@@ -1005,7 +1015,8 @@ export const ListMgmtreportProjectsResponse = zod.object({
 })),
   "businessType": zod.enum(['시공', '용역']).nullish().describe('회사\/부문 구조에 명시적으로 매핑된 경우만 채워짐. null이면 프론트에서 기존 키워드 추정 방식(classifyMrProject)으로 폴백.'),
   "companyLabel": zod.string().nullish(),
-  "divisionLabel": zod.string().nullish()
+  "divisionLabel": zod.string().nullish(),
+  "hasPimsvinaDetail": zod.boolean().describe('pd_overview에 이 프로젝트의 행이 있는지 여부. false면 SPC\/본사 등 실제 현장 계약 데이터가 PIMSVINA에 없는 관리 항목일 가능성이 높음 - 데이터 입력 탭에서 직접 입력 필요.')
 }))
 })
 
