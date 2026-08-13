@@ -25,14 +25,19 @@ const ACTUAL_COLOR = chartTheme.actualGreen;
 const RATE_COLOR = chartTheme.rateOrange;
 
 /* Badge label above dot */
-const BadgeLabel = (fill: string, compact = false) => (props: any) => {
+// n: 표시 중인 데이터 포인트 수. 많을수록 간격이 좁아지므로 폰트를 줄임.
+const BadgeLabel = (fill: string, compact = false, n = 12) => (props: any) => {
   const { x, y, value } = props;
   if (value == null || x == null || y == null) return null;
   const text = Number(value).toLocaleString("ko-KR");
-  const fontSize = compact ? 9 : 11.5;
-  const charW = compact ? 5.6 : 7;
-  const w = Math.max(compact ? 26 : 34, text.length * charW + (compact ? 8 : 10));
-  const h = compact ? 16 : 21;
+  // 컬럼 피치 추정: 차트 너비 320px 기준
+  const colPitch = Math.max(20, 320 / Math.max(1, n));
+  // fontWeight 700 sans-serif 기준 글자당 너비 ≈ fontSize × 0.62
+  const maxFs = compact ? 9 : 11.5;
+  const fontSize = Math.max(7.5, Math.min(maxFs, colPitch / (text.length * 0.62)));
+  const charW = fontSize * 0.62;
+  const h = fontSize + 7;
+  const w = Math.max(20, text.length * charW + 8);
   const bx = x - w / 2;
   const by = y - h - 9;
   return (
@@ -308,7 +313,7 @@ export function SalesChart() {
               connectNulls
               isAnimationActive={false}
             >
-              <LabelList dataKey="actual" content={BadgeLabel(ACTUAL_COLOR, compact)} />
+              <LabelList dataKey="actual" content={BadgeLabel(ACTUAL_COLOR, compact, visibleData.length)} />
               <LabelList dataKey="actual" content={ActualRateLabel} />
             </Line>
 
@@ -323,7 +328,7 @@ export function SalesChart() {
               connectNulls
               isAnimationActive={false}
             >
-              <LabelList dataKey="plan" content={BadgeLabel(PLAN_COLOR, compact)} />
+              <LabelList dataKey="plan" content={BadgeLabel(PLAN_COLOR, compact, visibleData.length)} />
               <LabelList dataKey="plan" content={PlanRateLabel} />
             </Line>
           </ComposedChart>

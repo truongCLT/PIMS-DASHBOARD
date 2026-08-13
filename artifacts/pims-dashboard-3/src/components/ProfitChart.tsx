@@ -190,10 +190,11 @@ export function ProfitChart() {
         {gridVals.map((v) => (
           <g key={v}>
             <line x1={plotLeft} y1={yv(v)} x2={plotRight} y2={yv(v)}
-              stroke={v === 0 ? "#9aa8ba" : "#e6edf5"}
+              stroke={v === 0 ? "#9aa8ba" : chartTheme.gridLine}
               strokeWidth={v === 0 ? 1.5 : 1}
+              strokeDasharray={v === 0 ? undefined : "3 3"}
             />
-            <text x={plotLeft - 12} y={yv(v) + 7} textAnchor="end" fontSize={fs(18)} fill="#333">
+            <text x={plotLeft - 12} y={yv(v) + 7} textAnchor="end" fontSize={fs(18)} fill={chartTheme.axisText}>
               {v.toLocaleString("ko-KR")}
             </text>
           </g>
