@@ -121,7 +121,7 @@ function BudgetExecutionStatus({ rows }: { rows: BudgetRow[] }) {
                 <div style={{ width: "110px", minWidth: "110px", fontSize: "12px", color: "#333", fontWeight: row.bold ? 700 : 400 }}>
                   <span>{row.item}</span>
                 </div>
-                <div style={{ flex: 1, position: "relative" }}>
+                <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
                   <div
                     style={{
                       position: "relative",
@@ -130,18 +130,6 @@ function BudgetExecutionStatus({ rows }: { rows: BudgetRow[] }) {
                       backgroundColor: chartTheme.lightGray,
                     }}
                   >
-                    <span
-                      style={{
-                        position: "absolute",
-                        right: "-8px",
-                        top: "50%",
-                        transform: "translate(100%, -50%)",
-                        fontSize: "11px",
-                        color: "#555",
-                      }}
-                    >
-                      {fmtMoney(row.budget)}
-                    </span>
                   </div>
                   {row.plan != null && (
                     <div
@@ -225,6 +213,10 @@ function BudgetExecutionStatus({ rows }: { rows: BudgetRow[] }) {
                       )}
                     </div>
                   )}
+                </div>
+                {/* 예산 금액 — 카드 바깥으로 넘치지 않도록 고정 너비 컬럼으로 분리 */}
+                <div style={{ width: "58px", minWidth: "58px", textAlign: "right", fontSize: "11px", color: "#555", paddingLeft: "4px" }}>
+                  {fmtMoney(row.budget)}
                 </div>
               </div>
               </React.Fragment>
