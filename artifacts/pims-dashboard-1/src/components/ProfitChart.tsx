@@ -236,9 +236,8 @@ export function ProfitChart() {
                 {/* 영업외손익 칩 — 상단 고정 행 */}
                 <rect x={cx - chipW / 2} y={-80} width={chipW} height={chipH} rx={chipH / 2} fill={chipBg} />
                 <text x={cx} y={-80 + chipH / 2} textAnchor="middle" dominantBaseline="central" fontSize={chipFs} fontWeight="700" fill={chipColor}>{chipText}</text>
-                {/* 월 + 영업이익률 */}
+                {/* 월 라벨 */}
                 <text x={cx} y={Y0 + 34} textAnchor="middle" fontSize={fs(13)} fontWeight="600" fill="#333">{d.m}</text>
-                <text x={cx} y={Y0 + 66} textAnchor="middle" fontSize={fs(13)} fontWeight="700" fill="#2e5bdb">{d.opPct}</text>
               </g>
             );
           }
@@ -248,10 +247,7 @@ export function ProfitChart() {
               {/* 영업이익 (navy, from zero) */}
               <rect x={bx} y={yOpTop} width={barW} height={Math.max(yOpBot - yOpTop, 0)} fill={NAVY} />
               {yOpBot - yOpTop > 44 && (
-                <>
-                  <text x={cx} y={(yOpTop + yOpBot) / 2 - 4}  textAnchor="middle" fontSize={fs(17)} fontWeight="700" fill="#fff">{d.op.toLocaleString("ko-KR")}</text>
-                  <text x={cx} y={(yOpTop + yOpBot) / 2 + 20} textAnchor="middle" fontSize={fs(16)} fill="#fff">({d.opPct})</text>
-                </>
+                <text x={cx} y={(yOpTop + yOpBot) / 2 + 7} textAnchor="middle" fontSize={fs(17)} fontWeight="700" fill="#fff">{d.op.toLocaleString("ko-KR")}</text>
               )}
 
               {/* 판관비 영역 (light): op → gross */}
