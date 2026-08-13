@@ -668,7 +668,6 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                   const barH = (v: number | null) =>
                     v != null && v > 0 ? Math.max((v / maxVal) * H, 8) : 0;
                   const GRAY_W = 68;
-                  const SUB_W = 31;
                   const renderGroup = (g: (typeof allBudgetRows)[number]) => {
                     const bud = g.budget ?? 0;
                     const pln = g.plan ?? 0;
@@ -677,6 +676,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                     const bh = barH(bud);
                     const ph = barH(pln);
                     const ah = barH(act);
+                    // % 라벨은 계획 선 또는 실적 막대 상단 중 높은 쪽 위에 표시
                     const subTop = Math.max(ph, ah);
                     return (
                       <div key={g.item} style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center" }}>
@@ -686,21 +686,11 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                         </div>
                         {/* 막대 영역 (% 라벨 공간 포함) */}
                         <div style={{ position: "relative", height: `${H + LABEL_H}px`, width: `${GRAY_W}px` }}>
-                          {/* 회색: 총 예산 */}
+                          {/* 회색: 총 예산 (배경) */}
                           <div style={{ position: "absolute", bottom: 0, left: 0, width: `${GRAY_W}px`, height: `${Math.max(bh, 2)}px`, backgroundColor: chartTheme.lightGray, borderRadius: "2px 2px 0 0" }} />
-                          {/* 집행율 % (계획/실적 막대 위) */}
-                          {pct != null && (
-                            <div style={{ position: "absolute", bottom: `${subTop + 2}px`, left: "50%", transform: "translateX(-50%)", fontSize: "12px", fontWeight: 700, color: chartTheme.inflowBlue, whiteSpace: "nowrap" }}>
-                              {fmtPct(pct)}
-                            </div>
-                          )}
-                          {/* 빨강: 집행 계획 */}
-                          {g.plan != null && ph > 0 && (
-                            <div title={fmtMoney(pln || null)} style={{ position: "absolute", bottom: 0, left: `${GRAY_W / 2 - SUB_W - 1}px`, width: `${SUB_W}px`, height: `${ph}px`, backgroundColor: chartTheme.outflowRed }} />
-                          )}
-                          {/* 파랑: 집행 실적 (금액 라벨 막대 안) */}
+                          {/* 파랑: 집행 실적 — 총예산 막대 안에 같은 너비로 오버랩 */}
                           {g.actual != null && ah > 0 && (
-                            <div style={{ position: "absolute", bottom: 0, left: `${GRAY_W / 2 + 1}px`, width: `${SUB_W}px`, height: `${ah}px`, backgroundColor: chartTheme.inflowBlue }}>
+                            <div style={{ position: "absolute", bottom: 0, left: 0, width: `${GRAY_W}px`, height: `${ah}px`, backgroundColor: chartTheme.inflowBlue, borderRadius: "0 0 2px 2px" }}>
                               <span
                                 title={fmtMoney(act || null)}
                                 style={{
@@ -716,6 +706,19 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                               >
                                 {fmtMoney(act || null)}
                               </span>
+                            </div>
+                          )}
+                          {/* 빨강: 집행 계획 — 해당 비율 높이의 가로 선 */}
+                          {g.plan != null && ph > 0 && (
+                            <div
+                              title={fmtMoney(pln || null)}
+                              style={{ position: "absolute", bottom: `${ph}px`, left: 0, width: `${GRAY_W}px`, height: "3px", backgroundColor: chartTheme.outflowRed, borderRadius: "2px", zIndex: 2 }}
+                            />
+                          )}
+                          {/* 집행율 % (계획 선/실적 막대 상단 중 높은 쪽 위) */}
+                          {pct != null && (
+                            <div style={{ position: "absolute", bottom: `${subTop + 4}px`, left: "50%", transform: "translateX(-50%)", fontSize: "12px", fontWeight: 700, color: chartTheme.inflowBlue, whiteSpace: "nowrap" }}>
+                              {fmtPct(pct)}
                             </div>
                           )}
                         </div>
@@ -805,48 +808,36 @@ export function OverviewTab({ projectName }: { projectName: string }) {
               ) : !hasFundData ? (
                 <div style={emptyNote}>{t("overviewTab:noFundData")}</div>
               ) : (
-                <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-around", marginTop: "10px", height: "170px" }}>
-                  <MiniBar
-                    value={revenue}
-                    max={cashMax}
-                    color={chartTheme.neutralGray}
-                    label={t("common:revenue")}
-                    height={120}
-                    valueLabel={fmtMoney(revenue)}
-                    valueOnTop
-                    width={34}
-                  />
-                  <MiniBar
-                    value={confirmed}
-                    max={cashMax}
-                    color={chartTheme.neutralGray}
-                    label={t("overviewTab:confirmedA")}
-                    height={120}
-                    valueLabel={fmtMoney(confirmed)}
-                    valueOnTop
-                    width={34}
-                  />
-                  <MiniBar
-                    value={collection}
-                    max={cashMax}
-                    color={chartTheme.balanceNavy}
-                    label={t("overviewTab:collectionB")}
-                    height={120}
-                    valueLabel={fmtMoney(collection)}
-                    valueOnTop
-                    width={34}
-                  />
-                  <MiniBar
-                    value={outstanding}
-                    max={cashMax}
-                    color={chartTheme.outflowRed}
-                    label={t("overviewTab:receivableAB")}
-                    height={120}
-                    valueLabel={fmtMoney(outstanding)}
-                    valueOnTop
-                    width={34}
-                  />
-                </div>
+                <>
+                  {/* 막대 그래프 — 숫자 라벨 제거 */}
+                  <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-around", marginTop: "10px", height: "130px" }}>
+                    <MiniBar value={revenue}     max={cashMax} color={chartTheme.neutralGray}  label={t("common:revenue")}           height={100} width={34} />
+                    <MiniBar value={confirmed}   max={cashMax} color={chartTheme.neutralGray}  label={t("overviewTab:confirmedA")}   height={100} width={34} />
+                    <MiniBar value={collection}  max={cashMax} color={chartTheme.balanceNavy}  label={t("overviewTab:collectionB")}  height={100} width={34} />
+                    <MiniBar value={outstanding} max={cashMax} color={chartTheme.outflowRed}   label={t("overviewTab:receivableAB")} height={100} width={34} />
+                  </div>
+                  {/* 하단 수치 테이블 */}
+                  <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px", fontSize: "12px" }}>
+                    <tbody>
+                      {([
+                        { label: t("common:revenue"),           value: revenue,      color: chartTheme.neutralGray },
+                        { label: t("overviewTab:confirmedA"),   value: confirmed,    color: chartTheme.neutralGray },
+                        { label: t("overviewTab:collectionB"),  value: collection,   color: chartTheme.balanceNavy },
+                        { label: t("overviewTab:receivableAB"), value: outstanding,  color: chartTheme.outflowRed  },
+                      ] as const).map(({ label, value, color }) => (
+                        <tr key={label} style={{ borderTop: "1px solid #eef2f7" }}>
+                          <td style={{ padding: "4px 4px 4px 0", display: "flex", alignItems: "center", gap: "5px", whiteSpace: "nowrap" }}>
+                            <div style={{ width: "8px", height: "8px", borderRadius: "2px", backgroundColor: color, flexShrink: 0 }} />
+                            <span style={{ color: "#5a6a84" }}>{label}</span>
+                          </td>
+                          <td style={{ padding: "4px 0", textAlign: "right", fontWeight: 600, color: "#16294a", whiteSpace: "nowrap" }}>
+                            {fmtMoney(value)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </>
               )}
             </div>
           );

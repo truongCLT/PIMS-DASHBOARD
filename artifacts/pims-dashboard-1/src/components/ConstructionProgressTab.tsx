@@ -317,7 +317,7 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
   const milestones = detail?.milestones ?? [];
 
   const lifecycleData = progress.map((p) => ({
-    month: `${p.year}-${MONTH_ABBR[p.month - 1]}`,
+    month: `${String(p.year).slice(-2)}/${String(p.month).padStart(2, "0")}`,
     plan: p.planPct,
     actual: p.actualPct,
     planAccum: p.planCumPct,
