@@ -4,6 +4,7 @@ import {
   ComposedChart,
   Bar,
   Line,
+  Area,
   XAxis,
   YAxis,
   Tooltip,
@@ -288,14 +289,16 @@ export function SaleProfitTab({
                   formatter={(v: number) => (v !== 0 ? Math.round(v).toLocaleString() : "")}
                 />
               </Bar>
-              <Line
+              <Area
                 yAxisId="cum"
                 dataKey="cumulative"
                 name={t("common:cumulative")}
                 type="monotone"
                 stroke={chartTheme.outflowRed}
                 strokeWidth={2}
-                dot={{ r: 3 }}
+                fill={chartTheme.outflowRed}
+                fillOpacity={0.15}
+                dot={{ r: 3, fill: chartTheme.outflowRed }}
                 isAnimationActive={false}
               >
                 <LabelList
@@ -305,7 +308,7 @@ export function SaleProfitTab({
                   style={{ fontSize: "11px", fill: chartTheme.outflowRed }}
                   formatter={(v: number) => Math.round(v).toLocaleString()}
                 />
-              </Line>
+              </Area>
             </ComposedChart>
           </ResponsiveContainer>
         </div>
