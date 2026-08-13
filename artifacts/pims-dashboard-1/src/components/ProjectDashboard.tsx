@@ -202,7 +202,7 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
               }}
             />
           </div>
-          <span style={{ fontSize: "12px", color: "#333", fontWeight: 600 }}>{moneyUnitLabel(currency, unitOn)}</span>
+          <span style={{ fontSize: "12px", color: "#333", fontWeight: 600, display: "inline-block", minWidth: "64px" }}>{moneyUnitLabel(currency, unitOn)}</span>
         </div>
 
       </div>
