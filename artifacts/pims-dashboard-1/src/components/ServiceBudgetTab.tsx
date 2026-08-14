@@ -273,6 +273,7 @@ export function ServiceBudgetTab({ projectName }: { projectName: string }) {
                       <DualBar
                         key={`${c.item}-${i}`}
                         label={c.item ?? ""}
+                        labelBold={/contingency/i.test(c.item ?? "")}
                         budget={c.budget ?? null}
                         plan={c.plan ?? null}
                         actual={c.actual ?? null}

@@ -173,7 +173,7 @@ export function ProfitChart() {
         </div>
       ) : (
       <svg
-        viewBox={daewoo ? "0 0 1000 510" : "0 0 1000 445"}
+        viewBox={daewoo ? "0 0 1000 510" : "0 0 1000 470"}
         style={daewoo
           ? { width: "100%", flex: 1, minHeight: 0, display: "block" }
           : { width: "100%", display: "block" }}
@@ -249,9 +249,6 @@ export function ProfitChart() {
             <g key={d.m}>
               {/* 영업이익 (navy, from zero) */}
               <rect x={bx} y={yOpTop} width={barW} height={Math.max(yOpBot - yOpTop, 0)} fill={NAVY} />
-              {yOpBot - yOpTop > 44 && (
-                <text x={cx} y={(yOpTop + yOpBot) / 2 + 7} textAnchor="middle" fontSize={fs(17)} fontWeight="700" fill="#fff">{d.op.toLocaleString("ko-KR")}</text>
-              )}
 
               {/* 판관비 영역 (light): op → gross */}
               <rect
@@ -262,36 +259,20 @@ export function ProfitChart() {
 
               {/* 영업외손익 (green segment) */}
               <rect x={bx} y={yv(nonTop)} width={barW} height={Math.max(yv(nonBot) - yv(nonTop), 0)} fill={GREEN} />
-              {Math.abs(yv(nonBot) - yv(nonTop)) > 22 && (
-                <text x={cx} y={(yv(nonTop) + yv(nonBot)) / 2 + 7} textAnchor="middle" fontSize={fs(16)} fontWeight="700" fill="#fff">
-                  {d.non >= 0 ? "+" : ""}{d.non.toLocaleString("ko-KR")}
-                </text>
-              )}
 
               {/* 매출이익 label above bar */}
               <text x={cx} y={labelTopY - 32} textAnchor="middle" fontSize={fs(21)} fontWeight="700" fill={NAVY}>{gross.toLocaleString("ko-KR")}</text>
               <text x={cx} y={labelTopY - 10} textAnchor="middle" fontSize={fs(17)} fontWeight="600" fill={NAVY}>({d.totalPct})</text>
 
-              {/* 판관비 bracket — 6개 미만일 때만 표시 */}
-              {!isCondensed && (
-                <>
-                  <path d={`M ${brX} ${yGross} h 7 V ${yOpTop} h -7`} fill="none" stroke={ORANGE} strokeWidth="2" />
-                  <text x={brX + 13} y={(yGross + yOpTop) / 2 - 4}  fontSize={fs(14)} fill={ORANGE}>{t("common:sga")}</text>
-                  <text x={brX + 13} y={(yGross + yOpTop) / 2 + 13} fontSize={fs(14)} fill={ORANGE}>{d.sga}({d.sgaPct})</text>
-                </>
-              )}
-
-              {/* 경상이익 점/점선 — 6개 미만일 때만 표시 */}
-              {!isCondensed && (
-                <>
-                  <line x1={bx - 26} y1={yOrd} x2={bx} y2={yOrd} stroke={GREEN} strokeWidth="1.5" strokeDasharray="4 3" />
-                  <circle cx={bx - 3} cy={yOrd} r="4" fill={GREEN} />
-                  <text x={bx - 2} y={yOrd + 19} textAnchor="end" fontSize={fs(14)} fill={GREEN}>{d.ord.toLocaleString("ko-KR")}({d.ordPct})</text>
-                </>
-              )}
-
               {/* Month label */}
               <text x={cx} y={Y0 + 32} textAnchor="middle" fontSize={fs(17)} fontWeight="600" fill="#333">{d.m}</text>
+
+              {/* 영업외손익 값 — 월 라벨 아래 */}
+              {d.non !== 0 && (
+                <text x={cx} y={Y0 + 54} textAnchor="middle" fontSize={fs(15)} fontWeight="700" fill={GREEN}>
+                  {d.non >= 0 ? "+" : ""}{d.non.toLocaleString("ko-KR")}
+                </text>
+              )}
             </g>
           );
         })}
