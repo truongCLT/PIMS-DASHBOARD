@@ -7,6 +7,8 @@
  */
 
 export interface ProjectDetailOverview {
+  /** PIMSVINA 현장 코드 (mr_projects.site_code), 현장 계약 환율 조회에 사용 */
+  siteCode?: string | null;
   /** 도급액 (천 USD) */
   contractAmount: number | null;
   /** 공사 시작일 YYYY-MM-DD */

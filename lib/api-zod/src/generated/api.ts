@@ -173,6 +173,31 @@ export const PutFxRatesHistoryResponse = zod.object({
 
 
 /**
+ * @summary PIMSVINA per-site contract exchange rate (CBTB_CTRTSUMM.RATEUSD/RATEKRW)
+ */
+export const GetPimsvinaSiterateQueryParams = zod.object({
+  "siteCode": zod.coerce.string()
+})
+
+export const GetPimsvinaSiterateResponse = zod.object({
+  "siteCode": zod.string(),
+  "rateUsd": zod.number().nullable().describe('1 USD 당 VND (RATEUSD)'),
+  "rateKrw": zod.number().nullable().describe('1 KRW 당 VND (RATEKRW)')
+}).describe('PIMSVINA 현장 계약 환율 (CBTB_CTRTSUMM.RATEUSD\/RATEKRW, VND 기준)')
+
+
+/**
+ * @summary PIMSVINA latest official monthly exchange rate (CHTB_EXCHANGE_RATIO)
+ */
+export const GetPimsvinaExchangerateResponseItem = zod.object({
+  "currency": zod.enum(['USD', 'KRW']),
+  "yymm": zod.string().describe('환율이 존재하는 최신 월 (YYYYMM)'),
+  "rate": zod.number().describe('1 currency 당 VND')
+}).describe('PIMSVINA 공식 환율 중 조회 시점 기준 최신 월 값 (CHTB_EXCHANGE_RATIO, VND 기준)')
+export const GetPimsvinaExchangerateResponse = zod.array(GetPimsvinaExchangerateResponseItem)
+
+
+/**
  * @summary Company/division org structure (companies with nested divisions)
  */
 export const GetOrgStructureResponse = zod.object({
@@ -332,6 +357,7 @@ export const GetProjectdetailResponse = zod.object({
   "projectName": zod.string(),
   "unit": zod.string().describe('Amount unit (천 USD)'),
   "overview": zod.object({
+  "siteCode": zod.string().nullish().describe('PIMSVINA 현장 코드 (mr_projects.site_code), 현장 계약 환율 조회에 사용'),
   "contractAmount": zod.number().nullable().describe('도급액 (천 USD)'),
   "startDate": zod.string().nullable().describe('공사 시작일 YYYY-MM-DD'),
   "endDate": zod.string().nullable().describe('공사 종료일 YYYY-MM-DD'),
@@ -458,6 +484,7 @@ export const PutProjectdetailBody = zod.object({
   "projectName": zod.string(),
   "unit": zod.string().describe('Amount unit (천 USD)'),
   "overview": zod.object({
+  "siteCode": zod.string().nullish().describe('PIMSVINA 현장 코드 (mr_projects.site_code), 현장 계약 환율 조회에 사용'),
   "contractAmount": zod.number().nullable().describe('도급액 (천 USD)'),
   "startDate": zod.string().nullable().describe('공사 시작일 YYYY-MM-DD'),
   "endDate": zod.string().nullable().describe('공사 종료일 YYYY-MM-DD'),
@@ -580,6 +607,7 @@ export const PutProjectdetailResponse = zod.object({
   "projectName": zod.string(),
   "unit": zod.string().describe('Amount unit (천 USD)'),
   "overview": zod.object({
+  "siteCode": zod.string().nullish().describe('PIMSVINA 현장 코드 (mr_projects.site_code), 현장 계약 환율 조회에 사용'),
   "contractAmount": zod.number().nullable().describe('도급액 (천 USD)'),
   "startDate": zod.string().nullable().describe('공사 시작일 YYYY-MM-DD'),
   "endDate": zod.string().nullable().describe('공사 종료일 YYYY-MM-DD'),

@@ -52,6 +52,36 @@ export interface FxRateHistoryEntry {
   rate: number;
 }
 
+/**
+ * PIMSVINA 현장 계약 환율 (CBTB_CTRTSUMM.RATEUSD/RATEKRW, VND 기준)
+ */
+export interface PimsvinaSiteRate {
+  siteCode: string;
+  /** 1 USD 당 VND (RATEUSD) */
+  rateUsd: number | null;
+  /** 1 KRW 당 VND (RATEKRW) */
+  rateKrw: number | null;
+}
+
+export type PimsvinaExchangeRateEntryCurrency = typeof PimsvinaExchangeRateEntryCurrency[keyof typeof PimsvinaExchangeRateEntryCurrency];
+
+
+export const PimsvinaExchangeRateEntryCurrency = {
+  USD: 'USD',
+  KRW: 'KRW',
+} as const;
+
+/**
+ * PIMSVINA 공식 환율 중 조회 시점 기준 최신 월 값 (CHTB_EXCHANGE_RATIO, VND 기준)
+ */
+export interface PimsvinaExchangeRateEntry {
+  currency: PimsvinaExchangeRateEntryCurrency;
+  /** 환율이 존재하는 최신 월 (YYYYMM) */
+  yymm: string;
+  /** 1 currency 당 VND */
+  rate: number;
+}
+
 export type DivisionBusinessType = typeof DivisionBusinessType[keyof typeof DivisionBusinessType];
 
 
@@ -490,6 +520,8 @@ export interface MgmtreportProjects {
 }
 
 export interface ProjectDetailOverview {
+  /** PIMSVINA 현장 코드 (mr_projects.site_code), 현장 계약 환율 조회에 사용 */
+  siteCode?: string | null;
   /** 도급액 (천 USD) */
   contractAmount: number | null;
   /** 공사 시작일 YYYY-MM-DD */
@@ -705,6 +737,10 @@ export interface ErrorEnvelope {
 export interface HealthStatus {
   status: string;
 }
+
+export type GetPimsvinaSiterateParams = {
+siteCode: string;
+};
 
 export type GetProjectdetailParams = {
 projectName: string;

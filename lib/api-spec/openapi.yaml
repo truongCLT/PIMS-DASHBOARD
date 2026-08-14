@@ -235,6 +235,44 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiErrorMessage"
+  /pimsvina/siterate:
+    get:
+      operationId: getPimsvinaSiterate
+      tags: [pimsvinaRates]
+      summary: PIMSVINA per-site contract exchange rate (CBTB_CTRTSUMM.RATEUSD/RATEKRW)
+      parameters:
+        - name: siteCode
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Site contract exchange rate
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PimsvinaSiteRate"
+        "400":
+          description: Missing siteCode
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorMessage"
+  /pimsvina/exchangerate:
+    get:
+      operationId: getPimsvinaExchangerate
+      tags: [pimsvinaRates]
+      summary: PIMSVINA latest official monthly exchange rate (CHTB_EXCHANGE_RATIO)
+      responses:
+        "200":
+          description: Latest official exchange rate entries (USD, KRW)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PimsvinaExchangeRateEntry"
   /orgstructure:
     get:
       operationId: getOrgStructure
@@ -1257,6 +1295,35 @@ components:
           type: number
           exclusiveMinimum: 0
       required: [currency, year, month, rate]
+    PimsvinaSiteRate:
+      type: object
+      description: PIMSVINA 현장 계약 환율 (CBTB_CTRTSUMM.RATEUSD/RATEKRW, VND 기준)
+      properties:
+        siteCode:
+          type: string
+        rateUsd:
+          type: number
+          nullable: true
+          description: 1 USD 당 VND (RATEUSD)
+        rateKrw:
+          type: number
+          nullable: true
+          description: 1 KRW 당 VND (RATEKRW)
+      required: [siteCode, rateUsd, rateKrw]
+    PimsvinaExchangeRateEntry:
+      type: object
+      description: PIMSVINA 공식 환율 중 조회 시점 기준 최신 월 값 (CHTB_EXCHANGE_RATIO, VND 기준)
+      properties:
+        currency:
+          type: string
+          enum: [USD, KRW]
+        yymm:
+          type: string
+          description: 환율이 존재하는 최신 월 (YYYYMM)
+        rate:
+          type: number
+          description: 1 currency 당 VND
+      required: [currency, yymm, rate]
     Division:
       type: object
       properties:
@@ -1874,6 +1941,10 @@ components:
     ProjectDetailOverview:
       type: object
       properties:
+        siteCode:
+          type: string
+          nullable: true
+          description: PIMSVINA 현장 코드 (mr_projects.site_code), 현장 계약 환율 조회에 사용
         contractAmount:
           type: number
           nullable: true
