@@ -161,18 +161,25 @@ function KPICard({
             </div>
           </div>
           <div style={{
-            display: "flex", alignItems: "center", gap: "6px",
+            display: "flex", alignItems: "center",
             borderTop: "1px solid #eef1f6", paddingTop: "6px",
           }}>
-            <span style={{ fontSize: "clamp(8px, 0.65vw, 10px)", color: K.labelColor, whiteSpace: "nowrap" }}>{t("common:vsPlan")}</span>
-            <span style={{ fontSize: "clamp(10px, 0.8vw, 12px)", fontWeight: 700, color: diff != null ? diffColor : K.labelColor, overflowWrap: "anywhere" }}>
-              {diff != null ? diffText : "-"}
-            </span>
-            <div style={{ width: "1px", backgroundColor: "#eef1f6", alignSelf: "stretch", margin: "0 2px", marginLeft: "auto", flexShrink: 0 }} />
-            <span style={{ fontSize: "clamp(8px, 0.65vw, 10px)", color: K.labelColor, whiteSpace: "nowrap" }}>{t("common:plan")}</span>
-            <span style={{ fontSize: "clamp(10px, 0.8vw, 12px)", fontWeight: 700, color: K.valueColor, overflowWrap: "anywhere" }}>
-              {plan.toLocaleString()}
-            </span>
+            {/* 좌: 계획 대비 */}
+            <div style={{ flex: 1, display: "flex", alignItems: "center", gap: "4px" }}>
+              <span style={{ fontSize: "clamp(8px, 0.65vw, 10px)", color: K.labelColor, whiteSpace: "nowrap" }}>{t("common:vsPlan")}</span>
+              <span style={{ fontSize: "clamp(10px, 0.8vw, 12px)", fontWeight: 700, color: diff != null ? diffColor : K.labelColor, overflowWrap: "anywhere" }}>
+                {diff != null ? diffText : "-"}
+              </span>
+            </div>
+            {/* 중앙 구분선 */}
+            <div style={{ width: "1px", backgroundColor: "#eef1f6", alignSelf: "stretch", flexShrink: 0 }} />
+            {/* 우: 계획 */}
+            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "4px" }}>
+              <span style={{ fontSize: "clamp(8px, 0.65vw, 10px)", color: K.labelColor, whiteSpace: "nowrap" }}>{t("common:plan")}</span>
+              <span style={{ fontSize: "clamp(10px, 0.8vw, 12px)", fontWeight: 700, color: K.valueColor, overflowWrap: "anywhere" }}>
+                {plan.toLocaleString()}
+              </span>
+            </div>
           </div>
         </div>
       );
