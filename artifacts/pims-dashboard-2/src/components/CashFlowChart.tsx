@@ -128,8 +128,9 @@ const makeBalanceLabel = (compact: boolean) => (props: any) => {
 };
 
 function monthLabel(ym: string, t: TFunc): string {
+  const year = Number(ym.slice(0, 4));
   const m = Number(ym.slice(5, 7));
-  return t("cashFlowChart:monthLabel", { month: m });
+  return t("cashFlowChart:monthLabel", { year, month: m });
 }
 
 export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) {

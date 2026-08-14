@@ -23,8 +23,9 @@ import { cardStyle } from "../lib/uiTokens";
 type TFn = ReturnType<typeof useTranslation>["t"];
 
 function monthLabel(ym: string, t: TFn): string {
+  const year = Number(ym.slice(0, 4));
   const m = Number(ym.slice(5, 7));
-  return t("serviceCashflowTab:monthLabel", { month: m, yy: ym.slice(2, 4) });
+  return t("serviceCashflowTab:monthLabel", { year, month: m });
 }
 
 function niceStep(range: number): number {

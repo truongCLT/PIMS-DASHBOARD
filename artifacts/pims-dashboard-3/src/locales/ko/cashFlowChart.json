@@ -3,7 +3,7 @@
   "noClosedProjectData": "종료된 프로젝트가 없어 집계 데이터가 없습니다.",
   "noOngoingCashflowData": "진행중 프로젝트의 자금수지 데이터가 없습니다.",
   "thousandUsd": "천 USD",
-  "monthLabel": "{{month}}월",
+  "monthLabel": "{{year}}년{{month}}월",
   "noProjectCashflowAggregate": "프로젝트별 자금수지 집계는 제공되지 않습니다.",
   "noDataForPeriod": "선택한 기간에 데이터가 없습니다.",
   "noAggregateData": "집계 데이터가 없습니다.",

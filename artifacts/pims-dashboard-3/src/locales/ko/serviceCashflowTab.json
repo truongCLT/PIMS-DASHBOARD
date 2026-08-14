@@ -1,5 +1,5 @@
 {
-  "monthLabel": "{{month}}월'{{yy}}",
+  "monthLabel": "{{year}}년{{month}}월",
   "entryGuide": "관리자 모드로 로그인하면 \"데이터 입력\" 탭의 \"월별 자금\" 표에서 자금 데이터를 입력할 수 있습니다.",
   "loadingCashflow": "자금 데이터를 불러오는 중입니다…",
   "noCashflowDataYet": "아직 입력된 자금 데이터가 없습니다.",
