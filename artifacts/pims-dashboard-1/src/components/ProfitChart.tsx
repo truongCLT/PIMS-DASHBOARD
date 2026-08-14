@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useDashboardData, type ProfitRow } from "../lib/mgmtreportData";
 import { useDashboardFilters } from "../lib/dashboardFilters";
@@ -38,6 +38,18 @@ export function ProfitChart() {
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
 
+  /* SVG 실제 너비를 측정해 viewBox(1000) 기준 역스케일 계산
+     → non-daewoo 폰트를 SalesChart CSS px 기준(11px)에 맞춤 */
+  const svgRef = useRef<SVGSVGElement>(null);
+  const [svgWidth, setSvgWidth] = useState(600);
+  useEffect(() => {
+    const el = svgRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([e]) => setSvgWidth(e.contentRect.width));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   const { derived, isError } = useDashboardData();
   const { unitIndex } = useDashboardFilters();
   const { theme } = useTheme();
@@ -54,9 +66,15 @@ export function ProfitChart() {
   const fs = (n: number) => {
     const base = compact ? Math.max(9, Math.round(n * 0.6)) : n;
     const scaled = Math.round(base * scaleUp);
-    // non-daewoo: SalesChart 기준 (11px @ 800px card) 을 넘지 않도록 캡
     return daewoo ? scaled : Math.min(scaled, 14);
   };
+
+  /* non-daewoo: SVG viewBox(1000) 역스케일로 SalesChart CSS px에 정확히 매핑
+     axisFs  = Y축 숫자  (SalesChart 기준 compact?9:11 px)
+     valueFs = 바 위 숫자 (SalesChart 기준 compact?9.5:11 px) */
+  const _inv   = 1000 / Math.max(svgWidth, 1);
+  const axisFs  = (compact ? 9 : 11) * _inv;
+  const valueFs = (compact ? 9.5 : 11) * _inv;
 
   const plotLeft  = daewoo ? (compact ? 160 : 115) : compact ? 130 : 80;
   const plotRight = 950;
@@ -175,6 +193,7 @@ export function ProfitChart() {
         </div>
       ) : (
       <svg
+        ref={svgRef}
         viewBox={daewoo ? "0 0 1000 530" : "0 0 1000 445"}
         style={daewoo
           ? { width: "100%", flex: 1, minHeight: 0, display: "block" }
@@ -196,7 +215,7 @@ export function ProfitChart() {
               strokeWidth={v === 0 ? 1.5 : 1}
               strokeDasharray={v === 0 ? undefined : "3 3"}
             />
-            <text x={plotLeft - 12} y={yv(v) + 7} textAnchor="end" fontSize={fs(18)} fill={chartTheme.axisText}>
+            <text x={plotLeft - 12} y={yv(v) + 7} textAnchor="end" fontSize={daewoo ? fs(18) : axisFs} fill={chartTheme.axisText}>
               {v.toLocaleString("ko-KR")}
             </text>
           </g>
@@ -262,7 +281,7 @@ export function ProfitChart() {
               {/* 영업이익 (navy, from zero) */}
               <rect x={bx} y={yOpTop} width={barW} height={Math.max(yOpBot - yOpTop, 0)} fill={NAVY} />
               {yOpBot - yOpTop > 44 && (
-                <text x={cx} y={(yOpTop + yOpBot) / 2 + 7} textAnchor="middle" fontSize={fs(17)} fontWeight="700" fill="#fff">{d.op.toLocaleString("ko-KR")}</text>
+                <text x={cx} y={(yOpTop + yOpBot) / 2 + 7} textAnchor="middle" fontSize={valueFs} fontWeight="700" fill="#fff">{d.op.toLocaleString("ko-KR")}</text>
               )}
 
               {/* 판관비 영역 (light): op → gross */}
@@ -275,14 +294,14 @@ export function ProfitChart() {
               {/* 영업외손익 (green segment) */}
               <rect x={bx} y={yv(nonTop)} width={barW} height={Math.max(yv(nonBot) - yv(nonTop), 0)} fill={GREEN} />
               {Math.abs(yv(nonBot) - yv(nonTop)) > 22 && (
-                <text x={cx} y={(yv(nonTop) + yv(nonBot)) / 2 + 7} textAnchor="middle" fontSize={fs(16)} fontWeight="700" fill="#fff">
+                <text x={cx} y={(yv(nonTop) + yv(nonBot)) / 2 + 7} textAnchor="middle" fontSize={valueFs} fontWeight="700" fill="#fff">
                   {d.non >= 0 ? "+" : ""}{d.non.toLocaleString("ko-KR")}
                 </text>
               )}
 
               {/* 매출이익 label above bar */}
-              <text x={cx} y={labelTopY - 32} textAnchor="middle" fontSize={fs(21)} fontWeight="700" fill={NAVY}>{gross.toLocaleString("ko-KR")}</text>
-              <text x={cx} y={labelTopY - 10} textAnchor="middle" fontSize={fs(17)} fontWeight="600" fill={NAVY}>({d.totalPct})</text>
+              <text x={cx} y={labelTopY - 32} textAnchor="middle" fontSize={valueFs} fontWeight="700" fill={NAVY}>{gross.toLocaleString("ko-KR")}</text>
+              <text x={cx} y={labelTopY - 10} textAnchor="middle" fontSize={axisFs} fontWeight="600" fill={NAVY}>({d.totalPct})</text>
 
               {/* 판관비 bracket — 6개 미만일 때만 표시 */}
               {!isCondensed && (

@@ -278,7 +278,8 @@ export function SalesChart() {
                 dataKey="plan"
                 name={t("salesChart:salesPlan")}
                 fill={planColor}
-                barSize={compact ? 26 : 34}
+                barSize={28}
+                maxBarSize={28}
                 radius={[7, 7, 0, 0]}
                 isAnimationActive={false}
               >
