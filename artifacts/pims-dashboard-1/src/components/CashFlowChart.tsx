@@ -208,11 +208,10 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
           <YAxis
             yAxisId="balance"
             orientation="right"
-            tick={{ fontSize: compact ? 9 : 11, fill: chartTheme.balanceNavy }}
-            width={compact ? 88 : 60}
+            tick={false}
+            width={0}
             axisLine={false}
             tickLine={false}
-            tickFormatter={(v: number) => v.toLocaleString()}
           />
           <Tooltip
             contentStyle={{ fontSize: "12px" }}
