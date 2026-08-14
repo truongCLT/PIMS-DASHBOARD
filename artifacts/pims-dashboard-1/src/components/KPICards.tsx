@@ -166,8 +166,7 @@ function KPICard({
           }}>
             {/* 좌: 계획 대비 */}
             <div
-              style={{ flex: 1, display: "flex", alignItems: "center", gap: "4px" }}
-              className="text-center">
+              style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "4px" }}>
               <span style={{ fontSize: "clamp(8px, 0.65vw, 10px)", color: K.labelColor, whiteSpace: "nowrap" }}>{t("common:vsPlan")}</span>
               <span style={{ fontSize: "clamp(10px, 0.8vw, 12px)", fontWeight: 700, color: diff != null ? diffColor : K.labelColor, overflowWrap: "anywhere" }}>
                 {diff != null ? diffText : "-"}
@@ -178,7 +177,7 @@ function KPICard({
               style={{ width: "1px", backgroundColor: "#eef1f6", alignSelf: "stretch", flexShrink: 0 }}
               className="text-center" />
             {/* 우: 계획 */}
-            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "4px" }}>
+            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "4px" }}>
               <span style={{ fontSize: "clamp(8px, 0.65vw, 10px)", color: K.labelColor, whiteSpace: "nowrap" }}>{t("common:plan")}</span>
               <span style={{ fontSize: "clamp(10px, 0.8vw, 12px)", fontWeight: 700, color: K.valueColor, overflowWrap: "anywhere" }}>
                 {plan.toLocaleString()}
