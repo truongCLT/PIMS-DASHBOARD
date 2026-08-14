@@ -651,7 +651,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                         );
                       })()}
                     </div>
-                    {/* 합계 + 매출 진도 푸터 */}
+                    {/* 합계 (좌) + 범례 (우) — 같은 행 */}
                     <div
                       style={{
                         display: "flex",
@@ -668,19 +668,18 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                         {t("common:total")} : {formatMoney(totalActualSum || null, currency, unitOn)} / {formatMoney(totalBudgetSum || null, currency, unitOn)}
                         {totalCostPct != null && ` (${fmtPct(totalCostPct)})`}
                       </span>
-                    </div>
-                    {/* 범례 */}
-                    <div style={{ display: "flex", gap: "12px", marginTop: "6px", justifyContent: "flex-end", flexWrap: "wrap" }}>
-                      {[
-                        { label: t("overviewTab:totalBudget"), color: chartTheme.lightGray },
-                        { label: t("overviewTab:executionPlanCumulative"), color: chartTheme.outflowRed },
-                        { label: t("overviewTab:executionActualCumulative"), color: chartTheme.inflowBlue },
-                      ].map(({ label, color }) => (
-                        <div key={label} style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                          <div style={{ width: "11px", height: "11px", backgroundColor: color, borderRadius: "2px" }} />
-                          <span style={{ fontSize: "12px", color: "#555" }}>{label}</span>
-                        </div>
-                      ))}
+                      <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
+                        {[
+                          { label: t("overviewTab:totalBudget"), color: chartTheme.lightGray },
+                          { label: t("overviewTab:executionPlanCumulative"), color: chartTheme.outflowRed },
+                          { label: t("overviewTab:executionActualCumulative"), color: chartTheme.inflowBlue },
+                        ].map(({ label, color }) => (
+                          <div key={label} style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                            <div style={{ width: "11px", height: "11px", backgroundColor: color, borderRadius: "2px" }} />
+                            <span style={{ fontSize: "12px", color: "#555" }}>{label}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </>
                 )}
