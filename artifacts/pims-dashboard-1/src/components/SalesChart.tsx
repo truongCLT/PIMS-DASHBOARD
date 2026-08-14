@@ -166,10 +166,11 @@ export function SalesChart() {
       height > 0 && d.actual > 0
     ) {
       const actualY = y + height - d.actual * (height / d.plan);
-      if (Number.isFinite(actualY)) topY = Math.min(y, actualY);
+      // 항상 실적 바 바로 위에 표시
+      if (Number.isFinite(actualY)) topY = actualY;
     }
     return (
-      <text x={x + width / 2} y={topY - 7} textAnchor="middle"
+      <text x={x + width / 2} y={topY - 4} textAnchor="middle"
         fontSize={fontSize} fontWeight={700} fill="#1a2d4d">
         {text}
       </text>
