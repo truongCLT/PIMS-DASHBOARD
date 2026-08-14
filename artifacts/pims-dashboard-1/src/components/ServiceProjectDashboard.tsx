@@ -98,7 +98,7 @@ function EmptyHint({ label }: { label: string }) {
 }
 
 export function ServiceProjectDashboard({ projectName }: { projectName: string }) {
-  const { t } = useTranslation(["serviceProjectDashboard", "common"]);
+  const { t } = useTranslation(["serviceProjectDashboard", "overviewTab", "common"]);
   const [currency, setCurrency] = useState("USD");
   const [unitOn, setUnitOn] = useState(true);
   const [activeTab, setActiveTab] = useState("Overview");
@@ -172,15 +172,40 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
   const costBudget = detail?.costBudget ?? [];
   const outsourcing = detail?.outsourcing ?? [];
 
-  // 예산 집행 현황 (Budget Execution) — 항목별 예산 vs 기성 실적
-  const budgetRows = costBudget.filter((c) => c.budget != null || c.actual != null);
-  const totalBudget = budgetRows.some((c) => c.budget != null)
-    ? budgetRows.reduce((a, c) => a + (c.budget ?? 0), 0)
+  // 예산 집행 현황 — 시공(OverviewTab)과 동일한 구조
+  const findCb = (name: string) =>
+    costBudget.find((r) => r.item.trim().toLowerCase() === name.toLowerCase()) ?? null;
+  const _common = findCb("Common");
+  const _expense1 = findCb("Expense 1");
+  const _expense2 = findCb("Expense 2");
+  const _contingency = findCb("Contingency");
+  const outRows = outsourcing;
+  const outBudget = outRows.some((r) => r.budget != null)
+    ? outRows.reduce((a, r) => a + (r.budget ?? 0), 0)
     : null;
-  const totalActual = budgetRows.some((c) => c.actual != null)
-    ? budgetRows.reduce((a, c) => a + (c.actual ?? 0), 0)
+  const outActual = outRows.some((r) => r.accum != null || r.resolved != null)
+    ? outRows.reduce((a, r) => a + (r.accum ?? r.resolved ?? 0), 0)
     : null;
-  const maxBudget = budgetRows.reduce((a, c) => Math.max(a, c.budget ?? 0), 0);
+  const outPlan = outRows.some((r) => r.executedBudget != null)
+    ? outRows.reduce((a, r) => a + (r.executedBudget ?? 0), 0)
+    : null;
+  const budgetRows = [
+    { item: "외주성", budget: outBudget, plan: outPlan, actual: outActual },
+    { item: "Common", budget: _common?.budget ?? null, plan: _common?.plan ?? null, actual: _common?.actual ?? null },
+    { item: "Expense 1", budget: _expense1?.budget ?? null, plan: _expense1?.plan ?? null, actual: _expense1?.actual ?? null },
+  ].filter((r) => r.budget != null || r.actual != null || r.plan != null);
+  const extraBudgetRows = [
+    { item: "Expense 2", budget: _expense2?.budget ?? null, plan: _expense2?.plan ?? null, actual: _expense2?.actual ?? null },
+    { item: "Contingency", budget: _contingency?.budget ?? null, plan: _contingency?.plan ?? null, actual: _contingency?.actual ?? null },
+  ].filter((r) => r.budget != null || r.actual != null || r.plan != null);
+  const allBudgetRows = [...budgetRows, ...extraBudgetRows];
+  const directCostPct = ratioPct(
+    budgetRows.reduce((a, r) => a + (r.actual ?? 0), 0),
+    budgetRows.reduce((a, r) => a + (r.budget ?? 0), 0),
+  );
+  const totalBudgetSum = allBudgetRows.reduce((a, r) => a + (r.budget ?? 0), 0);
+  const totalActualSum = allBudgetRows.reduce((a, r) => a + (r.actual ?? 0), 0);
+  const totalCostPct = ratioPct(totalActualSum, totalBudgetSum);
 
   // 도급액 — 개요 입력값 우선, 없으면 원가율 데이터(execution 우선, 없으면 bidding)의 도급액 사용
   const ov = detail?.overview;
@@ -477,74 +502,10 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
             // 매출 진도 (누계 매출 / 도급액) — 예산집행 기준선으로 사용
             const revProgress = ratioPct(revenueTotal, contractAmount);
             const totalDonutPct = ratioPct(revenueTotal, contractAmount);
-            // Direct / Indirect(Service Fee 등) 구분
-            const isDirect = (r: (typeof budgetRows)[number]) =>
-              (r.category ?? "").trim().toLowerCase() === "direct cost" ||
-              ["외주성", "common", "expense 1"].includes((r.item ?? "").trim().toLowerCase());
-            const directRows = budgetRows.filter(isDirect);
-            const indirectRows = budgetRows.filter((r) => !isDirect(r));
-            const directBudget = directRows.some((c) => c.budget != null)
-              ? directRows.reduce((a, c) => a + (c.budget ?? 0), 0)
-              : null;
-            const directActual = directRows.some((c) => c.actual != null)
-              ? directRows.reduce((a, c) => a + (c.actual ?? 0), 0)
-              : null;
-            const directPct = ratioPct(directActual, directBudget);
             const collectionRatePct =
               cashConfirmed != null && cashConfirmed > 0 && cashCollection != null
                 ? (cashCollection / cashConfirmed) * 100
                 : null;
-            const H = 190;
-            const renderBudgetBar = (g: (typeof budgetRows)[number], gi: number) => {
-              const budget = g.budget ?? 0;
-              const spent = g.actual ?? 0;
-              const bh = maxBudget > 0 ? Math.max((budget / maxBudget) * H, 8) : 8;
-              const sh = budget > 0 && spent > 0 ? Math.max(bh * Math.min(spent / budget, 1), 6) : 0;
-              const pct = ratioPct(g.actual, g.budget);
-              // 매출 진도 기준선 높이 (예산 × 매출진도%)
-              const mh = revProgress != null && budget > 0 ? Math.max(0, Math.min(bh * (revProgress / 100), bh)) : null;
-              return (
-                <div key={`${g.item}-${gi}`} style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: "11px", color: "#555", marginBottom: "2px" }}>{formatMoney(g.budget, currency, unitOn)}</div>
-                  <div style={{ height: `${H}px`, display: "flex", alignItems: "flex-end", gap: "3px", justifyContent: "center" }}>
-                    <div style={{ width: "26px", height: `${bh}px`, backgroundColor: "#d9dee5", position: "relative" }}>
-                      {mh != null && (
-                        <div
-                          style={{
-                            position: "absolute",
-                            bottom: `${mh}px`,
-                            left: "-4px",
-                            right: "-4px",
-                            borderTop: `2px dashed ${chartTheme.outflowRed}`,
-                          }}
-                        />
-                      )}
-                    </div>
-                    {sh > 0 && (
-                      <div style={{ width: "26px", height: `${sh}px`, backgroundColor: "#2f7cf6", position: "relative" }}>
-                        <span
-                          style={{
-                            position: "absolute",
-                            top: "50%",
-                            left: "50%",
-                            transform: "translate(-50%, -50%)",
-                            fontSize: "10px",
-                            color: "#fff",
-                            fontWeight: 700,
-                          }}
-                        >
-                          {formatMoney(g.actual, currency, unitOn)}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                  {pct != null && (
-                    <div style={{ fontSize: "12px", color: "#2f7cf6", fontWeight: 700, marginTop: "2px" }}>{fmtPct(pct)}</div>
-                  )}
-                  <div style={{ fontSize: "11px", color: "#333", fontWeight: 600, marginTop: "2px" }}>{g.item}</div>
-                </div>
-              );
-            };
             return (
           <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: "8px" }}>
             {/* Row: Revenue (도넛 2개) / Budget Execution Status / Cash (막대 4개) */}
@@ -604,73 +565,104 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                 )}
               </div>
 
-              {/* Budget Execution Status — Direct Cost vs 매출 진도 기준선, Indirect(Service Fee) 별도 */}
+              {/* Budget Execution Status — 시공(OverviewTab)과 동일한 3-막대 스타일 */}
               <div style={cardStyle}>
                 <CardHeader
-                  title={`${t("common:budget")} ${t("serviceProjectDashboard:executionStatusLabel")}`}
+                  title={t("overviewTab:budgetExecutionStatus")}
                   unit={unitStr}
-                  badgeLabel={t("serviceProjectDashboard:totalExecutionRate")}
-                  badgeValue={fmtPct(ratioPct(totalActual, totalBudget))}
+                  badgeLabel={t("overviewTab:totalCost")}
+                  badgeValue={fmtPct(totalCostPct)}
                   badgeColor={chartTheme.planBlue}
                 />
                 {isLoading ? (
                   <div style={{ padding: "40px 10px", textAlign: "center", fontSize: "13px", color: "#7c8ba3" }}>{t("common:loading")}</div>
-                ) : budgetRows.length === 0 ? (
+                ) : allBudgetRows.length === 0 ? (
                   <EmptyHint label={t("serviceProjectDashboard:budgetExecutionEmptyLabel")} />
                 ) : (
                   <>
-                    <div style={{ display: "flex", alignItems: "stretch", gap: "10px", marginTop: "8px" }}>
-                      {/* Direct Cost 그룹 */}
-                      <div
-                        style={{
-                          flex: directRows.length > 0 ? directRows.length : 1,
-                          border: "1px solid #e2e9f3",
-                          borderRadius: "6px",
-                          padding: "6px 4px 4px",
-                          backgroundColor: "#f8fafd",
-                        }}
-                      >
-                        <div style={{ textAlign: "center", fontSize: "12px", fontWeight: 700, color: "#16294a", marginBottom: "4px" }}>
-                          {t("serviceProjectDashboard:directCostLabel")} : {fmtPct(directPct)}
-                        </div>
-                        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-around" }}>
-                          {directRows.map(renderBudgetBar)}
-                        </div>
-                      </div>
-                      {/* Indirect Cost (Service Fee 외주 등) */}
-                      {indirectRows.length > 0 && (
-                        <div style={{ flex: indirectRows.length, padding: "6px 4px 4px" }}>
-                          <div style={{ textAlign: "center", fontSize: "12px", fontWeight: 700, color: "#7c8ba3", marginBottom: "4px" }}>
-                            {t("serviceProjectDashboard:indirectCostLabel")}
-                          </div>
-                          <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-around" }}>
-                            {indirectRows.map(renderBudgetBar)}
-                          </div>
-                        </div>
-                      )}
+                    <div style={{ display: "flex", gap: "10px", alignItems: "stretch" }}>
+                      {(() => {
+                        const BAR_H = 130;
+                        const LABEL_H = 18;
+                        const maxVal = Math.max(
+                          ...allBudgetRows.flatMap((r) => [r.budget ?? 0, r.plan ?? 0, r.actual ?? 0]),
+                          1,
+                        );
+                        const barH = (v: number | null) =>
+                          v != null && v > 0 ? Math.max((v / maxVal) * BAR_H, 8) : 0;
+                        const GRAY_W = 68;
+                        const renderGroup = (g: (typeof allBudgetRows)[number]) => {
+                          const bud = g.budget ?? 0;
+                          const pln = g.plan ?? 0;
+                          const act = g.actual ?? 0;
+                          const pct = bud > 0 && act > 0 ? (act / bud) * 100 : null;
+                          const bh = barH(bud);
+                          const ph = barH(pln);
+                          const ah = barH(act);
+                          const subTop = Math.max(ph, ah);
+                          const itemLabel = g.item === "외주성" ? t("overviewTab:outsourcingItem") : g.item;
+                          return (
+                            <div key={g.item} style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center" }}>
+                              <div title={formatMoney(bud || null, currency, unitOn)} style={{ fontSize: "12px", fontWeight: 600, color: "#333", marginBottom: "2px", whiteSpace: "nowrap", maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                {formatMoney(bud || null, currency, unitOn)}
+                              </div>
+                              <div style={{ position: "relative", height: `${BAR_H + LABEL_H}px`, width: `${GRAY_W}px` }}>
+                                <div style={{ position: "absolute", bottom: 0, left: 0, width: `${GRAY_W}px`, height: `${Math.max(bh, 2)}px`, backgroundColor: chartTheme.lightGray, borderRadius: "2px 2px 0 0" }} />
+                                {g.actual != null && ah > 0 && (
+                                  <div style={{ position: "absolute", bottom: 0, left: 0, width: `${GRAY_W}px`, height: `${ah}px`, backgroundColor: chartTheme.inflowBlue, borderRadius: "0 0 2px 2px" }}>
+                                    <span title={formatMoney(act || null, currency, unitOn)} style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", fontSize: "10px", color: "#fff", fontWeight: 700, whiteSpace: "nowrap" }}>
+                                      {formatMoney(act || null, currency, unitOn)}
+                                    </span>
+                                  </div>
+                                )}
+                                {g.plan != null && ph > 0 && (
+                                  <div title={formatMoney(pln || null, currency, unitOn)} style={{ position: "absolute", bottom: `${ph}px`, left: 0, width: `${GRAY_W}px`, height: "3px", backgroundColor: chartTheme.outflowRed, borderRadius: "2px", zIndex: 2 }} />
+                                )}
+                                {pct != null && (
+                                  <div style={{ position: "absolute", bottom: `${subTop + 4}px`, left: "50%", transform: "translateX(-50%)", fontSize: "12px", fontWeight: 700, color: chartTheme.inflowBlue, whiteSpace: "nowrap" }}>
+                                    {fmtPct(pct)}
+                                  </div>
+                                )}
+                              </div>
+                              <div style={{ fontSize: "13px", color: "#16294a", fontWeight: 700, marginTop: "4px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" }}>
+                                {itemLabel}
+                              </div>
+                            </div>
+                          );
+                        };
+                        return (
+                          <>
+                            {budgetRows.length > 0 && (
+                              <div style={{ flex: budgetRows.length, minWidth: 0, backgroundColor: "rgba(214,226,240,0.28)", border: "1px solid #e2e9f3", borderRadius: "8px", padding: "6px 8px 8px" }}>
+                                <div style={{ textAlign: "center", fontSize: "13px", color: "#16294a", fontWeight: 700, marginBottom: "4px" }}>
+                                  {t("overviewTab:directCost")} : {fmtPct(directCostPct)}
+                                </div>
+                                <div style={{ display: "flex", justifyContent: "space-around", gap: "8px", alignItems: "flex-end" }}>
+                                  {budgetRows.map(renderGroup)}
+                                </div>
+                              </div>
+                            )}
+                            {extraBudgetRows.length > 0 && (
+                              <div style={{ flex: extraBudgetRows.length, minWidth: 0, display: "flex", justifyContent: "space-around", gap: "8px", alignItems: "flex-end", padding: "6px 0 8px" }}>
+                                {extraBudgetRows.map(renderGroup)}
+                              </div>
+                            )}
+                          </>
+                        );
+                      })()}
                     </div>
-                    {/* 합계 + 매출 진도 범례 */}
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        marginTop: "8px",
-                        borderTop: "1px solid #eef2f7",
-                        paddingTop: "6px",
-                        fontSize: "12px",
-                      }}
-                    >
-                      <span style={{ color: "#16294a", fontWeight: 700 }}>
-                        {t("serviceProjectDashboard:totalRowLabel")} : {formatMoney(totalActual, currency, unitOn)} / {formatMoney(totalBudget, currency, unitOn)}
-                        {" "}({fmtPct(ratioPct(totalActual, totalBudget))})
-                      </span>
-                      {revProgress != null && (
-                        <span style={{ display: "flex", alignItems: "center", gap: "5px", color: "#555" }}>
-                          <span style={{ width: "16px", borderTop: `2px dashed ${chartTheme.outflowRed}` }} />
-                          {t("serviceProjectDashboard:revenueProgressLabel")} {fmtPct(revProgress)}
-                        </span>
-                      )}
+                    {/* 범례 */}
+                    <div style={{ display: "flex", gap: "12px", marginTop: "8px", justifyContent: "flex-end", flexWrap: "wrap" }}>
+                      {[
+                        { label: t("overviewTab:totalBudget"), color: chartTheme.lightGray },
+                        { label: t("overviewTab:executionPlanCumulative"), color: chartTheme.outflowRed },
+                        { label: t("overviewTab:executionActualCumulative"), color: chartTheme.inflowBlue },
+                      ].map(({ label, color }) => (
+                        <div key={label} style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                          <div style={{ width: "11px", height: "11px", backgroundColor: color, borderRadius: "2px" }} />
+                          <span style={{ fontSize: "12px", color: "#555" }}>{label}</span>
+                        </div>
+                      ))}
                     </div>
                   </>
                 )}
