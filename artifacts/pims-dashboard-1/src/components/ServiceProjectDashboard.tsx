@@ -651,8 +651,32 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                         );
                       })()}
                     </div>
+                    {/* 합계 + 매출 진도 푸터 */}
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        marginTop: "10px",
+                        paddingTop: "7px",
+                        borderTop: "1px solid #eef2f7",
+                        flexWrap: "wrap",
+                        gap: "6px",
+                      }}
+                    >
+                      <span style={{ fontSize: "13px", color: "#16294a", fontWeight: 700 }}>
+                        {t("common:total")} : {formatMoney(totalActualSum || null, currency, unitOn)} / {formatMoney(totalBudgetSum || null, currency, unitOn)}
+                        {totalCostPct != null && ` (${fmtPct(totalCostPct)})`}
+                      </span>
+                      {revProgress != null && (
+                        <span style={{ display: "flex", alignItems: "center", gap: "5px", fontSize: "12px", color: "#555" }}>
+                          <span style={{ width: "18px", borderTop: `2px dashed ${chartTheme.outflowRed}` }} />
+                          {t("serviceProjectDashboard:revenueProgressLabel")} {fmtPct(revProgress)}
+                        </span>
+                      )}
+                    </div>
                     {/* 범례 */}
-                    <div style={{ display: "flex", gap: "12px", marginTop: "8px", justifyContent: "flex-end", flexWrap: "wrap" }}>
+                    <div style={{ display: "flex", gap: "12px", marginTop: "6px", justifyContent: "flex-end", flexWrap: "wrap" }}>
                       {[
                         { label: t("overviewTab:totalBudget"), color: chartTheme.lightGray },
                         { label: t("overviewTab:executionPlanCumulative"), color: chartTheme.outflowRed },
