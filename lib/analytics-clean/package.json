@@ -1,0 +1,8 @@
+{
+  "name": "@workspace/analytics-clean",
+  "version": "0.0.0",
+  "exports": {
+    ".": "./index.ts"
+  },
+  "type": "module"
+}
