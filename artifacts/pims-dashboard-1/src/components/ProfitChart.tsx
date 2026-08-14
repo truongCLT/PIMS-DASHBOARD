@@ -236,7 +236,6 @@ export function ProfitChart() {
                 {/* 월 라벨 */}
                 <text x={cx} y={Y0 + 34} textAnchor="middle" fontSize={fs(13)} fontWeight="600" fill="#333">{d.m}</text>
                 {/* 영업외손익 칩 — 월 라벨 하단 */}
-                <text x={cx - chipW / 2 - 6} y={Y0 + 46 + chipH / 2} textAnchor="end" dominantBaseline="central" fontSize={fs(9)} fill="#64748b">{t("profitChart:nonOperatingProfitLoss")}</text>
                 <rect x={cx - chipW / 2} y={Y0 + 46} width={chipW} height={chipH} rx={chipH / 2} fill={chipBg} />
                 <text x={cx} y={Y0 + 46 + chipH / 2} textAnchor="middle" dominantBaseline="central" fontSize={chipFs} fontWeight="700" fill={chipColor}>{chipText}</text>
                 {/* 영업이익률 % — 칩 하단 */}
@@ -298,6 +297,24 @@ export function ProfitChart() {
 
         {/* zero baseline */}
         <line x1={plotLeft} y1={yZero} x2={plotRight} y2={yZero} stroke="#9aa8ba" strokeWidth={1.5} />
+
+        {/* 영업외손익 라벨 — 맨 왼쪽에 한 번만 */}
+        {daewoo && data.length > 0 && (() => {
+          const chipFs = fs(13);
+          const chipH = chipFs + 12;
+          return (
+            <text
+              x={plotLeft - 8}
+              y={Y0 + 46 + chipH / 2}
+              textAnchor="end"
+              dominantBaseline="central"
+              fontSize={fs(9)}
+              fill="#64748b"
+            >
+              {t("profitChart:nonOperatingProfitLoss")}
+            </text>
+          );
+        })()}
 
 
         {/* 호버 오버레이 — 모든 바 위에 올려서 마우스 이벤트 독점 */}

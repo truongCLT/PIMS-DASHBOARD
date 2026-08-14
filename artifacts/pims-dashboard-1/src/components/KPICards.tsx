@@ -158,18 +158,20 @@ function KPICard({
                   </span>
                 )}
               </div>
-              <div style={{ fontSize: "clamp(9px, 0.7vw, 11px)", color: K.labelColor }}>
-                {t("common:plan")} {plan.toLocaleString()}
-              </div>
             </div>
           </div>
           <div style={{
-            display: "flex", alignItems: "center", justifyContent: "space-between", gap: "6px",
+            display: "flex", alignItems: "center", gap: "6px",
             borderTop: "1px solid #eef1f6", paddingTop: "6px",
           }}>
             <span style={{ fontSize: "clamp(8px, 0.65vw, 10px)", color: K.labelColor, whiteSpace: "nowrap" }}>{t("common:vsPlan")}</span>
             <span style={{ fontSize: "clamp(10px, 0.8vw, 12px)", fontWeight: 700, color: diff != null ? diffColor : K.labelColor, overflowWrap: "anywhere" }}>
               {diff != null ? diffText : "-"}
+            </span>
+            <div style={{ width: "1px", backgroundColor: "#eef1f6", alignSelf: "stretch", margin: "0 2px", flexShrink: 0 }} />
+            <span style={{ fontSize: "clamp(8px, 0.65vw, 10px)", color: K.labelColor, whiteSpace: "nowrap" }}>{t("common:plan")}</span>
+            <span style={{ fontSize: "clamp(10px, 0.8vw, 12px)", fontWeight: 700, color: K.valueColor, overflowWrap: "anywhere" }}>
+              {plan.toLocaleString()}
             </span>
           </div>
         </div>
