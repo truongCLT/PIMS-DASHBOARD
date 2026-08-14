@@ -700,60 +700,42 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                   <EmptyHint label={t("serviceProjectDashboard:cashEmptyLabel")} />
                 ) : (
                   (() => {
-                    const cashMax = Math.max(
-                      revenueTotal ?? 0,
-                      cashConfirmed ?? 0,
-                      cashCollection ?? 0,
-                      Math.abs(cashOutstanding ?? 0),
-                      1,
-                    );
+                    const rev = revenueTotal ?? 0;
+                    const conf = cashConfirmed ?? 0;
+                    const coll = cashCollection ?? 0;
+                    const outs = Math.max(cashOutstanding ?? 0, 0);
+                    const cashMax = Math.max(rev, conf, coll, outs, 1);
                     return (
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "flex-end",
-                          justifyContent: "space-around",
-                          marginTop: "10px",
-                          height: "240px",
-                        }}
-                      >
-                        <MiniBar
-                          value={revenueTotal ?? 0}
-                          max={cashMax}
-                          color="#c9d2dd"
-                          label={t("common:revenue")}
-                          height={195}
-                          valueLabel={formatMoney(revenueTotal, currency, unitOn)}
-                          width={26}
-                        />
-                        <MiniBar
-                          value={cashConfirmed ?? 0}
-                          max={cashMax}
-                          color="#c9d2dd"
-                          label={t("serviceProjectDashboard:confirmedA")}
-                          height={195}
-                          valueLabel={formatMoney(cashConfirmed, currency, unitOn)}
-                          width={26}
-                        />
-                        <MiniBar
-                          value={cashCollection ?? 0}
-                          max={cashMax}
-                          color="#2f7cf6"
-                          label={t("serviceProjectDashboard:collectionB")}
-                          height={195}
-                          valueLabel={formatMoney(cashCollection, currency, unitOn)}
-                          width={26}
-                        />
-                        <MiniBar
-                          value={Math.max(cashOutstanding ?? 0, 0)}
-                          max={cashMax}
-                          color="#f2736a"
-                          label={t("serviceProjectDashboard:receivableAB")}
-                          height={195}
-                          valueLabel={formatMoney(cashOutstanding, currency, unitOn)}
-                          width={26}
-                        />
-                      </div>
+                      <>
+                        {/* 막대 그래프 */}
+                        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-around", marginTop: "10px", height: "130px" }}>
+                          <MiniBar value={rev}  max={cashMax} color={chartTheme.neutralGray} label={t("common:revenue")}                          height={100} width={34} />
+                          <MiniBar value={conf} max={cashMax} color={chartTheme.neutralGray} label={t("serviceProjectDashboard:confirmedA")}      height={100} width={34} />
+                          <MiniBar value={coll} max={cashMax} color={chartTheme.balanceNavy} label={t("serviceProjectDashboard:collectionB")}     height={100} width={34} />
+                          <MiniBar value={outs} max={cashMax} color={chartTheme.outflowRed}  label={t("serviceProjectDashboard:receivableAB")}    height={100} width={34} />
+                        </div>
+                        {/* 하단 수치 테이블 */}
+                        <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px", fontSize: "12px" }}>
+                          <tbody>
+                            {([
+                              { label: t("common:revenue"),                          value: rev,  color: chartTheme.neutralGray },
+                              { label: t("serviceProjectDashboard:confirmedA"),      value: conf, color: chartTheme.neutralGray },
+                              { label: t("serviceProjectDashboard:collectionB"),     value: coll, color: chartTheme.balanceNavy },
+                              { label: t("serviceProjectDashboard:receivableAB"),    value: outs, color: chartTheme.outflowRed  },
+                            ] as const).map(({ label, value, color }) => (
+                              <tr key={label} style={{ borderTop: "1px solid #eef2f7" }}>
+                                <td style={{ padding: "4px 4px 4px 0", display: "flex", alignItems: "center", gap: "5px", whiteSpace: "nowrap" }}>
+                                  <div style={{ width: "8px", height: "8px", borderRadius: "2px", backgroundColor: color, flexShrink: 0 }} />
+                                  <span style={{ color: "#5a6a84" }}>{label}</span>
+                                </td>
+                                <td style={{ padding: "4px 0", textAlign: "right", fontWeight: 600, color: "#16294a", whiteSpace: "nowrap" }}>
+                                  {formatMoney(value || null, currency, unitOn)}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </>
                     );
                   })()
                 )}
