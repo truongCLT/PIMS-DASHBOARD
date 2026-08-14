@@ -7,32 +7,37 @@ import { useMoney } from "../lib/displayUnit";
 import { chartTheme } from "../lib/chartTheme";
 import { cardStyle } from "../lib/uiTokens";
 
+const LABEL_W = 120; // px — label column width (same for every row)
+const TRACK_MAX_PCT = 88; // max track width as % of flex container
+const BAR_H = 22;
+
 /** Single horizontal bar row — plan (red) over actual (blue) */
 function DualBar({
   label,
+  labelBold = false,
   budget,
   plan,
   actual,
   maxBudget,
   fmtMoney,
-  indent = false,
 }: {
   label: string;
+  labelBold?: boolean;
   budget: number | null;
   plan: number | null;
   actual: number | null;
   maxBudget: number;
   fmtMoney: (v: number | null) => string;
-  indent?: boolean;
 }) {
-  const TRACK_MAX_PCT = 90; // max track width as % of container
-  const BAR_H = 22;
-  const trackW = maxBudget > 0 && budget != null && budget > 0
-    ? Math.max((budget / maxBudget) * TRACK_MAX_PCT, 4)
-    : TRACK_MAX_PCT * 0.2;
+  const trackW =
+    maxBudget > 0 && budget != null && budget > 0
+      ? Math.max((budget / maxBudget) * TRACK_MAX_PCT, 4)
+      : TRACK_MAX_PCT * 0.15;
 
-  const planRatio = budget != null && budget > 0 && plan != null ? Math.min(plan / budget, 1) : 0;
-  const actualRatio = budget != null && budget > 0 && actual != null ? Math.min(actual / budget, 1) : 0;
+  const planRatio =
+    budget != null && budget > 0 && plan != null ? Math.min(plan / budget, 1) : 0;
+  const actualRatio =
+    budget != null && budget > 0 && actual != null ? Math.min(actual / budget, 1) : 0;
 
   const planPct = fmtPct(ratioPct(plan, budget));
   const actualPct = fmtPct(ratioPct(actual, budget));
@@ -42,26 +47,24 @@ function DualBar({
       style={{
         display: "flex",
         alignItems: "center",
-        gap: "0",
-        minHeight: "58px",
-        paddingLeft: indent ? "20px" : "0",
+        minHeight: "60px",
       }}
     >
-      {/* Item label */}
+      {/* Label — fixed width, same for every row */}
       <div
         style={{
-          width: "120px",
+          width: `${LABEL_W}px`,
           flexShrink: 0,
           fontSize: "13px",
-          color: "#333",
-          fontWeight: 500,
+          color: "#16294a",
+          fontWeight: labelBold ? 700 : 500,
           paddingRight: "8px",
         }}
       >
         {label}
       </div>
 
-      {/* Two bars */}
+      {/* Bars */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "3px", justifyContent: "center" }}>
         {/* Plan bar (red) */}
         <div style={{ display: "flex", alignItems: "center" }}>
@@ -177,7 +180,7 @@ export function ServiceBudgetTab({ projectName }: { projectName: string }) {
     1,
   );
 
-  // Group by category
+  // Group by category; preserve insertion order
   const categories: string[] = [];
   const grouped: Record<string, typeof rows> = {};
   for (const r of rows) {
@@ -209,54 +212,72 @@ export function ServiceBudgetTab({ projectName }: { projectName: string }) {
             {t("serviceBudgetTab:noBudgetDataNotice")}
           </div>
         ) : (
-          <div style={{ marginTop: "16px", display: "flex", flexDirection: "column", gap: "0" }}>
-            {categories.map((cat) => (
-              <div key={cat}>
-                {/* Category header */}
-                {cat && (
-                  <div
-                    style={{
-                      fontSize: "13px",
-                      fontWeight: 700,
-                      color: "#16294a",
-                      padding: "10px 0 4px",
-                      borderBottom: "1px solid #e8eaf0",
-                      marginBottom: "2px",
-                    }}
-                  >
-                    {cat}
-                  </div>
-                )}
-                {grouped[cat].map((c, i) => (
-                  <DualBar
-                    key={`${c.item}-${i}`}
-                    label={c.item ?? ""}
-                    budget={c.budget ?? null}
-                    plan={c.plan ?? null}
-                    actual={c.actual ?? null}
-                    maxBudget={maxBudget}
-                    fmtMoney={fmtMoney}
-                    indent={!!cat}
-                  />
-                ))}
-              </div>
-            ))}
+          <div style={{ marginTop: "16px", display: "flex", flexDirection: "column" }}>
+            {categories.map((cat) => {
+              const items = grouped[cat];
+              // If category name matches exactly one item name, treat as standalone bold row
+              const isStandalone = items.length === 1 && items[0].item === cat;
 
-            {/* Total row */}
-            <div style={{ borderTop: "2px solid #c8d0e0", marginTop: "6px", paddingTop: "2px" }}>
+              return (
+                <div key={cat}>
+                  {/* Category header — bold label only, no underline */}
+                  {cat && !isStandalone && (
+                    <div
+                      style={{
+                        fontSize: "13px",
+                        fontWeight: 700,
+                        color: "#16294a",
+                        padding: "10px 0 2px",
+                      }}
+                    >
+                      {cat}
+                    </div>
+                  )}
+
+                  {items.map((c, i) =>
+                    isStandalone ? (
+                      /* Standalone: show as a bold DualBar without a separate header */
+                      <DualBar
+                        key={`${c.item}-${i}`}
+                        label={c.item ?? ""}
+                        labelBold
+                        budget={c.budget ?? null}
+                        plan={c.plan ?? null}
+                        actual={c.actual ?? null}
+                        maxBudget={maxBudget}
+                        fmtMoney={fmtMoney}
+                      />
+                    ) : (
+                      <DualBar
+                        key={`${c.item}-${i}`}
+                        label={c.item ?? ""}
+                        budget={c.budget ?? null}
+                        plan={c.plan ?? null}
+                        actual={c.actual ?? null}
+                        maxBudget={maxBudget}
+                        fmtMoney={fmtMoney}
+                      />
+                    ),
+                  )}
+                </div>
+              );
+            })}
+
+            {/* Total row — same alignment as every other DualBar */}
+            <div style={{ borderTop: "2px solid #c8d0e0", marginTop: "4px" }}>
               <DualBar
                 label={t("common:total")}
+                labelBold
                 budget={totalBudget}
                 plan={totalPlan}
                 actual={totalActual}
                 maxBudget={maxBudget}
                 fmtMoney={fmtMoney}
-                indent={false}
               />
             </div>
 
             {/* Legend */}
-            <div style={{ display: "flex", gap: "16px", justifyContent: "flex-end", marginTop: "8px" }}>
+            <div style={{ display: "flex", gap: "16px", justifyContent: "flex-end", marginTop: "4px" }}>
               {[
                 { label: t("serviceBudgetTab:planLabel"), color: chartTheme.outflowRed },
                 { label: t("serviceBudgetTab:actualLabel"), color: chartTheme.planBlue },
