@@ -215,7 +215,7 @@ export function ProfitChart() {
               strokeWidth={v === 0 ? 1.5 : 1}
               strokeDasharray={v === 0 ? undefined : "3 3"}
             />
-            <text x={plotLeft - 12} y={yv(v) + 7} textAnchor="end" fontSize={daewoo ? fs(18) : axisFs} fill={chartTheme.axisText}>
+            <text x={plotLeft - 12} y={yv(v) + 7} textAnchor="end" fontSize={axisFs} fill={chartTheme.axisText}>
               {v.toLocaleString("ko-KR")}
             </text>
           </g>
@@ -252,8 +252,8 @@ export function ProfitChart() {
                 {/* 판관비 캡: op → gross */}
                 <rect x={bx} y={Math.min(capTop, opTop)} width={barW} height={Math.abs(opTop - capTop)} rx={7} fill={DW_SGA} />
                 {/* 매출이익 값 + 비율 (막대 바로 위) */}
-                <text x={cx} y={Math.min(capTop, opTop) - 34} textAnchor="middle" fontSize={fs(17)} fontWeight="700" fill="#1a2d4d">{gross.toLocaleString("ko-KR")}</text>
-                <text x={cx} y={Math.min(capTop, opTop) - 10} textAnchor="middle" fontSize={fs(12)} fill="#64748b">{d.totalPct}</text>
+                <text x={cx} y={Math.min(capTop, opTop) - 34} textAnchor="middle" fontSize={valueFs} fontWeight="700" fill="#1a2d4d">{gross.toLocaleString("ko-KR")}</text>
+                <text x={cx} y={Math.min(capTop, opTop) - 10} textAnchor="middle" fontSize={axisFs} fill="#64748b">{d.totalPct}</text>
                 {/* 월 라벨 */}
                 <text x={cx} y={Y0 + 34} textAnchor="middle" fontSize={fs(13)} fontWeight="600" fill="#333">{d.m}</text>
                 {/* 영업외손익 칩 — 월 라벨 하단 */}
