@@ -156,10 +156,7 @@ export function SalesChart() {
     const d = visibleData[index];
     if (!d || d.actual == null || !Number.isFinite(Number(d.actual))) return null;
     const text = Number(d.actual).toLocaleString("ko-KR");
-    // 바 너비(width)를 컬럼 피치 기준으로 사용해 글자 수에 맞게 폰트 크기를 자동 조정.
-    // fontWeight 700 sans-serif 글자당 너비 ≈ fontSize × 0.62
-    const maxFs = compact ? 9.5 : 11;
-    const fontSize = Math.max(7.5, Math.min(maxFs, width / (text.length * 0.62)));
+    const fontSize = 14;
     let topY = y;
     if (
       d.plan != null && Number.isFinite(Number(d.plan)) && d.plan > 0 &&
