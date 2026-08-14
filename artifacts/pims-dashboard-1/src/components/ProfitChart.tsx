@@ -53,7 +53,9 @@ export function ProfitChart() {
   const scaleUp = daewoo ? 1.8 : 1;
   const fs = (n: number) => {
     const base = compact ? Math.max(9, Math.round(n * 0.6)) : n;
-    return Math.round(base * scaleUp);
+    const scaled = Math.round(base * scaleUp);
+    // non-daewoo: SalesChart 기준 (11px @ 800px card) 을 넘지 않도록 캡
+    return daewoo ? scaled : Math.min(scaled, 14);
   };
 
   const plotLeft  = daewoo ? (compact ? 160 : 115) : compact ? 130 : 80;
