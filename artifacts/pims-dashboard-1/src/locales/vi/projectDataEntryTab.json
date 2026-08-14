@@ -121,5 +121,9 @@
   "slideshowIntervalLabel": "Khoảng cách trình chiếu (giây)",
   "slideshowIntervalOff": "0 = tắt",
   "photoEmpty": "Chưa có ảnh nào. Hãy tải lên bằng nút phía trên.",
-  "photoDeleteBtn": "Xóa"
+  "photoDeleteBtn": "Xóa",
+  "closeLock": "Đóng sổ",
+  "closeUnlock": "Mở sổ",
+  "closedBanner": "⚠️ Dự án đã được đóng sổ. Hãy mở sổ để chỉnh sửa dữ liệu.",
+  "closeToggleFailed": "Không thể thay đổi trạng thái đóng sổ. Vui lòng thử lại."
 }

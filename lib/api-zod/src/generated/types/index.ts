@@ -67,6 +67,8 @@ export * from './mgmtreportRevertResult';
 export * from './mgmtreportSummary';
 export * from './orgStructure';
 export * from './orgStructureInput';
+export * from './patchProjectdetailClose200';
+export * from './patchProjectdetailCloseBody';
 export * from './previewCashflowImportBody';
 export * from './previewMgmtreportImportBody';
 export * from './previewSalescostImportBody';

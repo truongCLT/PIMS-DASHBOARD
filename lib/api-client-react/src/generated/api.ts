@@ -57,6 +57,8 @@ import type {
   MgmtreportSummary,
   OrgStructure,
   OrgStructureInput,
+  PatchProjectdetailClose200,
+  PatchProjectdetailCloseBody,
   PreviewCashflowImportBody,
   PreviewMgmtreportImportBody,
   PreviewSalescostImportBody,
@@ -1210,6 +1212,77 @@ export const usePutProjectdetail = <TError = ErrorType<ApiErrorMessage>,
         TContext
       > => {
       return useMutation(getPutProjectdetailMutationOptions(options));
+    }
+
+export const getPatchProjectdetailCloseUrl = () => {
+
+
+
+
+  return `/api/projectdetail/close`
+}
+
+/**
+ * @summary 프로젝트 데이터 편집 마감/해지 토글
+ */
+export const patchProjectdetailClose = async (patchProjectdetailCloseBody: PatchProjectdetailCloseBody, options?: RequestInit): Promise<PatchProjectdetailClose200> => {
+
+  return customFetch<PatchProjectdetailClose200>(getPatchProjectdetailCloseUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(patchProjectdetailCloseBody)
+  }
+);}
+
+
+
+
+
+export const getPatchProjectdetailCloseMutationOptions = <TError = ErrorType<ApiErrorMessage>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchProjectdetailClose>>, TError,{data: BodyType<PatchProjectdetailCloseBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof patchProjectdetailClose>>, TError,{data: BodyType<PatchProjectdetailCloseBody>}, TContext> => {
+
+const mutationKey = ['patchProjectdetailClose'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof patchProjectdetailClose>>, {data: BodyType<PatchProjectdetailCloseBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  patchProjectdetailClose(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PatchProjectdetailCloseMutationResult = NonNullable<Awaited<ReturnType<typeof patchProjectdetailClose>>>
+    export type PatchProjectdetailCloseMutationBody = BodyType<PatchProjectdetailCloseBody>
+    export type PatchProjectdetailCloseMutationError = ErrorType<ApiErrorMessage>
+
+    /**
+ * @summary 프로젝트 데이터 편집 마감/해지 토글
+ */
+export const usePatchProjectdetailClose = <TError = ErrorType<ApiErrorMessage>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchProjectdetailClose>>, TError,{data: BodyType<PatchProjectdetailCloseBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof patchProjectdetailClose>>,
+        TError,
+        {data: BodyType<PatchProjectdetailCloseBody>},
+        TContext
+      > => {
+      return useMutation(getPatchProjectdetailCloseMutationOptions(options));
     }
 
 export const getListProjectdetailCommentsUrl = (params: ListProjectdetailCommentsParams,) => {

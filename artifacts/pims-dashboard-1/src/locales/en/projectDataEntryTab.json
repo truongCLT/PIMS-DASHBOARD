@@ -121,5 +121,9 @@
   "slideshowIntervalLabel": "Slideshow interval (sec)",
   "slideshowIntervalOff": "0 = off",
   "photoEmpty": "No photos registered. Upload using the button above.",
-  "photoDeleteBtn": "Delete"
+  "photoDeleteBtn": "Delete",
+  "closeLock": "Lock",
+  "closeUnlock": "Unlock",
+  "closedBanner": "⚠️ This project is locked. Unlock it to edit data.",
+  "closeToggleFailed": "Failed to change lock status. Please try again."
 }

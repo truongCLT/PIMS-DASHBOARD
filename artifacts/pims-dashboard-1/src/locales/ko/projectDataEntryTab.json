@@ -121,5 +121,9 @@
   "slideshowIntervalLabel": "슬라이드쇼 간격 (초)",
   "slideshowIntervalOff": "0 = 꺼짐",
   "photoEmpty": "등록된 사진이 없습니다. 위 버튼으로 업로드하세요.",
-  "photoDeleteBtn": "삭제"
+  "photoDeleteBtn": "삭제",
+  "closeLock": "마감 설정",
+  "closeUnlock": "마감 해지",
+  "closedBanner": "⚠️ 마감 처리된 프로젝트입니다. 데이터를 수정하려면 마감 해지 후 저장하세요.",
+  "closeToggleFailed": "마감 상태 변경에 실패했습니다. 다시 시도해 주세요."
 }

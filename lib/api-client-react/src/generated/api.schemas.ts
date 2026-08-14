@@ -517,6 +517,8 @@ export interface ProjectDetailOverview {
      * @minimum 0
      */
   slideshowIntervalSeconds?: number | null;
+  /** 마감 여부. true이면 데이터 편집이 잠금 상태 */
+  isClosed?: boolean;
 }
 
 export interface ProjectDetailProgressPoint {
@@ -706,6 +708,17 @@ export interface HealthStatus {
 
 export type GetProjectdetailParams = {
 projectName: string;
+};
+
+export type PatchProjectdetailCloseBody = {
+  projectName: string;
+  /** true=마감, false=마감해지 */
+  closed: boolean;
+};
+
+export type PatchProjectdetailClose200 = {
+  projectName: string;
+  isClosed: boolean;
 };
 
 export type ListProjectdetailCommentsParams = {

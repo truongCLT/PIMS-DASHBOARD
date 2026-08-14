@@ -34,4 +34,6 @@ export interface ProjectDetailOverview {
      * @minimum 0
      */
   slideshowIntervalSeconds?: number | null;
+  /** 마감 여부. true이면 데이터 편집이 잠금 상태 */
+  isClosed?: boolean;
 }

@@ -34,6 +34,7 @@ export const pdOverviewTable = pgTable(
     cashConfirmed: numeric("cash_confirmed", { precision: 18, scale: 4 }), // Cash Confirmed (A) (천 USD)
     cashCollection: numeric("cash_collection", { precision: 18, scale: 4 }), // Cash Collection (B) (천 USD)
     slideshowIntervalSeconds: integer("slideshow_interval_seconds").notNull().default(0), // 슬라이드쇼 자동 전환 간격(초), 0=꺼짐
+    isClosed: integer("is_closed", { mode: "boolean" }).notNull().default(false), // 마감 여부 (true면 데이터 편집 잠금)
   },
   (t) => [uniqueIndex("pd_overview_uq").on(t.projectName)],
 );

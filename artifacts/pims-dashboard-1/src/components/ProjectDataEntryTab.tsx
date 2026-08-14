@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { Plus, Trash2, Save, Upload, X } from "lucide-react";
+import { Plus, Trash2, Save, Upload, X, Lock, LockOpen } from "lucide-react";
 import { readAdminToken } from "../lib/adminAuth";
 import {
   usePutProjectdetail,
@@ -10,6 +10,7 @@ import {
   getListMgmtreportProjectsQueryKey,
   useGetCashflowMonthly,
   getGetCashflowMonthlyQueryKey,
+  usePatchProjectdetailClose,
 } from "@workspace/api-client-react";
 import type {
   ProjectDetail,
@@ -278,7 +279,10 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
   const { detail, isLoading } = useProjectDetail(projectName);
   const queryClient = useQueryClient();
   const mutation = usePutProjectdetail();
+  const closeMutation = usePatchProjectdetailClose();
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
+  const [isClosed, setIsClosed] = useState(false);
+  const [closeMsg, setCloseMsg] = useState<string | null>(null);
 
   const mrProjectsQuery = useListMgmtreportProjects({ year: REPORT_YEAR });
   const currentStatus =
@@ -385,6 +389,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       setSalesMonthly(detail.salesMonthly ?? []);
       setPhotos(detail.photos ?? []);
       setSlideshowIntervalSeconds(detail.overview?.slideshowIntervalSeconds ?? 0);
+      setIsClosed(detail.overview?.isClosed ?? false);
       setLoaded(true);
     }
   }, [detail, loaded, cfRef, cfQuery.isLoading, cfQuery.data]);
@@ -471,11 +476,28 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
     if (photoInputRef.current) photoInputRef.current.value = "";
   };
 
+  const handleToggleClose = () => {
+    const next = !isClosed;
+    setCloseMsg(null);
+    closeMutation.mutate(
+      { data: { projectName, closed: next } },
+      {
+        onSuccess: () => {
+          setIsClosed(next);
+          setCloseMsg(null);
+          queryClient.invalidateQueries({ queryKey: getGetProjectdetailQueryKey({ projectName }) });
+        },
+        onError: () => setCloseMsg(t("projectDataEntryTab:closeToggleFailed")),
+      },
+    );
+  };
+
   const pendingRef = useRef(false);
   const queuedRef = useRef(false);
   const [cardMsgs, setCardMsgs] = useState<Record<string, string | null>>({});
 
   const save = (card?: string) => {
+    if (isClosed) return;
     if (pendingRef.current) {
       queuedRef.current = true;
       return;
@@ -580,19 +602,43 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
 
   const nowYear = new Date().getFullYear();
 
-  // 카드별 저장 버튼 + 결과 메시지가 있는 섹션 헤더
+  // 카드별 저장 버튼 + 마감 버튼 + 결과 메시지가 있는 섹션 헤더
   const cardHead = (label: string, key: string) => (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
       <span style={sectionTitle}>{label}</span>
-      <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
+      <span style={{ display: "inline-flex", alignItems: "center", gap: "8px", pointerEvents: "auto" }}>
         {cardMsgs[key] && (
           <span style={{ fontSize: "13px", color: cardMsgs[key] === t("common:saveSucceeded") ? "#1c7a5a" : "#e0655c" }}>
             {cardMsgs[key]}
           </span>
         )}
+        {closeMsg && (
+          <span style={{ fontSize: "13px", color: "#e0655c" }}>{closeMsg}</span>
+        )}
+        {/* 마감 설정/해지 버튼 */}
+        <button
+          onClick={handleToggleClose}
+          disabled={closeMutation.isPending}
+          style={{
+            display: "inline-flex", alignItems: "center", gap: "4px",
+            padding: "4px 12px",
+            fontSize: "13px",
+            fontWeight: 600,
+            backgroundColor: isClosed ? "#7c8ba3" : "#fff",
+            color: isClosed ? "#fff" : "#7c8ba3",
+            border: `1px solid ${isClosed ? "#7c8ba3" : "#c8d2de"}`,
+            borderRadius: "4px",
+            cursor: closeMutation.isPending ? "wait" : "pointer",
+            opacity: closeMutation.isPending ? 0.6 : 1,
+            pointerEvents: "auto",
+          }}
+        >
+          {isClosed ? <><LockOpen size={12} />{t("projectDataEntryTab:closeUnlock")}</> : <><Lock size={12} />{t("projectDataEntryTab:closeLock")}</>}
+        </button>
+        {/* 저장 버튼 */}
         <button
           onClick={() => save(key)}
-          disabled={mutation.isPending}
+          disabled={isClosed || mutation.isPending}
           style={{
             padding: "4px 14px",
             fontSize: "13px",
@@ -601,8 +647,8 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
             color: "#fff",
             border: "none",
             borderRadius: "4px",
-            cursor: mutation.isPending ? "wait" : "pointer",
-            opacity: mutation.isPending ? 0.6 : 1,
+            cursor: (isClosed || mutation.isPending) ? "not-allowed" : "pointer",
+            opacity: (isClosed || mutation.isPending) ? 0.45 : 1,
           }}
         >
           {t("common:save")}
@@ -762,7 +808,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
           )}
           <button
             onClick={() => save()}
-            disabled={mutation.isPending}
+            disabled={isClosed || mutation.isPending}
             style={{
               display: "flex",
               alignItems: "center",
@@ -774,8 +820,8 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
               padding: "8px 16px",
               fontSize: "16px",
               fontWeight: 600,
-              cursor: mutation.isPending ? "wait" : "pointer",
-              opacity: mutation.isPending ? 0.7 : 1,
+              cursor: (isClosed || mutation.isPending) ? "not-allowed" : "pointer",
+              opacity: (isClosed || mutation.isPending) ? 0.4 : 1,
             }}
           >
             <Save size={13} />
@@ -783,6 +829,28 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
           </button>
         </div>
       </div>
+
+      {/* 마감 배너 */}
+      {isClosed && (
+        <div style={{
+          backgroundColor: "#fff3cd",
+          border: "1px solid #f5c842",
+          borderRadius: "6px",
+          padding: "10px 16px",
+          fontSize: "13px",
+          fontWeight: 600,
+          color: "#856404",
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+        }}>
+          <Lock size={14} />
+          {t("projectDataEntryTab:closedBanner")}
+        </div>
+      )}
+
+      {/* 마감 시 입력 차단 래퍼 (cardHead의 마감 버튼은 pointerEvents:auto로 여전히 동작) */}
+      <div style={{ pointerEvents: isClosed ? "none" : "auto", opacity: isClosed ? 0.65 : 1 }}>
 
       {/* 0. 개요 정보 */}
       {!service && (
@@ -1371,6 +1439,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
         </div>
       </div>
 
+      </div>{/* end 마감 잠금 래퍼 */}
     </div>
   );
 }

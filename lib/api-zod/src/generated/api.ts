@@ -343,7 +343,8 @@ export const GetProjectdetailResponse = zod.object({
   "revenueTotal": zod.number().nullish().describe('누계 매출 실적 (천 USD)'),
   "cashConfirmed": zod.number().nullish().describe('Cash Confirmed (A) (천 USD)'),
   "cashCollection": zod.number().nullish().describe('Cash Collection (B) (천 USD)'),
-  "slideshowIntervalSeconds": zod.number().min(getProjectdetailResponseOverviewSlideshowIntervalSecondsMin).nullish().describe('슬라이드쇼 자동 전환 간격(초), 0=꺼짐')
+  "slideshowIntervalSeconds": zod.number().min(getProjectdetailResponseOverviewSlideshowIntervalSecondsMin).nullish().describe('슬라이드쇼 자동 전환 간격(초), 0=꺼짐'),
+  "isClosed": zod.boolean().optional().describe('마감 여부. true이면 데이터 편집이 잠금 상태')
 }),
   "progress": zod.array(zod.object({
   "year": zod.number().min(getProjectdetailResponseProgressItemYearMin).max(getProjectdetailResponseProgressItemYearMax),
@@ -468,7 +469,8 @@ export const PutProjectdetailBody = zod.object({
   "revenueTotal": zod.number().nullish().describe('누계 매출 실적 (천 USD)'),
   "cashConfirmed": zod.number().nullish().describe('Cash Confirmed (A) (천 USD)'),
   "cashCollection": zod.number().nullish().describe('Cash Collection (B) (천 USD)'),
-  "slideshowIntervalSeconds": zod.number().min(putProjectdetailBodyOverviewSlideshowIntervalSecondsMin).nullish().describe('슬라이드쇼 자동 전환 간격(초), 0=꺼짐')
+  "slideshowIntervalSeconds": zod.number().min(putProjectdetailBodyOverviewSlideshowIntervalSecondsMin).nullish().describe('슬라이드쇼 자동 전환 간격(초), 0=꺼짐'),
+  "isClosed": zod.boolean().optional().describe('마감 여부. true이면 데이터 편집이 잠금 상태')
 }),
   "progress": zod.array(zod.object({
   "year": zod.number().min(putProjectdetailBodyProgressItemYearMin).max(putProjectdetailBodyProgressItemYearMax),
@@ -589,7 +591,8 @@ export const PutProjectdetailResponse = zod.object({
   "revenueTotal": zod.number().nullish().describe('누계 매출 실적 (천 USD)'),
   "cashConfirmed": zod.number().nullish().describe('Cash Confirmed (A) (천 USD)'),
   "cashCollection": zod.number().nullish().describe('Cash Collection (B) (천 USD)'),
-  "slideshowIntervalSeconds": zod.number().min(putProjectdetailResponseOverviewSlideshowIntervalSecondsMin).nullish().describe('슬라이드쇼 자동 전환 간격(초), 0=꺼짐')
+  "slideshowIntervalSeconds": zod.number().min(putProjectdetailResponseOverviewSlideshowIntervalSecondsMin).nullish().describe('슬라이드쇼 자동 전환 간격(초), 0=꺼짐'),
+  "isClosed": zod.boolean().optional().describe('마감 여부. true이면 데이터 편집이 잠금 상태')
 }),
   "progress": zod.array(zod.object({
   "year": zod.number().min(putProjectdetailResponseProgressItemYearMin).max(putProjectdetailResponseProgressItemYearMax),
@@ -662,6 +665,20 @@ export const PutProjectdetailResponse = zod.object({
   "photos": zod.array(zod.object({
   "objectPath": zod.string().describe('Object storage path (\'\/objects\/uploads\/<uuid>\')')
 }))
+})
+
+
+/**
+ * @summary 프로젝트 데이터 편집 마감/해지 토글
+ */
+export const PatchProjectdetailCloseBody = zod.object({
+  "projectName": zod.string(),
+  "closed": zod.boolean().describe('true=마감, false=마감해지')
+})
+
+export const PatchProjectdetailCloseResponse = zod.object({
+  "projectName": zod.string(),
+  "isClosed": zod.boolean()
 })
 
 

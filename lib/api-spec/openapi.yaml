@@ -434,6 +434,49 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiErrorMessage"
+  /projectdetail/close:
+    patch:
+      operationId: patchProjectdetailClose
+      tags: [projectdetail]
+      summary: 프로젝트 데이터 편집 마감/해지 토글
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                projectName:
+                  type: string
+                closed:
+                  type: boolean
+                  description: true=마감, false=마감해지
+              required: [projectName, closed]
+      responses:
+        "200":
+          description: 마감 상태 변경 완료
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  projectName:
+                    type: string
+                  isClosed:
+                    type: boolean
+                required: [projectName, isClosed]
+        "400":
+          description: Invalid payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorMessage"
+        "403":
+          description: Not authorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorMessage"
   /projectdetail/comments:
     get:
       operationId: listProjectdetailComments
@@ -1880,6 +1923,9 @@ components:
           minimum: 0
           nullable: true
           description: 슬라이드쇼 자동 전환 간격(초), 0=꺼짐
+        isClosed:
+          type: boolean
+          description: 마감 여부. true이면 데이터 편집이 잠금 상태
       required: [contractAmount, startDate, endDate, client, scale]
     ProjectDetailProgressPoint:
       type: object
