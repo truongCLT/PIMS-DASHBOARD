@@ -668,12 +668,6 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                         {t("common:total")} : {formatMoney(totalActualSum || null, currency, unitOn)} / {formatMoney(totalBudgetSum || null, currency, unitOn)}
                         {totalCostPct != null && ` (${fmtPct(totalCostPct)})`}
                       </span>
-                      {revProgress != null && (
-                        <span style={{ display: "flex", alignItems: "center", gap: "5px", fontSize: "12px", color: "#555" }}>
-                          <span style={{ width: "18px", borderTop: `2px dashed ${chartTheme.outflowRed}` }} />
-                          {fmtPct(revProgress)}
-                        </span>
-                      )}
                     </div>
                     {/* 범례 */}
                     <div style={{ display: "flex", gap: "12px", marginTop: "6px", justifyContent: "flex-end", flexWrap: "wrap" }}>
