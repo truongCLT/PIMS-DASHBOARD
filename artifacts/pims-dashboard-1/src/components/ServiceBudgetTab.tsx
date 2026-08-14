@@ -234,20 +234,21 @@ export function ServiceBudgetTab({ projectName }: { projectName: string }) {
                     </div>
                   )}
 
-                  {items.map((c, i) =>
-                    isStandalone ? (
-                      /* Standalone: show as a bold DualBar without a separate header */
+                  {isStandalone ? (
+                    /* Standalone (e.g. Contingency): bold header-level label + same top gap as category headers */
+                    <div key={`${items[0].item}-0`} style={{ paddingTop: "10px" }}>
                       <DualBar
-                        key={`${c.item}-${i}`}
-                        label={c.item ?? ""}
+                        label={items[0].item ?? ""}
                         labelBold
-                        budget={c.budget ?? null}
-                        plan={c.plan ?? null}
-                        actual={c.actual ?? null}
+                        budget={items[0].budget ?? null}
+                        plan={items[0].plan ?? null}
+                        actual={items[0].actual ?? null}
                         maxBudget={maxBudget}
                         fmtMoney={fmtMoney}
                       />
-                    ) : (
+                    </div>
+                  ) : (
+                    items.map((c, i) => (
                       <DualBar
                         key={`${c.item}-${i}`}
                         label={c.item ?? ""}
@@ -257,14 +258,14 @@ export function ServiceBudgetTab({ projectName }: { projectName: string }) {
                         maxBudget={maxBudget}
                         fmtMoney={fmtMoney}
                       />
-                    ),
+                    ))
                   )}
                 </div>
               );
             })}
 
             {/* Total row — same alignment as every other DualBar */}
-            <div style={{ borderTop: "2px solid #c8d0e0", marginTop: "4px" }}>
+            <div style={{ paddingTop: "10px" }}>
               <DualBar
                 label={t("common:total")}
                 labelBold
