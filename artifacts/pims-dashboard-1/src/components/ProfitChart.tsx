@@ -173,7 +173,7 @@ export function ProfitChart() {
         </div>
       ) : (
       <svg
-        viewBox={daewoo ? "0 0 1000 510" : "0 0 1000 445"}
+        viewBox={daewoo ? "0 0 1000 530" : "0 0 1000 445"}
         style={daewoo
           ? { width: "100%", flex: 1, minHeight: 0, display: "block" }
           : { width: "100%", display: "block" }}
@@ -238,8 +238,19 @@ export function ProfitChart() {
                 {/* 영업외손익 칩 — 월 라벨 하단 */}
                 <rect x={cx - chipW / 2} y={Y0 + 46} width={chipW} height={chipH} rx={chipH / 2} fill={chipBg} />
                 <text x={cx} y={Y0 + 46 + chipH / 2} textAnchor="middle" dominantBaseline="central" fontSize={chipFs} fontWeight="700" fill={chipColor}>{chipText}</text>
-                {/* 영업이익률 % — 칩 하단 */}
-                <text x={cx} y={Y0 + 46 + chipH + 14} textAnchor="middle" fontSize={fs(11)} fill="#64748b">{d.opPct}</text>
+                {/* 영업이익률 칩 — 영업외손익 칩 하단 */}
+                {(() => {
+                  const opFs = fs(11);
+                  const opH  = opFs + 10;
+                  const opW  = Math.max(48, d.opPct.length * opFs * 0.62 + 16);
+                  const opY  = Y0 + 46 + chipH + 6;
+                  return (
+                    <>
+                      <rect x={cx - opW / 2} y={opY} width={opW} height={opH} rx={opH / 2} fill="#e8eef7" />
+                      <text x={cx} y={opY + opH / 2} textAnchor="middle" dominantBaseline="central" fontSize={opFs} fontWeight="700" fill={DW_OP}>{d.opPct}</text>
+                    </>
+                  );
+                })()}
               </g>
             );
           }
@@ -298,21 +309,22 @@ export function ProfitChart() {
         {/* zero baseline */}
         <line x1={plotLeft} y1={yZero} x2={plotRight} y2={yZero} stroke="#9aa8ba" strokeWidth={1.5} />
 
-        {/* 영업외손익 라벨 — 맨 왼쪽에 한 번만 */}
+        {/* 영업외손익·영업이익률 라벨 — 맨 왼쪽에 한 번씩만 */}
         {daewoo && data.length > 0 && (() => {
           const chipFs = fs(13);
-          const chipH = chipFs + 12;
+          const chipH  = chipFs + 12;
+          const opFs   = fs(11);
+          const opH    = opFs + 10;
+          const opY    = Y0 + 46 + chipH + 6;
           return (
-            <text
-              x={plotLeft - 8}
-              y={Y0 + 46 + chipH / 2}
-              textAnchor="end"
-              dominantBaseline="central"
-              fontSize={fs(9)}
-              fill="#64748b"
-            >
-              {t("profitChart:nonOperatingProfitLoss")}
-            </text>
+            <>
+              <text x={plotLeft - 8} y={Y0 + 46 + chipH / 2} textAnchor="end" dominantBaseline="central" fontSize={fs(9)} fill="#64748b">
+                {t("profitChart:nonOperatingProfitLoss")}
+              </text>
+              <text x={plotLeft - 8} y={opY + opH / 2} textAnchor="end" dominantBaseline="central" fontSize={fs(9)} fill="#64748b">
+                {t("profitChart:operatingMarginRate")}
+              </text>
+            </>
           );
         })()}
 

@@ -168,7 +168,7 @@ function KPICard({
             <span style={{ fontSize: "clamp(10px, 0.8vw, 12px)", fontWeight: 700, color: diff != null ? diffColor : K.labelColor, overflowWrap: "anywhere" }}>
               {diff != null ? diffText : "-"}
             </span>
-            <div style={{ width: "1px", backgroundColor: "#eef1f6", alignSelf: "stretch", margin: "0 2px", flexShrink: 0 }} />
+            <div style={{ width: "1px", backgroundColor: "#eef1f6", alignSelf: "stretch", margin: "0 2px", marginLeft: "auto", flexShrink: 0 }} />
             <span style={{ fontSize: "clamp(8px, 0.65vw, 10px)", color: K.labelColor, whiteSpace: "nowrap" }}>{t("common:plan")}</span>
             <span style={{ fontSize: "clamp(10px, 0.8vw, 12px)", fontWeight: 700, color: K.valueColor, overflowWrap: "anywhere" }}>
               {plan.toLocaleString()}
