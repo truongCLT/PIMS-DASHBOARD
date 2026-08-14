@@ -74,7 +74,7 @@ export function ProfitChart() {
      valueFs = 바 위 숫자 (SalesChart 기준 compact?9.5:11 px) */
   const _inv   = 1000 / Math.max(svgWidth, 1);
   const axisFs  = 11 * _inv;   // Y축·비율 라벨 → 항상 11px
-  const valueFs = 11 * _inv;   // 바 위 실적 숫자 → 항상 11px
+  const valueFs = 12 * _inv;   // 바 위 실적 숫자 → 항상 12px
 
   const plotLeft  = daewoo ? (compact ? 160 : 115) : compact ? 130 : 80;
   const plotRight = 950;

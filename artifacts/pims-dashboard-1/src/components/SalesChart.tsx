@@ -156,7 +156,7 @@ export function SalesChart() {
     const d = visibleData[index];
     if (!d || d.actual == null || !Number.isFinite(Number(d.actual))) return null;
     const text = Number(d.actual).toLocaleString("ko-KR");
-    const fontSize = 14;
+    const fontSize = 12;
     let topY = y;
     if (
       d.plan != null && Number.isFinite(Number(d.plan)) && d.plan > 0 &&
