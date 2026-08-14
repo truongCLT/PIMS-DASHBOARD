@@ -671,7 +671,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                       {revProgress != null && (
                         <span style={{ display: "flex", alignItems: "center", gap: "5px", fontSize: "12px", color: "#555" }}>
                           <span style={{ width: "18px", borderTop: `2px dashed ${chartTheme.outflowRed}` }} />
-                          {t("serviceProjectDashboard:revenueProgressLabel")} {fmtPct(revProgress)}
+                          {fmtPct(revProgress)}
                         </span>
                       )}
                     </div>
