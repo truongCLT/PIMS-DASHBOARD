@@ -2,5 +2,6 @@
   "executionStatusLabel": "집행 현황",
   "noBudgetDataNotice": "예산 집행 데이터가 없습니다. \"데이터 입력\" 탭에서 예산 집행 현황을 입력해 주세요.",
   "planLabel": "집행 계획",
-  "actualLabel": "집행 실적"
+  "actualLabel": "집행 실적",
+  "outsourcingItem": "외주"
 }

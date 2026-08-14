@@ -57,7 +57,7 @@ function DualBar({
           flexShrink: 0,
           fontSize: "13px",
           color: "#16294a",
-          fontWeight: labelBold ? 700 : 500,
+          fontWeight: labelBold ? 700 : 400,
           paddingRight: "8px",
         }}
       >
@@ -192,12 +192,33 @@ export function ServiceBudgetTab({ projectName }: { projectName: string }) {
     grouped[cat].push(r);
   }
 
+  // 외주 행 — Direct Cost 내 Common 앞에 삽입
+  const outsourcingRows = detail?.outsourcing ?? [];
+  const outsourcingBudget = outsourcingRows.reduce((a, o) => a + (o.budget ?? 0), 0);
+  const outsourcingPlan   = outsourcingRows.reduce((a, o) => a + (o.executedBudget ?? 0), 0);
+  const outsourcingActual = outsourcingRows.reduce((a, o) => a + (o.accum ?? 0), 0);
+  if (outsourcingRows.length > 0) {
+    if (!grouped["Direct Cost"]) {
+      grouped["Direct Cost"] = [];
+      categories.unshift("Direct Cost");
+    }
+    const commonIdx = grouped["Direct Cost"].findIndex((r) => r.item === "Common");
+    const insertIdx = commonIdx >= 0 ? commonIdx : 0;
+    grouped["Direct Cost"].splice(insertIdx, 0, {
+      category: "Direct Cost",
+      item: t("serviceBudgetTab:outsourcingItem"),
+      budget: outsourcingBudget > 0 ? outsourcingBudget : null,
+      plan: outsourcingPlan > 0 ? outsourcingPlan : null,
+      actual: outsourcingActual > 0 ? outsourcingActual : null,
+    });
+  }
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
       {/* Budget Execution Status */}
       <div style={{ ...cardStyle, padding: "14px 18px 24px" }}>
         <span style={{ fontSize: "13px", fontWeight: 600, color: "#2f7cf6" }}>
-          {t("common:budget")} <u>{t("serviceBudgetTab:executionStatusLabel")}</u>
+          {t("common:budget")} {t("serviceBudgetTab:executionStatusLabel")}
           <span style={{ marginLeft: "8px", fontSize: "12px", fontWeight: 500, color: "#7c8ba3" }}>
             {t("common:unit")}: {unitLabel}
           </span>
