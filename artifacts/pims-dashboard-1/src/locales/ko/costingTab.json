@@ -6,5 +6,6 @@
   "noBudgetDataNotice": "예산 집행 데이터가 없습니다. ( - )",
   "costEstimationTitle": "원가율",
   "noCostRatioDataNotice": "원가율 데이터가 없습니다. ( - )",
-  "asOfBasis": " ('{{ym}} 기준)"
+  "asOfBasis": " ('{{ym}} 기준)",
+  "outsourcingItem": "외주"
 }

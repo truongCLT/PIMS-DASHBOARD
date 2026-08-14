@@ -6,5 +6,6 @@
   "noBudgetDataNotice": "No budget execution data. ( - )",
   "costEstimationTitle": "Cost Rate",
   "noCostRatioDataNotice": "No cost ratio data. ( - )",
-  "asOfBasis": " (as of '{{ym}})"
+  "asOfBasis": " (as of '{{ym}})",
+  "outsourcingItem": "Outsourcing"
 }

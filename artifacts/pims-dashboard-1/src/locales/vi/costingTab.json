@@ -6,5 +6,6 @@
   "noBudgetDataNotice": "Không có dữ liệu thực hiện ngân sách. ( - )",
   "costEstimationTitle": "Tỷ lệ chi phí",
   "noCostRatioDataNotice": "Không có dữ liệu tỷ lệ giá vốn. ( - )",
-  "asOfBasis": " (tính đến '{{ym}})"
+  "asOfBasis": " (tính đến '{{ym}})",
+  "outsourcingItem": "Thuê ngoài"
 }

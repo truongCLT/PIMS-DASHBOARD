@@ -252,14 +252,37 @@ export function CostingTab({
     datedCompletions[datedCompletions.length - 1] ??
     completionRows.find((e) => e.year == null || e.month == null) ??
     null;
+  const outsourcingRows = detail?.outsourcing ?? [];
+  const outsourcingBudget = outsourcingRows.reduce((a, o) => a + (o.budget ?? 0), 0);
+  const outsourcingPlan   = outsourcingRows.reduce((a, o) => a + (o.executedBudget ?? 0), 0);
+  const outsourcingActual = outsourcingRows.reduce((a, o) => a + (o.accum ?? 0), 0);
+  const hasOutsourcing = outsourcingRows.length > 0;
+
   const budgetRows: BudgetRow[] = (detail?.costBudget ?? []).map((r) => ({
     category: r.category ?? null,
     item: r.item,
     budget: r.budget ?? null,
     plan: r.plan ?? null,
     actual: r.actual ?? null,
-    bold: r.category == null, // category 없는 단독 항목(Contingency 등)은 굵게
+    bold: r.category == null || /contingency/i.test(r.item), // category 없는 단독 항목 또는 Contingency는 굵게
   }));
+
+  // 외주 행을 Direct Cost 카테고리 내 Common 앞에 삽입
+  if (hasOutsourcing) {
+    const commonIdx = budgetRows.findIndex(
+      (r) => r.category === "Direct Cost" && r.item === "Common"
+    );
+    const directCostFirstIdx = budgetRows.findIndex((r) => r.category === "Direct Cost");
+    const insertIdx = commonIdx >= 0 ? commonIdx : directCostFirstIdx >= 0 ? directCostFirstIdx : budgetRows.length;
+    budgetRows.splice(insertIdx, 0, {
+      category: "Direct Cost",
+      item: t("costingTab:outsourcingItem"),
+      budget: outsourcingBudget > 0 ? outsourcingBudget : null,
+      plan: outsourcingPlan > 0 ? outsourcingPlan : null,
+      actual: outsourcingActual > 0 ? outsourcingActual : null,
+      bold: false,
+    });
+  }
 
   // 합계 행 (예산 데이터가 있을 때만)
   const rowsWithSum: BudgetRow[] =
