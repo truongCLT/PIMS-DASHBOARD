@@ -398,83 +398,80 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
             </span>
           </div>
           {/* 3-column: 월(막대) / 연(도넛) / 누계(도넛) */}
-          <div style={{ display: "flex", flex: 1, gap: "0", marginTop: "6px" }}>
+          <div style={{ display: "flex", flex: 1, gap: "0", marginTop: "8px", alignItems: "stretch" }}>
+
             {/* 월 막대 */}
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
-              <div style={{ width: "100%", height: "130px" }}>
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+              <div style={{ width: "120px", height: "140px" }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart
                     data={[{ plan: planMonth ?? 0, actual: actualMonth ?? 0 }]}
-                    margin={{ top: 22, right: 6, left: 6, bottom: 0 }}
+                    margin={{ top: 24, right: 10, left: 10, bottom: 0 }}
                   >
                     <YAxis hide domain={[0, 100]} />
-                    <Bar dataKey="plan" name={t("common:plan")} fill={chartTheme.planBlue} barSize={20} isAnimationActive={false}>
+                    <Bar dataKey="plan" name={t("common:plan")} fill={chartTheme.planBlue} barSize={24} isAnimationActive={false}>
                       <LabelList
                         dataKey="plan"
                         position="top"
-                        style={{ fontSize: "10px", fill: chartTheme.planBlue, fontWeight: 600 }}
+                        style={{ fontSize: "11px", fill: chartTheme.planBlue, fontWeight: 600 }}
                         formatter={(v: number) => planMonth != null ? `${v.toFixed(1)}%` : "-"}
                       />
                     </Bar>
-                    <Bar dataKey="actual" name={t("common:actual")} fill={chartTheme.outflowRed} barSize={20} isAnimationActive={false}>
+                    <Bar dataKey="actual" name={t("common:actual")} fill={chartTheme.outflowRed} barSize={24} isAnimationActive={false}>
                       <LabelList
                         dataKey="actual"
                         position="top"
-                        style={{ fontSize: "10px", fill: chartTheme.outflowRed, fontWeight: 600 }}
+                        style={{ fontSize: "11px", fill: chartTheme.outflowRed, fontWeight: 600 }}
                         formatter={(v: number) => actualMonth != null ? `${v.toFixed(1)}%` : "-"}
                       />
                     </Bar>
-                    <Legend wrapperStyle={{ fontSize: "10px" }} />
+                    <Legend wrapperStyle={{ fontSize: "11px" }} />
                   </ComposedChart>
                 </ResponsiveContainer>
               </div>
-              <span style={{ fontSize: "12px", color: "#555", fontWeight: 600, marginTop: "2px" }}>
+              <span style={{ fontSize: "13px", color: "#555", fontWeight: 700, marginTop: "4px" }}>
                 {t("common:monthly").replace("별", "")}
               </span>
             </div>
 
-            <div style={{ width: "1px", backgroundColor: "#eef2f7", alignSelf: "stretch", margin: "0 4px" }} />
+            <div style={{ width: "1px", backgroundColor: "#eef2f7", alignSelf: "stretch", margin: "0 6px" }} />
 
             {/* 연 도넛 */}
             <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-              <div style={{ position: "relative", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
-                <Donut
-                  percent={actualAnnual ?? 0}
-                  color={chartTheme.outflowRed}
-                  extraArc={planAnnual != null ? { percent: planAnnual, color: chartTheme.planBlue } : undefined}
-                  label={actualAnnual != null ? fmtPct(actualAnnual) : "-"}
-                  size={110}
-                  stroke={14}
-                  labelSize={17}
-                />
-              </div>
-              <div style={{ display: "flex", gap: "6px", fontSize: "10px", marginTop: "4px" }}>
+              <Donut
+                percent={actualAnnual ?? 0}
+                color={chartTheme.outflowRed}
+                extraArc={planAnnual != null ? { percent: planAnnual, color: chartTheme.planBlue } : undefined}
+                label={actualAnnual != null ? fmtPct(actualAnnual) : "-"}
+                size={120}
+                stroke={15}
+                labelSize={18}
+              />
+              <div style={{ display: "flex", gap: "6px", fontSize: "11px", marginTop: "6px" }}>
                 <span style={{ color: chartTheme.planBlue, fontWeight: 600 }}>{t("common:plan")} {planAnnual != null ? fmtPct(planAnnual) : "-"}</span>
                 <span style={{ color: chartTheme.outflowRed, fontWeight: 600 }}>{t("common:actual")} {actualAnnual != null ? fmtPct(actualAnnual) : "-"}</span>
               </div>
-              <span style={{ fontSize: "12px", color: "#555", fontWeight: 600, marginTop: "2px" }}>연</span>
+              <span style={{ fontSize: "13px", color: "#555", fontWeight: 700, marginTop: "4px" }}>연</span>
             </div>
 
-            <div style={{ width: "1px", backgroundColor: "#eef2f7", alignSelf: "stretch", margin: "0 4px" }} />
+            <div style={{ width: "1px", backgroundColor: "#eef2f7", alignSelf: "stretch", margin: "0 6px" }} />
 
             {/* 누계 도넛 */}
             <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-              <div style={{ position: "relative", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
-                <Donut
-                  percent={actualCum ?? 0}
-                  color={chartTheme.outflowRed}
-                  extraArc={planCum != null ? { percent: planCum, color: chartTheme.planBlue } : undefined}
-                  label={actualCum != null ? fmtPct(actualCum) : "-"}
-                  size={110}
-                  stroke={14}
-                  labelSize={17}
-                />
-              </div>
-              <div style={{ display: "flex", gap: "6px", fontSize: "10px", marginTop: "4px" }}>
+              <Donut
+                percent={actualCum ?? 0}
+                color={chartTheme.outflowRed}
+                extraArc={planCum != null ? { percent: planCum, color: chartTheme.planBlue } : undefined}
+                label={actualCum != null ? fmtPct(actualCum) : "-"}
+                size={120}
+                stroke={15}
+                labelSize={18}
+              />
+              <div style={{ display: "flex", gap: "6px", fontSize: "11px", marginTop: "6px" }}>
                 <span style={{ color: chartTheme.planBlue, fontWeight: 600 }}>{t("common:plan")} {fmtPct(planCum)}</span>
                 <span style={{ color: chartTheme.outflowRed, fontWeight: 600 }}>{t("common:actual")} {fmtPct(actualCum)}</span>
               </div>
-              <span style={{ fontSize: "12px", color: "#555", fontWeight: 600, marginTop: "2px" }}>{t("common:cumulative")}</span>
+              <span style={{ fontSize: "13px", color: "#555", fontWeight: 700, marginTop: "4px" }}>{t("common:cumulative")}</span>
             </div>
           </div>
 
