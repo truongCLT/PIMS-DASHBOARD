@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { useTranslation } from "react-i18next";
 import { ProjectCommentPanel } from "./ProjectCommentPanel";
 
@@ -7,81 +7,146 @@ import { useMoney } from "../lib/displayUnit";
 import { chartTheme } from "../lib/chartTheme";
 import { cardStyle } from "../lib/uiTokens";
 
-function HBar({
+/** Single horizontal bar row — plan (red) over actual (blue) */
+function DualBar({
   label,
-  totalWidth,
-  execRatio,
-  execLabel,
-  pctLabel,
-  totalLabel,
-  execColor,
-  tone = "plan",
-  trackColor = "#d5d7e2",
-  height = 46,
-  sub = false,
+  budget,
+  plan,
+  actual,
+  maxBudget,
+  fmtMoney,
+  indent = false,
 }: {
   label: string;
-  totalWidth: number; // % of container
-  execRatio: number; // 0~1 of total bar
-  execLabel?: string;
-  pctLabel?: string;
-  totalLabel?: string;
-  execColor?: string;
-  tone?: "plan" | "warn";
-  trackColor?: string;
-  height?: number;
-  sub?: boolean;
+  budget: number | null;
+  plan: number | null;
+  actual: number | null;
+  maxBudget: number;
+  fmtMoney: (v: number | null) => string;
+  indent?: boolean;
 }) {
+  const TRACK_MAX_PCT = 90; // max track width as % of container
+  const BAR_H = 22;
+  const trackW = maxBudget > 0 && budget != null && budget > 0
+    ? Math.max((budget / maxBudget) * TRACK_MAX_PCT, 4)
+    : TRACK_MAX_PCT * 0.2;
+
+  const planRatio = budget != null && budget > 0 && plan != null ? Math.min(plan / budget, 1) : 0;
+  const actualRatio = budget != null && budget > 0 && actual != null ? Math.min(actual / budget, 1) : 0;
+
+  const planPct = fmtPct(ratioPct(plan, budget));
+  const actualPct = fmtPct(ratioPct(actual, budget));
+
   return (
-    <div style={{ display: "flex", alignItems: "center", marginBottom: sub ? "10px" : "0" }}>
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "0",
+        minHeight: "58px",
+        paddingLeft: indent ? "20px" : "0",
+      }}
+    >
+      {/* Item label */}
       <div
         style={{
-          width: sub ? "160px" : "130px",
-          paddingLeft: sub ? "60px" : "0",
+          width: "120px",
+          flexShrink: 0,
           fontSize: "13px",
           color: "#333",
-          fontWeight: 600,
-          flexShrink: 0,
+          fontWeight: 500,
+          paddingRight: "8px",
         }}
       >
         {label}
       </div>
-      <div style={{ flex: 1, display: "flex", alignItems: "center", gap: "8px" }}>
-        <div style={{ width: `${totalWidth}%`, height: `${height}px`, backgroundColor: trackColor, display: "flex" }}>
-          {execRatio > 0 && execColor && (
-            <div
-              style={{
-                width: `${Math.min(execRatio, 1) * 100}%`,
-                height: "100%",
-                backgroundColor: execColor,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                position: "relative",
-              }}
-            >
-              {execLabel && (
-                <span style={{ fontSize: "12px", color: "#fff", fontWeight: 700 }}>{execLabel}</span>
-              )}
-              {pctLabel && (
-                <span
-                  style={{
-                    position: "absolute",
-                    left: "100%",
-                    marginLeft: "8px",
-                    fontSize: "12px",
-                    color: tone === "warn" ? chartTheme.sgaOrange : chartTheme.planBlue,
-                    fontWeight: 600,
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {pctLabel}
-                </span>
-              )}
-            </div>
+
+      {/* Two bars */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "3px", justifyContent: "center" }}>
+        {/* Plan bar (red) */}
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <div
+            style={{
+              width: `${trackW}%`,
+              height: `${BAR_H}px`,
+              backgroundColor: "#e8eaf0",
+              position: "relative",
+              flexShrink: 0,
+            }}
+          >
+            {planRatio > 0 && (
+              <div
+                style={{
+                  position: "absolute",
+                  left: 0,
+                  top: 0,
+                  width: `${planRatio * 100}%`,
+                  height: "100%",
+                  backgroundColor: chartTheme.outflowRed,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                {plan != null && (
+                  <span style={{ fontSize: "11px", color: "#fff", fontWeight: 700, whiteSpace: "nowrap", paddingInline: "4px" }}>
+                    {fmtMoney(plan)}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+          {planPct !== "-" && (
+            <span style={{ marginLeft: "8px", fontSize: "12px", color: chartTheme.outflowRed, fontWeight: 600, whiteSpace: "nowrap" }}>
+              {planPct}
+            </span>
           )}
         </div>
-        {totalLabel && <span style={{ fontSize: "12px", color: "#333", whiteSpace: "nowrap" }}>{totalLabel}</span>}
+
+        {/* Actual bar (blue) */}
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <div
+            style={{
+              width: `${trackW}%`,
+              height: `${BAR_H}px`,
+              backgroundColor: "#e8eaf0",
+              position: "relative",
+              flexShrink: 0,
+            }}
+          >
+            {actualRatio > 0 && (
+              <div
+                style={{
+                  position: "absolute",
+                  left: 0,
+                  top: 0,
+                  width: `${actualRatio * 100}%`,
+                  height: "100%",
+                  backgroundColor: chartTheme.planBlue,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                {actual != null && (
+                  <span style={{ fontSize: "11px", color: "#fff", fontWeight: 700, whiteSpace: "nowrap", paddingInline: "4px" }}>
+                    {fmtMoney(actual)}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+          {actualPct !== "-" && (
+            <span style={{ marginLeft: "8px", fontSize: "12px", color: chartTheme.planBlue, fontWeight: 600, whiteSpace: "nowrap" }}>
+              {actualPct}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Budget (right) */}
+      <div style={{ width: "80px", textAlign: "right", fontSize: "12px", color: "#555", flexShrink: 0, paddingLeft: "8px" }}>
+        {budget != null ? fmtMoney(budget) : "—"}
       </div>
     </div>
   );
@@ -92,13 +157,37 @@ export function ServiceBudgetTab({ projectName }: { projectName: string }) {
   const { detail, isLoading } = useProjectDetail(projectName);
   const { fmtMoney, unitLabel } = useMoney();
 
-  const rows = (detail?.costBudget ?? []).filter((c) => c.budget != null || c.actual != null);
-  const totalBudget = rows.some((c) => c.budget != null) ? rows.reduce((a, c) => a + (c.budget ?? 0), 0) : null;
-  const totalActual = rows.some((c) => c.actual != null) ? rows.reduce((a, c) => a + (c.actual ?? 0), 0) : null;
-  const maxBudget = Math.max(rows.reduce((a, c) => Math.max(a, c.budget ?? 0), 0), totalBudget ?? 0);
+  const rows = (detail?.costBudget ?? []).filter(
+    (c) => c.budget != null || c.plan != null || c.actual != null,
+  );
 
-  const widthPct = (v: number | null | undefined) =>
-    maxBudget > 0 && v != null ? Math.max((v / maxBudget) * 82, 3) : 3;
+  const totalBudget = rows.some((c) => c.budget != null)
+    ? rows.reduce((a, c) => a + (c.budget ?? 0), 0)
+    : null;
+  const totalPlan = rows.some((c) => c.plan != null)
+    ? rows.reduce((a, c) => a + (c.plan ?? 0), 0)
+    : null;
+  const totalActual = rows.some((c) => c.actual != null)
+    ? rows.reduce((a, c) => a + (c.actual ?? 0), 0)
+    : null;
+
+  const maxBudget = Math.max(
+    rows.reduce((a, c) => Math.max(a, c.budget ?? 0), 0),
+    totalBudget ?? 0,
+    1,
+  );
+
+  // Group by category
+  const categories: string[] = [];
+  const grouped: Record<string, typeof rows> = {};
+  for (const r of rows) {
+    const cat = r.category ?? "";
+    if (!grouped[cat]) {
+      grouped[cat] = [];
+      categories.push(cat);
+    }
+    grouped[cat].push(r);
+  }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -106,41 +195,78 @@ export function ServiceBudgetTab({ projectName }: { projectName: string }) {
       <div style={{ ...cardStyle, padding: "14px 18px 24px" }}>
         <span style={{ fontSize: "13px", fontWeight: 600, color: "#2f7cf6" }}>
           {t("common:budget")} <u>{t("serviceBudgetTab:executionStatusLabel")}</u>
-          <span style={{ marginLeft: "8px", fontSize: "12px", fontWeight: 500, color: "#7c8ba3" }}>{t("common:unit")}: {unitLabel}</span>
+          <span style={{ marginLeft: "8px", fontSize: "12px", fontWeight: 500, color: "#7c8ba3" }}>
+            {t("common:unit")}: {unitLabel}
+          </span>
         </span>
 
         {isLoading ? (
-          <div style={{ padding: "50px 20px", textAlign: "center", fontSize: "14px", color: "#7c8ba3" }}>{t("common:loading")}</div>
+          <div style={{ padding: "50px 20px", textAlign: "center", fontSize: "14px", color: "#7c8ba3" }}>
+            {t("common:loading")}
+          </div>
         ) : rows.length === 0 ? (
           <div style={{ padding: "50px 20px", textAlign: "center", fontSize: "14px", color: "#7c8ba3" }}>
             {t("serviceBudgetTab:noBudgetDataNotice")}
           </div>
         ) : (
-          <div style={{ marginTop: "18px", display: "flex", flexDirection: "column", gap: "26px" }}>
-            {rows.map((c, i) => {
-              const ratio = c.budget != null && c.budget > 0 && c.actual != null ? c.actual / c.budget : 0;
-              return (
-                <HBar
-                  key={`${c.item}-${i}`}
-                  label={c.category ? `${c.category} · ${c.item}` : c.item}
-                  totalWidth={widthPct(c.budget)}
-                  execRatio={ratio}
-                  execLabel={c.actual != null ? fmtMoney(c.actual) : undefined}
-                  pctLabel={fmtPct(ratioPct(c.actual, c.budget)) === "-" ? undefined : fmtPct(ratioPct(c.actual, c.budget))}
-                  totalLabel={fmtMoney(c.budget)}
-                  execColor={chartTheme.planBlue}
-                />
-              );
-            })}
-            <HBar
-              label={t("common:total")}
-              totalWidth={widthPct(totalBudget)}
-              execRatio={totalBudget != null && totalBudget > 0 && totalActual != null ? totalActual / totalBudget : 0}
-              execLabel={totalActual != null ? fmtMoney(totalActual) : undefined}
-              pctLabel={fmtPct(ratioPct(totalActual, totalBudget)) === "-" ? undefined : fmtPct(ratioPct(totalActual, totalBudget))}
-              totalLabel={fmtMoney(totalBudget)}
-              execColor={chartTheme.planBlue}
-            />
+          <div style={{ marginTop: "16px", display: "flex", flexDirection: "column", gap: "0" }}>
+            {categories.map((cat) => (
+              <div key={cat}>
+                {/* Category header */}
+                {cat && (
+                  <div
+                    style={{
+                      fontSize: "13px",
+                      fontWeight: 700,
+                      color: "#16294a",
+                      padding: "10px 0 4px",
+                      borderBottom: "1px solid #e8eaf0",
+                      marginBottom: "2px",
+                    }}
+                  >
+                    {cat}
+                  </div>
+                )}
+                {grouped[cat].map((c, i) => (
+                  <DualBar
+                    key={`${c.item}-${i}`}
+                    label={c.item ?? ""}
+                    budget={c.budget ?? null}
+                    plan={c.plan ?? null}
+                    actual={c.actual ?? null}
+                    maxBudget={maxBudget}
+                    fmtMoney={fmtMoney}
+                    indent={!!cat}
+                  />
+                ))}
+              </div>
+            ))}
+
+            {/* Total row */}
+            <div style={{ borderTop: "2px solid #c8d0e0", marginTop: "6px", paddingTop: "2px" }}>
+              <DualBar
+                label={t("common:total")}
+                budget={totalBudget}
+                plan={totalPlan}
+                actual={totalActual}
+                maxBudget={maxBudget}
+                fmtMoney={fmtMoney}
+                indent={false}
+              />
+            </div>
+
+            {/* Legend */}
+            <div style={{ display: "flex", gap: "16px", justifyContent: "flex-end", marginTop: "8px" }}>
+              {[
+                { label: t("serviceBudgetTab:planLabel"), color: chartTheme.outflowRed },
+                { label: t("serviceBudgetTab:actualLabel"), color: chartTheme.planBlue },
+              ].map(({ label, color }) => (
+                <div key={label} style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+                  <div style={{ width: "12px", height: "12px", backgroundColor: color, borderRadius: "2px" }} />
+                  <span style={{ fontSize: "12px", color: "#555" }}>{label}</span>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
