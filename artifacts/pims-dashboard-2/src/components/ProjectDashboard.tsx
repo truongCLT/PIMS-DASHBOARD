@@ -1,7 +1,7 @@
-import React, { useRef, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
-import { usePutProjectdetail } from "@workspace/api-client-react";
+import { usePutProjectdetail, useGetPimsvinaSiterate } from "@workspace/api-client-react";
 import { ProjectCommentPanel } from "./ProjectCommentPanel";
 import { Upload, FileSpreadsheet, RefreshCw } from "lucide-react";
 import projectPhoto from "../assets/project-photo.png";
@@ -15,7 +15,7 @@ import { OverviewTab } from "./OverviewTab";
 import { PimsvinaSyncPreviewModal, type PimsvinaPreviewData } from "./PimsvinaSyncPreviewModal";
 import { useProjectDetail, getGetProjectdetailQueryKey } from "../lib/projectDetailData";
 import { downloadProjectDetailTemplate, parseProjectDetailWorkbook, ExcelParseError } from "../lib/projectDetailExcel";
-import { DisplayUnitProvider, formatMoney, moneyUnitLabel } from "../lib/displayUnit";
+import { DisplayUnitProvider, DEFAULT_EXCHANGE_RATES, formatMoney, moneyUnitLabel } from "../lib/displayUnit";
 import { useAdminAuth, readAdminToken } from "../lib/adminAuth";
 import { cardStyle } from "../lib/uiTokens";
 import { tokens as aquaTokens } from "@workspace/aqua-glass";
@@ -71,6 +71,21 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
   );
 
   const { detail } = useProjectDetail(projectName);
+  const siteCode = detail?.overview?.siteCode ?? null;
+  const siteRateQuery = useGetPimsvinaSiterate(
+    { siteCode: siteCode ?? "" },
+    { query: { enabled: !!siteCode, staleTime: 5 * 60_000 } },
+  );
+  const siteRates = useMemo(() => {
+    const vndPerUsd = siteRateQuery.data?.rateUsd;
+    if (!vndPerUsd) return DEFAULT_EXCHANGE_RATES;
+    const vndPerKrw = siteRateQuery.data?.rateKrw;
+    return {
+      USD: 1,
+      VND: vndPerUsd,
+      KRW: vndPerKrw ? vndPerUsd / vndPerKrw : DEFAULT_EXCHANGE_RATES.KRW,
+    };
+  }, [siteRateQuery.data]);
   const queryClient = useQueryClient();
   const putMutation = usePutProjectdetail();
   const excelFileRef = useRef<HTMLInputElement>(null);
@@ -139,7 +154,7 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
       : "-";
 
   return (
-    <DisplayUnitProvider currency={currency} unitOn={unitOn}>
+    <DisplayUnitProvider currency={currency} unitOn={unitOn} rates={siteRates}>
     <div style={{ flex: 1, overflowY: "auto", backgroundColor: AG.background }}>
       {/* Filter row */}
       <div

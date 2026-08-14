@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { and, asc, desc, eq } from "drizzle-orm";
 import {
   db,
+  mrProjectsTable,
   pdCommentsTable,
   pdOverviewTable,
   pdProgressMonthlyTable,
@@ -39,7 +40,12 @@ const num = (v: string | null) => (v == null ? null : Number(v));
 const str = (v: number | null | undefined) => (v == null ? null : String(v));
 
 async function loadDetail(projectName: string) {
-  const [overviewRows, progress, milestones, costEstimation, costBudget, costBudgetMonthly, outsourcing, cashflow, cogsMonthly, salesMonthly, photos] = await Promise.all([
+  const [mrProjectRows, overviewRows, progress, milestones, costEstimation, costBudget, costBudgetMonthly, outsourcing, cashflow, cogsMonthly, salesMonthly, photos] = await Promise.all([
+    db
+      .select({ siteCode: mrProjectsTable.siteCode })
+      .from(mrProjectsTable)
+      .where(eq(mrProjectsTable.name, projectName))
+      .limit(1),
     db
       .select()
       .from(pdOverviewTable)
@@ -110,6 +116,7 @@ async function loadDetail(projectName: string) {
     projectName,
     unit: "천 USD",
     overview: {
+      siteCode: mrProjectRows[0]?.siteCode ?? null,
       contractAmount: ov ? num(ov.contractAmount) : null,
       startDate: formatDateStr(ov?.startDate),
       endDate: formatDateStr(ov?.endDate),
