@@ -371,7 +371,7 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
                   total={hasPhotos ? photos.length : 1}
                   current={hasPhotos ? safeIdx : 0}
                   onChange={setPhotoIdx}
-                  imgStyle={{ minHeight: "230px" }}
+                  imgStyle={{ minHeight: "138px", maxHeight: "138px" }}
                   autoPlayIntervalSeconds={detail?.overview?.slideshowIntervalSeconds ?? 0}
                 />
               );
