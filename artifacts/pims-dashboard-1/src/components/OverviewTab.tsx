@@ -758,24 +758,35 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                   );
                 })()}
               </div>
-              {/* 범례 */}
-              <div style={{ display: "flex", gap: "12px", marginTop: "8px", justifyContent: "flex-end", flexWrap: "wrap" }}>
-                {[
-                  { label: t("overviewTab:totalBudget"), color: chartTheme.lightGray },
-                  {
-                    label: t("overviewTab:executionPlanCumulative"),
-                    color: chartTheme.outflowRed,
-                  },
-                  {
-                    label: t("overviewTab:executionActualCumulative"),
-                    color: chartTheme.inflowBlue,
-                  },
-                ].map(({ label, color }) => (
-                  <div key={label} style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                    <div style={{ width: "11px", height: "11px", backgroundColor: color, borderRadius: "2px" }} />
-                    <span style={{ fontSize: "12px", color: "#555" }}>{label}</span>
-                  </div>
-                ))}
+              {/* 합계 (좌) + 범례 (우) — 같은 행 */}
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginTop: "10px",
+                  paddingTop: "7px",
+                  borderTop: "1px solid #eef2f7",
+                  flexWrap: "wrap",
+                  gap: "6px",
+                }}
+              >
+                <span style={{ fontSize: "13px", color: "#16294a", fontWeight: 700 }}>
+                  {t("common:total")} : {fmtMoney(totalActualSum || null)} / {fmtMoney(totalBudgetSum || null)}
+                  {totalCostPct != null && ` (${fmtPct(totalCostPct)})`}
+                </span>
+                <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
+                  {[
+                    { label: t("overviewTab:totalBudget"), color: chartTheme.lightGray },
+                    { label: t("overviewTab:executionPlanCumulative"), color: chartTheme.outflowRed },
+                    { label: t("overviewTab:executionActualCumulative"), color: chartTheme.inflowBlue },
+                  ].map(({ label, color }) => (
+                    <div key={label} style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                      <div style={{ width: "11px", height: "11px", backgroundColor: color, borderRadius: "2px" }} />
+                      <span style={{ fontSize: "12px", color: "#555" }}>{label}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </>
           )}
