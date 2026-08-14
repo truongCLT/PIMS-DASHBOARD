@@ -980,8 +980,8 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
             <tr>
               <th style={th}>{t("projectDataEntryTab:annualRevenueTargetVnd")}</th>
               <th style={th}>{t("projectDataEntryTab:cumulativeRevenueActualVnd")}</th>
-              <th style={th}>Cash Confirmed (A) (VND)</th>
-              <th style={th}>Cash Collection (B) (VND)</th>
+              <th style={th}>Cash Confirmed (A)</th>
+              <th style={th}>Cash Collection (B)</th>
             </tr>
           </thead>
           <tbody>
