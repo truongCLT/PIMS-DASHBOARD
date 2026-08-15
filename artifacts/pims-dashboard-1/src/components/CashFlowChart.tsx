@@ -359,7 +359,7 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
         title={t("common:cashFlow")}
         subtitle={`${config.label} · ${t("common:unit")}: ${unitLabel}`}
       >
-        <DetailDataTable<ChartRow>
+        <DetailDataTable
           rowKey={(row) => String(row.month)}
           columns={[
             { key: "month", label: t("common:period"), align: "left" },
