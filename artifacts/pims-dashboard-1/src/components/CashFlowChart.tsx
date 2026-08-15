@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   ComposedChart,
   Bar,
@@ -12,10 +12,12 @@ import {
   ReferenceLine,
 } from "recharts";
 import { useTranslation } from "react-i18next";
+import { useQueries } from "@tanstack/react-query";
 import { DetailModal, DetailDataTable } from "./DetailModal";
 import {
   useGetCashflowAggregate,
   getGetCashflowAggregateQueryKey,
+  getCashflowAggregate,
 } from "@workspace/api-client-react";
 import type { DashboardScope } from "./Sidebar";
 import { PROJECT_GROUPS } from "../data/projects";
@@ -57,7 +59,7 @@ interface ScopeQueryConfig {
   emptyMessage?: string;
 }
 
-/** 화면에 표시할 scope 라벨 (scope 값 자체는 비교/조회용 식별자이므로 변경하지 않음) */
+/** 화면에 표시할 scope 라벨 */
 function getScopeLabel(scope: DashboardScope, t: TFunc): string {
   switch (scope) {
     case "전체":
@@ -127,9 +129,24 @@ function monthLabel(ym: string, t: TFunc): string {
   return t("cashFlowChart:monthLabel", { month: m, year });
 }
 
+/** YYYY-MM 행만 드릴다운 가능 */
+function isValidYm(rawMonth: string): boolean {
+  return /^\d{4}-\d{2}$/.test(rawMonth);
+}
+
+type ChartRow = {
+  month: string;      // 표시용 라벨
+  rawMonth: string;   // "YYYY-MM" (드릴다운 조회 기준)
+  inflow: number;
+  outflow: number;
+  balance: number;
+};
+
 export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) {
   const { t } = useTranslation(["cashFlowChart", "common"]);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [drillRow, setDrillRow] = useState<ChartRow | null>(null);
+
   const config = getScopeConfig(scope, t);
   const filters = useDashboardFilters();
   const { from, to } = resolveMonthWindow(filters.startYm, filters.endYm);
@@ -142,7 +159,6 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
       ? t("cashFlowChart:thousandUsd")
       : unitLabelOf(filters.currency, filters.unitIndex);
 
-  // 기간 필터 미설정 시 기존 기본값(1월부터 6개월) 유지
   const hasCustomRange = filters.startYm !== "" || filters.endYm !== "";
   const fromMonth = hasCustomRange && !emptyRange ? from : 1;
   const months = hasCustomRange && !emptyRange ? to - from + 1 : 6;
@@ -161,13 +177,62 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
   });
 
   const points = query.data?.points ?? [];
-  const chartData = points.map((p) => ({
+  const chartData: ChartRow[] = points.map((p) => ({
     month: monthLabel(p.month, t),
+    rawMonth: p.month,
     inflow: convert(p.cashIn),
     outflow: -convert(p.cashOut),
     balance: convert(p.equivalent),
   }));
   const hasData = chartData.some((d) => d.inflow !== 0 || d.outflow !== 0 || d.balance !== 0);
+
+  /* ── 현장별 드릴다운: 진행중 스코프만 지원 ── */
+  const drillRefs = useMemo(() => {
+    if (scope === "시공-진행중") return getOngoingRefs("시공");
+    if (scope === "용역-진행중") return getOngoingRefs("용역");
+    return [];
+  }, [scope]);
+  const hasDrilldown = drillRefs.length > 0 && enabled;
+
+  /** 드릴다운 쿼리: 현장별 개별 쿼리 (조건부 활성) */
+  const drillEnabled = hasDrilldown; // 항상 프리패치 (클릭 즉시 표시)
+  const projectQueries = useQueries({
+    queries: drillRefs.map((ref) => {
+      const qp = {
+        names: ref.name,
+        division: ref.division,
+        fromYear: REPORT_YEAR,
+        fromMonth,
+        months,
+      };
+      return {
+        queryKey: getGetCashflowAggregateQueryKey(qp),
+        queryFn: () => getCashflowAggregate(qp),
+        enabled: drillEnabled,
+      };
+    }),
+  });
+
+  /** 클릭된 월의 현장별 유입·유출 rows */
+  const drillRows = useMemo(() => {
+    if (!drillRow || !hasDrilldown) return [];
+    const ym = drillRow.rawMonth;
+    return drillRefs
+      .map((ref, i) => {
+        const qData = projectQueries[i]?.data;
+        const pt = qData?.points.find((p) => p.month === ym);
+        return {
+          name: ref.name,
+          inflow: Math.round(convert(pt?.cashIn ?? 0)),
+          outflow: Math.round(convert(pt?.cashOut ?? 0)),
+        };
+      })
+      .filter((r) => r.inflow !== 0 || r.outflow !== 0)
+      .sort((a, b) => b.inflow - a.inflow);
+  }, [drillRow, hasDrilldown, drillRefs, projectQueries, convert]);
+
+  const drillIsLoading = projectQueries.some((q) => q.isLoading);
+  const drillIsError = projectQueries.some((q) => q.isError);
 
   const inflowName = t("cashFlowChart:cashInflow");
   const outflowName = t("cashFlowChart:cashOutflow");
@@ -287,13 +352,14 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
         ))}
       </div>
 
+      {/* ── 1차 상세 모달: 월별 자금수지 요약 ── */}
       <DetailModal
         open={detailOpen}
         onClose={() => setDetailOpen(false)}
         title={t("common:cashFlow")}
         subtitle={`${config.label} · ${t("common:unit")}: ${unitLabel}`}
       >
-        <DetailDataTable
+        <DetailDataTable<ChartRow>
           rowKey={(row) => String(row.month)}
           columns={[
             { key: "month", label: t("common:period"), align: "left" },
@@ -302,7 +368,58 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
             { key: "balance", label: balanceName },
           ]}
           rows={chartData}
+          onRowClick={(row) => {
+            if (hasDrilldown && isValidYm(row.rawMonth)) setDrillRow(row);
+          }}
+          isRowClickable={(row) => hasDrilldown && isValidYm(row.rawMonth)}
         />
+        {!hasDrilldown && (
+          <div style={{ padding: "10px 4px 0", fontSize: "11px", color: "#7c8ba3" }}>
+            {t("cashFlowChart:noProjectBreakdown")}
+          </div>
+        )}
+      </DetailModal>
+
+      {/* ── 2차 드릴다운 모달: 현장별 유입·유출 상세 ── */}
+      <DetailModal
+        open={drillRow != null}
+        onClose={() => setDrillRow(null)}
+        title={drillRow ? t("cashFlowChart:siteDetailTitle", { month: drillRow.month }) : ""}
+        subtitle={`${config.label} · ${t("common:unit")}: ${unitLabel}`}
+      >
+        {drillIsLoading ? (
+          <div style={{ padding: "28px 16px", textAlign: "center", fontSize: "13px", color: "#7c8ba3" }}>
+            {t("cashFlowChart:loadingSiteData")}
+          </div>
+        ) : drillIsError ? (
+          <div style={{ padding: "28px 16px", textAlign: "center", fontSize: "13px", color: "#e0655c" }}>
+            {t("cashFlowChart:cashflowFetchError")}
+          </div>
+        ) : drillRows.length === 0 ? (
+          <div style={{ padding: "28px 16px", textAlign: "center", fontSize: "13px", color: "#7c8ba3" }}>
+            {t("cashFlowChart:noSiteData")}
+          </div>
+        ) : (
+          <DetailDataTable
+            rowKey={(row) => row.name}
+            columns={[
+              { key: "name", label: t("cashFlowChart:colProject"), align: "left" },
+              {
+                key: "inflow",
+                label: t("cashFlowChart:colInflow"),
+                align: "right",
+                format: (v) => typeof v === "number" ? v.toLocaleString("ko-KR") : "-",
+              },
+              {
+                key: "outflow",
+                label: t("cashFlowChart:colOutflow"),
+                align: "right",
+                format: (v) => typeof v === "number" ? v.toLocaleString("ko-KR") : "-",
+              },
+            ]}
+            rows={drillRows}
+          />
+        )}
       </DetailModal>
     </div>
   );

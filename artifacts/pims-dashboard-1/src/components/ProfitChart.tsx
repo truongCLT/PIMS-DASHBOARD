@@ -1,11 +1,26 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { useDashboardData, type ProfitRow } from "../lib/mgmtreportData";
-import { useDashboardFilters } from "../lib/dashboardFilters";
+import {
+  useListSalescostSites,
+  getListSalescostSitesQueryKey,
+  useListMgmtreportProjects,
+  getListMgmtreportProjectsQueryKey,
+} from "@workspace/api-client-react";
+import { useDashboardData, type ProfitRow, REPORT_YEAR } from "../lib/mgmtreportData";
+import { useDashboardFilters, makeConverter } from "../lib/dashboardFilters";
+import { classifyMrProject } from "../data/projects";
 import { chartTheme } from "../lib/chartTheme";
 import { INK_BODY, INK_MUTED, POINT_BLUE, CARD_BORDER } from "../lib/uiTokens";
 import { useTheme } from "../lib/theme";
 import { DetailModal, DetailDataTable } from "./DetailModal";
+
+/** "N월" → 0-based 월 인덱스. 월 형식 아니면 null. */
+function extractMonthIdx(label: string): number | null {
+  const m = /^(\d+)월$/.exec(label);
+  if (!m) return null;
+  const n = parseInt(m[1], 10);
+  return n >= 1 && n <= 12 ? n - 1 : null;
+}
 
 const NAVY   = chartTheme.profitNavy;
 const GREEN  = chartTheme.profitGreen;
@@ -38,6 +53,7 @@ export function ProfitChart() {
   const { t } = useTranslation(["profitChart", "common"]);
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [drillRow, setDrillRow] = useState<ProfitRow | null>(null);
 
   /* SVG 실제 너비를 측정해 viewBox(1000) 기준 역스케일 계산
      → non-daewoo 폰트를 SalesChart CSS px 기준(11px)에 맞춤 */
@@ -52,7 +68,99 @@ export function ProfitChart() {
   }, []);
 
   const { derived, isError } = useDashboardData();
-  const { unitIndex } = useDashboardFilters();
+  const filters = useDashboardFilters();
+  const { unitIndex, currency, fxRates, project, division, statusFilter } = filters;
+  const convert = makeConverter(currency, unitIndex, fxRates);
+
+  /* ── 현장별 매출/원가 데이터 프리패치 ── */
+  const revParams = { year: REPORT_YEAR, metric: "revenue" as const };
+  const cogsParams = { year: REPORT_YEAR, metric: "cogs" as const };
+  const revQuery = useListSalescostSites(revParams, {
+    query: { queryKey: getListSalescostSitesQueryKey(revParams) },
+  });
+  const cogsQuery = useListSalescostSites(cogsParams, {
+    query: { queryKey: getListSalescostSitesQueryKey(cogsParams) },
+  });
+
+  /* ── siteCode 스코프 필터 (SalesChart와 동일 로직) ── */
+  const projectSelected = project !== "All";
+  const divisionSelected = !projectSelected && division != null;
+  const needProjectsList = projectSelected || divisionSelected;
+  const projectsQuery = useListMgmtreportProjects(
+    { year: REPORT_YEAR },
+    {
+      query: {
+        queryKey: getListMgmtreportProjectsQueryKey({ year: REPORT_YEAR }),
+        enabled: needProjectsList,
+      },
+    },
+  );
+  const scopedSiteCodes = useMemo<Set<string> | null>(() => {
+    if (!needProjectsList) return null;
+    const projects = projectsQuery.data?.projects ?? [];
+    if (projectSelected) {
+      const p = projects.find((x) => x.name === project);
+      if (!p?.siteCode) return new Set();
+      return new Set([p.siteCode]);
+    }
+    if (divisionSelected && division) {
+      const codes = projects
+        .filter(
+          (p) =>
+            !p.isGroup &&
+            classifyMrProject(p.name) === division &&
+            (statusFilter == null || (p.status ?? "ongoing") === statusFilter) &&
+            p.siteCode != null,
+        )
+        .map((p) => p.siteCode as string);
+      return new Set(codes);
+    }
+    return null;
+  }, [needProjectsList, projectSelected, divisionSelected, project, division, statusFilter, projectsQuery.data]);
+
+  /* ── 드릴다운 rows 계산 ── */
+  const drillMonthIdx = drillRow ? extractMonthIdx(drillRow.m) : null;
+  const drillSiteRows = useMemo(() => {
+    if (drillMonthIdx == null) return [];
+    const revSites = revQuery.data?.sites ?? [];
+    const cogsSites = cogsQuery.data?.sites ?? [];
+    // 매출 또는 원가가 있는 모든 현장 코드의 합집합 (cost-only 현장도 포함)
+    const revMap = new Map(revSites.map((s) => [s.code, s]));
+    const cogsMap = new Map(cogsSites.map((s) => [s.code, s]));
+    const allCodes = new Set([...revMap.keys(), ...cogsMap.keys()]);
+    // 스코프 적용
+    const targetCodes = scopedSiteCodes == null
+      ? allCodes
+      : new Set([...allCodes].filter((code) => scopedSiteCodes.has(code)));
+
+    return [...targetCodes]
+      .map((code) => {
+        const rs = revMap.get(code);
+        const cs = cogsMap.get(code);
+        const rev = convert(rs?.months[drillMonthIdx] ?? 0);
+        const cogs = convert(cs?.months[drillMonthIdx] ?? 0);
+        const gross = rev - cogs;
+        return {
+          name: rs?.name ?? cs?.name ?? code,
+          category: rs?.category ?? cs?.category ?? "-",
+          bizType: rs?.bizType ?? cs?.bizType ?? "-",
+          revenue: Math.round(rev),
+          cogs: Math.round(cogs),
+          gross: Math.round(gross),
+        };
+      })
+      .filter((r) => r.revenue !== 0 || r.cogs !== 0)
+      .sort((a, b) => b.gross - a.gross);
+  }, [drillMonthIdx, revQuery.data, cogsQuery.data, scopedSiteCodes, convert]);
+
+  const drillGrossTotal = drillSiteRows.reduce((acc, r) => acc + r.gross, 0);
+  const drillRowsWithShare = drillSiteRows.map((r) => ({
+    ...r,
+    share: drillGrossTotal !== 0 ? `${((r.gross / drillGrossTotal) * 100).toFixed(1)}%` : "-",
+  }));
+
+  const drillIsLoading =
+    revQuery.isLoading || cogsQuery.isLoading || (needProjectsList && projectsQuery.isLoading);
   const { theme } = useTheme();
   const daewoo = theme.charts?.profitVariant === "daewoo"; // 대우 예시1 스타일
   const compact     = unitIndex === 1;                 // 단위 기반 폰트 축소
@@ -413,7 +521,20 @@ export function ProfitChart() {
       </div>
       )}
 
-      <DetailModal open={detailOpen} onClose={() => setDetailOpen(false)} title={t("profitChart:profitLossStatus")}>
+      {/* 스코프 뷰: 판관비·영업이익 미제공 안내 — 테마 무관하게 항상 표시 */}
+      {derived?.profitNote && data.length > 0 && (
+        <div style={{ fontSize: "10px", color: INK_MUTED, textAlign: "center", padding: "2px 0 2px" }}>
+          {derived.profitNote}
+        </div>
+      )}
+
+      {/* ── 1차 손익 상세 모달 ── */}
+      <DetailModal
+        open={detailOpen}
+        onClose={() => setDetailOpen(false)}
+        title={t("profitChart:profitLossStatus")}
+        subtitle={derived?.unitLabel}
+      >
         <DetailDataTable
           rowKey={(row) => String(row.m)}
           columns={[
@@ -425,7 +546,47 @@ export function ProfitChart() {
             { key: "sga", label: t("common:sga"), format: (_v, row) => `${row.sga} (${row.sgaPct})` },
           ]}
           rows={data}
+          onRowClick={(row) => {
+            if (extractMonthIdx(row.m) != null) setDrillRow(row);
+          }}
+          isRowClickable={(row) => extractMonthIdx(row.m) != null}
         />
+      </DetailModal>
+
+      {/* ── 2차 현장별 매출이익 드릴다운 모달 ── */}
+      <DetailModal
+        open={drillRow != null}
+        onClose={() => setDrillRow(null)}
+        title={drillRow ? t("profitChart:siteDetailTitle", { month: drillRow.m }) : ""}
+        subtitle={derived?.unitLabel}
+      >
+        {drillIsLoading ? (
+          <div style={{ padding: "28px 16px", textAlign: "center", fontSize: "13px", color: "#7c8ba3" }}>
+            {t("profitChart:loadingSiteData")}
+          </div>
+        ) : (revQuery.isError || cogsQuery.isError) ? (
+          <div style={{ padding: "28px 16px", textAlign: "center", fontSize: "13px", color: "#e0655c" }}>
+            {t("profitChart:dataLoadFailed")}
+          </div>
+        ) : drillRowsWithShare.length === 0 ? (
+          <div style={{ padding: "28px 16px", textAlign: "center", fontSize: "13px", color: "#7c8ba3" }}>
+            {t("profitChart:noSiteData")}
+          </div>
+        ) : (
+          <DetailDataTable
+            rowKey={(row) => row.name}
+            columns={[
+              { key: "name", label: t("profitChart:colSiteName"), align: "left" },
+              { key: "category", label: t("profitChart:colCategory"), align: "left" },
+              { key: "bizType", label: t("profitChart:colBizType"), align: "left" },
+              { key: "revenue", label: t("common:revenue"), align: "right", format: (v) => typeof v === "number" ? v.toLocaleString("ko-KR") : "-" },
+              { key: "cogs", label: t("common:cogs"), align: "right", format: (v) => typeof v === "number" ? v.toLocaleString("ko-KR") : "-" },
+              { key: "gross", label: t("common:grossProfit"), align: "right", format: (v) => typeof v === "number" ? v.toLocaleString("ko-KR") : "-" },
+              { key: "share", label: t("profitChart:colShare"), align: "right" },
+            ]}
+            rows={drillRowsWithShare}
+          />
+        )}
       </DetailModal>
     </div>
   );

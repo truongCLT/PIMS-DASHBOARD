@@ -377,6 +377,32 @@ export function deriveDashboardData(
         svc: "-",
       };
     });
+  } else if (projectScope && !projectScope.empty && !emptyRange) {
+    /* 스코프 뷰: 판관비·영업이익 데이터 없음 → 매출이익만 표시.
+     * profitData를 채워 상세 모달 행을 활성화하고 현장별 드릴다운을 가능하게 한다. */
+    const sumActual = (arr: number[], months: number[]) =>
+      months.reduce((a, m) => a + (arr[m - 1] ?? 0), 0);
+    profitData = buckets
+      .map((b) => {
+        const rev = sumActual(revenue.actual, b.months);
+        const grossV = roundSmart(sumActual(gross.actual, b.months));
+        return {
+          m: b.label,
+          op: 0,
+          opPct: "-",
+          non: 0,
+          total: grossV,
+          totalPct: rev ? ratioStr(grossV, rev) : "-",
+          sga: "-",
+          sgaValue: 0,
+          sgaPct: "-",
+          ord: 0,
+          ordPct: "-",
+          con: "-",
+          svc: "-",
+        };
+      })
+      .filter((row) => row.total !== 0);
   }
 
   let orderStatus: OrderStatusData | null = null;
