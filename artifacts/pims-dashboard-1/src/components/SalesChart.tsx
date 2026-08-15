@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ComposedChart,
@@ -13,8 +13,15 @@ import {
   LabelList,
   Cell,
 } from "recharts";
-import { useDashboardData, type SalesRow } from "../lib/mgmtreportData";
-import { useDashboardFilters } from "../lib/dashboardFilters";
+import {
+  useListSalescostSites,
+  getListSalescostSitesQueryKey,
+  useListMgmtreportProjects,
+  getListMgmtreportProjectsQueryKey,
+} from "@workspace/api-client-react";
+import { useDashboardData, type SalesRow, REPORT_YEAR } from "../lib/mgmtreportData";
+import { useDashboardFilters, makeConverter } from "../lib/dashboardFilters";
+import { classifyMrProject } from "../data/projects";
 import { chartTheme } from "../lib/chartTheme";
 import { useTheme } from "../lib/theme";
 import { DetailModal, DetailDataTable } from "./DetailModal";
@@ -24,14 +31,11 @@ const ACTUAL_COLOR = chartTheme.actualGreen;
 const RATE_COLOR = chartTheme.rateOrange;
 
 /* Badge label above dot */
-// n: 표시 중인 데이터 포인트 수. 많을수록 간격이 좁아지므로 폰트를 줄임.
 const BadgeLabel = (fill: string, compact = false, n = 12) => (props: any) => {
   const { x, y, value } = props;
   if (value == null || x == null || y == null) return null;
   const text = Number(value).toLocaleString("ko-KR");
-  // 컬럼 피치 추정: 차트 너비 320px 기준
   const colPitch = Math.max(20, 320 / Math.max(1, n));
-  // fontWeight 700 sans-serif 기준 글자당 너비 ≈ fontSize × 0.62
   const maxFs = compact ? 9 : 11.5;
   const fontSize = Math.max(7.5, Math.min(maxFs, colPitch / (text.length * 0.62)));
   const charW = fontSize * 0.62;
@@ -58,20 +62,12 @@ const BadgeLabel = (fill: string, compact = false, n = 12) => (props: any) => {
   );
 };
 
-/*
- * Rate labels — one attached to each line.
- * Only the label on the LOWER value line actually renders for that month.
- * Lower value = lower on chart = higher SVG y coordinate.
- *
- * plan <= actual  →  plan is lower (or equal)  →  PlanRateLabel renders
- * actual  < plan  →  actual is lower            →  ActualRateLabel renders
- */
 const makePlanRateLabel = (chartData: SalesRow[]) => (props: any) => {
   const { x, y, index } = props;
   if (x == null || y == null || index == null) return null;
   const d = chartData[index];
   if (!d || d.rate == null || d.plan == null || d.actual == null) return null;
-  if (d.plan > d.actual) return null; // actual is lower → its label will render
+  if (d.plan > d.actual) return null;
   return (
     <text x={x} y={y + 18} textAnchor="middle" fill={RATE_COLOR} fontSize={10} fontWeight={700}>
       {d.rate}%
@@ -84,7 +80,7 @@ const makeActualRateLabel = (chartData: SalesRow[]) => (props: any) => {
   if (x == null || y == null || index == null) return null;
   const d = chartData[index];
   if (!d || d.rate == null || d.plan == null || d.actual == null) return null;
-  if (d.actual >= d.plan) return null; // plan is lower or equal → its label will render
+  if (d.actual >= d.plan) return null;
   return (
     <text x={x} y={y + 18} textAnchor="middle" fill={RATE_COLOR} fontSize={10} fontWeight={700}>
       {d.rate}%
@@ -112,11 +108,24 @@ const CustomTooltip = ({ active, payload, label, colors }: any) => {
   );
 };
 
+/** "N월" 형식 → 0-based 월 인덱스 (0–11). 월 형식이 아니면 null. */
+function extractMonthIdx(label: string): number | null {
+  const m = /^(\d+)월$/.exec(label);
+  if (!m) return null;
+  const n = parseInt(m[1], 10);
+  return n >= 1 && n <= 12 ? n - 1 : null;
+}
+
 export function SalesChart() {
   const { t } = useTranslation(["salesChart", "common"]);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [drillRow, setDrillRow] = useState<SalesRow | null>(null);
+
   const { derived, isError } = useDashboardData();
-  const { unitIndex } = useDashboardFilters();
+  const filters = useDashboardFilters();
+  const { unitIndex, currency, fxRates, project, division, statusFilter } = filters;
+  const convert = makeConverter(currency, unitIndex, fxRates);
+
   const { theme } = useTheme();
   const variant = theme.charts?.salesVariant;
   const planColor = theme.charts?.planColor ?? PLAN_COLOR;
@@ -127,7 +136,95 @@ export function SalesChart() {
   const PlanRateLabel = makePlanRateLabel(visibleData);
   const ActualRateLabel = makeActualRateLabel(visibleData);
 
-  /* month + 달성률 pill chip tick, used by the bars variant (대우 예시1) */
+  /* ── 현장별 매출 데이터 — 항상 프리패치(드릴다운 클릭 즉시 표시) ── */
+  const sitesParams = { year: REPORT_YEAR, metric: "revenue" as const };
+  const sitesQuery = useListSalescostSites(sitesParams, {
+    query: { queryKey: getListSalescostSitesQueryKey(sitesParams) },
+  });
+
+  /* ── 프로젝트/부문 스코프 결정 ── */
+  const projectSelected = project !== "All";
+  const divisionSelected = !projectSelected && division != null;
+  const needProjectsList = projectSelected || divisionSelected;
+
+  const projectsQuery = useListMgmtreportProjects(
+    { year: REPORT_YEAR },
+    {
+      query: {
+        queryKey: getListMgmtreportProjectsQueryKey({ year: REPORT_YEAR }),
+        enabled: needProjectsList,
+      },
+    },
+  );
+
+  /**
+   * 현재 필터 스코프에 해당하는 sc_sites.code 집합.
+   * null = 전체 현장(필터 없음).
+   * 빈 Set = 스코프 내 siteCode 매핑이 없음 → 현장 상세 없음.
+   *
+   * mr_projects.siteCode → sc_sites.code 로 연결하는 것이 올바른 방식.
+   * (이름 기반 매칭은 별개 식별자이므로 사용하지 않음.)
+   */
+  const scopedSiteCodes = useMemo<Set<string> | null>(() => {
+    if (!needProjectsList) return null; // 전체: 필터링 불필요
+    const projects = projectsQuery.data?.projects ?? [];
+    if (projectSelected) {
+      // 단일 프로젝트: 해당 프로젝트의 siteCode 한 개
+      const p = projects.find((x) => x.name === project);
+      if (!p?.siteCode) return new Set(); // 매핑 없음 → 현장 데이터 없음
+      return new Set([p.siteCode]);
+    }
+    if (divisionSelected && division) {
+      const codes = projects
+        .filter(
+          (p) =>
+            !p.isGroup &&
+            classifyMrProject(p.name) === division &&
+            (statusFilter == null || (p.status ?? "ongoing") === statusFilter) &&
+            p.siteCode != null,
+        )
+        .map((p) => p.siteCode as string);
+      return new Set(codes);
+    }
+    return null;
+  }, [needProjectsList, projectSelected, divisionSelected, project, division, statusFilter, projectsQuery.data]);
+
+  /* ── 클릭된 월의 현장별 rows 계산 ── */
+  const drillMonthIdx = drillRow ? extractMonthIdx(drillRow.month) : null;
+
+  const drillSiteRows = useMemo(() => {
+    if (drillMonthIdx == null) return [];
+    const allSites = sitesQuery.data?.sites ?? [];
+    // 스코프 적용: 선택된 프로젝트/부문에 속한 현장만
+    const scoped =
+      scopedSiteCodes == null
+        ? allSites
+        : allSites.filter((s) => scopedSiteCodes.has(s.code));
+
+    const mapped = scoped
+      .map((s) => ({
+        name: s.name,
+        category: s.category ?? "-",
+        bizType: s.bizType ?? "-",
+        amount: Math.round(convert(s.months[drillMonthIdx] ?? 0)),
+      }))
+      // 0인 현장은 제외, 마이너스(조정 역분개 등)는 유지
+      .filter((r) => r.amount !== 0)
+      .sort((a, b) => b.amount - a.amount);
+
+    const total = mapped.reduce((acc, r) => acc + r.amount, 0);
+    return mapped.map((r) => ({
+      ...r,
+      share: total !== 0 ? `${((r.amount / total) * 100).toFixed(1)}%` : "-",
+    }));
+  }, [drillMonthIdx, sitesQuery.data, scopedSiteCodes, convert]);
+
+  /* ── 드릴다운 로딩 상태 ──
+   * 부문/프로젝트 스코프가 있는데 projects 목록이 아직 오는 중이면 "loading" 표시 */
+  const drillIsLoading =
+    sitesQuery.isLoading || (needProjectsList && projectsQuery.isLoading);
+
+  /* month + 달성률 pill chip tick */
   const MonthRateTick = (props: any) => {
     const { x, y, payload } = props;
     const row = visibleData.find((r) => r.month === payload.value);
@@ -149,7 +246,6 @@ export function SalesChart() {
     );
   };
 
-  /* actual value label above the taller of the two overlapped bars (bars variant) */
   const BarValueLabel = (props: any) => {
     const { x, y, width, height, index } = props;
     if (x == null || index == null) return null;
@@ -163,7 +259,6 @@ export function SalesChart() {
       height > 0 && d.actual > 0
     ) {
       const actualY = y + height - d.actual * (height / d.plan);
-      // 항상 실적 바 바로 위에 표시
       if (Number.isFinite(actualY)) topY = actualY;
     }
     return (
@@ -202,7 +297,7 @@ export function SalesChart() {
           }}>{t("salesChart:viewDetails")}</button>
       </div>
 
-      {/* Legend (그래프 위) */}
+      {/* Legend */}
       <div style={{ display: "flex", alignItems: "center", gap: "14px", marginBottom: "6px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
           {variant === "bars" ? (
@@ -251,7 +346,6 @@ export function SalesChart() {
         ) : (
         <ResponsiveContainer width="100%" height="100%">
           {variant === "bars" ? (
-            /* ── 대우 예시1: 겹친 막대 (계획 넓고 연한색 · 실적 좁고 진한색) + 달성률 칩 ── */
             <ComposedChart data={visibleData} margin={{ top: 24, right: 18, left: -10, bottom: 4 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.gridLine} vertical={false} />
               <XAxis
@@ -304,7 +398,6 @@ export function SalesChart() {
               </Bar>
             </ComposedChart>
           ) : variant === "area" ? (
-            /* ── 대우 예시2: area(실적) + dashed line(계획) ── */
             <ComposedChart data={visibleData} margin={{ top: 30, right: 18, left: -10, bottom: 4 }}>
               <defs>
                 <linearGradient id="salesAreaFill" x1="0" y1="0" x2="0" y2="1">
@@ -379,8 +472,6 @@ export function SalesChart() {
               tickLine={false}
             />
             <Tooltip content={<CustomTooltip />} />
-
-            {/* 실적 및 전망 */}
             <Line
               type="linear"
               dataKey="actual"
@@ -394,8 +485,6 @@ export function SalesChart() {
               <LabelList dataKey="actual" content={BadgeLabel(ACTUAL_COLOR, compact, visibleData.length)} />
               <LabelList dataKey="actual" content={ActualRateLabel} />
             </Line>
-
-            {/* 계획 */}
             <Line
               type="linear"
               dataKey="plan"
@@ -415,7 +504,13 @@ export function SalesChart() {
         )}
       </div>
 
-      <DetailModal open={detailOpen} onClose={() => setDetailOpen(false)} title={t("salesChart:title")}>
+      {/* ── 1차 상세 모달: 월별 매출 요약 ── */}
+      <DetailModal
+        open={detailOpen}
+        onClose={() => setDetailOpen(false)}
+        title={t("salesChart:title")}
+        subtitle={derived?.unitLabel}
+      >
         <DetailDataTable
           rowKey={(row) => String(row.month)}
           columns={[
@@ -425,7 +520,50 @@ export function SalesChart() {
             { key: "rate", label: t("common:achievementRate"), format: (v) => (v == null ? "-" : `${v}%`) },
           ]}
           rows={visibleData}
+          onRowClick={(row) => {
+            if (extractMonthIdx(row.month) != null) setDrillRow(row);
+          }}
+          isRowClickable={(row) => extractMonthIdx(row.month) != null}
         />
+      </DetailModal>
+
+      {/* ── 2차 드릴다운 모달: 현장별 매출 상세 ── */}
+      <DetailModal
+        open={drillRow != null}
+        onClose={() => setDrillRow(null)}
+        title={drillRow ? t("salesChart:siteDetailTitle", { month: drillRow.month }) : ""}
+        subtitle={derived?.unitLabel}
+      >
+        {drillIsLoading ? (
+          <div style={{ padding: "28px 16px", textAlign: "center", fontSize: "13px", color: "#7c8ba3" }}>
+            {t("salesChart:loadingSiteData")}
+          </div>
+        ) : sitesQuery.isError ? (
+          <div style={{ padding: "28px 16px", textAlign: "center", fontSize: "13px", color: "#e0655c" }}>
+            {t("salesChart:errorLoadFailed")}
+          </div>
+        ) : drillSiteRows.length === 0 ? (
+          <div style={{ padding: "28px 16px", textAlign: "center", fontSize: "13px", color: "#7c8ba3" }}>
+            {t("salesChart:noSiteData")}
+          </div>
+        ) : (
+          <DetailDataTable
+            rowKey={(row) => row.name}
+            columns={[
+              { key: "name", label: t("salesChart:colSiteName"), align: "left" },
+              { key: "category", label: t("salesChart:colCategory"), align: "left" },
+              { key: "bizType", label: t("salesChart:colBizType"), align: "left" },
+              {
+                key: "amount",
+                label: t("salesChart:colAmount"),
+                align: "right",
+                format: (v) => typeof v === "number" ? v.toLocaleString("ko-KR") : "-",
+              },
+              { key: "share", label: t("salesChart:colShare"), align: "right" },
+            ]}
+            rows={drillSiteRows}
+          />
+        )}
       </DetailModal>
     </div>
   );

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { X } from "lucide-react";
 
 export function DetailModal({
@@ -92,11 +92,20 @@ export function DetailDataTable<T extends object>({
   columns,
   rows,
   rowKey,
+  onRowClick,
+  isRowClickable,
 }: {
   columns: DetailColumn<T>[];
   rows: T[];
   rowKey: (row: T, index: number) => string;
+  /** 행 클릭 핸들러. 제공 시 클릭 가능한 행 스타일이 적용됩니다. */
+  onRowClick?: (row: T, index: number) => void;
+  /** 특정 행만 클릭 가능하게 제한. 기본적으로 onRowClick이 있으면 모든 행이 클릭 가능 */
+  isRowClickable?: (row: T) => boolean;
 }) {
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+  const hasClick = !!onRowClick;
+
   return (
     <div style={{ overflowX: "auto" }}>
       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
@@ -117,42 +126,83 @@ export function DetailDataTable<T extends object>({
                 {c.label}
               </th>
             ))}
+            {/* 드릴다운 화살표 헤더 자리 */}
+            {hasClick && (
+              <th style={{ width: 22, borderBottom: "1px solid #e2e9f3" }} />
+            )}
           </tr>
         </thead>
         <tbody>
           {rows.length === 0 ? (
             <tr>
-              <td colSpan={columns.length} style={{ padding: "16px", textAlign: "center", color: "#888" }}>
+              <td
+                colSpan={columns.length + (hasClick ? 1 : 0)}
+                style={{ padding: "16px", textAlign: "center", color: "#888" }}
+              >
                 -
               </td>
             </tr>
           ) : (
-            rows.map((row, i) => (
-              <tr key={rowKey(row, i)} style={{ backgroundColor: i % 2 === 0 ? "#fff" : "#f8fbff" }}>
-                {columns.map((c) => {
-                  const raw = row[c.key as keyof T];
-                  const content = c.format
-                    ? c.format(raw, row)
-                    : typeof raw === "number"
-                      ? raw.toLocaleString()
-                      : (raw as React.ReactNode) ?? "-";
-                  return (
+            rows.map((row, i) => {
+              const clickable = hasClick && (!isRowClickable || isRowClickable(row));
+              return (
+                <tr
+                  key={rowKey(row, i)}
+                  onClick={clickable ? () => onRowClick!(row, i) : undefined}
+                  onMouseEnter={clickable ? () => setHoveredIdx(i) : undefined}
+                  onMouseLeave={clickable ? () => setHoveredIdx(null) : undefined}
+                  style={{
+                    backgroundColor:
+                      hoveredIdx === i && clickable
+                        ? "#eef4ff"
+                        : i % 2 === 0
+                          ? "#fff"
+                          : "#f8fbff",
+                    cursor: clickable ? "pointer" : undefined,
+                    transition: "background-color 0.1s",
+                  }}
+                >
+                  {columns.map((c) => {
+                    const raw = row[c.key as keyof T];
+                    const content = c.format
+                      ? c.format(raw, row)
+                      : typeof raw === "number"
+                        ? raw.toLocaleString()
+                        : (raw as React.ReactNode) ?? "-";
+                    return (
+                      <td
+                        key={c.key}
+                        style={{
+                          padding: "5px 10px",
+                          textAlign: c.align ?? "right",
+                          color: "#333",
+                          borderBottom: "1px solid #eef2f7",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {content}
+                      </td>
+                    );
+                  })}
+                  {/* 드릴다운 화살표 셀 */}
+                  {hasClick && (
                     <td
-                      key={c.key}
                       style={{
-                        padding: "5px 10px",
-                        textAlign: c.align ?? "right",
-                        color: "#333",
+                        padding: "5px 6px",
                         borderBottom: "1px solid #eef2f7",
-                        whiteSpace: "nowrap",
+                        textAlign: "center",
+                        color: clickable ? "#7c8ba3" : "transparent",
+                        fontSize: "15px",
+                        lineHeight: 1,
+                        userSelect: "none",
                       }}
                     >
-                      {content}
+                      {clickable ? "›" : ""}
                     </td>
-                  );
-                })}
-              </tr>
-            ))
+                  )}
+                </tr>
+              );
+            })
           )}
         </tbody>
       </table>

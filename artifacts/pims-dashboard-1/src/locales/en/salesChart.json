@@ -9,5 +9,13 @@
   "salesPlan": "Sales (Plan)",
   "salesActualForecast": "Sales (Actual & Forecast)",
   "month": "Month",
-  "bottomChipRate": "Bottom chip = achievement"
+  "bottomChipRate": "Bottom chip = achievement",
+  "siteDetailTitle": "Site Sales Detail – {{month}}",
+  "colSiteName": "Site",
+  "colCategory": "Category",
+  "colBizType": "Business Type",
+  "colAmount": "Amount",
+  "colShare": "Share",
+  "noSiteData": "No site-level data for this month.",
+  "loadingSiteData": "Loading site data…"
 }
