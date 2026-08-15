@@ -295,6 +295,43 @@ describe("parseSalescostWorkbook", () => {
     await expect(parseSalescostWorkbook(buf, YEAR)).rejects.toBeInstanceOf(SalescostParseError);
   });
 
+  it("시트 순서가 뒤바뀌어도(Alloc → Summary) 배부 데이터가 올바르게 파싱됨", async () => {
+    // Build a workbook where the Alloc sheet appears BEFORE Summary
+    const wb = new ExcelJS.Workbook();
+
+    // Add Alloc sheet FIRST
+    const wa = wb.addWorksheet(ALLOC_SHEET);
+    const ar1 = wa.getRow(1);
+    ar1.getCell(1).value = "Site 01";
+    ar1.getCell(2).value = "현장원가";
+    for (let i = 0; i < 12; i++) ar1.getCell(3 + i).value = 50;
+    ar1.commit();
+
+    // Add Summary sheet SECOND
+    const ws = wb.addWorksheet(SUMMARY_SHEET);
+    const sh1 = ws.getRow(1); sh1.getCell(4).value = "Revenue"; sh1.commit();
+    const sh2 = ws.getRow(2);
+    sh2.getCell(1).value = "SITE01";
+    sh2.getCell(4).value = "SITE01 - 역순 테스트";
+    sh2.getCell(5).value = 1; // VND month 1
+    sh2.getCell(19).value = 1; // USD month 1
+    sh2.commit();
+
+    const ab = await wb.xlsx.writeBuffer();
+    const buf = Buffer.from(ab as ArrayBuffer);
+
+    const parsed = await parseSalescostWorkbook(buf, YEAR);
+    expect(parsed.sites).toHaveLength(1);
+    expect(parsed.sites[0].code).toBe("SITE01");
+
+    const allocAmts = parsed.amounts.filter(
+      (a) => a.code === "SITE01" && a.metric === "site_cost",
+    );
+    // All 12 months of 현장원가 should be present despite reversed sheet order
+    expect(allocAmts).toHaveLength(12);
+    expect(allocAmts[0].amountUsd).toBe(50);
+  });
+
   it("buildSalescostPreview: year·site 수·합계를 올바르게 반환", async () => {
     const usd = (v: number) => Array.from({ length: 12 }, () => v);
     const buf = await buildFixture(
