@@ -521,33 +521,6 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                   <span style={{ fontSize: "12px", fontWeight: 700, color: "#333", marginTop: "10px" }}>{t("common:currentMonth")}</span>
                 </div>
 
-                {/* 연 — 연간 계획 대비 누계 실적 */}
-                {(() => {
-                  const annualPct = ratioPct(cumRev, annualPlanRev);
-                  return (
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                      <div style={{ marginTop: "-46px" }}>
-                        <Donut
-                          percent={annualPct ?? 0}
-                          color={rateColor(annualPct)}
-                          size={110}
-                          stroke={13}
-                          label={fmtPct(annualPct)}
-                          labelSize={18}
-                          labelColor={rateColor(annualPct)}
-                        />
-                      </div>
-                      <div style={{ fontSize: "12px", color: "#16294a", fontWeight: 700, marginTop: "12px" }}>
-                        {t("overviewTab:annualShort")}
-                      </div>
-                      <div style={{ fontSize: "11px", color: "#555", marginTop: "2px", whiteSpace: "nowrap" }}>
-                        {t("common:actual")} <b style={{ color: "#16294a" }}>{fmtMoney(cumRev)}</b>
-                        {" / "}{t("common:plan")} {fmtMoney(annualPlanRev || null)}
-                      </div>
-                    </div>
-                  );
-                })()}
-
                 {/* 누계 — 도급액 대비 */}
                 {(() => {
                   const totalPct = ratioPct(cumRev, overview.contractAmount);
