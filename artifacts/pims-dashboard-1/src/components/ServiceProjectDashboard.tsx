@@ -15,6 +15,7 @@ import { ProjectDataEntryTab } from "./ProjectDataEntryTab";
 import { useProjectDetail, getGetProjectdetailQueryKey, fmtPct, ratioPct } from "../lib/projectDetailData";
 import { useAdminAuth } from "../lib/adminAuth";
 import { DisplayUnitProvider, formatMoney, moneyUnitLabel } from "../lib/displayUnit";
+import { useDashboardFilters } from "../lib/dashboardFilters";
 import { CardHeader, rateColor } from "./OverviewTab";
 import { chartTheme } from "../lib/chartTheme";
 import { cardStyle, sectionTitle } from "../lib/uiTokens";
@@ -99,6 +100,7 @@ function EmptyHint({ label }: { label: string }) {
 
 export function ServiceProjectDashboard({ projectName }: { projectName: string }) {
   const { t } = useTranslation(["serviceProjectDashboard", "overviewTab", "common"]);
+  const { fxRates } = useDashboardFilters();
   const [currency, setCurrency] = useState("USD");
   const [unitOn, setUnitOn] = useState(true);
   const [activeTab, setActiveTab] = useState("Overview");
@@ -127,7 +129,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
     setExcelMsg(null);
     setExcelMsgIsSuccess(false);
     try {
-      await downloadProjectDetailTemplate(projectName, detail);
+      await downloadProjectDetailTemplate(projectName, detail, fxRates.VND);
     } catch (err) {
       console.error("Excel template download failed", err);
       setExcelMsg(t("serviceProjectDashboard:templateDownloadFailed"));
@@ -143,7 +145,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
     setExcelMsg(null);
     setExcelMsgIsSuccess(false);
     try {
-      const parsed = await parseProjectDetailWorkbook(file, detail);
+      const parsed = await parseProjectDetailWorkbook(file, detail, fxRates.VND);
       if (!window.confirm(t("serviceProjectDashboard:uploadConfirm"))) {
         setExcelBusy(false);
         return;

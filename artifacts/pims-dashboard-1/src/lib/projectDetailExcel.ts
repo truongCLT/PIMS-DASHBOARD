@@ -10,7 +10,7 @@ import type {
   ProjectDetailSalesPoint,
 } from "@workspace/api-client-react";
 
-// 시트/헤더 정의 — 다운로드와 업로드가 같은 양식을 사용한다. (금액 단위: 천 USD 원본값 그대로)
+// 시트/헤더 정의 — 다운로드와 업로드가 같은 양식을 사용한다. (금액 단위: Bil. VND = tỷ VND)
 const SHEETS = {
   overview: "개요",
   progress: "1.공정률",
@@ -25,9 +25,9 @@ const SHEETS = {
 
 const HEADERS: Record<string, string[]> = {
   [SHEETS.progress]: ["연도", "월", "월간 계획(%)", "월간 실적(%)", "누계 계획(%)", "누계 실적(%)"],
-  [SHEETS.milestones]: ["구분", "계획 시작(YYYY-MM)", "계획 종료(YYYY-MM)", "실제 시작(YYYY-MM)", "실제 종료(YYYY-MM)"],
-  [SHEETS.costEstimation]: ["구분(bidding/execution/completion)", "기준연도", "기준월", "도급액(천USD)", "원가(천USD)"],
-  [SHEETS.costBudget]: ["구분", "항목", "예산(천USD)", "계획(천USD)", "실적(천USD)"],
+  [SHEETS.milestones]: ["구분", "계획 시작(YYYY-MM-DD)", "계획 종료(YYYY-MM-DD)", "실제 시작(YYYY-MM-DD)", "실제 종료(YYYY-MM-DD)"],
+  [SHEETS.costEstimation]: ["구분(bidding/execution/completion)", "기준연도", "기준월", "도급액(Bil.VND)", "원가(Bil.VND)"],
+  [SHEETS.costBudget]: ["구분", "항목", "예산(Bil.VND)", "계획(Bil.VND)", "실적(Bil.VND)"],
   [SHEETS.outsourcing]: [
     "대공종",
     "세부공종",
@@ -35,21 +35,27 @@ const HEADERS: Record<string, string[]> = {
     "구분",
     "계약일",
     "차수",
-    "예산(천USD)",
-    "실행예산(천USD)",
-    "기성확정(천USD)",
-    "당월(천USD)",
-    "누계(천USD)",
+    "예산(Bil.VND)",
+    "실행예산(Bil.VND)",
+    "기성확정(Bil.VND)",
+    "당월(Bil.VND)",
+    "누계(Bil.VND)",
   ],
-  [SHEETS.cashflow]: ["연도", "월", "수입(천USD)", "지출(천USD)", "보유현금(천USD)"],
-  [SHEETS.cogsMonthly]: ["연도", "월", "회계 매출원가(천USD)", "집행 매출원가 WIP(천USD)"],
-  [SHEETS.salesMonthly]: ["연도", "월", "매출 계획(천USD)", "매출 실적(천USD)"],
+  [SHEETS.cashflow]: ["연도", "월", "수입(Bil.VND)", "지출(Bil.VND)", "보유현금(Bil.VND)"],
+  [SHEETS.cogsMonthly]: ["연도", "월", "회계 매출원가(Bil.VND)", "집행 매출원가 WIP(Bil.VND)"],
+  [SHEETS.salesMonthly]: ["연도", "월", "매출 계획(Bil.VND)", "매출 실적(Bil.VND)"],
 };
 
 type Cell = string | number | null;
 
-/** 데이터 입력용 Excel 양식 다운로드 (현재 저장된 데이터 포함, 천 USD 원본 단위) */
-export async function downloadProjectDetailTemplate(projectName: string, detail: ProjectDetail): Promise<void> {
+/** 천USD → Bil.VND 변환 (Excel 출력용) */
+function toVnd(v: number | null | undefined, fxRateVnd: number): number | null {
+  if (v == null) return null;
+  return v * fxRateVnd / 1_000_000;
+}
+
+/** 데이터 입력용 Excel 양식 다운로드 (Bil.VND 단위, 현재 환율 적용) */
+export async function downloadProjectDetailTemplate(projectName: string, detail: ProjectDetail, fxRateVnd: number): Promise<void> {
   const ExcelJS = (await import("exceljs")).default;
   const wb = new ExcelJS.Workbook();
   wb.created = new Date();
@@ -72,6 +78,8 @@ export async function downloadProjectDetailTemplate(projectName: string, detail:
     return ws;
   };
 
+  const tv = (v: number | null | undefined) => toVnd(v, fxRateVnd);
+
   // 개요 (key/value)
   {
     const ov = detail.overview;
@@ -80,14 +88,14 @@ export async function downloadProjectDetailTemplate(projectName: string, detail:
       ["발주처", ov.client ?? null],
       ["착공일(YYYY-MM-DD)", ov.startDate ?? null],
       ["준공일(YYYY-MM-DD)", ov.endDate ?? null],
-      ["도급액(천USD)", ov.contractAmount ?? null],
+      ["도급액(Bil.VND)", tv(ov.contractAmount)],
       ["공사규모", ov.scale ?? null],
       ["작성 기준월(YYYY-MM)", ov.asOfMonth ?? null],
       ["수행내용", ov.scope ?? null],
-      ["연간 매출 목표(천USD)", ov.revenueAnnualTarget ?? null],
-      ["누계 매출 실적(천USD)", ov.revenueTotal ?? null],
-      ["Cash Confirmed(천USD)", ov.cashConfirmed ?? null],
-      ["Cash Collection(천USD)", ov.cashCollection ?? null],
+      ["연간 매출 목표(Bil.VND)", tv(ov.revenueAnnualTarget)],
+      ["누계 매출 실적(Bil.VND)", tv(ov.revenueTotal)],
+      ["Cash Confirmed(Bil.VND)", tv(ov.cashConfirmed)],
+      ["Cash Collection(Bil.VND)", tv(ov.cashCollection)],
     ];
     for (const [k, v] of rows) {
       const r = ws.addRow([k, v]);
@@ -107,11 +115,11 @@ export async function downloadProjectDetailTemplate(projectName: string, detail:
   );
   addSheet(
     SHEETS.costEstimation,
-    detail.costEstimation.map((e) => [e.kind, e.year ?? null, e.month ?? null, e.contractAmount ?? null, e.costAmount ?? null]),
+    detail.costEstimation.map((e) => [e.kind, e.year ?? null, e.month ?? null, tv(e.contractAmount), tv(e.costAmount)]),
   );
   addSheet(
     SHEETS.costBudget,
-    detail.costBudget.map((b) => [b.category ?? null, b.item, b.budget ?? null, b.plan ?? null, b.actual ?? null]),
+    detail.costBudget.map((b) => [b.category ?? null, b.item, tv(b.budget), tv(b.plan), tv(b.actual)]),
   );
   addSheet(
     SHEETS.outsourcing,
@@ -122,24 +130,24 @@ export async function downloadProjectDetailTemplate(projectName: string, detail:
       o.category ?? null,
       o.contractDate ?? null,
       o.changeNo ?? null,
-      o.budget ?? null,
-      o.executedBudget ?? null,
-      o.resolved ?? null,
-      o.thisMonth ?? null,
-      o.accum ?? null,
+      tv(o.budget),
+      tv(o.executedBudget),
+      tv(o.resolved),
+      tv(o.thisMonth),
+      tv(o.accum),
     ]),
   );
   addSheet(
     SHEETS.cashflow,
-    detail.cashflow.map((c) => [c.year, c.month, c.cashIn ?? null, c.cashOut ?? null, c.equivalent ?? null]),
+    detail.cashflow.map((c) => [c.year, c.month, tv(c.cashIn), tv(c.cashOut), tv(c.equivalent)]),
   );
   addSheet(
     SHEETS.cogsMonthly,
-    (detail.cogsMonthly ?? []).map((c) => [c.year, c.month, c.acctCogs ?? null, c.wipCogs ?? null]),
+    (detail.cogsMonthly ?? []).map((c) => [c.year, c.month, tv(c.acctCogs), tv(c.wipCogs)]),
   );
   addSheet(
     SHEETS.salesMonthly,
-    (detail.salesMonthly ?? []).map((s) => [s.year, s.month, s.plan ?? null, s.actual ?? null]),
+    (detail.salesMonthly ?? []).map((s) => [s.year, s.month, tv(s.plan), tv(s.actual)]),
   );
 
   const buf = await wb.xlsx.writeBuffer();
@@ -203,13 +211,43 @@ function cellYm(v: unknown): string | null {
   return `${m[1]}-${m[2].padStart(2, "0")}`;
 }
 
+/** 'YYYY-MM-DD' 정규화 (Date/문자열/YYYY-MM 허용; YYYY-MM 입력 시 01일로 보완) */
+function cellYmd(v: unknown): string | null {
+  if (v instanceof Date || (typeof v === "object" && v != null)) {
+    // ExcelJS Date 객체: cellStr이 YYYY-MM-DD로 변환
+  }
+  const s = cellStr(v);
+  if (!s) return null;
+  // YYYY-MM-DD
+  const full = /^(\d{4})[-./](\d{1,2})[-./](\d{1,2})$/.exec(s);
+  if (full) {
+    const mo = Number(full[2]), dd = Number(full[3]);
+    if (mo < 1 || mo > 12 || dd < 1 || dd > 31) return null;
+    return `${full[1]}-${full[2].padStart(2, "0")}-${full[3].padStart(2, "0")}`;
+  }
+  // YYYY-MM → 1일로 보완
+  const ym = /^(\d{4})[-./](\d{1,2})$/.exec(s);
+  if (ym) {
+    const mo = Number(ym[2]);
+    if (mo < 1 || mo > 12) return null;
+    return `${ym[1]}-${ym[2].padStart(2, "0")}-01`;
+  }
+  return null;
+}
+
 export class ExcelParseError extends Error {}
+
+/** Bil.VND → 천USD 역변환 (Excel 업로드용) */
+function fromVnd(v: number | null, fxRateVnd: number): number | null {
+  if (v == null) return null;
+  return v * 1_000_000 / fxRateVnd;
+}
 
 /**
  * 업로드된 양식을 파싱해 ProjectDetail 본문을 만든다.
  * 시트가 없는 항목은 기존(existing) 값을 유지하고, 사진(photos)은 항상 기존 값을 유지한다.
  */
-export async function parseProjectDetailWorkbook(file: File, existing: ProjectDetail): Promise<ProjectDetail> {
+export async function parseProjectDetailWorkbook(file: File, existing: ProjectDetail, fxRateVnd: number): Promise<ProjectDetail> {
   const ExcelJS = (await import("exceljs")).default;
   const wb = new ExcelJS.Workbook();
   await wb.xlsx.load(await file.arrayBuffer());
@@ -230,6 +268,8 @@ export async function parseProjectDetailWorkbook(file: File, existing: ProjectDe
     return rows;
   };
 
+  const fv = (v: unknown) => fromVnd(cellNum(v), fxRateVnd);
+
   const result: ProjectDetail = { ...existing, photos: existing.photos };
 
   // 개요
@@ -246,7 +286,7 @@ export async function parseProjectDetailWorkbook(file: File, existing: ProjectDe
         client: cellStr(map.get("발주처")) ?? null,
         startDate: cellStr(map.get("착공일")) ?? null,
         endDate: cellStr(map.get("준공일")) ?? null,
-        contractAmount: cellNum(map.get("도급액")) ?? null,
+        contractAmount: fv(map.get("도급액")) ?? null,
         scale: cellStr(map.get("공사규모")) ?? null,
       };
       // 신규 항목: 해당 행이 양식에 존재할 때만 반영(구버전 양식은 기존 값 유지)
@@ -258,10 +298,10 @@ export async function parseProjectDetailWorkbook(file: File, existing: ProjectDe
         result.overview.asOfMonth = ym;
       }
       if (map.has("수행내용")) result.overview.scope = cellStr(map.get("수행내용"));
-      if (map.has("연간 매출 목표")) result.overview.revenueAnnualTarget = cellNum(map.get("연간 매출 목표"));
-      if (map.has("누계 매출 실적")) result.overview.revenueTotal = cellNum(map.get("누계 매출 실적"));
-      if (map.has("Cash Confirmed")) result.overview.cashConfirmed = cellNum(map.get("Cash Confirmed"));
-      if (map.has("Cash Collection")) result.overview.cashCollection = cellNum(map.get("Cash Collection"));
+      if (map.has("연간 매출 목표")) result.overview.revenueAnnualTarget = fv(map.get("연간 매출 목표"));
+      if (map.has("누계 매출 실적")) result.overview.revenueTotal = fv(map.get("누계 매출 실적"));
+      if (map.has("Cash Confirmed")) result.overview.cashConfirmed = fv(map.get("Cash Confirmed"));
+      if (map.has("Cash Collection")) result.overview.cashCollection = fv(map.get("Cash Collection"));
     }
   }
 
@@ -298,10 +338,10 @@ export async function parseProjectDetailWorkbook(file: File, existing: ProjectDe
         if (!label) throw new ExcelParseError(`[${SHEETS.milestones}] ${i + 2}행: 구분(이름)이 비어 있습니다.`);
         out.push({
           label,
-          planStart: cellYm(r[1]),
-          planEnd: cellYm(r[2]),
-          actualStart: cellYm(r[3]),
-          actualEnd: cellYm(r[4]),
+          planStart: cellYmd(r[1]),
+          planEnd: cellYmd(r[2]),
+          actualStart: cellYmd(r[3]),
+          actualEnd: cellYmd(r[4]),
         });
       });
       result.milestones = out;
@@ -321,8 +361,8 @@ export async function parseProjectDetailWorkbook(file: File, existing: ProjectDe
           kind,
           year: cellInt(r[1]),
           month: cellInt(r[2]),
-          contractAmount: cellNum(r[3]),
-          costAmount: cellNum(r[4]),
+          contractAmount: fv(r[3]),
+          costAmount: fv(r[4]),
         });
       });
       // 준공 전망(completion) 검증: 기준월 중복 / 기준월 없는 행 다중 입력 방지 (데이터 입력 화면과 동일 규칙)
@@ -357,9 +397,9 @@ export async function parseProjectDetailWorkbook(file: File, existing: ProjectDe
         out.push({
           category: cellStr(r[0]),
           item,
-          budget: cellNum(r[2]),
-          plan: cellNum(r[3]),
-          actual: cellNum(r[4]),
+          budget: fv(r[2]),
+          plan: fv(r[3]),
+          actual: fv(r[4]),
         });
       });
       result.costBudget = out;
@@ -381,11 +421,11 @@ export async function parseProjectDetailWorkbook(file: File, existing: ProjectDe
           category: cellStr(r[3]),
           contractDate: cellStr(r[4]),
           changeNo: cellStr(r[5]),
-          budget: cellNum(r[6]),
-          executedBudget: cellNum(r[7]),
-          resolved: cellNum(r[8]),
-          thisMonth: cellNum(r[9]),
-          accum: cellNum(r[10]),
+          budget: fv(r[6]),
+          executedBudget: fv(r[7]),
+          resolved: fv(r[8]),
+          thisMonth: fv(r[9]),
+          accum: fv(r[10]),
         });
       });
       result.outsourcing = out;
@@ -402,7 +442,7 @@ export async function parseProjectDetailWorkbook(file: File, existing: ProjectDe
         const month = cellInt(r[1]);
         if (year == null || month == null) throw new ExcelParseError(`[${SHEETS.cashflow}] ${i + 2}행: 연도/월이 비어 있습니다.`);
         if (month < 1 || month > 12) throw new ExcelParseError(`[${SHEETS.cashflow}] ${i + 2}행: 월(${month})이 올바르지 않습니다.`);
-        out.push({ year, month, cashIn: cellNum(r[2]), cashOut: cellNum(r[3]), equivalent: cellNum(r[4]) });
+        out.push({ year, month, cashIn: fv(r[2]), cashOut: fv(r[3]), equivalent: fv(r[4]) });
       });
       result.cashflow = out;
     }
@@ -424,7 +464,7 @@ export async function parseProjectDetailWorkbook(file: File, existing: ProjectDe
           throw new ExcelParseError(`[${SHEETS.cogsMonthly}] 같은 월(${year}.${String(month).padStart(2, "0")})이 중복 입력되었습니다.`);
         }
         seen.add(key);
-        out.push({ year, month, acctCogs: cellNum(r[2]), wipCogs: cellNum(r[3]) });
+        out.push({ year, month, acctCogs: fv(r[2]), wipCogs: fv(r[3]) });
       });
       result.cogsMonthly = out;
     }
@@ -451,7 +491,7 @@ export async function parseProjectDetailWorkbook(file: File, existing: ProjectDe
           throw new ExcelParseError(`[${SHEETS.salesMonthly}] 같은 월(${year}.${String(month).padStart(2, "0")})이 중복 입력되었습니다.`);
         }
         seen.add(key);
-        out.push({ year, month, plan: cellNum(r[2]), actual: cellNum(r[3]) });
+        out.push({ year, month, plan: fv(r[2]), actual: fv(r[3]) });
       });
       result.salesMonthly = out;
     }
