@@ -5,14 +5,9 @@ import { ProjectCommentPanel } from "./ProjectCommentPanel";
 import { useProjectDetail, fmtPct, ratioPct } from "../lib/projectDetailData";
 import { useMoney } from "../lib/displayUnit";
 import { chartTheme } from "../lib/chartTheme";
-import { cardStyle, sectionTitle } from "../lib/uiTokens";
+import { cardStyle, sectionTitle, emptyNote, INK_NAVY, INK_BODY, INK_SECONDARY } from "../lib/uiTokens";
 
-const emptyStyle: React.CSSProperties = {
-  padding: "24px 0",
-  textAlign: "center",
-  fontSize: "13px",
-  color: "#7c8ba3",
-};
+const emptyStyle = emptyNote;
 
 function Donut({
   percent,
@@ -53,7 +48,7 @@ function Donut({
           dominantBaseline="central"
           fontSize={15}
           fontWeight={700}
-          fill="#16294a"
+          fill={INK_NAVY}
         >
           {centerLabel}
         </text>
@@ -110,7 +105,7 @@ function BudgetExecutionStatus({ rows }: { rows: BudgetRow[] }) {
                 <div style={{
                   fontSize: "12px",
                   fontWeight: 700,
-                  color: "#333",
+                  color: INK_BODY,
                   marginTop: i === 0 ? 0 : "2px",
                   marginBottom: "-8px",
                 }}>
@@ -118,7 +113,7 @@ function BudgetExecutionStatus({ rows }: { rows: BudgetRow[] }) {
                 </div>
               )}
               <div style={{ display: "flex", alignItems: "center" }}>
-                <div style={{ width: "110px", minWidth: "110px", fontSize: "12px", color: "#333", fontWeight: row.bold ? 700 : 400 }}>
+                <div style={{ width: "110px", minWidth: "110px", fontSize: "12px", color: INK_BODY, fontWeight: row.bold ? 700 : 400 }}>
                   <span>{row.item}</span>
                 </div>
                 <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
@@ -215,7 +210,7 @@ function BudgetExecutionStatus({ rows }: { rows: BudgetRow[] }) {
                   )}
                 </div>
                 {/* 예산 금액 — 카드 바깥으로 넘치지 않도록 고정 너비 컬럼으로 분리 */}
-                <div style={{ width: "58px", minWidth: "58px", textAlign: "right", fontSize: "11px", color: "#555", paddingLeft: "4px" }}>
+                <div style={{ width: "58px", minWidth: "58px", textAlign: "right", fontSize: "11px", color: INK_SECONDARY, paddingLeft: "4px" }}>
                   {fmtMoney(row.budget)}
                 </div>
               </div>
@@ -335,11 +330,11 @@ export function CostingTab({
                   : "";
               return (
                 <div key={meta.kind} style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: "12px", color: "#555", marginBottom: "2px" }}>
+                  <div style={{ fontSize: "12px", color: INK_SECONDARY, marginBottom: "2px" }}>
                     {cost != null || contract != null ? `${fmtMoney(cost)} / ${fmtMoney(contract)}` : "-"}
                   </div>
                   <Donut percent={pct ?? 0} color={meta.color} size={150} stroke={16} centerLabel={fmtPct(pct)} />
-                  <div style={{ fontSize: "13px", color: "#16294a", fontWeight: 600, marginTop: "4px" }}>
+                  <div style={{ fontSize: "13px", color: INK_NAVY, fontWeight: 600, marginTop: "4px" }}>
                     {t(`costingTab:${EST_LABEL_KEY[meta.label]}`)}
                     {baseMonth}
                   </div>

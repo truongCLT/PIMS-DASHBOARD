@@ -4,14 +4,14 @@ import { ProjectCommentPanel } from "./ProjectCommentPanel";
 
 import { useProjectDetail, fmtPct, ratioPct } from "../lib/projectDetailData";
 import { useMoney } from "../lib/displayUnit";
-import { cardStyle, sectionTitle } from "../lib/uiTokens";
+import { cardStyle, sectionTitle, INK_NAVY, INK_BODY, INK_MUTED, TABLE_HEADER_BG, CARD_BORDER } from "../lib/uiTokens";
 
 const th: React.CSSProperties = {
-  backgroundColor: "#eef2f7",
-  color: "#16294a",
+  backgroundColor: TABLE_HEADER_BG,
+  color: INK_NAVY,
   fontSize: "13px",
   fontWeight: 700,
-  border: "1px solid #e2e9f3",
+  border: `1px solid ${CARD_BORDER}`,
   padding: "8px 6px",
   textAlign: "center",
   verticalAlign: "middle",
@@ -20,9 +20,9 @@ const th: React.CSSProperties = {
 };
 
 const td: React.CSSProperties = {
-  border: "1px solid #e2e9f3",
+  border: `1px solid ${CARD_BORDER}`,
   fontSize: "13px",
-  color: "#333",
+  color: INK_BODY,
   padding: "8px 6px",
   verticalAlign: "middle",
   textAlign: "center",
@@ -140,7 +140,7 @@ export function OutsourcingTab({ projectName }: { projectName: string }) {
                 </tr>
               ) : rows.length === 0 ? (
                 <tr>
-                  <td style={{ ...td, color: "#7c8ba3" }} colSpan={12}>
+                  <td style={{ ...td, color: INK_MUTED }} colSpan={12}>
                     {t("outsourcingTab:noOutsourcingData")}
                   </td>
                 </tr>

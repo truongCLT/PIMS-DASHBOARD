@@ -15,7 +15,7 @@ import { useMoney } from "../lib/displayUnit";
 import { getMrCashflowRef, useMrProject } from "../data/mrProjectLinks";
 import { REPORT_YEAR } from "../lib/mgmtreportData";
 import { chartTheme } from "../lib/chartTheme";
-import { cardStyle, sectionTitle, ACHIEVE_GREEN, ACHIEVE_RED, rateColor } from "../lib/uiTokens";
+import { cardStyle, sectionTitle, emptyNote, INK_NAVY, INK_BODY, INK_SECONDARY, INK_MUTED, CARD_BORDER, DIVIDER, PROGRESS_TRACK, ACHIEVE_GREEN, ACHIEVE_RED, rateColor } from "../lib/uiTokens";
 
 const ROW_COLUMNS = "1fr 1.6fr 1.6fr";
 
@@ -42,7 +42,7 @@ export function CardHeader({
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "4px", gap: "8px" }}>
       <span style={{ display: "flex", alignItems: "baseline", gap: "6px", minWidth: 0 }}>
         <span style={{ ...sectionTitle, marginBottom: 0 }}>{title}</span>
-        {unit && <span style={{ fontSize: "11px", color: "#7c8ba3", whiteSpace: "nowrap" }}>{unit}</span>}
+        {unit && <span style={{ fontSize: "11px", color: INK_MUTED, whiteSpace: "nowrap" }}>{unit}</span>}
       </span>
       <span style={{ display: "flex", alignItems: "center", gap: "6px", flexShrink: 0 }}>
         {badgeValue != null && (
@@ -50,9 +50,9 @@ export function CardHeader({
             style={{
               fontSize: "11px",
               fontWeight: 700,
-              color: badgeColor ?? "#16294a",
-              backgroundColor: `${badgeColor ?? "#16294a"}14`,
-              border: `1px solid ${badgeColor ?? "#16294a"}33`,
+              color: badgeColor ?? INK_NAVY,
+              backgroundColor: `${badgeColor ?? INK_NAVY}14`,
+              border: `1px solid ${badgeColor ?? INK_NAVY}33`,
               borderRadius: "10px",
               padding: "2px 8px",
               whiteSpace: "nowrap",
@@ -69,19 +69,13 @@ export function CardHeader({
 
 const monthSelectStyle: React.CSSProperties = {
   fontSize: "12px",
-  border: "1px solid #e2e9f3",
+  border: `1px solid ${CARD_BORDER}`,
   borderRadius: "4px",
   padding: "2px 4px",
-  color: "#333",
+  color: INK_BODY,
   cursor: "pointer",
 };
 
-const emptyNote: React.CSSProperties = {
-  padding: "40px 12px",
-  textAlign: "center",
-  fontSize: "13px",
-  color: "#7c8ba3",
-};
 
 /** raw Korean item name (fixed identifier from cost-budget data) → translation key */
 const ITEM_LABEL_KEY: Record<string, string> = {
@@ -322,7 +316,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
     <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: "8px" }}>
       {/* 전역 기준월 선택기 */}
       <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "6px 0 0" }}>
-        <span style={{ fontSize: "12px", color: "#333", fontWeight: 600 }}>{t("overviewTab:referenceMonth")} :</span>
+        <span style={{ fontSize: "12px", color: INK_BODY, fontWeight: 600 }}>{t("overviewTab:referenceMonth")} :</span>
         <select
           value={selectedMonth ?? ""}
           onChange={(e) => setSelectedMonth(e.target.value === "" ? null : Number(e.target.value))}
@@ -393,11 +387,11 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                                 borderRadius: "3px 3px 0 0",
                               }}
                             />
-                            <span style={{ fontSize: "11px", color: "#555", marginTop: "5px", fontWeight: 600 }}>{b.label}</span>
+                            <span style={{ fontSize: "11px", color: INK_SECONDARY, marginTop: "5px", fontWeight: 600 }}>{b.label}</span>
                           </div>
                         ))}
                       </div>
-                      <div style={{ fontSize: "12px", fontWeight: 700, color: "#333", marginTop: "4px" }}>{t("common:monthly")}</div>
+                      <div style={{ fontSize: "12px", fontWeight: 700, color: INK_BODY, marginTop: "4px" }}>{t("common:monthly")}</div>
                     </div>
                   );
                 })()}
@@ -412,12 +406,12 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                   return (
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
                       <div style={{ fontSize: "12px", fontWeight: 700, marginBottom: "4px", whiteSpace: "nowrap" }}>
-                        <span style={{ color: "#777" }}>{t("overviewTab:planA")}</span>
+                        <span style={{ color: INK_MUTED }}>{t("overviewTab:planA")}</span>
                         <span style={{ color: chartTheme.planBlue, fontSize: "14px", fontWeight: 800 }}>{fmtPct(planCum)}</span>
                       </div>
                       <svg width={136} height={136} viewBox="0 0 160 160">
                         {/* 회색 기준 링 (100%) */}
-                        <circle cx={cx} cy={cy} r={rIn} fill="none" stroke="#e2e7ee" strokeWidth={16} />
+                        <circle cx={cx} cy={cy} r={rIn} fill="none" stroke={PROGRESS_TRACK} strokeWidth={16} />
                         {/* 빨강: 실적 달성률 (내부 링) */}
                         <circle
                           cx={cx} cy={cy} r={rIn} fill="none"
@@ -436,11 +430,11 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                         <text x={cx} y={cy + 2} textAnchor="middle" fontSize={30} fontWeight={800} fill={rateColor(achieveRate)}>
                           {fmtPct(actualCum)}
                         </text>
-                        <text x={cx} y={cy + 22} textAnchor="middle" fontSize={13} fill="#555">
+                        <text x={cx} y={cy + 22} textAnchor="middle" fontSize={13} fill={INK_SECONDARY}>
                           {t("overviewTab:actualB")}
                         </text>
                       </svg>
-                      <div style={{ fontSize: "12px", fontWeight: 700, color: "#333", marginTop: "2px" }}>{t("common:cumulative")}</div>
+                      <div style={{ fontSize: "12px", fontWeight: 700, color: INK_BODY, marginTop: "2px" }}>{t("common:cumulative")}</div>
                     </div>
                   );
                 })()}
@@ -448,12 +442,12 @@ export function OverviewTab({ projectName }: { projectName: string }) {
             </>
           )}
           {/* 공기율 — 공정율과 유사한 그래프 표현 (수평 진행 바) */}
-          <div style={{ marginTop: "8px", borderTop: "1px solid #eef2f7", paddingTop: "8px" }}>
+          <div style={{ marginTop: "8px", borderTop: `1px solid ${DIVIDER}`, paddingTop: "8px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <span style={{ fontSize: "12px", color: "#333", fontWeight: 700, whiteSpace: "nowrap" }}>
+              <span style={{ fontSize: "12px", color: INK_BODY, fontWeight: 700, whiteSpace: "nowrap" }}>
                 {t("overviewTab:elapsedLabel")}
               </span>
-              <div style={{ flex: 1, height: "10px", backgroundColor: "#e2e7ee", borderRadius: "5px", overflow: "hidden" }}>
+              <div style={{ flex: 1, height: "10px", backgroundColor: PROGRESS_TRACK, borderRadius: "5px", overflow: "hidden" }}>
                 <div
                   style={{
                     width: `${Math.max(0, Math.min(elapsed ?? 0, 100))}%`,
@@ -498,7 +492,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                       {fmtPct((thisMonthRev / thisMonthPlan) * 100)}
                     </span>
                   ) : (
-                    <span style={{ fontSize: "15px", color: "#aaa" }}>-</span>
+                    <span style={{ fontSize: "15px", color: INK_MUTED }}>-</span>
                   )}
                   <div style={{ display: "flex", gap: "10px", alignItems: "flex-end" }}>
                     <MiniBar
@@ -518,7 +512,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                       valueLabel={fmtMoney(thisMonthRev)}
                     />
                   </div>
-                  <span style={{ fontSize: "12px", fontWeight: 700, color: "#333", marginTop: "10px" }}>{t("common:currentMonth")}</span>
+                  <span style={{ fontSize: "12px", fontWeight: 700, color: INK_BODY, marginTop: "10px" }}>{t("common:currentMonth")}</span>
                 </div>
 
                 {/* 누계 — 도급액 대비 */}
@@ -537,11 +531,11 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                           labelColor={rateColor(totalPct)}
                         />
                       </div>
-                      <div style={{ fontSize: "12px", color: "#16294a", fontWeight: 700, marginTop: "12px" }}>
+                      <div style={{ fontSize: "12px", color: INK_NAVY, fontWeight: 700, marginTop: "12px" }}>
                         {t("common:cumulative")}
                       </div>
-                      <div style={{ fontSize: "11px", color: "#555", marginTop: "2px", whiteSpace: "nowrap" }}>
-                        {t("common:actual")} <b style={{ color: "#16294a" }}>{fmtMoney(cumRev)}</b>
+                      <div style={{ fontSize: "11px", color: INK_SECONDARY, marginTop: "2px", whiteSpace: "nowrap" }}>
+                        {t("common:actual")} <b style={{ color: INK_NAVY }}>{fmtMoney(cumRev)}</b>
                         {" / "}{t("common:contractAmount")} {fmtMoney(overview.contractAmount)}
                       </div>
                     </div>
@@ -562,7 +556,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
           const biddingPct = estPct(bidding);
           const completionPct = estPct(completion);
           const improve = biddingPct != null && completionPct != null ? biddingPct - completionPct : null;
-          const improveColor = improve == null ? "#7c8ba3" : improve >= 0 ? ACHIEVE_GREEN : ACHIEVE_RED;
+          const improveColor = improve == null ? INK_MUTED : improve >= 0 ? ACHIEVE_GREEN : ACHIEVE_RED;
           const H = 150;
           const maxPct = Math.max(...stages.map((s) => estPct(s.data) ?? 0), 1);
           return (
@@ -583,7 +577,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                     const bh = pct != null ? Math.max((pct / maxPct) * H, 8) : 0;
                     return (
                       <div key={s.key} style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center" }}>
-                        <div style={{ fontSize: "16px", fontWeight: 800, color: "#16294a", marginBottom: "6px" }}>
+                        <div style={{ fontSize: "16px", fontWeight: 800, color: INK_NAVY, marginBottom: "6px" }}>
                           {fmtPct(pct)}
                         </div>
                         <div
@@ -594,7 +588,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                             borderRadius: "8px 8px 3px 3px",
                           }}
                         />
-                        <div style={{ fontSize: "12px", color: "#16294a", fontWeight: 700, marginTop: "5px", whiteSpace: "nowrap", maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        <div style={{ fontSize: "12px", color: INK_NAVY, fontWeight: 700, marginTop: "5px", whiteSpace: "nowrap", maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis" }}>
                           {s.title}
                         </div>
                       </div>
@@ -651,7 +645,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                     return (
                       <div key={g.item} style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center" }}>
                         {/* 예산 금액 (막대 위) */}
-                        <div title={fmtMoney(bud || null)} style={{ fontSize: "12px", fontWeight: 600, color: "#333", marginBottom: "2px", whiteSpace: "nowrap", maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        <div title={fmtMoney(bud || null)} style={{ fontSize: "12px", fontWeight: 600, color: INK_BODY, marginBottom: "2px", whiteSpace: "nowrap", maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis" }}>
                           {fmtMoney(bud || null)}
                         </div>
                         {/* 막대 영역 (% 라벨 공간 포함) */}
@@ -693,7 +687,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                           )}
                         </div>
                         {/* 항목명 */}
-                        <div style={{ fontSize: "13px", color: "#16294a", fontWeight: 700, marginTop: "4px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" }}>
+                        <div style={{ fontSize: "13px", color: INK_NAVY, fontWeight: 700, marginTop: "4px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" }}>
                           {ITEM_LABEL_KEY[g.item] ? t(`overviewTab:${ITEM_LABEL_KEY[g.item]}`) : g.item}
                         </div>
                       </div>
@@ -708,12 +702,12 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                             flex: budgetRows.length,
                             minWidth: 0,
                             backgroundColor: "rgba(214, 226, 240, 0.28)",
-                            border: "1px solid #e2e9f3",
+                            border: `1px solid ${CARD_BORDER}`,
                             borderRadius: "8px",
                             padding: "6px 8px 8px",
                           }}
                         >
-                          <div style={{ textAlign: "center", fontSize: "13px", color: "#16294a", fontWeight: 700, marginBottom: "4px" }}>
+                          <div style={{ textAlign: "center", fontSize: "13px", color: INK_NAVY, fontWeight: 700, marginBottom: "4px" }}>
                             {t("overviewTab:directCost")} : {fmtPct(directCostPct)}
                           </div>
                           <div style={{ display: "flex", justifyContent: "space-around", gap: "8px", alignItems: "flex-end" }}>
@@ -739,12 +733,12 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                   alignItems: "center",
                   marginTop: "10px",
                   paddingTop: "7px",
-                  borderTop: "1px solid #eef2f7",
+                  borderTop: `1px solid ${DIVIDER}`,
                   flexWrap: "wrap",
                   gap: "6px",
                 }}
               >
-                <span style={{ fontSize: "13px", color: "#16294a", fontWeight: 700 }}>
+                <span style={{ fontSize: "13px", color: INK_NAVY, fontWeight: 700 }}>
                   {t("common:total")} : {fmtMoney(totalActualSum || null)} / {fmtMoney(totalBudgetSum || null)}
                   {totalCostPct != null && ` (${fmtPct(totalCostPct)})`}
                 </span>
@@ -756,7 +750,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                   ].map(({ label, color }) => (
                     <div key={label} style={{ display: "flex", alignItems: "center", gap: "4px" }}>
                       <div style={{ width: "11px", height: "11px", backgroundColor: color, borderRadius: "2px" }} />
-                      <span style={{ fontSize: "12px", color: "#555" }}>{label}</span>
+                      <span style={{ fontSize: "12px", color: INK_SECONDARY }}>{label}</span>
                     </div>
                   ))}
                 </div>
@@ -806,12 +800,12 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                         { label: t("overviewTab:collectionB"),  value: collection,   color: chartTheme.balanceNavy },
                         { label: t("overviewTab:receivableAB"), value: outstanding,  color: chartTheme.outflowRed  },
                       ] as const).map(({ label, value, color }) => (
-                        <tr key={label} style={{ borderTop: "1px solid #eef2f7" }}>
+                        <tr key={label} style={{ borderTop: `1px solid ${DIVIDER}` }}>
                           <td style={{ padding: "4px 4px 4px 0", display: "flex", alignItems: "center", gap: "5px", whiteSpace: "nowrap" }}>
                             <div style={{ width: "8px", height: "8px", borderRadius: "2px", backgroundColor: color, flexShrink: 0 }} />
-                            <span style={{ color: "#5a6a84" }}>{label}</span>
+                            <span style={{ color: INK_MUTED }}>{label}</span>
                           </td>
-                          <td style={{ padding: "4px 0", textAlign: "right", fontWeight: 600, color: "#16294a", whiteSpace: "nowrap" }}>
+                          <td style={{ padding: "4px 0", textAlign: "right", fontWeight: 600, color: INK_NAVY, whiteSpace: "nowrap" }}>
                             {fmtMoney(value)}
                           </td>
                         </tr>

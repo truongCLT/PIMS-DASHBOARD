@@ -22,7 +22,7 @@ import { chartTheme } from "../lib/chartTheme";
 import { useMoney } from "../lib/displayUnit";
 import { useProjectDetail } from "../lib/projectDetailData";
 import { ProjectCommentPanel } from "./ProjectCommentPanel";
-import { cardStyle, sectionTitle } from "../lib/uiTokens";
+import { cardStyle, sectionTitle, emptyNote, INK_MUTED } from "../lib/uiTokens";
 
 function useSiteMonths(year: number, metric: "revenue" | "cogs", enabled: boolean) {
   const params = { year, metric };
@@ -33,14 +33,7 @@ function useSiteMonths(year: number, metric: "revenue" | "cogs", enabled: boolea
 
 function Notice({ children, error }: { children: React.ReactNode; error?: boolean }) {
   return (
-    <div
-      style={{
-        padding: "60px 20px",
-        textAlign: "center",
-        fontSize: "15px",
-        color: error ? "#f2736a" : "#7c8ba3",
-      }}
-    >
+    <div style={{ ...emptyNote, color: error ? chartTheme.outflowRed : INK_MUTED }}>
       {children}
     </div>
   );
@@ -272,7 +265,7 @@ export function SaleProfitTab({
               />
               <Legend wrapperStyle={{ fontSize: "12px" }} />
               {pdSalesHasAny && (
-                <Bar dataKey="plan" name={t("saleProfitTab:monthlyPlan")} fill="#c9d2dd" barSize={14} isAnimationActive={false}>
+                <Bar dataKey="plan" name={t("saleProfitTab:monthlyPlan")} fill={chartTheme.planGray} barSize={14} isAnimationActive={false}>
                   <LabelList
                     dataKey="plan"
                     position="top"

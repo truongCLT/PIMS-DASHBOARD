@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useDashboardData, type ProfitRow } from "../lib/mgmtreportData";
 import { useDashboardFilters } from "../lib/dashboardFilters";
 import { chartTheme } from "../lib/chartTheme";
+import { INK_BODY, INK_MUTED, POINT_BLUE, CARD_BORDER } from "../lib/uiTokens";
 import { useTheme } from "../lib/theme";
 import { DetailModal, DetailDataTable } from "./DetailModal";
 
@@ -12,11 +13,11 @@ const LIGHT  = chartTheme.profitLight;
 const ORANGE = chartTheme.sgaOrange;
 
 /* 대우 예시1 스타일 색상 (첨부 이미지) */
-const DW_OP  = "#2b4a8b"; // 영업이익 (진한 남색)
-const DW_SGA = "#a9c4f0"; // 판관비 (연한 파랑 캡)
-const DW_NON = "#3f9e63"; // 영업외손익 (범례 녹색 점)
-const DW_POS = "#2e9e5b";
-const DW_NEG = "#cf4d4d";
+const DW_OP  = chartTheme.dwOp;
+const DW_SGA = chartTheme.dwSga;
+const DW_NON = chartTheme.dwNon;
+const DW_POS = chartTheme.dwPos;
+const DW_NEG = chartTheme.dwNeg;
 
 const Y0   = 400; // bottom of plot area
 const YTOP = 20;
@@ -125,18 +126,18 @@ export function ProfitChart() {
           x={tx} y={ty} width={TW} height={TH}
           rx={5} ry={5}
           fill="white"
-          stroke="#c0cede"
+          stroke={chartTheme.neutralStroke}
           strokeWidth="1.5"
           filter="url(#tip-shadow)"
         />
         {/* 월 헤더 */}
-        <text x={tx + TW / 2} y={ty + 26} textAnchor="middle" fontSize={TF} fontWeight="700" fill="#16294a">
+        <text x={tx + TW / 2} y={ty + 26} textAnchor="middle" fontSize={TF} fontWeight="700" fill={chartTheme.titleNavy}>
           {d.m}
         </text>
         {/* 항목 줄 */}
         {lines.map((l, i) => (
           <g key={l.label}>
-            <text x={tx + 18}       y={ty + 56 + i * (TF + 3)} fontSize={TF} fill="#666">{l.label}</text>
+            <text x={tx + 18}       y={ty + 56 + i * (TF + 3)} fontSize={TF} fill={chartTheme.axisText}>{l.label}</text>
             <text x={tx + TW - 18}  y={ty + 56 + i * (TF + 3)} fontSize={TF} fontWeight="600" fill={l.color} textAnchor="end">{l.value}</text>
           </g>
         ))}
@@ -147,7 +148,7 @@ export function ProfitChart() {
   return (
     <div style={{
       backgroundColor: "#fff",
-      border: "1px solid #e2e9f3",
+      border: `1px solid ${CARD_BORDER}`,
       borderRadius: "6px",
       padding: "10px 12px",
       height: "100%",
@@ -158,11 +159,11 @@ export function ProfitChart() {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
           <span style={{ fontSize: "12px", fontWeight: "600", color: chartTheme.titleNavy }}>{t("profitChart:profitLossStatus")}</span>
-          {derived && <span style={{ fontSize: "10px", color: "#7c8ba3" }}>{t("common:unit")}: {derived.unitLabel}</span>}
+          {derived && <span style={{ fontSize: "10px", color: INK_MUTED }}>{t("common:unit")}: {derived.unitLabel}</span>}
         </div>
         <button
           onClick={() => setDetailOpen(true)}
-          style={{ fontSize: "11px", color: "#2f7cf6", background: "none", border: "none", cursor: "pointer" }}
+          style={{ fontSize: "11px", color: POINT_BLUE, background: "none", border: "none", cursor: "pointer" }}
         >
           {t("profitChart:viewDetails")}
         </button>
@@ -178,15 +179,15 @@ export function ProfitChart() {
           ].map((it) => (
             <div key={it.l} style={{ display: "flex", alignItems: "center", gap: "4px" }}>
               <div style={{ width: it.round ? "10px" : "13px", height: it.round ? "10px" : "11px", backgroundColor: it.c, borderRadius: it.round ? "50%" : "3px" }} />
-              <span style={{ fontSize: "11px", color: "#333", fontWeight: 600 }}>{it.l}</span>
+              <span style={{ fontSize: "11px", color: INK_BODY, fontWeight: 600 }}>{it.l}</span>
             </div>
           ))}
-          <span style={{ fontSize: "11px", color: "#5a6c8e", fontWeight: 600 }}>{t("profitChart:barTotalGross")}</span>
+          <span style={{ fontSize: "11px", color: chartTheme.subLabel, fontWeight: 600 }}>{t("profitChart:barTotalGross")}</span>
         </div>
       )}
 
       {data.length === 0 ? (
-        <div style={{ height: "200px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", color: "#888", textAlign: "center", padding: "0 20px" }}>
+        <div style={{ height: "200px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", color: INK_MUTED, textAlign: "center", padding: "0 20px" }}>
           {isError
             ? t("profitChart:dataLoadFailed")
             : derived?.profitNote ?? t("profitChart:dataLoading")}
@@ -211,7 +212,7 @@ export function ProfitChart() {
         {gridVals.map((v) => (
           <g key={v}>
             <line x1={plotLeft} y1={yv(v)} x2={plotRight} y2={yv(v)}
-              stroke={v === 0 ? "#9aa8ba" : chartTheme.gridLine}
+              stroke={v === 0 ? chartTheme.refLine : chartTheme.gridLine}
               strokeWidth={v === 0 ? 1.5 : 1}
               strokeDasharray={v === 0 ? undefined : "3 3"}
             />
@@ -239,7 +240,7 @@ export function ProfitChart() {
             /* ── 대우 예시1: 영업이익(진한색)+판관비(연한 캡) = 매출이익 · 영업외손익은 상단 고정 칩 행 ── */
             const chipText = `${d.non >= 0 ? "+" : ""}${d.non.toLocaleString("ko-KR")}`;
             const chipColor = d.non >= 0 ? DW_POS : DW_NEG;
-            const chipBg = d.non >= 0 ? "#e7f5ec" : "#fdecec";
+            const chipBg = d.non >= 0 ? chartTheme.chipPosBg : chartTheme.chipNegBg;
             const chipFs = fs(13);
             const chipH = chipFs + 12;
             const chipW = Math.max(56, chipText.length * chipFs * 0.62 + 22);
@@ -252,10 +253,10 @@ export function ProfitChart() {
                 {/* 판관비 캡: op → gross */}
                 <rect x={bx} y={Math.min(capTop, opTop)} width={barW} height={Math.abs(opTop - capTop)} rx={7} fill={DW_SGA} />
                 {/* 매출이익 값 + 비율 (막대 바로 위) */}
-                <text x={cx} y={Math.min(capTop, opTop) - 34} textAnchor="middle" fontSize={valueFs} fontWeight="700" fill="#1a2d4d">{gross.toLocaleString("ko-KR")}</text>
-                <text x={cx} y={Math.min(capTop, opTop) - 10} textAnchor="middle" fontSize={axisFs} fill="#64748b">{d.totalPct}</text>
+                <text x={cx} y={Math.min(capTop, opTop) - 34} textAnchor="middle" fontSize={valueFs} fontWeight="700" fill={chartTheme.valueFill}>{gross.toLocaleString("ko-KR")}</text>
+                <text x={cx} y={Math.min(capTop, opTop) - 10} textAnchor="middle" fontSize={axisFs} fill={chartTheme.axisSmall}>{d.totalPct}</text>
                 {/* 월 라벨 */}
-                <text x={cx} y={Y0 + 34} textAnchor="middle" fontSize={fs(13)} fontWeight="600" fill="#333">{d.m}</text>
+                <text x={cx} y={Y0 + 34} textAnchor="middle" fontSize={fs(13)} fontWeight="600" fill={chartTheme.axisText}>{d.m}</text>
                 {/* 영업외손익 칩 — 월 라벨 하단 */}
                 <rect x={cx - chipW / 2} y={Y0 + 46} width={chipW} height={chipH} rx={chipH / 2} fill={chipBg} />
                 <text x={cx} y={Y0 + 46 + chipH / 2} textAnchor="middle" dominantBaseline="central" fontSize={chipFs} fontWeight="700" fill={chipColor}>{chipText}</text>
@@ -267,7 +268,7 @@ export function ProfitChart() {
                   const opY  = Y0 + 46 + chipH + 6;
                   return (
                     <>
-                      <rect x={cx - opW / 2} y={opY} width={opW} height={opH} rx={opH / 2} fill="#e8eef7" />
+                      <rect x={cx - opW / 2} y={opY} width={opW} height={opH} rx={opH / 2} fill={chartTheme.opRateBg} />
                       <text x={cx} y={opY + opH / 2} textAnchor="middle" dominantBaseline="central" fontSize={opFs} fontWeight="700" fill={DW_OP}>{d.opPct}</text>
                     </>
                   );
@@ -322,13 +323,13 @@ export function ProfitChart() {
               )}
 
               {/* Month label */}
-              <text x={cx} y={Y0 + 32} textAnchor="middle" fontSize={fs(17)} fontWeight="600" fill="#333">{d.m}</text>
+              <text x={cx} y={Y0 + 32} textAnchor="middle" fontSize={fs(17)} fontWeight="600" fill={chartTheme.axisText}>{d.m}</text>
             </g>
           );
         })}
 
         {/* zero baseline */}
-        <line x1={plotLeft} y1={yZero} x2={plotRight} y2={yZero} stroke="#9aa8ba" strokeWidth={1.5} />
+        <line x1={plotLeft} y1={yZero} x2={plotRight} y2={yZero} stroke={chartTheme.refLine} strokeWidth={1.5} />
 
         {/* 영업외손익·영업이익률 라벨 — 맨 왼쪽에 한 번씩만 */}
         {daewoo && data.length > 0 && (() => {
@@ -339,10 +340,10 @@ export function ProfitChart() {
           const opY    = Y0 + 46 + chipH + 6;
           return (
             <>
-              <text x={plotLeft - 8} y={Y0 + 46 + chipH / 2} textAnchor="end" dominantBaseline="central" fontSize={fs(9)} fill="#64748b">
+              <text x={plotLeft - 8} y={Y0 + 46 + chipH / 2} textAnchor="end" dominantBaseline="central" fontSize={fs(9)} fill={chartTheme.axisSmall}>
                 {t("profitChart:nonOperatingProfitLoss")}
               </text>
-              <text x={plotLeft - 8} y={opY + opH / 2} textAnchor="end" dominantBaseline="central" fontSize={fs(9)} fill="#64748b">
+              <text x={plotLeft - 8} y={opY + opH / 2} textAnchor="end" dominantBaseline="central" fontSize={fs(9)} fill={chartTheme.axisSmall}>
                 {t("profitChart:operatingMarginRate")}
               </text>
             </>
@@ -374,15 +375,15 @@ export function ProfitChart() {
       <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginTop: "6px", justifyContent: "center" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
           <div style={{ width: "14px", height: "11px", backgroundColor: LIGHT, border: `1.5px solid ${NAVY}`, borderRadius: "2px" }} />
-          <span style={{ fontSize: "11px", color: "#333" }}>{t("profitChart:sgaArea")}</span>
+          <span style={{ fontSize: "11px", color: INK_BODY }}>{t("profitChart:sgaArea")}</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
           <div style={{ width: "14px", height: "11px", backgroundColor: NAVY, borderRadius: "2px" }} />
-          <span style={{ fontSize: "11px", color: "#333" }}>{t("common:operatingProfit")}</span>
+          <span style={{ fontSize: "11px", color: INK_BODY }}>{t("common:operatingProfit")}</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
           <div style={{ width: "14px", height: "11px", backgroundColor: GREEN, borderRadius: "2px" }} />
-          <span style={{ fontSize: "11px", color: "#333" }}>{t("profitChart:nonOperatingProfitLoss")}</span>
+          <span style={{ fontSize: "11px", color: INK_BODY }}>{t("profitChart:nonOperatingProfitLoss")}</span>
         </div>
         {/* 6개 미만일 때만 판관비·경상이익 범례 표시 */}
         {!isCondensed && (
@@ -391,7 +392,7 @@ export function ProfitChart() {
               <svg width="10" height="14" viewBox="0 0 10 14">
                 <path d="M 2 1 h 6 V 13 h -6" fill="none" stroke={ORANGE} strokeWidth="2" />
               </svg>
-              <span style={{ fontSize: "11px", color: "#333" }}>{t("common:sga")}</span>
+              <span style={{ fontSize: "11px", color: INK_BODY }}>{t("common:sga")}</span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
               <svg width="24" height="8" viewBox="0 0 24 8">
@@ -399,14 +400,14 @@ export function ProfitChart() {
                 <circle cx="4" cy="4" r="3" fill={GREEN} />
                 <circle cx="20" cy="4" r="3" fill={GREEN} />
               </svg>
-              <span style={{ fontSize: "11px", color: "#333" }}>{t("profitChart:ordinaryProfit")}</span>
+              <span style={{ fontSize: "11px", color: INK_BODY }}>{t("profitChart:ordinaryProfit")}</span>
             </div>
           </>
         )}
         {/* 6개 이상일 때 툴팁 안내 */}
         {isCondensed && (
           <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-            <span style={{ fontSize: "10px", color: "#888" }}>{t("profitChart:hoverHint")}</span>
+            <span style={{ fontSize: "10px", color: INK_MUTED }}>{t("profitChart:hoverHint")}</span>
           </div>
         )}
       </div>

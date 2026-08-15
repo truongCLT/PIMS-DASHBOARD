@@ -5,7 +5,7 @@ import { ProjectCommentPanel } from "./ProjectCommentPanel";
 import { useProjectDetail, fmtPct, ratioPct } from "../lib/projectDetailData";
 import { useMoney } from "../lib/displayUnit";
 import { chartTheme } from "../lib/chartTheme";
-import { cardStyle } from "../lib/uiTokens";
+import { cardStyle, sectionTitle, emptyNote, INK_NAVY, INK_MUTED, INK_SECONDARY, PROGRESS_TRACK } from "../lib/uiTokens";
 
 const LABEL_W = 120; // px — label column width (same for every row)
 const TRACK_MAX_PCT = 88; // max track width as % of flex container
@@ -56,7 +56,7 @@ function DualBar({
           width: `${LABEL_W}px`,
           flexShrink: 0,
           fontSize: "13px",
-          color: "#16294a",
+          color: INK_NAVY,
           fontWeight: labelBold ? 700 : 400,
           paddingRight: "8px",
         }}
@@ -72,7 +72,7 @@ function DualBar({
             style={{
               width: `${trackW}%`,
               height: `${BAR_H}px`,
-              backgroundColor: "#e8eaf0",
+              backgroundColor: PROGRESS_TRACK,
               position: "relative",
               flexShrink: 0,
             }}
@@ -112,7 +112,7 @@ function DualBar({
             style={{
               width: `${trackW}%`,
               height: `${BAR_H}px`,
-              backgroundColor: "#e8eaf0",
+              backgroundColor: PROGRESS_TRACK,
               position: "relative",
               flexShrink: 0,
             }}
@@ -148,7 +148,7 @@ function DualBar({
       </div>
 
       {/* Budget (right) */}
-      <div style={{ width: "80px", textAlign: "right", fontSize: "12px", color: "#555", flexShrink: 0, paddingLeft: "8px" }}>
+      <div style={{ width: "80px", textAlign: "right", fontSize: "12px", color: INK_SECONDARY, flexShrink: 0, paddingLeft: "8px" }}>
         {budget != null ? fmtMoney(budget) : "—"}
       </div>
     </div>
@@ -217,19 +217,17 @@ export function ServiceBudgetTab({ projectName }: { projectName: string }) {
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
       {/* Budget Execution Status */}
       <div style={{ ...cardStyle, padding: "14px 18px 24px" }}>
-        <span style={{ fontSize: "13px", fontWeight: 600, color: "#2f7cf6" }}>
-          {t("common:budget")} {t("serviceBudgetTab:executionStatusLabel")}
-          <span style={{ marginLeft: "8px", fontSize: "12px", fontWeight: 500, color: "#7c8ba3" }}>
-            {t("common:unit")}: {unitLabel}
-          </span>
-        </span>
+        <div style={{ display: "flex", alignItems: "baseline", gap: "8px", marginBottom: "4px" }}>
+          <span style={{ ...sectionTitle, marginBottom: 0 }}>{t("common:budget")} {t("serviceBudgetTab:executionStatusLabel")}</span>
+          <span style={{ fontSize: "11px", color: INK_MUTED }}>{t("common:unit")}: {unitLabel}</span>
+        </div>
 
         {isLoading ? (
-          <div style={{ padding: "50px 20px", textAlign: "center", fontSize: "14px", color: "#7c8ba3" }}>
+          <div style={emptyNote}>
             {t("common:loading")}
           </div>
         ) : rows.length === 0 ? (
-          <div style={{ padding: "50px 20px", textAlign: "center", fontSize: "14px", color: "#7c8ba3" }}>
+          <div style={emptyNote}>
             {t("serviceBudgetTab:noBudgetDataNotice")}
           </div>
         ) : (
@@ -247,7 +245,7 @@ export function ServiceBudgetTab({ projectName }: { projectName: string }) {
                       style={{
                         fontSize: "13px",
                         fontWeight: 700,
-                        color: "#16294a",
+                        color: INK_NAVY,
                         padding: "10px 0 2px",
                       }}
                     >
@@ -306,7 +304,7 @@ export function ServiceBudgetTab({ projectName }: { projectName: string }) {
               ].map(({ label, color }) => (
                 <div key={label} style={{ display: "flex", alignItems: "center", gap: "5px" }}>
                   <div style={{ width: "12px", height: "12px", backgroundColor: color, borderRadius: "2px" }} />
-                  <span style={{ fontSize: "12px", color: "#555" }}>{label}</span>
+                  <span style={{ fontSize: "12px", color: INK_SECONDARY }}>{label}</span>
                 </div>
               ))}
             </div>

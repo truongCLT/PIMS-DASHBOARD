@@ -28,11 +28,12 @@ import type {
 import { useProjectDetail, getGetProjectdetailQueryKey } from "../lib/projectDetailData";
 import { REPORT_YEAR } from "../lib/mgmtreportData";
 import { getMrCashflowRef } from "../data/mrProjectLinks";
-import { cardStyle, sectionTitle } from "../lib/uiTokens";
+import { cardStyle, sectionTitle, INK_NAVY, INK_BODY, INK_MUTED, POINT_BLUE, TABLE_HEADER_BG, CARD_BORDER, ACHIEVE_RED, SUCCESS_GREEN, ADMIN_NAVY, BORDER_STRONG, BORDER_MID, BORDER_LIGHT, STATUS_CLOSED_BG, STATUS_OPEN_BG, STATUS_CLOSED_TEXT, STATUS_OPEN_TEXT, WARNING_BG, WARNING_TEXT, WARNING_BORDER } from "../lib/uiTokens";
+import { chartTheme } from "../lib/chartTheme";
 
 const th: React.CSSProperties = {
-  backgroundColor: "#eef2f7",
-  color: "#16294a",
+  backgroundColor: TABLE_HEADER_BG,
+  color: INK_NAVY,
   fontSize: "13px",
   fontWeight: 700,
   border: "1px solid #c8d2de",
@@ -41,7 +42,7 @@ const th: React.CSSProperties = {
 };
 
 const tdCell: React.CSSProperties = {
-  border: "1px solid #e2e9f3",
+  border: `1px solid ${CARD_BORDER}`,
   padding: "2px",
 };
 
@@ -60,7 +61,7 @@ const addBtn: React.CSSProperties = {
   alignItems: "center",
   gap: "4px",
   fontSize: "13px",
-  color: "#2f7cf6",
+  color: POINT_BLUE,
   background: "none",
   border: "1px dashed #9dc3e6",
   borderRadius: "4px",
@@ -228,7 +229,7 @@ function DelBtn({ onClick }: { onClick: () => void }) {
     <button
       onClick={onClick}
       title={t("projectDataEntryTab:deleteRow")}
-      style={{ background: "none", border: "none", cursor: "pointer", padding: "4px", color: "#e0655c" }}
+      style={{ background: "none", border: "none", cursor: "pointer", padding: "4px", color: ACHIEVE_RED }}
     >
       <Trash2 size={13} />
     </button>
@@ -597,7 +598,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
 
 
   if (isLoading && !loaded) {
-    return <div style={{ ...cardStyle, textAlign: "center", color: "#7c8ba3", fontSize: "14px" }}>{t("common:loading")}</div>;
+    return <div style={{ ...cardStyle, textAlign: "center", color: INK_MUTED, fontSize: "14px" }}>{t("common:loading")}</div>;
   }
 
   const nowYear = new Date().getFullYear();
@@ -608,12 +609,12 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       <span style={sectionTitle}>{label}</span>
       <span style={{ display: "inline-flex", alignItems: "center", gap: "8px", pointerEvents: "auto" }}>
         {cardMsgs[key] && (
-          <span style={{ fontSize: "13px", color: cardMsgs[key] === t("common:saveSucceeded") ? "#1c7a5a" : "#e0655c" }}>
+          <span style={{ fontSize: "13px", color: cardMsgs[key] === t("common:saveSucceeded") ? SUCCESS_GREEN : ACHIEVE_RED }}>
             {cardMsgs[key]}
           </span>
         )}
         {closeMsg && (
-          <span style={{ fontSize: "13px", color: "#e0655c" }}>{closeMsg}</span>
+          <span style={{ fontSize: "13px", color: ACHIEVE_RED }}>{closeMsg}</span>
         )}
         {/* 마감 설정/해지 버튼 */}
         <button
@@ -624,9 +625,9 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
             padding: "4px 12px",
             fontSize: "13px",
             fontWeight: 600,
-            backgroundColor: isClosed ? "#7c8ba3" : "#fff",
-            color: isClosed ? "#fff" : "#7c8ba3",
-            border: `1px solid ${isClosed ? "#7c8ba3" : "#c8d2de"}`,
+            backgroundColor: isClosed ? INK_MUTED : "#fff",
+            color: isClosed ? "#fff" : INK_MUTED,
+            border: `1px solid ${isClosed ? INK_MUTED : BORDER_STRONG}`,
             borderRadius: "4px",
             cursor: closeMutation.isPending ? "wait" : "pointer",
             opacity: closeMutation.isPending ? 0.6 : 1,
@@ -643,7 +644,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
             padding: "4px 14px",
             fontSize: "13px",
             fontWeight: 600,
-            backgroundColor: "#1e3a6e",
+            backgroundColor: ADMIN_NAVY,
             color: "#fff",
             border: "none",
             borderRadius: "4px",
@@ -699,7 +700,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       >
         <Plus size={12} /> {t("projectDataEntryTab:addMonth")}
       </button>
-      <div style={{ fontSize: "12px", color: "#7c8ba3", marginTop: "6px" }}>
+      <div style={{ fontSize: "12px", color: INK_MUTED, marginTop: "6px" }}>
         {t("projectDataEntryTab:salesMonthlyNote")}
       </div>
     </div>
@@ -747,7 +748,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       >
         <Plus size={12} /> {t("projectDataEntryTab:addMonth")}
       </button>
-      <div style={{ fontSize: "12px", color: "#7c8ba3", marginTop: "6px" }}>
+      <div style={{ fontSize: "12px", color: INK_MUTED, marginTop: "6px" }}>
         {t("projectDataEntryTab:cogsMonthlyNote")}
       </div>
     </div>
@@ -756,12 +757,12 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
       <div style={{ ...cardStyle, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ fontSize: "14px", color: "#333" }}>
+        <div style={{ fontSize: "14px", color: INK_BODY }}>
           <b>{projectName}</b> {t("projectDataEntryTab:headerDescPart1")} <b>VND</b> {t("projectDataEntryTab:headerDescPart2")} <b>%</b>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           {statusMsg && (
-            <span style={{ fontSize: "13px", color: statusMsg === t("projectDataEntryTab:statusChangeFailed") ? "#e0655c" : "#1c7a5a", fontWeight: 600 }}>
+            <span style={{ fontSize: "13px", color: statusMsg === t("projectDataEntryTab:statusChangeFailed") ? ACHIEVE_RED : SUCCESS_GREEN, fontWeight: 600 }}>
               {statusMsg}
             </span>
           )}
@@ -772,8 +773,8 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                 fontWeight: 700,
                 padding: "3px 8px",
                 borderRadius: "10px",
-                backgroundColor: currentStatus === "closed" ? "#f3d9d5" : "#d8ecdc",
-                color: currentStatus === "closed" ? "#a83a2a" : "#2f6b3d",
+                backgroundColor: currentStatus === "closed" ? STATUS_CLOSED_BG : STATUS_OPEN_BG,
+                color: currentStatus === "closed" ? STATUS_CLOSED_TEXT : STATUS_OPEN_TEXT,
               }}
             >
               {currentStatus === "closed" ? t("common:closed") : t("common:inProgress")}
@@ -785,9 +786,9 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
               style={{
                 fontSize: "13px",
                 fontWeight: 600,
-                color: "#1e3a6e",
+                color: ADMIN_NAVY,
                 backgroundColor: "#fff",
-                border: "1px solid #b9c6d8",
+                border: `1px solid ${BORDER_MID}`,
                 borderRadius: "6px",
                 padding: "5px 10px",
                 cursor: statusMutation.isPending ? "wait" : "pointer",
@@ -802,7 +803,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
             </button>
           </div>
           {saveMsg && (
-            <span style={{ fontSize: "13px", color: saveMsg === t("common:saveSucceeded") ? "#1c7a5a" : "#e0655c", fontWeight: 600 }}>
+            <span style={{ fontSize: "13px", color: saveMsg === t("common:saveSucceeded") ? SUCCESS_GREEN : ACHIEVE_RED, fontWeight: 600 }}>
               {saveMsg}
             </span>
           )}
@@ -813,7 +814,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
               display: "flex",
               alignItems: "center",
               gap: "6px",
-              backgroundColor: "#1e3a6e",
+              backgroundColor: ADMIN_NAVY,
               color: "#fff",
               border: "none",
               borderRadius: "6px",
@@ -833,13 +834,13 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       {/* 마감 배너 */}
       {isClosed && (
         <div style={{
-          backgroundColor: "#fff3cd",
-          border: "1px solid #f5c842",
+          backgroundColor: WARNING_BG,
+          border: `1px solid ${WARNING_BORDER}`,
           borderRadius: "6px",
           padding: "10px 16px",
           fontSize: "13px",
           fontWeight: 600,
-          color: "#856404",
+          color: WARNING_TEXT,
           display: "flex",
           alignItems: "center",
           gap: "8px",
@@ -910,7 +911,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
             </tr>
           </tbody>
         </table>
-        <div style={{ fontSize: "12px", color: "#7c8ba3", marginTop: "6px" }}>
+        <div style={{ fontSize: "12px", color: INK_MUTED, marginTop: "6px" }}>
           {t("projectDataEntryTab:overviewCostRateNote")}
         </div>
         </div>
@@ -1069,7 +1070,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
             </tr>
           </tbody>
         </table>
-        <div style={{ fontSize: "12px", color: "#7c8ba3", marginTop: "6px" }}>
+        <div style={{ fontSize: "12px", color: INK_MUTED, marginTop: "6px" }}>
           {t("projectDataEntryTab:overviewCashNote")}
         </div>
         </div>
@@ -1096,7 +1097,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
               const completionCount = costEstimation.filter((r) => r.kind === "completion").length;
               return (
                 <tr key={`${e.kind}-${i}`}>
-                  <td style={{ ...tdCell, fontSize: "13px", padding: "5px 6px", color: "#333" }}>
+                  <td style={{ ...tdCell, fontSize: "13px", padding: "5px 6px", color: INK_BODY }}>
                     {t(`projectDataEntryTab:${EST_KINDS.find((k) => k.kind === e.kind)?.label ?? e.kind}`)}
                   </td>
                   <td style={{ ...tdCell, textAlign: "center" }}>
@@ -1113,10 +1114,10 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                             updateAt(setCostEstimation, i, { year: Number(y), month: Number(m) });
                           }
                         }}
-                        style={{ fontSize: "13px", padding: "3px 4px", border: "1px solid #ccd6e3", borderRadius: "3px" }}
+                        style={{ fontSize: "13px", padding: "3px 4px", border: `1px solid ${BORDER_LIGHT}`, borderRadius: "3px" }}
                       />
                     ) : (
-                      <span style={{ fontSize: "12px", color: "#aaa" }}>-</span>
+                      <span style={{ fontSize: "12px", color: INK_MUTED }}>-</span>
                     )}
                   </td>
                   <td style={tdCell}><VndInput valueKUsd={e.contractAmount} onChange={(v) => updateAt(setCostEstimation, i, { contractAmount: v })} data-row={i} data-col={0} /></td>
@@ -1125,7 +1126,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                     {isCompletion && completionCount > 1 && (
                       <button
                         onClick={() => setCostEstimation((rows) => rows.filter((_, j) => j !== i))}
-                        style={{ border: "none", background: "none", cursor: "pointer", color: "#e0655c", padding: "2px" }}
+                        style={{ border: "none", background: "none", cursor: "pointer", color: ACHIEVE_RED, padding: "2px" }}
                         title={t("common:delete")}
                       >
                         <Trash2 size={12} />
@@ -1142,11 +1143,11 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
           onClick={() =>
             setCostEstimation((rows) => [...rows, { kind: "completion", contractAmount: null, costAmount: null, year: null, month: null }])
           }
-          style={{ marginTop: "6px", display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "12px", color: "#2f7cf6", border: "1px dashed #9db6d8", borderRadius: "4px", padding: "3px 8px", background: "none", cursor: "pointer" }}
+          style={{ marginTop: "6px", display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "12px", color: POINT_BLUE, border: "1px dashed #9db6d8", borderRadius: "4px", padding: "3px 8px", background: "none", cursor: "pointer" }}
         >
           <Plus size={12} /> {t("projectDataEntryTab:addCompletionForecast")}
         </button>
-        <div style={{ fontSize: "12px", color: "#777", marginTop: "4px" }}>
+        <div style={{ fontSize: "12px", color: INK_MUTED, marginTop: "4px" }}>
           {t("projectDataEntryTab:costEstimationNote")}
         </div>
       </div>
@@ -1162,7 +1163,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       {/* 예산 집행 현황 */}
       <div style={cardStyle}>
         {cardHead(service ? t("projectDataEntryTab:costBudgetTitleService") : t("projectDataEntryTab:costBudgetTitleConstruction"), "costBudget")}
-        <div style={{ fontSize: "12px", color: "#777", marginTop: "4px" }}>
+        <div style={{ fontSize: "12px", color: INK_MUTED, marginTop: "4px" }}>
           {t("projectDataEntryTab:costBudgetNote")}
         </div>
         <div data-tbl="costBudget" onKeyDown={makeArrowNav("costBudget")}>
@@ -1178,7 +1179,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
           <tbody>
             {costBudget.map((c, i) => (
               <tr key={c.item}>
-                <td style={{ ...tdCell, fontSize: "13px", padding: "5px 6px", color: "#333", fontWeight: 600 }}>{c.item}</td>
+                <td style={{ ...tdCell, fontSize: "13px", padding: "5px 6px", color: INK_BODY, fontWeight: 600 }}>{c.item}</td>
                 <td style={tdCell}><VndInput valueKUsd={c.budget} onChange={(v) => updateAt(setCostBudget, i, { budget: v })} data-row={i} data-col={0} /></td>
                 <td style={tdCell}><VndInput valueKUsd={c.plan} onChange={(v) => updateAt(setCostBudget, i, { plan: v })} data-row={i} data-col={1} /></td>
                 <td style={tdCell}><VndInput valueKUsd={c.actual} onChange={(v) => updateAt(setCostBudget, i, { actual: v })} data-row={i} data-col={2} /></td>
@@ -1190,10 +1191,10 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
 
         {/* 월별 계획/실적 */}
         <div style={{ marginTop: "10px" }}>
-          <div style={{ fontSize: "12px", fontWeight: 600, color: "#2f7cf6", marginBottom: "4px" }}>
+          <div style={{ fontSize: "12px", fontWeight: 600, color: POINT_BLUE, marginBottom: "4px" }}>
             {t("projectDataEntryTab:monthlyPlanActualYear", { year: REPORT_YEAR })}
           </div>
-          <div style={{ fontSize: "11px", color: "#777", marginBottom: "6px" }}>
+          <div style={{ fontSize: "11px", color: INK_MUTED, marginBottom: "6px" }}>
             {t("projectDataEntryTab:monthlyPlanActualNote")}
           </div>
           {(["Common", "Expense 1", "Expense 2", "외주성"] as const).map((item) => {
@@ -1208,7 +1209,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
             const tblKey = `cbm-${item}`;
             return (
               <div key={item} style={{ marginBottom: "10px" }}>
-                <div style={{ fontSize: "13px", fontWeight: 700, color: "#16294a", marginBottom: "4px" }}>
+                <div style={{ fontSize: "13px", fontWeight: 700, color: INK_NAVY, marginBottom: "4px" }}>
                   {item === "외주성" ? t("projectDataEntryTab:outsourcingItem") : item}
                 </div>
                 <div data-tbl={tblKey} onKeyDown={makeArrowNav(tblKey)}>
@@ -1223,7 +1224,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                   <tbody>
                     {Array.from({ length: 12 }, (_, i) => i + 1).map((month) => (
                       <tr key={month}>
-                        <td style={{ ...tdCell, textAlign: "center", fontSize: "13px", color: "#555", padding: "3px 4px" }}>{t("projectDataEntryTab:monthSuffix", { month })}</td>
+                        <td style={{ ...tdCell, textAlign: "center", fontSize: "13px", color: INK_MUTED, padding: "3px 4px" }}>{t("projectDataEntryTab:monthSuffix", { month })}</td>
                         <td style={tdCell}><VndInput valueKUsd={getCbm(month, "plan")} onChange={(v) => setCbm(month, "plan", v)} data-row={month - 1} data-col={0} /></td>
                         <td style={tdCell}><VndInput valueKUsd={getCbm(month, "actual")} onChange={(v) => setCbm(month, "actual", v)} data-row={month - 1} data-col={1} /></td>
                       </tr>
@@ -1265,7 +1266,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                   <select
                     value={o.tradeGroup ?? ""}
                     onChange={(ev) => updateAt(setOutsourcing, i, { tradeGroup: ev.target.value || null })}
-                    style={{ width: "100%", fontSize: "13px", padding: "3px 2px", border: "1px solid #ccd6e3", borderRadius: "3px", backgroundColor: "#fff" }}
+                    style={{ width: "100%", fontSize: "13px", padding: "3px 2px", border: `1px solid ${BORDER_LIGHT}`, borderRadius: "3px", backgroundColor: "#fff" }}
                   >
                     <option value="">-</option>
                     {TRADE_GROUPS.map((g) => (
@@ -1345,11 +1346,11 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
         >
           <Plus size={12} /> {t("projectDataEntryTab:addMonth")}
         </button>
-        <div style={{ fontSize: "12px", color: "#7c8ba3", marginTop: "6px" }}>
+        <div style={{ fontSize: "12px", color: INK_MUTED, marginTop: "6px" }}>
           {t("projectDataEntryTab:cashflowNote")}
         </div>
         {cfPrefilled && (
-          <div style={{ fontSize: "12px", color: "#2f7cf6", marginTop: "4px", fontWeight: 600 }}>
+          <div style={{ fontSize: "12px", color: POINT_BLUE, marginTop: "4px", fontWeight: 600 }}>
             {t("projectDataEntryTab:cashflowPrefilledNote")}
           </div>
         )}
@@ -1360,7 +1361,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
           <span style={sectionTitle}>{t("projectDataEntryTab:photoSection")}</span>
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <label style={{ fontSize: "13px", color: "#4a6080", display: "flex", alignItems: "center", gap: "6px" }}>
+            <label style={{ fontSize: "13px", color: chartTheme.subLabel, display: "flex", alignItems: "center", gap: "6px" }}>
               {t("projectDataEntryTab:slideshowIntervalLabel")}
               <input
                 type="number"
@@ -1371,7 +1372,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                 onChange={(e) => setSlideshowIntervalSeconds(Math.max(0, Math.round(Number(e.target.value) || 0)))}
                 style={{ width: "60px", border: "1px solid #c8d2de", borderRadius: "4px", padding: "3px 6px", fontSize: "13px" }}
               />
-              <span style={{ fontSize: "11px", color: "#7c8ba3" }}>{t("projectDataEntryTab:slideshowIntervalOff")}</span>
+              <span style={{ fontSize: "11px", color: INK_MUTED }}>{t("projectDataEntryTab:slideshowIntervalOff")}</span>
             </label>
             <button
               onClick={() => photoInputRef.current?.click()}
@@ -1379,7 +1380,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
               style={{
                 display: "inline-flex", alignItems: "center", gap: "5px",
                 fontSize: "13px", fontWeight: 600,
-                background: "#1e3a6e", color: "#fff",
+                background: ADMIN_NAVY, color: "#fff",
                 border: "none", borderRadius: "5px", padding: "5px 12px",
                 cursor: uploadingPhotos ? "wait" : "pointer",
                 opacity: uploadingPhotos ? 0.7 : 1,
@@ -1399,16 +1400,16 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
           </div>
         </div>
         {photoError && (
-          <div style={{ fontSize: "12px", color: "#e0655c", marginBottom: "8px" }}>{photoError}</div>
+          <div style={{ fontSize: "12px", color: ACHIEVE_RED, marginBottom: "8px" }}>{photoError}</div>
         )}
         {photos.length === 0 && !uploadingPhotos && (
-          <div style={{ fontSize: "13px", color: "#7c8ba3", textAlign: "center", padding: "24px 0" }}>
+          <div style={{ fontSize: "13px", color: INK_MUTED, textAlign: "center", padding: "24px 0" }}>
             {t("projectDataEntryTab:photoEmpty")}
           </div>
         )}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: "8px" }}>
           {photos.map((p, i) => (
-            <div key={p.objectPath} style={{ position: "relative", borderRadius: "6px", overflow: "hidden", aspectRatio: "4/3", background: "#eef2f7" }}>
+            <div key={p.objectPath} style={{ position: "relative", borderRadius: "6px", overflow: "hidden", aspectRatio: "4/3", background: TABLE_HEADER_BG }}>
               <img
                 src={`/api/storage${p.objectPath}`}
                 alt={`photo-${i + 1}`}
