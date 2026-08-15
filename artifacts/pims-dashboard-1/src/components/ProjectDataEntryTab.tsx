@@ -28,7 +28,7 @@ import type {
 import { useProjectDetail, getGetProjectdetailQueryKey } from "../lib/projectDetailData";
 import { REPORT_YEAR } from "../lib/mgmtreportData";
 import { getMrCashflowRef } from "../data/mrProjectLinks";
-import { cardStyle, sectionTitle, INK_NAVY, INK_BODY, INK_MUTED, POINT_BLUE, TABLE_HEADER_BG, CARD_BORDER, ACHIEVE_RED, SUCCESS_GREEN, ADMIN_NAVY, BORDER_STRONG, BORDER_MID, BORDER_LIGHT, STATUS_CLOSED_BG, STATUS_OPEN_BG, STATUS_CLOSED_TEXT, STATUS_OPEN_TEXT, WARNING_BG, WARNING_TEXT, WARNING_BORDER } from "../lib/uiTokens";
+import { cardStyle, sectionTitle, emptyNote, INK_NAVY, INK_BODY, INK_MUTED, POINT_BLUE, TABLE_HEADER_BG, CARD_BORDER, ACHIEVE_RED, SUCCESS_GREEN, ADMIN_NAVY, BORDER_STRONG, BORDER_MID, BORDER_LIGHT, STATUS_CLOSED_BG, STATUS_OPEN_BG, STATUS_CLOSED_TEXT, STATUS_OPEN_TEXT, WARNING_BG, WARNING_TEXT, WARNING_BORDER } from "../lib/uiTokens";
 import { chartTheme } from "../lib/chartTheme";
 
 const th: React.CSSProperties = {
@@ -1403,7 +1403,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
           <div style={{ fontSize: "12px", color: ACHIEVE_RED, marginBottom: "8px" }}>{photoError}</div>
         )}
         {photos.length === 0 && !uploadingPhotos && (
-          <div style={{ fontSize: "13px", color: INK_MUTED, textAlign: "center", padding: "24px 0" }}>
+          <div style={{ ...emptyNote, padding: "24px 0" }}>
             {t("projectDataEntryTab:photoEmpty")}
           </div>
         )}

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { X } from "lucide-react";
+import { INK_NAVY, INK_SECONDARY, INK_MUTED, CARD_BORDER, DIVIDER } from "../lib/uiTokens";
 
 export function DetailModal({
   open,
@@ -54,9 +55,9 @@ export function DetailModal({
           }}
         >
           <div>
-            <div style={{ fontSize: "14px", fontWeight: 700, color: "#16294a" }}>{title}</div>
+            <div style={{ fontSize: "14px", fontWeight: 700, color: INK_NAVY }}>{title}</div>
             {subtitle && (
-              <div style={{ fontSize: "11px", color: "#7c8ba3", marginTop: "2px" }}>{subtitle}</div>
+              <div style={{ fontSize: "11px", color: INK_MUTED, marginTop: "2px" }}>{subtitle}</div>
             )}
           </div>
           <button
@@ -65,7 +66,7 @@ export function DetailModal({
               background: "none",
               border: "none",
               cursor: "pointer",
-              color: "#7c8ba3",
+              color: INK_MUTED,
               padding: "4px",
               display: "flex",
             }}
@@ -117,9 +118,9 @@ export function DetailDataTable<T extends object>({
                 style={{
                   padding: "6px 10px",
                   textAlign: c.align ?? "right",
-                  color: "#555",
+                  color: INK_SECONDARY,
                   fontWeight: 600,
-                  borderBottom: "1px solid #e2e9f3",
+                  borderBottom: `1px solid ${CARD_BORDER}`,
                   whiteSpace: "nowrap",
                 }}
               >
@@ -128,7 +129,7 @@ export function DetailDataTable<T extends object>({
             ))}
             {/* 드릴다운 화살표 헤더 자리 */}
             {hasClick && (
-              <th style={{ width: 22, borderBottom: "1px solid #e2e9f3" }} />
+              <th style={{ width: 22, borderBottom: `1px solid ${CARD_BORDER}` }} />
             )}
           </tr>
         </thead>
@@ -137,7 +138,7 @@ export function DetailDataTable<T extends object>({
             <tr>
               <td
                 colSpan={columns.length + (hasClick ? 1 : 0)}
-                style={{ padding: "16px", textAlign: "center", color: "#888" }}
+                style={{ padding: "16px", textAlign: "center", color: INK_MUTED }}
               >
                 -
               </td>
@@ -189,9 +190,9 @@ export function DetailDataTable<T extends object>({
                     <td
                       style={{
                         padding: "5px 6px",
-                        borderBottom: "1px solid #eef2f7",
+                        borderBottom: `1px solid ${DIVIDER}`,
                         textAlign: "center",
-                        color: clickable ? "#7c8ba3" : "transparent",
+                        color: clickable ? INK_MUTED : "transparent",
                         fontSize: "15px",
                         lineHeight: 1,
                         userSelect: "none",

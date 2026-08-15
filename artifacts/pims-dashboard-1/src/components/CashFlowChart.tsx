@@ -30,6 +30,7 @@ import {
   REPORT_YEAR,
 } from "../lib/dashboardFilters";
 import { chartTheme } from "../lib/chartTheme";
+import { emptyNote, ACHIEVE_RED, INK_MUTED } from "../lib/uiTokens";
 
 type TFunc = ReturnType<typeof useTranslation>["t"];
 
@@ -320,7 +321,7 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
           <span style={{ fontSize: "13px", fontWeight: "600", color: chartTheme.titleNavy }}>{t("common:cashFlow")}</span>
-          <span style={{ fontSize: "11px", color: "#7c8ba3" }}>
+          <span style={{ fontSize: "11px", color: INK_MUTED }}>
             {config.label} · {t("common:unit")}: {unitLabel}
           </span>
         </div>
@@ -347,7 +348,7 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
             ) : (
               <div style={{ width: "18px", height: "2px", backgroundColor: item.color }} />
             )}
-            <span style={{ fontSize: "12px", color: "#555" }}>{item.label}</span>
+            <span style={{ fontSize: "12px", color: INK_MUTED }}>{item.label}</span>
           </div>
         ))}
       </div>
@@ -374,7 +375,7 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
           isRowClickable={(row) => hasDrilldown && isValidYm(row.rawMonth)}
         />
         {!hasDrilldown && (
-          <div style={{ padding: "10px 4px 0", fontSize: "11px", color: "#7c8ba3" }}>
+          <div style={{ padding: "10px 4px 0", fontSize: "11px", color: INK_MUTED }}>
             {t("cashFlowChart:noProjectBreakdown")}
           </div>
         )}
@@ -388,15 +389,15 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
         subtitle={`${config.label} · ${t("common:unit")}: ${unitLabel}`}
       >
         {drillIsLoading ? (
-          <div style={{ padding: "28px 16px", textAlign: "center", fontSize: "13px", color: "#7c8ba3" }}>
+          <div style={{ ...emptyNote, padding: "28px 16px" }}>
             {t("cashFlowChart:loadingSiteData")}
           </div>
         ) : drillIsError ? (
-          <div style={{ padding: "28px 16px", textAlign: "center", fontSize: "13px", color: "#e0655c" }}>
+          <div style={{ ...emptyNote, padding: "28px 16px", color: ACHIEVE_RED }}>
             {t("cashFlowChart:cashflowFetchError")}
           </div>
         ) : drillRows.length === 0 ? (
-          <div style={{ padding: "28px 16px", textAlign: "center", fontSize: "13px", color: "#7c8ba3" }}>
+          <div style={{ ...emptyNote, padding: "28px 16px" }}>
             {t("cashFlowChart:noSiteData")}
           </div>
         ) : (
@@ -433,7 +434,7 @@ function CenterNote({ text }: { text: string }) {
       alignItems: "center",
       justifyContent: "center",
       fontSize: "13px",
-      color: "#7c8ba3",
+      color: INK_MUTED,
       textAlign: "center",
     }}>
       {text}

@@ -17,6 +17,7 @@ import {
   type SalescostImportPreview,
 } from "@workspace/api-client-react";
 import { REPORT_YEAR } from "../lib/mgmtreportData";
+import { TABLE_HEADER_BG, INK_MUTED, ACHIEVE_RED } from "../lib/uiTokens";
 import { uploadWithProgress, type UploadProgress } from "../lib/uploadWithProgress";
 
 type Dataset = "mgmtreport" | "cashflow" | "salescost";
@@ -265,7 +266,7 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
 
         {/* Body */}
         <div style={{ padding: "16px 18px", overflowY: "auto" }}>
-          <p style={{ margin: "0 0 12px", fontSize: "12px", color: "#7c8ba3", lineHeight: 1.6 }}>
+          <p style={{ margin: "0 0 12px", fontSize: "12px", color: INK_MUTED, lineHeight: 1.6 }}>
             {meta.description} {t("mgmtReportUploadModal:descConfirmBefore")}<b>{t("mgmtReportUploadModal:apply")}</b>{t("mgmtReportUploadModal:descConfirmAfter")}
           </p>
 
@@ -371,7 +372,7 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
           {progress && (
             <div style={{ marginBottom: "12px" }}>
               <style>{`@keyframes uploadIndeterminate { 0% { left: -40%; } 100% { left: 100%; } }`}</style>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: "#7c8ba3", marginBottom: "4px", fontWeight: 600 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: INK_MUTED, marginBottom: "4px", fontWeight: 600 }}>
                 <span>
                   {progress.phase === "upload"
                     ? t("mgmtReportUploadModal:uploadingFile")
@@ -416,7 +417,7 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
               style={{
                 backgroundColor: "#fdecec",
                 border: "1px solid #f5c2c0",
-                color: "#e0655c",
+                color: ACHIEVE_RED,
                 borderRadius: "8px",
                 padding: "10px 12px",
                 fontSize: "12px",
@@ -481,7 +482,7 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
               </div>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "11px" }}>
                 <thead>
-                  <tr style={{ backgroundColor: "#f8fafc", color: "#7c8ba3" }}>
+                  <tr style={{ backgroundColor: TABLE_HEADER_BG, color: INK_MUTED }}>
                     <th style={thLeft}>{t("mgmtReportUploadModal:colAppliedAt")}</th>
                     <th style={thLeft}>{t("mgmtReportUploadModal:colFilename")}</th>
                     <th style={thRight}>{t("common:year")}</th>
@@ -491,7 +492,7 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
                 <tbody>
                   {history.map((h) => (
                     <tr key={h.id} style={{ borderTop: "1px solid #eef2f7" }}>
-                      <td style={{ padding: "6px 14px", color: "#7c8ba3", whiteSpace: "nowrap" }}>
+                      <td style={{ padding: "6px 14px", color: INK_MUTED, whiteSpace: "nowrap" }}>
                         {new Date(h.createdAt).toLocaleString("ko-KR", {
                           year: "2-digit",
                           month: "2-digit",
@@ -507,12 +508,12 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
                           <span style={{ color: "#8a94a6" }}>{t("mgmtReportUploadModal:cannotRestore")}</span>
                         ) : confirmRevertId === h.id ? (
                           <span style={{ display: "inline-flex", gap: "6px", alignItems: "center" }}>
-                            <span style={{ color: "#e0655c", fontWeight: 600 }}>{t("mgmtReportUploadModal:confirmRestorePrompt")}</span>
+                            <span style={{ color: ACHIEVE_RED, fontWeight: 600 }}>{t("mgmtReportUploadModal:confirmRestorePrompt")}</span>
                             <button
                               onClick={() => handleRevert(h.id)}
                               disabled={busy}
                               style={{
-                                backgroundColor: "#e0655c",
+                                backgroundColor: ACHIEVE_RED,
                                 color: "#fff",
                                 border: "none",
                                 borderRadius: "5px",
@@ -591,7 +592,7 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
               <div style={{ maxHeight: "220px", overflowY: "auto" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "11px" }}>
                   <thead>
-                    <tr style={{ backgroundColor: "#f8fafc", color: "#7c8ba3" }}>
+                    <tr style={{ backgroundColor: TABLE_HEADER_BG, color: INK_MUTED }}>
                       <th style={thLeft}>{t("common:project")}</th>
                       <th style={thRight}>{t("mgmtReportUploadModal:colRevenueActualForecast")}</th>
                       <th style={thRight}>{t("mgmtReportUploadModal:colCogsActualForecast")}</th>
@@ -632,7 +633,7 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
               <div style={{ maxHeight: "220px", overflowY: "auto" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "11px" }}>
                   <thead>
-                    <tr style={{ backgroundColor: "#f8fafc", color: "#7c8ba3" }}>
+                    <tr style={{ backgroundColor: TABLE_HEADER_BG, color: INK_MUTED }}>
                       <th style={thLeft}>{t("common:project")}</th>
                       <th style={thLeft}>{t("mgmtReportUploadModal:colDivision")}</th>
                       <th style={thRight}>{t("mgmtReportUploadModal:colIncomeTotal")}</th>
@@ -644,7 +645,7 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
                     {preview.data.projects.map((p) => (
                       <tr key={p.name} style={{ borderTop: "1px solid #eef2f7" }}>
                         <td style={{ padding: "6px 14px", color: "#16294a" }}>{p.name}</td>
-                        <td style={{ padding: "6px 14px", color: "#7c8ba3" }}>{p.division}</td>
+                        <td style={{ padding: "6px 14px", color: INK_MUTED }}>{p.division}</td>
                         <td style={tdRight}>{fmt(p.cashInTotal)}</td>
                         <td style={tdRight}>{fmt(p.cashOutTotal)}</td>
                         <td style={tdRightEdge}>{fmt(p.amountCount)}</td>
@@ -672,7 +673,7 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
               <div style={{ maxHeight: "220px", overflowY: "auto" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "11px" }}>
                   <thead>
-                    <tr style={{ backgroundColor: "#f8fafc", color: "#7c8ba3" }}>
+                    <tr style={{ backgroundColor: TABLE_HEADER_BG, color: INK_MUTED }}>
                       <th style={thLeft}>{t("mgmtReportUploadModal:colCode")}</th>
                       <th style={thLeft}>{t("mgmtReportUploadModal:colSiteName")}</th>
                       <th style={thRight}>{t("mgmtReportUploadModal:colRevenueTotal")}</th>
@@ -683,7 +684,7 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
                   <tbody>
                     {preview.data.sites.map((s) => (
                       <tr key={s.code} style={{ borderTop: "1px solid #eef2f7" }}>
-                        <td style={{ padding: "6px 14px", color: "#7c8ba3" }}>{s.code}</td>
+                        <td style={{ padding: "6px 14px", color: INK_MUTED }}>{s.code}</td>
                         <td style={{ padding: "6px 14px", color: "#16294a" }}>{s.name}</td>
                         <td style={tdRight}>{fmt(s.revenueUsdTotal)}</td>
                         <td style={tdRight}>{fmt(s.cogsUsdTotal)}</td>

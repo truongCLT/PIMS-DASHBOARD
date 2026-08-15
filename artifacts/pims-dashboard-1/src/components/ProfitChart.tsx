@@ -10,7 +10,7 @@ import { useDashboardData, type ProfitRow, REPORT_YEAR } from "../lib/mgmtreport
 import { useDashboardFilters, makeConverter } from "../lib/dashboardFilters";
 import { classifyMrProject } from "../data/projects";
 import { chartTheme } from "../lib/chartTheme";
-import { INK_BODY, INK_MUTED, POINT_BLUE, CARD_BORDER } from "../lib/uiTokens";
+import { INK_BODY, INK_MUTED, POINT_BLUE, CARD_BORDER, emptyNote, ACHIEVE_RED } from "../lib/uiTokens";
 import { useTheme } from "../lib/theme";
 import { DetailModal, DetailDataTable } from "./DetailModal";
 
@@ -561,15 +561,15 @@ export function ProfitChart() {
         subtitle={derived?.unitLabel}
       >
         {drillIsLoading ? (
-          <div style={{ padding: "28px 16px", textAlign: "center", fontSize: "13px", color: "#7c8ba3" }}>
+          <div style={{ ...emptyNote, padding: "28px 16px" }}>
             {t("profitChart:loadingSiteData")}
           </div>
         ) : (revQuery.isError || cogsQuery.isError) ? (
-          <div style={{ padding: "28px 16px", textAlign: "center", fontSize: "13px", color: "#e0655c" }}>
+          <div style={{ ...emptyNote, padding: "28px 16px", color: ACHIEVE_RED }}>
             {t("profitChart:dataLoadFailed")}
           </div>
         ) : drillRowsWithShare.length === 0 ? (
-          <div style={{ padding: "28px 16px", textAlign: "center", fontSize: "13px", color: "#7c8ba3" }}>
+          <div style={{ ...emptyNote, padding: "28px 16px" }}>
             {t("profitChart:noSiteData")}
           </div>
         ) : (

@@ -25,6 +25,7 @@ import { classifyMrProject } from "../data/projects";
 import { chartTheme } from "../lib/chartTheme";
 import { useTheme } from "../lib/theme";
 import { DetailModal, DetailDataTable } from "./DetailModal";
+import { emptyNote, ACHIEVE_RED, INK_MUTED } from "../lib/uiTokens";
 
 const PLAN_COLOR = chartTheme.planBlue;
 const ACTUAL_COLOR = chartTheme.actualGreen;
@@ -284,7 +285,7 @@ export function SalesChart() {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
           <span style={{ fontSize: "13px", fontWeight: "600", color: chartTheme.titleNavy }}>{t("salesChart:title")}</span>
-          {derived && <span style={{ fontSize: "11px", color: "#7c8ba3" }}>{t("common:unit")}: {derived.unitLabel}</span>}
+          {derived && <span style={{ fontSize: "11px", color: INK_MUTED }}>{t("common:unit")}: {derived.unitLabel}</span>}
         </div>
         <button
           onClick={() => setDetailOpen(true)}
@@ -324,7 +325,7 @@ export function SalesChart() {
           <span style={{ fontSize: "12px", color: "#555" }}>{t("salesChart:salesActualForecast")}</span>
         </div>
         {variant === "bars" ? (
-          <span style={{ fontSize: "11px", color: "#7c8ba3" }}>{t("salesChart:bottomChipRate")}</span>
+          <span style={{ fontSize: "11px", color: INK_MUTED }}>{t("salesChart:bottomChipRate")}</span>
         ) : (
           <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
             <span style={{ fontSize: "12px", fontWeight: 700, color: rateColor }}>%</span>
@@ -535,15 +536,15 @@ export function SalesChart() {
         subtitle={derived?.unitLabel}
       >
         {drillIsLoading ? (
-          <div style={{ padding: "28px 16px", textAlign: "center", fontSize: "13px", color: "#7c8ba3" }}>
+          <div style={{ ...emptyNote, padding: "28px 16px" }}>
             {t("salesChart:loadingSiteData")}
           </div>
         ) : sitesQuery.isError ? (
-          <div style={{ padding: "28px 16px", textAlign: "center", fontSize: "13px", color: "#e0655c" }}>
+          <div style={{ ...emptyNote, padding: "28px 16px", color: ACHIEVE_RED }}>
             {t("salesChart:errorLoadFailed")}
           </div>
         ) : drillSiteRows.length === 0 ? (
-          <div style={{ padding: "28px 16px", textAlign: "center", fontSize: "13px", color: "#7c8ba3" }}>
+          <div style={{ ...emptyNote, padding: "28px 16px" }}>
             {t("salesChart:noSiteData")}
           </div>
         ) : (

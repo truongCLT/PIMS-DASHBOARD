@@ -522,7 +522,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                   badgeColor={rateColor(achievementPct)}
                 />
                 {isLoading ? (
-                  <div style={{ padding: "40px 10px", textAlign: "center", fontSize: "13px", color: INK_MUTED }}>{t("common:loading")}</div>
+                  <div style={{ ...emptyNote, padding: "40px 10px" }}>{t("common:loading")}</div>
                 ) : revenueTarget == null && revenueTotal == null ? (
                   <EmptyHint label={t("serviceProjectDashboard:revenueTargetActualLabel")} />
                 ) : (
@@ -577,7 +577,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                   badgeColor={chartTheme.planBlue}
                 />
                 {isLoading ? (
-                  <div style={{ padding: "40px 10px", textAlign: "center", fontSize: "13px", color: INK_MUTED }}>{t("common:loading")}</div>
+                  <div style={{ ...emptyNote, padding: "40px 10px" }}>{t("common:loading")}</div>
                 ) : allBudgetRows.length === 0 ? (
                   <EmptyHint label={t("serviceProjectDashboard:budgetExecutionEmptyLabel")} />
                 ) : (
@@ -697,7 +697,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                   badgeColor={rateColor(collectionRatePct)}
                 />
                 {isLoading ? (
-                  <div style={{ padding: "40px 10px", textAlign: "center", fontSize: "13px", color: INK_MUTED }}>{t("common:loading")}</div>
+                  <div style={{ ...emptyNote, padding: "40px 10px" }}>{t("common:loading")}</div>
                 ) : revenueTotal == null && cashConfirmed == null && cashCollection == null ? (
                   <EmptyHint label={t("serviceProjectDashboard:cashEmptyLabel")} />
                 ) : (
