@@ -469,9 +469,6 @@ export function OverviewTab({ projectName }: { projectName: string }) {
           <CardHeader
             title={t("common:revenue")}
             unit={unitLabel}
-            badgeLabel={t("overviewTab:annualShort")}
-            badgeValue={fmtPct(ratioPct(cumRev, annualPlanRev))}
-            badgeColor={rateColor(ratioPct(cumRev, annualPlanRev))}
           />
           {mr.isLoading || (siteCode != null && (revQ.isLoading || cogsQ.isLoading)) ? (
             <div style={emptyNote}>{t("overviewTab:loadingRevenue")}</div>
