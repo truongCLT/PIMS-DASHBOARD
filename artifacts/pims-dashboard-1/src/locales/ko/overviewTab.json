@@ -35,5 +35,7 @@
   "directCost": "Direct Cost",
   "totalCost": "Total Cost",
   "latestMonth": "최신월",
-  "referenceMonth": "기준월"
+  "referenceMonth": "기준월",
+  "cumulativeAchievementRate": "누적 달성률",
+  "monthlyAchievementRate": "월간 달성률"
 }

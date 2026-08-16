@@ -340,7 +340,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
           <CardHeader
             title={t("common:process")}
             unit="%"
-            badgeLabel={t("common:achievementRate")}
+            badgeLabel={t("overviewTab:cumulativeAchievementRate")}
             badgeValue={fmtPct(achieveRate)}
             badgeColor={rateColor(achieveRate)}
             right={undefined}
@@ -368,7 +368,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                   return (
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
                       <div style={{ fontSize: "14px", color: rateColor(monthlyAchieveRate), fontWeight: 800, marginBottom: "6px" }}>
-                        {t("common:achievementRate")} {fmtPct(monthlyAchieveRate)}
+                        {t("overviewTab:monthlyAchievementRate")} {fmtPct(monthlyAchieveRate)}
                       </div>
                       <div style={{ display: "flex", alignItems: "flex-end", gap: "10px", height: `${MAX_H + 20}px` }}>
                         {bars.map((b) => (

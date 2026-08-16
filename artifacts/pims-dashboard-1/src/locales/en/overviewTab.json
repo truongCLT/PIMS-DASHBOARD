@@ -35,5 +35,7 @@
   "directCost": "Direct Cost",
   "totalCost": "Total Cost",
   "latestMonth": "Latest month",
-  "referenceMonth": "Reference month"
+  "referenceMonth": "Reference month",
+  "cumulativeAchievementRate": "Cumul. achieve.",
+  "monthlyAchievementRate": "Monthly achieve."
 }

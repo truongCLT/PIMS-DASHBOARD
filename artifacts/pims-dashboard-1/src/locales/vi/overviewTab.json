@@ -35,5 +35,7 @@
   "directCost": "Chi phí trực tiếp",
   "totalCost": "Tổng chi phí",
   "latestMonth": "Tháng mới nhất",
-  "referenceMonth": "Tháng tham chiếu"
+  "referenceMonth": "Tháng tham chiếu",
+  "cumulativeAchievementRate": "Hoàn thành lũy kế",
+  "monthlyAchievementRate": "Hoàn thành tháng"
 }
