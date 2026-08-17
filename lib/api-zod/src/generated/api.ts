@@ -173,6 +173,31 @@ export const PutFxRatesHistoryResponse = zod.object({
 
 
 /**
+ * @summary PIMSVINA per-site contract exchange rate (CBTB_CTRTSUMM.RATEUSD/RATEKRW)
+ */
+export const GetPimsvinaSiterateQueryParams = zod.object({
+  "siteCode": zod.coerce.string()
+})
+
+export const GetPimsvinaSiterateResponse = zod.object({
+  "siteCode": zod.string(),
+  "rateUsd": zod.number().nullable().describe('1 USD 당 VND (RATEUSD)'),
+  "rateKrw": zod.number().nullable().describe('1 KRW 당 VND (RATEKRW)')
+}).describe('PIMSVINA 현장 계약 환율 (CBTB_CTRTSUMM.RATEUSD\/RATEKRW, VND 기준)')
+
+
+/**
+ * @summary PIMSVINA latest official monthly exchange rate (CHTB_EXCHANGE_RATIO)
+ */
+export const GetPimsvinaExchangerateResponseItem = zod.object({
+  "currency": zod.enum(['USD', 'KRW']),
+  "yymm": zod.string().describe('환율이 존재하는 최신 월 (YYYYMM)'),
+  "rate": zod.number().describe('1 currency 당 VND')
+}).describe('PIMSVINA 공식 환율 중 조회 시점 기준 최신 월 값 (CHTB_EXCHANGE_RATIO, VND 기준)')
+export const GetPimsvinaExchangerateResponse = zod.array(GetPimsvinaExchangerateResponseItem)
+
+
+/**
  * @summary Company/division org structure (companies with nested divisions)
  */
 export const GetOrgStructureResponse = zod.object({
@@ -250,7 +275,8 @@ export const UpdateMgmtreportProjectDivisionResponse = zod.object({
 })),
   "businessType": zod.enum(['시공', '용역']).nullish().describe('회사\/부문 구조에 명시적으로 매핑된 경우만 채워짐. null이면 프론트에서 기존 키워드 추정 방식(classifyMrProject)으로 폴백.'),
   "companyLabel": zod.string().nullish(),
-  "divisionLabel": zod.string().nullish()
+  "divisionLabel": zod.string().nullish(),
+  "hasPimsvinaDetail": zod.boolean().describe('pd_overview에 이 프로젝트의 행이 있는지 여부. false면 SPC\/본사 등 실제 현장 계약 데이터가 PIMSVINA에 없는 관리 항목일 가능성이 높음 - 데이터 입력 탭에서 직접 입력 필요.')
 })
 
 
@@ -296,6 +322,8 @@ export const GetProjectdetailQueryParams = zod.object({
   "projectName": zod.coerce.string()
 })
 
+export const getProjectdetailResponseOverviewSlideshowIntervalSecondsMin = 0;
+
 export const getProjectdetailResponseProgressItemYearMin = 2000;
 export const getProjectdetailResponseProgressItemYearMax = 2100;
 
@@ -329,6 +357,7 @@ export const GetProjectdetailResponse = zod.object({
   "projectName": zod.string(),
   "unit": zod.string().describe('Amount unit (천 USD)'),
   "overview": zod.object({
+  "siteCode": zod.string().nullish().describe('PIMSVINA 현장 코드 (mr_projects.site_code), 현장 계약 환율 조회에 사용'),
   "contractAmount": zod.number().nullable().describe('도급액 (천 USD)'),
   "startDate": zod.string().nullable().describe('공사 시작일 YYYY-MM-DD'),
   "endDate": zod.string().nullable().describe('공사 종료일 YYYY-MM-DD'),
@@ -339,7 +368,9 @@ export const GetProjectdetailResponse = zod.object({
   "revenueAnnualTarget": zod.number().nullish().describe('연간 매출 목표 (천 USD)'),
   "revenueTotal": zod.number().nullish().describe('누계 매출 실적 (천 USD)'),
   "cashConfirmed": zod.number().nullish().describe('Cash Confirmed (A) (천 USD)'),
-  "cashCollection": zod.number().nullish().describe('Cash Collection (B) (천 USD)')
+  "cashCollection": zod.number().nullish().describe('Cash Collection (B) (천 USD)'),
+  "slideshowIntervalSeconds": zod.number().min(getProjectdetailResponseOverviewSlideshowIntervalSecondsMin).nullish().describe('슬라이드쇼 자동 전환 간격(초), 0=꺼짐'),
+  "isClosed": zod.boolean().optional().describe('마감 여부. true이면 데이터 편집이 잠금 상태')
 }),
   "progress": zod.array(zod.object({
   "year": zod.number().min(getProjectdetailResponseProgressItemYearMin).max(getProjectdetailResponseProgressItemYearMax),
@@ -418,6 +449,8 @@ export const GetProjectdetailResponse = zod.object({
 /**
  * @summary Replace all project detail data for a project
  */
+export const putProjectdetailBodyOverviewSlideshowIntervalSecondsMin = 0;
+
 export const putProjectdetailBodyProgressItemYearMin = 2000;
 export const putProjectdetailBodyProgressItemYearMax = 2100;
 
@@ -451,6 +484,7 @@ export const PutProjectdetailBody = zod.object({
   "projectName": zod.string(),
   "unit": zod.string().describe('Amount unit (천 USD)'),
   "overview": zod.object({
+  "siteCode": zod.string().nullish().describe('PIMSVINA 현장 코드 (mr_projects.site_code), 현장 계약 환율 조회에 사용'),
   "contractAmount": zod.number().nullable().describe('도급액 (천 USD)'),
   "startDate": zod.string().nullable().describe('공사 시작일 YYYY-MM-DD'),
   "endDate": zod.string().nullable().describe('공사 종료일 YYYY-MM-DD'),
@@ -461,7 +495,9 @@ export const PutProjectdetailBody = zod.object({
   "revenueAnnualTarget": zod.number().nullish().describe('연간 매출 목표 (천 USD)'),
   "revenueTotal": zod.number().nullish().describe('누계 매출 실적 (천 USD)'),
   "cashConfirmed": zod.number().nullish().describe('Cash Confirmed (A) (천 USD)'),
-  "cashCollection": zod.number().nullish().describe('Cash Collection (B) (천 USD)')
+  "cashCollection": zod.number().nullish().describe('Cash Collection (B) (천 USD)'),
+  "slideshowIntervalSeconds": zod.number().min(putProjectdetailBodyOverviewSlideshowIntervalSecondsMin).nullish().describe('슬라이드쇼 자동 전환 간격(초), 0=꺼짐'),
+  "isClosed": zod.boolean().optional().describe('마감 여부. true이면 데이터 편집이 잠금 상태')
 }),
   "progress": zod.array(zod.object({
   "year": zod.number().min(putProjectdetailBodyProgressItemYearMin).max(putProjectdetailBodyProgressItemYearMax),
@@ -536,6 +572,8 @@ export const PutProjectdetailBody = zod.object({
 }))
 })
 
+export const putProjectdetailResponseOverviewSlideshowIntervalSecondsMin = 0;
+
 export const putProjectdetailResponseProgressItemYearMin = 2000;
 export const putProjectdetailResponseProgressItemYearMax = 2100;
 
@@ -569,6 +607,7 @@ export const PutProjectdetailResponse = zod.object({
   "projectName": zod.string(),
   "unit": zod.string().describe('Amount unit (천 USD)'),
   "overview": zod.object({
+  "siteCode": zod.string().nullish().describe('PIMSVINA 현장 코드 (mr_projects.site_code), 현장 계약 환율 조회에 사용'),
   "contractAmount": zod.number().nullable().describe('도급액 (천 USD)'),
   "startDate": zod.string().nullable().describe('공사 시작일 YYYY-MM-DD'),
   "endDate": zod.string().nullable().describe('공사 종료일 YYYY-MM-DD'),
@@ -579,7 +618,9 @@ export const PutProjectdetailResponse = zod.object({
   "revenueAnnualTarget": zod.number().nullish().describe('연간 매출 목표 (천 USD)'),
   "revenueTotal": zod.number().nullish().describe('누계 매출 실적 (천 USD)'),
   "cashConfirmed": zod.number().nullish().describe('Cash Confirmed (A) (천 USD)'),
-  "cashCollection": zod.number().nullish().describe('Cash Collection (B) (천 USD)')
+  "cashCollection": zod.number().nullish().describe('Cash Collection (B) (천 USD)'),
+  "slideshowIntervalSeconds": zod.number().min(putProjectdetailResponseOverviewSlideshowIntervalSecondsMin).nullish().describe('슬라이드쇼 자동 전환 간격(초), 0=꺼짐'),
+  "isClosed": zod.boolean().optional().describe('마감 여부. true이면 데이터 편집이 잠금 상태')
 }),
   "progress": zod.array(zod.object({
   "year": zod.number().min(putProjectdetailResponseProgressItemYearMin).max(putProjectdetailResponseProgressItemYearMax),
@@ -652,6 +693,20 @@ export const PutProjectdetailResponse = zod.object({
   "photos": zod.array(zod.object({
   "objectPath": zod.string().describe('Object storage path (\'\/objects\/uploads\/<uuid>\')')
 }))
+})
+
+
+/**
+ * @summary 프로젝트 데이터 편집 마감/해지 토글
+ */
+export const PatchProjectdetailCloseBody = zod.object({
+  "projectName": zod.string(),
+  "closed": zod.boolean().describe('true=마감, false=마감해지')
+})
+
+export const PatchProjectdetailCloseResponse = zod.object({
+  "projectName": zod.string(),
+  "isClosed": zod.boolean()
 })
 
 
@@ -1005,7 +1060,8 @@ export const ListMgmtreportProjectsResponse = zod.object({
 })),
   "businessType": zod.enum(['시공', '용역']).nullish().describe('회사\/부문 구조에 명시적으로 매핑된 경우만 채워짐. null이면 프론트에서 기존 키워드 추정 방식(classifyMrProject)으로 폴백.'),
   "companyLabel": zod.string().nullish(),
-  "divisionLabel": zod.string().nullish()
+  "divisionLabel": zod.string().nullish(),
+  "hasPimsvinaDetail": zod.boolean().describe('pd_overview에 이 프로젝트의 행이 있는지 여부. false면 SPC\/본사 등 실제 현장 계약 데이터가 PIMSVINA에 없는 관리 항목일 가능성이 높음 - 데이터 입력 탭에서 직접 입력 필요.')
 }))
 })
 

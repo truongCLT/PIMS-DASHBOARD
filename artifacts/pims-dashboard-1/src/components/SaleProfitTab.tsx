@@ -4,6 +4,7 @@ import {
   ComposedChart,
   Bar,
   Line,
+  Area,
   XAxis,
   YAxis,
   Tooltip,
@@ -21,7 +22,7 @@ import { chartTheme } from "../lib/chartTheme";
 import { useMoney } from "../lib/displayUnit";
 import { useProjectDetail } from "../lib/projectDetailData";
 import { ProjectCommentPanel } from "./ProjectCommentPanel";
-import { cardStyle, sectionTitle } from "../lib/uiTokens";
+import { cardStyle, sectionTitle, emptyNote, INK_MUTED } from "../lib/uiTokens";
 
 function useSiteMonths(year: number, metric: "revenue" | "cogs", enabled: boolean) {
   const params = { year, metric };
@@ -32,14 +33,7 @@ function useSiteMonths(year: number, metric: "revenue" | "cogs", enabled: boolea
 
 function Notice({ children, error }: { children: React.ReactNode; error?: boolean }) {
   return (
-    <div
-      style={{
-        padding: "60px 20px",
-        textAlign: "center",
-        fontSize: "15px",
-        color: error ? "#f2736a" : "#7c8ba3",
-      }}
-    >
+    <div style={{ ...emptyNote, color: error ? chartTheme.outflowRed : INK_MUTED }}>
       {children}
     </div>
   );
@@ -213,6 +207,12 @@ export function SaleProfitTab({
     };
   });
   const hasCogs = cogsChartData.some((d) => d.acctCogs !== 0 || d.wipCogs !== 0);
+  // 데이터가 있는 첫 월 ~ 마지막 월로 범위 축소
+  const firstCogsIdx = cogsChartData.findIndex((d) => d.acctCogs !== 0 || d.wipCogs !== 0);
+  const lastCogsIdx = cogsChartData.reduce((acc, d, i) => (d.acctCogs !== 0 || d.wipCogs !== 0 ? i : acc), -1);
+  const cogsChartDataTrimmed = firstCogsIdx >= 0
+    ? cogsChartData.slice(firstCogsIdx, lastCogsIdx + 1)
+    : cogsChartData;
 
   const hasData = chartData.some((d) => d.revenue !== 0 || d.cumulative !== 0 || d.plan !== 0);
   if (isLoading || pdLoading) {
@@ -265,7 +265,7 @@ export function SaleProfitTab({
               />
               <Legend wrapperStyle={{ fontSize: "12px" }} />
               {pdSalesHasAny && (
-                <Bar dataKey="plan" name={t("saleProfitTab:monthlyPlan")} fill="#c9d2dd" barSize={14} isAnimationActive={false}>
+                <Bar dataKey="plan" name={t("saleProfitTab:monthlyPlan")} fill={chartTheme.planGray} barSize={14} isAnimationActive={false}>
                   <LabelList
                     dataKey="plan"
                     position="top"
@@ -288,14 +288,16 @@ export function SaleProfitTab({
                   formatter={(v: number) => (v !== 0 ? Math.round(v).toLocaleString() : "")}
                 />
               </Bar>
-              <Line
+              <Area
                 yAxisId="cum"
                 dataKey="cumulative"
                 name={t("common:cumulative")}
                 type="monotone"
                 stroke={chartTheme.outflowRed}
                 strokeWidth={2}
-                dot={{ r: 3 }}
+                fill={chartTheme.outflowRed}
+                fillOpacity={0.15}
+                dot={{ r: 3, fill: chartTheme.outflowRed }}
                 isAnimationActive={false}
               >
                 <LabelList
@@ -305,7 +307,7 @@ export function SaleProfitTab({
                   style={{ fontSize: "11px", fill: chartTheme.outflowRed }}
                   formatter={(v: number) => Math.round(v).toLocaleString()}
                 />
-              </Line>
+              </Area>
             </ComposedChart>
           </ResponsiveContainer>
         </div>
@@ -321,7 +323,7 @@ export function SaleProfitTab({
         ) : (
           <div style={{ width: "100%", height: "260px", marginTop: "8px" }}>
             <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={cogsChartData} margin={{ top: 30, right: 40, left: 40, bottom: 0 }}>
+              <ComposedChart data={cogsChartDataTrimmed} margin={{ top: 30, right: 40, left: 40, bottom: 0 }}>
                 <XAxis
                   dataKey="label"
                   tick={{ fontSize: 10, fill: chartTheme.axisText }}
@@ -330,12 +332,12 @@ export function SaleProfitTab({
                 />
                 <YAxis
                   hide
-                  domain={[0, Math.max(...cogsChartData.map((d) => Math.max(d.acctCogs, d.wipCogs)), 1) * 2.4]}
+                  domain={[0, Math.max(...cogsChartDataTrimmed.map((d) => Math.max(d.acctCogs, d.wipCogs)), 1) * 2.4]}
                 />
                 <YAxis
                   yAxisId="cum"
                   hide
-                  domain={[0, Math.max(...cogsChartData.map((d) => Math.max(d.acctCum, d.wipCum)), 1) * 1.1]}
+                  domain={[0, Math.max(...cogsChartDataTrimmed.map((d) => Math.max(d.acctCum, d.wipCum)), 1) * 1.1]}
                 />
                 <Tooltip
                   contentStyle={{ fontSize: "13px" }}

@@ -16,6 +16,7 @@ import { useProjectDetail, getGetProjectdetailQueryKey } from "../lib/projectDet
 import { downloadProjectDetailTemplate, parseProjectDetailWorkbook, ExcelParseError } from "../lib/projectDetailExcel";
 import { DisplayUnitProvider, formatMoney, moneyUnitLabel } from "../lib/displayUnit";
 import { useAdminAuth } from "../lib/adminAuth";
+import { useDashboardFilters } from "../lib/dashboardFilters";
 import { cardStyle, sectionTitle } from "../lib/uiTokens";
 export { Donut, MiniBar } from "./charts";
 
@@ -48,6 +49,7 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
     Cashflow: t("projectDashboard:cashflow"),
     "Data entry": t("projectDashboard:dataEntry"),
   };
+  const { fxRates } = useDashboardFilters();
   const [currency, setCurrency] = useState("USD");
   const [unitOn, setUnitOn] = useState(true);
   const [activeTab, setActiveTab] = useState("Overview");
@@ -78,7 +80,7 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
     setExcelMsg(null);
     setExcelStatus(null);
     try {
-      await downloadProjectDetailTemplate(projectName, detail);
+      await downloadProjectDetailTemplate(projectName, detail, fxRates.VND);
     } catch (err) {
       console.error("Excel template download failed", err);
       setExcelMsg(t("projectDashboard:templateDownloadFailed"));
@@ -94,7 +96,7 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
     setExcelMsg(null);
     setExcelStatus(null);
     try {
-      const parsed = await parseProjectDetailWorkbook(file, detail);
+      const parsed = await parseProjectDetailWorkbook(file, detail, fxRates.VND);
       if (!window.confirm(t("projectDashboard:confirmReplaceData"))) {
         setExcelBusy(false);
         return;
@@ -202,7 +204,7 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
               }}
             />
           </div>
-          <span style={{ fontSize: "12px", color: "#333", fontWeight: 600 }}>{moneyUnitLabel(currency, unitOn)}</span>
+          <span style={{ fontSize: "12px", color: "#333", fontWeight: 600, display: "inline-block", minWidth: "64px" }}>{moneyUnitLabel(currency, unitOn)}</span>
         </div>
 
       </div>

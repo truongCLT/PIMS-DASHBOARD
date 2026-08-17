@@ -15,5 +15,12 @@
   "cashOutflow": "Cash Outflow",
   "cumulativeCashBalance": "Cumulative Cash Balance",
   "cumulativeCashBalanceRightAxis": "Cumulative Cash Balance (right axis)",
-  "viewDetails": "View Details"
+  "viewDetails": "View Details",
+  "siteDetailTitle": "Site Cash Flow Detail – {{month}}",
+  "colProject": "Site",
+  "colInflow": "Inflow",
+  "colOutflow": "Outflow",
+  "noProjectBreakdown": "Project-level breakdown is not available for this scope.",
+  "loadingSiteData": "Loading site data…",
+  "noSiteData": "No site-level cash flow data for this month."
 }

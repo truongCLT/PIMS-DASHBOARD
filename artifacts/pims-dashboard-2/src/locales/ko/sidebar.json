@@ -1,5 +1,6 @@
 {
   "selfDevelopmentDivision": "자체개발",
   "landSaleDivision": "용지매각",
-  "adminModeTooltip": "관리자 모드"
+  "adminModeTooltip": "관리자 모드",
+  "orgStructureEmptyNotice": "조직 구조가 아직 설정되지 않아 기본 메뉴 구조로 표시 중입니다. 관리자 모드의 조직도 편집에서 설정할 수 있습니다."
 }

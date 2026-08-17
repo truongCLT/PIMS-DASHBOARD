@@ -9,5 +9,12 @@
   "hoverHint": "※ Di chuột qua cột để xem chi tiết lợi nhuận thường xuyên và chi phí quản lý",
   "month": "Tháng",
   "operatingMarginRate": "Tỷ suất LN KD",
-  "barTotalGross": "Cả cột = LN gộp"
+  "barTotalGross": "Cả cột = LN gộp",
+  "siteDetailTitle": "Chi tiết LN gộp công trình – {{month}}",
+  "colSiteName": "Tên công trình",
+  "colCategory": "Danh mục",
+  "colBizType": "Loại hình",
+  "colShare": "Tỷ trọng",
+  "noSiteData": "Không có dữ liệu công trình cho tháng này.",
+  "loadingSiteData": "Đang tải dữ liệu công trình…"
 }

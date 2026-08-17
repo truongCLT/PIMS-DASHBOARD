@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ProjectCommentPanel } from "./ProjectCommentPanel";
 
@@ -13,11 +13,15 @@ import {
   Legend,
   LabelList,
 } from "recharts";
-import { useGetCashflowMonthly, getGetCashflowMonthlyQueryKey } from "@workspace/api-client-react";
+import {
+  useGetCashflowMonthly,
+  getGetCashflowMonthlyQueryKey,
+  useGetPimsvinaExchangerate,
+} from "@workspace/api-client-react";
 import { getMrCashflowRef } from "../data/mrProjectLinks";
 import { useProjectDetail } from "../lib/projectDetailData";
 import { chartTheme } from "../lib/chartTheme";
-import { useMoney } from "../lib/displayUnit";
+import { useMoney, convertMoney, moneyUnitLabel, DEFAULT_EXCHANGE_RATES } from "../lib/displayUnit";
 import { cardStyle } from "../lib/uiTokens";
 import { tokens as aquaTokens } from "@workspace/aqua-glass";
 const AG = aquaTokens.color.light;
@@ -25,8 +29,9 @@ const AG = aquaTokens.color.light;
 type TFn = ReturnType<typeof useTranslation>["t"];
 
 function monthLabel(ym: string, t: TFn): string {
+  const year = Number(ym.slice(0, 4));
   const m = Number(ym.slice(5, 7));
-  return t("serviceCashflowTab:monthLabel", { month: m, yy: ym.slice(2, 4) });
+  return t("serviceCashflowTab:monthLabel", { year, month: m });
 }
 
 function niceStep(range: number): number {
@@ -50,7 +55,21 @@ export function ServiceCashflowTab({
   months: number;
 }) {
   const { t } = useTranslation(["serviceCashflowTab", "common"]);
-  const { convert, unitLabel } = useMoney();
+  // Cashflow 탭은 (사이트별 계약 환율이 아닌) PIMSVINA의 공식 월별 환율(최신월)을 사용한다.
+  const { currency, unitOn } = useMoney();
+  const officialRateQuery = useGetPimsvinaExchangerate({ query: { staleTime: 5 * 60_000 } });
+  const officialRates = useMemo(() => {
+    const usdRow = officialRateQuery.data?.find((r) => r.currency === "USD");
+    if (!usdRow) return DEFAULT_EXCHANGE_RATES;
+    const krwRow = officialRateQuery.data?.find((r) => r.currency === "KRW");
+    return {
+      USD: 1,
+      VND: usdRow.rate,
+      KRW: krwRow ? krwRow.rate : DEFAULT_EXCHANGE_RATES.KRW,
+    };
+  }, [officialRateQuery.data]);
+  const convert = (v: number) => convertMoney(v, currency, unitOn, officialRates);
+  const unitLabel = moneyUnitLabel(currency, unitOn);
 
   // 보조: 데이터 입력 탭에서 저장한 프로젝트별 자금 데이터 (pd_cashflow_monthly)
   const { detail, isLoading: pdLoading } = useProjectDetail(projectName);

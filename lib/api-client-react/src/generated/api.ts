@@ -38,6 +38,7 @@ import type {
   FxRates,
   GetCashflowAggregateParams,
   GetCashflowMonthlyParams,
+  GetPimsvinaSiterateParams,
   GetProjectdetailParams,
   GetSalescostSummaryParams,
   HealthStatus,
@@ -57,6 +58,10 @@ import type {
   MgmtreportSummary,
   OrgStructure,
   OrgStructureInput,
+  PatchProjectdetailClose200,
+  PatchProjectdetailCloseBody,
+  PimsvinaExchangeRateEntry,
+  PimsvinaSiteRate,
   PreviewCashflowImportBody,
   PreviewMgmtreportImportBody,
   PreviewSalescostImportBody,
@@ -694,6 +699,167 @@ export const usePutFxRatesHistory = <TError = ErrorType<ApiErrorMessage>,
       return useMutation(getPutFxRatesHistoryMutationOptions(options));
     }
 
+export const getGetPimsvinaSiterateUrl = (params: GetPimsvinaSiterateParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/pimsvina/siterate?${stringifiedParams}` : `/api/pimsvina/siterate`
+}
+
+/**
+ * @summary PIMSVINA per-site contract exchange rate (CBTB_CTRTSUMM.RATEUSD/RATEKRW)
+ */
+export const getPimsvinaSiterate = async (params: GetPimsvinaSiterateParams, options?: RequestInit): Promise<PimsvinaSiteRate> => {
+
+  return customFetch<PimsvinaSiteRate>(getGetPimsvinaSiterateUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPimsvinaSiterateQueryKey = (params?: GetPimsvinaSiterateParams,) => {
+    return [
+    `/api/pimsvina/siterate`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetPimsvinaSiterateQueryOptions = <TData = Awaited<ReturnType<typeof getPimsvinaSiterate>>, TError = ErrorType<ApiErrorMessage>>(params: GetPimsvinaSiterateParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPimsvinaSiterate>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPimsvinaSiterateQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPimsvinaSiterate>>> = ({ signal }) => getPimsvinaSiterate(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPimsvinaSiterate>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPimsvinaSiterateQueryResult = NonNullable<Awaited<ReturnType<typeof getPimsvinaSiterate>>>
+export type GetPimsvinaSiterateQueryError = ErrorType<ApiErrorMessage>
+
+
+/**
+ * @summary PIMSVINA per-site contract exchange rate (CBTB_CTRTSUMM.RATEUSD/RATEKRW)
+ */
+
+export function useGetPimsvinaSiterate<TData = Awaited<ReturnType<typeof getPimsvinaSiterate>>, TError = ErrorType<ApiErrorMessage>>(
+ params: GetPimsvinaSiterateParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPimsvinaSiterate>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPimsvinaSiterateQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetPimsvinaExchangerateUrl = () => {
+
+
+
+
+  return `/api/pimsvina/exchangerate`
+}
+
+/**
+ * @summary PIMSVINA latest official monthly exchange rate (CHTB_EXCHANGE_RATIO)
+ */
+export const getPimsvinaExchangerate = async ( options?: RequestInit): Promise<PimsvinaExchangeRateEntry[]> => {
+
+  return customFetch<PimsvinaExchangeRateEntry[]>(getGetPimsvinaExchangerateUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPimsvinaExchangerateQueryKey = () => {
+    return [
+    `/api/pimsvina/exchangerate`
+    ] as const;
+    }
+
+
+export const getGetPimsvinaExchangerateQueryOptions = <TData = Awaited<ReturnType<typeof getPimsvinaExchangerate>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPimsvinaExchangerate>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPimsvinaExchangerateQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPimsvinaExchangerate>>> = ({ signal }) => getPimsvinaExchangerate({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPimsvinaExchangerate>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPimsvinaExchangerateQueryResult = NonNullable<Awaited<ReturnType<typeof getPimsvinaExchangerate>>>
+export type GetPimsvinaExchangerateQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary PIMSVINA latest official monthly exchange rate (CHTB_EXCHANGE_RATIO)
+ */
+
+export function useGetPimsvinaExchangerate<TData = Awaited<ReturnType<typeof getPimsvinaExchangerate>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPimsvinaExchangerate>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPimsvinaExchangerateQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
 export const getGetOrgStructureUrl = () => {
 
 
@@ -1210,6 +1376,77 @@ export const usePutProjectdetail = <TError = ErrorType<ApiErrorMessage>,
         TContext
       > => {
       return useMutation(getPutProjectdetailMutationOptions(options));
+    }
+
+export const getPatchProjectdetailCloseUrl = () => {
+
+
+
+
+  return `/api/projectdetail/close`
+}
+
+/**
+ * @summary 프로젝트 데이터 편집 마감/해지 토글
+ */
+export const patchProjectdetailClose = async (patchProjectdetailCloseBody: PatchProjectdetailCloseBody, options?: RequestInit): Promise<PatchProjectdetailClose200> => {
+
+  return customFetch<PatchProjectdetailClose200>(getPatchProjectdetailCloseUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(patchProjectdetailCloseBody)
+  }
+);}
+
+
+
+
+
+export const getPatchProjectdetailCloseMutationOptions = <TError = ErrorType<ApiErrorMessage>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchProjectdetailClose>>, TError,{data: BodyType<PatchProjectdetailCloseBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof patchProjectdetailClose>>, TError,{data: BodyType<PatchProjectdetailCloseBody>}, TContext> => {
+
+const mutationKey = ['patchProjectdetailClose'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof patchProjectdetailClose>>, {data: BodyType<PatchProjectdetailCloseBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  patchProjectdetailClose(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PatchProjectdetailCloseMutationResult = NonNullable<Awaited<ReturnType<typeof patchProjectdetailClose>>>
+    export type PatchProjectdetailCloseMutationBody = BodyType<PatchProjectdetailCloseBody>
+    export type PatchProjectdetailCloseMutationError = ErrorType<ApiErrorMessage>
+
+    /**
+ * @summary 프로젝트 데이터 편집 마감/해지 토글
+ */
+export const usePatchProjectdetailClose = <TError = ErrorType<ApiErrorMessage>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchProjectdetailClose>>, TError,{data: BodyType<PatchProjectdetailCloseBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof patchProjectdetailClose>>,
+        TError,
+        {data: BodyType<PatchProjectdetailCloseBody>},
+        TContext
+      > => {
+      return useMutation(getPatchProjectdetailCloseMutationOptions(options));
     }
 
 export const getListProjectdetailCommentsUrl = (params: ListProjectdetailCommentsParams,) => {

@@ -9,5 +9,12 @@
   "hoverHint": "※ Hover over a bar to see ordinary profit and SG&A details",
   "month": "Month",
   "operatingMarginRate": "OP margin",
-  "barTotalGross": "Full bar = Gross profit"
+  "barTotalGross": "Full bar = Gross profit",
+  "siteDetailTitle": "Site Gross Profit Detail – {{month}}",
+  "colSiteName": "Site",
+  "colCategory": "Category",
+  "colBizType": "Business Type",
+  "colShare": "Share",
+  "noSiteData": "No site-level data for this month.",
+  "loadingSiteData": "Loading site data…"
 }

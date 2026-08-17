@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ChevronsUp, Download, FileSpreadsheet, FileText, RefreshCw, Upload } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { useListMgmtreportProjects } from "@workspace/api-client-react";
+import { useListMgmtreportProjects, getBaseUrl } from "@workspace/api-client-react";
 import { exportDashboardExcel, exportDashboardPdf } from "../lib/exportDashboard";
 import { MgmtReportUploadModal } from "./MgmtReportUploadModal";
 import { FxRateEditor } from "./FxRateEditor";
@@ -56,14 +56,17 @@ export function DashboardHeader({
   const downloadMenuRef = useRef<HTMLDivElement>(null);
   const [downloadPos, setDownloadPos] = useState<{ top: number; right: number } | null>(null);
 
-  const adminFetch = (path: string) => {
+  const adminFetch = (path: string, body?: any) => {
     const token = readAdminToken();
-    return fetch(path, {
+    const baseUrl = getBaseUrl() || "";
+    const fullUrl = path.startsWith("/") ? `${baseUrl}${path}` : path;
+    return fetch(fullUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
+      ...(body ? { body: JSON.stringify(body) } : {}),
     });
   };
 
@@ -92,14 +95,7 @@ export function DashboardHeader({
     if (confirming || !syncPreview) return;
     setConfirming(true);
     try {
-      const res = await fetch("/api/sync-pimsvina/confirm", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(readAdminToken() ? { Authorization: `Bearer ${readAdminToken()}` } : {}),
-        },
-        body: JSON.stringify({ data: syncPreview }),
-      });
+      const res = await adminFetch("/api/sync-pimsvina/confirm", { data: syncPreview });
       const data = await res.json();
       if (data.success) {
         alert(

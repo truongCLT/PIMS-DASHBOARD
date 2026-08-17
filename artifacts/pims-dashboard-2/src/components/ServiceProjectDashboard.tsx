@@ -1,7 +1,7 @@
-import React, { useRef, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
-import { usePutProjectdetail } from "@workspace/api-client-react";
+import { usePutProjectdetail, useGetPimsvinaSiterate } from "@workspace/api-client-react";
 import { ProjectCommentPanel } from "./ProjectCommentPanel";
 import { Download, FileSpreadsheet, Upload, RefreshCw } from "lucide-react";
 import { downloadProjectDetailTemplate, parseProjectDetailWorkbook, ExcelParseError } from "../lib/projectDetailExcel";
@@ -15,7 +15,7 @@ import { ProjectDataEntryTab } from "./ProjectDataEntryTab";
 import { PimsvinaSyncPreviewModal, type PimsvinaPreviewData } from "./PimsvinaSyncPreviewModal";
 import { useProjectDetail, getGetProjectdetailQueryKey, fmtPct, ratioPct } from "../lib/projectDetailData";
 import { useAdminAuth, readAdminToken } from "../lib/adminAuth";
-import { DisplayUnitProvider, formatMoney, moneyUnitLabel } from "../lib/displayUnit";
+import { DisplayUnitProvider, DEFAULT_EXCHANGE_RATES, formatMoney, moneyUnitLabel } from "../lib/displayUnit";
 import { CardHeader, rateColor } from "./OverviewTab";
 import { chartTheme } from "../lib/chartTheme";
 import { cardStyle } from "../lib/uiTokens";
@@ -118,6 +118,21 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
   const [toMonth, setToMonth] = useState(String(prevMonthDate.getMonth() + 1).padStart(2, "0"));
 
   const { detail, isLoading } = useProjectDetail(projectName);
+  const siteCode = detail?.overview?.siteCode ?? null;
+  const siteRateQuery = useGetPimsvinaSiterate(
+    { siteCode: siteCode ?? "" },
+    { query: { enabled: !!siteCode, staleTime: 5 * 60_000 } },
+  );
+  const siteRates = useMemo(() => {
+    const vndPerUsd = siteRateQuery.data?.rateUsd;
+    if (!vndPerUsd) return DEFAULT_EXCHANGE_RATES;
+    const vndPerKrw = siteRateQuery.data?.rateKrw;
+    return {
+      USD: 1,
+      VND: vndPerUsd,
+      KRW: vndPerKrw ? vndPerUsd / vndPerKrw : DEFAULT_EXCHANGE_RATES.KRW,
+    };
+  }, [siteRateQuery.data]);
 
   // Excel 양식 다운로드/업로드 (데이터 입력 탭)
   const queryClient = useQueryClient();
@@ -220,7 +235,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
     cashConfirmed != null && cashCollection != null ? cashConfirmed - cashCollection : null;
 
   return (
-    <DisplayUnitProvider currency={currency} unitOn={unitOn}>
+    <DisplayUnitProvider currency={currency} unitOn={unitOn} rates={siteRates}>
     <div style={{ flex: 1, overflowY: "auto", backgroundColor: AG.background }}>
       {/* Filter row */}
       <div

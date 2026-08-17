@@ -1,4 +1,7 @@
 {
   "executionStatusLabel": "Tình trạng thực hiện",
-  "noBudgetDataNotice": "Không có dữ liệu thực hiện ngân sách. Vui lòng nhập tình trạng thực hiện ngân sách trong tab \"Nhập dữ liệu\"."
+  "noBudgetDataNotice": "Không có dữ liệu thực hiện ngân sách. Vui lòng nhập tình trạng thực hiện ngân sách trong tab \"Nhập dữ liệu\".",
+  "planLabel": "Kế hoạch thực hiện",
+  "actualLabel": "Thực hiện thực tế",
+  "outsourcingItem": "Thuê ngoài"
 }

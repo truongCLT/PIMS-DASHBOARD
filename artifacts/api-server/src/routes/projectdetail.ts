@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { and, asc, desc, eq } from "drizzle-orm";
 import {
   db,
+  mrProjectsTable,
   pdCommentsTable,
   pdOverviewTable,
   pdProgressMonthlyTable,
@@ -39,7 +40,12 @@ const num = (v: string | null) => (v == null ? null : Number(v));
 const str = (v: number | null | undefined) => (v == null ? null : String(v));
 
 async function loadDetail(projectName: string) {
-  const [overviewRows, progress, milestones, costEstimation, costBudget, costBudgetMonthly, outsourcing, cashflow, cogsMonthly, salesMonthly, photos] = await Promise.all([
+  const [mrProjectRows, overviewRows, progress, milestones, costEstimation, costBudget, costBudgetMonthly, outsourcing, cashflow, cogsMonthly, salesMonthly, photos] = await Promise.all([
+    db
+      .select({ siteCode: mrProjectsTable.siteCode })
+      .from(mrProjectsTable)
+      .where(eq(mrProjectsTable.name, projectName))
+      .limit(1),
     db
       .select()
       .from(pdOverviewTable)
@@ -110,6 +116,7 @@ async function loadDetail(projectName: string) {
     projectName,
     unit: "천 USD",
     overview: {
+      siteCode: mrProjectRows[0]?.siteCode ?? null,
       contractAmount: ov ? num(ov.contractAmount) : null,
       startDate: formatDateStr(ov?.startDate),
       endDate: formatDateStr(ov?.endDate),
@@ -121,6 +128,8 @@ async function loadDetail(projectName: string) {
       revenueTotal: ov ? num(ov.revenueTotal) : null,
       cashConfirmed: ov ? num(ov.cashConfirmed) : null,
       cashCollection: ov ? num(ov.cashCollection) : null,
+      slideshowIntervalSeconds: ov?.slideshowIntervalSeconds ?? 0,
+      isClosed: ov?.isClosed ?? false,
     },
     progress: progress.map((p) => {
       const clamp100 = (v: number | null) => (v == null ? null : Math.min(100, Math.max(0, v)));
@@ -235,6 +244,25 @@ function validateProgress(progress: { year: number; month: number }[]): string[]
   return errors;
 }
 
+/* ── 마감/해지 토글 ── */
+router.patch("/projectdetail/close", requireAdmin, async (req, res) => {
+  const { projectName, closed } = req.body ?? {};
+  if (typeof projectName !== "string" || !projectName.trim() || typeof closed !== "boolean") {
+    res.status(400).json({ error: "projectName(string)과 closed(boolean)이 필요합니다." });
+    return;
+  }
+  try {
+    await db
+      .update(pdOverviewTable)
+      .set({ isClosed: closed })
+      .where(eq(pdOverviewTable.projectName, projectName.trim()));
+    res.json({ projectName: projectName.trim(), isClosed: closed });
+  } catch (err) {
+    req.log.error({ err }, "failed to toggle close status");
+    res.status(500).json({ error: "마감 상태 변경에 실패했습니다." });
+  }
+});
+
 router.put("/projectdetail", requireAdmin, async (req, res) => {
   const parsed = PutProjectdetailBody.safeParse(req.body);
   if (!parsed.success || !parsed.data.projectName.trim()) {
@@ -252,6 +280,15 @@ router.put("/projectdetail", requireAdmin, async (req, res) => {
     return;
   }
   const body = parsed.data;
+
+  /* 마감 상태이면 편집 차단 */
+  const closedRows = await db.select({ isClosed: pdOverviewTable.isClosed })
+    .from(pdOverviewTable)
+    .where(eq(pdOverviewTable.projectName, body.projectName.trim()));
+  if (closedRows[0]?.isClosed) {
+    res.status(403).json({ error: "마감된 프로젝트는 데이터를 수정할 수 없습니다. 마감을 해지한 후 시도해주세요." });
+    return;
+  }
 
   const progressErrors = validateProgress(body.progress);
   if (progressErrors.length > 0) {
@@ -312,6 +349,10 @@ router.put("/projectdetail", requireAdmin, async (req, res) => {
       const cashConfirmed = ov.cashConfirmed === undefined ? (prevOv?.cashConfirmed ?? null) : str(ov.cashConfirmed);
       const cashCollection =
         ov.cashCollection === undefined ? (prevOv?.cashCollection ?? null) : str(ov.cashCollection);
+      const slideshowIntervalSeconds =
+        ov.slideshowIntervalSeconds !== undefined
+          ? (ov.slideshowIntervalSeconds ?? 0)
+          : (prevOv?.slideshowIntervalSeconds ?? 0);
       if (
         ov.contractAmount != null ||
         ov.startDate != null ||
@@ -323,7 +364,8 @@ router.put("/projectdetail", requireAdmin, async (req, res) => {
         revenueAnnualTarget != null ||
         revenueTotal != null ||
         cashConfirmed != null ||
-        cashCollection != null
+        cashCollection != null ||
+        slideshowIntervalSeconds > 0
       ) {
         await tx.insert(pdOverviewTable).values({
           projectName,
@@ -338,6 +380,7 @@ router.put("/projectdetail", requireAdmin, async (req, res) => {
           revenueTotal,
           cashConfirmed,
           cashCollection,
+          slideshowIntervalSeconds,
         });
       }
       if (body.progress.length > 0) {

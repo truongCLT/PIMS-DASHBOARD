@@ -5,7 +5,7 @@
   "planProcessA": "계획 공정 (A)",
   "actualProcessB": "실적 공정 (B)",
   "yearMonth": "{{year}}년 {{month}}월",
-  "projectLifecycleProcess": "프로젝트 생애주기 공정",
+  "projectLifecycleProcess": "월별 공정 계획 및 실적",
   "noMonthlyProcessData": "월별 공정 데이터가 없습니다. ( - )",
   "monthlyPlan": "월 계획",
   "monthlyActual": "월 실적",

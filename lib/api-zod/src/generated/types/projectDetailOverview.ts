@@ -7,6 +7,8 @@
  */
 
 export interface ProjectDetailOverview {
+  /** PIMSVINA 현장 코드 (mr_projects.site_code), 현장 계약 환율 조회에 사용 */
+  siteCode?: string | null;
   /** 도급액 (천 USD) */
   contractAmount: number | null;
   /** 공사 시작일 YYYY-MM-DD */
@@ -29,4 +31,11 @@ export interface ProjectDetailOverview {
   cashConfirmed?: number | null;
   /** Cash Collection (B) (천 USD) */
   cashCollection?: number | null;
+  /**
+     * 슬라이드쇼 자동 전환 간격(초), 0=꺼짐
+     * @minimum 0
+     */
+  slideshowIntervalSeconds?: number | null;
+  /** 마감 여부. true이면 데이터 편집이 잠금 상태 */
+  isClosed?: boolean;
 }

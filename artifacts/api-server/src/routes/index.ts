@@ -8,6 +8,7 @@ import adminRouter from "./admin";
 import fxratesRouter from "./fxrates";
 import storageRouter from "./storage";
 import pimsvinaSyncRouter from "./pimsvinaSync";
+import pimsvinaRatesRouter from "./pimsvinaRates";
 import orgstructureRouter from "./orgstructure";
 
 const router: IRouter = Router();
@@ -21,6 +22,7 @@ router.use(adminRouter);
 router.use(fxratesRouter);
 router.use(storageRouter);
 router.use(pimsvinaSyncRouter);
+router.use(pimsvinaRatesRouter);
 router.use(orgstructureRouter);
 
 export default router;

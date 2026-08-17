@@ -9,5 +9,13 @@
   "salesPlan": "매출(계획)",
   "salesActualForecast": "매출(실적 및 전망)",
   "month": "월",
-  "bottomChipRate": "하단 칩 = 달성률"
+  "bottomChipRate": "하단 칩 = 달성률",
+  "siteDetailTitle": "현장별 매출 상세 – {{month}}",
+  "colSiteName": "현장명",
+  "colCategory": "카테고리",
+  "colBizType": "사업유형",
+  "colAmount": "금액",
+  "colShare": "비율",
+  "noSiteData": "해당 월의 현장별 데이터가 없습니다.",
+  "loadingSiteData": "현장 데이터 로딩 중…"
 }

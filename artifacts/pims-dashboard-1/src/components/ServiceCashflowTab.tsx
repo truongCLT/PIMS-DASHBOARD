@@ -18,13 +18,14 @@ import { getMrCashflowRef } from "../data/mrProjectLinks";
 import { useProjectDetail } from "../lib/projectDetailData";
 import { chartTheme } from "../lib/chartTheme";
 import { useMoney } from "../lib/displayUnit";
-import { cardStyle } from "../lib/uiTokens";
+import { cardStyle, sectionTitle, emptyNote, INK_MUTED, INK_BODY } from "../lib/uiTokens";
 
 type TFn = ReturnType<typeof useTranslation>["t"];
 
 function monthLabel(ym: string, t: TFn): string {
   const m = Number(ym.slice(5, 7));
-  return t("serviceCashflowTab:monthLabel", { month: m, yy: ym.slice(2, 4) });
+  const year = ym.slice(0, 4);
+  return t("serviceCashflowTab:monthLabel", { month: m, yy: ym.slice(2, 4), year });
 }
 
 function niceStep(range: number): number {
@@ -112,7 +113,7 @@ export function ServiceCashflowTab({
   const hasData = chartData.some((d) => d.cashIn !== 0 || d.cashOut !== 0 || d.equivalent !== 0);
 
   const entryGuide = (
-    <div style={{ fontSize: "14px", color: "#7c8ba3", marginTop: "8px" }}>
+    <div style={{ fontSize: "14px", color: INK_MUTED, marginTop: "8px" }}>
       {t("serviceCashflowTab:entryGuide")}
     </div>
   );
@@ -120,13 +121,13 @@ export function ServiceCashflowTab({
   let body: React.ReactNode;
   if (pdLoading || (cfRef != null && query.isLoading)) {
     body = (
-      <div style={{ padding: "60px 20px", textAlign: "center", fontSize: "15px", color: "#7c8ba3" }}>
+      <div style={emptyNote}>
         {t("serviceCashflowTab:loadingCashflow")}
       </div>
     );
   } else if (cfRef == null && !hasPdData) {
     body = (
-      <div style={{ padding: "60px 20px", textAlign: "center", fontSize: "15px", color: "#7c8ba3" }}>
+      <div style={emptyNote}>
         {t("serviceCashflowTab:noCashflowDataYet")}
         {entryGuide}
       </div>
@@ -134,7 +135,7 @@ export function ServiceCashflowTab({
   } else if (!useCf && !hasPdData && query.isError) {
     const status = (query.error as { status?: number } | null)?.status;
     body = (
-      <div style={{ padding: "60px 20px", textAlign: "center", fontSize: "15px", color: status === 404 ? "#7c8ba3" : "#f2736a" }}>
+      <div style={{ ...emptyNote, color: status === 404 ? INK_MUTED : chartTheme.outflowRed }}>
         {status === 404 ? (
           <>
             {t("serviceCashflowTab:noProjectCashflowData")}
@@ -147,7 +148,7 @@ export function ServiceCashflowTab({
     );
   } else if (!hasData) {
     body = (
-      <div style={{ padding: "60px 20px", textAlign: "center", fontSize: "15px", color: "#7c8ba3" }}>
+      <div style={emptyNote}>
         {t("serviceCashflowTab:noDataInPeriod")}
         {entryGuide}
       </div>
@@ -170,12 +171,12 @@ export function ServiceCashflowTab({
           <ComposedChart data={chartData} stackOffset="sign" margin={{ top: 10, right: 16, left: 10, bottom: 0 }}>
             <XAxis
               dataKey="month"
-              tick={{ fontSize: 12, fill: "#333", fontWeight: 600 }}
+              tick={{ fontSize: 12, fill: INK_BODY, fontWeight: 600 }}
               tickLine={false}
               axisLine={{ stroke: chartTheme.axisLine }}
             />
             <YAxis
-              tick={{ fontSize: 11, fill: "#333", fontWeight: 600 }}
+              tick={{ fontSize: 11, fill: INK_BODY, fontWeight: 600 }}
               tickLine={false}
               axisLine={false}
               domain={[bottom, top]}
@@ -224,7 +225,16 @@ export function ServiceCashflowTab({
               strokeWidth={2}
               dot={{ r: 3, fill: "#fff", stroke: chartTheme.actualGreen }}
               isAnimationActive={false}
-            />
+            >
+              <LabelList
+                dataKey="equivalent"
+                position="top"
+                style={{ fontSize: "12px", fill: chartTheme.actualGreen, fontWeight: 700 }}
+                formatter={(v: number) =>
+                  v !== 0 ? v.toLocaleString(undefined, { maximumFractionDigits: 0 }) : ""
+                }
+              />
+            </Line>
           </ComposedChart>
         </ResponsiveContainer>
         </div>
@@ -237,8 +247,8 @@ export function ServiceCashflowTab({
       {/* Cashflow */}
       <div style={cardStyle}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span style={{ fontSize: "15px", fontWeight: 700, color: chartTheme.titleNavy }}>{t("common:cashFlow")}</span>
-          <span style={{ fontSize: "13px", color: "#7c8ba3" }}>
+          <span style={sectionTitle}>{t("common:cashFlow")}</span>
+          <span style={{ fontSize: "11px", color: INK_MUTED }}>
             {useCf && query.data
               ? `${t("common:unit")}: ${cfConvertible ? unitLabel : query.data.unit}`
               : hasPdData

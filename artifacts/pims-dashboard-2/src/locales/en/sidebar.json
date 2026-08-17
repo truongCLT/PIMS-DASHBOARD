@@ -1,5 +1,6 @@
 {
   "selfDevelopmentDivision": "Self-Development",
   "landSaleDivision": "Land Sale",
-  "adminModeTooltip": "Admin Mode"
+  "adminModeTooltip": "Admin Mode",
+  "orgStructureEmptyNotice": "Organization structure is not set up yet; showing the default menu. You can configure it in Org Chart Edit under admin mode."
 }

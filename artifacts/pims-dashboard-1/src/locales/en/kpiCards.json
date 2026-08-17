@@ -1,7 +1,7 @@
 {
-  "currentMonthRevenue": "Current Month Revenue",
-  "currentMonthOperatingProfit": "Current Month Operating Profit",
-  "annualCumulativeRevenue": "Annual Cumulative Revenue",
-  "annualCumulativeOperatingProfit": "Annual Cumulative Operating Profit",
+  "ytdRevenue": "YTD Revenue",
+  "ytdOperatingProfit": "YTD Operating Profit",
+  "fullYearRevenue": "Full Year Revenue",
+  "fullYearOperatingProfit": "Full Year Operating Profit",
   "errorShort": "Error"
 }

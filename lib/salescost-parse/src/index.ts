@@ -1,8 +1,12 @@
 import ExcelJS from "exceljs";
+import { Readable } from "node:stream";
 
 // 매출/원가 Excel parser (shared by CLI importer and API server upload).
-// NOTE: 이 워크북은 ExcelJS 전체 로드 시 huge defined-name tables로 인해
-// Node 기본 힙이 OOM된다. NODE_OPTIONS=--max-old-space-size=6144 필요.
+// NOTE: 이 워크북은 ExcelJS 전체 로드(wb.xlsx.load) 시 defined-name tables로 인해
+// Node 기본 힙이 OOM된다. 스트리밍 리더(피크 ~130MB)로 행 단위 파싱.
+// 스트리밍 모드는 병합 셀 값을 채워주지 않으므로 alloc 시트의 Site 레이블은
+// 마지막 비어있지 않은 값을 carry-forward한다.
+// 시트 순서 독립성: Alloc 시트를 선 버퍼링 후 Summary 파싱 완료 후 처리한다.
 //
 // Sheets:
 //   `Summary <year>` — Revenue/COGS/REPAIRING COST ALLOWANCE 섹션
@@ -71,18 +75,27 @@ const METRIC_BY_LABEL: Record<string, string> = {
   "아국인 인원수": "employees",
 };
 
-function parseWorkbook(wb: ExcelJS.Workbook, year: number): ParsedSalescost {
+// Buffered alloc row: raw code candidate + label + 12 monthly USD values
+type AllocRowBuf = {
+  codeCandidate: string | null; // non-null only when this row changes the current site
+  label: string;
+  usd: (number | null)[];
+};
+
+async function parseStream(
+  source: string | Readable,
+  year: number,
+): Promise<ParsedSalescost> {
   const summarySheet = `Summary ${year}`;
-  const ws = wb.getWorksheet(summarySheet);
-  if (!ws) {
-    throw new SalescostParseError(
-      `'${summarySheet}' 시트를 찾을 수 없습니다. 대상 연도가 맞는지, 매출/원가 취합 양식이 맞는지 확인해 주세요.`,
-    );
-  }
 
   const sites = new Map<string, SiteRec>();
-  const amounts: AmountRec[] = [];
+  const summaryAmounts: AmountRec[] = [];
   let sortOrder = 0;
+  let summaryFound = false;
+  let allocFound = false;
+
+  // Buffer for alloc rows — collected during streaming, processed after Summary is complete
+  const allocBuf: AllocRowBuf[] = [];
 
   const ensureSite = (
     code: string,
@@ -99,65 +112,105 @@ function parseWorkbook(wb: ExcelJS.Workbook, year: number): ParsedSalescost {
     }
   };
 
-  // ---- Summary sheet: revenue / cogs / repair allowance ----
-  let section: "revenue" | "cogs" | "repair_allowance" | null = null;
-  for (let r = 1; r <= ws.rowCount; r++) {
-    const row = ws.getRow(r);
-    const label = norm(cellText(row.getCell(4).value));
-    if (label === "Revenue") { section = "revenue"; continue; }
-    if (label === "COGS") { section = "cogs"; continue; }
-    if (label === "REPAIRING COST ALLOWANCE") { section = "repair_allowance"; continue; }
-    if (label === "ER") { section = null; continue; }
-    if (!section) continue;
+  const reader = new ExcelJS.stream.xlsx.WorkbookReader(source as string, {
+    entries: "emit",
+    sharedStrings: "cache",
+    styles: "ignore",
+    hyperlinks: "ignore",
+    worksheets: "emit",
+  });
 
-    const code = norm(cellText(row.getCell(1).value));
-    if (!/^SITE\d+$/i.test(code)) continue;
-    const category = norm(cellText(row.getCell(2).value)) || null;
-    const bizType = norm(cellText(row.getCell(3).value)) || null;
-    const desc = norm(cellText(row.getCell(4).value));
-    const name = desc.replace(/^SITE\d+\s*-\s*/i, "") || desc;
-    ensureSite(code.toUpperCase(), name, category, bizType);
+  for await (const ws of reader) {
+    const wsName = (ws as unknown as { name?: string }).name;
 
-    for (let m = 1; m <= 12; m++) {
-      const vnd = cellNumber(row.getCell(4 + m).value); // cols 5..16
-      const usd = cellNumber(row.getCell(18 + m).value); // cols 19..30 (repair: USD absent)
-      if ((vnd == null || vnd === 0) && (usd == null || usd === 0)) continue;
-      amounts.push({
-        code: code.toUpperCase(),
-        metric: section,
-        month: m,
-        amountVnd: vnd ?? null,
-        amountUsd: usd ?? null,
-      });
+    if (wsName === summarySheet) {
+      summaryFound = true;
+      let section: "revenue" | "cogs" | "repair_allowance" | null = null;
+
+      for await (const row of ws) {
+        const label = norm(cellText(row.getCell(4).value));
+        if (label === "Revenue") { section = "revenue"; continue; }
+        if (label === "COGS") { section = "cogs"; continue; }
+        if (label === "REPAIRING COST ALLOWANCE") { section = "repair_allowance"; continue; }
+        if (label === "ER") { section = null; continue; }
+        if (!section) continue;
+
+        const code = norm(cellText(row.getCell(1).value));
+        if (!/^SITE\d+$/i.test(code)) continue;
+        const category = norm(cellText(row.getCell(2).value)) || null;
+        const bizType = norm(cellText(row.getCell(3).value)) || null;
+        const desc = norm(cellText(row.getCell(4).value));
+        const name = desc.replace(/^SITE\d+\s*-\s*/i, "") || desc;
+        ensureSite(code.toUpperCase(), name, category, bizType);
+
+        for (let m = 1; m <= 12; m++) {
+          const vnd = cellNumber(row.getCell(4 + m).value); // cols 5..16
+          const usd = cellNumber(row.getCell(18 + m).value); // cols 19..30 (repair: USD absent)
+          if ((vnd == null || vnd === 0) && (usd == null || usd === 0)) continue;
+          summaryAmounts.push({
+            code: code.toUpperCase(),
+            metric: section,
+            month: m,
+            amountVnd: vnd ?? null,
+            amountUsd: usd ?? null,
+          });
+        }
+      }
+    } else if (wsName === ALLOC_SHEET) {
+      allocFound = true;
+      // Buffer raw rows; col1 merged-cell carry-forward is handled during replay below
+      let currentCode: string | null = null;
+
+      for await (const row of ws) {
+        const siteLabel = cellText(row.getCell(1).value);
+        const m = /Site\s*(\d+)/i.exec(siteLabel);
+        const codeCandidate = m ? `SITE${m[1].padStart(2, "0")}` : null;
+        if (codeCandidate) currentCode = codeCandidate;
+
+        const label = norm(cellText(row.getCell(2).value)).split("(")[0].trim();
+        const usd: (number | null)[] = [];
+        for (let mo = 1; mo <= 12; mo++) {
+          usd.push(cellNumber(row.getCell(2 + mo).value)); // cols 3..14
+        }
+        // Only buffer rows that have a site context and a known label
+        if (!currentCode) continue;
+        allocBuf.push({ codeCandidate, label, usd });
+      }
+    } else {
+      // Drain unrelated sheets so the reader can advance
+      for await (const _ of ws) { /* drain */ }
     }
   }
 
-  // ---- Allocation sheet (1000 USD) ----
-  const wa = wb.getWorksheet(ALLOC_SHEET);
-  if (!wa) {
+  if (!summaryFound) {
+    throw new SalescostParseError(
+      `'${summarySheet}' 시트를 찾을 수 없습니다. 대상 연도가 맞는지, 매출/원가 취합 양식이 맞는지 확인해 주세요.`,
+    );
+  }
+  if (!allocFound) {
     throw new SalescostParseError(
       `'${ALLOC_SHEET}' 시트를 찾을 수 없습니다. 매출/원가 취합 양식이 맞는지 확인해 주세요.`,
     );
   }
 
-  let currentCode: string | null = null;
-  for (let r = 1; r <= wa.rowCount; r++) {
-    const row = wa.getRow(r);
-    const siteLabel = cellText(row.getCell(1).value);
-    const m = /Site\s*(\d+)/i.exec(siteLabel);
-    if (m) currentCode = `SITE${m[1].padStart(2, "0")}`;
-    if (!currentCode || !sites.has(currentCode)) continue;
+  // Replay buffered alloc rows now that `sites` is fully populated
+  const allocAmounts: AmountRec[] = [];
+  let replayCode: string | null = null;
+  for (const row of allocBuf) {
+    if (row.codeCandidate) replayCode = row.codeCandidate;
+    if (!replayCode || !sites.has(replayCode)) continue;
 
-    const rowLabel = norm(cellText(row.getCell(2).value)).split("(")[0].trim();
-    const metric = METRIC_BY_LABEL[rowLabel];
+    const metric = METRIC_BY_LABEL[row.label];
     if (!metric) continue;
 
-    for (let mo = 1; mo <= 12; mo++) {
-      const usd = cellNumber(row.getCell(2 + mo).value); // cols 3..14
+    for (let mo = 0; mo < 12; mo++) {
+      const usd = row.usd[mo];
       if (usd == null || usd === 0) continue;
-      amounts.push({ code: currentCode, metric, month: mo, amountVnd: null, amountUsd: usd });
+      allocAmounts.push({ code: replayCode, metric, month: mo + 1, amountVnd: null, amountUsd: usd });
     }
   }
+
+  const amounts = [...summaryAmounts, ...allocAmounts];
 
   if (sites.size === 0) {
     throw new SalescostParseError(
@@ -177,30 +230,28 @@ export async function parseSalescostWorkbook(
   buffer: Buffer,
   year: number,
 ): Promise<ParsedSalescost> {
-  const wb = new ExcelJS.Workbook();
   try {
-    await wb.xlsx.load(buffer as unknown as ExcelJS.Buffer);
-  } catch {
+    return await parseStream(Readable.from(buffer), year);
+  } catch (err) {
+    if (err instanceof SalescostParseError) throw err;
     throw new SalescostParseError(
       "Excel 파일을 열 수 없습니다. .xlsx 형식의 파일인지 확인해 주세요.",
     );
   }
-  return parseWorkbook(wb, year);
 }
 
 export async function parseSalescostFile(
   filePath: string,
   year: number,
 ): Promise<ParsedSalescost> {
-  const wb = new ExcelJS.Workbook();
   try {
-    await wb.xlsx.readFile(filePath);
-  } catch {
+    return await parseStream(filePath, year);
+  } catch (err) {
+    if (err instanceof SalescostParseError) throw err;
     throw new SalescostParseError(
       "Excel 파일을 열 수 없습니다. .xlsx 형식의 파일인지 확인해 주세요.",
     );
   }
-  return parseWorkbook(wb, year);
 }
 
 export function buildSalescostPreview(parsed: ParsedSalescost) {

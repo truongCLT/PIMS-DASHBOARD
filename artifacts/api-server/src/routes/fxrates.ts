@@ -9,10 +9,11 @@ import {
   PutFxRatesHistoryResponse,
 } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/adminAuth";
+import { fetchPimsvinaApi } from "../lib/pimsvinaClient";
 
 const router: IRouter = Router();
 
-/** 저장값이 없을 때 사용하는 기본 환율 (1 USD 기준) */
+/** PIMSVINA에도 값이 없을 때 사용하는 최종 기본 환율 (1 USD 기준) */
 const DEFAULT_RATES: Record<"USD" | "KRW" | "VND", number> = {
   USD: 1,
   KRW: 1380,
@@ -24,10 +25,42 @@ function currentYearMonth(): { year: number; month: number } {
   return { year: now.getFullYear(), month: now.getMonth() + 1 };
 }
 
+/**
+ * PIMSVINA의 공식 환율(최신 월)을 조회한다. 계산(교차환율) 없이 각 통화의 행 값을 그대로 사용한다:
+ * - USD: BASEMONEY='USD', CHGMONEY='USD' 행의 값 (자기참조 행, 그대로 사용)
+ * - VND: BASEMONEY='VND', CHGMONEY='USD' 행의 값 (1 USD = ? VND)
+ * - KRW: BASEMONEY='KRW', CHGMONEY='KRW' 행의 값 (자기참조 행, 그대로 사용)
+ * VND 값이 없거나 호출에 실패하면 null (호출측에서 DB에 저장된 수동 값으로 폴백).
+ */
+async function getPimsvinaRates(): Promise<Record<"USD" | "KRW" | "VND", number> | null> {
+  const rows = await fetchPimsvinaApi("dashboard_common_exchangerate_1q.jsp", {});
+
+  const usdSelfRow = rows.find((r) => r.basemoney === "USD" && r.chgmoney === "USD");
+  const usd = usdSelfRow?.rate != null ? Number(usdSelfRow.rate) : DEFAULT_RATES.USD;
+
+  const usdRow = rows.find((r) => r.basemoney === "VND" && r.chgmoney === "USD");
+  const vnd = usdRow?.rate != null ? Number(usdRow.rate) : null;
+  if (vnd == null || Number.isNaN(vnd)) return null;
+
+  const krwRow = rows.find((r) => r.basemoney === "KRW" && r.chgmoney === "KRW");
+  const krw = krwRow?.rate != null ? Number(krwRow.rate) : DEFAULT_RATES.KRW;
+
+  return { USD: usd, KRW: krw, VND: vnd };
+}
+
 router.get("/fxrates", async (req, res) => {
   try {
-    const rows = await db.select().from(fxRatesTable);
+    // PIMSVINA 최신 공식 환율을 우선 사용한다. PIMSVINA를 호출하지 못했을 때만
+    // 수동으로 저장된 값(fxRatesTable) 또는 최종 기본값으로 폴백한다.
+    const pimsvinaRates = await getPimsvinaRates();
+    if (pimsvinaRates) {
+      res.json(
+        GetFxRatesResponse.parse({ usd: pimsvinaRates.USD, krw: pimsvinaRates.KRW, vnd: pimsvinaRates.VND }),
+      );
+      return;
+    }
 
+    const rows = await db.select().from(fxRatesTable);
     const { year: curYear, month: curMonth } = currentYearMonth();
     const getLatestRate = (curr: "USD" | "KRW" | "VND"): number => {
       const filtered = rows.filter(

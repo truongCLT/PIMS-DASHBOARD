@@ -52,6 +52,36 @@ export interface FxRateHistoryEntry {
   rate: number;
 }
 
+/**
+ * PIMSVINA 현장 계약 환율 (CBTB_CTRTSUMM.RATEUSD/RATEKRW, VND 기준)
+ */
+export interface PimsvinaSiteRate {
+  siteCode: string;
+  /** 1 USD 당 VND (RATEUSD) */
+  rateUsd: number | null;
+  /** 1 KRW 당 VND (RATEKRW) */
+  rateKrw: number | null;
+}
+
+export type PimsvinaExchangeRateEntryCurrency = typeof PimsvinaExchangeRateEntryCurrency[keyof typeof PimsvinaExchangeRateEntryCurrency];
+
+
+export const PimsvinaExchangeRateEntryCurrency = {
+  USD: 'USD',
+  KRW: 'KRW',
+} as const;
+
+/**
+ * PIMSVINA 공식 환율 중 조회 시점 기준 최신 월 값 (CHTB_EXCHANGE_RATIO, VND 기준)
+ */
+export interface PimsvinaExchangeRateEntry {
+  currency: PimsvinaExchangeRateEntryCurrency;
+  /** 환율이 존재하는 최신 월 (YYYYMM) */
+  yymm: string;
+  /** 1 currency 당 VND */
+  rate: number;
+}
+
 export type DivisionBusinessType = typeof DivisionBusinessType[keyof typeof DivisionBusinessType];
 
 
@@ -479,6 +509,8 @@ export interface MgmtreportProject {
   businessType?: MgmtreportProjectBusinessType;
   companyLabel?: string | null;
   divisionLabel?: string | null;
+  /** pd_overview에 이 프로젝트의 행이 있는지 여부. false면 SPC/본사 등 실제 현장 계약 데이터가 PIMSVINA에 없는 관리 항목일 가능성이 높음 - 데이터 입력 탭에서 직접 입력 필요. */
+  hasPimsvinaDetail: boolean;
 }
 
 export interface MgmtreportProjects {
@@ -488,6 +520,8 @@ export interface MgmtreportProjects {
 }
 
 export interface ProjectDetailOverview {
+  /** PIMSVINA 현장 코드 (mr_projects.site_code), 현장 계약 환율 조회에 사용 */
+  siteCode?: string | null;
   /** 도급액 (천 USD) */
   contractAmount: number | null;
   /** 공사 시작일 YYYY-MM-DD */
@@ -510,6 +544,13 @@ export interface ProjectDetailOverview {
   cashConfirmed?: number | null;
   /** Cash Collection (B) (천 USD) */
   cashCollection?: number | null;
+  /**
+     * 슬라이드쇼 자동 전환 간격(초), 0=꺼짐
+     * @minimum 0
+     */
+  slideshowIntervalSeconds?: number | null;
+  /** 마감 여부. true이면 데이터 편집이 잠금 상태 */
+  isClosed?: boolean;
 }
 
 export interface ProjectDetailProgressPoint {
@@ -697,8 +738,23 @@ export interface HealthStatus {
   status: string;
 }
 
+export type GetPimsvinaSiterateParams = {
+siteCode: string;
+};
+
 export type GetProjectdetailParams = {
 projectName: string;
+};
+
+export type PatchProjectdetailCloseBody = {
+  projectName: string;
+  /** true=마감, false=마감해지 */
+  closed: boolean;
+};
+
+export type PatchProjectdetailClose200 = {
+  projectName: string;
+  isClosed: boolean;
 };
 
 export type ListProjectdetailCommentsParams = {

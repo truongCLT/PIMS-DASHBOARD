@@ -1,0 +1,30 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@plugin "@tailwindcss/typography";
+
+:root {
+  --background: 214 32% 91%; /* #eef2f7 */
+  --foreground: 218 54% 19%; /* #16294a */
+  --border: 215 41% 92%; /* #e2e9f3 */
+  /* standard generic colors for shadcn elements just to avoid red boxes */
+  --primary: 217 91% 57%; /* #2f7cf6 */
+  --primary-foreground: 0 0% 100%;
+  --card: 0 0% 100%;
+  --card-foreground: 218 54% 19%;
+  --card-border: 215 41% 92%;
+  --muted: 215 41% 92%;
+  --muted-foreground: 217 14% 56%; /* #7c8ba3 */
+  --accent: 215 41% 92%;
+  --accent-foreground: 218 54% 19%;
+  --destructive: 3 71% 62%; /* #e0655c */
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.5rem;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: #eef2f7;
+  color: #16294a;
+}
+html { scroll-behavior: smooth; }

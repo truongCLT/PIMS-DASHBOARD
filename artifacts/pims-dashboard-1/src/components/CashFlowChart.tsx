@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   ComposedChart,
   Bar,
@@ -12,10 +12,12 @@ import {
   ReferenceLine,
 } from "recharts";
 import { useTranslation } from "react-i18next";
+import { useQueries } from "@tanstack/react-query";
 import { DetailModal, DetailDataTable } from "./DetailModal";
 import {
   useGetCashflowAggregate,
   getGetCashflowAggregateQueryKey,
+  getCashflowAggregate,
 } from "@workspace/api-client-react";
 import type { DashboardScope } from "./Sidebar";
 import { PROJECT_GROUPS } from "../data/projects";
@@ -28,6 +30,7 @@ import {
   REPORT_YEAR,
 } from "../lib/dashboardFilters";
 import { chartTheme } from "../lib/chartTheme";
+import { emptyNote, ACHIEVE_RED, INK_MUTED } from "../lib/uiTokens";
 
 type TFunc = ReturnType<typeof useTranslation>["t"];
 
@@ -57,7 +60,7 @@ interface ScopeQueryConfig {
   emptyMessage?: string;
 }
 
-/** 화면에 표시할 scope 라벨 (scope 값 자체는 비교/조회용 식별자이므로 변경하지 않음) */
+/** 화면에 표시할 scope 라벨 */
 function getScopeLabel(scope: DashboardScope, t: TFunc): string {
   switch (scope) {
     case "전체":
@@ -111,22 +114,11 @@ function getScopeConfig(scope: DashboardScope, t: TFunc): ScopeQueryConfig {
   };
 }
 
-const makeInflowLabel = (compact: boolean) => (props: any) => {
-  const { x, y, width, value } = props;
-  if (!value) return null;
+const makeBalanceLabel = (compact: boolean) => (props: any) => {
+  const { x, y, value } = props;
+  if (value === undefined || value === null) return null;
   return (
-    <text x={x + width / 2} y={y - 3} fill={chartTheme.inflowBlue} textAnchor="middle" fontSize={compact ? 9 : 13} fontWeight="600">
-      +{Math.round(value).toLocaleString()}
-    </text>
-  );
-};
-
-const makeOutflowLabel = (compact: boolean) => (props: any) => {
-  const { x, y, width, height, value } = props;
-  if (!value) return null;
-  const bottom = Math.max(y, y + height);
-  return (
-    <text x={x + width / 2} y={bottom + 9} fill={chartTheme.outflowRed} textAnchor="middle" fontSize={compact ? 9 : 13} fontWeight="600">
+    <text x={x} y={y - 7} fill={chartTheme.balanceNavy} textAnchor="middle" fontSize={compact ? 9 : 11} fontWeight="600">
       {Math.round(value).toLocaleString()}
     </text>
   );
@@ -134,12 +126,28 @@ const makeOutflowLabel = (compact: boolean) => (props: any) => {
 
 function monthLabel(ym: string, t: TFunc): string {
   const m = Number(ym.slice(5, 7));
-  return t("cashFlowChart:monthLabel", { month: m });
+  const year = ym.slice(0, 4);
+  return t("cashFlowChart:monthLabel", { month: m, year });
 }
+
+/** YYYY-MM 행만 드릴다운 가능 */
+function isValidYm(rawMonth: string): boolean {
+  return /^\d{4}-\d{2}$/.test(rawMonth);
+}
+
+type ChartRow = {
+  month: string;      // 표시용 라벨
+  rawMonth: string;   // "YYYY-MM" (드릴다운 조회 기준)
+  inflow: number;
+  outflow: number;
+  balance: number;
+};
 
 export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) {
   const { t } = useTranslation(["cashFlowChart", "common"]);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [drillRow, setDrillRow] = useState<ChartRow | null>(null);
+
   const config = getScopeConfig(scope, t);
   const filters = useDashboardFilters();
   const { from, to } = resolveMonthWindow(filters.startYm, filters.endYm);
@@ -152,7 +160,6 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
       ? t("cashFlowChart:thousandUsd")
       : unitLabelOf(filters.currency, filters.unitIndex);
 
-  // 기간 필터 미설정 시 기존 기본값(1월부터 6개월) 유지
   const hasCustomRange = filters.startYm !== "" || filters.endYm !== "";
   const fromMonth = hasCustomRange && !emptyRange ? from : 1;
   const months = hasCustomRange && !emptyRange ? to - from + 1 : 6;
@@ -171,13 +178,62 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
   });
 
   const points = query.data?.points ?? [];
-  const chartData = points.map((p) => ({
+  const chartData: ChartRow[] = points.map((p) => ({
     month: monthLabel(p.month, t),
+    rawMonth: p.month,
     inflow: convert(p.cashIn),
     outflow: -convert(p.cashOut),
     balance: convert(p.equivalent),
   }));
   const hasData = chartData.some((d) => d.inflow !== 0 || d.outflow !== 0 || d.balance !== 0);
+
+  /* ── 현장별 드릴다운: 진행중 스코프만 지원 ── */
+  const drillRefs = useMemo(() => {
+    if (scope === "시공-진행중") return getOngoingRefs("시공");
+    if (scope === "용역-진행중") return getOngoingRefs("용역");
+    return [];
+  }, [scope]);
+  const hasDrilldown = drillRefs.length > 0 && enabled;
+
+  /** 드릴다운 쿼리: 현장별 개별 쿼리 (조건부 활성) */
+  const drillEnabled = hasDrilldown; // 항상 프리패치 (클릭 즉시 표시)
+  const projectQueries = useQueries({
+    queries: drillRefs.map((ref) => {
+      const qp = {
+        names: ref.name,
+        division: ref.division,
+        fromYear: REPORT_YEAR,
+        fromMonth,
+        months,
+      };
+      return {
+        queryKey: getGetCashflowAggregateQueryKey(qp),
+        queryFn: () => getCashflowAggregate(qp),
+        enabled: drillEnabled,
+      };
+    }),
+  });
+
+  /** 클릭된 월의 현장별 유입·유출 rows */
+  const drillRows = useMemo(() => {
+    if (!drillRow || !hasDrilldown) return [];
+    const ym = drillRow.rawMonth;
+    return drillRefs
+      .map((ref, i) => {
+        const qData = projectQueries[i]?.data;
+        const pt = qData?.points.find((p) => p.month === ym);
+        return {
+          name: ref.name,
+          inflow: Math.round(convert(pt?.cashIn ?? 0)),
+          outflow: Math.round(convert(pt?.cashOut ?? 0)),
+        };
+      })
+      .filter((r) => r.inflow !== 0 || r.outflow !== 0)
+      .sort((a, b) => b.inflow - a.inflow);
+  }, [drillRow, hasDrilldown, drillRefs, projectQueries, convert]);
+
+  const drillIsLoading = projectQueries.some((q) => q.isLoading);
+  const drillIsError = projectQueries.some((q) => q.isError);
 
   const inflowName = t("cashFlowChart:cashInflow");
   const outflowName = t("cashFlowChart:cashOutflow");
@@ -218,11 +274,10 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
           <YAxis
             yAxisId="balance"
             orientation="right"
-            tick={{ fontSize: compact ? 9 : 11, fill: chartTheme.balanceNavy }}
-            width={compact ? 88 : 60}
+            tick={false}
+            width={0}
             axisLine={false}
             tickLine={false}
-            tickFormatter={(v: number) => v.toLocaleString()}
           />
           <Tooltip
             contentStyle={{ fontSize: "12px" }}
@@ -233,12 +288,8 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
             }}
           />
           <ReferenceLine y={0} yAxisId="flow" stroke={chartTheme.zeroLine} />
-          <Bar isAnimationActive={false} yAxisId="flow" dataKey="inflow" name={inflowName} fill={chartTheme.inflowBlue} barSize={16} radius={[2, 2, 0, 0]}>
-            <LabelList dataKey="inflow" content={makeInflowLabel(compact)} />
-          </Bar>
-          <Bar isAnimationActive={false} yAxisId="flow" dataKey="outflow" name={outflowName} fill={chartTheme.outflowRed} barSize={16} radius={[0, 0, 2, 2]}>
-            <LabelList dataKey="outflow" content={makeOutflowLabel(compact)} />
-          </Bar>
+          <Bar isAnimationActive={false} yAxisId="flow" dataKey="inflow" name={inflowName} fill={chartTheme.inflowBlue} barSize={16} radius={[2, 2, 0, 0]} />
+          <Bar isAnimationActive={false} yAxisId="flow" dataKey="outflow" name={outflowName} fill={chartTheme.outflowRed} barSize={16} radius={[0, 0, 2, 2]} />
           <Line
             isAnimationActive={false}
             yAxisId="balance"
@@ -248,7 +299,9 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
             stroke={chartTheme.balanceNavy}
             strokeWidth={2}
             dot={{ r: 3, fill: chartTheme.balanceNavy }}
-          />
+          >
+            <LabelList dataKey="balance" content={makeBalanceLabel(compact)} />
+          </Line>
         </ComposedChart>
       </ResponsiveContainer>
     );
@@ -268,7 +321,7 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
           <span style={{ fontSize: "13px", fontWeight: "600", color: chartTheme.titleNavy }}>{t("common:cashFlow")}</span>
-          <span style={{ fontSize: "11px", color: "#7c8ba3" }}>
+          <span style={{ fontSize: "11px", color: INK_MUTED }}>
             {config.label} · {t("common:unit")}: {unitLabel}
           </span>
         </div>
@@ -295,11 +348,12 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
             ) : (
               <div style={{ width: "18px", height: "2px", backgroundColor: item.color }} />
             )}
-            <span style={{ fontSize: "12px", color: "#555" }}>{item.label}</span>
+            <span style={{ fontSize: "12px", color: INK_MUTED }}>{item.label}</span>
           </div>
         ))}
       </div>
 
+      {/* ── 1차 상세 모달: 월별 자금수지 요약 ── */}
       <DetailModal
         open={detailOpen}
         onClose={() => setDetailOpen(false)}
@@ -315,7 +369,58 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
             { key: "balance", label: balanceName },
           ]}
           rows={chartData}
+          onRowClick={(row) => {
+            if (hasDrilldown && isValidYm(row.rawMonth)) setDrillRow(row);
+          }}
+          isRowClickable={(row) => hasDrilldown && isValidYm(row.rawMonth)}
         />
+        {!hasDrilldown && (
+          <div style={{ padding: "10px 4px 0", fontSize: "11px", color: INK_MUTED }}>
+            {t("cashFlowChart:noProjectBreakdown")}
+          </div>
+        )}
+      </DetailModal>
+
+      {/* ── 2차 드릴다운 모달: 현장별 유입·유출 상세 ── */}
+      <DetailModal
+        open={drillRow != null}
+        onClose={() => setDrillRow(null)}
+        title={drillRow ? t("cashFlowChart:siteDetailTitle", { month: drillRow.month }) : ""}
+        subtitle={`${config.label} · ${t("common:unit")}: ${unitLabel}`}
+      >
+        {drillIsLoading ? (
+          <div style={{ ...emptyNote, padding: "28px 16px" }}>
+            {t("cashFlowChart:loadingSiteData")}
+          </div>
+        ) : drillIsError ? (
+          <div style={{ ...emptyNote, padding: "28px 16px", color: ACHIEVE_RED }}>
+            {t("cashFlowChart:cashflowFetchError")}
+          </div>
+        ) : drillRows.length === 0 ? (
+          <div style={{ ...emptyNote, padding: "28px 16px" }}>
+            {t("cashFlowChart:noSiteData")}
+          </div>
+        ) : (
+          <DetailDataTable
+            rowKey={(row) => row.name}
+            columns={[
+              { key: "name", label: t("cashFlowChart:colProject"), align: "left" },
+              {
+                key: "inflow",
+                label: t("cashFlowChart:colInflow"),
+                align: "right",
+                format: (v) => typeof v === "number" ? v.toLocaleString("ko-KR") : "-",
+              },
+              {
+                key: "outflow",
+                label: t("cashFlowChart:colOutflow"),
+                align: "right",
+                format: (v) => typeof v === "number" ? v.toLocaleString("ko-KR") : "-",
+              },
+            ]}
+            rows={drillRows}
+          />
+        )}
       </DetailModal>
     </div>
   );
@@ -329,7 +434,7 @@ function CenterNote({ text }: { text: string }) {
       alignItems: "center",
       justifyContent: "center",
       fontSize: "13px",
-      color: "#7c8ba3",
+      color: INK_MUTED,
       textAlign: "center",
     }}>
       {text}

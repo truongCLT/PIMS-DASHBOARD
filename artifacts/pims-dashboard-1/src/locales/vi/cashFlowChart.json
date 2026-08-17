@@ -15,5 +15,12 @@
   "cashOutflow": "Dòng tiền ra",
   "cumulativeCashBalance": "Số dư tiền mặt lũy kế",
   "cumulativeCashBalanceRightAxis": "Số dư tiền mặt lũy kế (trục phải)",
-  "viewDetails": "Xem chi tiết"
+  "viewDetails": "Xem chi tiết",
+  "siteDetailTitle": "Chi tiết thu chi công trình – {{month}}",
+  "colProject": "Tên công trình",
+  "colInflow": "Dòng vào",
+  "colOutflow": "Dòng ra",
+  "noProjectBreakdown": "Không hỗ trợ chi tiết công trình cho phạm vi này.",
+  "loadingSiteData": "Đang tải dữ liệu công trình…",
+  "noSiteData": "Không có dữ liệu thu chi công trình cho tháng này."
 }

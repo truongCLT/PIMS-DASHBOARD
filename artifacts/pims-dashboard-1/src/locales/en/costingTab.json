@@ -4,7 +4,8 @@
   "estCompletionCostRatio": "Estimated Cost Ratio at Completion",
   "budgetExecutionStatusTitle": "Budget Execution Status",
   "noBudgetDataNotice": "No budget execution data. ( - )",
-  "costEstimationTitle": "Cost Estimation",
+  "costEstimationTitle": "Cost Rate",
   "noCostRatioDataNotice": "No cost ratio data. ( - )",
-  "asOfBasis": " (as of '{{ym}})"
+  "asOfBasis": " (as of '{{ym}})",
+  "outsourcingItem": "Outsourcing"
 }

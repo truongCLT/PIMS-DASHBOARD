@@ -15,7 +15,7 @@ import { useMoney } from "../lib/displayUnit";
 import { getMrCashflowRef, useMrProject } from "../data/mrProjectLinks";
 import { REPORT_YEAR } from "../lib/mgmtreportData";
 import { chartTheme } from "../lib/chartTheme";
-import { cardStyle, sectionTitle, ACHIEVE_GREEN, ACHIEVE_RED, rateColor } from "../lib/uiTokens";
+import { cardStyle, sectionTitle, emptyNote, INK_NAVY, INK_BODY, INK_SECONDARY, INK_MUTED, CARD_BORDER, DIVIDER, PROGRESS_TRACK, ACHIEVE_GREEN, ACHIEVE_RED, rateColor } from "../lib/uiTokens";
 
 const ROW_COLUMNS = "1fr 1.6fr 1.6fr";
 
@@ -42,7 +42,7 @@ export function CardHeader({
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "4px", gap: "8px" }}>
       <span style={{ display: "flex", alignItems: "baseline", gap: "6px", minWidth: 0 }}>
         <span style={{ ...sectionTitle, marginBottom: 0 }}>{title}</span>
-        {unit && <span style={{ fontSize: "11px", color: "#7c8ba3", whiteSpace: "nowrap" }}>{unit}</span>}
+        {unit && <span style={{ fontSize: "11px", color: INK_MUTED, whiteSpace: "nowrap" }}>{unit}</span>}
       </span>
       <span style={{ display: "flex", alignItems: "center", gap: "6px", flexShrink: 0 }}>
         {badgeValue != null && (
@@ -50,9 +50,9 @@ export function CardHeader({
             style={{
               fontSize: "11px",
               fontWeight: 700,
-              color: badgeColor ?? "#16294a",
-              backgroundColor: `${badgeColor ?? "#16294a"}14`,
-              border: `1px solid ${badgeColor ?? "#16294a"}33`,
+              color: badgeColor ?? INK_NAVY,
+              backgroundColor: `${badgeColor ?? INK_NAVY}14`,
+              border: `1px solid ${badgeColor ?? INK_NAVY}33`,
               borderRadius: "10px",
               padding: "2px 8px",
               whiteSpace: "nowrap",
@@ -69,26 +69,20 @@ export function CardHeader({
 
 const monthSelectStyle: React.CSSProperties = {
   fontSize: "12px",
-  border: "1px solid #e2e9f3",
+  border: `1px solid ${CARD_BORDER}`,
   borderRadius: "4px",
   padding: "2px 4px",
-  color: "#333",
+  color: INK_BODY,
   cursor: "pointer",
 };
 
-const emptyNote: React.CSSProperties = {
-  padding: "40px 12px",
-  textAlign: "center",
-  fontSize: "13px",
-  color: "#7c8ba3",
-};
 
 /** raw Korean item name (fixed identifier from cost-budget data) → translation key */
 const ITEM_LABEL_KEY: Record<string, string> = {
   "외주성": "outsourcingItem",
 };
 
-function PhotoCard({ projectName, photos }: { projectName: string; photos: ProjectDetailPhoto[] }) {
+function PhotoCard({ projectName, photos, slideshowIntervalSeconds = 0 }: { projectName: string; photos: ProjectDetailPhoto[]; slideshowIntervalSeconds?: number }) {
   const { t } = useTranslation(["overviewTab", "common"]);
   const [active, setActive] = useState(0);
 
@@ -111,6 +105,7 @@ function PhotoCard({ projectName, photos }: { projectName: string; photos: Proje
         current={hasPhotos ? safeIdx : 0}
         onChange={setActive}
         imgStyle={{ minHeight: "170px" }}
+        autoPlayIntervalSeconds={slideshowIntervalSeconds}
       />
     </div>
   );
@@ -160,11 +155,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
   const hasRevenue = lastMonthIdx >= 0;
 
   // ---- 자금 (cashflow) ----
-  const [cashMonth, setCashMonth] = useState<number | null>(null); // null = 전체(누계)
-  // 월 필터용: cashMonth 선택 시 해당 월(0-based index = cashMonth-1)까지 누계
-  const cumRevFiltered = cashMonth == null
-    ? cumRev
-    : revMonths.slice(0, cashMonth).reduce((a, b) => a + (b ?? 0), 0);
+  // cumRevFiltered 는 resolvedMonth 확정 후 아래에서 계산
   const cfRef = getMrCashflowRef(projectName);
   const cfParams = {
     projectName: cfRef?.name ?? "",
@@ -187,13 +178,31 @@ export function OverviewTab({ projectName }: { projectName: string }) {
     }));
   const hasPdCashRows = (detail?.cashflow ?? []).length > 0;
   const cfPoints = hasPdCashRows ? pdCashPoints : (cfQ.data?.points ?? []);
-  // 월 필터: cashMonth 선택 시 해당 월까지 누계
-  const cfFiltered = cashMonth == null
+  const hasCash = (hasPdCashRows || cfRef != null) && cfPoints.some((p) => p.cashIn !== 0 || p.cashOut !== 0 || p.equivalent !== 0);
+  // cfFiltered·cashIn·cashOut·balance 는 resolvedMonth 확정 후 아래에서 계산
+
+  // ---- 공정 (progress) ----
+  const progress = detail?.progress ?? [];
+  const sorted = [...progress].sort((a, b) => a.year * 12 + a.month - (b.year * 12 + b.month));
+  const progRows = sorted.filter((p) => p.planCumPct != null || p.actualCumPct != null || p.planPct != null || p.actualPct != null);
+
+  // ---- 전역 기준월 ----
+  // "직전 실적이 있는 월" = revMonths 기준 최신 실적 월, 없으면 progress 마지막 월
+  const latestActualMonth: number | null = lastMonthIdx >= 0
+    ? lastMonthIdx + 1
+    : (progRows.length > 0 ? progRows[progRows.length - 1].month : null);
+  const [selectedMonth, setSelectedMonth] = useState<number | null>(null); // null = 최신월
+  const resolvedMonth = selectedMonth ?? latestActualMonth ?? null;
+  // cumRevFiltered: resolvedMonth 기준 누계
+  const cumRevFiltered = resolvedMonth == null
+    ? cumRev
+    : revMonths.slice(0, resolvedMonth).reduce((a, b) => a + (b ?? 0), 0);
+  // cfFiltered·cashIn·cashOut·balance: resolvedMonth 기준 필터
+  const cfFiltered = resolvedMonth == null
     ? cfPoints
     : cfPoints.filter((p) => {
-        const ym = p.month; // "YYYY-MM"
-        const cutoff = `${REPORT_YEAR}-${String(cashMonth).padStart(2, "0")}`;
-        return ym <= cutoff;
+        const cutoff = `${REPORT_YEAR}-${String(resolvedMonth).padStart(2, "0")}`;
+        return p.month <= cutoff;
       });
   const cashIn = cfFiltered.reduce((a, p) => a + (p.cashIn ?? 0), 0);
   const cashOut = cfFiltered.reduce((a, p) => a + (p.cashOut ?? 0), 0);
@@ -201,15 +210,9 @@ export function OverviewTab({ projectName }: { projectName: string }) {
   for (const p of cfFiltered) {
     if (p.cashIn !== 0 || p.cashOut !== 0 || p.equivalent !== 0) balance = p.equivalent;
   }
-  const hasCash = (hasPdCashRows || cfRef != null) && cfPoints.some((p) => p.cashIn !== 0 || p.cashOut !== 0 || p.equivalent !== 0);
 
-  // ---- 공정 (progress) ----
-  const progress = detail?.progress ?? [];
-  const sorted = [...progress].sort((a, b) => a.year * 12 + a.month - (b.year * 12 + b.month));
-  const progRows = sorted.filter((p) => p.planCumPct != null || p.actualCumPct != null || p.planPct != null || p.actualPct != null);
-  const [progKey, setProgKey] = useState<string>(""); // "" = 최신월
-  const latest = progKey
-    ? progRows.find((p) => `${p.year}-${p.month}` === progKey) ?? null
+  const latest = resolvedMonth != null
+    ? (progRows.find((p) => p.year === REPORT_YEAR && p.month === resolvedMonth) ?? (progRows.length > 0 ? progRows[progRows.length - 1] : null))
     : (progRows.length > 0 ? progRows[progRows.length - 1] : null);
   const planCum = latest?.planCumPct ?? null;
   const actualCum = latest?.actualCumPct ?? null;
@@ -236,7 +239,6 @@ export function OverviewTab({ projectName }: { projectName: string }) {
     e ? ratioPct(e.costAmount ?? null, e.contractAmount ?? null) : null;
 
   // ---- 실행예산 집행 (Direct Cost = Common + Expense 1 + 외주성) ----
-  const [budgetMonth, setBudgetMonth] = useState<number | null>(null); // null = 전체
   const cb = detail?.costBudget ?? [];
   const findCb = (name: string) => cb.find((r) => r.item.trim().toLowerCase() === name.toLowerCase()) ?? null;
   const common = findCb("Common");
@@ -250,9 +252,9 @@ export function OverviewTab({ projectName }: { projectName: string }) {
     : null;
   const cbm = detail?.costBudgetMonthly ?? [];
   const getCbm = (item: string, field: "plan" | "actual") => {
-    if (budgetMonth == null) return null; // 전체: monthly 미사용
+    if (resolvedMonth == null) return null; // 최신월/전체: monthly 미사용
     // 1월부터 선택월까지 누적 합산
-    const rows = cbm.filter((r) => r.item === item && r.year === REPORT_YEAR && r.month <= budgetMonth);
+    const rows = cbm.filter((r) => r.item === item && r.year === REPORT_YEAR && r.month <= resolvedMonth);
     if (rows.length === 0) return null;
     const total = rows.reduce((a, r) => a + (r[field] ?? 0), 0);
     return total > 0 ? total : null;
@@ -261,22 +263,22 @@ export function OverviewTab({ projectName }: { projectName: string }) {
     {
       item: "외주성",
       budget: outBudget,
-      plan: budgetMonth == null
+      plan: resolvedMonth == null
         ? (outRows.some((r) => r.executedBudget != null) ? outRows.reduce((a, r) => a + (r.executedBudget ?? 0), 0) : null)
         : getCbm("외주성", "plan"),
-      actual: budgetMonth == null ? outActual : getCbm("외주성", "actual"),
+      actual: resolvedMonth == null ? outActual : getCbm("외주성", "actual"),
     },
     {
       item: "Common",
       budget: common?.budget ?? null,
-      plan: budgetMonth == null ? (common?.plan ?? null) : getCbm("Common", "plan"),
-      actual: budgetMonth == null ? (common?.actual ?? null) : getCbm("Common", "actual"),
+      plan: resolvedMonth == null ? (common?.plan ?? null) : getCbm("Common", "plan"),
+      actual: resolvedMonth == null ? (common?.actual ?? null) : getCbm("Common", "actual"),
     },
     {
       item: "Expense 1",
       budget: expense1?.budget ?? null,
-      plan: budgetMonth == null ? (expense1?.plan ?? null) : getCbm("Expense 1", "plan"),
-      actual: budgetMonth == null ? (expense1?.actual ?? null) : getCbm("Expense 1", "actual"),
+      plan: resolvedMonth == null ? (expense1?.plan ?? null) : getCbm("Expense 1", "plan"),
+      actual: resolvedMonth == null ? (expense1?.actual ?? null) : getCbm("Expense 1", "actual"),
     },
   ].filter((r) => r.budget != null || r.actual != null || r.plan != null);
   // Direct Cost % 는 Common·Expense 1·외주성 기준 (Expense 2·Contingency 제외)
@@ -288,22 +290,49 @@ export function OverviewTab({ projectName }: { projectName: string }) {
     {
       item: "Expense 2",
       budget: expense2?.budget ?? null,
-      plan: budgetMonth == null ? (expense2?.plan ?? null) : getCbm("Expense 2", "plan"),
-      actual: budgetMonth == null ? (expense2?.actual ?? null) : getCbm("Expense 2", "actual"),
+      plan: resolvedMonth == null ? (expense2?.plan ?? null) : getCbm("Expense 2", "plan"),
+      actual: resolvedMonth == null ? (expense2?.actual ?? null) : getCbm("Expense 2", "actual"),
     },
     {
       item: "Contingency",
       budget: contingency?.budget ?? null,
-      plan: budgetMonth == null ? (contingency?.plan ?? null) : getCbm("Contingency", "plan"),
-      actual: budgetMonth == null ? (contingency?.actual ?? null) : getCbm("Contingency", "actual"),
+      plan: resolvedMonth == null ? (contingency?.plan ?? null) : getCbm("Contingency", "plan"),
+      actual: resolvedMonth == null ? (contingency?.actual ?? null) : getCbm("Contingency", "actual"),
     },
   ].filter((r) => r.budget != null || r.actual != null || r.plan != null);
   const allBudgetRows = [...budgetRows, ...extraBudgetRows];
+  // Total Cost % = 전체 항목(Expense 2·Contingency 포함) 기준
+  const totalBudgetSum = allBudgetRows.reduce((a, r) => a + (r.budget ?? 0), 0);
+  const totalActualSum = allBudgetRows.reduce((a, r) => a + (r.actual ?? 0), 0);
+  const totalCostPct = ratioPct(totalActualSum, totalBudgetSum);
 
   const MAX_H = 110;
 
+  const latestMonthLabel = latestActualMonth != null
+    ? `'${String(REPORT_YEAR).slice(2)}.${String(latestActualMonth).padStart(2, "0")}`
+    : null;
+
   return (
     <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: "8px" }}>
+      {/* 전역 기준월 선택기 */}
+      <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "6px 0 0" }}>
+        <span style={{ fontSize: "12px", color: INK_BODY, fontWeight: 600 }}>{t("overviewTab:referenceMonth")} :</span>
+        <select
+          value={selectedMonth ?? ""}
+          onChange={(e) => setSelectedMonth(e.target.value === "" ? null : Number(e.target.value))}
+          style={monthSelectStyle}
+        >
+          <option value="">
+            {t("overviewTab:latestMonth")}{latestMonthLabel ? ` (${latestMonthLabel})` : ""}
+          </option>
+          {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+            <option key={m} value={m}>
+              {`'${String(REPORT_YEAR).slice(2)}.${String(m).padStart(2, "0")}`}
+            </option>
+          ))}
+        </select>
+      </div>
+
       {/* Row 1: Progress / Revenue / Cost estimation */}
       <div style={{ display: "grid", gridTemplateColumns: ROW_COLUMNS, gap: "8px" }}>
         {/* Progress */}
@@ -311,25 +340,10 @@ export function OverviewTab({ projectName }: { projectName: string }) {
           <CardHeader
             title={t("common:process")}
             unit="%"
-            badgeLabel={t("common:achievementRate")}
+            badgeLabel={t("overviewTab:cumulativeAchievementRate")}
             badgeValue={fmtPct(achieveRate)}
             badgeColor={rateColor(achieveRate)}
-            right={
-              progRows.length > 0 ? (
-                <select
-                  value={progKey}
-                  onChange={(e) => setProgKey(e.target.value)}
-                  style={monthSelectStyle}
-                >
-                  <option value="">{t("overviewTab:latestMonth")}</option>
-                  {progRows.map((p) => (
-                    <option key={`${p.year}-${p.month}`} value={`${p.year}-${p.month}`}>
-                      {`'${String(p.year).slice(2)}.${String(p.month).padStart(2, "0")}`}
-                    </option>
-                  ))}
-                </select>
-              ) : undefined
-            }
+            right={undefined}
           />
           {latest == null ? (
             <div style={emptyNote}>{t("overviewTab:noProcessData")}</div>
@@ -354,7 +368,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                   return (
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
                       <div style={{ fontSize: "14px", color: rateColor(monthlyAchieveRate), fontWeight: 800, marginBottom: "6px" }}>
-                        {t("common:achievementRate")} {fmtPct(monthlyAchieveRate)}
+                        {t("overviewTab:monthlyAchievementRate")} {fmtPct(monthlyAchieveRate)}
                       </div>
                       <div style={{ display: "flex", alignItems: "flex-end", gap: "10px", height: `${MAX_H + 20}px` }}>
                         {bars.map((b) => (
@@ -373,11 +387,11 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                                 borderRadius: "3px 3px 0 0",
                               }}
                             />
-                            <span style={{ fontSize: "11px", color: "#555", marginTop: "5px", fontWeight: 600 }}>{b.label}</span>
+                            <span style={{ fontSize: "11px", color: INK_SECONDARY, marginTop: "5px", fontWeight: 600 }}>{b.label}</span>
                           </div>
                         ))}
                       </div>
-                      <div style={{ fontSize: "12px", fontWeight: 700, color: "#333", marginTop: "4px" }}>{t("common:monthly")}</div>
+                      <div style={{ fontSize: "12px", fontWeight: 700, color: INK_BODY, marginTop: "4px" }}>{t("common:monthly")}</div>
                     </div>
                   );
                 })()}
@@ -392,12 +406,12 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                   return (
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
                       <div style={{ fontSize: "12px", fontWeight: 700, marginBottom: "4px", whiteSpace: "nowrap" }}>
-                        <span style={{ color: "#777" }}>{t("overviewTab:planA")}</span>
+                        <span style={{ color: INK_MUTED }}>{t("overviewTab:planA")}</span>
                         <span style={{ color: chartTheme.planBlue, fontSize: "14px", fontWeight: 800 }}>{fmtPct(planCum)}</span>
                       </div>
                       <svg width={136} height={136} viewBox="0 0 160 160">
                         {/* 회색 기준 링 (100%) */}
-                        <circle cx={cx} cy={cy} r={rIn} fill="none" stroke="#e2e7ee" strokeWidth={16} />
+                        <circle cx={cx} cy={cy} r={rIn} fill="none" stroke={PROGRESS_TRACK} strokeWidth={16} />
                         {/* 빨강: 실적 달성률 (내부 링) */}
                         <circle
                           cx={cx} cy={cy} r={rIn} fill="none"
@@ -416,11 +430,11 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                         <text x={cx} y={cy + 2} textAnchor="middle" fontSize={30} fontWeight={800} fill={rateColor(achieveRate)}>
                           {fmtPct(actualCum)}
                         </text>
-                        <text x={cx} y={cy + 22} textAnchor="middle" fontSize={13} fill="#555">
+                        <text x={cx} y={cy + 22} textAnchor="middle" fontSize={13} fill={INK_SECONDARY}>
                           {t("overviewTab:actualB")}
                         </text>
                       </svg>
-                      <div style={{ fontSize: "12px", fontWeight: 700, color: "#333", marginTop: "2px" }}>{t("common:cumulative")}</div>
+                      <div style={{ fontSize: "12px", fontWeight: 700, color: INK_BODY, marginTop: "2px" }}>{t("common:cumulative")}</div>
                     </div>
                   );
                 })()}
@@ -428,12 +442,12 @@ export function OverviewTab({ projectName }: { projectName: string }) {
             </>
           )}
           {/* 공기율 — 공정율과 유사한 그래프 표현 (수평 진행 바) */}
-          <div style={{ marginTop: "8px", borderTop: "1px solid #eef2f7", paddingTop: "8px" }}>
+          <div style={{ marginTop: "8px", borderTop: `1px solid ${DIVIDER}`, paddingTop: "8px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <span style={{ fontSize: "12px", color: "#333", fontWeight: 700, whiteSpace: "nowrap" }}>
+              <span style={{ fontSize: "12px", color: INK_BODY, fontWeight: 700, whiteSpace: "nowrap" }}>
                 {t("overviewTab:elapsedLabel")}
               </span>
-              <div style={{ flex: 1, height: "10px", backgroundColor: "#e2e7ee", borderRadius: "5px", overflow: "hidden" }}>
+              <div style={{ flex: 1, height: "10px", backgroundColor: PROGRESS_TRACK, borderRadius: "5px", overflow: "hidden" }}>
                 <div
                   style={{
                     width: `${Math.max(0, Math.min(elapsed ?? 0, 100))}%`,
@@ -455,9 +469,6 @@ export function OverviewTab({ projectName }: { projectName: string }) {
           <CardHeader
             title={t("common:revenue")}
             unit={unitLabel}
-            badgeLabel={t("overviewTab:annualShort")}
-            badgeValue={fmtPct(ratioPct(cumRev, annualPlanRev))}
-            badgeColor={rateColor(ratioPct(cumRev, annualPlanRev))}
           />
           {mr.isLoading || (siteCode != null && (revQ.isLoading || cogsQ.isLoading)) ? (
             <div style={emptyNote}>{t("overviewTab:loadingRevenue")}</div>
@@ -478,7 +489,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                       {fmtPct((thisMonthRev / thisMonthPlan) * 100)}
                     </span>
                   ) : (
-                    <span style={{ fontSize: "15px", color: "#aaa" }}>-</span>
+                    <span style={{ fontSize: "15px", color: INK_MUTED }}>-</span>
                   )}
                   <div style={{ display: "flex", gap: "10px", alignItems: "flex-end" }}>
                     <MiniBar
@@ -498,10 +509,10 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                       valueLabel={fmtMoney(thisMonthRev)}
                     />
                   </div>
-                  <span style={{ fontSize: "12px", fontWeight: 700, color: "#333", marginTop: "10px" }}>{t("common:currentMonth")}</span>
+                  <span style={{ fontSize: "12px", fontWeight: 700, color: INK_BODY, marginTop: "10px" }}>{t("common:currentMonth")}</span>
                 </div>
 
-                {/* 연 — 연간 계획 대비 누계 실적 */}
+                {/* 년 — 연간 계획 대비 실적 */}
                 {(() => {
                   const annualPct = ratioPct(cumRev, annualPlanRev);
                   return (
@@ -517,12 +528,12 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                           labelColor={rateColor(annualPct)}
                         />
                       </div>
-                      <div style={{ fontSize: "12px", color: "#16294a", fontWeight: 700, marginTop: "12px" }}>
+                      <div style={{ fontSize: "12px", color: INK_NAVY, fontWeight: 700, marginTop: "12px" }}>
                         {t("overviewTab:annualShort")}
                       </div>
-                      <div style={{ fontSize: "11px", color: "#555", marginTop: "2px", whiteSpace: "nowrap" }}>
-                        {t("common:actual")} <b style={{ color: "#16294a" }}>{fmtMoney(cumRev)}</b>
-                        {" / "}{t("common:plan")} {fmtMoney(annualPlanRev || null)}
+                      <div style={{ fontSize: "11px", color: INK_SECONDARY, marginTop: "2px", whiteSpace: "nowrap" }}>
+                        {t("common:actual")} <b style={{ color: INK_NAVY }}>{fmtMoney(cumRev)}</b>
+                        {" / "}{t("common:plan")} {fmtMoney(annualPlanRev)}
                       </div>
                     </div>
                   );
@@ -544,11 +555,11 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                           labelColor={rateColor(totalPct)}
                         />
                       </div>
-                      <div style={{ fontSize: "12px", color: "#16294a", fontWeight: 700, marginTop: "12px" }}>
+                      <div style={{ fontSize: "12px", color: INK_NAVY, fontWeight: 700, marginTop: "12px" }}>
                         {t("common:cumulative")}
                       </div>
-                      <div style={{ fontSize: "11px", color: "#555", marginTop: "2px", whiteSpace: "nowrap" }}>
-                        {t("common:actual")} <b style={{ color: "#16294a" }}>{fmtMoney(cumRev)}</b>
+                      <div style={{ fontSize: "11px", color: INK_SECONDARY, marginTop: "2px", whiteSpace: "nowrap" }}>
+                        {t("common:actual")} <b style={{ color: INK_NAVY }}>{fmtMoney(cumRev)}</b>
                         {" / "}{t("common:contractAmount")} {fmtMoney(overview.contractAmount)}
                       </div>
                     </div>
@@ -569,7 +580,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
           const biddingPct = estPct(bidding);
           const completionPct = estPct(completion);
           const improve = biddingPct != null && completionPct != null ? biddingPct - completionPct : null;
-          const improveColor = improve == null ? "#7c8ba3" : improve >= 0 ? ACHIEVE_GREEN : ACHIEVE_RED;
+          const improveColor = improve == null ? INK_MUTED : improve >= 0 ? ACHIEVE_GREEN : ACHIEVE_RED;
           const H = 150;
           const maxPct = Math.max(...stages.map((s) => estPct(s.data) ?? 0), 1);
           return (
@@ -590,11 +601,8 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                     const bh = pct != null ? Math.max((pct / maxPct) * H, 8) : 0;
                     return (
                       <div key={s.key} style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center" }}>
-                        <div style={{ fontSize: "16px", fontWeight: 800, color: "#16294a", marginBottom: "2px" }}>
+                        <div style={{ fontSize: "16px", fontWeight: 800, color: INK_NAVY, marginBottom: "6px" }}>
                           {fmtPct(pct)}
-                        </div>
-                        <div style={{ fontSize: "10px", color: "#7c8ba3", marginBottom: "4px", whiteSpace: "nowrap", maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis" }}>
-                          {s.data ? `${fmtMoney(s.data.costAmount ?? null)} / ${fmtMoney(s.data.contractAmount ?? null)}` : "-"}
                         </div>
                         <div
                           style={{
@@ -604,7 +612,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                             borderRadius: "8px 8px 3px 3px",
                           }}
                         />
-                        <div style={{ fontSize: "12px", color: "#16294a", fontWeight: 700, marginTop: "5px", whiteSpace: "nowrap", maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        <div style={{ fontSize: "12px", color: INK_NAVY, fontWeight: 700, marginTop: "5px", whiteSpace: "nowrap", maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis" }}>
                           {s.title}
                         </div>
                       </div>
@@ -620,28 +628,17 @@ export function OverviewTab({ projectName }: { projectName: string }) {
       {/* Row 2: Photo / Budget Execution Status / Cash */}
       <div style={{ display: "grid", gridTemplateColumns: ROW_COLUMNS, gap: "8px" }}>
         {/* Photo */}
-        <PhotoCard projectName={projectName} photos={detail?.photos ?? []} />
+        <PhotoCard projectName={projectName} photos={detail?.photos ?? []} slideshowIntervalSeconds={detail?.overview?.slideshowIntervalSeconds ?? 0} />
 
         {/* Budget Execution Status */}
         <div style={cardStyle}>
           <CardHeader
             title={t("overviewTab:budgetExecutionStatus")}
             unit={unitLabel}
-            badgeLabel={t("overviewTab:directCost")}
-            badgeValue={fmtPct(directCostPct)}
+            badgeLabel={t("overviewTab:totalCost")}
+            badgeValue={fmtPct(totalCostPct)}
             badgeColor={chartTheme.planBlue}
-            right={
-              <select
-                value={budgetMonth ?? ""}
-                onChange={(e) => setBudgetMonth(e.target.value === "" ? null : Number(e.target.value))}
-                style={monthSelectStyle}
-              >
-                <option value="">{t("common:all")}</option>
-                {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
-                  <option key={m} value={m}>{t("overviewTab:monthOption", { month: m })}</option>
-                ))}
-              </select>
-            }
+            right={undefined}
           />
           {allBudgetRows.length === 0 ? (
             <div style={emptyNote}>{t("overviewTab:noBudgetData")}</div>
@@ -659,7 +656,6 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                   const barH = (v: number | null) =>
                     v != null && v > 0 ? Math.max((v / maxVal) * H, 8) : 0;
                   const GRAY_W = 68;
-                  const SUB_W = 31;
                   const renderGroup = (g: (typeof allBudgetRows)[number]) => {
                     const bud = g.budget ?? 0;
                     const pln = g.plan ?? 0;
@@ -668,30 +664,21 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                     const bh = barH(bud);
                     const ph = barH(pln);
                     const ah = barH(act);
+                    // % 라벨은 계획 선 또는 실적 막대 상단 중 높은 쪽 위에 표시
                     const subTop = Math.max(ph, ah);
                     return (
                       <div key={g.item} style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center" }}>
                         {/* 예산 금액 (막대 위) */}
-                        <div title={fmtMoney(bud || null)} style={{ fontSize: "12px", fontWeight: 600, color: "#333", marginBottom: "2px", whiteSpace: "nowrap", maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        <div title={fmtMoney(bud || null)} style={{ fontSize: "12px", fontWeight: 600, color: INK_BODY, marginBottom: "2px", whiteSpace: "nowrap", maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis" }}>
                           {fmtMoney(bud || null)}
                         </div>
                         {/* 막대 영역 (% 라벨 공간 포함) */}
                         <div style={{ position: "relative", height: `${H + LABEL_H}px`, width: `${GRAY_W}px` }}>
-                          {/* 회색: 총 예산 */}
+                          {/* 회색: 총 예산 (배경) */}
                           <div style={{ position: "absolute", bottom: 0, left: 0, width: `${GRAY_W}px`, height: `${Math.max(bh, 2)}px`, backgroundColor: chartTheme.lightGray, borderRadius: "2px 2px 0 0" }} />
-                          {/* 집행율 % (계획/실적 막대 위) */}
-                          {pct != null && (
-                            <div style={{ position: "absolute", bottom: `${subTop + 2}px`, left: "50%", transform: "translateX(-50%)", fontSize: "12px", fontWeight: 700, color: chartTheme.inflowBlue, whiteSpace: "nowrap" }}>
-                              {fmtPct(pct)}
-                            </div>
-                          )}
-                          {/* 빨강: 집행 계획 */}
-                          {g.plan != null && ph > 0 && (
-                            <div title={fmtMoney(pln || null)} style={{ position: "absolute", bottom: 0, left: `${GRAY_W / 2 - SUB_W - 1}px`, width: `${SUB_W}px`, height: `${ph}px`, backgroundColor: chartTheme.outflowRed }} />
-                          )}
-                          {/* 파랑: 집행 실적 (금액 라벨 막대 안) */}
+                          {/* 파랑: 집행 실적 — 총예산 막대 안에 같은 너비로 오버랩 */}
                           {g.actual != null && ah > 0 && (
-                            <div style={{ position: "absolute", bottom: 0, left: `${GRAY_W / 2 + 1}px`, width: `${SUB_W}px`, height: `${ah}px`, backgroundColor: chartTheme.inflowBlue }}>
+                            <div style={{ position: "absolute", bottom: 0, left: 0, width: `${GRAY_W}px`, height: `${ah}px`, backgroundColor: chartTheme.inflowBlue, borderRadius: "0 0 2px 2px" }}>
                               <span
                                 title={fmtMoney(act || null)}
                                 style={{
@@ -709,9 +696,22 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                               </span>
                             </div>
                           )}
+                          {/* 빨강: 집행 계획 — 해당 비율 높이의 가로 선 */}
+                          {g.plan != null && ph > 0 && (
+                            <div
+                              title={fmtMoney(pln || null)}
+                              style={{ position: "absolute", bottom: `${ph}px`, left: 0, width: `${GRAY_W}px`, height: "3px", backgroundColor: chartTheme.outflowRed, borderRadius: "2px", zIndex: 2 }}
+                            />
+                          )}
+                          {/* 집행율 % (계획 선/실적 막대 상단 중 높은 쪽 위) */}
+                          {pct != null && (
+                            <div style={{ position: "absolute", bottom: `${subTop + 4}px`, left: "50%", transform: "translateX(-50%)", fontSize: "12px", fontWeight: 700, color: chartTheme.inflowBlue, whiteSpace: "nowrap" }}>
+                              {fmtPct(pct)}
+                            </div>
+                          )}
                         </div>
                         {/* 항목명 */}
-                        <div style={{ fontSize: "13px", color: "#16294a", fontWeight: 700, marginTop: "4px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" }}>
+                        <div style={{ fontSize: "13px", color: INK_NAVY, fontWeight: 700, marginTop: "4px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" }}>
                           {ITEM_LABEL_KEY[g.item] ? t(`overviewTab:${ITEM_LABEL_KEY[g.item]}`) : g.item}
                         </div>
                       </div>
@@ -726,12 +726,12 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                             flex: budgetRows.length,
                             minWidth: 0,
                             backgroundColor: "rgba(214, 226, 240, 0.28)",
-                            border: "1px solid #e2e9f3",
+                            border: `1px solid ${CARD_BORDER}`,
                             borderRadius: "8px",
                             padding: "6px 8px 8px",
                           }}
                         >
-                          <div style={{ textAlign: "center", fontSize: "13px", color: "#16294a", fontWeight: 700, marginBottom: "4px" }}>
+                          <div style={{ textAlign: "center", fontSize: "13px", color: INK_NAVY, fontWeight: 700, marginBottom: "4px" }}>
                             {t("overviewTab:directCost")} : {fmtPct(directCostPct)}
                           </div>
                           <div style={{ display: "flex", justifyContent: "space-around", gap: "8px", alignItems: "flex-end" }}>
@@ -749,28 +749,35 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                   );
                 })()}
               </div>
-              {/* 범례 */}
-              <div style={{ display: "flex", gap: "12px", marginTop: "8px", justifyContent: "flex-end", flexWrap: "wrap" }}>
-                {[
-                  { label: t("overviewTab:totalBudget"), color: chartTheme.lightGray },
-                  {
-                    label: budgetMonth == null
-                      ? t("overviewTab:executionPlanCumulative")
-                      : t("overviewTab:executionPlanMonth", { month: budgetMonth }),
-                    color: chartTheme.outflowRed,
-                  },
-                  {
-                    label: budgetMonth == null
-                      ? t("overviewTab:executionActualCumulative")
-                      : t("overviewTab:executionActualMonth", { month: budgetMonth }),
-                    color: chartTheme.inflowBlue,
-                  },
-                ].map(({ label, color }) => (
-                  <div key={label} style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                    <div style={{ width: "11px", height: "11px", backgroundColor: color, borderRadius: "2px" }} />
-                    <span style={{ fontSize: "12px", color: "#555" }}>{label}</span>
-                  </div>
-                ))}
+              {/* 합계 (좌) + 범례 (우) — 같은 행 */}
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginTop: "10px",
+                  paddingTop: "7px",
+                  borderTop: `1px solid ${DIVIDER}`,
+                  flexWrap: "wrap",
+                  gap: "6px",
+                }}
+              >
+                <span style={{ fontSize: "13px", color: INK_NAVY, fontWeight: 700 }}>
+                  {t("common:total")} : {fmtMoney(totalActualSum || null)} / {fmtMoney(totalBudgetSum || null)}
+                  {totalCostPct != null && ` (${fmtPct(totalCostPct)})`}
+                </span>
+                <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
+                  {[
+                    { label: t("overviewTab:totalBudget"), color: chartTheme.lightGray },
+                    { label: t("overviewTab:executionPlanCumulative"), color: chartTheme.outflowRed },
+                    { label: t("overviewTab:executionActualCumulative"), color: chartTheme.inflowBlue },
+                  ].map(({ label, color }) => (
+                    <div key={label} style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                      <div style={{ width: "11px", height: "11px", backgroundColor: color, borderRadius: "2px" }} />
+                      <span style={{ fontSize: "12px", color: INK_SECONDARY }}>{label}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </>
           )}
@@ -793,66 +800,43 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                 badgeLabel={t("overviewTab:collectionRate")}
                 badgeValue={confirmed > 0 ? fmtPct((collection / confirmed) * 100) : undefined}
                 badgeColor={confirmed > 0 ? rateColor((collection / confirmed) * 100) : undefined}
-                right={
-                  <select
-                    value={cashMonth ?? ""}
-                    onChange={(e) => setCashMonth(e.target.value === "" ? null : Number(e.target.value))}
-                    style={monthSelectStyle}
-                  >
-                    <option value="">{t("common:all")}</option>
-                    {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
-                      <option key={m} value={m}>{t("overviewTab:monthOption", { month: m })}</option>
-                    ))}
-                  </select>
-                }
+                right={undefined}
               />
               {isLoadingFund ? (
                 <div style={emptyNote}>{t("overviewTab:loadingFundData")}</div>
               ) : !hasFundData ? (
                 <div style={emptyNote}>{t("overviewTab:noFundData")}</div>
               ) : (
-                <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-around", marginTop: "10px", height: "170px" }}>
-                  <MiniBar
-                    value={revenue}
-                    max={cashMax}
-                    color={chartTheme.neutralGray}
-                    label={t("common:revenue")}
-                    height={120}
-                    valueLabel={fmtMoney(revenue)}
-                    valueOnTop
-                    width={34}
-                  />
-                  <MiniBar
-                    value={confirmed}
-                    max={cashMax}
-                    color={chartTheme.neutralGray}
-                    label={t("overviewTab:confirmedA")}
-                    height={120}
-                    valueLabel={fmtMoney(confirmed)}
-                    valueOnTop
-                    width={34}
-                  />
-                  <MiniBar
-                    value={collection}
-                    max={cashMax}
-                    color={chartTheme.balanceNavy}
-                    label={t("overviewTab:collectionB")}
-                    height={120}
-                    valueLabel={fmtMoney(collection)}
-                    valueOnTop
-                    width={34}
-                  />
-                  <MiniBar
-                    value={outstanding}
-                    max={cashMax}
-                    color={chartTheme.outflowRed}
-                    label={t("overviewTab:receivableAB")}
-                    height={120}
-                    valueLabel={fmtMoney(outstanding)}
-                    valueOnTop
-                    width={34}
-                  />
-                </div>
+                <>
+                  {/* 막대 그래프 — 숫자 라벨 제거 */}
+                  <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-around", marginTop: "10px", height: "130px" }}>
+                    <MiniBar value={revenue}     max={cashMax} color={chartTheme.neutralGray}  label={t("common:revenue")}           height={100} width={34} />
+                    <MiniBar value={confirmed}   max={cashMax} color={chartTheme.neutralGray}  label={t("overviewTab:confirmedA")}   height={100} width={34} />
+                    <MiniBar value={collection}  max={cashMax} color={chartTheme.balanceNavy}  label={t("overviewTab:collectionB")}  height={100} width={34} />
+                    <MiniBar value={outstanding} max={cashMax} color={chartTheme.outflowRed}   label={t("overviewTab:receivableAB")} height={100} width={34} />
+                  </div>
+                  {/* 하단 수치 테이블 */}
+                  <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px", fontSize: "12px" }}>
+                    <tbody>
+                      {([
+                        { label: t("common:revenue"),           value: revenue,      color: chartTheme.neutralGray },
+                        { label: t("overviewTab:confirmedA"),   value: confirmed,    color: chartTheme.neutralGray },
+                        { label: t("overviewTab:collectionB"),  value: collection,   color: chartTheme.balanceNavy },
+                        { label: t("overviewTab:receivableAB"), value: outstanding,  color: chartTheme.outflowRed  },
+                      ] as const).map(({ label, value, color }) => (
+                        <tr key={label} style={{ borderTop: `1px solid ${DIVIDER}` }}>
+                          <td style={{ padding: "4px 4px 4px 0", display: "flex", alignItems: "center", gap: "5px", whiteSpace: "nowrap" }}>
+                            <div style={{ width: "8px", height: "8px", borderRadius: "2px", backgroundColor: color, flexShrink: 0 }} />
+                            <span style={{ color: INK_MUTED }}>{label}</span>
+                          </td>
+                          <td style={{ padding: "4px 0", textAlign: "right", fontWeight: 600, color: INK_NAVY, whiteSpace: "nowrap" }}>
+                            {fmtMoney(value)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </>
               )}
             </div>
           );

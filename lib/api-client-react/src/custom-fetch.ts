@@ -60,13 +60,26 @@ function isUrl(input: RequestInfo | URL): input is URL {
   return typeof URL !== "undefined" && input instanceof URL;
 }
 
+export function getBaseUrl(): string | null {
+  return (
+    _baseUrl ??
+    (typeof window !== "undefined" && (window as any).__API_URL__
+      ? String((window as any).__API_URL__).replace(/\/+$/, "")
+      : typeof import.meta !== "undefined" && (import.meta as any).env?.VITE_API_URL
+      ? String((import.meta as any).env.VITE_API_URL).replace(/\/+$/, "")
+      : null)
+  );
+}
+
 function applyBaseUrl(input: RequestInfo | URL): RequestInfo | URL {
-  if (!_baseUrl) return input;
+  const activeBaseUrl = getBaseUrl();
+
+  if (!activeBaseUrl) return input;
   const url = resolveUrl(input);
   // Only prepend to relative paths (starting with /)
   if (!url.startsWith("/")) return input;
 
-  const absolute = `${_baseUrl}${url}`;
+  const absolute = `${activeBaseUrl}${url}`;
   if (typeof input === "string") return absolute;
   if (isUrl(input)) return new URL(absolute);
   return new Request(absolute, input as Request);

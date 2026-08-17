@@ -2,14 +2,15 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { useProjectDetail, fmtPct, ratioPct } from "../lib/projectDetailData";
 import { useMoney } from "../lib/displayUnit";
+import { cardStyle, INK_NAVY, INK_MUTED, TABLE_HEADER_BG, CARD_BORDER } from "../lib/uiTokens";
 
 const thStyle: React.CSSProperties = {
-  backgroundColor: "#eef2f7",
-  color: "#16294a",
+  backgroundColor: TABLE_HEADER_BG,
+  color: INK_NAVY,
   fontSize: "13px",
   fontWeight: 700,
   padding: "10px 8px",
-  border: "1px solid #e2e9f3",
+  border: `1px solid ${CARD_BORDER}`,
   textAlign: "center",
   verticalAlign: "middle",
   whiteSpace: "pre-line",
@@ -17,9 +18,9 @@ const thStyle: React.CSSProperties = {
 
 const tdStyle: React.CSSProperties = {
   fontSize: "13px",
-  color: "#222",
+  color: INK_NAVY,
   padding: "10px 8px",
-  border: "1px solid #e2e9f3",
+  border: `1px solid ${CARD_BORDER}`,
   verticalAlign: "top",
   backgroundColor: "#fff",
 };
@@ -41,14 +42,7 @@ export function ServiceOutsourcingTab({ projectName }: { projectName: string }) 
   };
 
   return (
-    <div
-      style={{
-        backgroundColor: "#fff",
-        border: "1px solid #e2e9f3",
-        borderRadius: "8px",
-        padding: "12px",
-      }}
-    >
+    <div style={cardStyle}>
       <table style={{ width: "100%", borderCollapse: "collapse" }}>
         <thead>
           <tr>
@@ -71,13 +65,13 @@ export function ServiceOutsourcingTab({ projectName }: { projectName: string }) 
         <tbody>
           {isLoading ? (
             <tr>
-              <td style={{ ...tdCenter, color: "#7c8ba3" }} colSpan={11}>
+              <td style={{ ...tdCenter, color: INK_MUTED }} colSpan={11}>
                 {t("common:loading")}
               </td>
             </tr>
           ) : rows.length === 0 ? (
             <tr>
-              <td style={{ ...tdCenter, color: "#7c8ba3", padding: "24px 10px" }} colSpan={11}>
+              <td style={{ ...tdCenter, color: INK_MUTED, padding: "24px 10px" }} colSpan={11}>
                 {t("serviceOutsourcingTab:noData")}
               </td>
             </tr>

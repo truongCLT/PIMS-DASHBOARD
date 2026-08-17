@@ -5,14 +5,9 @@ import { ProjectCommentPanel } from "./ProjectCommentPanel";
 import { useProjectDetail, fmtPct, ratioPct } from "../lib/projectDetailData";
 import { useMoney } from "../lib/displayUnit";
 import { chartTheme } from "../lib/chartTheme";
-import { cardStyle, sectionTitle } from "../lib/uiTokens";
+import { cardStyle, sectionTitle, emptyNote, INK_NAVY, INK_BODY, INK_SECONDARY } from "../lib/uiTokens";
 
-const emptyStyle: React.CSSProperties = {
-  padding: "24px 0",
-  textAlign: "center",
-  fontSize: "13px",
-  color: "#7c8ba3",
-};
+const emptyStyle = emptyNote;
 
 function Donut({
   percent,
@@ -53,7 +48,7 @@ function Donut({
           dominantBaseline="central"
           fontSize={15}
           fontWeight={700}
-          fill="#16294a"
+          fill={INK_NAVY}
         >
           {centerLabel}
         </text>
@@ -81,6 +76,7 @@ type BudgetRow = {
   budget: number | null;
   plan: number | null;
   actual: number | null;
+  bold?: boolean;
 };
 
 function BudgetExecutionStatus({ rows }: { rows: BudgetRow[] }) {
@@ -109,7 +105,7 @@ function BudgetExecutionStatus({ rows }: { rows: BudgetRow[] }) {
                 <div style={{
                   fontSize: "12px",
                   fontWeight: 700,
-                  color: "#333",
+                  color: INK_BODY,
                   marginTop: i === 0 ? 0 : "2px",
                   marginBottom: "-8px",
                 }}>
@@ -117,10 +113,10 @@ function BudgetExecutionStatus({ rows }: { rows: BudgetRow[] }) {
                 </div>
               )}
               <div style={{ display: "flex", alignItems: "center" }}>
-                <div style={{ width: "110px", minWidth: "110px", fontSize: "12px", color: "#333" }}>
+                <div style={{ width: "110px", minWidth: "110px", fontSize: "12px", color: INK_BODY, fontWeight: row.bold ? 700 : 400 }}>
                   <span>{row.item}</span>
                 </div>
-                <div style={{ flex: 1, position: "relative" }}>
+                <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
                   <div
                     style={{
                       position: "relative",
@@ -129,18 +125,6 @@ function BudgetExecutionStatus({ rows }: { rows: BudgetRow[] }) {
                       backgroundColor: chartTheme.lightGray,
                     }}
                   >
-                    <span
-                      style={{
-                        position: "absolute",
-                        right: "-8px",
-                        top: "50%",
-                        transform: "translate(100%, -50%)",
-                        fontSize: "11px",
-                        color: "#555",
-                      }}
-                    >
-                      {fmtMoney(row.budget)}
-                    </span>
                   </div>
                   {row.plan != null && (
                     <div
@@ -225,6 +209,10 @@ function BudgetExecutionStatus({ rows }: { rows: BudgetRow[] }) {
                     </div>
                   )}
                 </div>
+                {/* 예산 금액 — 카드 바깥으로 넘치지 않도록 고정 너비 컬럼으로 분리 */}
+                <div style={{ width: "58px", minWidth: "58px", textAlign: "right", fontSize: "11px", color: INK_SECONDARY, paddingLeft: "4px" }}>
+                  {fmtMoney(row.budget)}
+                </div>
               </div>
               </React.Fragment>
             );
@@ -259,13 +247,37 @@ export function CostingTab({
     datedCompletions[datedCompletions.length - 1] ??
     completionRows.find((e) => e.year == null || e.month == null) ??
     null;
+  const outsourcingRows = detail?.outsourcing ?? [];
+  const outsourcingBudget = outsourcingRows.reduce((a, o) => a + (o.budget ?? 0), 0);
+  const outsourcingPlan   = outsourcingRows.reduce((a, o) => a + (o.executedBudget ?? 0), 0);
+  const outsourcingActual = outsourcingRows.reduce((a, o) => a + (o.accum ?? 0), 0);
+  const hasOutsourcing = outsourcingRows.length > 0;
+
   const budgetRows: BudgetRow[] = (detail?.costBudget ?? []).map((r) => ({
     category: r.category ?? null,
     item: r.item,
     budget: r.budget ?? null,
     plan: r.plan ?? null,
     actual: r.actual ?? null,
+    bold: r.category == null || /contingency/i.test(r.item), // category 없는 단독 항목 또는 Contingency는 굵게
   }));
+
+  // 외주 행을 Direct Cost 카테고리 내 Common 앞에 삽입
+  if (hasOutsourcing) {
+    const commonIdx = budgetRows.findIndex(
+      (r) => r.category === "Direct Cost" && r.item === "Common"
+    );
+    const directCostFirstIdx = budgetRows.findIndex((r) => r.category === "Direct Cost");
+    const insertIdx = commonIdx >= 0 ? commonIdx : directCostFirstIdx >= 0 ? directCostFirstIdx : budgetRows.length;
+    budgetRows.splice(insertIdx, 0, {
+      category: "Direct Cost",
+      item: t("costingTab:outsourcingItem"),
+      budget: outsourcingBudget > 0 ? outsourcingBudget : null,
+      plan: outsourcingPlan > 0 ? outsourcingPlan : null,
+      actual: outsourcingActual > 0 ? outsourcingActual : null,
+      bold: false,
+    });
+  }
 
   // 합계 행 (예산 데이터가 있을 때만)
   const rowsWithSum: BudgetRow[] =
@@ -278,6 +290,7 @@ export function CostingTab({
             budget: budgetRows.reduce((a, r) => a + (r.budget ?? 0), 0),
             plan: budgetRows.some((r) => r.plan != null) ? budgetRows.reduce((a, r) => a + (r.plan ?? 0), 0) : null,
             actual: budgetRows.some((r) => r.actual != null) ? budgetRows.reduce((a, r) => a + (r.actual ?? 0), 0) : null,
+            bold: true,
           },
         ]
       : [];
@@ -317,11 +330,11 @@ export function CostingTab({
                   : "";
               return (
                 <div key={meta.kind} style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: "12px", color: "#555", marginBottom: "2px" }}>
+                  <div style={{ fontSize: "12px", color: INK_SECONDARY, marginBottom: "2px" }}>
                     {cost != null || contract != null ? `${fmtMoney(cost)} / ${fmtMoney(contract)}` : "-"}
                   </div>
                   <Donut percent={pct ?? 0} color={meta.color} size={150} stroke={16} centerLabel={fmtPct(pct)} />
-                  <div style={{ fontSize: "13px", color: "#16294a", fontWeight: 600, marginTop: "4px" }}>
+                  <div style={{ fontSize: "13px", color: INK_NAVY, fontWeight: 600, marginTop: "4px" }}>
                     {t(`costingTab:${EST_LABEL_KEY[meta.label]}`)}
                     {baseMonth}
                   </div>

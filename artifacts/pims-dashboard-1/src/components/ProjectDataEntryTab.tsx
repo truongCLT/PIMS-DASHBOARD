@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { Plus, Trash2, Save } from "lucide-react";
+import { Plus, Trash2, Save, Upload, X, Lock, LockOpen } from "lucide-react";
+import { readAdminToken } from "../lib/adminAuth";
 import {
   usePutProjectdetail,
   useListMgmtreportProjects,
@@ -9,6 +10,7 @@ import {
   getListMgmtreportProjectsQueryKey,
   useGetCashflowMonthly,
   getGetCashflowMonthlyQueryKey,
+  usePatchProjectdetailClose,
 } from "@workspace/api-client-react";
 import type {
   ProjectDetail,
@@ -26,11 +28,12 @@ import type {
 import { useProjectDetail, getGetProjectdetailQueryKey } from "../lib/projectDetailData";
 import { REPORT_YEAR } from "../lib/mgmtreportData";
 import { getMrCashflowRef } from "../data/mrProjectLinks";
-import { cardStyle, sectionTitle } from "../lib/uiTokens";
+import { cardStyle, sectionTitle, emptyNote, INK_NAVY, INK_BODY, INK_MUTED, POINT_BLUE, TABLE_HEADER_BG, CARD_BORDER, ACHIEVE_RED, SUCCESS_GREEN, ADMIN_NAVY, BORDER_STRONG, BORDER_MID, BORDER_LIGHT, STATUS_CLOSED_BG, STATUS_OPEN_BG, STATUS_CLOSED_TEXT, STATUS_OPEN_TEXT, WARNING_BG, WARNING_TEXT, WARNING_BORDER } from "../lib/uiTokens";
+import { chartTheme } from "../lib/chartTheme";
 
 const th: React.CSSProperties = {
-  backgroundColor: "#eef2f7",
-  color: "#16294a",
+  backgroundColor: TABLE_HEADER_BG,
+  color: INK_NAVY,
   fontSize: "13px",
   fontWeight: 700,
   border: "1px solid #c8d2de",
@@ -39,7 +42,7 @@ const th: React.CSSProperties = {
 };
 
 const tdCell: React.CSSProperties = {
-  border: "1px solid #e2e9f3",
+  border: `1px solid ${CARD_BORDER}`,
   padding: "2px",
 };
 
@@ -58,7 +61,7 @@ const addBtn: React.CSSProperties = {
   alignItems: "center",
   gap: "4px",
   fontSize: "13px",
-  color: "#2f7cf6",
+  color: POINT_BLUE,
   background: "none",
   border: "1px dashed #9dc3e6",
   borderRadius: "4px",
@@ -226,7 +229,7 @@ function DelBtn({ onClick }: { onClick: () => void }) {
     <button
       onClick={onClick}
       title={t("projectDataEntryTab:deleteRow")}
-      style={{ background: "none", border: "none", cursor: "pointer", padding: "4px", color: "#e0655c" }}
+      style={{ background: "none", border: "none", cursor: "pointer", padding: "4px", color: ACHIEVE_RED }}
     >
       <Trash2 size={13} />
     </button>
@@ -277,7 +280,10 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
   const { detail, isLoading } = useProjectDetail(projectName);
   const queryClient = useQueryClient();
   const mutation = usePutProjectdetail();
+  const closeMutation = usePatchProjectdetailClose();
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
+  const [isClosed, setIsClosed] = useState(false);
+  const [closeMsg, setCloseMsg] = useState<string | null>(null);
 
   const mrProjectsQuery = useListMgmtreportProjects({ year: REPORT_YEAR });
   const currentStatus =
@@ -309,6 +315,11 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
   const [cashflow, setCashflow] = useState<ProjectDetailCashflowPoint[]>([]);
   const [cogsMonthly, setCogsMonthly] = useState<ProjectDetailCogsPoint[]>([]);
   const [salesMonthly, setSalesMonthly] = useState<ProjectDetailSalesPoint[]>([]);
+  const [photos, setPhotos] = useState<{ objectPath: string }[]>([]);
+  const [slideshowIntervalSeconds, setSlideshowIntervalSeconds] = useState(0);
+  const [uploadingPhotos, setUploadingPhotos] = useState(false);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
   const [loaded, setLoaded] = useState(false);
   const [cfPrefilled, setCfPrefilled] = useState(false);
 
@@ -377,6 +388,9 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       }
       setCogsMonthly(detail.cogsMonthly ?? []);
       setSalesMonthly(detail.salesMonthly ?? []);
+      setPhotos(detail.photos ?? []);
+      setSlideshowIntervalSeconds(detail.overview?.slideshowIntervalSeconds ?? 0);
+      setIsClosed(detail.overview?.isClosed ?? false);
       setLoaded(true);
     }
   }, [detail, loaded, cfRef, cfQuery.isLoading, cfQuery.data]);
@@ -427,11 +441,64 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
     return errors.length > 0 ? errors.join(" ") : null;
   };
 
+  // 사진 업로드: presigned URL 발급 → 직접 PUT
+  const handlePhotoUpload = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    setUploadingPhotos(true);
+    setPhotoError(null);
+    const newPaths: { objectPath: string }[] = [];
+    const failed: string[] = [];
+    for (const file of Array.from(files)) {
+      try {
+        const token = readAdminToken();
+        const headers: Record<string, string> = { "Content-Type": "application/json" };
+        if (token) headers["Authorization"] = `Bearer ${token}`;
+        const urlRes = await fetch("/api/storage/uploads/request-url", {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ name: file.name, size: file.size, contentType: file.type || "image/jpeg" }),
+        });
+        if (!urlRes.ok) throw new Error(`URL 발급 실패: ${urlRes.status}`);
+        const { uploadURL, objectPath } = (await urlRes.json()) as { uploadURL: string; objectPath: string };
+        const putRes = await fetch(uploadURL, {
+          method: "PUT",
+          headers: { "Content-Type": file.type || "image/jpeg" },
+          body: file,
+        });
+        if (!putRes.ok) throw new Error(`업로드 실패: ${putRes.status}`);
+        newPaths.push({ objectPath });
+      } catch {
+        failed.push(file.name);
+      }
+    }
+    if (newPaths.length > 0) setPhotos((prev) => [...prev, ...newPaths]);
+    if (failed.length > 0) setPhotoError(t("projectDataEntryTab:photoUploadFailed", { files: failed.join(", ") }));
+    setUploadingPhotos(false);
+    if (photoInputRef.current) photoInputRef.current.value = "";
+  };
+
+  const handleToggleClose = () => {
+    const next = !isClosed;
+    setCloseMsg(null);
+    closeMutation.mutate(
+      { data: { projectName, closed: next } },
+      {
+        onSuccess: () => {
+          setIsClosed(next);
+          setCloseMsg(null);
+          queryClient.invalidateQueries({ queryKey: getGetProjectdetailQueryKey({ projectName }) });
+        },
+        onError: () => setCloseMsg(t("projectDataEntryTab:closeToggleFailed")),
+      },
+    );
+  };
+
   const pendingRef = useRef(false);
   const queuedRef = useRef(false);
   const [cardMsgs, setCardMsgs] = useState<Record<string, string | null>>({});
 
   const save = (card?: string) => {
+    if (isClosed) return;
     if (pendingRef.current) {
       queuedRef.current = true;
       return;
@@ -473,7 +540,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
     const body: ProjectDetail = {
       projectName,
       unit: "천 USD",
-      overview,
+      overview: { ...overview, slideshowIntervalSeconds },
       progress: progressRows,
       milestones: milestones.filter((m) => m.label.trim() !== ""),
       costEstimation: estRows,
@@ -484,7 +551,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       cashflow: cfPrefilled ? [] : cashflow.filter((c) => c.year > 0 && c.month >= 1 && c.month <= 12),
       cogsMonthly: cogsMonthly.filter((c) => c.year > 0 && c.month >= 1 && c.month <= 12),
       salesMonthly: salesMonthly.filter((s) => s.year > 0 && s.month >= 1 && s.month <= 12),
-      photos: [],
+      photos,
     };
     pendingRef.current = true;
     mutation.mutate(
@@ -527,38 +594,62 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
     }
     const t = setTimeout(() => saveRef.current(), 1000);
     return () => clearTimeout(t);
-  }, [loaded, overview, progress, milestones, costEstimation, costBudget, costBudgetMonthly, outsourcing, cashflow, cogsMonthly, salesMonthly]);
+  }, [loaded, overview, progress, milestones, costEstimation, costBudget, costBudgetMonthly, outsourcing, cashflow, cogsMonthly, salesMonthly, photos, slideshowIntervalSeconds]);
 
 
   if (isLoading && !loaded) {
-    return <div style={{ ...cardStyle, textAlign: "center", color: "#7c8ba3", fontSize: "14px" }}>{t("common:loading")}</div>;
+    return <div style={{ ...cardStyle, textAlign: "center", color: INK_MUTED, fontSize: "14px" }}>{t("common:loading")}</div>;
   }
 
   const nowYear = new Date().getFullYear();
 
-  // 카드별 저장 버튼 + 결과 메시지가 있는 섹션 헤더
+  // 카드별 저장 버튼 + 마감 버튼 + 결과 메시지가 있는 섹션 헤더
   const cardHead = (label: string, key: string) => (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
       <span style={sectionTitle}>{label}</span>
-      <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
+      <span style={{ display: "inline-flex", alignItems: "center", gap: "8px", pointerEvents: "auto" }}>
         {cardMsgs[key] && (
-          <span style={{ fontSize: "13px", color: cardMsgs[key] === t("common:saveSucceeded") ? "#1c7a5a" : "#e0655c" }}>
+          <span style={{ fontSize: "13px", color: cardMsgs[key] === t("common:saveSucceeded") ? SUCCESS_GREEN : ACHIEVE_RED }}>
             {cardMsgs[key]}
           </span>
         )}
+        {closeMsg && (
+          <span style={{ fontSize: "13px", color: ACHIEVE_RED }}>{closeMsg}</span>
+        )}
+        {/* 마감 설정/해지 버튼 */}
+        <button
+          onClick={handleToggleClose}
+          disabled={closeMutation.isPending}
+          style={{
+            display: "inline-flex", alignItems: "center", gap: "4px",
+            padding: "4px 12px",
+            fontSize: "13px",
+            fontWeight: 600,
+            backgroundColor: isClosed ? INK_MUTED : "#fff",
+            color: isClosed ? "#fff" : INK_MUTED,
+            border: `1px solid ${isClosed ? INK_MUTED : BORDER_STRONG}`,
+            borderRadius: "4px",
+            cursor: closeMutation.isPending ? "wait" : "pointer",
+            opacity: closeMutation.isPending ? 0.6 : 1,
+            pointerEvents: "auto",
+          }}
+        >
+          {isClosed ? <><LockOpen size={12} />{t("projectDataEntryTab:closeUnlock")}</> : <><Lock size={12} />{t("projectDataEntryTab:closeLock")}</>}
+        </button>
+        {/* 저장 버튼 */}
         <button
           onClick={() => save(key)}
-          disabled={mutation.isPending}
+          disabled={isClosed || mutation.isPending}
           style={{
             padding: "4px 14px",
             fontSize: "13px",
             fontWeight: 600,
-            backgroundColor: "#1e3a6e",
+            backgroundColor: ADMIN_NAVY,
             color: "#fff",
             border: "none",
             borderRadius: "4px",
-            cursor: mutation.isPending ? "wait" : "pointer",
-            opacity: mutation.isPending ? 0.6 : 1,
+            cursor: (isClosed || mutation.isPending) ? "not-allowed" : "pointer",
+            opacity: (isClosed || mutation.isPending) ? 0.45 : 1,
           }}
         >
           {t("common:save")}
@@ -609,7 +700,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       >
         <Plus size={12} /> {t("projectDataEntryTab:addMonth")}
       </button>
-      <div style={{ fontSize: "12px", color: "#7c8ba3", marginTop: "6px" }}>
+      <div style={{ fontSize: "12px", color: INK_MUTED, marginTop: "6px" }}>
         {t("projectDataEntryTab:salesMonthlyNote")}
       </div>
     </div>
@@ -657,7 +748,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       >
         <Plus size={12} /> {t("projectDataEntryTab:addMonth")}
       </button>
-      <div style={{ fontSize: "12px", color: "#7c8ba3", marginTop: "6px" }}>
+      <div style={{ fontSize: "12px", color: INK_MUTED, marginTop: "6px" }}>
         {t("projectDataEntryTab:cogsMonthlyNote")}
       </div>
     </div>
@@ -666,12 +757,12 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
       <div style={{ ...cardStyle, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ fontSize: "14px", color: "#333" }}>
+        <div style={{ fontSize: "14px", color: INK_BODY }}>
           <b>{projectName}</b> {t("projectDataEntryTab:headerDescPart1")} <b>VND</b> {t("projectDataEntryTab:headerDescPart2")} <b>%</b>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           {statusMsg && (
-            <span style={{ fontSize: "13px", color: statusMsg === t("projectDataEntryTab:statusChangeFailed") ? "#e0655c" : "#1c7a5a", fontWeight: 600 }}>
+            <span style={{ fontSize: "13px", color: statusMsg === t("projectDataEntryTab:statusChangeFailed") ? ACHIEVE_RED : SUCCESS_GREEN, fontWeight: 600 }}>
               {statusMsg}
             </span>
           )}
@@ -682,8 +773,8 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                 fontWeight: 700,
                 padding: "3px 8px",
                 borderRadius: "10px",
-                backgroundColor: currentStatus === "closed" ? "#f3d9d5" : "#d8ecdc",
-                color: currentStatus === "closed" ? "#a83a2a" : "#2f6b3d",
+                backgroundColor: currentStatus === "closed" ? STATUS_CLOSED_BG : STATUS_OPEN_BG,
+                color: currentStatus === "closed" ? STATUS_CLOSED_TEXT : STATUS_OPEN_TEXT,
               }}
             >
               {currentStatus === "closed" ? t("common:closed") : t("common:inProgress")}
@@ -695,9 +786,9 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
               style={{
                 fontSize: "13px",
                 fontWeight: 600,
-                color: "#1e3a6e",
+                color: ADMIN_NAVY,
                 backgroundColor: "#fff",
-                border: "1px solid #b9c6d8",
+                border: `1px solid ${BORDER_MID}`,
                 borderRadius: "6px",
                 padding: "5px 10px",
                 cursor: statusMutation.isPending ? "wait" : "pointer",
@@ -712,26 +803,26 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
             </button>
           </div>
           {saveMsg && (
-            <span style={{ fontSize: "13px", color: saveMsg === t("common:saveSucceeded") ? "#1c7a5a" : "#e0655c", fontWeight: 600 }}>
+            <span style={{ fontSize: "13px", color: saveMsg === t("common:saveSucceeded") ? SUCCESS_GREEN : ACHIEVE_RED, fontWeight: 600 }}>
               {saveMsg}
             </span>
           )}
           <button
             onClick={() => save()}
-            disabled={mutation.isPending}
+            disabled={isClosed || mutation.isPending}
             style={{
               display: "flex",
               alignItems: "center",
               gap: "6px",
-              backgroundColor: "#1e3a6e",
+              backgroundColor: ADMIN_NAVY,
               color: "#fff",
               border: "none",
               borderRadius: "6px",
               padding: "8px 16px",
               fontSize: "16px",
               fontWeight: 600,
-              cursor: mutation.isPending ? "wait" : "pointer",
-              opacity: mutation.isPending ? 0.7 : 1,
+              cursor: (isClosed || mutation.isPending) ? "not-allowed" : "pointer",
+              opacity: (isClosed || mutation.isPending) ? 0.4 : 1,
             }}
           >
             <Save size={13} />
@@ -739,6 +830,28 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
           </button>
         </div>
       </div>
+
+      {/* 마감 배너 */}
+      {isClosed && (
+        <div style={{
+          backgroundColor: WARNING_BG,
+          border: `1px solid ${WARNING_BORDER}`,
+          borderRadius: "6px",
+          padding: "10px 16px",
+          fontSize: "13px",
+          fontWeight: 600,
+          color: WARNING_TEXT,
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+        }}>
+          <Lock size={14} />
+          {t("projectDataEntryTab:closedBanner")}
+        </div>
+      )}
+
+      {/* 마감 시 입력 차단 래퍼 (cardHead의 마감 버튼은 pointerEvents:auto로 여전히 동작) */}
+      <div style={{ pointerEvents: isClosed ? "none" : "auto", opacity: isClosed ? 0.65 : 1 }}>
 
       {/* 0. 개요 정보 */}
       {!service && (
@@ -798,7 +911,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
             </tr>
           </tbody>
         </table>
-        <div style={{ fontSize: "12px", color: "#7c8ba3", marginTop: "6px" }}>
+        <div style={{ fontSize: "12px", color: INK_MUTED, marginTop: "6px" }}>
           {t("projectDataEntryTab:overviewCostRateNote")}
         </div>
         </div>
@@ -936,8 +1049,8 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
             <tr>
               <th style={th}>{t("projectDataEntryTab:annualRevenueTargetVnd")}</th>
               <th style={th}>{t("projectDataEntryTab:cumulativeRevenueActualVnd")}</th>
-              <th style={th}>Cash Confirmed (A) (VND)</th>
-              <th style={th}>Cash Collection (B) (VND)</th>
+              <th style={th}>Cash Confirmed (A)</th>
+              <th style={th}>Cash Collection (B)</th>
             </tr>
           </thead>
           <tbody>
@@ -957,7 +1070,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
             </tr>
           </tbody>
         </table>
-        <div style={{ fontSize: "12px", color: "#7c8ba3", marginTop: "6px" }}>
+        <div style={{ fontSize: "12px", color: INK_MUTED, marginTop: "6px" }}>
           {t("projectDataEntryTab:overviewCashNote")}
         </div>
         </div>
@@ -984,7 +1097,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
               const completionCount = costEstimation.filter((r) => r.kind === "completion").length;
               return (
                 <tr key={`${e.kind}-${i}`}>
-                  <td style={{ ...tdCell, fontSize: "13px", padding: "5px 6px", color: "#333" }}>
+                  <td style={{ ...tdCell, fontSize: "13px", padding: "5px 6px", color: INK_BODY }}>
                     {t(`projectDataEntryTab:${EST_KINDS.find((k) => k.kind === e.kind)?.label ?? e.kind}`)}
                   </td>
                   <td style={{ ...tdCell, textAlign: "center" }}>
@@ -1001,10 +1114,10 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                             updateAt(setCostEstimation, i, { year: Number(y), month: Number(m) });
                           }
                         }}
-                        style={{ fontSize: "13px", padding: "3px 4px", border: "1px solid #ccd6e3", borderRadius: "3px" }}
+                        style={{ fontSize: "13px", padding: "3px 4px", border: `1px solid ${BORDER_LIGHT}`, borderRadius: "3px" }}
                       />
                     ) : (
-                      <span style={{ fontSize: "12px", color: "#aaa" }}>-</span>
+                      <span style={{ fontSize: "12px", color: INK_MUTED }}>-</span>
                     )}
                   </td>
                   <td style={tdCell}><VndInput valueKUsd={e.contractAmount} onChange={(v) => updateAt(setCostEstimation, i, { contractAmount: v })} data-row={i} data-col={0} /></td>
@@ -1013,7 +1126,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                     {isCompletion && completionCount > 1 && (
                       <button
                         onClick={() => setCostEstimation((rows) => rows.filter((_, j) => j !== i))}
-                        style={{ border: "none", background: "none", cursor: "pointer", color: "#e0655c", padding: "2px" }}
+                        style={{ border: "none", background: "none", cursor: "pointer", color: ACHIEVE_RED, padding: "2px" }}
                         title={t("common:delete")}
                       >
                         <Trash2 size={12} />
@@ -1030,11 +1143,11 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
           onClick={() =>
             setCostEstimation((rows) => [...rows, { kind: "completion", contractAmount: null, costAmount: null, year: null, month: null }])
           }
-          style={{ marginTop: "6px", display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "12px", color: "#2f7cf6", border: "1px dashed #9db6d8", borderRadius: "4px", padding: "3px 8px", background: "none", cursor: "pointer" }}
+          style={{ marginTop: "6px", display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "12px", color: POINT_BLUE, border: "1px dashed #9db6d8", borderRadius: "4px", padding: "3px 8px", background: "none", cursor: "pointer" }}
         >
           <Plus size={12} /> {t("projectDataEntryTab:addCompletionForecast")}
         </button>
-        <div style={{ fontSize: "12px", color: "#777", marginTop: "4px" }}>
+        <div style={{ fontSize: "12px", color: INK_MUTED, marginTop: "4px" }}>
           {t("projectDataEntryTab:costEstimationNote")}
         </div>
       </div>
@@ -1050,7 +1163,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       {/* 예산 집행 현황 */}
       <div style={cardStyle}>
         {cardHead(service ? t("projectDataEntryTab:costBudgetTitleService") : t("projectDataEntryTab:costBudgetTitleConstruction"), "costBudget")}
-        <div style={{ fontSize: "12px", color: "#777", marginTop: "4px" }}>
+        <div style={{ fontSize: "12px", color: INK_MUTED, marginTop: "4px" }}>
           {t("projectDataEntryTab:costBudgetNote")}
         </div>
         <div data-tbl="costBudget" onKeyDown={makeArrowNav("costBudget")}>
@@ -1066,7 +1179,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
           <tbody>
             {costBudget.map((c, i) => (
               <tr key={c.item}>
-                <td style={{ ...tdCell, fontSize: "13px", padding: "5px 6px", color: "#333", fontWeight: 600 }}>{c.item}</td>
+                <td style={{ ...tdCell, fontSize: "13px", padding: "5px 6px", color: INK_BODY, fontWeight: 600 }}>{c.item}</td>
                 <td style={tdCell}><VndInput valueKUsd={c.budget} onChange={(v) => updateAt(setCostBudget, i, { budget: v })} data-row={i} data-col={0} /></td>
                 <td style={tdCell}><VndInput valueKUsd={c.plan} onChange={(v) => updateAt(setCostBudget, i, { plan: v })} data-row={i} data-col={1} /></td>
                 <td style={tdCell}><VndInput valueKUsd={c.actual} onChange={(v) => updateAt(setCostBudget, i, { actual: v })} data-row={i} data-col={2} /></td>
@@ -1078,10 +1191,10 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
 
         {/* 월별 계획/실적 */}
         <div style={{ marginTop: "10px" }}>
-          <div style={{ fontSize: "12px", fontWeight: 600, color: "#2f7cf6", marginBottom: "4px" }}>
+          <div style={{ fontSize: "12px", fontWeight: 600, color: POINT_BLUE, marginBottom: "4px" }}>
             {t("projectDataEntryTab:monthlyPlanActualYear", { year: REPORT_YEAR })}
           </div>
-          <div style={{ fontSize: "11px", color: "#777", marginBottom: "6px" }}>
+          <div style={{ fontSize: "11px", color: INK_MUTED, marginBottom: "6px" }}>
             {t("projectDataEntryTab:monthlyPlanActualNote")}
           </div>
           {(["Common", "Expense 1", "Expense 2", "외주성"] as const).map((item) => {
@@ -1096,7 +1209,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
             const tblKey = `cbm-${item}`;
             return (
               <div key={item} style={{ marginBottom: "10px" }}>
-                <div style={{ fontSize: "13px", fontWeight: 700, color: "#16294a", marginBottom: "4px" }}>
+                <div style={{ fontSize: "13px", fontWeight: 700, color: INK_NAVY, marginBottom: "4px" }}>
                   {item === "외주성" ? t("projectDataEntryTab:outsourcingItem") : item}
                 </div>
                 <div data-tbl={tblKey} onKeyDown={makeArrowNav(tblKey)}>
@@ -1111,7 +1224,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                   <tbody>
                     {Array.from({ length: 12 }, (_, i) => i + 1).map((month) => (
                       <tr key={month}>
-                        <td style={{ ...tdCell, textAlign: "center", fontSize: "13px", color: "#555", padding: "3px 4px" }}>{t("projectDataEntryTab:monthSuffix", { month })}</td>
+                        <td style={{ ...tdCell, textAlign: "center", fontSize: "13px", color: INK_MUTED, padding: "3px 4px" }}>{t("projectDataEntryTab:monthSuffix", { month })}</td>
                         <td style={tdCell}><VndInput valueKUsd={getCbm(month, "plan")} onChange={(v) => setCbm(month, "plan", v)} data-row={month - 1} data-col={0} /></td>
                         <td style={tdCell}><VndInput valueKUsd={getCbm(month, "actual")} onChange={(v) => setCbm(month, "actual", v)} data-row={month - 1} data-col={1} /></td>
                       </tr>
@@ -1153,7 +1266,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                   <select
                     value={o.tradeGroup ?? ""}
                     onChange={(ev) => updateAt(setOutsourcing, i, { tradeGroup: ev.target.value || null })}
-                    style={{ width: "100%", fontSize: "13px", padding: "3px 2px", border: "1px solid #ccd6e3", borderRadius: "3px", backgroundColor: "#fff" }}
+                    style={{ width: "100%", fontSize: "13px", padding: "3px 2px", border: `1px solid ${BORDER_LIGHT}`, borderRadius: "3px", backgroundColor: "#fff" }}
                   >
                     <option value="">-</option>
                     {TRADE_GROUPS.map((g) => (
@@ -1233,16 +1346,101 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
         >
           <Plus size={12} /> {t("projectDataEntryTab:addMonth")}
         </button>
-        <div style={{ fontSize: "12px", color: "#7c8ba3", marginTop: "6px" }}>
+        <div style={{ fontSize: "12px", color: INK_MUTED, marginTop: "6px" }}>
           {t("projectDataEntryTab:cashflowNote")}
         </div>
         {cfPrefilled && (
-          <div style={{ fontSize: "12px", color: "#2f7cf6", marginTop: "4px", fontWeight: 600 }}>
+          <div style={{ fontSize: "12px", color: POINT_BLUE, marginTop: "4px", fontWeight: 600 }}>
             {t("projectDataEntryTab:cashflowPrefilledNote")}
           </div>
         )}
       </div>
 
+      {/* 7. 현장 사진 */}
+      <div style={cardStyle}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
+          <span style={sectionTitle}>{t("projectDataEntryTab:photoSection")}</span>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <label style={{ fontSize: "13px", color: chartTheme.subLabel, display: "flex", alignItems: "center", gap: "6px" }}>
+              {t("projectDataEntryTab:slideshowIntervalLabel")}
+              <input
+                type="number"
+                min={0}
+                max={300}
+                step={1}
+                value={slideshowIntervalSeconds}
+                onChange={(e) => setSlideshowIntervalSeconds(Math.max(0, Math.round(Number(e.target.value) || 0)))}
+                style={{ width: "60px", border: "1px solid #c8d2de", borderRadius: "4px", padding: "3px 6px", fontSize: "13px" }}
+              />
+              <span style={{ fontSize: "11px", color: INK_MUTED }}>{t("projectDataEntryTab:slideshowIntervalOff")}</span>
+            </label>
+            <button
+              onClick={() => photoInputRef.current?.click()}
+              disabled={uploadingPhotos}
+              style={{
+                display: "inline-flex", alignItems: "center", gap: "5px",
+                fontSize: "13px", fontWeight: 600,
+                background: ADMIN_NAVY, color: "#fff",
+                border: "none", borderRadius: "5px", padding: "5px 12px",
+                cursor: uploadingPhotos ? "wait" : "pointer",
+                opacity: uploadingPhotos ? 0.7 : 1,
+              }}
+            >
+              <Upload size={13} />
+              {uploadingPhotos ? t("projectDataEntryTab:photoUploading") : t("projectDataEntryTab:photoUploadBtn")}
+            </button>
+            <input
+              ref={photoInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              style={{ display: "none" }}
+              onChange={(e) => handlePhotoUpload(e.target.files)}
+            />
+          </div>
+        </div>
+        {photoError && (
+          <div style={{ fontSize: "12px", color: ACHIEVE_RED, marginBottom: "8px" }}>{photoError}</div>
+        )}
+        {photos.length === 0 && !uploadingPhotos && (
+          <div style={{ ...emptyNote, padding: "24px 0" }}>
+            {t("projectDataEntryTab:photoEmpty")}
+          </div>
+        )}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: "8px" }}>
+          {photos.map((p, i) => (
+            <div key={p.objectPath} style={{ position: "relative", borderRadius: "6px", overflow: "hidden", aspectRatio: "4/3", background: TABLE_HEADER_BG }}>
+              <img
+                src={`/api/storage${p.objectPath}`}
+                alt={`photo-${i + 1}`}
+                style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+              />
+              <button
+                onClick={() => setPhotos((prev) => prev.filter((_, j) => j !== i))}
+                title={t("projectDataEntryTab:photoDeleteBtn")}
+                style={{
+                  position: "absolute", top: "4px", right: "4px",
+                  background: "rgba(0,0,0,0.55)", border: "none", borderRadius: "50%",
+                  width: "22px", height: "22px",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  cursor: "pointer", color: "#fff", padding: 0,
+                }}
+              >
+                <X size={13} />
+              </button>
+              <div style={{
+                position: "absolute", bottom: 0, left: 0, right: 0,
+                background: "rgba(0,0,0,0.35)", color: "#fff",
+                fontSize: "10px", textAlign: "center", padding: "2px 0",
+              }}>
+                {i + 1}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      </div>{/* end 마감 잠금 래퍼 */}
     </div>
   );
 }

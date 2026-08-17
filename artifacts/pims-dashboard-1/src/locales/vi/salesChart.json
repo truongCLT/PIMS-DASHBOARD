@@ -9,5 +9,13 @@
   "salesPlan": "Doanh thu (Kế hoạch)",
   "salesActualForecast": "Doanh thu (Thực hiện & Dự báo)",
   "month": "Tháng",
-  "bottomChipRate": "Chip dưới = tỷ lệ đạt"
+  "bottomChipRate": "Chip dưới = tỷ lệ đạt",
+  "siteDetailTitle": "Chi tiết doanh thu công trình – {{month}}",
+  "colSiteName": "Tên công trình",
+  "colCategory": "Danh mục",
+  "colBizType": "Loại hình",
+  "colAmount": "Số tiền",
+  "colShare": "Tỷ trọng",
+  "noSiteData": "Không có dữ liệu công trình cho tháng này.",
+  "loadingSiteData": "Đang tải dữ liệu công trình…"
 }

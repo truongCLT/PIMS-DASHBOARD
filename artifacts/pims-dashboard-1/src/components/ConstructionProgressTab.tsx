@@ -11,6 +11,7 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
+  LabelList,
 } from "recharts";
 
 import projectPhoto from "../assets/project-photo.png";
@@ -23,14 +24,9 @@ import {
   type ProjectDetail,
 } from "../lib/projectDetailData";
 import { chartTheme } from "../lib/chartTheme";
-import { cardStyle, sectionTitle } from "../lib/uiTokens";
+import { cardStyle, sectionTitle, emptyNote, INK_NAVY, INK_BODY, INK_SECONDARY, INK_MUTED, DIVIDER, MUTED_HINT, STATUS_POS_BG, STATUS_NEG_BG } from "../lib/uiTokens";
 
-const emptyStyle: React.CSSProperties = {
-  padding: "24px 0",
-  textAlign: "center",
-  fontSize: "13px",
-  color: "#7c8ba3",
-};
+const emptyStyle = emptyNote;
 
 function Donut({
   percent,
@@ -87,7 +83,7 @@ function Donut({
           dominantBaseline="central"
           fontSize={labelSize}
           fontWeight={700}
-          fill="#16294a"
+          fill={INK_NAVY}
         >
           {label}
         </text>
@@ -153,7 +149,7 @@ function MilestoneChart({ milestones }: { milestones: ProjectDetail["milestones"
     <div style={cardStyle}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <span style={{ ...sectionTitle }}>{t("common:milestone")}</span>
-        <div style={{ display: "flex", flexDirection: "column", gap: "4px", fontSize: "11px", color: "#333" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "4px", fontSize: "11px", color: INK_BODY }}>
           <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
             <span style={{ width: "26px", height: "5px", backgroundColor: chartTheme.outflowRed, display: "inline-block" }} />
             <u>{t("common:plan")}</u>
@@ -193,7 +189,7 @@ function MilestoneChart({ milestones }: { milestones: ProjectDetail["milestones"
                   display: "flex",
                   alignItems: "flex-start",
                   height: `${ROW_H}px`,
-                  borderBottom: "1px solid #eef2f7",
+                  borderBottom: `1px solid ${DIVIDER}`,
                 }}
               >
                 <div
@@ -202,7 +198,7 @@ function MilestoneChart({ milestones }: { milestones: ProjectDetail["milestones"
                     minWidth: `${AXIS_LEFT}px`,
                     fontSize: "11px",
                     fontWeight: 600,
-                    color: "#333",
+                    color: INK_BODY,
                     overflow: "hidden",
                     textOverflow: "ellipsis",
                     whiteSpace: "nowrap",
@@ -274,7 +270,7 @@ function MilestoneChart({ milestones }: { milestones: ProjectDetail["milestones"
                     </div>
                   )}
                   {!plan && !actual && (
-                    <span style={{ position: "absolute", top: "8px", fontSize: "11px", color: "#aab2bc" }}>-</span>
+                    <span style={{ position: "absolute", top: "8px", fontSize: "11px", color: MUTED_HINT }}>-</span>
                   )}
                 </div>
               </div>
@@ -290,7 +286,7 @@ function MilestoneChart({ milestones }: { milestones: ProjectDetail["milestones"
                     style={{
                       flex: 1,
                       fontSize: "10px",
-                      color: "#777",
+                      color: INK_MUTED,
                       textAlign: "left",
                       visibility: total > 18 && i % 2 === 1 ? "hidden" : "visible",
                     }}
@@ -317,7 +313,7 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
   const milestones = detail?.milestones ?? [];
 
   const lifecycleData = progress.map((p) => ({
-    month: `${p.year}-${MONTH_ABBR[p.month - 1]}`,
+    month: `${String(p.year).slice(-2)}/${String(p.month).padStart(2, "0")}`,
     plan: p.planPct,
     actual: p.actualPct,
     planAccum: p.planCumPct,
@@ -329,6 +325,24 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
   const planCum = latest?.planCumPct ?? null;
   const actualCum = latest?.actualCumPct ?? null;
   const diff = planCum != null && actualCum != null ? actualCum - planCum : null;
+
+  // 기준월 당월 공정률
+  const planMonth = latest != null
+    ? (progress.find((p) => p.year === latest.year && p.month === latest.month)?.planPct ?? null)
+    : null;
+  const actualMonth = latest != null
+    ? (progress.find((p) => p.year === latest.year && p.month === latest.month)?.actualPct ?? null)
+    : null;
+
+  // 연간 공정률 합계 (기준월 연도)
+  const latestYear = latest?.year ?? null;
+  const annualRows = latestYear != null ? progress.filter((p) => p.year === latestYear) : [];
+  const planAnnual = annualRows.some((p) => p.planPct != null)
+    ? Math.min(annualRows.reduce((s, p) => s + (p.planPct ?? 0), 0), 100)
+    : null;
+  const actualAnnual = annualRows.some((p) => p.actualPct != null)
+    ? Math.min(annualRows.reduce((s, p) => s + (p.actualPct ?? 0), 0), 100)
+    : null;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -353,6 +367,7 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
                   current={hasPhotos ? safeIdx : 0}
                   onChange={setPhotoIdx}
                   imgStyle={{ minHeight: "230px" }}
+                  autoPlayIntervalSeconds={detail?.overview?.slideshowIntervalSeconds ?? 0}
                 />
               );
             })()}
@@ -366,7 +381,7 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
             <span
               style={{
                 fontSize: "11px",
-                backgroundColor: diff != null && diff < 0 ? "#fdecea" : "#dff2e3",
+                backgroundColor: diff != null && diff < 0 ? STATUS_NEG_BG : STATUS_POS_BG,
                 color: diff != null && diff < 0 ? chartTheme.outflowRed : chartTheme.profitGreen,
                 borderRadius: "3px",
                 padding: "2px 6px",
@@ -377,34 +392,92 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
               (B-A) {diff != null ? `${diff >= 0 ? "+" : ""}${diff.toFixed(1)}%` : "-"}
             </span>
           </div>
-          <div style={{ textAlign: "center", fontSize: "12px", color: "#333", marginTop: "4px" }}>
-            {t("constructionProgressTab:planProcessA")}
+          {/* 3-column: 월(막대) / 연(도넛) / 누계(도넛) */}
+          <div style={{ display: "flex", flex: 1, gap: "0", marginTop: "8px", alignItems: "stretch" }}>
+
+            {/* 월 막대 */}
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+              <div style={{ width: "120px", height: "140px" }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart
+                    data={[{ plan: planMonth ?? 0, actual: actualMonth ?? 0 }]}
+                    margin={{ top: 24, right: 10, left: 10, bottom: 0 }}
+                  >
+                    <YAxis hide domain={[0, 100]} />
+                    <Bar dataKey="plan" name={t("common:plan")} fill={chartTheme.planBlue} barSize={24} isAnimationActive={false}>
+                      <LabelList
+                        dataKey="plan"
+                        position="top"
+                        style={{ fontSize: "11px", fill: chartTheme.planBlue, fontWeight: 600 }}
+                        formatter={(v: number) => planMonth != null ? `${v.toFixed(1)}%` : "-"}
+                      />
+                    </Bar>
+                    <Bar dataKey="actual" name={t("common:actual")} fill={chartTheme.outflowRed} barSize={24} isAnimationActive={false}>
+                      <LabelList
+                        dataKey="actual"
+                        position="top"
+                        style={{ fontSize: "11px", fill: chartTheme.outflowRed, fontWeight: 600 }}
+                        formatter={(v: number) => actualMonth != null ? `${v.toFixed(1)}%` : "-"}
+                      />
+                    </Bar>
+                    <Legend wrapperStyle={{ fontSize: "11px" }} />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
+              <span style={{ fontSize: "13px", color: INK_SECONDARY, fontWeight: 700, marginTop: "4px" }}>
+                {t("common:monthly").replace("별", "")}
+              </span>
+            </div>
+
+            <div style={{ width: "1px", backgroundColor: DIVIDER, alignSelf: "stretch", margin: "0 6px" }} />
+
+            {/* 연 도넛 */}
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+              <Donut
+                percent={actualAnnual ?? 0}
+                color={chartTheme.outflowRed}
+                extraArc={planAnnual != null ? { percent: planAnnual, color: chartTheme.planBlue } : undefined}
+                label={actualAnnual != null ? fmtPct(actualAnnual) : "-"}
+                size={120}
+                stroke={15}
+                labelSize={18}
+              />
+              <div style={{ display: "flex", gap: "6px", fontSize: "11px", marginTop: "6px" }}>
+                <span style={{ color: chartTheme.planBlue, fontWeight: 600 }}>{t("common:plan")} {planAnnual != null ? fmtPct(planAnnual) : "-"}</span>
+                <span style={{ color: chartTheme.outflowRed, fontWeight: 600 }}>{t("common:actual")} {actualAnnual != null ? fmtPct(actualAnnual) : "-"}</span>
+              </div>
+              <span style={{ fontSize: "13px", color: INK_SECONDARY, fontWeight: 700, marginTop: "4px" }}>연</span>
+            </div>
+
+            <div style={{ width: "1px", backgroundColor: DIVIDER, alignSelf: "stretch", margin: "0 6px" }} />
+
+            {/* 누계 도넛 */}
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+              <Donut
+                percent={actualCum ?? 0}
+                color={chartTheme.outflowRed}
+                extraArc={planCum != null ? { percent: planCum, color: chartTheme.planBlue } : undefined}
+                label={actualCum != null ? fmtPct(actualCum) : "-"}
+                size={120}
+                stroke={15}
+                labelSize={18}
+              />
+              <div style={{ display: "flex", gap: "6px", fontSize: "11px", marginTop: "6px" }}>
+                <span style={{ color: chartTheme.planBlue, fontWeight: 600 }}>{t("common:plan")} {fmtPct(planCum)}</span>
+                <span style={{ color: chartTheme.outflowRed, fontWeight: 600 }}>{t("common:actual")} {fmtPct(actualCum)}</span>
+              </div>
+              <span style={{ fontSize: "13px", color: INK_SECONDARY, fontWeight: 700, marginTop: "4px" }}>{t("common:cumulative")}</span>
+            </div>
           </div>
-          <div style={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "center", margin: "4px 0 2px", position: "relative", minHeight: 0 }}>
-            <Donut
-              percent={actualCum ?? 0}
-              color={chartTheme.outflowRed}
-              extraArc={planCum != null ? { percent: planCum, color: chartTheme.planBlue } : undefined}
-              label={fmtPct(actualCum)}
-              size={230}
-              stroke={26}
-              labelSize={34}
-            />
-            <span style={{ position: "absolute", right: "6px", bottom: "10px", fontSize: "12px", color: chartTheme.planBlue, fontWeight: 700 }}>
-              {fmtPct(planCum)}
-            </span>
-          </div>
-          <div style={{ textAlign: "center", fontSize: "12px", color: "#16294a", fontWeight: 600 }}>
-            {t("constructionProgressTab:actualProcessB")}
-          </div>
+
           <div
             style={{
               textAlign: "center",
-              fontSize: "13px",
-              color: "#333",
+              fontSize: "12px",
+              color: INK_BODY,
               fontWeight: 700,
               marginTop: "8px",
-              borderTop: "1px solid #eef2f7",
+              borderTop: `1px solid ${DIVIDER}`,
               paddingTop: "6px",
             }}
           >

@@ -1,7 +1,7 @@
 {
-  "currentMonthRevenue": "Doanh thu tháng này",
-  "currentMonthOperatingProfit": "Lợi nhuận kinh doanh tháng này",
-  "annualCumulativeRevenue": "Doanh thu lũy kế năm",
-  "annualCumulativeOperatingProfit": "Lợi nhuận kinh doanh lũy kế năm",
+  "ytdRevenue": "Doanh thu lũy kế",
+  "ytdOperatingProfit": "Lợi nhuận kinh doanh lũy kế",
+  "fullYearRevenue": "Doanh thu cả năm",
+  "fullYearOperatingProfit": "Lợi nhuận kinh doanh cả năm",
   "errorShort": "Lỗi"
 }

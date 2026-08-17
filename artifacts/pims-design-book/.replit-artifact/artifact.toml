@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/pims-design-book/"
+title = "PIMS Design Book"
+description = "A static design reference app documenting all color tokens, typography, chart types, and shared UI components used in the PIMS Dashboard 1. Serves as a living style guide for the team when building new screens or reusing patterns."
+version = "1.0.0"
+id = "artifacts/pims-design-book"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/pims-design-book/" ]
+localPort = 21276
+
+[services.development]
+run = "pnpm --filter @workspace/pims-design-book run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/pims-design-book", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/pims-design-book/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21276"
+BASE_PATH = "/pims-design-book/"

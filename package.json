@@ -7,13 +7,15 @@
     "dev:be": "cross-env PORT=5100 dotenv -e .env -- npx pnpm --filter @workspace/api-server start",
     "dev:fe": "cross-env PORT=5500 BASE_PATH=/ dotenv -e .env -- npx pnpm --filter @workspace/pims-dashboard-2 dev",
     "db:push": "cross-env PORT=5100 dotenv -e .env -- npx pnpm --filter @workspace/db run push",
-    "build": "cross-env PORT=5100 BASE_PATH=/ dotenv -e .env -- npx pnpm --filter @workspace/api-server build && cross-env PORT=5500 BASE_PATH=/ dotenv -e .env -- npx pnpm --filter @workspace/pims-dashboard-2 build",
+    "build": "cross-env PORT=5100 BASE_PATH=/ dotenv -e .env -- npx pnpm --filter @workspace/api-server build && cross-env PORT=5500 BASE_PATH=./ VITE_API_URL=http://boatcon.infoerp.com.vn:9480 dotenv -e .env -- npx pnpm --filter @workspace/pims-dashboard-2 build",
+    "build:fe": "cross-env PORT=5500 BASE_PATH=./ VITE_API_URL=http://boatcon.infoerp.com.vn:9480 dotenv -e .env -- npx pnpm --filter @workspace/pims-dashboard-2 build",
     "typecheck": "npx pnpm -r --if-present run typecheck"
   },
   "private": true,
   "dependencies": {
     "@replit/connectors-sdk": "^0.4.1",
-    "marked": "^18.0.8"
+    "marked": "^18.0.8",
+    "vitest": "^4.1.10"
   },
   "devDependencies": {
     "@esbuild/win32-x64": "^0.27.3",
@@ -21,7 +23,6 @@
     "concurrently": "^10.0.4",
     "cross-env": "^10.1.0",
     "dotenv-cli": "^11.0.0",
-    "lightningcss-win32-x64-msvc": "^1.33.0",
     "prettier": "^3.9.4",
     "typescript": "~5.9.3"
   }
