@@ -20,7 +20,6 @@ async function buildAll() {
     bundle: true,
     format: "esm",
     outdir: distDir,
-    outExtension: { ".js": ".mjs" },
     logLevel: "info",
     // Some packages may not be bundleable, so we externalize them, we can add more here as needed.
     // Some of the packages below may not be imported or installed, but we're adding them in case they are in the future.
@@ -115,6 +114,19 @@ import __bannerUrl from 'node:url';
 globalThis.require = __bannerCrReq(import.meta.url);
 globalThis.__filename = __bannerUrl.fileURLToPath(import.meta.url);
 globalThis.__dirname = __bannerPath.dirname(globalThis.__filename);
+const __bundlerProxy = new Proxy({}, {
+  get(target, prop) {
+    if (typeof prop !== 'string') return Reflect.get(target, prop);
+    const file = prop === 'pino/file' ? './pino-file.js' : ('./' + prop + '.js');
+    return __bannerPath.resolve(globalThis.__dirname, file);
+  },
+  set() { return true; }
+});
+Object.defineProperty(globalThis, '__bundlerPathsOverrides', {
+  get() { return __bundlerProxy; },
+  set() {},
+  configurable: true
+});
     `,
     },
   });

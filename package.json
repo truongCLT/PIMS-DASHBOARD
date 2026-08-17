@@ -16,6 +16,7 @@
     "marked": "^18.0.8"
   },
   "devDependencies": {
+    "@esbuild/win32-x64": "^0.27.3",
     "@rollup/rollup-win32-x64-msvc": "^4.62.4",
     "concurrently": "^10.0.4",
     "cross-env": "^10.1.0",
