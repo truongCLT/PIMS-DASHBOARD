@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { getBaseUrl } from "@workspace/api-client-react";
 import { ProjectCommentPanel } from "./ProjectCommentPanel";
 import {
   ComposedChart,
@@ -346,7 +347,7 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
               const photos = detail?.photos ?? [];
               const hasPhotos = photos.length > 0;
               const safeIdx = Math.min(photoIdx, Math.max(photos.length - 1, 0));
-              const src = hasPhotos ? `/api/storage${photos[safeIdx].objectPath}` : projectPhoto;
+              const src = hasPhotos ? `${getBaseUrl() || ""}/api/storage${photos[safeIdx].objectPath}` : projectPhoto;
               return (
                 <PhotoPager
                   src={src}

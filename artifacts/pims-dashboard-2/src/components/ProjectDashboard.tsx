@@ -1,7 +1,7 @@
 import React, { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
-import { usePutProjectdetail, useGetPimsvinaSiterate } from "@workspace/api-client-react";
+import { usePutProjectdetail, useGetPimsvinaSiterate, getBaseUrl } from "@workspace/api-client-react";
 import { ProjectCommentPanel } from "./ProjectCommentPanel";
 import { Upload, FileSpreadsheet, RefreshCw } from "lucide-react";
 import projectPhoto from "../assets/project-photo.png";
@@ -234,7 +234,8 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
               setSyncing(true);
               try {
                 const token = readAdminToken();
-                const res = await fetch("/api/sync-pimsvina/preview", {
+                const baseUrl = getBaseUrl() || "";
+                const res = await fetch(baseUrl + "/api/sync-pimsvina/preview", {
                   method: "POST",
                   headers: {
                     "Content-Type": "application/json",
@@ -286,7 +287,8 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
             setConfirming(true);
             try {
               const token = readAdminToken();
-              const res = await fetch("/api/sync-pimsvina/confirm", {
+              const baseUrl = getBaseUrl() || "";
+              const res = await fetch(baseUrl + "/api/sync-pimsvina/confirm", {
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",

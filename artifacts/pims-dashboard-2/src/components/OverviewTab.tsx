@@ -6,6 +6,7 @@ import {
   getListSalescostSitesQueryKey,
   useGetCashflowMonthly,
   getGetCashflowMonthlyQueryKey,
+  getBaseUrl,
 } from "@workspace/api-client-react";
 import projectPhoto from "../assets/project-photo.png";
 import { PhotoPager } from "./PhotoPager";
@@ -101,7 +102,7 @@ function PhotoCard({ projectName, photos }: { projectName: string; photos: Proje
 
   const hasPhotos = photos.length > 0;
   const safeIdx = Math.min(active, Math.max(photos.length - 1, 0));
-  const src = hasPhotos ? `/api/storage${photos[safeIdx].objectPath}` : projectPhoto;
+  const src = hasPhotos ? `${getBaseUrl() || ""}/api/storage${photos[safeIdx].objectPath}` : projectPhoto;
   const total = hasPhotos ? photos.length : 1;
 
   return (
