@@ -979,7 +979,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                     aria-label={t("projectDataEntryTab:cumulativePlanPercent")}
                     data-row={i}
                     data-col={4}
-                    style={{ ...inputStyle, textAlign: "right", backgroundColor: TABLE_HEADER_BG, color: INK_MUTED }}
+                    style={{ ...inputStyle, textAlign: "right" }}
                   />
                 </td>
                 <td style={tdCell}><NumInput value={p.actualCumPct} onChange={(v) => updateProgressAt(i, { actualCumPct: v })} data-row={i} data-col={5} /></td>
