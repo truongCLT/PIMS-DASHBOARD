@@ -256,7 +256,7 @@ export function SaleProfitTab({
                 tickLine={false}
                 axisLine={{ stroke: chartTheme.axisLine }}
               />
-              {/* 막대는 아래쪽 절반, 누계 선은 위쪽에 배치해 숫자 겹침 방지 */}
+              {/* 계획은 면적, 실적은 막대, 누계는 선으로 겹침을 줄여 표시 */}
               <YAxis hide domain={[0, Math.max(maxRevenue * 2.4, 1)]} />
               <YAxis yAxisId="cum" hide domain={[0, Math.max(maxCum * 1.1, 1)]} />
               <Tooltip
@@ -265,14 +265,23 @@ export function SaleProfitTab({
               />
               <Legend wrapperStyle={{ fontSize: "12px" }} />
               {pdSalesHasAny && (
-                <Bar dataKey="plan" name={t("saleProfitTab:monthlyPlan")} fill={chartTheme.planGray} barSize={14} isAnimationActive={false}>
+                <Area
+                  dataKey="plan"
+                  name={t("saleProfitTab:monthlyPlan")}
+                  type="monotone"
+                  stroke={chartTheme.planGray}
+                  strokeWidth={1.5}
+                  fill={chartTheme.planGray}
+                  fillOpacity={0.42}
+                  isAnimationActive={false}
+                >
                   <LabelList
                     dataKey="plan"
                     position="top"
                     style={{ fontSize: "11px", fill: chartTheme.axisText }}
                     formatter={(v: number) => (v !== 0 ? Math.round(v).toLocaleString() : "")}
                   />
-                </Bar>
+                </Area>
               )}
               <Bar
                 dataKey="revenue"
@@ -288,15 +297,13 @@ export function SaleProfitTab({
                   formatter={(v: number) => (v !== 0 ? Math.round(v).toLocaleString() : "")}
                 />
               </Bar>
-              <Area
+              <Line
                 yAxisId="cum"
                 dataKey="cumulative"
                 name={t("common:cumulative")}
                 type="monotone"
                 stroke={chartTheme.outflowRed}
                 strokeWidth={2}
-                fill={chartTheme.outflowRed}
-                fillOpacity={0.15}
                 dot={{ r: 3, fill: chartTheme.outflowRed }}
                 isAnimationActive={false}
               >
@@ -307,7 +314,7 @@ export function SaleProfitTab({
                   style={{ fontSize: "11px", fill: chartTheme.outflowRed }}
                   formatter={(v: number) => Math.round(v).toLocaleString()}
                 />
-              </Area>
+              </Line>
             </ComposedChart>
           </ResponsiveContainer>
         </div>
