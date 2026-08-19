@@ -153,6 +153,33 @@ function NumInput({
   );
 }
 
+function calculateProgressPlanCumulative(rows: ProjectDetailProgressPoint[]): ProjectDetailProgressPoint[] {
+  let cumulative = 0;
+  let hasPlan = false;
+  const cumulativeByIndex = new Map<number, number | null>();
+
+  rows
+    .map((row, index) => ({ row, index }))
+    .sort(
+      (a, b) =>
+        a.row.year - b.row.year ||
+        a.row.month - b.row.month ||
+        a.index - b.index,
+    )
+    .forEach(({ row, index }) => {
+      if (row.planPct != null) {
+        cumulative += row.planPct;
+        hasPlan = true;
+      }
+      cumulativeByIndex.set(index, hasPlan ? Math.min(100, Math.max(0, cumulative)) : null);
+    });
+
+  return rows.map((row, index) => ({
+    ...row,
+    planCumPct: cumulativeByIndex.get(index) ?? null,
+  }));
+}
+
 function TextInput({
   value,
   onChange,
@@ -345,7 +372,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
   useEffect(() => {
     if (detail && !loaded && !(cfRef != null && cfQuery.isLoading)) {
       setOverview(detail.overview ?? EMPTY_OVERVIEW);
-      setProgress(detail.progress);
+      setProgress(calculateProgressPlanCumulative(detail.progress));
       setMilestones(detail.milestones);
       {
         const fixed = (["bidding", "execution"] as const).map(
@@ -397,6 +424,10 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
 
   const updateAt = <T,>(setter: React.Dispatch<React.SetStateAction<T[]>>, i: number, patch: Partial<T>) =>
     setter((rows) => rows.map((r, j) => (j === i ? { ...r, ...patch } : r)));
+  const updateProgressAt = (i: number, patch: Partial<ProjectDetailProgressPoint>) =>
+    setProgress((rows) =>
+      calculateProgressPlanCumulative(rows.map((row, j) => (j === i ? { ...row, ...patch } : row))),
+    );
   // 자금수지 표를 사용자가 직접 수정하면 prefill 상태 해제 → 이후 저장부터 실제 데이터로 저장
   const editCashflow: React.Dispatch<React.SetStateAction<ProjectDetailCashflowPoint[]>> = (action) => {
     setCfPrefilled(false);
@@ -936,13 +967,23 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
           <tbody>
             {progress.map((p, i) => (
               <tr key={i}>
-                <td style={tdCell}><NumInput value={p.year} onChange={(v) => updateAt(setProgress, i, { year: v ?? 0 })} data-row={i} data-col={0} /></td>
-                <td style={tdCell}><NumInput value={p.month} onChange={(v) => updateAt(setProgress, i, { month: v ?? 0 })} data-row={i} data-col={1} /></td>
-                <td style={tdCell}><NumInput value={p.planPct} onChange={(v) => updateAt(setProgress, i, { planPct: v })} data-row={i} data-col={2} /></td>
-                <td style={tdCell}><NumInput value={p.actualPct} onChange={(v) => updateAt(setProgress, i, { actualPct: v })} data-row={i} data-col={3} /></td>
-                <td style={tdCell}><NumInput value={p.planCumPct} onChange={(v) => updateAt(setProgress, i, { planCumPct: v })} data-row={i} data-col={4} /></td>
-                <td style={tdCell}><NumInput value={p.actualCumPct} onChange={(v) => updateAt(setProgress, i, { actualCumPct: v })} data-row={i} data-col={5} /></td>
-                <td style={{ ...tdCell, textAlign: "center" }}><DelBtn onClick={() => removeAt(setProgress, i)} /></td>
+                <td style={tdCell}><NumInput value={p.year} onChange={(v) => updateProgressAt(i, { year: v ?? 0 })} data-row={i} data-col={0} /></td>
+                <td style={tdCell}><NumInput value={p.month} onChange={(v) => updateProgressAt(i, { month: v ?? 0 })} data-row={i} data-col={1} /></td>
+                <td style={tdCell}><NumInput value={p.planPct} onChange={(v) => updateProgressAt(i, { planPct: v })} data-row={i} data-col={2} /></td>
+                <td style={tdCell}><NumInput value={p.actualPct} onChange={(v) => updateProgressAt(i, { actualPct: v })} data-row={i} data-col={3} /></td>
+                <td style={tdCell}>
+                  <input
+                    type="number"
+                    value={p.planCumPct ?? ""}
+                    readOnly
+                    aria-label={t("projectDataEntryTab:cumulativePlanPercent")}
+                    data-row={i}
+                    data-col={4}
+                    style={{ ...inputStyle, textAlign: "right", backgroundColor: TABLE_HEADER_BG, color: INK_MUTED }}
+                  />
+                </td>
+                <td style={tdCell}><NumInput value={p.actualCumPct} onChange={(v) => updateProgressAt(i, { actualCumPct: v })} data-row={i} data-col={5} /></td>
+                <td style={{ ...tdCell, textAlign: "center" }}><DelBtn onClick={() => setProgress((rows) => calculateProgressPlanCumulative(rows.filter((_, j) => j !== i)))} /></td>
               </tr>
             ))}
           </tbody>
@@ -957,7 +998,12 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                 ? { year: last.year + 1, month: 1 }
                 : { year: last.year, month: last.month + 1 }
               : { year: nowYear, month: 1 };
-            setProgress((rows) => [...rows, { ...next, planPct: null, actualPct: null, planCumPct: null, actualCumPct: null }]);
+            setProgress((rows) =>
+              calculateProgressPlanCumulative([
+                ...rows,
+                { ...next, planPct: null, actualPct: null, planCumPct: null, actualCumPct: null },
+              ]),
+            );
           }}
         >
           <Plus size={12} /> {t("projectDataEntryTab:addMonth")}
