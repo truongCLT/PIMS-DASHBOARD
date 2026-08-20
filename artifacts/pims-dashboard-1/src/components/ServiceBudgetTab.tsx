@@ -267,7 +267,7 @@ export function ServiceBudgetTab({ projectName }: { projectName: string }) {
                       />
                     </div>
                   ) : (
-                    items.map((c, i) => (
+                    items.map((c: any, i: number) => (
                       <DualBar
                         key={`${c.item}-${i}`}
                         label={c.item ?? ""}

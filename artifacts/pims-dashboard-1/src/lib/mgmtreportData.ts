@@ -17,6 +17,22 @@ import {
 
 export const REPORT_YEAR = new Date().getFullYear();
 
+/**
+ * 프로젝트명으로 시공/용역 부문을 조회한다. 서버가 회사/부문 구조(CATB_COMPANYSTRUCT 동기화)로
+ * 명시적으로 매핑한 businessType을 우선 사용하고, 매핑되지 않은 프로젝트는 기존 키워드 추정
+ * 방식(classifyMrProject)으로 폴백한다 — App.tsx의 시공/용역 대시보드 라우팅에 사용.
+ */
+export function useProjectBusinessType(projectName: string | null): "시공" | "용역" | null {
+  const projectsQuery = useListMgmtreportProjects(
+    { year: REPORT_YEAR },
+    { query: { queryKey: getListMgmtreportProjectsQueryKey({ year: REPORT_YEAR }), enabled: projectName != null } },
+  );
+  if (!projectName) return null;
+  const project = projectsQuery.data?.projects.find((p) => p.name === projectName);
+  if (!project) return null;
+  return project.businessType ?? classifyMrProject(projectName);
+}
+
 interface Line {
   code: string;
   label: string;
@@ -55,8 +71,6 @@ export interface SalesRow {
   plan: number | null;
   actual: number | null;
   rate: number | null;
-  /** 조회 종료월 이후(전망) 구간 여부 */
-  isForecast?: boolean;
 }
 
 export interface ProfitRow {
@@ -85,8 +99,6 @@ export interface DashboardData {
   year: number;
   month: number;
   orderMonthActual: number | null;
-  /** 조회 시작 월 (1..12) — 연간 누적 KPI의 실제 시작 월 */
-  fromMonth: number;
   kpi: KpiItem[];
   performanceRows: PerformanceRow[];
   salesData: SalesRow[];
@@ -169,7 +181,7 @@ export interface DeriveOptions {
   from: number; // 1..12
   to: number; // 1..12 (from > to → empty range)
   bucket: PeriodMode;
-  convert: (v: number) => number;
+  convert: (v: number, year?: number, month?: number) => number;
   unitLabel: string;
   projectScope: ProjectScope | null;
   /** 매출 차트 데이터를 조회 기간과 무관하게 12개월 전체로 생성 (엑셀 보고서용) */
@@ -181,7 +193,7 @@ export function defaultDeriveOptions(month: number): DeriveOptions {
     from: 1,
     to: Math.min(Math.max(month, 1), 12),
     bucket: "Month",
-    convert: (v) => v,
+    convert: (v) => v, // identity — 이미 변환된 값이거나 변환 불필요한 컨텍스트에서 사용
     unitLabel: "천 USD",
     projectScope: null,
     salesFullYear: true,
@@ -201,7 +213,8 @@ export function deriveDashboardData(
   const byCode = new Map(lines.map((l) => [l.code, l]));
   const getLine = (code: string): Line => byCode.get(code) ?? ZERO;
 
-  const cv = (arr: number[]) => arr.map((v) => convert(v));
+  // 배열 인덱스 i는 summary.year의 (i+1)월 — 월별 환율을 적용해 변환한다.
+  const cv = (arr: number[]) => arr.map((v, i) => convert(v, summary.year, i + 1));
   const totalOf = (arr: number[]) => arr.reduce((a, b) => a + b, 0);
 
   let revenue: Line;
@@ -216,10 +229,10 @@ export function deriveDashboardData(
     const revPlan = cv(projectScope.revenuePlan);
     const revActual = cv(projectScope.revenueActual);
     const grossPlan = projectScope.revenuePlan.map((v, i) =>
-      convert(v - (projectScope.cogsPlan[i] ?? 0)),
+      convert(v - (projectScope.cogsPlan[i] ?? 0), summary.year, i + 1),
     );
     const grossActual = projectScope.revenueActual.map((v, i) =>
-      convert(v - (projectScope.cogsActual[i] ?? 0)),
+      convert(v - (projectScope.cogsActual[i] ?? 0), summary.year, i + 1),
     );
     revenue = {
       code: "revenue",
@@ -239,12 +252,14 @@ export function deriveDashboardData(
     };
     sga = op1 = op2 = ordinary = orders = null;
   } else {
+    // planTotal/actualTotal은 서버에서 이미 연간 합계로 집계된 단일 값이라 특정 월에 귀속되지 않으므로,
+    // 이 화면의 기준월(M, 조회 종료월)의 환율을 앵커로 사용해 변환한다.
     const conv = (l: Line): Line => ({
       ...l,
       plan: cv(l.plan),
       actual: cv(l.actual),
-      planTotal: convert(l.planTotal),
-      actualTotal: convert(l.actualTotal),
+      planTotal: convert(l.planTotal, summary.year, M),
+      actualTotal: convert(l.actualTotal, summary.year, M),
     });
     revenue = conv(getLine("revenue"));
     gross = conv(getLine("gross_profit"));
@@ -265,176 +280,158 @@ export function deriveDashboardData(
         plan: "-",
         actual: "-",
         achievement: "-",
-        achievementColor: "#9ab0c8",
+        achievementColor: "#f2736a",
       };
     }
-    const plan =
-      mode === "monthly" ? line.plan[M - 1]
-      : mode === "ytd"   ? rangeSum(line.plan, 1, M)
-      :                    line.planTotal;
-    const actual =
-      mode === "monthly" ? line.actual[M - 1]
-      : mode === "ytd"   ? rangeSum(line.actual, 1, M)
-      :                    line.actualTotal;
+    let p = 0;
+    let a = 0;
+    if (mode === "monthly") {
+      p = line.plan[M - 1] ?? 0;
+      a = line.actual[M - 1] ?? 0;
+    } else if (mode === "ytd") {
+      p = rangeSum(line.plan, 1, M);
+      a = rangeSum(line.actual, 1, M);
+    } else {
+      p = line.planTotal;
+      a = line.actualTotal;
+    }
     return {
       title,
-      plan: roundSmart(plan),
-      actual: roundSmart(actual),
-      achievement: pctStr(actual, plan),
-      achievementColor: kpiColor(actual, plan),
+      plan: fmtN(p),
+      actual: fmtN(a),
+      achievement: pctStr(a, p),
+      achievementColor: kpiColor(a, p),
     };
   };
 
   const kpi: KpiItem[] = [
-    kpiOf("당월 누적 매출",     revenue, "ytd"),
-    kpiOf("당월 누적 영업이익", op1,     "ytd"),
-    kpiOf("연간 합계 매출",     revenue, "fullYear"),
-    kpiOf("연간 합계 영업이익", op1,     "fullYear"),
+    kpiOf("YTD Revenue", revenue, "ytd"),
+    kpiOf("YTD Operating Profit", op1 ?? gross, "ytd"),
+    kpiOf("Full Year Revenue", revenue, "fullYear"),
+    kpiOf("Full Year Operating Profit", op1 ?? gross, "fullYear"),
   ];
 
-  const perfRow = (label: string, line: Line | null, withSub: boolean): PerformanceRow => {
-    if (emptyRange || !line) {
+  const pRow = (label: string, line: Line | null, subLine?: Line | null): PerformanceRow => {
+    if (emptyRange || !line || projectScope?.empty) {
       return {
         label,
         planM: "-",
         actualM: "-",
         achM: "-",
-        planY: line && !emptyRange ? fmtN(line.planTotal) : "-",
-        forecastY: line && !emptyRange ? fmtN(line.actualTotal) : "-",
-        achY: line && !emptyRange ? pctStr(line.actualTotal, line.planTotal) : "-",
+        planY: "-",
+        forecastY: "-",
+        achY: "-",
       };
     }
-    const planM = rangeSum(line.plan, F, M);
-    const actualM = rangeSum(line.actual, F, M);
+    const pM = rangeSum(line.plan, F, M);
+    const aM = rangeSum(line.actual, F, M);
+    const pY = line.planTotal;
+    const aY = line.actualTotal;
     const row: PerformanceRow = {
       label,
-      planM: fmtN(planM),
-      actualM: fmtN(actualM),
-      achM: pctStr(actualM, planM),
-      planY: fmtN(line.planTotal),
-      forecastY: fmtN(line.actualTotal),
-      achY: pctStr(line.actualTotal, line.planTotal),
+      planM: fmtN(pM),
+      actualM: fmtN(aM),
+      achM: pctStr(aM, pM),
+      planY: fmtN(pY),
+      forecastY: fmtN(aY),
+      achY: pctStr(aY, pY),
     };
-    if (withSub) {
-      row.sub = ratioStr(planM, rangeSum(revenue.plan, F, M));
-      row.subActual = ratioStr(actualM, rangeSum(revenue.actual, F, M));
-      row.subForecast = ratioStr(line.planTotal, revenue.planTotal);
-      row.subAch = ratioStr(line.actualTotal, revenue.actualTotal);
+
+    if (subLine) {
+      const spM = rangeSum(subLine.plan, F, M);
+      const saM = rangeSum(subLine.actual, F, M);
+      const spY = subLine.planTotal;
+      const saY = subLine.actualTotal;
+      row.sub = `${label} 달성률 / 이익률`;
+      row.subActual = ratioStr(saM, aM);
+      row.subForecast = ratioStr(saY, aY);
+      row.subAch = ratioStr(saY, pY ? (saM / spM) * pY : 0);
     }
     return row;
   };
 
   const performanceRows: PerformanceRow[] = [
-    perfRow("수주", orders, false),
-    perfRow("매출", revenue, false),
-    perfRow("매출이익", gross, true),
-    perfRow("판관비", sga, true),
-    perfRow("영업이익", op1, true),
-    perfRow("경상이익", ordinary, true),
+    pRow("매출액", revenue),
+    pRow("매출이익", gross, revenue),
+    pRow("판관비", sga),
+    pRow("영업이익", op1, revenue),
+    pRow("영업외손익", op2),
+    pRow("경상이익", ordinary, revenue),
   ];
 
-  const buckets = makeBuckets(F, M, bucket);
-  const salesBuckets = opts.salesFullYear && !emptyRange ? makeBuckets(1, 12, bucket) : buckets;
-
-  const salesData: SalesRow[] = salesBuckets.map((b) => {
-    const plan = roundSmart(b.months.reduce((a, m) => a + (revenue.plan[m - 1] ?? 0), 0));
-    const actual = roundSmart(b.months.reduce((a, m) => a + (revenue.actual[m - 1] ?? 0), 0));
+  const buckets = makeBuckets(opts.salesFullYear ? 1 : F, opts.salesFullYear ? 12 : M, bucket);
+  const salesData: SalesRow[] = buckets.map((b) => {
+    const plan = rangeSum(revenue.plan, b.months[0], b.months[b.months.length - 1]);
+    const actual = rangeSum(revenue.actual, b.months[0], b.months[b.months.length - 1]);
+    const inside = b.months.every((m) => m >= F && m <= M);
     return {
       month: b.label,
-      net: null,
-      report: null,
-      plan,
-      actual,
+      net: inside ? actual - plan : null,
+      report: inside ? actual : null,
+      plan: roundSmart(plan),
+      actual: inside ? roundSmart(actual) : null,
       rate: plan ? Math.round((actual / plan) * 100) : null,
-      isForecast: (b.months[0] ?? 0) > M,
     };
   });
 
-  let profitData: ProfitRow[] = [];
-  if (!projectScope && !emptyRange && sga && op1 && op2 && ordinary) {
-    profitData = buckets.map((b) => {
-      const sum = (line: Line, kind: "plan" | "actual") =>
-        b.months.reduce((a, m) => a + (line[kind][m - 1] ?? 0), 0);
-      const rev = sum(revenue, "actual");
-      const opV = roundSmart(sum(op1!, "actual"));
-      const nonV = roundSmart(sum(ordinary!, "actual") - sum(op2!, "actual"));
-      const sgaV = roundSmart(sum(sga!, "actual"));
-      const grossV = roundSmart(sum(gross, "actual"));
-      const ordV = roundSmart(sum(ordinary!, "actual"));
-      return {
-        m: b.label,
-        op: opV,
-        opPct: ratioStr(opV, rev),
-        non: nonV,
-        total: grossV,
-        totalPct: ratioStr(grossV, rev),
-        sga: `-${fmtN(sgaV)}`,
-        sgaValue: sgaV,
-        sgaPct: ratioStr(sgaV, rev),
-        ord: ordV,
-        ordPct: ratioStr(ordV, rev),
-        con: "-",
-        svc: "-",
-      };
-    });
-  } else if (projectScope && !projectScope.empty && !emptyRange) {
-    /* 스코프 뷰: 판관비·영업이익 데이터 없음 → 매출이익만 표시.
-     * profitData를 채워 상세 모달 행을 활성화하고 현장별 드릴다운을 가능하게 한다. */
-    const sumActual = (arr: number[], months: number[]) =>
-      months.reduce((a, m) => a + (arr[m - 1] ?? 0), 0);
-    profitData = buckets
-      .map((b) => {
-        const rev = sumActual(revenue.actual, b.months);
-        const grossV = roundSmart(sumActual(gross.actual, b.months));
-        return {
-          m: b.label,
-          op: 0,
-          opPct: "-",
-          non: 0,
-          total: grossV,
-          totalPct: rev ? ratioStr(grossV, rev) : "-",
-          sga: "-",
-          sgaValue: 0,
-          sgaPct: "-",
-          ord: 0,
-          ordPct: "-",
-          con: "-",
-          svc: "-",
-        };
-      })
-      .filter((row) => row.total !== 0);
-  }
+  const pBuckets = makeBuckets(F, M, bucket);
+  const profitData: ProfitRow[] = pBuckets.map((b) => {
+    const fromM = b.months[0];
+    const toM = b.months[b.months.length - 1];
+
+    const revA = rangeSum(revenue.actual, fromM, toM);
+    const grossA = rangeSum(gross.actual, fromM, toM);
+    const opA = op1 ? rangeSum(op1.actual, fromM, toM) : grossA;
+    const sgaA = sga ? rangeSum(sga.actual, fromM, toM) : 0;
+    const op2A = op2 ? rangeSum(op2.actual, fromM, toM) : 0;
+    const ordA = ordinary ? rangeSum(ordinary.actual, fromM, toM) : opA + op2A;
+
+    return {
+      m: b.label,
+      op: roundSmart(opA),
+      opPct: ratioStr(opA, revA),
+      non: roundSmart(op2A),
+      total: roundSmart(grossA),
+      totalPct: ratioStr(grossA, revA),
+      sga: ratioStr(sgaA, revA),
+      sgaValue: roundSmart(sgaA),
+      sgaPct: ratioStr(sgaA, revA),
+      ord: roundSmart(ordA),
+      ordPct: ratioStr(ordA, revA),
+      con: "-",
+      svc: "-",
+    };
+  });
 
   let orderStatus: OrderStatusData | null = null;
-  let orderMonthActual: number | null = null;
-  if (orders && !emptyRange) {
-    const orderedCum = roundSmart(rangeSum(orders.actual, F, M));
+  if (!projectScope && orders) {
+    const pY = orders.planTotal;
+    const aM = rangeSum(orders.actual, 1, M);
     orderStatus = {
-      planTotal: roundSmart(orders.planTotal),
-      ordered: orderedCum,
-      remaining: Math.max(roundSmart(orders.planTotal) - orderedCum, 0),
+      planTotal: roundSmart(pY),
+      ordered: roundSmart(aM),
+      remaining: roundSmart(Math.max(0, pY - aM)),
     };
-    orderMonthActual = roundSmart(orders.actual[M - 1]);
   }
+
+  const profitNote =
+    projectScope != null
+      ? projectScope.kind === "division"
+        ? "※ 부문 합계 보기에서는 판관비·영업이익 손익 항목을 집계하지 않습니다 (매출·매출이익 항목만 제공)."
+        : "※ 개별 프로젝트 보기에서는 판관비·영업이익 손익 항목을 집계하지 않습니다 (매출·매출이익 항목만 제공)."
+      : null;
 
   return {
     year: summary.year,
     month: M,
-    orderMonthActual,
-    fromMonth: F,
+    orderMonthActual: orders?.actual[M - 1] ?? null,
     kpi,
     performanceRows,
     salesData,
     profitData,
     orderStatus,
     unitLabel,
-    profitNote: emptyRange
-      ? "선택한 기간에 데이터가 없습니다."
-      : projectScope
-        ? projectScope.kind === "division"
-          ? "부문별 손익 상세(판관비·영업이익) 데이터는 제공되지 않습니다."
-          : "프로젝트별 손익 상세(판관비·영업이익) 데이터는 제공되지 않습니다."
-        : null,
+    profitNote,
     emptyRange,
   };
 }
@@ -456,8 +453,9 @@ export function useDashboardData() {
   const summaryForYear = query.data?.find((s) => s.year === REPORT_YEAR) ?? null;
 
   const projectSelected = filters.project !== "All";
-  const divisionSelected = !projectSelected && filters.division != null;
+  const divisionSelected = filters.division != null;
   const needProjects = projectSelected || divisionSelected;
+
   const projectsQuery = useListMgmtreportProjects(
     { year: REPORT_YEAR },
     {
@@ -473,7 +471,7 @@ export function useDashboardData() {
     if (needProjects && !projectsQuery.data) return null;
 
     const { from, to } = resolveMonthWindow(filters.startYm, filters.endYm);
-    const convert = makeConverter(filters.currency, filters.unitIndex, filters.fxRates);
+    const convert = makeConverter(filters.currency, filters.unitIndex, filters.fxRateHistory);
     const unitLabel =
       filters.currency === "USD" && filters.unitIndex === 0
         ? "천 USD"
@@ -496,7 +494,7 @@ export function useDashboardData() {
       const members = (projectsQuery.data?.projects ?? []).filter(
         (p) =>
           !p.isGroup &&
-          classifyMrProject(p.name) === filters.division &&
+          (p.businessType ?? classifyMrProject(p.name)) === filters.division &&
           (filters.statusFilter == null || (p.status ?? "ongoing") === filters.statusFilter),
       );
       const sum12 = (pick: (p: (typeof members)[number]) => number[]): number[] => {
@@ -528,7 +526,6 @@ export function useDashboardData() {
       convert,
       unitLabel,
       projectScope,
-      salesFullYear: true,
     });
   }, [
     summaryForYear,
@@ -544,6 +541,7 @@ export function useDashboardData() {
     filters.period,
     filters.currency,
     filters.unitIndex,
+    filters.fxRateHistory,
   ]);
 
   /* 필터와 무관한 기본 스냅샷 (엑셀 보고서용) */

@@ -37,9 +37,10 @@ export function lookupFxRate(
   year: number,
   month: number,
 ): number {
+  if (!Array.isArray(history)) return FX_RATES[currency] ?? 1;
   let best: FxRateHistoryEntry | null = null;
   for (const e of history) {
-    if (e.currency !== currency) continue;
+    if (!e || e.currency !== currency) continue;
     if (e.year > year || (e.year === year && e.month > month)) continue; // target보다 미래는 후보 아님
     if (
       !best ||
@@ -49,7 +50,7 @@ export function lookupFxRate(
       best = e;
     }
   }
-  return best?.rate ?? FX_RATES[currency];
+  return best?.rate ?? FX_RATES[currency] ?? 1;
 }
 
 export const UNIT_OPTIONS: Record<CurrencyCode, [string, string]> = {
@@ -73,10 +74,13 @@ export function makeConverter(
   currency: CurrencyCode,
   unitIndex: 0 | 1,
   fxRateHistory: FxRateHistory = [],
-): (v: number, year: number, month: number) => number {
-  return (v: number, year: number, month: number) => {
-    const rate = lookupFxRate(fxRateHistory, currency, year, month);
-    const factor = (1000 * rate) / UNIT_DIVISORS[currency][unitIndex];
+): (v: number, year?: number, month?: number) => number {
+  return (v: number, year?: number, month?: number) => {
+    const y = year ?? REPORT_YEAR;
+    const m = month ?? 1;
+    const rate = lookupFxRate(fxRateHistory, currency, y, m);
+    const divisor = UNIT_DIVISORS[currency]?.[unitIndex] ?? 1e3;
+    const factor = (1000 * rate) / divisor;
     return v * factor;
   };
 }

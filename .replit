@@ -75,6 +75,27 @@ PORT = "23438"
 BASE_PATH = "/analytics-clean/"
 
 [[workflows.workflow]]
+name = "artifacts/pims-dashboard-1: web"
+author = "agent"
+mode = "parallel"
+
+[workflows.workflow.metadata]
+outputType = "webview"
+artifactId = "artifacts/pims-dashboard-1"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm --filter @workspace/pims-dashboard-1 run dev"
+cwd = "./artifacts/pims-dashboard-1"
+waitForPort = 23701
+ensurePreviewReachable = "/"
+router = "path"
+
+[workflows.workflow.tasks.env]
+PORT = "23701"
+BASE_PATH = "/pims-dashboard-1/"
+
+[[workflows.workflow]]
 name = "artifacts/pims-dashboard-2: web"
 author = "agent"
 mode = "parallel"

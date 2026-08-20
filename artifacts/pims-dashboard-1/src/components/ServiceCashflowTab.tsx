@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ProjectCommentPanel } from "./ProjectCommentPanel";
 
@@ -13,11 +13,15 @@ import {
   Legend,
   LabelList,
 } from "recharts";
-import { useGetCashflowMonthly, getGetCashflowMonthlyQueryKey } from "@workspace/api-client-react";
+import {
+  useGetCashflowMonthly,
+  getGetCashflowMonthlyQueryKey,
+  useGetPimsvinaExchangerate,
+} from "@workspace/api-client-react";
 import { getMrCashflowRef } from "../data/mrProjectLinks";
 import { useProjectDetail } from "../lib/projectDetailData";
 import { chartTheme } from "../lib/chartTheme";
-import { useMoney } from "../lib/displayUnit";
+import { useMoney, convertMoney, moneyUnitLabel, DEFAULT_EXCHANGE_RATES } from "../lib/displayUnit";
 import { cardStyle, sectionTitle, emptyNote, INK_MUTED, INK_BODY } from "../lib/uiTokens";
 
 type TFn = ReturnType<typeof useTranslation>["t"];
@@ -49,23 +53,37 @@ export function ServiceCashflowTab({
   months: number;
 }) {
   const { t } = useTranslation(["serviceCashflowTab", "common"]);
-  const { convert, unitLabel } = useMoney();
+  // Cashflow 탭은 (사이트별 계약 환율이 아닌) PIMSVINA의 공식 월별 환율(최신월)을 사용한다.
+  const { currency, unitOn } = useMoney();
+  const officialRateQuery = useGetPimsvinaExchangerate({ query: { staleTime: 5 * 60_000 } });
+  const officialRates = useMemo(() => {
+    const usdRow = officialRateQuery.data?.find((r) => r.currency === "USD");
+    if (!usdRow) return DEFAULT_EXCHANGE_RATES;
+    const krwRow = officialRateQuery.data?.find((r) => r.currency === "KRW");
+    return {
+      USD: 1,
+      VND: usdRow.rate,
+      KRW: krwRow ? krwRow.rate : DEFAULT_EXCHANGE_RATES.KRW,
+    };
+  }, [officialRateQuery.data]);
+  const convert = (v: number) => convertMoney(v, currency, unitOn, officialRates);
+  const unitLabel = moneyUnitLabel(currency, unitOn);
 
   // 보조: 데이터 입력 탭에서 저장한 프로젝트별 자금 데이터 (pd_cashflow_monthly)
   const { detail, isLoading: pdLoading } = useProjectDetail(projectName);
   const startIdx = fromYear * 12 + (fromMonth - 1);
   const pdPoints = (detail?.cashflow ?? [])
-    .filter((c) => {
+    .filter((c: any) => {
       const idx = c.year * 12 + (c.month - 1);
       return idx >= startIdx && idx < startIdx + months;
     })
-    .map((c) => ({
+    .map((c: any) => ({
       month: `${c.year}-${String(c.month).padStart(2, "0")}`,
       cashIn: c.cashIn ?? 0,
       cashOut: c.cashOut ?? 0,
       equivalent: c.equivalent ?? 0,
     }));
-  const hasPdData = pdPoints.some((p) => p.cashIn !== 0 || p.cashOut !== 0 || p.equivalent !== 0);
+  const hasPdData = pdPoints.some((p: any) => p.cashIn !== 0 || p.cashOut !== 0 || p.equivalent !== 0);
   // 저장된 pd 행이 존재하면(값이 모두 0이어도) pd 데이터를 우선 사용
   const hasPdRows = (detail?.cashflow ?? []).length > 0;
 
@@ -85,7 +103,7 @@ export function ServiceCashflowTab({
     },
   });
   const cfPoints = query.data?.points ?? [];
-  const hasCfData = cfPoints.some((p) => p.cashIn !== 0 || p.cashOut !== 0 || p.equivalent !== 0);
+  const hasCfData = cfPoints.some((p: any) => p.cashIn !== 0 || p.cashOut !== 0 || p.equivalent !== 0);
 
   // 우선순위: 데이터 입력 탭에서 저장한 행(pd_*)이 있으면 그 값을, 없으면 자금수지 Excel(cf_*) 값을 표시
   const useCf = cfRef != null && hasCfData && !hasPdRows;
@@ -94,7 +112,7 @@ export function ServiceCashflowTab({
   const cfConvertible = (query.data?.unit ?? "").includes("USD");
   const applyConvert = hasPdRows || cfConvertible;
   const cv = (v: number) => (applyConvert ? convert(v) : v);
-  const chartData = points.map((p) => ({
+  const chartData = points.map((p: any) => ({
     month: monthLabel(p.month, t),
     cashIn: cv(p.cashIn),
     cashOut: -cv(p.cashOut),
@@ -102,15 +120,15 @@ export function ServiceCashflowTab({
     different: cv(p.cashIn) - cv(p.cashOut),
   }));
 
-  const maxVal = Math.max(...chartData.map((d) => Math.max(d.cashIn, d.equivalent, 0)), 0);
-  const minVal = Math.min(...chartData.map((d) => Math.min(d.cashOut, d.equivalent, 0)), 0);
+  const maxVal = Math.max(...chartData.map((d: any) => Math.max(d.cashIn, d.equivalent, 0)), 0);
+  const minVal = Math.min(...chartData.map((d: any) => Math.min(d.cashOut, d.equivalent, 0)), 0);
   const step = niceStep(maxVal - minVal || 10);
   const top = Math.ceil(maxVal / step) * step || step;
   const bottom = Math.floor(minVal / step) * step;
   const ticks: number[] = [];
   for (let t = bottom; t <= top; t += step) ticks.push(t);
 
-  const hasData = chartData.some((d) => d.cashIn !== 0 || d.cashOut !== 0 || d.equivalent !== 0);
+  const hasData = chartData.some((d: any) => d.cashIn !== 0 || d.cashOut !== 0 || d.equivalent !== 0);
 
   const entryGuide = (
     <div style={{ fontSize: "14px", color: INK_MUTED, marginTop: "8px" }}>

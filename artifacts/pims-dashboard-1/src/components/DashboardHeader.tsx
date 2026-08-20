@@ -5,7 +5,9 @@ import { useListMgmtreportProjects } from "@workspace/api-client-react";
 import { exportDashboardExcel, exportDashboardPdf } from "../lib/exportDashboard";
 import { MgmtReportUploadModal } from "./MgmtReportUploadModal";
 import { FxRateEditor } from "./FxRateEditor";
-import { useAdminAuth } from "../lib/adminAuth";
+import { useAdminAuth, readAdminToken } from "../lib/adminAuth";
+import { getBaseUrl } from "@workspace/api-client-react";
+import { PimsvinaSyncPreviewModal, type PimsvinaPreviewData } from "./PimsvinaSyncPreviewModal";
 import {
   useDashboardFilters,
   UNIT_OPTIONS,
@@ -45,16 +47,48 @@ export function DashboardHeader({
   const [exporting, setExporting] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [syncPreview, setSyncPreview] = useState<PimsvinaPreviewData | null>(null);
+  const [confirming, setConfirming] = useState(false);
   const downloadRef = useRef<HTMLDivElement>(null);
+
+  const adminFetch = (path: string, body?: any) => {
+    const token = readAdminToken();
+    const baseUrl = getBaseUrl() || "";
+    const fullUrl = path.startsWith("/") ? `${baseUrl}${path}` : path;
+    return fetch(fullUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      ...(body ? { body: JSON.stringify(body) } : {}),
+    });
+  };
 
   const handleSyncPimsvina = async () => {
     if (syncing) return;
     setSyncing(true);
     try {
-      const res = await fetch("/api/sync-pimsvina", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      });
+      const res = await adminFetch("/api/sync-pimsvina/preview");
+      const data = await res.json();
+      if (data.success) {
+        setSyncPreview(data.data);
+      } else {
+        alert(t("dashboardHeader:syncFailed", { error: data.error || t("dashboardHeader:syncFailedDefaultError") }));
+      }
+    } catch (err: any) {
+      console.error("Sync preview error:", err);
+      alert(t("dashboardHeader:connectionErrorMessage", { message: err.message }));
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const handleConfirmSync = async () => {
+    if (confirming || !syncPreview) return;
+    setConfirming(true);
+    try {
+      const res = await adminFetch("/api/sync-pimsvina/confirm", { data: syncPreview });
       const data = await res.json();
       if (data.success) {
         alert(
@@ -81,10 +115,10 @@ export function DashboardHeader({
         alert(t("dashboardHeader:syncFailed", { error: data.error || t("dashboardHeader:syncFailedDefaultError") }));
       }
     } catch (err: any) {
-      console.error("Sync error:", err);
+      console.error("Sync confirm error:", err);
       alert(t("dashboardHeader:connectionErrorMessage", { message: err.message }));
     } finally {
-      setSyncing(false);
+      setConfirming(false);
     }
   };
 
@@ -354,33 +388,6 @@ export function DashboardHeader({
           </span>
         </div>
 
-        {/* 관리자 전용: PIMSVINA 데이터 동기화 */}
-        {isAdmin && (
-          <button
-            onClick={handleSyncPimsvina}
-            disabled={syncing}
-            title={t("dashboardHeader:syncButtonTitle")}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              backgroundColor: syncing ? "#64748b" : "#2563eb",
-              color: "#fff",
-              border: "none",
-              borderRadius: "6px",
-              padding: "7px 14px",
-              fontSize: "12px",
-              cursor: syncing ? "wait" : "pointer",
-              fontWeight: "500",
-              boxShadow: "0 1px 3px rgba(0,0,0,0.12)",
-              transition: "all 0.15s ease",
-            }}
-          >
-            <RefreshCw size={13} style={{ animation: syncing ? "spin 1s linear infinite" : "none" }} />
-            {syncing ? t("dashboardHeader:syncing") : t("dashboardHeader:syncButtonLabel")}
-          </button>
-        )}
-
         {/* 관리자 전용: 환율 설정 + Excel 업로드 */}
         {isAdmin && <FxRateEditor />}
         {isAdmin && (
@@ -499,6 +506,14 @@ export function DashboardHeader({
       </div>
 
       {uploadOpen && <MgmtReportUploadModal onClose={() => setUploadOpen(false)} />}
+      {syncPreview && (
+        <PimsvinaSyncPreviewModal
+          data={syncPreview}
+          confirming={confirming}
+          onConfirm={handleConfirmSync}
+          onClose={() => setSyncPreview(null)}
+        />
+      )}
     </div>
   );
 }
