@@ -1,6 +1,8 @@
 {
   "title": "Dashboard",
   "syncSuccessMessage": "✅ PIMSVINA data sync completed!\n\nUpdate details:\n• Cashflow: {{cfProjects}} new project(s) / {{cfMonthly}} monthly record(s)\n• Sales & Cost: {{scSites}} new site(s) / {{scMonthly}} monthly record(s)\n• Management Report: {{mrProjects}} new project(s) / {{mrMonthly}} monthly record(s) / {{mrAnnual}} annual record(s) / {{mrPnl}} PnL record(s)\n• Project Detail: {{pdOverview}} project overview(s) / {{pdProgress}} progress record(s) / {{pdOutsourcing}} outsourcing record(s)\n• Project Detail Cashflow/Sales/Budget: {{pdCashflow}} cashflow record(s) / {{pdSales}} sales record(s) / {{pdCostBudget}} budget record(s)\n• FX Rates: {{fxRates}} currency(ies)",
+  "syncNewProjectsInfo": "🆕 {{count}} new project(s) were added to the sidebar: {{names}}",
+  "syncSkippedWarning": "⚠️ {{count}} row(s) were SKIPPED (not saved) because their site_code could not be matched to a project — add the missing mr_projects.site_code mapping and re-sync. Skipped: {{names}}",
   "syncFailed": "❌ Sync failed: {{error}}",
   "syncFailedDefaultError": "PIMSVINA server connection error",
   "connectionErrorMessage": "❌ A server connection error occurred: {{message}}",

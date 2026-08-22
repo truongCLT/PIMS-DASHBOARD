@@ -94,6 +94,15 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
     pdSales: 0,
     pdCostBudget: 0,
     pdMilestones: 0,
+    skipped: 0,
+  };
+  const skippedProjects = new Set<string>();
+  const MAX_SKIPPED_SAMPLES = 30;
+  const trackSkipped = (item: any) => {
+    counts.skipped++;
+    if (skippedProjects.size >= MAX_SKIPPED_SAMPLES) return;
+    const label = item.project_name || item.fldcode || item.site_code || "(unknown)";
+    skippedProjects.add(String(label));
   };
 
   // Helper: PIMS-DASHBOARD stores currency fields in 1,000 VND / kUSD units (multiplied by 25.4M for VND display)
@@ -104,40 +113,121 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
     return isNaN(n) ? null : String(n / 1000);
   };
 
+  // PIMSVINA trả as_of_month dạng "YYYYMM" (VD "202608") nhưng PUT /projectdetail (Data Entry form)
+  // validate nghiêm ngặt theo "YYYY-MM" — nếu ghi thẳng giá trị thô, form Data Entry sẽ báo lỗi
+  // "작성 기준월은 YYYY-MM 형식이어야 합니다" và không Save được nữa cho tới khi sửa lại thủ công.
+  const normalizeAsOfMonth = (v: any): string | null => {
+    if (v == null) return null;
+    const raw = String(v).trim();
+    if (!raw) return null;
+    if (/^\d{4}-(0[1-9]|1[0-2])$/.test(raw)) return raw;
+    if (/^\d{4}(0[1-9]|1[0-2])$/.test(raw)) return `${raw.slice(0, 4)}-${raw.slice(4, 6)}`;
+    return raw;
+  };
+
+  // PIMSVINA trả project_name bằng tên tiếng Anh (FUN_GET_FLDNAME) — KHÔNG khớp với mr_projects.name
+  // (nhãn tiếng Hàn dùng cho Sidebar/màn chi tiết). Khóa nối đúng là fldcode/site_code (dạng "SITE28")
+  // khớp với mr_projects.site_code. Dòng nào không tra được site_code/tên tương ứng sẽ được TỰ ĐỘNG
+  // TẠO MỚI trong mr_projects (thay vì bỏ qua) để site mới xuất hiện ngay trên sidebar.
+  const allProjects = await db
+    .select({ name: mrProjectsTable.name, siteCode: mrProjectsTable.siteCode, sortOrder: mrProjectsTable.sortOrder })
+    .from(mrProjectsTable);
+  const siteCodeToName = new Map<string, string>();
+  const knownNames = new Set<string>();
+  let nextSortOrder = 1;
+  for (const p of allProjects) {
+    if (p.siteCode) siteCodeToName.set(p.siteCode.trim().toUpperCase(), p.name);
+    knownNames.add(p.name);
+    if (p.sortOrder >= nextSortOrder) nextSortOrder = p.sortOrder + 1;
+  }
+  // Một số bảng nguồn PIMSVINA (CBTB_FLDSUMM/CJTB_BUSPLAN_DETL/...) dùng FLDCODE làm mã công trình con
+  // (VD "VH10TC6") và trả site_code (ACNT_FLDCODE, dạng "SITE30") riêng qua join CBTB_FLD_MAPPING.
+  // Một số bảng khác (CETB_PFMCTRTHIST/CDTB_ORDCONTTYPE/CHTB_PFMCOSTRMRK) lại dùng FLDCODE làm CHÍNH mã
+  // tài chính dạng "SITE28" luôn (site_code join ra null vì không cần dịch). Nên ưu tiên site_code, chỉ
+  // fallback fldcode khi nó đã đúng định dạng SITE## để không lấy nhầm mã công trình con.
+  const SITE_CODE_PATTERN = /^SITE\d+$/i;
+  const newProjectNames = new Set<string>();
+  const resolveProjectName = async (item: any): Promise<string | null> => {
+    let code = String(item.site_code || "").trim().toUpperCase();
+    if (!code) {
+      const fld = String(item.fldcode || "").trim().toUpperCase();
+      if (SITE_CODE_PATTERN.test(fld)) code = fld;
+    }
+    const rawFldCode = item.fldcode != null ? String(item.fldcode).trim() : "";
+    if (code) {
+      const existingName = siteCodeToName.get(code);
+      if (existingName) return existingName;
+    }
+    const rawName = typeof item.project_name === "string" ? item.project_name.trim() : "";
+    if (!code && !rawName) return null;
+    const name = rawName || code;
+    if (!code && knownNames.has(name)) return name;
+    if (knownNames.has(name)) {
+      // Tên đã tồn tại (VD do import Excel trước đó) nhưng chưa gắn site_code/fld_code -> gắn thêm vào DB, không tạo trùng
+      if (code) siteCodeToName.set(code, name);
+      if (code || rawFldCode) {
+        await db
+          .update(mrProjectsTable)
+          .set({ ...(code ? { siteCode: code } : {}), ...(rawFldCode ? { fldCode: rawFldCode } : {}) })
+          .where(eq(mrProjectsTable.name, name));
+      }
+      return name;
+    }
+    await db.insert(mrProjectsTable).values({
+      name,
+      siteCode: code || null,
+      fldCode: rawFldCode || null,
+      sortOrder: nextSortOrder++,
+      status: "ongoing",
+    });
+    knownNames.add(name);
+    newProjectNames.add(name);
+    if (code) siteCodeToName.set(code, name);
+    return name;
+  };
+
   // 1. Sync Project Detail Overview
   for (const item of pdOverview) {
-    if (!item.project_name) continue;
+    const projectName = await resolveProjectName(item);
+    if (!projectName) {
+      trackSkipped(item);
+      continue;
+    }
     const [existing] = await db
       .select()
       .from(pdOverviewTable)
-      .where(eq(pdOverviewTable.projectName, item.project_name));
+      .where(eq(pdOverviewTable.projectName, projectName));
 
     if (existing) {
       await db
         .update(pdOverviewTable)
         .set({
+          fldCode: item.fldcode || existing.fldCode,
+          siteCode: item.site_code || existing.siteCode,
           contractAmount: item.contract_amount != null ? toK(item.contract_amount) : existing.contractAmount,
           startDate: item.start_date || existing.startDate,
           endDate: item.end_date || existing.endDate,
           client: item.client || existing.client,
           scale: item.scale || existing.scale,
-          asOfMonth: item.as_of_month || existing.asOfMonth,
+          asOfMonth: item.as_of_month != null ? normalizeAsOfMonth(item.as_of_month) : existing.asOfMonth,
           scope: item.scope || existing.scope,
           revenueAnnualTarget: item.revenue_annual_target != null ? toK(item.revenue_annual_target) : existing.revenueAnnualTarget,
           revenueTotal: item.revenue_total != null ? toK(item.revenue_total) : existing.revenueTotal,
           cashConfirmed: item.cash_confirmed != null ? toK(item.cash_confirmed) : existing.cashConfirmed,
           cashCollection: item.cash_collection != null ? toK(item.cash_collection) : existing.cashCollection,
         })
-        .where(eq(pdOverviewTable.projectName, item.project_name));
+        .where(eq(pdOverviewTable.projectName, projectName));
     } else {
       await db.insert(pdOverviewTable).values({
-        projectName: item.project_name,
+        projectName,
+        fldCode: item.fldcode || null,
+        siteCode: item.site_code || null,
         contractAmount: item.contract_amount != null ? toK(item.contract_amount) : null,
         startDate: item.start_date || null,
         endDate: item.end_date || null,
         client: item.client || null,
         scale: item.scale || null,
-        asOfMonth: item.as_of_month || null,
+        asOfMonth: normalizeAsOfMonth(item.as_of_month),
         scope: item.scope || null,
         revenueAnnualTarget: item.revenue_annual_target != null ? toK(item.revenue_annual_target) : null,
         revenueTotal: item.revenue_total != null ? toK(item.revenue_total) : null,
@@ -150,7 +240,11 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
 
   // 10. Sync Project Detail Progress (keyed directly by project_name)
   for (const item of fetched.pdProgress) {
-    if (!item.project_name || !item.year || !item.month) continue;
+    const projectName = await resolveProjectName(item);
+    if (!projectName || !item.year || !item.month) {
+      if (!projectName) trackSkipped(item);
+      continue;
+    }
     const sanitizeNumStr = (v: any) => {
       if (v == null || v === "") return null;
       const n = Number(v);
@@ -168,7 +262,9 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
     await db
       .insert(pdProgressMonthlyTable)
       .values({
-        projectName: item.project_name,
+        projectName,
+        fldCode: item.fldcode || null,
+        siteCode: item.site_code || null,
         year: Number(item.year),
         month: Number(item.month),
         planPct,
@@ -178,7 +274,7 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
       })
       .onConflictDoUpdate({
         target: [pdProgressMonthlyTable.projectName, pdProgressMonthlyTable.year, pdProgressMonthlyTable.month],
-        set: { planPct, actualPct, planCumPct, actualCumPct },
+        set: { fldCode: item.fldcode || null, siteCode: item.site_code || null, planPct, actualPct, planCumPct, actualCumPct },
       });
     counts.pdProgress++;
   }
@@ -186,15 +282,21 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
   // 11. Sync Project Detail Outsourcing (no natural unique key -> full replace per project)
   const pdOutsourcingByProject = new Map<string, any[]>();
   for (const item of fetched.pdOutsourcing) {
-    if (!item.project_name || !item.trade) continue;
-    if (!pdOutsourcingByProject.has(item.project_name)) pdOutsourcingByProject.set(item.project_name, []);
-    pdOutsourcingByProject.get(item.project_name)!.push(item);
+    const projectName = await resolveProjectName(item);
+    if (!projectName || !item.trade) {
+      if (!projectName) trackSkipped(item);
+      continue;
+    }
+    if (!pdOutsourcingByProject.has(projectName)) pdOutsourcingByProject.set(projectName, []);
+    pdOutsourcingByProject.get(projectName)!.push(item);
   }
   for (const [projectName, items] of pdOutsourcingByProject) {
     await db.delete(pdOutsourcingTable).where(eq(pdOutsourcingTable.projectName, projectName));
     for (const item of items) {
       await db.insert(pdOutsourcingTable).values({
         projectName,
+        fldCode: item.fldcode || null,
+        siteCode: item.site_code || null,
         tradeGroup: item.trade_group || null,
         trade: item.trade,
         vendor: item.vendor || null,
@@ -214,7 +316,11 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
 
   // 12. Sync Project Detail Cashflow Monthly (cash in/out per project per month)
   for (const item of fetched.pdCashflow) {
-    if (!item.project_name || !item.year || !item.month) continue;
+    const projectName = await resolveProjectName(item);
+    if (!projectName || !item.year || !item.month) {
+      if (!projectName) trackSkipped(item);
+      continue;
+    }
     const cashIn = item.cash_in != null ? String(item.cash_in) : null;
     const cashOut = item.cash_out != null ? String(item.cash_out) : null;
     const equivalent = item.equivalent != null ? String(item.equivalent) : null;
@@ -222,7 +328,9 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
     await db
       .insert(pdCashflowMonthlyTable)
       .values({
-        projectName: item.project_name,
+        projectName,
+        fldCode: item.fldcode || null,
+        siteCode: item.site_code || null,
         year: Number(item.year),
         month: Number(item.month),
         cashIn,
@@ -231,21 +339,27 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
       })
       .onConflictDoUpdate({
         target: [pdCashflowMonthlyTable.projectName, pdCashflowMonthlyTable.year, pdCashflowMonthlyTable.month],
-        set: { cashIn, cashOut, equivalent },
+        set: { fldCode: item.fldcode || null, siteCode: item.site_code || null, cashIn, cashOut, equivalent },
       });
     counts.pdCashflow++;
   }
 
   // 13. Sync Project Detail COGS Monthly (acct_cogs & wip_cogs per project per month)
   for (const item of fetched.pdCogs || []) {
-    if (!item.project_name || !item.year || !item.month) continue;
+    const projectName = await resolveProjectName(item);
+    if (!projectName || !item.year || !item.month) {
+      if (!projectName) trackSkipped(item);
+      continue;
+    }
     const acctCogs = item.acct_cogs != null ? String(item.acct_cogs) : null;
     const wipCogs = item.wip_cogs != null ? String(item.wip_cogs) : null;
 
     await db
       .insert(pdCogsMonthlyTable)
       .values({
-        projectName: item.project_name,
+        projectName,
+        fldCode: item.fldcode || null,
+        siteCode: item.site_code || null,
         year: Number(item.year),
         month: Number(item.month),
         acctCogs,
@@ -253,21 +367,27 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
       })
       .onConflictDoUpdate({
         target: [pdCogsMonthlyTable.projectName, pdCogsMonthlyTable.year, pdCogsMonthlyTable.month],
-        set: { acctCogs, wipCogs },
+        set: { fldCode: item.fldcode || null, siteCode: item.site_code || null, acctCogs, wipCogs },
       });
     counts.pdCogs++;
   }
 
   // 14. Sync Project Detail Sales Monthly (revenue plan/actual per project per month)
   for (const item of fetched.pdSales) {
-    if (!item.project_name || !item.year || !item.month) continue;
+    const projectName = await resolveProjectName(item);
+    if (!projectName || !item.year || !item.month) {
+      if (!projectName) trackSkipped(item);
+      continue;
+    }
     const plan = item.plan != null ? String(item.plan) : null;
     const actual = item.actual != null ? String(item.actual) : null;
 
     await db
       .insert(pdSalesMonthlyTable)
       .values({
-        projectName: item.project_name,
+        projectName,
+        fldCode: item.fldcode || null,
+        siteCode: item.site_code || null,
         year: Number(item.year),
         month: Number(item.month),
         plan,
@@ -275,7 +395,7 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
       })
       .onConflictDoUpdate({
         target: [pdSalesMonthlyTable.projectName, pdSalesMonthlyTable.year, pdSalesMonthlyTable.month],
-        set: { plan, actual },
+        set: { fldCode: item.fldcode || null, siteCode: item.site_code || null, plan, actual },
       });
     counts.pdSales++;
   }
@@ -283,15 +403,21 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
   // 14. Sync Project Detail Cost Budget (no natural unique key -> full replace per project)
   const pdCostBudgetByProject = new Map<string, any[]>();
   for (const item of fetched.pdCostBudget) {
-    if (!item.project_name || !item.item) continue;
-    if (!pdCostBudgetByProject.has(item.project_name)) pdCostBudgetByProject.set(item.project_name, []);
-    pdCostBudgetByProject.get(item.project_name)!.push(item);
+    const projectName = await resolveProjectName(item);
+    if (!projectName || !item.item) {
+      if (!projectName) trackSkipped(item);
+      continue;
+    }
+    if (!pdCostBudgetByProject.has(projectName)) pdCostBudgetByProject.set(projectName, []);
+    pdCostBudgetByProject.get(projectName)!.push(item);
   }
   for (const [projectName, items] of pdCostBudgetByProject) {
     await db.delete(pdCostBudgetTable).where(eq(pdCostBudgetTable.projectName, projectName));
     for (const item of items) {
       await db.insert(pdCostBudgetTable).values({
         projectName,
+        fldCode: item.fldcode || null,
+        siteCode: item.site_code || null,
         category: item.category || null,
         item: item.item,
         budget: toK(item.budget),
@@ -309,9 +435,13 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
   // no natural unique key across syncs -> full replace per project (pd_outsourcing/pd_cost_budget와 동일 패턴)
   const pdMilestonesByProject = new Map<string, any[]>();
   for (const item of fetched.pdMilestones) {
-    if (!item.project_name || !item.label) continue;
-    if (!pdMilestonesByProject.has(item.project_name)) pdMilestonesByProject.set(item.project_name, []);
-    pdMilestonesByProject.get(item.project_name)!.push(item);
+    const projectName = await resolveProjectName(item);
+    if (!projectName || !item.label) {
+      if (!projectName) trackSkipped(item);
+      continue;
+    }
+    if (!pdMilestonesByProject.has(projectName)) pdMilestonesByProject.set(projectName, []);
+    pdMilestonesByProject.get(projectName)!.push(item);
   }
   for (const [projectName, items] of pdMilestonesByProject) {
     await db.delete(pdMilestonesTable).where(eq(pdMilestonesTable.projectName, projectName));
@@ -319,6 +449,8 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
     for (const item of items) {
       await db.insert(pdMilestonesTable).values({
         projectName,
+        fldCode: item.fldcode || null,
+        siteCode: item.site_code || null,
         label: item.label,
         planStart: item.plan_start || null,
         planEnd: item.plan_end || null,
@@ -330,7 +462,11 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
     }
   }
 
-  return counts;
+  return {
+    ...counts,
+    skippedProjects: Array.from(skippedProjects),
+    newProjects: Array.from(newProjectNames),
+  };
 }
 
 // 1단계: 미리보기 — PIMSVINA에서 데이터를 조회만 하고 DB에는 저장하지 않는다.

@@ -22,6 +22,8 @@ export const pdOverviewTable = pgTable(
   {
     id: serial("id").primaryKey(),
     projectName: text("project_name").notNull(),
+    fldCode: text("fld_code"), // PIMSVINA site code (FLDCODE, e.g. 'VH10TC1')
+    siteCode: text("site_code"), // PIMSVINA financial site code (ACNT_FLDCODE, via CBTB_FLD_MAPPING)
     contractAmount: numeric("contract_amount", { precision: 18, scale: 4 }), // 도급액 (천 USD)
     startDate: text("start_date"), // 공사 시작일 'YYYY-MM-DD'
     endDate: text("end_date"), // 공사 종료일 'YYYY-MM-DD'
@@ -45,6 +47,8 @@ export const pdProgressMonthlyTable = pgTable(
   {
     id: serial("id").primaryKey(),
     projectName: text("project_name").notNull(),
+    fldCode: text("fld_code"), // PIMSVINA site code (FLDCODE)
+    siteCode: text("site_code"), // PIMSVINA financial site code (ACNT_FLDCODE)
     year: integer("year").notNull(),
     month: integer("month").notNull(), // 1..12
     planPct: numeric("plan_pct", { precision: 9, scale: 4 }), // 월간 계획 공정률 (%)
@@ -64,6 +68,8 @@ export const pdMilestonesTable = pgTable(
   {
     id: serial("id").primaryKey(),
     projectName: text("project_name").notNull(),
+    fldCode: text("fld_code"), // PIMSVINA site code (FLDCODE)
+    siteCode: text("site_code"), // PIMSVINA financial site code (ACNT_FLDCODE)
     label: text("label").notNull(),
     planStart: text("plan_start"), // 'YYYY-MM'
     planEnd: text("plan_end"),
@@ -98,6 +104,8 @@ export const pdCostBudgetTable = pgTable(
   {
     id: serial("id").primaryKey(),
     projectName: text("project_name").notNull(),
+    fldCode: text("fld_code"), // PIMSVINA site code (FLDCODE)
+    siteCode: text("site_code"), // PIMSVINA financial site code (ACNT_FLDCODE)
     category: text("category"), // e.g. 'Direct Cost' | 'Indirect Cost' | null
     item: text("item").notNull(), // e.g. '외주비', '자재비'
     budget: numeric("budget", { precision: 18, scale: 4 }),
@@ -132,6 +140,8 @@ export const pdCashflowMonthlyTable = pgTable(
   {
     id: serial("id").primaryKey(),
     projectName: text("project_name").notNull(),
+    fldCode: text("fld_code"), // PIMSVINA site code (FLDCODE)
+    siteCode: text("site_code"), // PIMSVINA financial site code (ACNT_FLDCODE)
     year: integer("year").notNull(),
     month: integer("month").notNull(), // 1..12
     cashIn: numeric("cash_in", { precision: 18, scale: 4 }), // 수입 (천 USD)
@@ -150,6 +160,8 @@ export const pdCogsMonthlyTable = pgTable(
   {
     id: serial("id").primaryKey(),
     projectName: text("project_name").notNull(),
+    fldCode: text("fld_code"), // PIMSVINA site code (FLDCODE)
+    siteCode: text("site_code"), // PIMSVINA financial site code (ACNT_FLDCODE)
     year: integer("year").notNull(),
     month: integer("month").notNull(), // 1..12
     acctCogs: numeric("acct_cogs", { precision: 18, scale: 4 }), // 회계 매출원가 (천 USD)
@@ -167,6 +179,8 @@ export const pdSalesMonthlyTable = pgTable(
   {
     id: serial("id").primaryKey(),
     projectName: text("project_name").notNull(),
+    fldCode: text("fld_code"), // PIMSVINA site code (FLDCODE)
+    siteCode: text("site_code"), // PIMSVINA financial site code (ACNT_FLDCODE)
     year: integer("year").notNull(),
     month: integer("month").notNull(), // 1..12
     plan: numeric("plan", { precision: 18, scale: 4 }), // 매출 계획 (천 USD)
@@ -196,6 +210,8 @@ export const pdOutsourcingTable = pgTable(
   {
     id: serial("id").primaryKey(),
     projectName: text("project_name").notNull(),
+    fldCode: text("fld_code"), // PIMSVINA site code (FLDCODE)
+    siteCode: text("site_code"), // PIMSVINA financial site code (ACNT_FLDCODE)
     tradeGroup: text("trade_group"), // 대공종 (공통/토목/건축/기계/전기/조경)
     trade: text("trade").notNull(), // 세부 공종
     vendor: text("vendor"), // 업체명

@@ -91,25 +91,33 @@ export function DashboardHeader({
       const res = await adminFetch("/api/sync-pimsvina/confirm", { data: syncPreview });
       const data = await res.json();
       if (data.success) {
-        alert(
-          t("dashboardHeader:syncSuccessMessage", {
-            cfProjects: data.counts?.cfProjects ?? 0,
-            cfMonthly: data.counts?.cfMonthly ?? 0,
-            scSites: data.counts?.scSites ?? 0,
-            scMonthly: data.counts?.scMonthly ?? 0,
-            mrProjects: data.counts?.mrProjects ?? 0,
-            mrMonthly: data.counts?.mrMonthly ?? 0,
-            mrAnnual: data.counts?.mrAnnual ?? 0,
-            mrPnl: data.counts?.mrPnl ?? 0,
-            pdOverview: data.counts?.pdOverview ?? 0,
-            pdProgress: data.counts?.pdProgress ?? 0,
-            pdOutsourcing: data.counts?.pdOutsourcing ?? 0,
-            pdCashflow: data.counts?.pdCashflow ?? 0,
-            pdSales: data.counts?.pdSales ?? 0,
-            pdCostBudget: data.counts?.pdCostBudget ?? 0,
-            fxRates: data.counts?.fxRates ?? 0,
-          })
-        );
+        let message = t("dashboardHeader:syncSuccessMessage", {
+          cfProjects: data.counts?.cfProjects ?? 0,
+          cfMonthly: data.counts?.cfMonthly ?? 0,
+          scSites: data.counts?.scSites ?? 0,
+          scMonthly: data.counts?.scMonthly ?? 0,
+          mrProjects: data.counts?.mrProjects ?? 0,
+          mrMonthly: data.counts?.mrMonthly ?? 0,
+          mrAnnual: data.counts?.mrAnnual ?? 0,
+          mrPnl: data.counts?.mrPnl ?? 0,
+          pdOverview: data.counts?.pdOverview ?? 0,
+          pdProgress: data.counts?.pdProgress ?? 0,
+          pdOutsourcing: data.counts?.pdOutsourcing ?? 0,
+          pdCashflow: data.counts?.pdCashflow ?? 0,
+          pdSales: data.counts?.pdSales ?? 0,
+          pdCostBudget: data.counts?.pdCostBudget ?? 0,
+          fxRates: data.counts?.fxRates ?? 0,
+        });
+        const newProjects: string[] = data.counts?.newProjects ?? [];
+        if (newProjects.length > 0) {
+          message += "\n\n" + t("dashboardHeader:syncNewProjectsInfo", { count: newProjects.length, names: newProjects.join(", ") });
+        }
+        const skipped = data.counts?.skipped ?? 0;
+        if (skipped > 0) {
+          const names: string[] = data.counts?.skippedProjects ?? [];
+          message += "\n\n" + t("dashboardHeader:syncSkippedWarning", { count: skipped, names: names.join(", ") });
+        }
+        alert(message);
         window.location.reload();
       } else {
         alert(t("dashboardHeader:syncFailed", { error: data.error || t("dashboardHeader:syncFailedDefaultError") }));

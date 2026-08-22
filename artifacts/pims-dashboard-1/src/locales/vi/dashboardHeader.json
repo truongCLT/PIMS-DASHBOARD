@@ -1,6 +1,8 @@
 {
   "title": "Bảng điều khiển",
   "syncSuccessMessage": "✅ Đồng bộ dữ liệu PIMSVINA đã hoàn tất!\n\nChi tiết cập nhật:\n• Thu chi (Cashflow): {{cfProjects}} dự án mới / {{cfMonthly}} bản ghi theo tháng\n• Doanh thu & Chi phí (Sales & Cost): {{scSites}} công trường mới / {{scMonthly}} bản ghi theo tháng\n• Báo cáo quản trị (Management Report): {{mrProjects}} dự án mới / {{mrMonthly}} bản ghi theo tháng / {{mrAnnual}} bản ghi theo năm / {{mrPnl}} bản ghi PnL\n• Chi tiết dự án (Project Detail): {{pdOverview}} tổng quan công trình / {{pdProgress}} bản ghi tiến độ / {{pdOutsourcing}} bản ghi thuê ngoài\n• Chi tiết thu chi/doanh thu/dự toán (Project Detail Cashflow/Sales/Budget): {{pdCashflow}} bản ghi thu chi / {{pdSales}} bản ghi doanh thu / {{pdCostBudget}} bản ghi dự toán\n• Tỷ giá cơ sở (FX Rates): {{fxRates}} loại tiền tệ",
+  "syncNewProjectsInfo": "🆕 Đã thêm {{count}} dự án mới vào sidebar: {{names}}",
+  "syncSkippedWarning": "⚠️ {{count}} dòng đã bị BỎ QUA (chưa lưu) vì không khớp được site_code với dự án nào — hãy bổ sung mr_projects.site_code còn thiếu rồi đồng bộ lại. Các mục bị bỏ qua: {{names}}",
   "syncFailed": "❌ Đồng bộ thất bại: {{error}}",
   "syncFailedDefaultError": "Lỗi kết nối máy chủ PIMSVINA",
   "connectionErrorMessage": "❌ Đã xảy ra lỗi kết nối máy chủ: {{message}}",

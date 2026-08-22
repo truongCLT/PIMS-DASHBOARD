@@ -1,6 +1,8 @@
 {
   "title": "대시보드",
   "syncSuccessMessage": "✅ PIMSVINA 데이터 동기화가 완료되었습니다!\n\n업데이트 내역:\n• 자금수지 (Cashflow): 신규 {{cfProjects}}개 프로젝트 / 월별 {{cfMonthly}}건\n• 매출 및 원가 (Sales & Cost): 신규 {{scSites}}개 현장 / 월별 {{scMonthly}}건\n• 경영보고서 (Management Report): 신규 {{mrProjects}}개 프로젝트 / 월별 {{mrMonthly}}건 / 연간 {{mrAnnual}}건 / PnL {{mrPnl}}건\n• 상세 공정 (Project Detail): 개요 {{pdOverview}}개 공사 / 공정 {{pdProgress}}건 / 외주 {{pdOutsourcing}}건\n• 상세 자금/매출/예산 (Project Detail Cashflow/Sales/Budget): 자금 {{pdCashflow}}건 / 매출 {{pdSales}}건 / 예산 {{pdCostBudget}}건\n• 기준 환율 (FX Rates): {{fxRates}}개 통화",
+  "syncNewProjectsInfo": "🆕 사이드바에 신규 프로젝트 {{count}}개가 추가되었습니다: {{names}}",
+  "syncSkippedWarning": "⚠️ {{count}}건은 site_code를 프로젝트와 매칭하지 못해 저장되지 않고 건너뛰었습니다 — mr_projects.site_code 매핑을 추가한 뒤 다시 동기화하세요. 건너뛴 항목: {{names}}",
   "syncFailed": "❌ 동기화 실패: {{error}}",
   "syncFailedDefaultError": "PIMSVINA 서버 연결 오류",
   "connectionErrorMessage": "❌ 서버 연결 오류가 발생했습니다: {{message}}",

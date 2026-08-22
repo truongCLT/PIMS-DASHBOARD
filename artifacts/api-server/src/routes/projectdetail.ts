@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, sql } from "drizzle-orm";
 import {
   db,
   mrProjectsTable,
@@ -129,7 +129,7 @@ async function loadDetail(projectName: string) {
       cashConfirmed: ov ? num(ov.cashConfirmed) : null,
       cashCollection: ov ? num(ov.cashCollection) : null,
       slideshowIntervalSeconds: ov?.slideshowIntervalSeconds ?? 0,
-      isClosed: ov?.isClosed ?? false,
+      isClosed: !!ov?.isClosed,
     },
     progress: progress.map((p) => {
       const clamp100 = (v: number | null) => (v == null ? null : Math.min(100, Math.max(0, v)));
@@ -221,6 +221,63 @@ router.get("/projectdetail", async (req, res) => {
   }
 });
 
+/**
+ * GET all Monthly Revenue (Data Entry tab, "Monthly Revenue" section — pd_sales_monthly) rows
+ * across every project — for bulk export/consumption by an external report (Productivity Report).
+ * NOTE: kept at the "/outsourcing/all" path because that is the URL the consuming report already
+ * calls; despite the path name this no longer returns pd_outsourcing data.
+ */
+router.get("/outsourcing/all", async (req, res) => {
+  try {
+    const rows = await db
+      .select({
+        projectName: pdSalesMonthlyTable.projectName,
+        // 수기 입력(Data Entry)된 행은 fld_code/site_code가 비어있음 -> mr_projects.site_code로 보완
+        siteCode: sql<string | null>`coalesce(${pdSalesMonthlyTable.siteCode}, ${mrProjectsTable.siteCode})`,
+        fldCode: pdSalesMonthlyTable.fldCode,
+        year: pdSalesMonthlyTable.year,
+        month: pdSalesMonthlyTable.month,
+        revenuePlan: pdSalesMonthlyTable.plan,
+        revenueActual: pdSalesMonthlyTable.actual,
+      })
+      .from(pdSalesMonthlyTable)
+      .leftJoin(mrProjectsTable, eq(mrProjectsTable.name, pdSalesMonthlyTable.projectName))
+      .orderBy(asc(pdSalesMonthlyTable.projectName), asc(pdSalesMonthlyTable.year), asc(pdSalesMonthlyTable.month));
+    res.json({ data: rows });
+  } catch (err) {
+    req.log.error({ err }, "failed to list all monthly revenue rows");
+    res.status(500).json({ error: "매출(월별) 전체 조회에 실패했습니다." });
+  }
+});
+
+/** GET all Monthly Cost of Revenue (COGS) rows across every project — for bulk export/consumption. */
+router.get("/cogs-monthly/all", async (req, res) => {
+  try {
+    const rows = await db
+      .select()
+      .from(pdCogsMonthlyTable)
+      .orderBy(asc(pdCogsMonthlyTable.projectName), asc(pdCogsMonthlyTable.year), asc(pdCogsMonthlyTable.month));
+    res.json({ data: rows });
+  } catch (err) {
+    req.log.error({ err }, "failed to list all cogs monthly rows");
+    res.status(500).json({ error: "매출원가(월별) 전체 조회에 실패했습니다." });
+  }
+});
+
+/** GET all Monthly Revenue (plan/actual) rows across every project — for bulk export/consumption. */
+router.get("/sales-monthly/all", async (req, res) => {
+  try {
+    const rows = await db
+      .select()
+      .from(pdSalesMonthlyTable)
+      .orderBy(asc(pdSalesMonthlyTable.projectName), asc(pdSalesMonthlyTable.year), asc(pdSalesMonthlyTable.month));
+    res.json({ data: rows });
+  } catch (err) {
+    req.log.error({ err }, "failed to list all sales monthly rows");
+    res.status(500).json({ error: "매출(월별) 전체 조회에 실패했습니다." });
+  }
+});
+
 function validateProgress(progress: { year: number; month: number }[]): string[] {
   const errors: string[] = [];
   const seen = new Map<string, number>();
@@ -254,7 +311,7 @@ router.patch("/projectdetail/close", requireAdmin, async (req, res) => {
   try {
     await db
       .update(pdOverviewTable)
-      .set({ isClosed: closed })
+      .set({ isClosed: (closed ? 1 : 0) as any })
       .where(eq(pdOverviewTable.projectName, projectName.trim()));
     res.json({ projectName: projectName.trim(), isClosed: closed });
   } catch (err) {

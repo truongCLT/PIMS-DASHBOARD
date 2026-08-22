@@ -23,6 +23,7 @@ export const mrProjectsTable = pgTable(
     name: text("name").notNull(), // normalized label, e.g. 'K8HH1 도급공사'
     code: text("code"), // PIMSVINA project_code (dashboard_mr_projects_1q.jsp), null for Excel-imported rows
     siteCode: text("site_code"), // e.g. 'SITE23' when present in label
+    fldCode: text("fld_code"), // PIMSVINA FLDCODE (mã công trình con, VD 'VH10TC1') — nguồn từ pimsvinaSync
     groupLabel: text("group_label"), // e.g. 'DECV법인 취합본 [법인전체]' | null for regular projects
     sortOrder: integer("sort_order").notNull().default(0),
     status: text("status").notNull().default("ongoing"), // 'ongoing'(진행중) | 'closed'(종료)

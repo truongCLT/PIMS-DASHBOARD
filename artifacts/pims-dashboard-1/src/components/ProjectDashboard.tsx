@@ -142,6 +142,7 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
   };
 
   const ov = detail?.overview ?? { contractAmount: null, startDate: null, endDate: null, client: null, scale: null };
+  const isProjectLocked = detail?.overview?.isClosed ?? false;
   const fmtDate = (d: string | null) => (d ? `'${d.slice(2, 4)}.${d.slice(5, 7)}.${d.slice(8, 10)}` : "-");
   const periodLabel =
     ov.startDate && ov.endDate
@@ -229,8 +230,9 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
         {/* Sync PIMSVINA Button for Project View */}
         {isAdmin && (
           <button
+            title={isProjectLocked ? t("projectDashboard:syncDisabledLockedTooltip") : undefined}
             onClick={async () => {
-              if (syncing) return;
+              if (syncing || isProjectLocked) return;
               setSyncing(true);
               try {
                 const token = readAdminToken();
@@ -255,21 +257,22 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
                 setSyncing(false);
               }
             }}
-            disabled={syncing}
+            disabled={syncing || isProjectLocked}
             style={{
               display: "flex",
               alignItems: "center",
               gap: "6px",
-              backgroundColor: syncing ? "#64748b" : "#2563eb",
+              backgroundColor: syncing || isProjectLocked ? "#64748b" : "#2563eb",
               color: "#fff",
               border: "none",
               borderRadius: "6px",
               padding: "5px 12px",
               fontSize: "12px",
-              cursor: syncing ? "wait" : "pointer",
+              cursor: syncing ? "wait" : isProjectLocked ? "not-allowed" : "pointer",
               fontWeight: "600",
               boxShadow: "0 1px 3px rgba(0,0,0,0.12)",
               marginLeft: "12px",
+              opacity: isProjectLocked ? 0.6 : 1,
             }}
           >
             <RefreshCw size={13} style={{ animation: syncing ? "spin 1s linear infinite" : "none" }} />
@@ -319,7 +322,10 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
       <div style={{ ...cardStyle, margin: "8px 10px 0", display: "flex", gap: "10px", alignItems: "stretch" }}>
         <div style={{ flex: 1 }}>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 0", fontSize: "12px", color: "#16294a" }}>
-            <span style={{ fontWeight: 700, paddingRight: "14px" }}>{t("common:project")} : {projectName}</span>
+            <span style={{ fontWeight: 700, paddingRight: "14px" }}>
+              {t("common:project")} : {projectName}
+              {siteCode && <span style={{ fontWeight: 400, color: "#556" }}> [{siteCode}]</span>}
+            </span>
             <span style={{ borderLeft: "1px solid #e2e9f3", padding: "0 14px" }}>{t("projectDashboard:client")} : {ov.client ?? "-"}</span>
             <span style={{ borderLeft: "1px solid #e2e9f3", padding: "0 14px" }}>
               {t("projectDashboard:constructionPeriod")} : {periodLabel}

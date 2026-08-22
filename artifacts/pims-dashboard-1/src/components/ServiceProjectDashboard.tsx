@@ -230,6 +230,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
 
   // 도급액 — 개요 입력값 우선, 없으면 원가율 데이터(execution 우선, 없으면 bidding)의 도급액 사용
   const ov = detail?.overview;
+  const isProjectLocked = ov?.isClosed ?? false;
   const contractAmount =
     ov?.contractAmount ??
     detail?.costEstimation.find((e) => e.kind === "execution")?.contractAmount ??
@@ -335,8 +336,9 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
         {/* Sync PIMSVINA Button for Service Project View */}
         {isAdmin && (
           <button
+            title={isProjectLocked ? t("projectDashboard:syncDisabledLockedTooltip") : undefined}
             onClick={async () => {
-              if (syncing) return;
+              if (syncing || isProjectLocked) return;
               setSyncing(true);
               try {
                 const token = readAdminToken();
@@ -361,21 +363,22 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                 setSyncing(false);
               }
             }}
-            disabled={syncing}
+            disabled={syncing || isProjectLocked}
             style={{
               display: "flex",
               alignItems: "center",
               gap: "6px",
-              backgroundColor: syncing ? "#64748b" : "#2563eb",
+              backgroundColor: syncing || isProjectLocked ? "#64748b" : "#2563eb",
               color: "#fff",
               border: "none",
               borderRadius: "6px",
               padding: "5px 12px",
               fontSize: "12px",
-              cursor: syncing ? "wait" : "pointer",
+              cursor: syncing ? "wait" : isProjectLocked ? "not-allowed" : "pointer",
               fontWeight: "600",
               boxShadow: "0 1px 3px rgba(0,0,0,0.12)",
               marginLeft: "12px",
+              opacity: isProjectLocked ? 0.6 : 1,
             }}
           >
             <RefreshCw size={13} style={{ animation: syncing ? "spin 1s linear infinite" : "none" }} />
@@ -445,7 +448,10 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
       <div style={{ ...cardStyle, margin: "8px 10px 0", display: "flex", gap: "10px", alignItems: "stretch" }}>
         <div style={{ flex: 1 }}>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 0", fontSize: "12px", color: INK_NAVY }}>
-            <span style={{ fontWeight: 700, paddingRight: "14px" }}>Project : {projectName}</span>
+            <span style={{ fontWeight: 700, paddingRight: "14px" }}>
+              Project : {projectName}
+              {siteCode && <span style={{ fontWeight: 400, color: INK_BODY }}> [{siteCode}]</span>}
+            </span>
             {ov?.asOfMonth && (
               <span style={{ borderLeft: `1px solid ${CARD_BORDER}`, padding: "0 14px" }}>
                 {t("serviceProjectDashboard:asOfMonth", { year: ov.asOfMonth.slice(0, 4), month: Number(ov.asOfMonth.slice(5, 7)) })}
