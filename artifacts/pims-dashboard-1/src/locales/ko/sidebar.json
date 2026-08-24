@@ -1,5 +1,7 @@
 {
   "selfDevelopmentDivision": "자체개발",
   "landSaleDivision": "용지매각",
-  "adminModeTooltip": "관리자 모드"
+  "adminModeTooltip": "관리자 모드",
+  "collapseMenu": "메뉴 접기",
+  "expandMenu": "메뉴 펼치기"
 }

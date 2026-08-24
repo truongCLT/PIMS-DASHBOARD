@@ -1,5 +1,7 @@
 {
   "selfDevelopmentDivision": "Self-Development",
   "landSaleDivision": "Land Sale",
-  "adminModeTooltip": "Admin Mode"
+  "adminModeTooltip": "Admin Mode",
+  "collapseMenu": "Collapse menu",
+  "expandMenu": "Expand menu"
 }

@@ -1,5 +1,7 @@
 {
   "selfDevelopmentDivision": "Tự phát triển",
   "landSaleDivision": "Bán đất",
-  "adminModeTooltip": "Chế độ quản trị"
+  "adminModeTooltip": "Chế độ quản trị",
+  "collapseMenu": "Thu gọn menu",
+  "expandMenu": "Mở rộng menu"
 }

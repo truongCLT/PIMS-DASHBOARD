@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import pimsBranding from "../assets/pims-branding.png";
-import { FolderClosed } from "lucide-react";
+import { FolderClosed, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { useListMgmtreportProjects } from "@workspace/api-client-react";
 import { PROJECT_GROUPS, classifyMrProject, isTestMrProject } from "../data/projects";
 import { REPORT_YEAR } from "../lib/mgmtreportData";
@@ -143,11 +143,9 @@ function TreeNode({
   const bg = isActive ? T.sidebar.activeItemBg : "transparent";
   const activeColor = isActive ? T.sidebar.activeItemColor : color;
   // Project names / group labels (DECV, TCC, DE HEIM) are data and pass through unchanged.
-  const displayLabel = item.isProject
-    ? [item.label, item.siteCode ? `(${item.siteCode})` : null, item.fldCode ? `[${item.fldCode}]` : null]
-        .filter(Boolean)
-        .join(" ")
-    : treeLabel(item.label, t);
+  const nameLabel = item.isProject ? item.label : treeLabel(item.label, t);
+  const codeLabel = item.isProject && item.siteCode ? `(${item.siteCode})` : "";
+  const displayLabel = codeLabel ? `${nameLabel} ${codeLabel}` : nameLabel;
 
   return (
     <div>
@@ -181,14 +179,28 @@ function TreeNode({
         <div
           title={displayLabel}
           style={{
+            display: "flex",
+            alignItems: "baseline",
+            gap: "4px",
             flex: 1,
             minWidth: 0,
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
           }}
         >
-          {displayLabel}
+          <span
+            style={{
+              minWidth: 0,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {nameLabel}
+          </span>
+          {codeLabel && (
+            <span style={{ flexShrink: 0, fontSize: "9px", opacity: 0.65 }}>
+              {codeLabel}
+            </span>
+          )}
         </div>
         {collapsible && (
           <span style={{ fontSize: "10px", color: "#44546a" }}>
@@ -241,102 +253,157 @@ export function Sidebar({
 
   const { theme: T } = useTheme();
   const isTotalSelected = selectedProject == null && selectedScope === "전체";
+  const [collapsed, setCollapsed] = useState(false);
+  const width = collapsed ? "48px" : "210px";
 
   return (
     <div style={{
-      width: "170px",
-      minWidth: "170px",
+      width,
+      minWidth: width,
       backgroundColor: T.sidebar.bg,
       display: "flex",
       flexDirection: "column",
       overflow: "hidden",
       borderRight: T.sidebar.border,
+      transition: "width 0.15s ease, min-width 0.15s ease",
     }}>
-      {/* DECV TOTAL */}
+      {/* DECV TOTAL & collapse toggle */}
       <div
-        onClick={onSelectTotal}
         style={{
-        display: "flex",
-        alignItems: "center",
-        gap: "8px",
-        padding: "10px 12px",
-        color: isTotalSelected ? T.sidebar.activeItemColor : T.sidebar.topLevelColor,
-        fontSize: "12px",
-        fontWeight: "700",
-        borderBottom: T.sidebar.totalBorderBottom,
-        cursor: "pointer",
-        backgroundColor: isTotalSelected ? T.sidebar.totalActiveBg : "transparent",
-        borderLeft: isTotalSelected ? `2px solid ${T.sidebar.activeItemAccent}` : "2px solid transparent",
-      }}>
-        <FolderClosed size={14} color={isTotalSelected ? T.sidebar.activeItemAccent : T.sidebar.topLevelColor} fill={isTotalSelected ? T.sidebar.activeItemAccent : T.sidebar.topLevelColor} />
-        DECV TOTAL
-      </div>
-
-      {/* Tree */}
-      <div style={{ flex: 1, overflowY: "auto" }}>
-        {treeData.map((item, i) => (
-          <TreeNode
-            key={i}
-            item={item}
-            depth={0}
-            selectedProject={selectedProject}
-            selectedScope={selectedScope}
-            onSelectProject={onSelectProject}
-            onSelectScope={onSelectScope}
-          />
-        ))}
-      </div>
-
-      {/* Language switcher */}
-      <div style={{ padding: "10px 10px 0", borderTop: T.sidebar.brandingBorderTop }}>
-        <div style={{
           display: "flex",
-          borderRadius: "6px",
-          overflow: "hidden",
-          border: "1px solid #dde6f1",
-        }}>
-          {SUPPORTED_LANGUAGES.map((lng, i) => {
-            const active = i18n.language === lng;
-            return (
-              <button
-                key={lng}
-                onClick={() => i18n.changeLanguage(lng)}
-                style={{
-                  flex: 1,
-                  padding: "6px 2px",
-                  fontSize: "11px",
-                  fontWeight: active ? "700" : "500",
-                  border: "none",
-                  borderLeft: i === 0 ? "none" : "1px solid #dde6f1",
-                  backgroundColor: active ? T.sidebar.activeItemAccent : "#ffffff",
-                  color: active ? "#ffffff" : "#556",
-                  cursor: "pointer",
-                }}
-              >
-                {LANGUAGE_LABELS[lng]}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Bottom branding */}
-      <div style={{
-        padding: "12px 10px",
-      }}>
-        <img
-          src={pimsBranding}
-          alt="PIMS System For DAEWOO E&C VINA"
-          onClick={onLogoClick}
-          title={t("sidebar:adminModeTooltip")}
+          alignItems: "center",
+          justifyContent: collapsed ? "center" : "space-between",
+          padding: "10px 12px",
+          borderBottom: T.sidebar.totalBorderBottom,
+          backgroundColor: isTotalSelected ? T.sidebar.totalActiveBg : "transparent",
+          borderLeft: isTotalSelected ? `2px solid ${T.sidebar.activeItemAccent}` : "2px solid transparent",
+        }}
+      >
+        <div
+          onClick={onSelectTotal}
+          title="DECV TOTAL"
           style={{
-            width: "100%",
-            borderRadius: "8px",
-            display: "block",
-            cursor: onLogoClick ? "pointer" : "default",
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            color: isTotalSelected ? T.sidebar.activeItemColor : T.sidebar.topLevelColor,
+            fontSize: "12px",
+            fontWeight: "700",
+            cursor: "pointer",
+            overflow: "hidden",
+            whiteSpace: "nowrap",
           }}
-        />
+        >
+          <FolderClosed size={14} color={isTotalSelected ? T.sidebar.activeItemAccent : T.sidebar.topLevelColor} fill={isTotalSelected ? T.sidebar.activeItemAccent : T.sidebar.topLevelColor} />
+          {!collapsed && <span>DECV TOTAL</span>}
+        </div>
+        {!collapsed && (
+          <button
+            onClick={() => setCollapsed(true)}
+            title={t("sidebar:collapseMenu")}
+            style={{
+              border: "none",
+              background: "none",
+              cursor: "pointer",
+              color: T.sidebar.topLevelColor,
+              display: "flex",
+              alignItems: "center",
+              padding: "2px",
+            }}
+          >
+            <PanelLeftClose size={16} />
+          </button>
+        )}
       </div>
+      {collapsed && (
+        <button
+          onClick={() => setCollapsed(false)}
+          title={t("sidebar:expandMenu")}
+          style={{
+            border: "none",
+            background: "none",
+            cursor: "pointer",
+            color: T.sidebar.topLevelColor,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "8px 0",
+          }}
+        >
+          <PanelLeftOpen size={16} />
+        </button>
+      )}
+
+      {!collapsed && (
+        <>
+          {/* Tree */}
+          <div style={{ flex: 1, overflowY: "auto" }}>
+            {treeData.map((item, i) => (
+              <TreeNode
+                key={i}
+                item={item}
+                depth={0}
+                selectedProject={selectedProject}
+                selectedScope={selectedScope}
+                onSelectProject={onSelectProject}
+                onSelectScope={onSelectScope}
+              />
+            ))}
+          </div>
+
+          {/* Language switcher */}
+          <div style={{ padding: "10px 10px 0", borderTop: T.sidebar.brandingBorderTop }}>
+            <div style={{
+              display: "flex",
+              borderRadius: "6px",
+              overflow: "hidden",
+              border: "1px solid #dde6f1",
+            }}>
+              {SUPPORTED_LANGUAGES.map((lng, i) => {
+                const active = i18n.language === lng;
+                return (
+                  <button
+                    key={lng}
+                    onClick={() => i18n.changeLanguage(lng)}
+                    style={{
+                      flex: 1,
+                      padding: "6px 2px",
+                      fontSize: "11px",
+                      fontWeight: active ? "700" : "500",
+                      border: "none",
+                      borderLeft: i === 0 ? "none" : "1px solid #dde6f1",
+                      backgroundColor: active ? T.sidebar.activeItemAccent : "#ffffff",
+                      color: active ? "#ffffff" : "#556",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {LANGUAGE_LABELS[lng]}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Bottom branding */}
+          <div style={{
+            padding: "12px 10px",
+          }}>
+            <img
+              src={pimsBranding}
+              alt="PIMS System For DAEWOO E&C VINA"
+              onClick={onLogoClick}
+              title={t("sidebar:adminModeTooltip")}
+              style={{
+                width: "100%",
+                borderRadius: "8px",
+                display: "block",
+                cursor: onLogoClick ? "pointer" : "default",
+              }}
+            />
+          </div>
+        </>
+      )}
+      {collapsed && <div style={{ flex: 1 }} />}
     </div>
   );
 }
