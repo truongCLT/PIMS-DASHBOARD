@@ -266,6 +266,7 @@ router.get("/mgmtreport/projects", async (req, res) => {
     type Proj = {
       name: string;
       siteCode: string | null;
+      fldCode: string | null;
       status: string;
       isGroup: boolean;
       revenuePlan: number[];
@@ -286,6 +287,7 @@ router.get("/mgmtreport/projects", async (req, res) => {
       byId.set(p.id, {
         name: p.name,
         siteCode: p.siteCode,
+        fldCode: p.fldCode,
         status: p.status,
         isGroup: p.groupLabel != null,
         revenuePlan: Array(12).fill(0),

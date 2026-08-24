@@ -24,17 +24,17 @@ export const pdOverviewTable = pgTable(
     projectName: text("project_name").notNull(),
     fldCode: text("fld_code"), // PIMSVINA site code (FLDCODE, e.g. 'VH10TC1')
     siteCode: text("site_code"), // PIMSVINA financial site code (ACNT_FLDCODE, via CBTB_FLD_MAPPING)
-    contractAmount: numeric("contract_amount", { precision: 18, scale: 4 }), // 도급액 (천 USD)
+    contractAmount: numeric("contract_amount", { precision: 24, scale: 8 }), // 도급액 (천 USD)
     startDate: text("start_date"), // 공사 시작일 'YYYY-MM-DD'
     endDate: text("end_date"), // 공사 종료일 'YYYY-MM-DD'
     client: text("client"), // 발주처
     scale: text("scale"), // 공사규모
     asOfMonth: text("as_of_month"), // 작성 기준월 'YYYY-MM'
     scope: text("scope"), // 수행내용 (용역)
-    revenueAnnualTarget: numeric("revenue_annual_target", { precision: 18, scale: 4 }), // 연간 매출 목표 (천 USD)
-    revenueTotal: numeric("revenue_total", { precision: 18, scale: 4 }), // 누계 매출 실적 (천 USD)
-    cashConfirmed: numeric("cash_confirmed", { precision: 18, scale: 4 }), // Cash Confirmed (A) (천 USD)
-    cashCollection: numeric("cash_collection", { precision: 18, scale: 4 }), // Cash Collection (B) (천 USD)
+    revenueAnnualTarget: numeric("revenue_annual_target", { precision: 24, scale: 8 }), // 연간 매출 목표 (천 USD)
+    revenueTotal: numeric("revenue_total", { precision: 24, scale: 8 }), // 누계 매출 실적 (천 USD)
+    cashConfirmed: numeric("cash_confirmed", { precision: 24, scale: 8 }), // Cash Confirmed (A) (천 USD)
+    cashCollection: numeric("cash_collection", { precision: 24, scale: 8 }), // Cash Collection (B) (천 USD)
     slideshowIntervalSeconds: integer("slideshow_interval_seconds").notNull().default(0), // 슬라이드쇼 자동 전환 간격(초), 0=꺼짐
     isClosed: integer("is_closed", { mode: "boolean" }).notNull().default(sql`0`), // 마감 여부 (true면 데이터 편집 잠금)
   },
@@ -87,8 +87,8 @@ export const pdCostEstimationTable = pgTable(
     id: serial("id").primaryKey(),
     projectName: text("project_name").notNull(),
     kind: text("kind").notNull(), // 'bidding' | 'execution' | 'completion'
-    contractAmount: numeric("contract_amount", { precision: 18, scale: 4 }), // 도급액 기준 (천 USD)
-    costAmount: numeric("cost_amount", { precision: 18, scale: 4 }), // 원가 (천 USD)
+    contractAmount: numeric("contract_amount", { precision: 24, scale: 8 }), // 도급액 기준 (천 USD)
+    costAmount: numeric("cost_amount", { precision: 24, scale: 8 }), // 원가 (천 USD)
     year: integer("year"), // completion 월별 이력용 (bidding/execution 은 null)
     month: integer("month"), // 1..12
   },
@@ -108,9 +108,9 @@ export const pdCostBudgetTable = pgTable(
     siteCode: text("site_code"), // PIMSVINA financial site code (ACNT_FLDCODE)
     category: text("category"), // e.g. 'Direct Cost' | 'Indirect Cost' | null
     item: text("item").notNull(), // e.g. '외주비', '자재비'
-    budget: numeric("budget", { precision: 18, scale: 4 }),
-    plan: numeric("plan", { precision: 18, scale: 4 }),
-    actual: numeric("actual", { precision: 18, scale: 4 }),
+    budget: numeric("budget", { precision: 24, scale: 8 }),
+    plan: numeric("plan", { precision: 24, scale: 8 }),
+    actual: numeric("actual", { precision: 24, scale: 8 }),
     sortOrder: integer("sort_order").notNull().default(0),
   },
   (t) => [index("pd_cost_budget_project_idx").on(t.projectName)],
@@ -125,8 +125,8 @@ export const pdCostBudgetMonthlyTable = pgTable(
     item: text("item").notNull(), // 'Common' | 'Expense 1'
     year: integer("year").notNull(),
     month: integer("month").notNull(), // 1..12
-    plan: numeric("plan", { precision: 18, scale: 4 }),
-    actual: numeric("actual", { precision: 18, scale: 4 }),
+    plan: numeric("plan", { precision: 24, scale: 8 }),
+    actual: numeric("actual", { precision: 24, scale: 8 }),
   },
   (t) => [
     uniqueIndex("pd_cost_budget_monthly_uq").on(t.projectName, t.item, t.year, t.month),
@@ -144,9 +144,9 @@ export const pdCashflowMonthlyTable = pgTable(
     siteCode: text("site_code"), // PIMSVINA financial site code (ACNT_FLDCODE)
     year: integer("year").notNull(),
     month: integer("month").notNull(), // 1..12
-    cashIn: numeric("cash_in", { precision: 18, scale: 4 }), // 수입 (천 USD)
-    cashOut: numeric("cash_out", { precision: 18, scale: 4 }), // 지출 (천 USD)
-    equivalent: numeric("equivalent", { precision: 18, scale: 4 }), // 보유 현금 (천 USD)
+    cashIn: numeric("cash_in", { precision: 24, scale: 8 }), // 수입 (천 USD)
+    cashOut: numeric("cash_out", { precision: 24, scale: 8 }), // 지출 (천 USD)
+    equivalent: numeric("equivalent", { precision: 24, scale: 8 }), // 보유 현금 (천 USD)
   },
   (t) => [
     uniqueIndex("pd_cashflow_monthly_uq").on(t.projectName, t.year, t.month),
@@ -164,8 +164,8 @@ export const pdCogsMonthlyTable = pgTable(
     siteCode: text("site_code"), // PIMSVINA financial site code (ACNT_FLDCODE)
     year: integer("year").notNull(),
     month: integer("month").notNull(), // 1..12
-    acctCogs: numeric("acct_cogs", { precision: 18, scale: 4 }), // 회계 매출원가 (천 USD)
-    wipCogs: numeric("wip_cogs", { precision: 18, scale: 4 }), // 집행 매출원가 (WIP) (천 USD)
+    acctCogs: numeric("acct_cogs", { precision: 24, scale: 8 }), // 회계 매출원가 (천 USD)
+    wipCogs: numeric("wip_cogs", { precision: 24, scale: 8 }), // 집행 매출원가 (WIP) (천 USD)
   },
   (t) => [
     uniqueIndex("pd_cogs_monthly_uq").on(t.projectName, t.year, t.month),
@@ -183,8 +183,8 @@ export const pdSalesMonthlyTable = pgTable(
     siteCode: text("site_code"), // PIMSVINA financial site code (ACNT_FLDCODE)
     year: integer("year").notNull(),
     month: integer("month").notNull(), // 1..12
-    plan: numeric("plan", { precision: 18, scale: 4 }), // 매출 계획 (천 USD)
-    actual: numeric("actual", { precision: 18, scale: 4 }), // 매출 실적 (천 USD)
+    plan: numeric("plan", { precision: 24, scale: 8 }), // 매출 계획 (천 USD)
+    actual: numeric("actual", { precision: 24, scale: 8 }), // 매출 실적 (천 USD)
   },
   (t) => [
     uniqueIndex("pd_sales_monthly_uq").on(t.projectName, t.year, t.month),
@@ -218,11 +218,11 @@ export const pdOutsourcingTable = pgTable(
     category: text("category"), // 구분 (예: 용역/외주)
     contractDate: text("contract_date"), // 최초 계약일 (자유 형식)
     changeNo: text("change_no"), // 변경 계약 차수
-    budget: numeric("budget", { precision: 18, scale: 4 }), // 예산 (A)
-    executedBudget: numeric("executed_budget", { precision: 18, scale: 4 }), // 집행예산
-    resolved: numeric("resolved", { precision: 18, scale: 4 }), // 결의금액 (B)
-    thisMonth: numeric("this_month", { precision: 18, scale: 4 }), // 기성 이번달
-    accum: numeric("accum", { precision: 18, scale: 4 }), // 기성 누계 (C)
+    budget: numeric("budget", { precision: 24, scale: 8 }), // 예산 (A)
+    executedBudget: numeric("executed_budget", { precision: 24, scale: 8 }), // 집행예산
+    resolved: numeric("resolved", { precision: 24, scale: 8 }), // 결의금액 (B)
+    thisMonth: numeric("this_month", { precision: 24, scale: 8 }), // 기성 이번달
+    accum: numeric("accum", { precision: 24, scale: 8 }), // 기성 누계 (C)
     sortOrder: integer("sort_order").notNull().default(0),
   },
   (t) => [index("pd_outsourcing_project_idx").on(t.projectName)],

@@ -1884,6 +1884,10 @@ components:
         siteCode:
           type: string
           nullable: true
+        fldCode:
+          type: string
+          nullable: true
+          description: PIMSVINA FLDCODE (mã công trình con, VD 'VH10TC1')
         status:
           type: string
           enum: [ongoing, closed]

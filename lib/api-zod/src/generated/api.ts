@@ -261,6 +261,7 @@ export const UpdateMgmtreportProjectDivisionBody = zod.object({
 export const UpdateMgmtreportProjectDivisionResponse = zod.object({
   "name": zod.string(),
   "siteCode": zod.string().nullish(),
+  "fldCode": zod.string().nullish().describe('PIMSVINA FLDCODE (mã công trình con, VD \'VH10TC1\')'),
   "status": zod.enum(['ongoing', 'closed']).optional().describe('진행 상태 (ongoing=진행중, closed=종료)'),
   "isGroup": zod.boolean().describe('True for corporate rollup rows (DECV법인 취합본)'),
   "revenuePlan": zod.array(zod.number()),
@@ -1046,6 +1047,7 @@ export const ListMgmtreportProjectsResponse = zod.object({
   "projects": zod.array(zod.object({
   "name": zod.string(),
   "siteCode": zod.string().nullish(),
+  "fldCode": zod.string().nullish().describe('PIMSVINA FLDCODE (mã công trình con, VD \'VH10TC1\')'),
   "status": zod.enum(['ongoing', 'closed']).optional().describe('진행 상태 (ongoing=진행중, closed=종료)'),
   "isGroup": zod.boolean().describe('True for corporate rollup rows (DECV법인 취합본)'),
   "revenuePlan": zod.array(zod.number()),

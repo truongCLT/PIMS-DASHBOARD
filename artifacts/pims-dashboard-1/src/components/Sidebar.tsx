@@ -23,6 +23,7 @@ interface TreeItem {
   isProject?: boolean;
   scope?: DashboardScope;
   siteCode?: string | null;
+  fldCode?: string | null;
 }
 
 type TFn = ReturnType<typeof useTranslation>["t"];
@@ -48,17 +49,22 @@ function treeLabel(label: string, t: TFn): string {
   return key ? t(key) : label;
 }
 
-function buildTreeData(mrProjects: { name: string; siteCode?: string | null; status?: string }[]): TreeItem[] {
+function buildTreeData(
+  mrProjects: { name: string; siteCode?: string | null; fldCode?: string | null; status?: string }[],
+): TreeItem[] {
   const byDivision: Record<
     "시공" | "용역",
-    { ongoing: { name: string; siteCode?: string | null }[]; closed: { name: string; siteCode?: string | null }[] }
+    {
+      ongoing: { name: string; siteCode?: string | null; fldCode?: string | null }[];
+      closed: { name: string; siteCode?: string | null; fldCode?: string | null }[];
+    }
   > = {
     시공: { ongoing: [], closed: [] },
     용역: { ongoing: [], closed: [] },
   };
   for (const p of mrProjects) {
     const bucket = p.status === "closed" ? "closed" : "ongoing";
-    byDivision[classifyMrProject(p.name)][bucket].push({ name: p.name, siteCode: p.siteCode });
+    byDivision[classifyMrProject(p.name)][bucket].push({ name: p.name, siteCode: p.siteCode, fldCode: p.fldCode });
   }
   // 테스트 프로젝트는 각 버킷 최상단에 (안정 정렬로 나머지 순서 유지)
   for (const division of ["시공", "용역"] as const) {
@@ -86,7 +92,7 @@ function buildTreeData(mrProjects: { name: string; siteCode?: string | null; sta
                 children: (group.label === "DECV"
                   ? byDivision[division.label as "시공" | "용역"].ongoing
                   : []
-                ).map((p) => ({ label: p.name, siteCode: p.siteCode, isProject: true })),
+                ).map((p) => ({ label: p.name, siteCode: p.siteCode, fldCode: p.fldCode, isProject: true })),
               },
               {
                 label: "종료",
@@ -94,7 +100,7 @@ function buildTreeData(mrProjects: { name: string; siteCode?: string | null; sta
                 children: (group.label === "DECV"
                   ? byDivision[division.label as "시공" | "용역"].closed
                   : []
-                ).map((p) => ({ label: p.name, siteCode: p.siteCode, isProject: true })),
+                ).map((p) => ({ label: p.name, siteCode: p.siteCode, fldCode: p.fldCode, isProject: true })),
               },
             ]
           : [],
@@ -138,9 +144,9 @@ function TreeNode({
   const activeColor = isActive ? T.sidebar.activeItemColor : color;
   // Project names / group labels (DECV, TCC, DE HEIM) are data and pass through unchanged.
   const displayLabel = item.isProject
-    ? item.siteCode
-      ? `${item.label} (${item.siteCode})`
-      : item.label
+    ? [item.label, item.siteCode ? `(${item.siteCode})` : null, item.fldCode ? `[${item.fldCode}]` : null]
+        .filter(Boolean)
+        .join(" ")
     : treeLabel(item.label, t);
 
   return (
@@ -229,7 +235,7 @@ export function Sidebar({
   const treeData = useMemo(() => {
     const projects = (projectsQuery.data?.projects ?? [])
       .filter((p) => !p.isGroup)
-      .map((p) => ({ name: p.name, siteCode: p.siteCode, status: p.status }));
+      .map((p) => ({ name: p.name, siteCode: p.siteCode, fldCode: p.fldCode, status: p.status }));
     return buildTreeData(projects);
   }, [projectsQuery.data]);
 

@@ -1,4 +1,6 @@
 import { Router, type IRouter } from "express";
+import { eq } from "drizzle-orm";
+import { db, pdOverviewTable } from "@workspace/db";
 import { fetchPimsvinaApi } from "../lib/pimsvinaClient";
 import { GetPimsvinaSiterateResponse, GetPimsvinaExchangerateResponse } from "@workspace/api-zod";
 
@@ -13,7 +15,15 @@ router.get("/pimsvina/siterate", async (req, res) => {
     return;
   }
   try {
-    const rows = await fetchPimsvinaApi("dashboard_common_siterate_1q.jsp", { site_code: siteCode });
+    // CBTB_CTRTSUMM (the source table behind this jsp) is keyed by the raw PIMSVINA FLDCODE
+    // (e.g. "VH11TA3"), not by our pseudo site_code (e.g. "SITE29") — those only coincide for
+    // sites where FLDCODE happens to already be in "SITE##" form. Resolve the real FLDCODE first.
+    const [overview] = await db
+      .select({ fldCode: pdOverviewTable.fldCode })
+      .from(pdOverviewTable)
+      .where(eq(pdOverviewTable.siteCode, siteCode));
+    const fldCode = overview?.fldCode || siteCode;
+    const rows = await fetchPimsvinaApi("dashboard_common_siterate_1q.jsp", { site_code: fldCode });
     const row = rows[0];
     res.json(
       GetPimsvinaSiterateResponse.parse({

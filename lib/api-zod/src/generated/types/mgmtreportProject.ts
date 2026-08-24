@@ -12,6 +12,8 @@ import type { MgmtreportProjectStatus } from './mgmtreportProjectStatus';
 export interface MgmtreportProject {
   name: string;
   siteCode?: string | null;
+  /** PIMSVINA FLDCODE (mã công trình con, VD 'VH10TC1') */
+  fldCode?: string | null;
   /** 진행 상태 (ongoing=진행중, closed=종료) */
   status?: MgmtreportProjectStatus;
   /** True for corporate rollup rows (DECV법인 취합본) */
