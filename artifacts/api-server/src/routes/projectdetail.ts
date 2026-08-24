@@ -221,6 +221,12 @@ router.get("/projectdetail", async (req, res) => {
   }
 });
 
+// Must match VND_PER_K_USD in ProjectDataEntryTab.tsx — that's the rate the Data Entry tab
+// used to convert the entered VND into the "천 USD" (thousand USD) values stored in pd_sales_monthly,
+// so it's also the rate needed to convert them back to VND for this endpoint's consumer.
+const VND_PER_K_USD = 25_400_000;
+const toVnd = (kUsd: string | null) => (kUsd == null ? null : Math.round(Number(kUsd) * VND_PER_K_USD));
+
 /**
  * GET all Monthly Revenue (Data Entry tab, "Monthly Revenue" section — pd_sales_monthly) rows
  * across every project — for bulk export/consumption by an external report (Productivity Report).
@@ -243,7 +249,13 @@ router.get("/outsourcing/all", async (req, res) => {
       .from(pdSalesMonthlyTable)
       .leftJoin(mrProjectsTable, eq(mrProjectsTable.name, pdSalesMonthlyTable.projectName))
       .orderBy(asc(pdSalesMonthlyTable.projectName), asc(pdSalesMonthlyTable.year), asc(pdSalesMonthlyTable.month));
-    res.json({ data: rows });
+    res.json({
+      data: rows.map((r) => ({
+        ...r,
+        revenuePlan: toVnd(r.revenuePlan),
+        revenueActual: toVnd(r.revenueActual),
+      })),
+    });
   } catch (err) {
     req.log.error({ err }, "failed to list all monthly revenue rows");
     res.status(500).json({ error: "매출(월별) 전체 조회에 실패했습니다." });
