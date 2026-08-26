@@ -241,7 +241,8 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
   // 10. Sync Project Detail Progress (keyed directly by project_name)
   for (const item of fetched.pdProgress) {
     const projectName = await resolveProjectName(item);
-    if (!projectName || !item.year || !item.month) {
+    const m = Number(item.month);
+    if (!projectName || !item.year || !item.month || isNaN(m) || m < 1 || m > 12) {
       if (!projectName) trackSkipped(item);
       continue;
     }
@@ -266,7 +267,7 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
         fldCode: item.fldcode || null,
         siteCode: item.site_code || null,
         year: Number(item.year),
-        month: Number(item.month),
+        month: m,
         planPct,
         actualPct,
         planCumPct,
@@ -317,7 +318,8 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
   // 12. Sync Project Detail Cashflow Monthly (cash in/out per project per month)
   for (const item of fetched.pdCashflow) {
     const projectName = await resolveProjectName(item);
-    if (!projectName || !item.year || !item.month) {
+    const m = Number(item.month);
+    if (!projectName || !item.year || !item.month || isNaN(m) || m < 1 || m > 12) {
       if (!projectName) trackSkipped(item);
       continue;
     }
@@ -332,7 +334,7 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
         fldCode: item.fldcode || null,
         siteCode: item.site_code || null,
         year: Number(item.year),
-        month: Number(item.month),
+        month: m,
         cashIn,
         cashOut,
         equivalent,
@@ -347,7 +349,8 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
   // 13. Sync Project Detail COGS Monthly (acct_cogs & wip_cogs per project per month)
   for (const item of fetched.pdCogs || []) {
     const projectName = await resolveProjectName(item);
-    if (!projectName || !item.year || !item.month) {
+    const m = Number(item.month);
+    if (!projectName || !item.year || !item.month || isNaN(m) || m < 1 || m > 12) {
       if (!projectName) trackSkipped(item);
       continue;
     }
@@ -361,7 +364,7 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
         fldCode: item.fldcode || null,
         siteCode: item.site_code || null,
         year: Number(item.year),
-        month: Number(item.month),
+        month: m,
         acctCogs,
         wipCogs,
       })
@@ -375,7 +378,8 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
   // 14. Sync Project Detail Sales Monthly (revenue plan/actual per project per month)
   for (const item of fetched.pdSales) {
     const projectName = await resolveProjectName(item);
-    if (!projectName || !item.year || !item.month) {
+    const m = Number(item.month);
+    if (!projectName || !item.year || !item.month || isNaN(m) || m < 1 || m > 12) {
       if (!projectName) trackSkipped(item);
       continue;
     }
@@ -389,7 +393,7 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
         fldCode: item.fldcode || null,
         siteCode: item.site_code || null,
         year: Number(item.year),
-        month: Number(item.month),
+        month: m,
         plan,
         actual,
       })
