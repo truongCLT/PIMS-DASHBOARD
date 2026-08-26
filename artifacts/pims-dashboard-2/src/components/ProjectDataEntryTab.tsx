@@ -92,7 +92,7 @@ function VndInput({
   const displayValue = editing
     ? rawStr
     : valueKUsd != null
-      ? fmtVnd(valueKUsd * VND_PER_K_USD)
+      ? fmtVnd(valueKUsd)
       : "";
 
   return (
@@ -104,20 +104,13 @@ function VndInput({
       data-col={dataCol}
       style={{ ...inputStyle, textAlign: "right" }}
       onFocus={() => {
-        const vnd = valueKUsd != null ? valueKUsd * VND_PER_K_USD : 0;
+        const vnd = valueKUsd != null ? valueKUsd : 0;
         setRawStr(vnd === 0 ? "" : String(Math.round(vnd)));
         setEditing(true);
       }}
       onChange={(e) => {
         const digits = e.target.value.replace(/[^\d]/g, "");
         setRawStr(digits === "" ? "" : Number(digits).toLocaleString("en-US"));
-        // Propagate immediately so totals update in real-time while typing
-        if (digits === "" || digits === "0") {
-          onChange(null);
-        } else {
-          const vnd = parseFloat(digits);
-          onChange(isNaN(vnd) ? null : vnd / VND_PER_K_USD);
-        }
       }}
       onBlur={() => {
         setEditing(false);
@@ -126,7 +119,7 @@ function VndInput({
           onChange(null);
         } else {
           const vnd = parseFloat(cleaned);
-          onChange(isNaN(vnd) ? null : vnd / VND_PER_K_USD);
+          onChange(isNaN(vnd) ? null : vnd);
         }
         setRawStr("");
       }}

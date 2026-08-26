@@ -70,11 +70,7 @@ const addBtn: React.CSSProperties = {
   marginTop: "8px",
 };
 
-const VND_PER_K_USD = 25_400_000;
-
-function fmtVnd(vnd: number): string {
-  return Math.round(vnd).toLocaleString("en-US");
-}
+import { useMoney } from "../lib/displayUnit";
 
 function VndInput({
   valueKUsd,
@@ -87,13 +83,14 @@ function VndInput({
   "data-row"?: string | number;
   "data-col"?: string | number;
 }) {
+  const { convert, fmtMoney } = useMoney();
   const [editing, setEditing] = React.useState(false);
   const [rawStr, setRawStr] = React.useState("");
 
   const displayValue = editing
     ? rawStr
     : valueKUsd != null
-      ? fmtVnd(valueKUsd * VND_PER_K_USD)
+      ? fmtMoney(valueKUsd)
       : "";
 
   return (
@@ -105,8 +102,8 @@ function VndInput({
       data-col={dataCol}
       style={{ ...inputStyle, textAlign: "right" }}
       onFocus={() => {
-        const vnd = valueKUsd != null ? valueKUsd * VND_PER_K_USD : 0;
-        setRawStr(vnd === 0 ? "" : String(Math.round(vnd)));
+        const convertedVal = valueKUsd != null ? convert(valueKUsd) : 0;
+        setRawStr(convertedVal === 0 ? "" : String(Math.round(convertedVal)));
         setEditing(true);
       }}
       onChange={(e) => {
@@ -119,8 +116,8 @@ function VndInput({
         if (cleaned === "" || cleaned === "0") {
           onChange(null);
         } else {
-          const vnd = parseFloat(cleaned);
-          onChange(isNaN(vnd) ? null : vnd / VND_PER_K_USD);
+          const val = parseFloat(cleaned);
+          onChange(isNaN(val) ? null : val);
         }
         setRawStr("");
       }}

@@ -105,12 +105,17 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
     skippedProjects.add(String(label));
   };
 
-  // Helper: PIMS-DASHBOARD stores currency fields in 1,000 VND / kUSD units (multiplied by 25.4M for VND display)
-  // PIMSVINA Oracle APIs return exact raw amounts (VND / USD). Dividing by 1000 converts raw VND to 1k VND unit.
+  // PIMS-DASHBOARD thiết kế lưu trữ chuẩn theo đơn vị kUSD (1 kUSD = 25.400.000 VND).
+  // Khi PIMSVINA trả về số tiền VND gốc (> 100M VND), chia cho 25.400.000 để lưu về kUSD chuẩn.
+  const VND_PER_K_USD = 25_400_000;
   const toK = (v: any) => {
     if (v == null || v === "") return null;
     const n = Number(v);
-    return isNaN(n) ? null : String(n / 1000);
+    if (isNaN(n)) return null;
+    if (n > 100000000) {
+      return String(n / VND_PER_K_USD);
+    }
+    return String(n / 1000);
   };
 
   // PIMSVINA trả as_of_month dạng "YYYYMM" (VD "202608") nhưng PUT /projectdetail (Data Entry form)

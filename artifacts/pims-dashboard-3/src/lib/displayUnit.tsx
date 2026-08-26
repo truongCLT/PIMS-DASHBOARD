@@ -47,7 +47,6 @@ const DisplayUnitContext = createContext<DisplayUnit>(defaultUnit);
 export function convertMoney(v: number, currency: string, unitOn: boolean): number {
   const rate = EXCHANGE_RATES[currency] ?? 1;
   if (currency === "VND" && unitOn) {
-    // 1 K USD = rate * 1000 VND / 1,000,000,000 Bil.VND
     return v * rate * 1000 / 1_000_000_000;
   }
   return unitOn ? v * rate : v * rate * 1000;

@@ -52,7 +52,6 @@ export function convertMoney(
 ): number {
   const rate = rates[currency] ?? 1;
   if (currency === "VND" && unitOn) {
-    // 1 K USD = rate * 1000 VND / 1,000,000,000 Bil.VND
     return v * rate * 1000 / 1_000_000_000;
   }
   return unitOn ? v * rate : v * rate * 1000;
