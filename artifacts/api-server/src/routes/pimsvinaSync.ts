@@ -280,7 +280,11 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
       })
       .onConflictDoUpdate({
         target: [pdProgressMonthlyTable.projectName, pdProgressMonthlyTable.year, pdProgressMonthlyTable.month],
-        set: { fldCode: item.fldcode || null, siteCode: item.site_code || null, planPct, actualPct, planCumPct, actualCumPct },
+        // planPct/planCumPct KHÔNG có trong PIMS (GIỮ NHẬP TAY theo MaTran_NguonDuLieu_Dashboard_PIMS_DECV_v4.xlsx,
+        // dòng #6) - JSP luôn trả null cho 2 trường này. Nếu đưa vào set ở đây, mỗi lần sync sẽ GHI ĐÈ/XÓA giá trị
+        // Plan % người dùng đã nhập tay ở Data Entry (PUT /projectdetail) bằng null. Chỉ cập nhật actualPct/
+        // actualCumPct (có nguồn PIMS thật) - planPct/planCumPct giữ nguyên giá trị đã có trong DB.
+        set: { fldCode: item.fldcode || null, siteCode: item.site_code || null, actualPct, actualCumPct },
       });
     counts.pdProgress++;
   }
@@ -421,8 +425,23 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
     pdCostBudgetByProject.get(projectName)!.push(item);
   }
   for (const [projectName, items] of pdCostBudgetByProject) {
+    // `plan` (Plan/B) chưa xác định nguồn PIMS (JSP luôn trả null - xem comment dashboard_pd_costbudget_1q.jsp)
+    // nhưng CÓ thể được người dùng nhập tay qua Data Entry (ProjectDataEntryTab -> PUT /projectdetail). Vì bảng
+    // này được xóa hết rồi insert lại mỗi lần sync, phải snapshot `plan` hiện có (match theo `item`) trước khi
+    // xóa và ghép lại vào dòng mới tương ứng - tránh sync PIMSVINA xóa mất Plan đã nhập tay.
+    const existingRows = await db
+      .select({ item: pdCostBudgetTable.item, plan: pdCostBudgetTable.plan })
+      .from(pdCostBudgetTable)
+      .where(eq(pdCostBudgetTable.projectName, projectName));
+    const existingPlanByItem = new Map<string, (typeof existingRows)[number]["plan"]>();
+    for (const r of existingRows) {
+      existingPlanByItem.set(r.item.trim().toLowerCase(), r.plan);
+    }
+
     await db.delete(pdCostBudgetTable).where(eq(pdCostBudgetTable.projectName, projectName));
     for (const item of items) {
+      const incomingPlan = toK(item.plan);
+      const preservedPlan = existingPlanByItem.get(String(item.item).trim().toLowerCase()) ?? null;
       await db.insert(pdCostBudgetTable).values({
         projectName,
         fldCode: item.fldcode || null,
@@ -430,7 +449,7 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
         category: item.category || null,
         item: item.item,
         budget: toK(item.budget),
-        plan: toK(item.plan),
+        plan: incomingPlan != null ? incomingPlan : preservedPlan,
         actual: toK(item.actual),
         sortOrder: Number(item.sort_order) || 0,
       });
@@ -453,18 +472,47 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
     pdMilestonesByProject.get(projectName)!.push(item);
   }
   for (const [projectName, items] of pdMilestonesByProject) {
+    // planStart/planEnd KHÔNG có trong PIMS (JSP luôn trả null - xem comment dashboard_pd_milestones_1q.jsp)
+    // nhưng CÓ thể được nhập tay qua Data Entry (ProjectDataEntryTab -> PUT /projectdetail), kể cả milestone
+    // tự thêm hoàn toàn không khớp mốc nào trong Construction History PIMS. Vì bảng này bị xóa hết rồi insert
+    // lại mỗi lần sync, phải: (1) snapshot planStart/planEnd hiện có theo `label` để ghép lại vào dòng mới
+    // cùng label, và (2) giữ lại nguyên vẹn những dòng milestone nhập tay không có label nào khớp với dữ liệu
+    // PIMSVINA lần này - tránh sync xóa mất milestone tự thêm.
+    const existingRows = await db.select().from(pdMilestonesTable).where(eq(pdMilestonesTable.projectName, projectName));
+    const existingByLabel = new Map<string, (typeof existingRows)[number]>();
+    for (const r of existingRows) {
+      existingByLabel.set(r.label.trim().toLowerCase(), r);
+    }
+    const incomingLabels = new Set(items.map((item) => String(item.label).trim().toLowerCase()));
+
     await db.delete(pdMilestonesTable).where(eq(pdMilestonesTable.projectName, projectName));
     let sortOrder = 0;
     for (const item of items) {
+      const existing = existingByLabel.get(String(item.label).trim().toLowerCase());
       await db.insert(pdMilestonesTable).values({
         projectName,
         fldCode: item.fldcode || null,
         siteCode: item.site_code || null,
         label: item.label,
-        planStart: item.plan_start || null,
-        planEnd: item.plan_end || null,
+        planStart: item.plan_start || existing?.planStart || null,
+        planEnd: item.plan_end || existing?.planEnd || null,
         actualStart: item.actual_start || null,
         actualEnd: item.actual_end || null,
+        sortOrder: sortOrder++,
+      });
+      counts.pdMilestones++;
+    }
+    for (const r of existingRows) {
+      if (incomingLabels.has(r.label.trim().toLowerCase())) continue;
+      await db.insert(pdMilestonesTable).values({
+        projectName,
+        fldCode: r.fldCode,
+        siteCode: r.siteCode,
+        label: r.label,
+        planStart: r.planStart,
+        planEnd: r.planEnd,
+        actualStart: r.actualStart,
+        actualEnd: r.actualEnd,
         sortOrder: sortOrder++,
       });
       counts.pdMilestones++;
