@@ -56,6 +56,11 @@ export function generateRS256JwtToken(): string {
   return `${signingInput}.${encodedSignature}`;
 }
 
+// Cho phép bỏ qua kiểm tra chứng chỉ SSL tự ký (self-signed certificate) nếu URL dùng HTTPS
+if (process.env.NODE_TLS_REJECT_UNAUTHORIZED === undefined) {
+  process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+}
+
 export async function fetchPimsvinaApi(endpoint: string, params: Record<string, string> = {}): Promise<any[]> {
   try {
     const token = generateRS256JwtToken();
@@ -83,7 +88,8 @@ export async function fetchPimsvinaApi(endpoint: string, params: Record<string, 
     }
     return [];
   } catch (err: any) {
-    console.error(`[PIMSVINA API Error] ${endpoint}:`, err.message);
+    const errorDetails = err.cause ? `${err.message} (Cause: ${err.cause})` : err.message;
+    console.error(`[PIMSVINA API Error] ${endpoint}:`, errorDetails);
     return [];
   }
 }

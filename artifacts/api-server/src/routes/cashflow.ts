@@ -240,7 +240,8 @@ router.get("/cashflow/aggregate", async (req, res) => {
         if (m > 12) { m = 1; y++; }
       }
       const points = requested.map((key) => ({ month: key, cashIn: 0, cashOut: 0, equivalent: 0 }));
-      res.json(GetCashflowAggregateResponse.parse({ unit: "천 USD", points }));
+      const scope = divisionList ? divisionList.join("+") : (nameList ? nameList.join("+") : "전체");
+      res.json(GetCashflowAggregateResponse.parse({ scope, unit: "천 USD", points }));
       return;
     }
 

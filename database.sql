@@ -2,22 +2,46 @@
 -- 1. BẢNG DỮ LIỆU TỶ GIÁ (FX Rates)
 -- ============================================================
 CREATE TABLE IF NOT EXISTS fx_rates (
-    currency TEXT PRIMARY KEY CHECK (currency IN ('USD', 'KRW', 'VND')),
+    currency TEXT NOT NULL CHECK (currency IN ('USD', 'KRW', 'VND')),
+    year INT NOT NULL,
+    month INT NOT NULL CHECK (month BETWEEN 1 AND 12),
     rate DOUBLE PRECISION NOT NULL CHECK (rate > 0),
-    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (currency, year, month)
 );
 
 -- ============================================================
--- 2. NHÓM BẢNG ZAFUMU / CASHFLOW (cf_*)
+-- 2. CƠ CẤU TỔ CHỨC CÔNG TY / PHÒNG BAN (orgstructure)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS companies (
+    id SERIAL PRIMARY KEY,
+    label TEXT NOT NULL,
+    sort_order INT NOT NULL DEFAULT 0,
+    CONSTRAINT companies_label_uq UNIQUE (label)
+);
+
+CREATE TABLE IF NOT EXISTS divisions (
+    id SERIAL PRIMARY KEY,
+    company_id INT NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+    label TEXT NOT NULL,
+    business_type TEXT NOT NULL CHECK (business_type IN ('시공', '용역')),
+    sort_order INT NOT NULL DEFAULT 0,
+    CONSTRAINT divisions_company_label_uq UNIQUE (company_id, label)
+);
+
+-- ============================================================
+-- 3. NHÓM BẢNG ZAFUMU / CASHFLOW (cf_*)
 -- ============================================================
 CREATE TABLE IF NOT EXISTS cf_projects (
     id SERIAL PRIMARY KEY,
     name TEXT NOT NULL,
     division TEXT NOT NULL,
+    code TEXT,
     item_name_in TEXT,
     item_name_out TEXT,
     sort_order INT NOT NULL DEFAULT 0,
-    CONSTRAINT cf_projects_name_division_uq UNIQUE (name, division)
+    CONSTRAINT cf_projects_name_division_uq UNIQUE (name, division),
+    CONSTRAINT cf_projects_code_uq UNIQUE (code)
 );
 
 CREATE TABLE IF NOT EXISTS cf_monthly_amounts (
@@ -31,7 +55,7 @@ CREATE TABLE IF NOT EXISTS cf_monthly_amounts (
 );
 
 -- ============================================================
--- 3. NHÓM BẢNG SALES & COST / DOANH THU - CHI PHÍ (sc_*)
+-- 4. NHÓM BẢNG SALES & COST / DOANH THU - CHI PHÍ (sc_*)
 -- ============================================================
 CREATE TABLE IF NOT EXISTS sc_sites (
     id SERIAL PRIMARY KEY,
@@ -54,15 +78,18 @@ CREATE TABLE IF NOT EXISTS sc_monthly (
 );
 
 -- ============================================================
--- 4. NHÓM BẢNG MANAGEMENT REPORT / BÁO CÁO QUẢN TRỊ (mr_*)
+-- 5. NHÓM BẢNG MANAGEMENT REPORT / BÁO CÁO QUẢN TRỊ (mr_*)
 -- ============================================================
 CREATE TABLE IF NOT EXISTS mr_projects (
     id SERIAL PRIMARY KEY,
     name TEXT NOT NULL UNIQUE,
+    code TEXT UNIQUE,
     site_code TEXT,
+    fld_code TEXT,
     group_label TEXT,
     sort_order INT NOT NULL DEFAULT 0,
-    status TEXT NOT NULL DEFAULT 'ongoing' CHECK (status IN ('ongoing', 'closed'))
+    status TEXT NOT NULL DEFAULT 'ongoing' CHECK (status IN ('ongoing', 'closed')),
+    division_id INT REFERENCES divisions(id) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS mr_monthly (
@@ -116,27 +143,33 @@ CREATE TABLE IF NOT EXISTS mr_import_history (
 );
 
 -- ============================================================
--- 5. NHÓM BẢNG PROJECT DETAIL / CHI TIẾT DỰ ÁN (pd_*)
+-- 6. NHÓM BẢNG PROJECT DETAIL / CHI TIẾT DỰ ÁN (pd_*)
 -- ============================================================
 CREATE TABLE IF NOT EXISTS pd_overview (
     id SERIAL PRIMARY KEY,
     project_name TEXT NOT NULL UNIQUE,
-    contract_amount NUMERIC(18, 4),
+    fld_code TEXT,
+    site_code TEXT,
+    contract_amount NUMERIC(24, 8),
     start_date TEXT,
     end_date TEXT,
     client TEXT,
     scale TEXT,
     as_of_month TEXT,
     scope TEXT,
-    revenue_annual_target NUMERIC(18, 4),
-    revenue_total NUMERIC(18, 4),
-    cash_confirmed NUMERIC(18, 4),
-    cash_collection NUMERIC(18, 4)
+    revenue_annual_target NUMERIC(24, 8),
+    revenue_total NUMERIC(24, 8),
+    cash_confirmed NUMERIC(24, 8),
+    cash_collection NUMERIC(24, 8),
+    slideshow_interval_seconds INT NOT NULL DEFAULT 0,
+    is_closed BOOLEAN NOT NULL DEFAULT FALSE
 );
 
 CREATE TABLE IF NOT EXISTS pd_progress_monthly (
     id SERIAL PRIMARY KEY,
     project_name TEXT NOT NULL,
+    fld_code TEXT,
+    site_code TEXT,
     year INT NOT NULL,
     month INT NOT NULL CHECK (month BETWEEN 1 AND 12),
     plan_pct NUMERIC(9, 4),
@@ -149,6 +182,8 @@ CREATE TABLE IF NOT EXISTS pd_progress_monthly (
 CREATE TABLE IF NOT EXISTS pd_milestones (
     id SERIAL PRIMARY KEY,
     project_name TEXT NOT NULL,
+    fld_code TEXT,
+    site_code TEXT,
     label TEXT NOT NULL,
     plan_start TEXT,
     plan_end TEXT,
@@ -162,8 +197,8 @@ CREATE TABLE IF NOT EXISTS pd_cost_estimation (
     id SERIAL PRIMARY KEY,
     project_name TEXT NOT NULL,
     kind TEXT NOT NULL CHECK (kind IN ('bidding', 'execution', 'completion')),
-    contract_amount NUMERIC(18, 4),
-    cost_amount NUMERIC(18, 4),
+    contract_amount NUMERIC(24, 8),
+    cost_amount NUMERIC(24, 8),
     year INT,
     month INT,
     CONSTRAINT pd_cost_estimation_uq UNIQUE NULLS NOT DISTINCT (project_name, kind, year, month)
@@ -172,11 +207,13 @@ CREATE TABLE IF NOT EXISTS pd_cost_estimation (
 CREATE TABLE IF NOT EXISTS pd_cost_budget (
     id SERIAL PRIMARY KEY,
     project_name TEXT NOT NULL,
+    fld_code TEXT,
+    site_code TEXT,
     category TEXT,
     item TEXT NOT NULL,
-    budget NUMERIC(18, 4),
-    plan NUMERIC(18, 4),
-    actual NUMERIC(18, 4),
+    budget NUMERIC(24, 8),
+    plan NUMERIC(24, 8),
+    actual NUMERIC(24, 8),
     sort_order INT NOT NULL DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS pd_cost_budget_project_idx ON pd_cost_budget(project_name);
@@ -187,39 +224,45 @@ CREATE TABLE IF NOT EXISTS pd_cost_budget_monthly (
     item TEXT NOT NULL,
     year INT NOT NULL,
     month INT NOT NULL CHECK (month BETWEEN 1 AND 12),
-    plan NUMERIC(18, 4),
-    actual NUMERIC(18, 4),
+    plan NUMERIC(24, 8),
+    actual NUMERIC(24, 8),
     CONSTRAINT pd_cost_budget_monthly_uq UNIQUE (project_name, item, year, month)
 );
 
 CREATE TABLE IF NOT EXISTS pd_cashflow_monthly (
     id SERIAL PRIMARY KEY,
     project_name TEXT NOT NULL,
+    fld_code TEXT,
+    site_code TEXT,
     year INT NOT NULL,
     month INT NOT NULL CHECK (month BETWEEN 1 AND 12),
-    cash_in NUMERIC(18, 4),
-    cash_out NUMERIC(18, 4),
-    equivalent NUMERIC(18, 4),
+    cash_in NUMERIC(24, 8),
+    cash_out NUMERIC(24, 8),
+    equivalent NUMERIC(24, 8),
     CONSTRAINT pd_cashflow_monthly_uq UNIQUE (project_name, year, month)
 );
 
 CREATE TABLE IF NOT EXISTS pd_cogs_monthly (
     id SERIAL PRIMARY KEY,
     project_name TEXT NOT NULL,
+    fld_code TEXT,
+    site_code TEXT,
     year INT NOT NULL,
     month INT NOT NULL CHECK (month BETWEEN 1 AND 12),
-    acct_cogs NUMERIC(18, 4),
-    wip_cogs NUMERIC(18, 4),
+    acct_cogs NUMERIC(24, 8),
+    wip_cogs NUMERIC(24, 8),
     CONSTRAINT pd_cogs_monthly_uq UNIQUE (project_name, year, month)
 );
 
 CREATE TABLE IF NOT EXISTS pd_sales_monthly (
     id SERIAL PRIMARY KEY,
     project_name TEXT NOT NULL,
+    fld_code TEXT,
+    site_code TEXT,
     year INT NOT NULL,
     month INT NOT NULL CHECK (month BETWEEN 1 AND 12),
-    plan NUMERIC(18, 4),
-    actual NUMERIC(18, 4),
+    plan NUMERIC(24, 8),
+    actual NUMERIC(24, 8),
     CONSTRAINT pd_sales_monthly_uq UNIQUE (project_name, year, month)
 );
 
@@ -234,17 +277,19 @@ CREATE INDEX IF NOT EXISTS pd_photos_project_idx ON pd_photos(project_name);
 CREATE TABLE IF NOT EXISTS pd_outsourcing (
     id SERIAL PRIMARY KEY,
     project_name TEXT NOT NULL,
+    fld_code TEXT,
+    site_code TEXT,
     trade_group TEXT,
     trade TEXT NOT NULL,
     vendor TEXT,
     category TEXT,
     contract_date TEXT,
     change_no TEXT,
-    budget NUMERIC(18, 4),
-    executed_budget NUMERIC(18, 4),
-    resolved NUMERIC(18, 4),
-    this_month NUMERIC(18, 4),
-    accum NUMERIC(18, 4),
+    budget NUMERIC(24, 8),
+    executed_budget NUMERIC(24, 8),
+    resolved NUMERIC(24, 8),
+    this_month NUMERIC(24, 8),
+    accum NUMERIC(24, 8),
     sort_order INT NOT NULL DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS pd_outsourcing_project_idx ON pd_outsourcing(project_name);
