@@ -66,12 +66,16 @@ export const ORACLE_DASHBOARD_QUERIES: Record<string, OracleEndpointQuery> = {
   },
 
   "dashboard_pd_progress_1q.jsp": {
+    // STNDCLSCODE 'ZAA%' là tiền tố SAI (không có bản ghi nào khớp trong CHTB_PFMCOSTRMRK - xem comment
+    // chi tiết ở "dashboard_pd_costbudget_1q.jsp" bên dưới), khiến DIRECT_COST_BDGT luôn = 0 -> bị lọc bởi
+    // "WHERE DIRECT_COST_BDGT <> 0" -> Progress Actual % ra 0 dòng cho TOÀN BỘ dự án. Tiền tố đúng theo
+    // CATB_STNDCLS: 'A%' = 1.Direct Cost (top-level, đã bao gồm cả Common Works/Expenses I bên trong).
     sql: `WITH DIRECT_COST_MONTHLY AS (
         SELECT FLDCODE,
                TO_NUMBER(SUBSTR(BASEYYMM, 1, 4)) AS YEAR,
                TO_NUMBER(SUBSTR(BASEYYMM, 5, 2)) AS MONTH,
-               SUM(CASE WHEN STNDCLSCODE LIKE 'ZAA%' THEN NVL(BDGTAMT, 0) ELSE 0 END) AS DIRECT_COST_BDGT,
-               SUM(CASE WHEN STNDCLSCODE LIKE 'ZAA%' THEN NVL(PFMAMT, 0) ELSE 0 END) AS DIRECT_COST_ACTUAL
+               SUM(CASE WHEN STNDCLSCODE LIKE 'A%' THEN NVL(BDGTAMT, 0) ELSE 0 END) AS DIRECT_COST_BDGT,
+               SUM(CASE WHEN STNDCLSCODE LIKE 'A%' THEN NVL(PFMAMT, 0) ELSE 0 END) AS DIRECT_COST_ACTUAL
         FROM CHTB_PFMCOSTRMRK
         GROUP BY FLDCODE, SUBSTR(BASEYYMM, 1, 4), SUBSTR(BASEYYMM, 5, 2)
     ),
@@ -204,6 +208,9 @@ export const ORACLE_DASHBOARD_QUERIES: Record<string, OracleEndpointQuery> = {
         LEFT JOIN MONTHLY_COST_INVEST I ON I.FLDCODE = D.FLDCODE AND I.BASEYYMM = D.BASEYYMM
     ),
     MONTHLY_WIP_COST AS (
+        -- Tổng chi phí = Direct Cost ('A%', đã gồm Common/Expense I) + Expense II ('BWZJ%') + Contingency
+        -- ('CWDD%') theo CATB_STNDCLS. Tiền tố 'ZAA/ZBA/ZCA/ZDA/ZZA' cũ SAI (không khớp bản ghi nào) nên
+        -- WIP_COGS luôn ra 0 - xem comment chi tiết ở "dashboard_pd_costbudget_1q.jsp".
         SELECT
             P.FLDCODE,
             TO_NUMBER(SUBSTR(P.BASEYYMM, 1, 4)) AS YEAR,
@@ -211,11 +218,9 @@ export const ORACLE_DASHBOARD_QUERIES: Record<string, OracleEndpointQuery> = {
             P.BASEYYMM,
             SUM(NVL(P.PFMAMT, 0)) AS WIP_COGS
         FROM CHTB_PFMCOSTRMRK P
-        WHERE P.STNDCLSCODE LIKE 'ZAA%'
-           OR P.STNDCLSCODE LIKE 'ZBA%'
-           OR P.STNDCLSCODE LIKE 'ZCA%'
-           OR P.STNDCLSCODE LIKE 'ZDA%'
-           OR P.STNDCLSCODE LIKE 'ZZA%'
+        WHERE P.STNDCLSCODE LIKE 'A%'
+           OR P.STNDCLSCODE LIKE 'BWZJ%'
+           OR P.STNDCLSCODE LIKE 'CWDD%'
         GROUP BY P.FLDCODE, P.BASEYYMM
     ),
     ALL_PERIODS AS (
@@ -278,34 +283,41 @@ export const ORACLE_DASHBOARD_QUERIES: Record<string, OracleEndpointQuery> = {
   },
 
   "dashboard_pd_costbudget_1q.jsp": {
+    // STNDCLSCODE thực tế trong CHTB_PFMCOSTRMRK theo cây phân loại CATB_STNDCLS (KHÔNG dùng tiền tố
+    // 'ZAA/ZBA/ZCA/ZDA/ZZA' như suy đoán ban đầu - không có bản ghi nào trong toàn bộ Oracle khớp các
+    // tiền tố đó, khiến Budget Execution Status luôn ra 0 cho MỌI dự án). Tiền tố đúng theo CATB_STNDCLS:
+    // A% = 1.Direct Cost (top), AWZH% = Common Works (con của Direct Cost), AWZI% = Expenses I (con của
+    // Direct Cost), BWZJ% = Expenses II (con của Indirect Cost - 2.간접비), CWDD% = Contingency (con của
+    // 3.예비비). Outsourcing = Direct Cost - Common - Expense1 (đúng như公式 cũ, chỉ sai tiền tố lọc).
+    // Đồng thời bỏ nhóm theo YEAR: bảng đích pd_cost_budget không có cột year (1 dòng/hạng mục, không
+    // phải 1 dòng/hạng mục/năm) - nhóm theo YEAR cũ tạo ra nhiều dòng trùng ITEM mỗi lần sync, và phía
+    // Data Entry chỉ lấy dòng ĐẦU TIÊN tìm thấy (thường là năm cũ nhất) nên hiển thị sai lệch.
     sql: `WITH LATEST_SNAPSHOT AS (
-        SELECT FLDCODE, SUBSTR(BASEYYMM, 1, 4) AS BASEYY, MAX(BASEYYMM) AS MAX_BASEYYMM
+        SELECT FLDCODE, MAX(BASEYYMM) AS MAX_BASEYYMM
         FROM CHTB_PFMCOSTRMRK
-        GROUP BY FLDCODE, SUBSTR(BASEYYMM, 1, 4)
+        GROUP BY FLDCODE
     ),
     COST_STATUS AS (
         SELECT
             A.FLDCODE,
-            TO_NUMBER(SUBSTR(A.BASEYYMM, 1, 4)) AS YEAR,
-            SUM(CASE WHEN A.STNDCLSCODE LIKE 'ZAA%' THEN NVL(A.BDGTAMT, 0) ELSE 0 END) AS DIRECT_COST_BDGT,
-            SUM(CASE WHEN A.STNDCLSCODE LIKE 'ZAA%' THEN NVL(A.PFMAMT, 0) ELSE 0 END) AS DIRECT_COST_ACTUAL,
-            SUM(CASE WHEN A.STNDCLSCODE LIKE 'ZBA%' THEN NVL(A.BDGTAMT, 0) ELSE 0 END) AS COMMON_BDGT,
-            SUM(CASE WHEN A.STNDCLSCODE LIKE 'ZBA%' THEN NVL(A.PFMAMT, 0) ELSE 0 END) AS COMMON_ACTUAL,
-            SUM(CASE WHEN A.STNDCLSCODE LIKE 'ZCA%' THEN NVL(A.BDGTAMT, 0) ELSE 0 END) AS EXPENSE1_BDGT,
-            SUM(CASE WHEN A.STNDCLSCODE LIKE 'ZCA%' THEN NVL(A.PFMAMT, 0) ELSE 0 END) AS EXPENSE1_ACTUAL,
-            SUM(CASE WHEN A.STNDCLSCODE LIKE 'ZDA%' THEN NVL(A.BDGTAMT, 0) ELSE 0 END) AS EXPENSE2_BDGT,
-            SUM(CASE WHEN A.STNDCLSCODE LIKE 'ZDA%' THEN NVL(A.PFMAMT, 0) ELSE 0 END) AS EXPENSE2_ACTUAL,
-            SUM(CASE WHEN A.STNDCLSCODE LIKE 'ZZA%' THEN NVL(A.BDGTAMT, 0) ELSE 0 END) AS CONTINGENCY_BDGT,
-            SUM(CASE WHEN A.STNDCLSCODE LIKE 'ZZA%' THEN NVL(A.PFMAMT, 0) ELSE 0 END) AS CONTINGENCY_ACTUAL
+            SUM(CASE WHEN A.STNDCLSCODE LIKE 'A%' THEN NVL(A.BDGTAMT, 0) ELSE 0 END) AS DIRECT_COST_BDGT,
+            SUM(CASE WHEN A.STNDCLSCODE LIKE 'A%' THEN NVL(A.PFMAMT, 0) ELSE 0 END) AS DIRECT_COST_ACTUAL,
+            SUM(CASE WHEN A.STNDCLSCODE LIKE 'AWZH%' THEN NVL(A.BDGTAMT, 0) ELSE 0 END) AS COMMON_BDGT,
+            SUM(CASE WHEN A.STNDCLSCODE LIKE 'AWZH%' THEN NVL(A.PFMAMT, 0) ELSE 0 END) AS COMMON_ACTUAL,
+            SUM(CASE WHEN A.STNDCLSCODE LIKE 'AWZI%' THEN NVL(A.BDGTAMT, 0) ELSE 0 END) AS EXPENSE1_BDGT,
+            SUM(CASE WHEN A.STNDCLSCODE LIKE 'AWZI%' THEN NVL(A.PFMAMT, 0) ELSE 0 END) AS EXPENSE1_ACTUAL,
+            SUM(CASE WHEN A.STNDCLSCODE LIKE 'BWZJ%' THEN NVL(A.BDGTAMT, 0) ELSE 0 END) AS EXPENSE2_BDGT,
+            SUM(CASE WHEN A.STNDCLSCODE LIKE 'BWZJ%' THEN NVL(A.PFMAMT, 0) ELSE 0 END) AS EXPENSE2_ACTUAL,
+            SUM(CASE WHEN A.STNDCLSCODE LIKE 'CWDD%' THEN NVL(A.BDGTAMT, 0) ELSE 0 END) AS CONTINGENCY_BDGT,
+            SUM(CASE WHEN A.STNDCLSCODE LIKE 'CWDD%' THEN NVL(A.PFMAMT, 0) ELSE 0 END) AS CONTINGENCY_ACTUAL
         FROM CHTB_PFMCOSTRMRK A
         JOIN LATEST_SNAPSHOT S ON S.FLDCODE = A.FLDCODE AND S.MAX_BASEYYMM = A.BASEYYMM
-        GROUP BY A.FLDCODE, SUBSTR(A.BASEYYMM, 1, 4)
+        GROUP BY A.FLDCODE
     )
     SELECT
         C.FLDCODE AS FLDCODE,
         (SELECT MAX(FM.ACNT_FLDCODE) FROM CBTB_FLD_MAPPING FM WHERE FM.FLDCODE = C.FLDCODE) AS SITE_CODE,
         FUN_GET_FLDNAME(C.FLDCODE) AS PROJECT_NAME,
-        C.YEAR AS YEAR,
         'Direct Cost' AS CATEGORY,
         'Outsourcing' AS ITEM,
         (C.DIRECT_COST_BDGT - C.COMMON_BDGT - C.EXPENSE1_BDGT) AS BUDGET,
@@ -320,7 +332,6 @@ export const ORACLE_DASHBOARD_QUERIES: Record<string, OracleEndpointQuery> = {
         C.FLDCODE AS FLDCODE,
         (SELECT MAX(FM.ACNT_FLDCODE) FROM CBTB_FLD_MAPPING FM WHERE FM.FLDCODE = C.FLDCODE) AS SITE_CODE,
         FUN_GET_FLDNAME(C.FLDCODE) AS PROJECT_NAME,
-        C.YEAR AS YEAR,
         'Direct Cost' AS CATEGORY,
         'Common' AS ITEM,
         C.COMMON_BDGT AS BUDGET,
@@ -334,7 +345,6 @@ export const ORACLE_DASHBOARD_QUERIES: Record<string, OracleEndpointQuery> = {
         C.FLDCODE AS FLDCODE,
         (SELECT MAX(FM.ACNT_FLDCODE) FROM CBTB_FLD_MAPPING FM WHERE FM.FLDCODE = C.FLDCODE) AS SITE_CODE,
         FUN_GET_FLDNAME(C.FLDCODE) AS PROJECT_NAME,
-        C.YEAR AS YEAR,
         'Direct Cost' AS CATEGORY,
         'Expense 1' AS ITEM,
         C.EXPENSE1_BDGT AS BUDGET,
@@ -348,7 +358,6 @@ export const ORACLE_DASHBOARD_QUERIES: Record<string, OracleEndpointQuery> = {
         C.FLDCODE AS FLDCODE,
         (SELECT MAX(FM.ACNT_FLDCODE) FROM CBTB_FLD_MAPPING FM WHERE FM.FLDCODE = C.FLDCODE) AS SITE_CODE,
         FUN_GET_FLDNAME(C.FLDCODE) AS PROJECT_NAME,
-        C.YEAR AS YEAR,
         CAST(NULL AS VARCHAR2(20)) AS CATEGORY,
         'Direct cost' AS ITEM,
         C.DIRECT_COST_BDGT AS BUDGET,
@@ -362,7 +371,6 @@ export const ORACLE_DASHBOARD_QUERIES: Record<string, OracleEndpointQuery> = {
         C.FLDCODE AS FLDCODE,
         (SELECT MAX(FM.ACNT_FLDCODE) FROM CBTB_FLD_MAPPING FM WHERE FM.FLDCODE = C.FLDCODE) AS SITE_CODE,
         FUN_GET_FLDNAME(C.FLDCODE) AS PROJECT_NAME,
-        C.YEAR AS YEAR,
         'Indirect Cost' AS CATEGORY,
         'Expense 2' AS ITEM,
         C.EXPENSE2_BDGT AS BUDGET,
@@ -376,7 +384,6 @@ export const ORACLE_DASHBOARD_QUERIES: Record<string, OracleEndpointQuery> = {
         C.FLDCODE AS FLDCODE,
         (SELECT MAX(FM.ACNT_FLDCODE) FROM CBTB_FLD_MAPPING FM WHERE FM.FLDCODE = C.FLDCODE) AS SITE_CODE,
         FUN_GET_FLDNAME(C.FLDCODE) AS PROJECT_NAME,
-        C.YEAR AS YEAR,
         'Indirect Cost' AS CATEGORY,
         'Contingency' AS ITEM,
         C.CONTINGENCY_BDGT AS BUDGET,
@@ -385,7 +392,32 @@ export const ORACLE_DASHBOARD_QUERIES: Record<string, OracleEndpointQuery> = {
         ROUND(DECODE(C.CONTINGENCY_BDGT, 0, 0, C.CONTINGENCY_ACTUAL / C.CONTINGENCY_BDGT * 100), 2) AS EXECUTION_RATE,
         6 AS SORT_ORDER
     FROM COST_STATUS C
-    ORDER BY PROJECT_NAME, YEAR, SORT_ORDER`,
+    ORDER BY PROJECT_NAME, SORT_ORDER`,
+  },
+
+  "dashboard_pd_costestimation_1q.jsp": {
+    // Cost Rate — CHỈ mục "Execution Budget" (실행예산원가율). Bidding và Estimated Completion chưa có
+    // nguồn PIMS đáng tin cậy đã xác minh (xem MaTran_NguonDuLieu_Dashboard_PIMS_DECV_v4.xlsx #12/#14) —
+    // vẫn giữ nhập tay. Nguồn: CDTB_PFMSUM_VINA join CDTB_PFMCHGSEQ lọc BDGTTYPECODE='1' (Execution
+    // Budget - xác minh qua COMPRSN/TITLE1/TITLE2 thực tế, khác '0'=Initial/Bidding và '2'=Change/test)
+    // và APPRSTSCODE='40' (đã duyệt), lấy PFMCHGSEQ mới nhất còn thoả điều kiện.
+    sql: `WITH EXEC_BUDGET_SEQ AS (
+        SELECT FLDCODE, MAX(PFMCHGSEQ) AS PFMCHGSEQ
+        FROM CDTB_PFMCHGSEQ
+        WHERE BDGTTYPECODE = '1' AND APPRSTSCODE = '40'
+        GROUP BY FLDCODE
+    )
+    SELECT
+        P.FLDCODE AS FLDCODE,
+        (SELECT MAX(FM.ACNT_FLDCODE) FROM CBTB_FLD_MAPPING FM WHERE FM.FLDCODE = P.FLDCODE) AS SITE_CODE,
+        FUN_GET_FLDNAME(P.FLDCODE) AS PROJECT_NAME,
+        MAX(CASE WHEN P.STNDCODE = 'ZYA' THEN P.BDGTAMT END) AS COST_AMOUNT,
+        MAX(CASE WHEN P.STNDCODE = 'ZZL' THEN P.BDGTAMT END) AS CONTRACT_AMOUNT
+    FROM CDTB_PFMSUM_VINA P
+    JOIN EXEC_BUDGET_SEQ S ON S.FLDCODE = P.FLDCODE AND S.PFMCHGSEQ = P.PFMCHGSEQ
+    WHERE P.CURCODE = 'USD' AND P.STNDCODE IN ('ZYA', 'ZZL')
+    GROUP BY P.FLDCODE
+    ORDER BY PROJECT_NAME`,
   },
 
   "dashboard_pd_milestones_1q.jsp": {

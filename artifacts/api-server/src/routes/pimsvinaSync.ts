@@ -17,6 +17,7 @@ import {
   pdCogsMonthlyTable,
   pdSalesMonthlyTable,
   pdCostBudgetTable,
+  pdCostEstimationTable,
   pdMilestonesTable,
   fxRatesTable,
   companiesTable,
@@ -49,6 +50,7 @@ async function fetchAllPimsvinaData() {
     pdCogs,
     pdSales,
     pdCostBudget,
+    pdCostEstimation,
     pdMilestones,
   ] = await Promise.all([
     fetchPimsvinaApi("dashboard_pd_overview_1q.jsp"),
@@ -58,6 +60,7 @@ async function fetchAllPimsvinaData() {
     fetchPimsvinaApi("dashboard_pd_cogs_monthly_1q.jsp"),
     fetchPimsvinaApi("dashboard_pd_sales_1q.jsp"),
     fetchPimsvinaApi("dashboard_pd_costbudget_1q.jsp"),
+    fetchPimsvinaApi("dashboard_pd_costestimation_1q.jsp"),
     fetchPimsvinaApi("dashboard_pd_milestones_1q.jsp"),
   ]);
   return {
@@ -68,6 +71,7 @@ async function fetchAllPimsvinaData() {
     pdCogs,
     pdSales,
     pdCostBudget,
+    pdCostEstimation,
     pdMilestones,
   };
 }
@@ -83,6 +87,7 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
   const pdCogs = fetched.pdCogs ?? [];
   const pdSales = fetched.pdSales ?? [];
   const pdCostBudget = fetched.pdCostBudget ?? [];
+  const pdCostEstimation = fetched.pdCostEstimation ?? [];
   const pdMilestones = fetched.pdMilestones ?? [];
 
   const counts = {
@@ -93,6 +98,7 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
     pdCogs: 0,
     pdSales: 0,
     pdCostBudget: 0,
+    pdCostEstimation: 0,
     pdMilestones: 0,
     skipped: 0,
   };
@@ -455,6 +461,42 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
       });
       counts.pdCostBudget++;
     }
+  }
+
+  // 14b. Sync Project Detail Cost Estimation — CHỈ kind='execution' (Execution Budget Cost Rate).
+  // 'bidding' và 'completion' chưa có nguồn PIMS đã xác minh (xem MaTran_NguonDuLieu...v4.xlsx #12/#14),
+  // vẫn phải nhập tay qua Data Entry (PUT /projectdetail) — TUYỆT ĐỐI không đụng tới 2 kind đó ở đây,
+  // chỉ upsert đúng 1 dòng kind='execution' theo unique key (projectName, kind, year, month).
+  // BDGTAMT ở nguồn đã là USD gốc (không phải VND) nên quy đổi kUSD bằng cách chia 1000 trực tiếp,
+  // KHÔNG dùng toK() chung (toK() sẽ hiểu nhầm số USD lớn > 100 triệu thành VND và chia nhầm cho tỷ giá).
+  for (const item of pdCostEstimation) {
+    const projectName = await resolveProjectName(item);
+    if (!projectName || item.cost_amount == null || item.contract_amount == null) {
+      if (!projectName) trackSkipped(item);
+      continue;
+    }
+    const costAmountK = String(Number(item.cost_amount) / 1000);
+    const contractAmountK = String(Number(item.contract_amount) / 1000);
+    await db
+      .insert(pdCostEstimationTable)
+      .values({
+        projectName,
+        kind: "execution",
+        contractAmount: contractAmountK,
+        costAmount: costAmountK,
+        year: null,
+        month: null,
+      })
+      .onConflictDoUpdate({
+        target: [
+          pdCostEstimationTable.projectName,
+          pdCostEstimationTable.kind,
+          pdCostEstimationTable.year,
+          pdCostEstimationTable.month,
+        ],
+        set: { contractAmount: contractAmountK, costAmount: costAmountK },
+      });
+    counts.pdCostEstimation++;
   }
 
   // 15. Sync Project Milestones — CBTB_CONSTHISTORY(공사이력) 기반 근사치. APQP_WBS로 시도했으나 실제 DB에
