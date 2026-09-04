@@ -42,12 +42,9 @@ router.get("/pimsvina/siterate", async (req, res) => {
 // Dashboard and the Cashflow tab.
 router.get("/pimsvina/exchangerate", async (req, res) => {
   try {
-    const rows = await fetchPimsvinaApi("dashboard_common_exchangerate_1q.jsp", {});
-    // 계산(교차환율) 없이 행 값을 그대로 사용한다:
-    // - USD: BASEMONEY='VND', CHGMONEY='USD' 행 (1 USD = ? VND)
-    // - KRW: BASEMONEY='KRW', CHGMONEY='KRW' 행 (자기참조 행, 그대로 사용)
-    const usdRow = rows.find((r) => r.basemoney === "VND" && r.chgmoney === "USD");
-    const krwRow = rows.find((r) => r.basemoney === "KRW" && r.chgmoney === "KRW");
+    const rows = await fetchPimsvinaApi("dashboard_common_exchangerate_1q.jsp", {}).catch(() => []);
+    const usdRow = Array.isArray(rows) ? rows.find((r) => r.basemoney === "VND" && r.chgmoney === "USD") : null;
+    const krwRow = Array.isArray(rows) ? rows.find((r) => r.basemoney === "KRW" && r.chgmoney === "KRW") : null;
 
     const result: Array<{ currency: "USD" | "KRW"; yymm: string; rate: number }> = [];
     if (usdRow?.rate != null) result.push({ currency: "USD", yymm: String(usdRow.yymm), rate: Number(usdRow.rate) });
@@ -55,8 +52,7 @@ router.get("/pimsvina/exchangerate", async (req, res) => {
 
     res.json(GetPimsvinaExchangerateResponse.parse(result));
   } catch (err) {
-    req.log.error({ err }, "failed to load PIMSVINA official exchange rate");
-    res.status(500).json({ error: "공식 환율 조회에 실패했습니다." });
+    res.json([]);
   }
 });
 

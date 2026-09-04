@@ -33,19 +33,24 @@ function currentYearMonth(): { year: number; month: number } {
  * VND 값이 없거나 호출에 실패하면 null (호출측에서 DB에 저장된 수동 값으로 폴백).
  */
 async function getPimsvinaRates(): Promise<Record<"USD" | "KRW" | "VND", number> | null> {
-  const rows = await fetchPimsvinaApi("dashboard_common_exchangerate_1q.jsp", {});
+  try {
+    const rows = await fetchPimsvinaApi("dashboard_common_exchangerate_1q.jsp", {});
+    if (!Array.isArray(rows) || rows.length === 0) return null;
 
-  const usdSelfRow = rows.find((r) => r.basemoney === "USD" && r.chgmoney === "USD");
-  const usd = usdSelfRow?.rate != null ? Number(usdSelfRow.rate) : DEFAULT_RATES.USD;
+    const usdSelfRow = rows.find((r) => r.basemoney === "USD" && r.chgmoney === "USD");
+    const usd = usdSelfRow?.rate != null ? Number(usdSelfRow.rate) : DEFAULT_RATES.USD;
 
-  const usdRow = rows.find((r) => r.basemoney === "VND" && r.chgmoney === "USD");
-  const vnd = usdRow?.rate != null ? Number(usdRow.rate) : null;
-  if (vnd == null || Number.isNaN(vnd)) return null;
+    const usdRow = rows.find((r) => r.basemoney === "VND" && r.chgmoney === "USD");
+    const vnd = usdRow?.rate != null ? Number(usdRow.rate) : null;
+    if (vnd == null || Number.isNaN(vnd)) return null;
 
-  const krwRow = rows.find((r) => r.basemoney === "KRW" && r.chgmoney === "KRW");
-  const krw = krwRow?.rate != null ? Number(krwRow.rate) : DEFAULT_RATES.KRW;
+    const krwRow = rows.find((r) => r.basemoney === "KRW" && r.chgmoney === "KRW");
+    const krw = krwRow?.rate != null ? Number(krwRow.rate) : DEFAULT_RATES.KRW;
 
-  return { USD: usd, KRW: krw, VND: vnd };
+    return { USD: usd, KRW: krw, VND: vnd };
+  } catch (e) {
+    return null;
+  }
 }
 
 router.get("/fxrates", async (req, res) => {

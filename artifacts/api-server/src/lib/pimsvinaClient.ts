@@ -1,5 +1,7 @@
 import fs from "fs";
 import crypto from "crypto";
+import { queryOracle } from "./oraclePool";
+import { ORACLE_DASHBOARD_QUERIES } from "./pimsvinaOracleQueries";
 
 // Configs from environment variables (.env)
 const PIMSVINA_BASE_URL =
@@ -61,11 +63,32 @@ if (process.env.NODE_TLS_REJECT_UNAUTHORIZED === undefined) {
   process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 }
 
+const TIMEOUT_MS = Number(process.env.PIMSVINA_TIMEOUT_MS) || 60000;
+
 export async function fetchPimsvinaApi(endpoint: string, params: Record<string, string> = {}): Promise<any[]> {
+  const oracleQuery = ORACLE_DASHBOARD_QUERIES[endpoint];
+  if (oracleQuery) {
+    try {
+      const binds = oracleQuery.binds ? oracleQuery.binds(params) : {};
+      return await queryOracle(oracleQuery.sql, binds);
+    } catch (err: any) {
+      console.error(`[PIMSVINA Oracle Error] ${endpoint}:`, err.message);
+      return [];
+    }
+  }
+
   try {
     const token = generateRS256JwtToken();
-    const baseUrl = PIMSVINA_BASE_URL.replace(/\/$/, "");
-    const url = new URL(`${baseUrl}/${endpoint}`);
+    let baseUrl = PIMSVINA_BASE_URL.replace(/\/$/, "");
+    let cleanEndpoint = endpoint.replace(/^\//, "");
+
+    // Tránh bị lặp chuỗi site/jsp/Common/dashboard nếu cả baseUrl và endpoint đều có
+    if (baseUrl.includes("/site/jsp/Common/dashboard") && cleanEndpoint.startsWith("site/jsp/Common/dashboard/")) {
+      cleanEndpoint = cleanEndpoint.replace(/^site\/jsp\/Common\/dashboard\//, "");
+    }
+
+    const targetUrl = baseUrl.endsWith(".jsp") ? baseUrl : `${baseUrl}/${cleanEndpoint}`;
+    const url = new URL(targetUrl);
     Object.entries(params).forEach(([k, v]) => url.searchParams.append(k, v));
 
     const response = await fetch(url.toString(), {
@@ -74,6 +97,7 @@ export async function fetchPimsvinaApi(endpoint: string, params: Record<string, 
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
+      signal: AbortSignal.timeout(TIMEOUT_MS),
     });
 
     const resText = await response.text();
