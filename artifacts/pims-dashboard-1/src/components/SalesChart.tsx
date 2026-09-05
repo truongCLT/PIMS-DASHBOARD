@@ -97,11 +97,14 @@ const CustomTooltip = ({ active, payload, label, colors }: any) => {
   const plan = payload.find((p: any) => p.dataKey === "plan");
   const actual = payload.find((p: any) => p.dataKey === "actual");
   const rate = plan?.payload?.rate ?? actual?.payload?.rate;
+  const actualLabel = actual?.payload?.isForecast
+    ? t("salesChart:salesForecast")
+    : t("salesChart:salesActual");
   return (
     <div style={{ backgroundColor: "#fff", border: "1px solid #e2e9f3", borderRadius: "4px", padding: "8px 10px", fontSize: "12px" }}>
       <div style={{ fontWeight: 700, marginBottom: "4px", color: "#16294a" }}>{label}</div>
       {plan && <div style={{ color: c.plan }}>{t("salesChart:salesPlan")}: {Number(plan.value).toLocaleString("ko-KR")}</div>}
-      {actual && <div style={{ color: c.actual }}>{t("salesChart:salesActualForecast")}: {Number(actual.value).toLocaleString("ko-KR")}</div>}
+      {actual && <div style={{ color: c.actual }}>{actualLabel}: {Number(actual.value).toLocaleString("ko-KR")}</div>}
       {rate != null && (
         <div style={{ color: c.rate, fontWeight: 700, marginTop: "4px" }}>{t("common:achievementRate")}: {rate}%</div>
       )}
@@ -322,8 +325,18 @@ export function SalesChart() {
               <circle cx="20" cy="4" r="2.5" fill={actualColor} />
             </svg>
           )}
-          <span style={{ fontSize: "12px", color: "#555" }}>{t("salesChart:salesActualForecast")}</span>
+          <span style={{ fontSize: "12px", color: "#555" }}>
+            {variant === "bars" ? t("salesChart:salesActual") : t("salesChart:salesActualForecast")}
+          </span>
         </div>
+        {variant === "bars" && (
+          <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+            <svg width="14" height="10">
+              <rect x="1" y="1" width="12" height="8" rx="2" fill="#fff" stroke={actualColor} strokeWidth="1.4" strokeDasharray="3 2" />
+            </svg>
+            <span style={{ fontSize: "12px", color: "#555" }}>{t("salesChart:salesForecast")}</span>
+          </div>
+        )}
         {variant === "bars" ? (
           <span style={{ fontSize: "11px", color: INK_MUTED }}>{t("salesChart:bottomChipRate")}</span>
         ) : (

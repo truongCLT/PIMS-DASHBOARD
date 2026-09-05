@@ -71,6 +71,8 @@ export interface SalesRow {
   plan: number | null;
   actual: number | null;
   rate: number | null;
+  /** 조회 기준월 이후 연간 예상값이면 true */
+  isForecast?: boolean;
 }
 
 export interface ProfitRow {
@@ -359,18 +361,24 @@ export function deriveDashboardData(
     pRow("경상이익", ordinary, revenue),
   ];
 
-  const buckets = makeBuckets(opts.salesFullYear ? 1 : F, opts.salesFullYear ? 12 : M, bucket);
+  const buckets = makeBuckets(
+    opts.salesFullYear ? 1 : F,
+    opts.salesFullYear ? 12 : M,
+    opts.salesFullYear ? "Month" : bucket,
+  );
   const salesData: SalesRow[] = buckets.map((b) => {
     const plan = rangeSum(revenue.plan, b.months[0], b.months[b.months.length - 1]);
     const actual = rangeSum(revenue.actual, b.months[0], b.months[b.months.length - 1]);
-    const inside = b.months.every((m) => m >= F && m <= M);
+    const inside = b.months.every((m) => m <= M);
+    const isForecast = b.months.every((m) => m > M);
     return {
       month: b.label,
       net: inside ? actual - plan : null,
       report: inside ? actual : null,
       plan: roundSmart(plan),
-      actual: inside ? roundSmart(actual) : null,
-      rate: plan ? Math.round((actual / plan) * 100) : null,
+      actual: roundSmart(actual),
+      rate: inside && plan ? Math.round((actual / plan) * 100) : null,
+      isForecast,
     };
   });
 
@@ -526,6 +534,7 @@ export function useDashboardData() {
       convert,
       unitLabel,
       projectScope,
+      salesFullYear: true,
     });
   }, [
     summaryForYear,

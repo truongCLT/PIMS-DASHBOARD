@@ -8,6 +8,8 @@
   "report": "Báo cáo",
   "salesPlan": "Doanh thu (Kế hoạch)",
   "salesActualForecast": "Doanh thu (Thực hiện & Dự báo)",
+  "salesActual": "Doanh thu (Thực hiện)",
+  "salesForecast": "Doanh thu (Dự báo)",
   "month": "Tháng",
   "bottomChipRate": "Chip dưới = tỷ lệ đạt",
   "siteDetailTitle": "Chi tiết doanh thu công trình – {{month}}",
