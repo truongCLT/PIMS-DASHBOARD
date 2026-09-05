@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { ChevronsUp, Download, FileSpreadsheet, FileText, RefreshCw, Upload } from "lucide-react";
+import { ChevronsDown, ChevronsUp, Download, FileSpreadsheet, FileText, RefreshCw, Upload } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useListMgmtreportProjects } from "@workspace/api-client-react";
 import { exportDashboardExcel, exportDashboardPdf } from "../lib/exportDashboard";
@@ -49,6 +49,7 @@ export function DashboardHeader({
   const [syncing, setSyncing] = useState(false);
   const [syncPreview, setSyncPreview] = useState<PimsvinaPreviewData | null>(null);
   const [confirming, setConfirming] = useState(false);
+  const [controlsVisible, setControlsVisible] = useState(true);
   const downloadRef = useRef<HTMLDivElement>(null);
 
   const adminFetch = (path: string, body?: any) => {
@@ -194,7 +195,12 @@ export function DashboardHeader({
           fontWeight: "700",
           margin: "0 0 12px",
         }}>{t("dashboardHeader:title")}</h1>
-        <button style={{
+        <button
+          type="button"
+          aria-expanded={controlsVisible}
+          aria-label={controlsVisible ? t("dashboardHeader:collapseControls") : t("dashboardHeader:expandControls")}
+          onClick={() => setControlsVisible((visible) => !visible)}
+          style={{
           backgroundColor: "#ffffff",
           border: "1px solid #d5dfe9",
           borderRadius: "8px",
@@ -205,12 +211,12 @@ export function DashboardHeader({
           display: "flex",
           alignItems: "center",
         }}>
-          <ChevronsUp size={16} />
+          {controlsVisible ? <ChevronsUp size={16} /> : <ChevronsDown size={16} />}
         </button>
       </div>
 
       {/* Filter bar — white rounded box */}
-      <div style={{
+      {controlsVisible && <div style={{
         position: "relative",
         backgroundColor: "#ffffff",
         borderRadius: "10px",
@@ -511,7 +517,7 @@ export function DashboardHeader({
             </div>
           )}
         </div>
-      </div>
+      </div>}
 
       {uploadOpen && <MgmtReportUploadModal onClose={() => setUploadOpen(false)} />}
       {syncPreview && (
