@@ -1,0 +1,17 @@
+{
+  "loadingNotice": "매출/원가 데이터를 불러오는 중입니다...",
+  "errorNotice": "매출/원가 데이터 조회에 실패했습니다. 잠시 후 다시 시도해 주세요.",
+  "noDataNotice": "선택한 기간에 데이터가 없습니다.",
+  "monthlyRevenueTitle": "매출 ({{unit}})",
+  "monthlyPlan": "월 계획",
+  "monthlyRevenue": "월 매출",
+  "costRatioLineTitle": "누계 원가율 (%)",
+  "cumulativeCostRatio": "누계 원가율",
+  "costRatioTitle": "원가율",
+  "estBidding": "입찰",
+  "estExecutionBudget": "실행예산 편성",
+  "estStandardCompletion": "표준추정원가율",
+  "totalBudget": "총 예산",
+  "budgetLegendPlan": "집행 계획",
+  "budgetLegendActual": "실적(집행률)"
+}

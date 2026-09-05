@@ -1,0 +1,17 @@
+{
+  "loadingNotice": "Loading revenue/cost data...",
+  "errorNotice": "Failed to load revenue/cost data. Please try again shortly.",
+  "noDataNotice": "No data for the selected period.",
+  "monthlyRevenueTitle": "Revenue ({{unit}})",
+  "monthlyPlan": "Monthly Plan",
+  "monthlyRevenue": "Monthly Revenue",
+  "costRatioLineTitle": "Cumulative Cost Ratio (%)",
+  "cumulativeCostRatio": "Cumulative Cost Ratio",
+  "costRatioTitle": "Cost Rate",
+  "estBidding": "Bidding",
+  "estExecutionBudget": "Execution Budget Setup",
+  "estStandardCompletion": "Standard Estimated Cost Ratio",
+  "totalBudget": "Total Budget",
+  "budgetLegendPlan": "Exec. Plan",
+  "budgetLegendActual": "Actual (Exec. Rate)"
+}

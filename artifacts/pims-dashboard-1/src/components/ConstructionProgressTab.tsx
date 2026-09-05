@@ -330,7 +330,15 @@ function MilestoneChart({ milestones }: { milestones: ProjectDetail["milestones"
   );
 }
 
-export function ConstructionProgressTab({ projectName }: { projectName: string }) {
+export function ConstructionProgressTab({
+  projectName,
+  referenceYear,
+  referenceMonth,
+}: {
+  projectName: string;
+  referenceYear: number;
+  referenceMonth: number;
+}) {
   const { t } = useTranslation(["constructionProgressTab", "common"]);
   const { detail, isLoading } = useProjectDetail(projectName);
   const { fmtMoney, unitLabel } = useMoney();
@@ -340,7 +348,9 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
   const progress = detail?.progress ?? [];
   const milestones = detail?.milestones ?? [];
 
-  const lifecycleData = progress.map((p) => ({
+  const referenceIndex = referenceYear * 12 + referenceMonth;
+  const progressToReference = progress.filter((p) => p.year * 12 + p.month <= referenceIndex);
+  const lifecycleData = progressToReference.map((p) => ({
     month: `${String(p.year).slice(-2)}/${String(p.month).padStart(2, "0")}`,
     plan: p.planPct,
     actual: p.actualPct,
@@ -349,7 +359,10 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
   }));
 
   // 최신(마지막) 누계 공정률
-  const latest = [...progress].reverse().find((p) => p.planCumPct != null || p.actualCumPct != null) ?? null;
+  const latest =
+    [...progressToReference]
+      .sort((a, b) => b.year * 12 + b.month - (a.year * 12 + a.month))
+      .find((p) => p.planCumPct != null || p.actualCumPct != null) ?? null;
   const planCum = latest?.planCumPct ?? null;
   const actualCum = latest?.actualCumPct ?? null;
   const diff = planCum != null && actualCum != null ? actualCum - planCum : null;
@@ -364,7 +377,10 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
 
   // 연간 공정률 합계 (기준월 연도)
   const latestYear = latest?.year ?? null;
-  const annualRows = latestYear != null ? progress.filter((p) => p.year === latestYear) : [];
+  const annualRows =
+    latestYear != null
+      ? progressToReference.filter((p) => p.year === latestYear)
+      : [];
   const planAnnual = annualRows.some((p) => p.planPct != null)
     ? Math.min(annualRows.reduce((s, p) => s + (p.planPct ?? 0), 0), 100)
     : null;

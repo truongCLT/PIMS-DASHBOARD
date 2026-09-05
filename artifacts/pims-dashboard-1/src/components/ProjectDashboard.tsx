@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { useCallback, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePutProjectdetail, useGetPimsvinaSiterate, getBaseUrl } from "@workspace/api-client-react";
@@ -6,11 +6,10 @@ import { ProjectCommentPanel } from "./ProjectCommentPanel";
 import { Upload, FileSpreadsheet, RefreshCw } from "lucide-react";
 import projectPhoto from "../assets/project-photo.png";
 import { ConstructionProgressTab } from "./ConstructionProgressTab";
-import { CostingTab } from "./CostingTab";
+import { SaleCostTab } from "./SaleCostTab";
 import { OutsourcingTab } from "./OutsourcingTab";
 import { ServiceCashflowTab } from "./ServiceCashflowTab";
 import { ProjectDataEntryTab } from "./ProjectDataEntryTab";
-import { SaleProfitTab } from "./SaleProfitTab";
 import { OverviewTab } from "./OverviewTab";
 import { ProjectSummaryTab } from "./ProjectSummaryTab";
 import { ProjectReportTab } from "./ProjectReportTab";
@@ -22,10 +21,11 @@ import { useDashboardFilters } from "../lib/dashboardFilters";
 import { PimsvinaSyncPreviewModal, type PimsvinaPreviewData } from "./PimsvinaSyncPreviewModal";
 import { cardStyle } from "../lib/uiTokens";
 import { ProjectContextBar } from "./ProjectContextBar";
+import { REPORT_YEAR } from "../lib/mgmtreportData";
 export { Donut, MiniBar } from "./charts";
 
 
-const SIDE_TABS = ["Summary", "Report", "Overview", "Construction progress", "Sale & Profit", "Costing", "Outsourcing", "Cashflow", "Data entry"];
+const SIDE_TABS = ["Summary", "Report", "Overview", "Construction progress", "Sale & Cost", "Outsourcing", "Cashflow", "Data entry"];
 
 const YEARS = Array.from({ length: 21 }, (_, i) => 2015 + i); // 2015 ~ 2035
 const MONTHS = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"];
@@ -49,8 +49,7 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
     Report: "보고서",
     Overview: "개요(2)",
     "Construction progress": t("common:process"),
-    "Sale & Profit": t("common:revenue"),
-    Costing: t("projectDashboard:costing"),
+    "Sale & Cost": "매출/원가",
     Outsourcing: t("common:outsourcing"),
     Cashflow: t("projectDashboard:cashflow"),
     "Data entry": t("projectDashboard:dataEntry"),
@@ -70,6 +69,16 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
   const [fromMonth, setFromMonth] = useState("01");
   const [toYear, setToYear] = useState(prevMonthDate.getFullYear());
   const [toMonth, setToMonth] = useState(String(prevMonthDate.getMonth() + 1).padStart(2, "0"));
+  const [reportMonth, setReportMonth] = useState<number | null>(null);
+  const handleReportMonthChange = (month: number | null) => {
+    setReportMonth(month);
+  };
+  const handleResolvedReportMonthChange = useCallback((month: number | null) => {
+    if (month != null) {
+      setToYear(REPORT_YEAR);
+      setToMonth(String(month).padStart(2, "0"));
+    }
+  }, []);
   const periodMonths = Math.min(
     24,
     Math.max(1, (toYear - fromYear) * 12 + (Number(toMonth) - Number(fromMonth)) + 1),
@@ -443,19 +452,28 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
           </div>
         ) : activeTab === "Report" ? (
           <div style={{ flex: 1, minWidth: 0 }}>
-            <ProjectReportTab projectName={projectName} />
+            <ProjectReportTab
+              projectName={projectName}
+              selectedMonth={reportMonth}
+              onSelectedMonthChange={handleReportMonthChange}
+              onResolvedMonthChange={handleResolvedReportMonthChange}
+            />
           </div>
         ) : activeTab === "Construction progress" ? (
           <div style={{ flex: 1, minWidth: 0 }}>
-            <ConstructionProgressTab projectName={projectName} />
-          </div>
-        ) : activeTab === "Costing" ? (
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <CostingTab projectName={projectName} toYear={toYear} toMonth={Number(toMonth)} />
+            <ConstructionProgressTab
+              projectName={projectName}
+              referenceYear={toYear}
+              referenceMonth={Number(toMonth)}
+            />
           </div>
         ) : activeTab === "Outsourcing" ? (
           <div style={{ flex: 1, minWidth: 0 }}>
-            <OutsourcingTab projectName={projectName} />
+            <OutsourcingTab
+              projectName={projectName}
+              referenceYear={toYear}
+              referenceMonth={Number(toMonth)}
+            />
           </div>
         ) : activeTab === "Data entry" ? (
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -468,15 +486,19 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
               fromYear={fromYear}
               fromMonth={Number(fromMonth)}
               months={periodMonths}
+              toYear={toYear}
+              toMonth={Number(toMonth)}
             />
           </div>
-        ) : activeTab === "Sale & Profit" ? (
+        ) : activeTab === "Sale & Cost" ? (
           <div style={{ flex: 1, minWidth: 0 }}>
-            <SaleProfitTab
+            <SaleCostTab
               projectName={projectName}
               fromYear={fromYear}
               fromMonth={Number(fromMonth)}
               months={periodMonths}
+              toYear={toYear}
+              toMonth={Number(toMonth)}
             />
           </div>
         ) : (

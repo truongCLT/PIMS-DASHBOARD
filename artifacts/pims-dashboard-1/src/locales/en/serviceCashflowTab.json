@@ -8,5 +8,8 @@
   "noDataInPeriod": "No cash flow data for the selected period.",
   "cashIn": "Cash In",
   "cashOut": "Cash Out",
-  "balance": "Balance"
+  "balance": "Balance",
+  "referenceMonth": "Reference month",
+  "outlookAfterReference": "Outlook after reference month",
+  "fromMonth": "From {{month}}/{{year}}"
 }

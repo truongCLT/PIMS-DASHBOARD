@@ -9,7 +9,7 @@
  *   Row 1 (auto-fit ≥240px): 공정 | 매출 | 현황 표
  *   Row 2 (auto-fit ≥240px): 원가 | 자금 | 코멘트
  */
-import React, { useState } from "react";
+import React, { useEffect } from "react";
 import {
   useListSalescostSites,
   getListSalescostSitesQueryKey,
@@ -50,11 +50,18 @@ function reportGrid(minColW: string): React.CSSProperties {
 
 // ─── Main component ────────────────────────────────────────────────────────
 
-export function ProjectReportTab({ projectName }: { projectName: string }) {
+export function ProjectReportTab({
+  projectName,
+  selectedMonth,
+  onSelectedMonthChange,
+  onResolvedMonthChange,
+}: {
+  projectName: string;
+  selectedMonth: number | null;
+  onSelectedMonthChange: (month: number | null) => void;
+  onResolvedMonthChange: (month: number | null) => void;
+}) {
   const { detail, isLoading } = useProjectDetail(projectName);
-
-  // ── Reference-month selector ────────────────────────────────────────────
-  const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
 
   // ── Construction progress ───────────────────────────────────────────────
   const progress = detail?.progress ?? [];
@@ -97,6 +104,9 @@ export function ProjectReportTab({ projectName }: { projectName: string }) {
         ? progRows[progRows.length - 1].month
         : null;
   const resolvedMonth = selectedMonth ?? latestActualMonth ?? null;
+  useEffect(() => {
+    onResolvedMonthChange(resolvedMonth);
+  }, [onResolvedMonthChange, resolvedMonth]);
 
   // Cumulative revenue up to resolvedMonth
   const cumRev =
@@ -319,7 +329,7 @@ export function ProjectReportTab({ projectName }: { projectName: string }) {
           <select
             value={selectedMonth ?? ""}
             onChange={(e) =>
-              setSelectedMonth(e.target.value === "" ? null : Number(e.target.value))
+              onSelectedMonthChange(e.target.value === "" ? null : Number(e.target.value))
             }
             style={monthSelectStyle}
           >

@@ -4,7 +4,19 @@ import { ProjectCommentPanel } from "./ProjectCommentPanel";
 
 import { useProjectDetail, fmtPct, ratioPct } from "../lib/projectDetailData";
 import { useMoney } from "../lib/displayUnit";
-import { cardStyle, sectionTitle, INK_NAVY, INK_BODY, INK_MUTED, TABLE_HEADER_BG, CARD_BORDER } from "../lib/uiTokens";
+import {
+  cardStyle,
+  sectionTitle,
+  INK_NAVY,
+  INK_BODY,
+  INK_MUTED,
+  TABLE_HEADER_BG,
+  CARD_BORDER,
+  ACHIEVE_GREEN,
+  ACHIEVE_RED,
+  STATUS_POS_BG,
+  STATUS_NEG_BG,
+} from "../lib/uiTokens";
 
 const th: React.CSSProperties = {
   backgroundColor: TABLE_HEADER_BG,
@@ -33,7 +45,7 @@ const td: React.CSSProperties = {
 
 // 컬럼: 대공종, 세부공종, 업체명, 계약일, 차수, 예산, 집행예산, 결의금액, 결의율, 이번달, 누계, 비율
 // 이번달(9), 누계(10), 비율(11) 동일 너비
-const DEFAULT_WIDTHS = [64, 90, 90, 70, 46, 92, 92, 92, 60, 80, 80, 80];
+const DEFAULT_WIDTHS = [64, 90, 90, 70, 46, 92, 92, 92, 60, 80, 80, 80, 92];
 
 function ResizeHandle({ onDrag }: { onDrag: (dx: number) => void }) {
   const { t } = useTranslation(["outsourcingTab", "common"]);
@@ -70,7 +82,15 @@ function ResizeHandle({ onDrag }: { onDrag: (dx: number) => void }) {
   );
 }
 
-export function OutsourcingTab({ projectName }: { projectName: string }) {
+export function OutsourcingTab({
+  projectName,
+  referenceYear,
+  referenceMonth,
+}: {
+  projectName: string;
+  referenceYear: number;
+  referenceMonth: number;
+}) {
   const { t } = useTranslation(["outsourcingTab", "common"]);
   const { fmtMoney } = useMoney();
   const { detail, isLoading } = useProjectDetail(projectName);
@@ -92,6 +112,10 @@ export function OutsourcingTab({ projectName }: { projectName: string }) {
     resolved: rows.some((r) => r.resolved != null) ? rows.reduce((a, r) => a + (r.resolved ?? 0), 0) : null,
     thisMonth: rows.some((r) => r.thisMonth != null) ? rows.reduce((a, r) => a + (r.thisMonth ?? 0), 0) : null,
     accum: rows.some((r) => r.accum != null) ? rows.reduce((a, r) => a + (r.accum ?? 0), 0) : null,
+    remaining:
+      rows.some((r) => r.resolved != null || r.accum != null)
+        ? rows.reduce((a, r) => a + Math.max((r.resolved ?? 0) - (r.accum ?? 0), 0), 0)
+        : null,
   };
 
   const totalWidth = widths.reduce((a, b) => a + b, 0);
@@ -100,7 +124,15 @@ export function OutsourcingTab({ projectName }: { projectName: string }) {
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
       {/* Outsourcing and Materials table */}
       <div style={cardStyle}>
-        <span style={sectionTitle}>{t("outsourcingTab:outsourcingAndMaterials")}</span>
+        <span style={sectionTitle}>
+          {t("outsourcingTab:outsourcingAndMaterials")}
+          <span style={{ fontSize: "11px", fontWeight: 400, color: INK_MUTED, marginLeft: "6px" }}>
+            ({t("outsourcingTab:asOf", {
+              year: String(referenceYear).slice(2),
+              month: String(referenceMonth).padStart(2, "0"),
+            })})
+          </span>
+        </span>
         <div style={{ overflowX: "auto", marginTop: "10px" }}>
           <table style={{ width: "100%", minWidth: `${totalWidth}px`, borderCollapse: "collapse", tableLayout: "fixed" }}>
             <colgroup>
@@ -121,7 +153,7 @@ export function OutsourcingTab({ projectName }: { projectName: string }) {
                 <th style={th} rowSpan={2}>{t("outsourcingTab:executedBudget")}<ResizeHandle onDrag={resize(6)} /></th>
                 <th style={th} rowSpan={2}>{t("outsourcingTab:resolvedAmount")}<br />(B)<ResizeHandle onDrag={resize(7)} /></th>
                 <th style={th} rowSpan={2}>{t("outsourcingTab:resolvedRate")}<br />(B/A)<ResizeHandle onDrag={resize(8)} /></th>
-                <th style={th} colSpan={3}>{t("outsourcingTab:progressBillingStatus")}</th>
+                <th style={th} colSpan={4}>{t("outsourcingTab:progressBillingStatus")}</th>
               </tr>
               <tr>
                 <th style={th}>{t("outsourcingTab:category")}<ResizeHandle onDrag={resize(0)} /></th>
@@ -129,18 +161,19 @@ export function OutsourcingTab({ projectName }: { projectName: string }) {
                 <th style={th}>{t("outsourcingTab:thisMonth")}<ResizeHandle onDrag={resize(9)} /></th>
                 <th style={th}>{t("common:cumulative")}<br />(C)<ResizeHandle onDrag={resize(10)} /></th>
                 <th style={th}>{t("outsourcingTab:ratio")}<br />(C/B)<ResizeHandle onDrag={resize(11)} /></th>
+                <th style={th}>{t("outsourcingTab:remainingBilling")}<br />(B-C)<ResizeHandle onDrag={resize(12)} /></th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td style={td} colSpan={12}>
+                  <td style={td} colSpan={13}>
                     {t("common:loading")}
                   </td>
                 </tr>
               ) : rows.length === 0 ? (
                 <tr>
-                  <td style={{ ...td, color: INK_MUTED }} colSpan={12}>
+                  <td style={{ ...td, color: INK_MUTED }} colSpan={13}>
                     {t("outsourcingTab:noOutsourcingData")}
                   </td>
                 </tr>
@@ -156,10 +189,26 @@ export function OutsourcingTab({ projectName }: { projectName: string }) {
                       <td style={td}>{fmtMoney(r.budget)}</td>
                       <td style={td}>{fmtMoney(r.executedBudget)}</td>
                       <td style={td}>{fmtMoney(r.resolved)}</td>
-                      <td style={td}>{fmtPct(ratioPct(r.resolved, r.budget))}</td>
+                      <td style={{
+                        ...td,
+                        fontWeight: 700,
+                        color: ratioPct(r.resolved, r.budget) != null && ratioPct(r.resolved, r.budget)! >= 100 ? ACHIEVE_GREEN : ACHIEVE_RED,
+                      }}>{fmtPct(ratioPct(r.resolved, r.budget))}</td>
                       <td style={td}>{fmtMoney(r.thisMonth)}</td>
-                      <td style={td}>{fmtMoney(r.accum)}</td>
-                      <td style={td}>{fmtPct(ratioPct(r.accum, r.resolved))}</td>
+                      <td style={{ ...td, fontWeight: 700, color: INK_NAVY, backgroundColor: TABLE_HEADER_BG }}>{fmtMoney(r.accum)}</td>
+                      <td style={{ ...td, fontWeight: 700, color: INK_NAVY }}>{fmtPct(ratioPct(r.accum, r.resolved))}</td>
+                      <td style={{
+                        ...td,
+                        fontWeight: 700,
+                        color: Math.max((r.resolved ?? 0) - (r.accum ?? 0), 0) > 0 ? ACHIEVE_RED : ACHIEVE_GREEN,
+                        backgroundColor: Math.max((r.resolved ?? 0) - (r.accum ?? 0), 0) > 0 ? STATUS_NEG_BG : STATUS_POS_BG,
+                      }}>
+                        {fmtMoney(
+                          r.resolved == null && r.accum == null
+                            ? null
+                            : Math.max((r.resolved ?? 0) - (r.accum ?? 0), 0),
+                        )}
+                      </td>
                     </tr>
                   ))}
                   <tr>
@@ -174,6 +223,12 @@ export function OutsourcingTab({ projectName }: { projectName: string }) {
                     <td style={{ ...td, fontWeight: 600 }}>{fmtMoney(sum.thisMonth)}</td>
                     <td style={{ ...td, fontWeight: 600 }}>{fmtMoney(sum.accum)}</td>
                     <td style={{ ...td, fontWeight: 600 }}>{fmtPct(ratioPct(sum.accum, sum.resolved))}</td>
+                    <td style={{
+                      ...td,
+                      fontWeight: 700,
+                      color: (sum.remaining ?? 0) > 0 ? ACHIEVE_RED : ACHIEVE_GREEN,
+                      backgroundColor: (sum.remaining ?? 0) > 0 ? STATUS_NEG_BG : STATUS_POS_BG,
+                    }}>{fmtMoney(sum.remaining)}</td>
                   </tr>
                 </>
               )}

@@ -8,5 +8,8 @@
   "noDataInPeriod": "선택한 기간에 자금 데이터가 없습니다.",
   "cashIn": "수금",
   "cashOut": "지출",
-  "balance": "잔액"
+  "balance": "잔액",
+  "referenceMonth": "기준월",
+  "outlookAfterReference": "기준월 이후 전망",
+  "fromMonth": "{{year}}.{{month}}부터"
 }

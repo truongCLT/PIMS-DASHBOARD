@@ -8,5 +8,8 @@
   "noDataInPeriod": "Không có dữ liệu thu chi trong khoảng thời gian đã chọn.",
   "cashIn": "Thu tiền",
   "cashOut": "Chi tiền",
-  "balance": "Số dư"
+  "balance": "Số dư",
+  "referenceMonth": "Tháng tham chiếu",
+  "outlookAfterReference": "Dự báo sau tháng tham chiếu",
+  "fromMonth": "Từ {{month}}/{{year}}"
 }

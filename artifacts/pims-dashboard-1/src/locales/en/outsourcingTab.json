@@ -16,5 +16,7 @@
   "detailedTrade": "Detailed Trade",
   "thisMonth": "This Month",
   "ratio": "Ratio",
-  "noOutsourcingData": "No outsourcing/material data available. ( - )"
+  "noOutsourcingData": "No outsourcing/material data available. ( - )",
+  "remainingBilling": "Remaining Billing",
+  "asOf": "As of {{month}}/{{year}}"
 }
