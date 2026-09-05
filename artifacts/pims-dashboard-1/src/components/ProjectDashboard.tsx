@@ -13,6 +13,7 @@ import { ProjectDataEntryTab } from "./ProjectDataEntryTab";
 import { SaleProfitTab } from "./SaleProfitTab";
 import { OverviewTab } from "./OverviewTab";
 import { ProjectSummaryTab } from "./ProjectSummaryTab";
+import { ProjectReportTab } from "./ProjectReportTab";
 import { useProjectDetail, getGetProjectdetailQueryKey } from "../lib/projectDetailData";
 import { downloadProjectDetailTemplate, parseProjectDetailWorkbook, ExcelParseError } from "../lib/projectDetailExcel";
 import { DisplayUnitProvider, DEFAULT_EXCHANGE_RATES, formatMoney, moneyUnitLabel } from "../lib/displayUnit";
@@ -24,7 +25,7 @@ import { ProjectContextBar } from "./ProjectContextBar";
 export { Donut, MiniBar } from "./charts";
 
 
-const SIDE_TABS = ["Summary", "Overview", "Construction progress", "Sale & Profit", "Costing", "Outsourcing", "Cashflow", "Data entry"];
+const SIDE_TABS = ["Summary", "Report", "Overview", "Construction progress", "Sale & Profit", "Costing", "Outsourcing", "Cashflow", "Data entry"];
 
 const YEARS = Array.from({ length: 21 }, (_, i) => 2015 + i); // 2015 ~ 2035
 const MONTHS = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"];
@@ -45,6 +46,7 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
   const { t } = useTranslation(["projectDashboard", "common"]);
   const SIDE_TAB_LABELS: Record<string, string> = {
     Summary: "개요",
+    Report: "보고서",
     Overview: "개요(2)",
     "Construction progress": t("common:process"),
     "Sale & Profit": t("common:revenue"),
@@ -438,6 +440,10 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
         {activeTab === "Summary" ? (
           <div style={{ flex: 1, minWidth: 0 }}>
             <ProjectSummaryTab projectName={projectName} />
+          </div>
+        ) : activeTab === "Report" ? (
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <ProjectReportTab projectName={projectName} />
           </div>
         ) : activeTab === "Construction progress" ? (
           <div style={{ flex: 1, minWidth: 0 }}>
