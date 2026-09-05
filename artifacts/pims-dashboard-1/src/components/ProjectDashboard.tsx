@@ -12,6 +12,7 @@ import { ServiceCashflowTab } from "./ServiceCashflowTab";
 import { ProjectDataEntryTab } from "./ProjectDataEntryTab";
 import { SaleProfitTab } from "./SaleProfitTab";
 import { OverviewTab } from "./OverviewTab";
+import { ProjectSummaryTab } from "./ProjectSummaryTab";
 import { useProjectDetail, getGetProjectdetailQueryKey } from "../lib/projectDetailData";
 import { downloadProjectDetailTemplate, parseProjectDetailWorkbook, ExcelParseError } from "../lib/projectDetailExcel";
 import { DisplayUnitProvider, DEFAULT_EXCHANGE_RATES, formatMoney, moneyUnitLabel } from "../lib/displayUnit";
@@ -23,7 +24,7 @@ import { ProjectContextBar } from "./ProjectContextBar";
 export { Donut, MiniBar } from "./charts";
 
 
-const SIDE_TABS = ["Overview", "Construction progress", "Sale & Profit", "Costing", "Outsourcing", "Cashflow", "Data entry"];
+const SIDE_TABS = ["Summary", "Overview", "Construction progress", "Sale & Profit", "Costing", "Outsourcing", "Cashflow", "Data entry"];
 
 const YEARS = Array.from({ length: 21 }, (_, i) => 2015 + i); // 2015 ~ 2035
 const MONTHS = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"];
@@ -43,7 +44,8 @@ const selectStyle: React.CSSProperties = {
 export function ProjectDashboard({ projectName }: { projectName: string }) {
   const { t } = useTranslation(["projectDashboard", "common"]);
   const SIDE_TAB_LABELS: Record<string, string> = {
-    Overview: t("common:overview"),
+    Summary: "개요",
+    Overview: "개요(2)",
     "Construction progress": t("common:process"),
     "Sale & Profit": t("common:revenue"),
     Costing: t("projectDashboard:costing"),
@@ -54,7 +56,7 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
   const { fxRates } = useDashboardFilters();
   const [currency, setCurrency] = useState("USD");
   const [unitOn, setUnitOn] = useState(true);
-  const [activeTab, setActiveTab] = useState("Overview");
+  const [activeTab, setActiveTab] = useState("Summary");
   const { isAdmin } = useAdminAuth();
   const [syncing, setSyncing] = useState(false);
   const [syncPreview, setSyncPreview] = useState<PimsvinaPreviewData | null>(null);
@@ -433,7 +435,11 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
 
       {/* Body: content */}
       <div style={{ display: "flex", flexDirection: "column", gap: "8px", padding: "10px" }}>
-        {activeTab === "Construction progress" ? (
+        {activeTab === "Summary" ? (
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <ProjectSummaryTab projectName={projectName} />
+          </div>
+        ) : activeTab === "Construction progress" ? (
           <div style={{ flex: 1, minWidth: 0 }}>
             <ConstructionProgressTab projectName={projectName} />
           </div>
@@ -468,6 +474,7 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
             />
           </div>
         ) : (
+        /* Overview (개요(2)) — original OverviewTab + comment panel */
         <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: "8px" }}>
           <OverviewTab projectName={projectName} />
 
