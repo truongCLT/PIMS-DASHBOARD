@@ -294,6 +294,18 @@ const TRADE_GROUP_LABEL_KEY: Record<string, string> = {
   "조경": "tradeGroupLandscape",
 };
 
+const PROCESS_COST_PLAN_ITEMS = [
+  { key: "외주 건축", label: "processCostArchitecture" },
+  { key: "외주 기계", label: "processCostMechanical" },
+  { key: "외주 전기", label: "processCostElectrical" },
+  { key: "외주 토목", label: "processCostCivil" },
+  { key: "외주 조경", label: "processCostLandscape" },
+  { key: "외주 경비", label: "processCostOutsourcingExpense" },
+  { key: "Common", label: "processCostCommon" },
+  { key: "Expense 1", label: "processCostExpense1" },
+  { key: "Expense 2", label: "processCostExpense2" },
+] as const;
+
 const EST_KINDS: { kind: "bidding" | "execution" | "completion"; label: string }[] = [
   { kind: "bidding", label: "estKindBidding" },
   { kind: "execution", label: "estKindExecution" },
@@ -302,6 +314,7 @@ const EST_KINDS: { kind: "bidding" | "execution" | "completion"; label: string }
 
 export function ProjectDataEntryTab({ projectName, service = false }: { projectName: string; service?: boolean }) {
   const { t } = useTranslation(["projectDataEntryTab", "common"]);
+  const { fmtMoney } = useMoney();
   const { detail, isLoading } = useProjectDetail(projectName);
   const queryClient = useQueryClient();
   const mutation = usePutProjectdetail();
@@ -707,6 +720,55 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
   }
 
   const nowYear = new Date().getFullYear();
+  const toMonthIndex = (value: string | null | undefined) => {
+    const match = /^(\d{4})-(\d{1,2})/.exec(value ?? "");
+    return match ? Number(match[1]) * 12 + Number(match[2]) - 1 : null;
+  };
+  const dataMonthIndexes = [
+    ...progress.map((row) => row.year * 12 + row.month - 1),
+    ...salesMonthly.map((row) => row.year * 12 + row.month - 1),
+    ...costBudgetMonthly.map((row) => row.year * 12 + row.month - 1),
+  ].filter((value) => Number.isFinite(value));
+  const projectStartIndex =
+    toMonthIndex(overview.startDate) ??
+    (dataMonthIndexes.length > 0 ? Math.min(...dataMonthIndexes) : nowYear * 12);
+  const projectEndIndex =
+    toMonthIndex(overview.endDate) ??
+    (dataMonthIndexes.length > 0 ? Math.max(...dataMonthIndexes) : projectStartIndex + 11);
+  const processCostMonths = Array.from(
+    { length: Math.min(120, Math.max(1, projectEndIndex - projectStartIndex + 1)) },
+    (_, offset) => {
+      const index = projectStartIndex + offset;
+      return { year: Math.floor(index / 12), month: (index % 12) + 1 };
+    },
+  );
+  const getProcessCostPlan = (item: string, year: number, month: number) =>
+    costBudgetMonthly.find((row) => row.item === item && row.year === year && row.month === month)?.plan ?? null;
+  const setProcessCostPlan = (item: string, year: number, month: number, value: number | null) =>
+    setCostBudgetMonthly((rows) => {
+      const index = rows.findIndex((row) => row.item === item && row.year === year && row.month === month);
+      if (index >= 0) return rows.map((row, i) => (i === index ? { ...row, plan: value } : row));
+      return [...rows, { item, year, month, plan: value, actual: null }];
+    });
+  const getSalesPlan = (year: number, month: number) =>
+    salesMonthly.find((row) => row.year === year && row.month === month)?.plan ?? null;
+  const setSalesPlan = (year: number, month: number, value: number | null) =>
+    setSalesMonthly((rows) => {
+      const index = rows.findIndex((row) => row.year === year && row.month === month);
+      if (index >= 0) return rows.map((row, i) => (i === index ? { ...row, plan: value } : row));
+      return [...rows, { year, month, plan: value, actual: null }];
+    });
+  const getProgressPlan = (year: number, month: number) =>
+    progress.find((row) => row.year === year && row.month === month)?.planPct ?? null;
+  const setProgressPlan = (year: number, month: number, value: number | null) =>
+    setProgress((rows) => {
+      const index = rows.findIndex((row) => row.year === year && row.month === month);
+      const next =
+        index >= 0
+          ? rows.map((row, i) => (i === index ? { ...row, planPct: value } : row))
+          : [...rows, { year, month, planPct: value, actualPct: null, planCumPct: null, actualCumPct: null }];
+      return calculateProgressPlanCumulative(next);
+    });
 
   // 카드별 저장 버튼 + 마감 버튼 + 결과 메시지가 있는 섹션 헤더
   const cardHead = (label: string, key: string) => (
@@ -1171,6 +1233,80 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
         >
           <Plus size={12} /> {t("projectDataEntryTab:addMilestone")}
         </button>
+      </div>
+
+      {/* 공정별 원가 계획 */}
+      <div style={cardStyle}>
+        {cardHead(t("projectDataEntryTab:processCostPlanTitle"), "costBudget")}
+        <div style={{ fontSize: "12px", color: INK_MUTED, marginTop: "4px" }}>
+          {t("projectDataEntryTab:processCostPlanNote")}
+        </div>
+        <div style={{ overflowX: "auto", marginTop: "8px" }}>
+          <div data-tbl="processCostPlan" onKeyDown={makeArrowNav("processCostPlan")}>
+            <table style={{ width: "100%", minWidth: "1460px", borderCollapse: "collapse", tableLayout: "fixed" }}>
+              <thead>
+                <tr>
+                  <th style={{ ...th, width: "64px" }} rowSpan={2}>{t("common:year")}</th>
+                  <th style={{ ...th, width: "52px" }} rowSpan={2}>{t("projectDataEntryTab:monthColumn")}</th>
+                  <th style={th} colSpan={6}>{t("projectDataEntryTab:processCostOutsourcing")}</th>
+                  <th style={th}>Common</th>
+                  <th style={th}>Expense 1</th>
+                  <th style={th}>Expense 2</th>
+                  <th style={{ ...th, width: "92px" }} rowSpan={2}>{t("common:total")}</th>
+                  <th style={{ ...th, width: "104px" }} rowSpan={2}>{t("projectDataEntryTab:monthlySales")}</th>
+                  <th style={{ ...th, width: "78px" }} rowSpan={2}>{t("projectDataEntryTab:progressRate")}</th>
+                </tr>
+                <tr>
+                  {PROCESS_COST_PLAN_ITEMS.map((item) => (
+                    <th key={item.key} style={th}>{t(`projectDataEntryTab:${item.label}`)}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {processCostMonths.map(({ year, month }, rowIndex) => {
+                  const values = PROCESS_COST_PLAN_ITEMS.map((item) => getProcessCostPlan(item.key, year, month));
+                  const hasCost = values.some((value) => value != null);
+                  const total = hasCost ? values.reduce<number>((sum, value) => sum + (value ?? 0), 0) : null;
+                  return (
+                    <tr key={`${year}-${month}`}>
+                      <td style={{ ...tdCell, textAlign: "center", fontSize: "13px", color: INK_BODY }}>{String(year).slice(2)}{t("projectDataEntryTab:yearSuffix")}</td>
+                      <td style={{ ...tdCell, textAlign: "center", fontSize: "13px", color: INK_BODY }}>{t("projectDataEntryTab:monthSuffix", { month })}</td>
+                      {PROCESS_COST_PLAN_ITEMS.map((item, colIndex) => (
+                        <td key={item.key} style={tdCell}>
+                          <VndInput
+                            valueKUsd={values[colIndex]}
+                            onChange={(value) => setProcessCostPlan(item.key, year, month, value)}
+                            data-row={rowIndex}
+                            data-col={colIndex}
+                          />
+                        </td>
+                      ))}
+                      <td style={{ ...tdCell, textAlign: "right", padding: "5px 6px", fontSize: "13px", fontWeight: 700, color: INK_NAVY, backgroundColor: TABLE_HEADER_BG }}>
+                        {fmtMoney(total)}
+                      </td>
+                      <td style={tdCell}>
+                        <VndInput
+                          valueKUsd={getSalesPlan(year, month)}
+                          onChange={(value) => setSalesPlan(year, month, value)}
+                          data-row={rowIndex}
+                          data-col={PROCESS_COST_PLAN_ITEMS.length}
+                        />
+                      </td>
+                      <td style={tdCell}>
+                        <NumInput
+                          value={getProgressPlan(year, month)}
+                          onChange={(value) => setProgressPlan(year, month, value)}
+                          data-row={rowIndex}
+                          data-col={PROCESS_COST_PLAN_ITEMS.length + 1}
+                        />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
       {/* 시공: 매출 탭 순서(공정 다음) */}
       {salesMonthlyCard}
