@@ -9,6 +9,7 @@ interface Props {
   onChange: (idx: number) => void;
   imgStyle?: React.CSSProperties;
   autoPlayIntervalSeconds?: number; // 0 또는 미설정 = 자동재생 꺼짐
+  loop?: boolean;
 }
 
 /** 페이지 번호 목록 계산 (1-based, '...' 포함) */
@@ -46,7 +47,7 @@ const NAV_BTN: React.CSSProperties = {
   flexShrink: 0,
 };
 
-export function PhotoPager({ src, alt, total, current, onChange, imgStyle, autoPlayIntervalSeconds = 0 }: Props) {
+export function PhotoPager({ src, alt, total, current, onChange, imgStyle, autoPlayIntervalSeconds = 0, loop = false }: Props) {
   const { t } = useTranslation(["photoPager", "common"]);
   const pages = buildPages(total, current);
   const [paused, setPaused] = useState(false);
@@ -131,12 +132,12 @@ export function PhotoPager({ src, alt, total, current, onChange, imgStyle, autoP
         >
           {/* 이전 버튼 */}
           <button
-            onClick={() => onChange(Math.max(0, current - 1))}
-            disabled={current === 0}
+            onClick={() => onChange(loop ? (current - 1 + total) % total : Math.max(0, current - 1))}
+            disabled={!loop && current === 0}
             style={{
               ...NAV_BTN,
-              opacity: current === 0 ? 0.35 : 1,
-              cursor: current === 0 ? "default" : "pointer",
+              opacity: !loop && current === 0 ? 0.35 : 1,
+              cursor: !loop && current === 0 ? "default" : "pointer",
             }}
             aria-label={t("photoPager:prevPhoto")}
           >
@@ -170,12 +171,12 @@ export function PhotoPager({ src, alt, total, current, onChange, imgStyle, autoP
 
           {/* 다음 버튼 */}
           <button
-            onClick={() => onChange(Math.min(total - 1, current + 1))}
-            disabled={current === total - 1}
+            onClick={() => onChange(loop ? (current + 1) % total : Math.min(total - 1, current + 1))}
+            disabled={!loop && current === total - 1}
             style={{
               ...NAV_BTN,
-              opacity: current === total - 1 ? 0.35 : 1,
-              cursor: current === total - 1 ? "default" : "pointer",
+              opacity: !loop && current === total - 1 ? 0.35 : 1,
+              cursor: !loop && current === total - 1 ? "default" : "pointer",
             }}
             aria-label={t("photoPager:nextPhoto")}
           >
