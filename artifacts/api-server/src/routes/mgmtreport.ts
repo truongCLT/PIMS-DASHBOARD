@@ -377,7 +377,12 @@ router.patch("/mgmtreport/projects/:name/division", requireAdmin, async (req, re
     res.status(400).json({ error: "잘못된 요청 본문입니다." });
     return;
   }
-  const { name } = req.params;
+  const paramName = req.params.name;
+  const name = Array.isArray(paramName) ? paramName[0] : paramName;
+  if (!name) {
+    res.status(400).json({ error: "프로젝트 이름이 필요합니다." });
+    return;
+  }
   const { divisionId } = parsed.data;
   try {
     const [updated] = await db

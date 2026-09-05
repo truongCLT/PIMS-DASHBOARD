@@ -3,6 +3,7 @@ import { and, asc, desc, eq, sql } from "drizzle-orm";
 import {
   db,
   mrProjectsTable,
+  mrMonthlyTable,
   pdCommentsTable,
   pdOverviewTable,
   pdProgressMonthlyTable,
@@ -58,7 +59,7 @@ const num = (v: string | null) => (v == null ? null : Number(v));
 const str = (v: number | null | undefined) => (v == null ? null : String(v));
 
 async function loadDetail(projectName: string) {
-  const [mrProjectRows, overviewRows, progress, milestones, costEstimation, costBudget, costBudgetMonthly, outsourcing, cashflow, cogsMonthly, salesMonthly, photos] = await Promise.all([
+  const [mrProjectRows, overviewRows, progress, milestones, costEstimation, costBudget, costBudgetMonthly, outsourcing, cashflow, cogsMonthly, salesMonthly, mrSalesMonthly, photos] = await Promise.all([
     db
       .select({ siteCode: mrProjectsTable.siteCode })
       .from(mrProjectsTable)
@@ -114,6 +115,17 @@ async function loadDetail(projectName: string) {
       .where(eq(pdSalesMonthlyTable.projectName, projectName))
       .orderBy(asc(pdSalesMonthlyTable.year), asc(pdSalesMonthlyTable.month)),
     db
+      .select({
+        year: mrMonthlyTable.year,
+        month: mrMonthlyTable.month,
+        scenario: mrMonthlyTable.scenario,
+        amountUsd: mrMonthlyTable.amountUsd,
+      })
+      .from(mrMonthlyTable)
+      .innerJoin(mrProjectsTable, eq(mrMonthlyTable.projectId, mrProjectsTable.id))
+      .where(and(eq(mrProjectsTable.name, projectName), eq(mrMonthlyTable.metric, "revenue")))
+      .orderBy(asc(mrMonthlyTable.year), asc(mrMonthlyTable.month)),
+    db
       .select()
       .from(pdPhotosTable)
       .where(eq(pdPhotosTable.projectName, projectName))
@@ -121,6 +133,33 @@ async function loadDetail(projectName: string) {
   ]);
 
   const ov = overviewRows[0];
+  const resolvedSalesMonthly = new Map<
+    string,
+    { year: number; month: number; plan: number | null; actual: number | null }
+  >();
+  for (const row of salesMonthly) {
+    resolvedSalesMonthly.set(`${row.year}-${row.month}`, {
+      year: row.year,
+      month: row.month,
+      plan: num(row.plan),
+      actual: num(row.actual),
+    });
+  }
+  for (const row of mrSalesMonthly) {
+    const key = `${row.year}-${row.month}`;
+    const current = resolvedSalesMonthly.get(key) ?? {
+      year: row.year,
+      month: row.month,
+      plan: null,
+      actual: null,
+    };
+    const amount = Number(row.amountUsd);
+    if (Number.isFinite(amount)) {
+      if (row.scenario === "plan" && current.plan == null) current.plan = amount;
+      if (row.scenario === "actual" && current.actual == null) current.actual = amount;
+    }
+    resolvedSalesMonthly.set(key, current);
+  }
   const formatDateStr = (d: string | null | undefined) => {
     if (!d) return null;
     const clean = d.trim();
@@ -214,12 +253,9 @@ async function loadDetail(projectName: string) {
       acctCogs: num(c.acctCogs),
       wipCogs: num(c.wipCogs),
     })),
-    salesMonthly: salesMonthly.map((s) => ({
-      year: s.year,
-      month: s.month,
-      plan: num(s.plan),
-      actual: num(s.actual),
-    })),
+    salesMonthly: [...resolvedSalesMonthly.values()].sort(
+      (a, b) => a.year - b.year || a.month - b.month,
+    ),
     photos: photos.map((p) => ({ objectPath: p.objectPath })),
   };
 }
@@ -327,6 +363,33 @@ function validateProgress(progress: { year: number; month: number }[]): string[]
         seen.set(key, rowNo);
       }
     }
+  });
+  return errors;
+}
+
+function validateMonthlyRows(
+  label: string,
+  rows: { year: number; month: number }[] | undefined,
+  rowKey: (row: { year: number; month: number }) => string = () => "",
+): string[] {
+  const errors: string[] = [];
+  const seen = new Map<string, number>();
+  (rows ?? []).forEach((row, index) => {
+    const rowNo = index + 1;
+    if (!Number.isInteger(row.year) || row.year < 2000 || row.year > 2100) {
+      errors.push(`${label} ${rowNo}번째 행: 연도(${row.year})는 2000~2100 사이의 정수여야 합니다.`);
+    }
+    if (!Number.isInteger(row.month) || row.month < 1 || row.month > 12) {
+      errors.push(`${label} ${rowNo}번째 행: 월(${row.month})은 1~12 사이의 정수여야 합니다.`);
+      return;
+    }
+    const key = `${rowKey(row)}-${row.year}-${row.month}`;
+    const previous = seen.get(key);
+    if (previous != null) {
+      errors.push(`${label} ${rowNo}번째 행: ${row.year}년 ${row.month}월이 ${previous}번째 행과 중복됩니다.`);
+      return;
+    }
+    seen.set(key, rowNo);
   });
   return errors;
 }
@@ -476,6 +539,22 @@ router.put("/projectdetail", requireAdmin, async (req, res) => {
       res.status(400).json({ error: progressErrors.join(" ") });
       return;
     }
+  }
+
+  const monthlyErrors = [
+    ...(!lockedSections.has("costBudget")
+      ? validateMonthlyRows("예산 집행 월별", body.costBudgetMonthly, (row) => {
+          const budgetRow = row as typeof row & { item: string };
+          return budgetRow.item;
+        })
+      : []),
+    ...(!lockedSections.has("cashflow") ? validateMonthlyRows("월별 자금", body.cashflow) : []),
+    ...(!lockedSections.has("cogsMonthly") ? validateMonthlyRows("월별 매출원가", body.cogsMonthly) : []),
+    ...(!lockedSections.has("salesMonthly") ? validateMonthlyRows("월별 매출", body.salesMonthly) : []),
+  ];
+  if (monthlyErrors.length > 0) {
+    res.status(400).json({ error: monthlyErrors.join(" ") });
+    return;
   }
 
   if (!lockedSections.has("overview") && body.photos.some((p) => !/^\/objects\/[\w\-./]+$/.test(p.objectPath))) {

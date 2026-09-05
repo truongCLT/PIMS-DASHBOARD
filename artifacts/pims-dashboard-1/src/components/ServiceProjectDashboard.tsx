@@ -149,7 +149,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
     setExcelMsg(null);
     setExcelMsgIsSuccess(false);
     try {
-      await downloadProjectDetailTemplate(projectName, detail, fxRates.VND);
+      await downloadProjectDetailTemplate(projectName, detail, fxRates.VND, "용역");
     } catch (err) {
       console.error("Excel template download failed", err);
       setExcelMsg(t("serviceProjectDashboard:templateDownloadFailed"));

@@ -6,3 +6,4 @@
 - [JSX generics vs metadata plugin](jsx-generic-babel-plugin.md) — `<Comp<T>>` in .tsx crashes vite:react-babel via injected data-component-name; use prop inference instead.
 - [Windows-only deps break publish](win32-deps-deploy.md) — win32-* packages as direct deps make the Linux publish build fail with npm EBADPLATFORM; remove and relock.
 - [Aqua Glass package ownership](aqua-glass-package-ownership.md) — only the design-system artifact may own @workspace/aqua-glass; a duplicate lib stub makes pnpm link consumers incorrectly.
+- [PIMS ZIP selective merge](pims-zip-selective-merge.md) — uploaded snapshots may be newer by date but delete active multi-artifact features; compare functional commits and merge selectively.

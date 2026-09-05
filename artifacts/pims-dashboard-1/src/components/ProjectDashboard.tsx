@@ -100,7 +100,7 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
     setExcelMsg(null);
     setExcelStatus(null);
     try {
-      await downloadProjectDetailTemplate(projectName, detail, fxRates.VND);
+      await downloadProjectDetailTemplate(projectName, detail, fxRates.VND, "시공");
     } catch (err) {
       console.error("Excel template download failed", err);
       setExcelMsg(t("projectDashboard:templateDownloadFailed"));
