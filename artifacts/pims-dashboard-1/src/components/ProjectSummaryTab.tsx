@@ -170,6 +170,7 @@ function SitePhotoPanel({
         flexDirection: "column",
         minHeight: "260px",
         flex: "0 0 280px",
+        alignSelf: "stretch",
       }}
     >
       <div style={{ ...sectionTitle, marginBottom: "6px", fontSize: "13px" }}>
@@ -245,7 +246,7 @@ export function ProjectSummaryTab({ projectName }: { projectName: string }) {
         display: "flex",
         flexDirection: "row",
         gap: "10px",
-        alignItems: "flex-start",
+        alignItems: "stretch",
         flexWrap: "wrap",
       }}
     >
