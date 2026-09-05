@@ -1,12 +1,14 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { Plus, Trash2, Save, Upload, X, Lock, LockOpen } from "lucide-react";
+import { Plus, Trash2, Save, Upload, X, Lock, LockOpen, ChevronRight } from "lucide-react";
 import { readAdminToken } from "../lib/adminAuth";
 import {
   usePutProjectdetail,
   useListMgmtreportProjects,
   useUpdateMgmtreportProjectStatus,
+  useUpdateMgmtreportProjectDivision,
+  useGetOrgStructure,
   getListMgmtreportProjectsQueryKey,
   useGetCashflowMonthly,
   getGetCashflowMonthlyQueryKey,
@@ -310,10 +312,37 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
   const [closeMsg, setCloseMsg] = useState<string | null>(null);
 
   const mrProjectsQuery = useListMgmtreportProjects({ year: REPORT_YEAR });
-  const currentStatus =
-    mrProjectsQuery.data?.projects.find((p) => p.name === projectName)?.status ?? "ongoing";
+  const currentProject = mrProjectsQuery.data?.projects.find((p) => p.name === projectName);
+  const currentStatus = currentProject?.status ?? "ongoing";
+  const currentBusinessType = currentProject?.businessType ?? (service ? "용역" : "시공");
   const statusMutation = useUpdateMgmtreportProjectStatus();
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
+  const orgStructureQuery = useGetOrgStructure();
+  const divisionMutation = useUpdateMgmtreportProjectDivision();
+  const [divisionMsg, setDivisionMsg] = useState<string | null>(null);
+  const changeBusinessType = (businessType: "시공" | "용역") => {
+    if (businessType === currentBusinessType) return;
+    const companies = orgStructureQuery.data?.companies ?? [];
+    const currentCompany = companies.find((company) => company.label === currentProject?.companyLabel);
+    const targetDivision =
+      currentCompany?.divisions.find((division) => division.businessType === businessType) ??
+      companies.flatMap((company) => company.divisions).find((division) => division.businessType === businessType);
+    if (!targetDivision) {
+      setDivisionMsg(`${businessType} 부문을 찾을 수 없습니다.`);
+      return;
+    }
+    setDivisionMsg(null);
+    divisionMutation.mutate(
+      { name: projectName, data: { divisionId: targetDivision.id } },
+      {
+        onSuccess: () => {
+          setDivisionMsg(`${businessType} 메뉴로 변경되었습니다.`);
+          queryClient.invalidateQueries({ queryKey: getListMgmtreportProjectsQueryKey() });
+        },
+        onError: () => setDivisionMsg("프로젝트 메뉴 변경에 실패했습니다."),
+      },
+    );
+  };
   const toggleStatus = () => {
     const next = currentStatus === "closed" ? "ongoing" : "closed";
     setStatusMsg(null);
@@ -833,7 +862,51 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
         <div style={{ fontSize: "14px", color: INK_BODY }}>
           <b>{projectName}</b> {t("projectDataEntryTab:headerDescPart1")} <b>VND</b> {t("projectDataEntryTab:headerDescPart2")} <b>%</b>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap", justifyContent: "flex-end" }}>
+          <div
+            role="radiogroup"
+            aria-label="프로젝트 메뉴 위치"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "4px 10px",
+              border: `1px solid ${BORDER_MID}`,
+              borderRadius: "6px",
+              backgroundColor: TABLE_HEADER_BG,
+            }}
+          >
+            {(["시공", "용역"] as const).map((businessType) => (
+              <label
+                key={businessType}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "4px",
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  color: currentBusinessType === businessType ? ADMIN_NAVY : INK_MUTED,
+                  cursor: divisionMutation.isPending ? "wait" : "pointer",
+                }}
+              >
+                <input
+                  type="radio"
+                  name={`project-business-type-${projectName}`}
+                  value={businessType}
+                  checked={currentBusinessType === businessType}
+                  disabled={divisionMutation.isPending || orgStructureQuery.isLoading || mrProjectsQuery.isLoading}
+                  onChange={() => changeBusinessType(businessType)}
+                  style={{ margin: 0, accentColor: ADMIN_NAVY }}
+                />
+                {businessType}
+              </label>
+            ))}
+          </div>
+          {divisionMsg && (
+            <span style={{ fontSize: "13px", color: divisionMsg.includes("실패") || divisionMsg.includes("없습니다") ? ACHIEVE_RED : SUCCESS_GREEN, fontWeight: 600 }}>
+              {divisionMsg}
+            </span>
+          )}
           {statusMsg && (
             <span style={{ fontSize: "13px", color: statusMsg === t("projectDataEntryTab:statusChangeFailed") ? ACHIEVE_RED : SUCCESS_GREEN, fontWeight: 600 }}>
               {statusMsg}
@@ -868,6 +941,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                 opacity: statusMutation.isPending ? 0.7 : 1,
               }}
             >
+              <ChevronRight size={12} />
               {statusMutation.isPending
                 ? t("projectDataEntryTab:changingStatus")
                 : currentStatus === "closed"
