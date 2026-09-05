@@ -49,6 +49,10 @@ function treeLabel(label: string, t: TFn): string {
   return key ? t(key) : label;
 }
 
+function hasSiteNumber(siteCode: string | null | undefined): siteCode is string {
+  return typeof siteCode === "string" && /^SITE\d+$/i.test(siteCode.trim());
+}
+
 function buildTreeData(
   mrProjects: { name: string; siteCode?: string | null; fldCode?: string | null; status?: string; businessType?: "시공" | "용역" | null }[],
 ): TreeItem[] {
@@ -246,7 +250,7 @@ export function Sidebar({
   const projectsQuery = useListMgmtreportProjects({ year: REPORT_YEAR });
   const treeData = useMemo(() => {
     const projects = (projectsQuery.data?.projects ?? [])
-      .filter((p) => !p.isGroup)
+      .filter((p) => !p.isGroup && hasSiteNumber(p.siteCode))
       .map((p) => ({ name: p.name, siteCode: p.siteCode, fldCode: (p as { fldCode?: string | null }).fldCode, status: p.status, businessType: p.businessType }));
     return buildTreeData(projects);
   }, [projectsQuery.data]);
