@@ -1,6 +1,8 @@
 /** Shared types used across the 매출/원가 tab sub-components. */
 
 export type RevenuePoint = {
+  year: number;
+  month: number;
   label: string;
   revenue: number;
   plan: number;

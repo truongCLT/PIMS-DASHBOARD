@@ -86,6 +86,8 @@ export function buildChartData(
     cumCogs    += cogs;
     cumPlan    += plan;
     return {
+      year,
+      month,
       label: `'${String(year).slice(2)}.${String(month).padStart(2, "0")}`,
       revenue:    Math.round(convert(revenue)),
       plan:       Math.round(convert(plan)),

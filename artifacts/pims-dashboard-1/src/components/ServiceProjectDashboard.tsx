@@ -7,10 +7,9 @@ import { Download, FileSpreadsheet, Upload, RefreshCw } from "lucide-react";
 import { downloadProjectDetailTemplate, parseProjectDetailWorkbook, ExcelParseError } from "../lib/projectDetailExcel";
 import { MiniBar } from "./ProjectDashboard";
 import { Donut } from "./charts";
-import { SaleProfitTab } from "./SaleProfitTab";
-import { ServiceOutsourcingTab } from "./ServiceOutsourcingTab";
+import { SaleCostTab } from "./SaleCostTab";
+import { OutsourcingTab } from "./OutsourcingTab";
 import { ServiceCashflowTab } from "./ServiceCashflowTab";
-import { ServiceBudgetTab } from "./ServiceBudgetTab";
 import { ServiceReportTab } from "./ServiceReportTab";
 import { ProjectDataEntryTab } from "./ProjectDataEntryTab";
 import { PimsvinaSyncPreviewModal, type PimsvinaPreviewData } from "./PimsvinaSyncPreviewModal";
@@ -23,14 +22,13 @@ import { chartTheme } from "../lib/chartTheme";
 import { cardStyle, sectionTitle, emptyNote, INK_NAVY, INK_BODY, INK_SECONDARY, INK_MUTED, CARD_BORDER, POINT_BLUE, DIVIDER, TABLE_HEADER_BG, MUTED_HINT, SUCCESS_GREEN, DISABLED_GRAY } from "../lib/uiTokens";
 import { ProjectContextBar } from "./ProjectContextBar";
 
-const TABS = ["Overview", "Report", "Sale & Profit", "Budget Execution", "Outsourcing", "Cashflow", "Data entry"];
+const TABS = ["Overview", "Report", "Sale & Cost", "Outsourcing", "Cashflow", "Data entry"];
 
 /** tab id → fully-qualified i18next key (may reference the shared "common" namespace) */
 const TAB_LABEL_KEYS: Record<string, string> = {
   Overview: "common:overview",
   Report: "serviceProjectDashboard:reportTab",
-  "Sale & Profit": "common:revenue",
-  "Budget Execution": "serviceProjectDashboard:budgetExecutionTab",
+  "Sale & Cost": "serviceProjectDashboard:saleCostTab",
   Outsourcing: "common:outsourcing",
   Cashflow: "serviceProjectDashboard:cashLabel",
   "Data entry": "serviceProjectDashboard:dataEntryTab",
@@ -494,9 +492,10 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
             projectName={projectName}
             referenceYear={toYear}
             referenceMonth={Number(toMonth)}
+            krwPerUsd={siteRates.KRW}
           />
-        ) : activeTab === "Sale & Profit" ? (
-          <SaleProfitTab
+        ) : activeTab === "Sale & Cost" ? (
+          <SaleCostTab
             projectName={projectName}
             fromYear={fromYear}
             fromMonth={Number(fromMonth)}
@@ -504,9 +503,20 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
               24,
               Math.max(1, (toYear - fromYear) * 12 + (Number(toMonth) - Number(fromMonth)) + 1),
             )}
+            toYear={toYear}
+            toMonth={Number(toMonth)}
+            showCostRatioLine={false}
+            showBudgetExecution={false}
+            showRevenueCumulativeLine={false}
+            splitRevenueForecast
+            serviceCostBreakdown
           />
         ) : activeTab === "Outsourcing" ? (
-          <ServiceOutsourcingTab projectName={projectName} />
+          <OutsourcingTab
+            projectName={projectName}
+            referenceYear={toYear}
+            referenceMonth={Number(toMonth)}
+          />
         ) : activeTab === "Cashflow" ? (
           <ServiceCashflowTab
             projectName={projectName}
@@ -519,8 +529,6 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
             toYear={toYear}
             toMonth={Number(toMonth)}
           />
-        ) : activeTab === "Budget Execution" ? (
-          <ServiceBudgetTab projectName={projectName} />
         ) : activeTab === "Data entry" ? (
           <>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "8px" }}>

@@ -89,15 +89,35 @@ function RevenueTooltip({
 export function RevenueChartCard({
   chartData,
   pdSalesHasAny,
+  showCumulativeLine = true,
+  splitForecast = false,
+  referenceYear,
+  referenceMonth,
 }: {
   chartData: RevenuePoint[];
   pdSalesHasAny: boolean;
+  showCumulativeLine?: boolean;
+  splitForecast?: boolean;
+  referenceYear?: number;
+  referenceMonth?: number;
 }) {
   const { t } = useTranslation(["saleCostTab", "common"]);
   const { unitLabel } = useMoney();
 
   const maxRevenue = Math.max(...chartData.map((d) => Math.max(d.revenue, d.plan)), 0);
   const maxCum     = Math.max(...chartData.map((d) => Math.max(d.cumulative, d.planCum)), 0);
+  const referenceIndex =
+    referenceYear != null && referenceMonth != null
+      ? referenceYear * 12 + referenceMonth - 1
+      : Number.POSITIVE_INFINITY;
+  const displayData = chartData.map((point) => {
+    const isForecast = point.year * 12 + point.month - 1 > referenceIndex;
+    return {
+      ...point,
+      actualRevenue: !splitForecast || !isForecast ? point.revenue : 0,
+      forecastRevenue: splitForecast && isForecast ? point.revenue : 0,
+    };
+  });
 
   return (
     <div style={cardStyle}>
@@ -106,7 +126,7 @@ export function RevenueChartCard({
       </span>
       <div style={{ width: "100%", height: "260px", marginTop: "8px" }}>
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={chartData} margin={{ top: 30, right: 40, left: 40, bottom: 0 }}>
+          <ComposedChart data={displayData} margin={{ top: 30, right: 40, left: 40, bottom: 0 }}>
             <XAxis
               dataKey="label"
               tick={{ fontSize: 10, fill: chartTheme.axisText }}
@@ -144,20 +164,39 @@ export function RevenueChartCard({
               </Area>
             )}
             <Bar
-              dataKey="revenue"
-              name={t("saleCostTab:monthlyRevenue")}
+              dataKey="actualRevenue"
+              name={splitForecast ? t("common:actual") : t("saleCostTab:monthlyRevenue")}
               fill={chartTheme.planBlue}
               barSize={pdSalesHasAny ? 14 : 22}
               isAnimationActive={false}
             >
               <LabelList
-                dataKey="revenue"
+                dataKey="actualRevenue"
                 position="top"
                 style={{ fontSize: "11px", fill: chartTheme.axisText }}
                 formatter={(v: number) => (v !== 0 ? Math.round(v).toLocaleString() : "")}
               />
             </Bar>
-            <Line
+            {splitForecast && (
+              <Bar
+                dataKey="forecastRevenue"
+                name={t("saleCostTab:forecast")}
+                fill="#fff"
+                stroke={chartTheme.planBlue}
+                strokeWidth={1.5}
+                strokeDasharray="4 3"
+                barSize={14}
+                isAnimationActive={false}
+              >
+                <LabelList
+                  dataKey="forecastRevenue"
+                  position="top"
+                  style={{ fontSize: "11px", fill: chartTheme.axisText }}
+                  formatter={(v: number) => (v !== 0 ? Math.round(v).toLocaleString() : "")}
+                />
+              </Bar>
+            )}
+            {showCumulativeLine && <Line
               yAxisId="cum"
               dataKey="cumulative"
               name={t("common:cumulative")}
@@ -174,7 +213,7 @@ export function RevenueChartCard({
                 style={{ fontSize: "11px", fill: chartTheme.outflowRed }}
                 formatter={(v: number) => Math.round(v).toLocaleString()}
               />
-            </Line>
+            </Line>}
           </ComposedChart>
         </ResponsiveContainer>
       </div>

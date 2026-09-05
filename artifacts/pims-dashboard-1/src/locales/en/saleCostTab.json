@@ -1,4 +1,10 @@
 {
+  "forecast": "Forecast",
+  "serviceCostTitle": "WIP & Accounting Cost of Sales",
+  "costBasis": "Basis",
+  "wipCost": "WIP cost of sales",
+  "accountingCost": "Accounting cost of sales",
+  "forecastCostRatio": "Forecast cost ratio (cumulative cost / revenue)",
   "loadingNotice": "Loading revenue/cost data...",
   "errorNotice": "Failed to load revenue/cost data. Please try again shortly.",
   "noDataNotice": "No data for the selected period.",

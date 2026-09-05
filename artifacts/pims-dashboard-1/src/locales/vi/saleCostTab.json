@@ -1,4 +1,10 @@
 {
+  "forecast": "Dự báo",
+  "serviceCostTitle": "Giá vốn WIP & kế toán",
+  "costBasis": "Phân loại",
+  "wipCost": "Giá vốn WIP",
+  "accountingCost": "Giá vốn kế toán",
+  "forecastCostRatio": "Tỷ lệ chi phí dự báo (lũy kế chi phí / doanh thu)",
   "loadingNotice": "Dang tai du lieu doanh thu/chi phi...",
   "errorNotice": "Khong the tai du lieu doanh thu/chi phi. Vui long thu lai sau.",
   "noDataNotice": "Khong co du lieu trong khoang thoi gian da chon.",

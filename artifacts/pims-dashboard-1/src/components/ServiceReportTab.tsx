@@ -12,6 +12,8 @@ import {
   DIVIDER,
   TABLE_HEADER_BG,
   SUCCESS_GREEN,
+  WARNING_BORDER,
+  ACHIEVE_RED,
 } from "../lib/uiTokens";
 
 const DASH = "-";
@@ -49,19 +51,37 @@ function PlanActualBar({ plan, actual }: { plan: number | null; actual: number |
   );
 }
 
-function StatusRate({ value }: { value: number | null }) {
-  if (value == null) return <span style={{ color: INK_MUTED }}>{DASH}</span>;
-  return <span style={{ color: value >= 100 ? SUCCESS_GREEN : chartTheme.outflowRed, fontWeight: 700 }}>{fmtPct(value)}</span>;
+type Signal = "green" | "yellow" | "red" | "none";
+
+function TrafficLight({ signal }: { signal: Signal }) {
+  const color =
+    signal === "green"
+      ? SUCCESS_GREEN
+      : signal === "yellow"
+        ? WARNING_BORDER
+        : signal === "red"
+          ? ACHIEVE_RED
+          : INK_MUTED;
+  const label =
+    signal === "green" ? "초록불" : signal === "yellow" ? "노란불" : signal === "red" ? "빨간불" : DASH;
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", color, fontWeight: 700, whiteSpace: "nowrap" }}>
+      <span style={{ width: "9px", height: "9px", borderRadius: "50%", backgroundColor: color, boxShadow: `0 0 0 2px ${color}20` }} />
+      {label}
+    </span>
+  );
 }
 
 export function ServiceReportTab({
   projectName,
   referenceYear,
   referenceMonth,
+  krwPerUsd,
 }: {
   projectName: string;
   referenceYear: number;
   referenceMonth: number;
+  krwPerUsd: number;
 }) {
   const { detail, isLoading } = useProjectDetail(projectName);
   const { fmtMoney, unitLabel } = useMoney();
@@ -76,13 +96,10 @@ export function ServiceReportTab({
     rows.filter((row) => row.year === referenceYear && row.month === referenceMonth);
 
   const salesRows = detail?.salesMonthly ?? [];
-  const costRows = detail?.cogsMonthly ?? [];
   const cashRows = detail?.cashflow ?? [];
   const progressRows = detail?.progress ?? [];
   const monthSales = atReference(salesRows);
   const cumSales = throughReference(salesRows);
-  const monthCost = atReference(costRows);
-  const cumCost = throughReference(costRows);
   const monthCash = atReference(cashRows);
   const cumCash = throughReference(cashRows);
   const monthProgress = atReference(progressRows)[0];
@@ -91,10 +108,6 @@ export function ServiceReportTab({
   const salesMonthActual = sumNullable(monthSales, (row) => row.actual);
   const salesCumPlan = sumNullable(cumSales, (row) => row.plan);
   const salesCumActual = sumNullable(cumSales, (row) => row.actual);
-  const costMonthPlan = sumNullable(monthCost, (row) => row.plan);
-  const costMonthActual = sumNullable(monthCost, (row) => row.actual);
-  const costCumPlan = sumNullable(cumCost, (row) => row.plan);
-  const costCumActual = sumNullable(cumCost, (row) => row.actual);
   const cashMonthIn = sumNullable(monthCash, (row) => row.cashIn);
   const cashMonthOut = sumNullable(monthCash, (row) => row.cashOut);
   const cashCumIn = sumNullable(cumCash, (row) => row.cashIn);
@@ -124,13 +137,65 @@ export function ServiceReportTab({
   const recognized = cashCumIn;
   const receivable = salesCumActual != null && recognized != null ? salesCumActual - recognized : null;
 
+  const planActualSignal = (
+    monthPlan: number | null,
+    monthActual: number | null,
+    cumPlan: number | null,
+    cumActual: number | null,
+  ): { signal: Signal; condition: string } => {
+    if (monthPlan == null || monthActual == null || cumPlan == null || cumActual == null) {
+      return { signal: "none", condition: "판정 데이터 없음" };
+    }
+    if (cumActual < cumPlan) return { signal: "red", condition: "누계 실적 < 누계 계획" };
+    if (monthActual < monthPlan) return { signal: "yellow", condition: "누계 달성, 월 실적 < 월 계획" };
+    return { signal: "green", condition: "누계 실적 ≥ 누계 계획" };
+  };
+  const progressSignal = planActualSignal(
+    monthProgress?.planPct ?? null,
+    monthProgress?.actualPct ?? null,
+    monthProgress?.planCumPct ?? null,
+    monthProgress?.actualCumPct ?? null,
+  );
+  const salesSignal = planActualSignal(salesMonthPlan, salesMonthActual, salesCumPlan, salesCumActual);
+  const costDeviations = budgetItems
+    .filter((row) => row.plan != null && row.plan > 0 && row.actual != null)
+    .map((row) => Math.abs(((row.actual! - row.plan!) / row.plan!) * 100));
+  const totalCostDeviation =
+    budgetPlan != null && budgetPlan > 0 && budgetActual != null
+      ? Math.abs(((budgetActual - budgetPlan) / budgetPlan) * 100)
+      : null;
+  const overFiveCount = costDeviations.filter((value) => value > 5).length;
+  const overTwoCount = costDeviations.filter((value) => value > 2 && value <= 5).length;
+  const costSignal: { signal: Signal; condition: string; priority: string } =
+    totalCostDeviation == null
+      ? { signal: "none", condition: "판정 데이터 없음", priority: DASH }
+      : overFiveCount > 0
+        ? { signal: "red", condition: `${overFiveCount}개 항목 계획 대비 5% 초과`, priority: "우선" }
+        : overTwoCount >= 3 || totalCostDeviation > 2
+          ? {
+              signal: "yellow",
+              condition:
+                overTwoCount >= 3
+                  ? `${overTwoCount}개 항목 계획 대비 2~5% 이격`
+                  : `총 원가 계획 대비 ${totalCostDeviation.toFixed(1)}% 이격`,
+              priority: "2선",
+            }
+          : { signal: "green", condition: `총 원가 계획 대비 ${totalCostDeviation.toFixed(1)}% 이격`, priority: "3선" };
+  const tenEokKrwInKUsd = 1_000_000_000 / Math.max(krwPerUsd, 1) / 1_000;
+  const fundsSignal: { signal: Signal; condition: string } =
+    receivable == null
+      ? { signal: "none", condition: "판정 데이터 없음" }
+      : receivable <= 0
+        ? { signal: "green", condition: "채권이 0" }
+        : receivable < tenEokKrwInKUsd
+          ? { signal: "yellow", condition: "채권이 0~10억" }
+          : { signal: "red", condition: "채권이 10억 이상" };
   const statusRows = [
-    { label: "공정", monthPlan: monthProgress?.planPct ?? null, monthActual: monthProgress?.actualPct ?? null, cumPlan: monthProgress?.planCumPct ?? null, cumActual: monthProgress?.actualCumPct ?? null, percent: true },
-    { label: "매출", monthPlan: salesMonthPlan, monthActual: salesMonthActual, cumPlan: salesCumPlan, cumActual: salesCumActual },
-    { label: "원가", monthPlan: costMonthPlan, monthActual: costMonthActual, cumPlan: costCumPlan, cumActual: costCumActual },
-    { label: "자금", monthPlan: null, monthActual: cashMonthIn, cumPlan: null, cumActual: cashCumIn },
+    { label: "공정", ...progressSignal, priority: DASH },
+    { label: "매출", ...salesSignal, priority: DASH },
+    { label: "원가", ...costSignal },
+    { label: "자금", ...fundsSignal, priority: DASH },
   ];
-  const formatStatus = (value: number | null, percent?: boolean) => percent ? fmtPct(value) : fmtMoney(value);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -164,28 +229,20 @@ export function ServiceReportTab({
             <thead>
               <tr>
                 <th style={{ padding: "4px", background: TABLE_HEADER_BG }}>구분</th>
-                <th style={{ padding: "4px", background: TABLE_HEADER_BG }}>현황</th>
-                <th style={{ padding: "4px", background: TABLE_HEADER_BG }}>계획</th>
-                <th style={{ padding: "4px", background: TABLE_HEADER_BG }}>실적</th>
-                <th style={{ padding: "4px", background: TABLE_HEADER_BG }}>상태</th>
+                <th style={{ padding: "4px", background: TABLE_HEADER_BG }}>판정 기준</th>
+                <th style={{ padding: "4px", background: TABLE_HEADER_BG }}>신호등</th>
+                <th style={{ padding: "4px", background: TABLE_HEADER_BG }}>우선순위</th>
               </tr>
             </thead>
             <tbody>
-              {statusRows.flatMap((row) => [
-                <tr key={`${row.label}-month`}>
-                  <td style={{ padding: "4px", borderBottom: `1px solid ${DIVIDER}` }} rowSpan={2}>{row.label}</td>
-                  <td style={{ padding: "4px", borderBottom: `1px solid ${DIVIDER}` }}>월</td>
-                  <td style={{ padding: "4px", textAlign: "right", borderBottom: `1px solid ${DIVIDER}` }}>{formatStatus(row.monthPlan, row.percent)}</td>
-                  <td style={{ padding: "4px", textAlign: "right", borderBottom: `1px solid ${DIVIDER}` }}>{formatStatus(row.monthActual, row.percent)}</td>
-                  <td style={{ padding: "4px", textAlign: "right", borderBottom: `1px solid ${DIVIDER}` }}><StatusRate value={ratioPct(row.monthActual, row.monthPlan)} /></td>
-                </tr>,
-                <tr key={`${row.label}-cum`}>
-                  <td style={{ padding: "4px", borderBottom: `1px solid ${DIVIDER}` }}>누계</td>
-                  <td style={{ padding: "4px", textAlign: "right", borderBottom: `1px solid ${DIVIDER}` }}>{formatStatus(row.cumPlan, row.percent)}</td>
-                  <td style={{ padding: "4px", textAlign: "right", borderBottom: `1px solid ${DIVIDER}` }}>{formatStatus(row.cumActual, row.percent)}</td>
-                  <td style={{ padding: "4px", textAlign: "right", borderBottom: `1px solid ${DIVIDER}` }}><StatusRate value={ratioPct(row.cumActual, row.cumPlan)} /></td>
-                </tr>,
-              ])}
+              {statusRows.map((row) => (
+                <tr key={row.label}>
+                  <td style={{ padding: "6px 4px", borderBottom: `1px solid ${DIVIDER}`, fontWeight: 700, color: INK_NAVY }}>{row.label}</td>
+                  <td style={{ padding: "6px 4px", borderBottom: `1px solid ${DIVIDER}`, color: INK_BODY }}>{row.condition}</td>
+                  <td style={{ padding: "6px 4px", borderBottom: `1px solid ${DIVIDER}` }}><TrafficLight signal={row.signal} /></td>
+                  <td style={{ padding: "6px 4px", textAlign: "center", borderBottom: `1px solid ${DIVIDER}`, fontWeight: row.priority !== DASH ? 700 : 400 }}>{row.priority}</td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>

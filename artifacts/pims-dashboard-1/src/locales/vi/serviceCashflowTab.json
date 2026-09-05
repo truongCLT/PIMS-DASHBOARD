@@ -1,4 +1,8 @@
 {
+  "actualCashIn": "Thu thực tế",
+  "actualCashOut": "Chi thực tế",
+  "forecastCashIn": "Dự báo thu",
+  "forecastCashOut": "Dự báo chi",
   "monthLabel": "Th{{month}}/{{yy}}",
   "entryGuide": "Đăng nhập với quyền quản trị để nhập dữ liệu thu chi trong bảng \"Thu chi theo tháng\" ở tab \"Nhập dữ liệu\".",
   "loadingCashflow": "Đang tải dữ liệu thu chi…",

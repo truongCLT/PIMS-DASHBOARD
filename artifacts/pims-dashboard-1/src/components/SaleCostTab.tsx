@@ -16,9 +16,9 @@ import {
 import { useMrProject } from "../data/mrProjectLinks";
 import { REPORT_YEAR } from "../lib/mgmtreportData";
 import { useMoney } from "../lib/displayUnit";
-import { useProjectDetail } from "../lib/projectDetailData";
+import { useProjectDetail, fmtPct, ratioPct } from "../lib/projectDetailData";
 import { ProjectCommentPanel } from "./ProjectCommentPanel";
-import { cardStyle, emptyNote, INK_MUTED } from "../lib/uiTokens";
+import { cardStyle, sectionTitle, emptyNote, INK_MUTED, INK_BODY, INK_NAVY, DIVIDER, TABLE_HEADER_BG } from "../lib/uiTokens";
 import { chartTheme } from "../lib/chartTheme";
 
 import {
@@ -62,6 +62,11 @@ export function SaleCostTab({
   months,
   toYear,
   toMonth,
+  showCostRatioLine = true,
+  showBudgetExecution = true,
+  showRevenueCumulativeLine = true,
+  splitRevenueForecast = false,
+  serviceCostBreakdown = false,
 }: {
   projectName: string;
   fromYear: number;
@@ -69,9 +74,14 @@ export function SaleCostTab({
   months: number;
   toYear: number;
   toMonth: number;
+  showCostRatioLine?: boolean;
+  showBudgetExecution?: boolean;
+  showRevenueCumulativeLine?: boolean;
+  splitRevenueForecast?: boolean;
+  serviceCostBreakdown?: boolean;
 }) {
   const { t } = useTranslation(["saleCostTab", "costingTab"]);
-  const { convert } = useMoney();
+  const { convert, fmtMoney } = useMoney();
   const { detail: pdDetail, isLoading: pdLoading } = useProjectDetail(projectName);
 
   // ── 기간 계산 ─────────────────────────────────────────────────────────────
@@ -160,6 +170,26 @@ export function SaleCostTab({
   const ratios       = chartData.filter((d) => d.ratio != null);
   let lastRatioIdx   = -1;
   chartData.forEach((d, i) => { if (d.ratio != null) lastRatioIdx = i; });
+  const referenceIndex = toYear * 12 + toMonth - 1;
+  const serviceCogs = pdDetail?.cogsMonthly ?? [];
+  const sumNullable = (values: Array<number | null | undefined>) =>
+    values.some((value) => value != null)
+      ? values.reduce<number>((sum, value) => sum + (value ?? 0), 0)
+      : null;
+  const cogsBeforeReference = serviceCogs.filter((row) => row.year * 12 + row.month - 1 <= referenceIndex);
+  const cogsAfterReference = serviceCogs.filter((row) => row.year * 12 + row.month - 1 > referenceIndex);
+  const serviceCostSummary = {
+    plan: sumNullable(serviceCogs.map((row) => row.plan)),
+    wipActual: sumNullable(cogsBeforeReference.map((row) => row.wipCogs ?? row.actual)),
+    wipForecast: sumNullable(cogsAfterReference.map((row) => row.wipCogs ?? row.actual)),
+    acctActual: sumNullable(cogsBeforeReference.map((row) => row.acctCogs ?? row.actual)),
+    acctForecast: sumNullable(cogsAfterReference.map((row) => row.acctCogs ?? row.actual)),
+  };
+  const forecastRevenue = sumNullable((pdDetail?.salesMonthly ?? []).map((row) => row.actual));
+  const forecastCost =
+    serviceCostSummary.acctActual != null || serviceCostSummary.acctForecast != null
+      ? (serviceCostSummary.acctActual ?? 0) + (serviceCostSummary.acctForecast ?? 0)
+      : null;
 
   // ── 예산 집행 현황 ────────────────────────────────────────────────────────
   const estimation      = pdDetail?.costEstimation ?? [];
@@ -200,11 +230,53 @@ export function SaleCostTab({
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
       {/* 1. 매출 차트 */}
       {hasData && (
-        <RevenueChartCard chartData={chartData} pdSalesHasAny={pdSalesHasAny} />
+        <RevenueChartCard
+          chartData={chartData}
+          pdSalesHasAny={pdSalesHasAny}
+          showCumulativeLine={showRevenueCumulativeLine}
+          splitForecast={splitRevenueForecast}
+          referenceYear={toYear}
+          referenceMonth={toMonth}
+        />
+      )}
+
+      {serviceCostBreakdown && (
+        <div style={cardStyle}>
+          <span style={sectionTitle}>{t("saleCostTab:serviceCostTitle")}</span>
+          <div style={{ overflowX: "auto", marginTop: "8px" }}>
+            <table style={{ width: "100%", minWidth: "620px", borderCollapse: "collapse", fontSize: "12px" }}>
+              <thead>
+                <tr>
+                  <th style={{ padding: "7px", textAlign: "left", backgroundColor: TABLE_HEADER_BG, color: INK_NAVY }}>{t("saleCostTab:costBasis")}</th>
+                  <th style={{ padding: "7px", textAlign: "right", backgroundColor: TABLE_HEADER_BG, color: INK_NAVY }}>{t("common:plan")}</th>
+                  <th style={{ padding: "7px", textAlign: "right", backgroundColor: TABLE_HEADER_BG, color: INK_NAVY }}>{t("common:actual")}</th>
+                  <th style={{ padding: "7px", textAlign: "right", backgroundColor: TABLE_HEADER_BG, color: INK_NAVY }}>{t("saleCostTab:forecast")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { label: t("saleCostTab:wipCost"), actual: serviceCostSummary.wipActual, forecast: serviceCostSummary.wipForecast },
+                  { label: t("saleCostTab:accountingCost"), actual: serviceCostSummary.acctActual, forecast: serviceCostSummary.acctForecast },
+                ].map((row) => (
+                  <tr key={row.label}>
+                    <td style={{ padding: "8px 7px", borderBottom: `1px solid ${DIVIDER}`, color: INK_BODY, fontWeight: 700 }}>{row.label}</td>
+                    <td style={{ padding: "8px 7px", textAlign: "right", borderBottom: `1px solid ${DIVIDER}` }}>{fmtMoney(serviceCostSummary.plan)}</td>
+                    <td style={{ padding: "8px 7px", textAlign: "right", borderBottom: `1px solid ${DIVIDER}` }}>{fmtMoney(row.actual)}</td>
+                    <td style={{ padding: "8px 7px", textAlign: "right", borderBottom: `1px solid ${DIVIDER}` }}>{fmtMoney(row.forecast)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", marginTop: "8px", padding: "8px 10px", backgroundColor: TABLE_HEADER_BG, borderRadius: "6px" }}>
+            <span style={{ fontSize: "12px", color: INK_BODY }}>{t("saleCostTab:forecastCostRatio")}</span>
+            <strong style={{ color: INK_NAVY }}>{fmtPct(ratioPct(forecastCost, forecastRevenue))}</strong>
+          </div>
+        </div>
       )}
 
       {/* 2. 누계 원가율 라인 */}
-      {hasData && ratios.length > 0 && (
+      {showCostRatioLine && hasData && ratios.length > 0 && (
         <CostRatioLineCard chartData={chartData} lastRatioIdx={lastRatioIdx} />
       )}
 
@@ -217,7 +289,7 @@ export function SaleCostTab({
       />
 
       {/* 4. 예산 집행 현황 */}
-      <BudgetExecutionSection rows={budgetRowsWithSum} />
+      {showBudgetExecution && <BudgetExecutionSection rows={budgetRowsWithSum} />}
 
       {/* 5. 코멘트 */}
       <div style={cardStyle}>

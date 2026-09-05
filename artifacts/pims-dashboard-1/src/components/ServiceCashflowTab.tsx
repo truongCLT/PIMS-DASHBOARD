@@ -136,6 +136,10 @@ export function ServiceCashflowTab({
     month: monthLabel(p.month, t),
     cashIn: cv(p.cashIn),
     cashOut: -cv(p.cashOut),
+    cashInActual: Number(p.month.slice(0, 4)) * 12 + Number(p.month.slice(5, 7)) - 1 <= toYear * 12 + toMonth - 1 ? cv(p.cashIn) : 0,
+    cashOutActual: Number(p.month.slice(0, 4)) * 12 + Number(p.month.slice(5, 7)) - 1 <= toYear * 12 + toMonth - 1 ? -cv(p.cashOut) : 0,
+    cashInForecast: Number(p.month.slice(0, 4)) * 12 + Number(p.month.slice(5, 7)) - 1 > toYear * 12 + toMonth - 1 ? cv(p.cashIn) : 0,
+    cashOutForecast: Number(p.month.slice(0, 4)) * 12 + Number(p.month.slice(5, 7)) - 1 > toYear * 12 + toMonth - 1 ? -cv(p.cashOut) : 0,
     equivalent: cv(p.equivalent),
     different: cv(p.cashIn) - cv(p.cashOut),
   }));
@@ -241,8 +245,8 @@ export function ServiceCashflowTab({
               />
             )}
             <Bar
-              dataKey="cashIn"
-              name={t("serviceCashflowTab:cashIn")}
+              dataKey="cashInActual"
+              name={t("serviceCashflowTab:actualCashIn")}
               fill={chartTheme.inflowBlue}
               barSize={barSize}
               stackId="cash"
@@ -250,15 +254,15 @@ export function ServiceCashflowTab({
               radius={[4, 4, 0, 0]}
             >
               <LabelList
-                dataKey="cashIn"
+                dataKey="cashInActual"
                 position="center"
                 style={{ fontSize: "13px", fill: "#fff", fontWeight: 700 }}
                 formatter={(v: number) => (v !== 0 ? v.toLocaleString(undefined, { maximumFractionDigits: 0 }) : "")}
               />
             </Bar>
             <Bar
-              dataKey="cashOut"
-              name={t("serviceCashflowTab:cashOut")}
+              dataKey="cashOutActual"
+              name={t("serviceCashflowTab:actualCashOut")}
               fill={chartTheme.actualGreen}
               barSize={barSize}
               stackId="cash"
@@ -266,9 +270,45 @@ export function ServiceCashflowTab({
               radius={[0, 0, 4, 4]}
             >
               <LabelList
-                dataKey="cashOut"
+                dataKey="cashOutActual"
                 position="center"
                 style={{ fontSize: "13px", fill: "#fff", fontWeight: 700 }}
+                formatter={(v: number) => (v !== 0 ? v.toLocaleString(undefined, { maximumFractionDigits: 0 }) : "")}
+              />
+            </Bar>
+            <Bar
+              dataKey="cashInForecast"
+              name={t("serviceCashflowTab:forecastCashIn")}
+              fill="#fff"
+              stroke={chartTheme.inflowBlue}
+              strokeWidth={1.5}
+              strokeDasharray="4 3"
+              barSize={barSize}
+              stackId="cash"
+              isAnimationActive={false}
+            >
+              <LabelList
+                dataKey="cashInForecast"
+                position="center"
+                style={{ fontSize: "13px", fill: chartTheme.inflowBlue, fontWeight: 700 }}
+                formatter={(v: number) => (v !== 0 ? v.toLocaleString(undefined, { maximumFractionDigits: 0 }) : "")}
+              />
+            </Bar>
+            <Bar
+              dataKey="cashOutForecast"
+              name={t("serviceCashflowTab:forecastCashOut")}
+              fill="#fff"
+              stroke={chartTheme.actualGreen}
+              strokeWidth={1.5}
+              strokeDasharray="4 3"
+              barSize={barSize}
+              stackId="cash"
+              isAnimationActive={false}
+            >
+              <LabelList
+                dataKey="cashOutForecast"
+                position="center"
+                style={{ fontSize: "13px", fill: chartTheme.actualGreen, fontWeight: 700 }}
                 formatter={(v: number) => (v !== 0 ? v.toLocaleString(undefined, { maximumFractionDigits: 0 }) : "")}
               />
             </Bar>
