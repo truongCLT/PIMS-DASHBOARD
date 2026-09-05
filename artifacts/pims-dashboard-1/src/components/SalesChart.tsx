@@ -180,7 +180,7 @@ export function SalesChart() {
         .filter(
           (p) =>
             !p.isGroup &&
-            classifyMrProject(p.name) === division &&
+            (p.businessType ?? classifyMrProject(p.name)) === division &&
             (statusFilter == null || (p.status ?? "ongoing") === statusFilter) &&
             p.siteCode != null,
         )

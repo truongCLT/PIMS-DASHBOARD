@@ -20,6 +20,7 @@ import { useDashboardFilters } from "../lib/dashboardFilters";
 import { CardHeader, rateColor } from "./OverviewTab";
 import { chartTheme } from "../lib/chartTheme";
 import { cardStyle, sectionTitle, emptyNote, INK_NAVY, INK_BODY, INK_SECONDARY, INK_MUTED, CARD_BORDER, POINT_BLUE, DIVIDER, TABLE_HEADER_BG, MUTED_HINT, SUCCESS_GREEN, DISABLED_GRAY } from "../lib/uiTokens";
+import { ProjectContextBar } from "./ProjectContextBar";
 
 const TABS = ["Overview", "Sale & Profit", "Budget Execution", "Outsourcing", "Cashflow", "Data entry"];
 
@@ -444,34 +445,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
         />
       )}
 
-      {/* Project info bar — always visible */}
-      <div style={{ ...cardStyle, margin: "8px 10px 0", display: "flex", gap: "10px", alignItems: "stretch" }}>
-        <div style={{ flex: 1 }}>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 0", fontSize: "12px", color: INK_NAVY }}>
-            <span style={{ fontWeight: 700, paddingRight: "14px" }}>
-              Project : {projectName}
-              {siteCode && <span style={{ fontWeight: 400, color: INK_BODY }}> [{siteCode}]</span>}
-            </span>
-            {ov?.asOfMonth && (
-              <span style={{ borderLeft: `1px solid ${CARD_BORDER}`, padding: "0 14px" }}>
-                {t("serviceProjectDashboard:asOfMonth", { year: ov.asOfMonth.slice(0, 4), month: Number(ov.asOfMonth.slice(5, 7)) })}
-              </span>
-            )}
-            {ov?.client && (
-              <span style={{ borderLeft: `1px solid ${CARD_BORDER}`, padding: "0 14px" }}>{t("serviceProjectDashboard:clientLabel")} : {ov.client}</span>
-            )}
-            {periodLabel && (
-              <span style={{ borderLeft: `1px solid ${CARD_BORDER}`, padding: "0 14px" }}>{t("serviceProjectDashboard:periodLabel")} : {periodLabel}</span>
-            )}
-            {ov?.scope && (
-              <span style={{ borderLeft: `1px solid ${CARD_BORDER}`, padding: "0 14px" }}>{t("serviceProjectDashboard:scopeLabel")} : {ov.scope}</span>
-            )}
-            <span style={{ borderLeft: `1px solid ${CARD_BORDER}`, padding: "0 14px" }}>
-              {t("common:contractAmount")} : {contractAmount != null ? `${formatMoney(contractAmount, currency, unitOn)} ${moneyUnitLabel(currency, unitOn)}` : "-"}
-            </span>
-          </div>
-        </div>
-      </div>
+      <ProjectContextBar projectName={siteCode ? `${projectName} [${siteCode}]` : projectName} businessType="용역" client={ov?.client} period={periodLabel} primaryValue={ov?.scope} contractValue={contractAmount != null ? `${formatMoney(contractAmount, currency, unitOn)} ${moneyUnitLabel(currency, unitOn)}` : "-"} referenceMonth={ov?.asOfMonth} isClosed={ov?.isClosed} labels={{ client: t("serviceProjectDashboard:clientLabel"), period: t("serviceProjectDashboard:periodLabel"), primary: t("serviceProjectDashboard:scopeLabel"), contract: t("common:contractAmount"), referenceMonth: t("common:baseMonth"), closed: t("common:closed"), ongoing: t("common:inProgress") }} />
 
       {/* Horizontal tab bar */}
       <div

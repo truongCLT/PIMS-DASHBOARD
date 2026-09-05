@@ -10,7 +10,6 @@ import {
   getListMgmtreportProjectsQueryKey,
   useGetCashflowMonthly,
   getGetCashflowMonthlyQueryKey,
-  usePatchProjectdetailClose,
 } from "@workspace/api-client-react";
 import type {
   ProjectDetail,
@@ -28,7 +27,7 @@ import type {
 import { useProjectDetail, getGetProjectdetailQueryKey } from "../lib/projectDetailData";
 import { REPORT_YEAR } from "../lib/mgmtreportData";
 import { getMrCashflowRef } from "../data/mrProjectLinks";
-import { cardStyle, sectionTitle, emptyNote, INK_NAVY, INK_BODY, INK_MUTED, POINT_BLUE, TABLE_HEADER_BG, CARD_BORDER, ACHIEVE_RED, SUCCESS_GREEN, ADMIN_NAVY, BORDER_STRONG, BORDER_MID, BORDER_LIGHT, STATUS_CLOSED_BG, STATUS_OPEN_BG, STATUS_CLOSED_TEXT, STATUS_OPEN_TEXT, WARNING_BG, WARNING_TEXT, WARNING_BORDER } from "../lib/uiTokens";
+import { cardStyle, sectionTitle, emptyNote, INK_NAVY, INK_BODY, INK_MUTED, POINT_BLUE, TABLE_HEADER_BG, CARD_BORDER, ACHIEVE_RED, SUCCESS_GREEN, ADMIN_NAVY, BORDER_STRONG, BORDER_MID, BORDER_LIGHT, STATUS_CLOSED_BG, STATUS_OPEN_BG, STATUS_CLOSED_TEXT, STATUS_OPEN_TEXT } from "../lib/uiTokens";
 import { chartTheme } from "../lib/chartTheme";
 
 const th: React.CSSProperties = {
@@ -304,9 +303,10 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
   const { detail, isLoading } = useProjectDetail(projectName);
   const queryClient = useQueryClient();
   const mutation = usePutProjectdetail();
-  const closeMutation = usePatchProjectdetailClose();
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
-  const [isClosed, setIsClosed] = useState(false);
+  const [closedSections, setClosedSections] = useState<Set<string>>(new Set());
+  const [locksLoaded, setLocksLoaded] = useState(false);
+  const [closingSection, setClosingSection] = useState<string | null>(null);
   const [closeMsg, setCloseMsg] = useState<string | null>(null);
 
   const mrProjectsQuery = useListMgmtreportProjects({ year: REPORT_YEAR });
@@ -346,6 +346,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
   const photoInputRef = useRef<HTMLInputElement>(null);
   const [loaded, setLoaded] = useState(false);
   const [cfPrefilled, setCfPrefilled] = useState(false);
+  const lastLockStateRef = useRef<string | null>(null);
 
   // 자금수지 Excel(cf_*) DB 데이터 — 데이터 입력 이력이 없으면 표에 미리 채워 수정할 수 있게 함
   const cfRef = getMrCashflowRef(projectName);
@@ -364,6 +365,8 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
   useEffect(() => {
     setLoaded(false);
     setCfPrefilled(false);
+    setLocksLoaded(false);
+    lastLockStateRef.current = null;
   }, [projectName]);
 
   useEffect(() => {
@@ -414,7 +417,6 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       setSalesMonthly(detail.salesMonthly ?? []);
       setPhotos(detail.photos ?? []);
       setSlideshowIntervalSeconds(detail.overview?.slideshowIntervalSeconds ?? 0);
-      setIsClosed(detail.overview?.isClosed ?? false);
       setLoaded(true);
     }
   }, [detail, loaded, cfRef, cfQuery.isLoading, cfQuery.data]);
@@ -505,20 +507,54 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
     if (photoInputRef.current) photoInputRef.current.value = "";
   };
 
-  const handleToggleClose = () => {
-    const next = !isClosed;
+  useEffect(() => {
+    let cancelled = false;
+    setClosedSections(new Set());
+    setLocksLoaded(false);
+    fetch(`/api/projectdetail/section-locks?projectName=${encodeURIComponent(projectName)}`)
+      .then(async (response) => {
+        if (!response.ok) throw new Error();
+        return response.json() as Promise<{ closedSections: string[] }>;
+      })
+      .then((data) => {
+        if (!cancelled) {
+          setClosedSections(new Set(data.closedSections));
+          setLocksLoaded(true);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setLocksLoaded(false);
+          setCloseMsg(t("projectDataEntryTab:closeToggleFailed"));
+        }
+      });
+    return () => { cancelled = true; };
+  }, [projectName, t]);
+
+  const handleToggleClose = async (section: string) => {
+    const next = !closedSections.has(section);
     setCloseMsg(null);
-    closeMutation.mutate(
-      { data: { projectName, closed: next } },
-      {
-        onSuccess: () => {
-          setIsClosed(next);
-          setCloseMsg(null);
-          queryClient.invalidateQueries({ queryKey: getGetProjectdetailQueryKey({ projectName }) });
-        },
-        onError: () => setCloseMsg(t("projectDataEntryTab:closeToggleFailed")),
-      },
-    );
+    setClosingSection(section);
+    try {
+      const token = readAdminToken();
+      const response = await fetch("/api/projectdetail/close", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ projectName, section, closed: next }),
+      });
+      if (!response.ok) throw new Error();
+      setClosedSections((current) => {
+        const updated = new Set(current);
+        if (next) updated.add(section);
+        else updated.delete(section);
+        return updated;
+      });
+      queryClient.invalidateQueries({ queryKey: getGetProjectdetailQueryKey({ projectName }) });
+    } catch {
+      setCloseMsg(t("projectDataEntryTab:closeToggleFailed"));
+    } finally {
+      setClosingSection(null);
+    }
   };
 
   const pendingRef = useRef(false);
@@ -526,7 +562,9 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
   const [cardMsgs, setCardMsgs] = useState<Record<string, string | null>>({});
 
   const save = (card?: string) => {
-    if (isClosed) return;
+    if (!locksLoaded) return;
+    if (!card && closedSections.size > 0) return;
+    if (card && closedSections.has(card)) return;
     if (pendingRef.current) {
       queuedRef.current = true;
       return;
@@ -616,13 +654,20 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
   }, [projectName]);
   useEffect(() => {
     if (!loaded) return;
+    const lockState = `${locksLoaded}:${[...closedSections].sort().join(",")}`;
+    const lockStateChanged = lastLockStateRef.current !== lockState;
+    lastLockStateRef.current = lockState;
+    if (!locksLoaded || lockStateChanged) {
+      if (locksLoaded) skipAutoSaveRef.current = false;
+      return;
+    }
     if (skipAutoSaveRef.current) {
       skipAutoSaveRef.current = false;
       return;
     }
     const t = setTimeout(() => saveRef.current(), 1000);
     return () => clearTimeout(t);
-  }, [loaded, overview, progress, milestones, costEstimation, costBudget, costBudgetMonthly, outsourcing, cashflow, cogsMonthly, salesMonthly, photos, slideshowIntervalSeconds]);
+  }, [loaded, locksLoaded, closedSections, overview, progress, milestones, costEstimation, costBudget, costBudgetMonthly, outsourcing, cashflow, cogsMonthly, salesMonthly, photos, slideshowIntervalSeconds]);
 
 
   if (isLoading && !loaded) {
@@ -646,28 +691,28 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
         )}
         {/* 마감 설정/해지 버튼 */}
         <button
-          onClick={handleToggleClose}
-          disabled={closeMutation.isPending}
+          onClick={() => handleToggleClose(key)}
+          disabled={!locksLoaded || closingSection != null}
           style={{
             display: "inline-flex", alignItems: "center", gap: "4px",
             padding: "4px 12px",
             fontSize: "13px",
             fontWeight: 600,
-            backgroundColor: isClosed ? INK_MUTED : "#fff",
-            color: isClosed ? "#fff" : INK_MUTED,
-            border: `1px solid ${isClosed ? INK_MUTED : BORDER_STRONG}`,
+            backgroundColor: closedSections.has(key) ? INK_MUTED : "#fff",
+            color: closedSections.has(key) ? "#fff" : INK_MUTED,
+            border: `1px solid ${closedSections.has(key) ? INK_MUTED : BORDER_STRONG}`,
             borderRadius: "4px",
-            cursor: closeMutation.isPending ? "wait" : "pointer",
-            opacity: closeMutation.isPending ? 0.6 : 1,
+            cursor: !locksLoaded || closingSection != null ? "wait" : "pointer",
+            opacity: !locksLoaded || closingSection != null ? 0.6 : 1,
             pointerEvents: "auto",
           }}
         >
-          {isClosed ? <><LockOpen size={12} />{t("projectDataEntryTab:closeUnlock")}</> : <><Lock size={12} />{t("projectDataEntryTab:closeLock")}</>}
+          {closedSections.has(key) ? <><LockOpen size={12} />{t("projectDataEntryTab:closeUnlock")}</> : <><Lock size={12} />{t("projectDataEntryTab:closeLock")}</>}
         </button>
         {/* 저장 버튼 */}
         <button
           onClick={() => save(key)}
-          disabled={isClosed || mutation.isPending}
+          disabled={!locksLoaded || closedSections.has(key) || mutation.isPending}
           style={{
             padding: "4px 14px",
             fontSize: "13px",
@@ -676,8 +721,8 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
             color: "#fff",
             border: "none",
             borderRadius: "4px",
-            cursor: (isClosed || mutation.isPending) ? "not-allowed" : "pointer",
-            opacity: (isClosed || mutation.isPending) ? 0.45 : 1,
+            cursor: (!locksLoaded || closedSections.has(key) || mutation.isPending) ? "not-allowed" : "pointer",
+            opacity: (!locksLoaded || closedSections.has(key) || mutation.isPending) ? 0.45 : 1,
           }}
         >
           {t("common:save")}
@@ -837,7 +882,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
           )}
           <button
             onClick={() => save()}
-            disabled={isClosed || mutation.isPending}
+            disabled={!locksLoaded || mutation.isPending || closedSections.size > 0}
             style={{
               display: "flex",
               alignItems: "center",
@@ -849,8 +894,8 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
               padding: "8px 16px",
               fontSize: "16px",
               fontWeight: 600,
-              cursor: (isClosed || mutation.isPending) ? "not-allowed" : "pointer",
-              opacity: (isClosed || mutation.isPending) ? 0.4 : 1,
+              cursor: (!locksLoaded || mutation.isPending || closedSections.size > 0) ? "not-allowed" : "pointer",
+              opacity: (!locksLoaded || mutation.isPending || closedSections.size > 0) ? 0.4 : 1,
             }}
           >
             <Save size={13} />
@@ -859,33 +904,11 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
         </div>
       </div>
 
-      {/* 마감 배너 */}
-      {isClosed && (
-        <div style={{
-          backgroundColor: WARNING_BG,
-          border: `1px solid ${WARNING_BORDER}`,
-          borderRadius: "6px",
-          padding: "10px 16px",
-          fontSize: "13px",
-          fontWeight: 600,
-          color: WARNING_TEXT,
-          display: "flex",
-          alignItems: "center",
-          gap: "8px",
-        }}>
-          <Lock size={14} />
-          {t("projectDataEntryTab:closedBanner")}
-        </div>
-      )}
-
-      {/* 마감 시 입력 차단 래퍼 (cardHead의 마감 버튼은 pointerEvents:auto로 여전히 동작) */}
-      <div style={{ pointerEvents: isClosed ? "none" : "auto", opacity: isClosed ? 0.65 : 1 }}>
-
       {/* 0. 개요 정보 */}
       {!service && (
       <>
       <div style={cardStyle}>
-        <span style={sectionTitle}>{t("projectDataEntryTab:overviewTitle")}</span>
+        {cardHead(t("projectDataEntryTab:overviewTitle"), "overview")}
         <div data-tbl="overview" onKeyDown={makeArrowNav("overview")}>
         <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px" }}>
           <thead>
@@ -1483,7 +1506,6 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
         </div>
       </div>
 
-      </div>{/* end 마감 잠금 래퍼 */}
     </div>
   );
 }

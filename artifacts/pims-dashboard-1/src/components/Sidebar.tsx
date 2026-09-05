@@ -50,7 +50,7 @@ function treeLabel(label: string, t: TFn): string {
 }
 
 function buildTreeData(
-  mrProjects: { name: string; siteCode?: string | null; fldCode?: string | null; status?: string }[],
+  mrProjects: { name: string; siteCode?: string | null; fldCode?: string | null; status?: string; businessType?: "시공" | "용역" | null }[],
 ): TreeItem[] {
   const byDivision: Record<
     "시공" | "용역",
@@ -64,7 +64,7 @@ function buildTreeData(
   };
   for (const p of mrProjects) {
     const bucket = p.status === "closed" ? "closed" : "ongoing";
-    byDivision[classifyMrProject(p.name)][bucket].push({ name: p.name, siteCode: p.siteCode, fldCode: p.fldCode });
+    byDivision[p.businessType ?? classifyMrProject(p.name)][bucket].push({ name: p.name, siteCode: p.siteCode, fldCode: p.fldCode });
   }
   // 테스트 프로젝트는 각 버킷 최상단에 (안정 정렬로 나머지 순서 유지)
   for (const division of ["시공", "용역"] as const) {
@@ -247,7 +247,7 @@ export function Sidebar({
   const treeData = useMemo(() => {
     const projects = (projectsQuery.data?.projects ?? [])
       .filter((p) => !p.isGroup)
-      .map((p) => ({ name: p.name, siteCode: p.siteCode, fldCode: p.fldCode, status: p.status }));
+      .map((p) => ({ name: p.name, siteCode: p.siteCode, fldCode: (p as { fldCode?: string | null }).fldCode, status: p.status, businessType: p.businessType }));
     return buildTreeData(projects);
   }, [projectsQuery.data]);
 

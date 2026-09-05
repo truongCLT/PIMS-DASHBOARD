@@ -15,6 +15,7 @@ import {
   pdCogsMonthlyTable,
   pdSalesMonthlyTable,
   pdPhotosTable,
+  pdSectionLocksTable,
 } from "@workspace/db";
 import {
   GetProjectdetailQueryParams,
@@ -31,6 +32,23 @@ import {
 import { requireAdmin } from "../middlewares/adminAuth";
 
 const router: IRouter = Router();
+const SECTION_KEYS = [
+  "salesMonthly",
+  "cogsMonthly",
+  "progress",
+  "milestones",
+  "overview",
+  "costEstimation",
+  "costBudget",
+  "outsourcing",
+  "cashflow",
+] as const;
+
+type SectionKey = (typeof SECTION_KEYS)[number];
+
+function isSectionKey(value: unknown): value is SectionKey {
+  return typeof value === "string" && (SECTION_KEYS as readonly string[]).includes(value);
+}
 
 class DuplicateCogsMonthError extends Error {}
 class DuplicateSalesMonthError extends Error {}
@@ -315,20 +333,98 @@ function validateProgress(progress: { year: number; month: number }[]): string[]
 
 /* ── 마감/해지 토글 ── */
 router.patch("/projectdetail/close", requireAdmin, async (req, res) => {
-  const { projectName, closed } = req.body ?? {};
-  if (typeof projectName !== "string" || !projectName.trim() || typeof closed !== "boolean") {
-    res.status(400).json({ error: "projectName(string)과 closed(boolean)이 필요합니다." });
+  const { projectName, section, closed } = req.body ?? {};
+  if (
+    typeof projectName !== "string" ||
+    !projectName.trim() ||
+    typeof closed !== "boolean" ||
+    (section !== undefined && !isSectionKey(section))
+  ) {
+    res.status(400).json({ error: "projectName(string), closed(boolean), section(지원 섹션)이 필요합니다." });
     return;
   }
   try {
-    await db
-      .update(pdOverviewTable)
-      .set({ isClosed: (closed ? 1 : 0) as any })
-      .where(eq(pdOverviewTable.projectName, projectName.trim()));
-    res.json({ projectName: projectName.trim(), isClosed: closed });
+    const name = projectName.trim();
+    await db.transaction(async (tx) => {
+      const existingLocks = await tx
+        .select({ sectionKey: pdSectionLocksTable.sectionKey })
+        .from(pdSectionLocksTable)
+        .where(eq(pdSectionLocksTable.projectName, name));
+      const [overview] = await tx
+        .select({ isClosed: pdOverviewTable.isClosed })
+        .from(pdOverviewTable)
+        .where(eq(pdOverviewTable.projectName, name));
+
+      // Projects closed before section locks were introduced retain their closed
+      // state. Materialize it before applying a single-section change.
+      if (overview?.isClosed && existingLocks.length === 0) {
+        await tx.insert(pdSectionLocksTable).values(
+          SECTION_KEYS.map((sectionKey) => ({ projectName: name, sectionKey, isClosed: 1 })),
+        );
+      }
+
+      const sections = section === undefined ? SECTION_KEYS : [section];
+      await tx.insert(pdSectionLocksTable).values(
+        sections.map((sectionKey) => ({ projectName: name, sectionKey, isClosed: closed ? 1 : 0 })),
+      ).onConflictDoUpdate({
+        target: [pdSectionLocksTable.projectName, pdSectionLocksTable.sectionKey],
+        set: { isClosed: closed ? 1 : 0 },
+      });
+
+      // Keep the old overview flag useful for legacy callers: it means every
+      // supported section is closed. An old caller without `section` changes
+      // all sections, preserving its original all-or-nothing semantics.
+      const locks = await tx
+        .select({ sectionKey: pdSectionLocksTable.sectionKey, isClosed: pdSectionLocksTable.isClosed })
+        .from(pdSectionLocksTable)
+        .where(eq(pdSectionLocksTable.projectName, name));
+      const closedBySection = new Map(locks.map((lock) => [lock.sectionKey, lock.isClosed]));
+      const allClosed = SECTION_KEYS.every((sectionKey) => closedBySection.get(sectionKey) === 1);
+      await tx
+        .insert(pdOverviewTable)
+        .values({ projectName: name, isClosed: allClosed ? 1 : 0 })
+        .onConflictDoUpdate({
+          target: pdOverviewTable.projectName,
+          set: { isClosed: allClosed ? 1 : 0 },
+        });
+    });
+    res.json(section === undefined ? { projectName: name, isClosed: closed } : { projectName: name, section, isClosed: closed });
   } catch (err) {
     req.log.error({ err }, "failed to toggle close status");
     res.status(500).json({ error: "마감 상태 변경에 실패했습니다." });
+  }
+});
+
+router.get("/projectdetail/section-locks", async (req, res) => {
+  const projectName = typeof req.query.projectName === "string" ? req.query.projectName.trim() : "";
+  if (!projectName) {
+    res.status(400).json({ error: "projectName이 필요합니다." });
+    return;
+  }
+  try {
+    const rows = await db
+      .select({ sectionKey: pdSectionLocksTable.sectionKey, isClosed: pdSectionLocksTable.isClosed })
+      .from(pdSectionLocksTable)
+      .where(eq(pdSectionLocksTable.projectName, projectName));
+    if (rows.length > 0) {
+      res.json({
+        projectName,
+        closedSections: rows
+          .filter((row) => row.isClosed && isSectionKey(row.sectionKey))
+          .map((row) => row.sectionKey),
+      });
+      return;
+    }
+
+    // No lock rows means this project predates the section-lock table.
+    const [overview] = await db
+      .select({ isClosed: pdOverviewTable.isClosed })
+      .from(pdOverviewTable)
+      .where(eq(pdOverviewTable.projectName, projectName));
+    res.json({ projectName, closedSections: overview?.isClosed ? SECTION_KEYS : [] });
+  } catch (err) {
+    req.log.error({ err }, "failed to get section close statuses");
+    res.status(500).json({ error: "섹션별 마감 상태 조회에 실패했습니다." });
   }
 });
 
@@ -349,29 +445,45 @@ router.put("/projectdetail", requireAdmin, async (req, res) => {
     return;
   }
   const body = parsed.data;
-
-  /* 마감 상태이면 편집 차단 */
-  const closedRows = await db.select({ isClosed: pdOverviewTable.isClosed })
-    .from(pdOverviewTable)
-    .where(eq(pdOverviewTable.projectName, body.projectName.trim()));
-  if (closedRows[0]?.isClosed) {
+  const projectName = body.projectName;
+  const lockRows = await db
+    .select({ sectionKey: pdSectionLocksTable.sectionKey, isClosed: pdSectionLocksTable.isClosed })
+    .from(pdSectionLocksTable)
+    .where(eq(pdSectionLocksTable.projectName, projectName));
+  const lockedSections = new Set<SectionKey>();
+  for (const row of lockRows) {
+    if (row.isClosed === 1 && isSectionKey(row.sectionKey)) {
+      lockedSections.add(row.sectionKey);
+    }
+  }
+  if (lockRows.length === 0) {
+    const [overview] = await db
+      .select({ isClosed: pdOverviewTable.isClosed })
+      .from(pdOverviewTable)
+      .where(eq(pdOverviewTable.projectName, projectName));
+    if (overview?.isClosed) {
+      SECTION_KEYS.forEach((section) => lockedSections.add(section));
+    }
+  }
+  if (lockedSections.size === SECTION_KEYS.length) {
     res.status(403).json({ error: "마감된 프로젝트는 데이터를 수정할 수 없습니다. 마감을 해지한 후 시도해주세요." });
     return;
   }
 
-  const progressErrors = validateProgress(body.progress);
-  if (progressErrors.length > 0) {
-    res.status(400).json({ error: progressErrors.join(" ") });
-    return;
+  if (!lockedSections.has("progress")) {
+    const progressErrors = validateProgress(body.progress);
+    if (progressErrors.length > 0) {
+      res.status(400).json({ error: progressErrors.join(" ") });
+      return;
+    }
   }
-  const projectName = body.projectName;
 
-  if (body.photos.some((p) => !/^\/objects\/[\w\-./]+$/.test(p.objectPath))) {
+  if (!lockedSections.has("overview") && body.photos.some((p) => !/^\/objects\/[\w\-./]+$/.test(p.objectPath))) {
     res.status(400).json({ error: "잘못된 사진 경로입니다." });
     return;
   }
 
-  {
+  if (!lockedSections.has("overview")) {
     const asOf = body.overview.asOfMonth;
     if (asOf != null && asOf.trim() !== "" && !/^\d{4}-(0[1-9]|1[0-2])$/.test(asOf.trim())) {
       res.status(400).json({ error: "작성 기준월은 YYYY-MM 형식이어야 합니다." });
@@ -388,21 +500,35 @@ router.put("/projectdetail", requireAdmin, async (req, res) => {
         .where(eq(pdOverviewTable.projectName, projectName));
       const prevOv = existingOvRows[0];
 
-      await tx.delete(pdOverviewTable).where(eq(pdOverviewTable.projectName, projectName));
-      await tx.delete(pdProgressMonthlyTable).where(eq(pdProgressMonthlyTable.projectName, projectName));
-      await tx.delete(pdMilestonesTable).where(eq(pdMilestonesTable.projectName, projectName));
-      await tx.delete(pdCostEstimationTable).where(eq(pdCostEstimationTable.projectName, projectName));
-      await tx.delete(pdCostBudgetTable).where(eq(pdCostBudgetTable.projectName, projectName));
-      await tx.delete(pdCostBudgetMonthlyTable).where(eq(pdCostBudgetMonthlyTable.projectName, projectName));
-      await tx.delete(pdOutsourcingTable).where(eq(pdOutsourcingTable.projectName, projectName));
-      await tx.delete(pdCashflowMonthlyTable).where(eq(pdCashflowMonthlyTable.projectName, projectName));
-      if (body.cogsMonthly !== undefined) {
+      if (!lockedSections.has("overview")) {
+        await tx.delete(pdOverviewTable).where(eq(pdOverviewTable.projectName, projectName));
+        await tx.delete(pdPhotosTable).where(eq(pdPhotosTable.projectName, projectName));
+      }
+      if (!lockedSections.has("progress")) {
+        await tx.delete(pdProgressMonthlyTable).where(eq(pdProgressMonthlyTable.projectName, projectName));
+      }
+      if (!lockedSections.has("milestones")) {
+        await tx.delete(pdMilestonesTable).where(eq(pdMilestonesTable.projectName, projectName));
+      }
+      if (!lockedSections.has("costEstimation")) {
+        await tx.delete(pdCostEstimationTable).where(eq(pdCostEstimationTable.projectName, projectName));
+      }
+      if (!lockedSections.has("costBudget")) {
+        await tx.delete(pdCostBudgetTable).where(eq(pdCostBudgetTable.projectName, projectName));
+        await tx.delete(pdCostBudgetMonthlyTable).where(eq(pdCostBudgetMonthlyTable.projectName, projectName));
+      }
+      if (!lockedSections.has("outsourcing")) {
+        await tx.delete(pdOutsourcingTable).where(eq(pdOutsourcingTable.projectName, projectName));
+      }
+      if (!lockedSections.has("cashflow")) {
+        await tx.delete(pdCashflowMonthlyTable).where(eq(pdCashflowMonthlyTable.projectName, projectName));
+      }
+      if (!lockedSections.has("cogsMonthly") && body.cogsMonthly !== undefined) {
         await tx.delete(pdCogsMonthlyTable).where(eq(pdCogsMonthlyTable.projectName, projectName));
       }
-      if (body.salesMonthly !== undefined) {
+      if (!lockedSections.has("salesMonthly") && body.salesMonthly !== undefined) {
         await tx.delete(pdSalesMonthlyTable).where(eq(pdSalesMonthlyTable.projectName, projectName));
       }
-      await tx.delete(pdPhotosTable).where(eq(pdPhotosTable.projectName, projectName));
 
       const ov = body.overview;
       const client = ov.client?.trim() ? ov.client.trim() : null;
@@ -422,7 +548,7 @@ router.put("/projectdetail", requireAdmin, async (req, res) => {
         ov.slideshowIntervalSeconds !== undefined
           ? (ov.slideshowIntervalSeconds ?? 0)
           : (prevOv?.slideshowIntervalSeconds ?? 0);
-      if (
+      if (!lockedSections.has("overview") && (
         ov.contractAmount != null ||
         ov.startDate != null ||
         ov.endDate != null ||
@@ -435,7 +561,7 @@ router.put("/projectdetail", requireAdmin, async (req, res) => {
         cashConfirmed != null ||
         cashCollection != null ||
         slideshowIntervalSeconds > 0
-      ) {
+      )) {
         await tx.insert(pdOverviewTable).values({
           projectName,
           contractAmount: str(ov.contractAmount),
@@ -452,7 +578,7 @@ router.put("/projectdetail", requireAdmin, async (req, res) => {
           slideshowIntervalSeconds,
         });
       }
-      if (body.progress.length > 0) {
+      if (!lockedSections.has("progress") && body.progress.length > 0) {
         await tx.insert(pdProgressMonthlyTable).values(
           body.progress.map((p) => ({
             projectName,
@@ -465,7 +591,7 @@ router.put("/projectdetail", requireAdmin, async (req, res) => {
           })),
         );
       }
-      if (body.milestones.length > 0) {
+      if (!lockedSections.has("milestones") && body.milestones.length > 0) {
         await tx.insert(pdMilestonesTable).values(
           body.milestones.map((m, i) => ({
             projectName,
@@ -478,7 +604,7 @@ router.put("/projectdetail", requireAdmin, async (req, res) => {
           })),
         );
       }
-      if (body.costEstimation.length > 0) {
+      if (!lockedSections.has("costEstimation") && body.costEstimation.length > 0) {
         await tx.insert(pdCostEstimationTable).values(
           body.costEstimation.map((c) => ({
             projectName,
@@ -490,7 +616,7 @@ router.put("/projectdetail", requireAdmin, async (req, res) => {
           })),
         );
       }
-      if (body.costBudget.length > 0) {
+      if (!lockedSections.has("costBudget") && body.costBudget.length > 0) {
         await tx.insert(pdCostBudgetTable).values(
           body.costBudget.map((c, i) => ({
             projectName,
@@ -506,7 +632,7 @@ router.put("/projectdetail", requireAdmin, async (req, res) => {
       const cbmRows = (body.costBudgetMonthly ?? []).filter(
         (r) => r.plan != null || r.actual != null,
       );
-      if (cbmRows.length > 0) {
+      if (!lockedSections.has("costBudget") && cbmRows.length > 0) {
         await tx.insert(pdCostBudgetMonthlyTable).values(
           cbmRows.map((c) => ({
             projectName,
@@ -518,7 +644,7 @@ router.put("/projectdetail", requireAdmin, async (req, res) => {
           })),
         );
       }
-      if (body.outsourcing.length > 0) {
+      if (!lockedSections.has("outsourcing") && body.outsourcing.length > 0) {
         await tx.insert(pdOutsourcingTable).values(
           body.outsourcing.map((o, i) => ({
             projectName,
@@ -537,7 +663,7 @@ router.put("/projectdetail", requireAdmin, async (req, res) => {
           })),
         );
       }
-      if (body.cashflow.length > 0) {
+      if (!lockedSections.has("cashflow") && body.cashflow.length > 0) {
         await tx.insert(pdCashflowMonthlyTable).values(
           body.cashflow.map((c) => ({
             projectName,
@@ -549,7 +675,7 @@ router.put("/projectdetail", requireAdmin, async (req, res) => {
           })),
         );
       }
-      const cogsRows = body.cogsMonthly ?? [];
+      const cogsRows = lockedSections.has("cogsMonthly") ? [] : (body.cogsMonthly ?? []);
       const cogsKeys = new Set<string>();
       for (const c of cogsRows) {
         const k = `${c.year}-${c.month}`;
@@ -569,7 +695,7 @@ router.put("/projectdetail", requireAdmin, async (req, res) => {
           })),
         );
       }
-      const salesRows = body.salesMonthly ?? [];
+      const salesRows = lockedSections.has("salesMonthly") ? [] : (body.salesMonthly ?? []);
       const salesKeys = new Set<string>();
       for (const s of salesRows) {
         if (!Number.isInteger(s.year) || s.year < 2000 || s.year > 2100 || !Number.isInteger(s.month) || s.month < 1 || s.month > 12) {
@@ -592,7 +718,7 @@ router.put("/projectdetail", requireAdmin, async (req, res) => {
           })),
         );
       }
-      if (body.photos.length > 0) {
+      if (!lockedSections.has("overview") && body.photos.length > 0) {
         await tx.insert(pdPhotosTable).values(
           body.photos.map((p, i) => ({
             projectName,

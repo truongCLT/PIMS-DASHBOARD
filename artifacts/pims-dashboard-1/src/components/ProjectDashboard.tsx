@@ -18,7 +18,8 @@ import { DisplayUnitProvider, DEFAULT_EXCHANGE_RATES, formatMoney, moneyUnitLabe
 import { useAdminAuth, readAdminToken } from "../lib/adminAuth";
 import { useDashboardFilters } from "../lib/dashboardFilters";
 import { PimsvinaSyncPreviewModal, type PimsvinaPreviewData } from "./PimsvinaSyncPreviewModal";
-import { cardStyle, sectionTitle } from "../lib/uiTokens";
+import { cardStyle } from "../lib/uiTokens";
+import { ProjectContextBar } from "./ProjectContextBar";
 export { Donut, MiniBar } from "./charts";
 
 
@@ -318,29 +319,7 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
         />
       )}
 
-      {/* Project info bar — always visible */}
-      <div style={{ ...cardStyle, margin: "8px 10px 0", display: "flex", gap: "10px", alignItems: "stretch" }}>
-        <div style={{ flex: 1 }}>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 0", fontSize: "12px", color: "#16294a" }}>
-            <span style={{ fontWeight: 700, paddingRight: "14px" }}>
-              {t("common:project")} : {projectName}
-              {siteCode && <span style={{ fontWeight: 400, color: "#556" }}> [{siteCode}]</span>}
-            </span>
-            <span style={{ borderLeft: "1px solid #e2e9f3", padding: "0 14px" }}>{t("projectDashboard:client")} : {ov.client ?? "-"}</span>
-            <span style={{ borderLeft: "1px solid #e2e9f3", padding: "0 14px" }}>
-              {t("projectDashboard:constructionPeriod")} : {periodLabel}
-            </span>
-          </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 0", fontSize: "12px", color: "#16294a", marginTop: "8px" }}>
-            <span style={{ paddingRight: "14px" }}>
-              {t("common:contractAmount")} : {formatMoney(ov.contractAmount, currency, unitOn)} {moneyUnitLabel(currency, unitOn)}
-            </span>
-            <span style={{ borderLeft: "1px solid #e2e9f3", padding: "0 14px" }}>
-              {t("projectDashboard:constructionScale")} : {ov.scale ?? "-"}
-            </span>
-          </div>
-        </div>
-      </div>
+      <ProjectContextBar projectName={siteCode ? `${projectName} [${siteCode}]` : projectName} businessType="시공" client={ov.client} period={periodLabel} primaryValue={ov.scale} contractValue={`${formatMoney(ov.contractAmount, currency, unitOn)} ${moneyUnitLabel(currency, unitOn)}`} referenceMonth={ov.asOfMonth} isClosed={ov.isClosed} labels={{ client: t("projectDashboard:client"), period: t("projectDashboard:constructionPeriod"), primary: t("projectDashboard:constructionScale"), contract: t("common:contractAmount"), referenceMonth: t("common:baseMonth"), closed: t("common:closed"), ongoing: t("common:inProgress") }} />
 
       {/* Horizontal tab bar */}
       <div

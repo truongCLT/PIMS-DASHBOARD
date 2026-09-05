@@ -36,9 +36,21 @@ export const pdOverviewTable = pgTable(
     cashConfirmed: numeric("cash_confirmed", { precision: 24, scale: 8 }), // Cash Confirmed (A) (천 USD)
     cashCollection: numeric("cash_collection", { precision: 24, scale: 8 }), // Cash Collection (B) (천 USD)
     slideshowIntervalSeconds: integer("slideshow_interval_seconds").notNull().default(0), // 슬라이드쇼 자동 전환 간격(초), 0=꺼짐
-    isClosed: integer("is_closed", { mode: "boolean" }).notNull().default(sql`0`), // 마감 여부 (true면 데이터 편집 잠금)
+    isClosed: integer("is_closed").notNull().default(sql`0`), // 마감 여부 (true면 데이터 편집 잠금)
   },
   (t) => [uniqueIndex("pd_overview_uq").on(t.projectName)],
+);
+
+// 섹션별 마감 상태 — 기존 pd_overview.is_closed는 전체 마감 호환용으로 유지한다.
+export const pdSectionLocksTable = pgTable(
+  "pd_section_locks",
+  {
+    id: serial("id").primaryKey(),
+    projectName: text("project_name").notNull(),
+    sectionKey: text("section_key").notNull(),
+    isClosed: integer("is_closed").notNull().default(sql`0`),
+  },
+  (t) => [uniqueIndex("pd_section_locks_uq").on(t.projectName, t.sectionKey)],
 );
 
 // 공정 — 월별 공정률 (계획/실적 월간, 누계)

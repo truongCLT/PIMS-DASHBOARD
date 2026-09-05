@@ -724,23 +724,25 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
           >
             {t("common:close")}
           </button>
-          <button
-            onClick={handleApply}
-            disabled={busy || !preview || done}
-            style={{
-              backgroundColor: "#1c7a5a",
-              color: "#fff",
-              border: "none",
-              borderRadius: "6px",
-              padding: "8px 18px",
-              fontSize: "12px",
-              fontWeight: 700,
-              cursor: busy || !preview || done ? "not-allowed" : "pointer",
-              opacity: busy || !preview || done ? 0.55 : 1,
-            }}
-          >
-            {loading === "apply" ? t("mgmtReportUploadModal:applying") : t("mgmtReportUploadModal:apply")}
-          </button>
+          {!done && (
+            <button
+              onClick={handleApply}
+              disabled={busy || !preview}
+              style={{
+                backgroundColor: "#1c7a5a",
+                color: "#fff",
+                border: "none",
+                borderRadius: "6px",
+                padding: "8px 18px",
+                fontSize: "12px",
+                fontWeight: 700,
+                cursor: busy || !preview ? "not-allowed" : "pointer",
+                opacity: busy || !preview ? 0.55 : 1,
+              }}
+            >
+              {loading === "apply" ? t("mgmtReportUploadModal:applying") : t("mgmtReportUploadModal:apply")}
+            </button>
+          )}
         </div>
       </div>
     </div>
