@@ -377,7 +377,6 @@ export function ProjectReportTab({
           </select>
         </div>
       </div>
-
       {/* ── Row 1: 공정 | 매출 | 현황 표 ── */}
       <div style={reportGrid("240px")}>
         <ProgressSection
@@ -393,7 +392,6 @@ export function ProjectReportTab({
         />
         <StatusTableSection rows={statusRows} />
       </div>
-
       {/* ── Row 2: 원가 | 자금 | 코멘트 ── */}
       <div style={reportGrid("240px")}>
         <CostSection budgetRows={allBudgetRows} />
@@ -404,7 +402,7 @@ export function ProjectReportTab({
           cumRev={cumRev}
         />
         <div style={cardStyle}>
-          <div style={{ ...sectionTitle, marginBottom: "8px" }}>코멘트</div>
+          <div style={{ ...sectionTitle, marginBottom: "8px" }}>주요 이슈 및 대응방안</div>
           <ProjectCommentPanel projectName={projectName} tab="budget" showHeader={false} />
         </div>
       </div>
