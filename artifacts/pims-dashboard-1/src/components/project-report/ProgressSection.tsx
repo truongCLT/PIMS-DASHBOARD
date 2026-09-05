@@ -3,7 +3,7 @@
  * Shows monthly and cumulative construction-progress plan vs actual
  * with horizontal progress bars and achievement badges.
  */
-import React from "react";
+import React, { useState } from "react";
 import { fmtPct, ratioPct } from "../../lib/projectDetailData";
 import { chartTheme } from "../../lib/chartTheme";
 import {
@@ -17,13 +17,23 @@ import {
 import { REPORT_YEAR } from "../../lib/mgmtreportData";
 import { DASH, StatusBadge, ProgressBar, DataKV } from "./ReportPrimitives";
 import type { ProgRowData } from "./reportTypes";
+import { useMoney } from "../../lib/displayUnit";
+
+interface CostExecutionData {
+  monthlyPlan: number | null;
+  monthlyActual: number | null;
+  cumulativePlan: number | null;
+  cumulativeActual: number | null;
+}
 
 interface Props {
   progRows: ProgRowData[];
   resolvedMonth: number | null;
+  costExecution: CostExecutionData;
 }
 
-export function ProgressSection({ progRows, resolvedMonth }: Props) {
+export function ProgressSection({ progRows, resolvedMonth, costExecution }: Props) {
+  const { fmtMoney } = useMoney();
   const latest =
     resolvedMonth != null
       ? (progRows.find((p) => p.year === REPORT_YEAR && p.month === resolvedMonth) ??
@@ -67,6 +77,14 @@ export function ProgressSection({ progRows, resolvedMonth }: Props) {
             actual={actualM}
             max={barMax}
             rate={monthlyRate}
+            hoverContent={
+              <CostExecutionTooltip
+                title="월 원가집행"
+                plan={costExecution.monthlyPlan}
+                actual={costExecution.monthlyActual}
+                fmtMoney={fmtMoney}
+              />
+            }
           />
 
           <div style={{ borderTop: `1px solid ${DIVIDER}` }} />
@@ -77,6 +95,14 @@ export function ProgressSection({ progRows, resolvedMonth }: Props) {
             actual={actualCum}
             max={cumMax}
             rate={cumRate}
+            hoverContent={
+              <CostExecutionTooltip
+                title="누계 원가집행"
+                plan={costExecution.cumulativePlan}
+                actual={costExecution.cumulativeActual}
+                fmtMoney={fmtMoney}
+              />
+            }
           />
 
           <div style={{ borderTop: `1px solid ${DIVIDER}`, paddingTop: "6px" }}>
@@ -110,15 +136,22 @@ function PlanActualGroup({
   actual,
   max,
   rate,
+  hoverContent,
 }: {
   label: string;
   plan: number | null;
   actual: number | null;
   max: number;
   rate: number | null;
+  hoverContent?: React.ReactNode;
 }) {
+  const [hovered, setHovered] = useState(false);
   return (
-    <div>
+    <div
+      style={{ position: "relative" }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
       <div
         style={{
           fontSize: "11px",
@@ -137,6 +170,49 @@ function PlanActualGroup({
         <span style={{ fontSize: "11px", color: INK_SECONDARY }}>
           달성률 <StatusBadge value={rate} />
         </span>
+      </div>
+      {hovered && hoverContent && (
+        <div
+          style={{
+            position: "absolute",
+            zIndex: 20,
+            right: 0,
+            top: "100%",
+            width: "190px",
+            padding: "8px 10px",
+            borderRadius: "6px",
+            backgroundColor: "#fff",
+            border: `1px solid ${DIVIDER}`,
+            boxShadow: "0 6px 18px rgba(15, 35, 58, 0.16)",
+          }}
+        >
+          {hoverContent}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CostExecutionTooltip({
+  title,
+  plan,
+  actual,
+  fmtMoney,
+}: {
+  title: string;
+  plan: number | null;
+  actual: number | null;
+  fmtMoney: (value: number | null | undefined) => string;
+}) {
+  const achievement = ratioPct(actual, plan);
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+      <div style={{ fontSize: "11px", fontWeight: 700, color: INK_SECONDARY }}>{title}</div>
+      <DataKV label="계획 (공정별 원가 계획 합계)" value={fmtMoney(plan)} />
+      <DataKV label="실적 (공정별 원가 집행 합계)" value={fmtMoney(actual)} />
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <span style={{ fontSize: "10px", color: INK_MUTED }}>원가집행 달성률</span>
+        <StatusBadge value={achievement} />
       </div>
     </div>
   );

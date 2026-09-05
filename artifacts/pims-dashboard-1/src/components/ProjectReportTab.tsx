@@ -36,6 +36,18 @@ import { CostSection } from "./project-report/CostSection";
 import { FundsSection } from "./project-report/FundsSection";
 import type { StatusRowData } from "./project-report/reportTypes";
 
+const PROCESS_COST_PLAN_ITEMS = new Set([
+  "외주 건축",
+  "외주 기계",
+  "외주 전기",
+  "외주 토목",
+  "외주 조경",
+  "외주 경비",
+  "Common",
+  "Expense 1",
+  "Expense 2",
+]);
+
 // ─── Responsive grid helpers ───────────────────────────────────────────────
 
 /** auto-fit grid: items collapse to single column below ~minW × column-count */
@@ -215,9 +227,30 @@ export function ProjectReportTab({
       ? planMonths.slice(0, resolvedMonth).reduce<number>((a, b) => a + (b ?? 0), 0)
       : planMonths.reduce<number>((a, b) => a + (b ?? 0), 0);
 
-  const totalBudget = allBudgetRows.reduce<number>((a, r) => a + (r.budget ?? 0), 0);
-  const totalActual = allBudgetRows.reduce<number>((a, r) => a + (r.actual ?? 0), 0);
-  const totalPlan = allBudgetRows.reduce<number>((a, r) => a + (r.plan ?? 0), 0);
+  // 공정별 원가 계획: 선택 기준월의 월별/누계 계획 대비 실적
+  const costPlanRows = (detail?.costBudgetMonthly ?? []).filter(
+    (row) =>
+      PROCESS_COST_PLAN_ITEMS.has(row.item) &&
+      row.year === REPORT_YEAR &&
+      (resolvedMonth == null || row.month <= resolvedMonth),
+  );
+  const selectedCostRows =
+    resolvedMonth == null
+      ? costPlanRows.filter((row) => row.month === Math.max(0, ...costPlanRows.map((item) => item.month)))
+      : costPlanRows.filter((row) => row.month === resolvedMonth);
+  const sumNullable = (
+    rows: typeof costPlanRows,
+    field: "plan" | "actual",
+  ): number | null =>
+    rows.some((row) => row[field] != null)
+      ? rows.reduce<number>((sum, row) => sum + (row[field] ?? 0), 0)
+      : null;
+  const costExecution = {
+    monthlyPlan: sumNullable(selectedCostRows, "plan"),
+    monthlyActual: sumNullable(selectedCostRows, "actual"),
+    cumulativePlan: sumNullable(costPlanRows, "plan"),
+    cumulativeActual: sumNullable(costPlanRows, "actual"),
+  };
 
   const statusRows: StatusRowData[] = [
     {
@@ -242,14 +275,14 @@ export function ProjectReportTab({
     {
       category: "원가",
       type: "월",
-      plan: totalPlan > 0 ? totalPlan : null,
-      actual: totalActual > 0 ? totalActual : null,
+      plan: costExecution.monthlyPlan,
+      actual: costExecution.monthlyActual,
     },
     {
       category: "원가",
       type: "누계",
-      plan: totalBudget > 0 ? totalBudget : null,
-      actual: totalActual > 0 ? totalActual : null,
+      plan: costExecution.cumulativePlan,
+      actual: costExecution.cumulativeActual,
     },
     {
       category: "자금",
@@ -347,7 +380,11 @@ export function ProjectReportTab({
 
       {/* ── Row 1: 공정 | 매출 | 현황 표 ── */}
       <div style={reportGrid("240px")}>
-        <ProgressSection progRows={progRows} resolvedMonth={resolvedMonth} />
+        <ProgressSection
+          progRows={progRows}
+          resolvedMonth={resolvedMonth}
+          costExecution={costExecution}
+        />
         <SalesSection
           planMonths={planMonths}
           actualMonths={revMonths}
