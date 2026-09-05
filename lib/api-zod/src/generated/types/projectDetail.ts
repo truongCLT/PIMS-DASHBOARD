@@ -19,6 +19,8 @@ import type { ProjectDetailSalesPoint } from './projectDetailSalesPoint';
 
 export interface ProjectDetail {
   projectName: string;
+  /** 계획 데이터 변경 차수. 계획이 없으면 0. */
+  planVersion?: number;
   /** Amount unit (천 USD) */
   unit: string;
   overview: ProjectDetailOverview;

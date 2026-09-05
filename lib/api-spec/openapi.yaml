@@ -2211,6 +2211,9 @@ components:
       properties:
         projectName:
           type: string
+        planVersion:
+          type: integer
+          description: 계획 데이터 변경 차수. 계획이 없으면 0.
         unit:
           type: string
           description: Amount unit (천 USD)

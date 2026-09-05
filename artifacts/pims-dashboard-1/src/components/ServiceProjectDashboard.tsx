@@ -508,6 +508,8 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
               24,
               Math.max(1, (toYear - fromYear) * 12 + (Number(toMonth) - Number(fromMonth)) + 1),
             )}
+            toYear={toYear}
+            toMonth={Number(toMonth)}
           />
         ) : activeTab === "Budget Execution" ? (
           <ServiceBudgetTab projectName={projectName} />

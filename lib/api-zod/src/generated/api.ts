@@ -356,6 +356,7 @@ export const getProjectdetailResponseSalesMonthlyItemMonthMax = 12;
 
 export const GetProjectdetailResponse = zod.object({
   "projectName": zod.string(),
+  "planVersion": zod.number().optional().describe('계획 데이터 변경 차수. 계획이 없으면 0.'),
   "unit": zod.string().describe('Amount unit (천 USD)'),
   "overview": zod.object({
   "siteCode": zod.string().nullish().describe('PIMSVINA 현장 코드 (mr_projects.site_code), 현장 계약 환율 조회에 사용'),
@@ -483,6 +484,7 @@ export const putProjectdetailBodySalesMonthlyItemMonthMax = 12;
 
 export const PutProjectdetailBody = zod.object({
   "projectName": zod.string(),
+  "planVersion": zod.number().optional().describe('계획 데이터 변경 차수. 계획이 없으면 0.'),
   "unit": zod.string().describe('Amount unit (천 USD)'),
   "overview": zod.object({
   "siteCode": zod.string().nullish().describe('PIMSVINA 현장 코드 (mr_projects.site_code), 현장 계약 환율 조회에 사용'),
@@ -606,6 +608,7 @@ export const putProjectdetailResponseSalesMonthlyItemMonthMax = 12;
 
 export const PutProjectdetailResponse = zod.object({
   "projectName": zod.string(),
+  "planVersion": zod.number().optional().describe('계획 데이터 변경 차수. 계획이 없으면 0.'),
   "unit": zod.string().describe('Amount unit (천 USD)'),
   "overview": zod.object({
   "siteCode": zod.string().nullish().describe('PIMSVINA 현장 코드 (mr_projects.site_code), 현장 계약 환율 조회에 사용'),

@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
 import { and, asc, desc, eq, sql } from "drizzle-orm";
+import { createHash } from "node:crypto";
 import {
   db,
   mrProjectsTable,
@@ -17,6 +18,7 @@ import {
   pdSalesMonthlyTable,
   pdPhotosTable,
   pdSectionLocksTable,
+  pdPlanVersionsTable,
 } from "@workspace/db";
 import {
   GetProjectdetailQueryParams,
@@ -51,6 +53,46 @@ function isSectionKey(value: unknown): value is SectionKey {
   return typeof value === "string" && (SECTION_KEYS as readonly string[]).includes(value);
 }
 
+type PlanVersionSource = {
+  progress: Array<{ year: number; month: number; planPct?: number | null }>;
+  milestones: Array<{ label: string; planStart?: string | null; planEnd?: string | null }>;
+  costBudget: Array<{ category?: string | null; item: string; budget?: number | null; plan?: number | null }>;
+  costBudgetMonthly?: Array<{ item: string; year: number; month: number; plan?: number | null }>;
+  salesMonthly?: Array<{ year: number; month: number; plan?: number | null }>;
+};
+
+function planFingerprint(source: PlanVersionSource): { fingerprint: string; hasPlan: boolean } {
+  const plan = {
+    progress: source.progress
+      .map((row) => [row.year, row.month, row.planPct ?? null])
+      .sort((a, b) => Number(a[0]) - Number(b[0]) || Number(a[1]) - Number(b[1])),
+    milestones: source.milestones
+      .map((row) => [row.label.trim(), row.planStart ?? null, row.planEnd ?? null])
+      .sort((a, b) => String(a[0]).localeCompare(String(b[0]))),
+    costBudget: source.costBudget
+      .map((row) => [row.category ?? null, row.item.trim(), row.budget ?? null, row.plan ?? null])
+      .sort((a, b) => String(a[1]).localeCompare(String(b[1]))),
+    costBudgetMonthly: (source.costBudgetMonthly ?? [])
+      .map((row) => [row.item.trim(), row.year, row.month, row.plan ?? null])
+      .sort((a, b) => String(a[0]).localeCompare(String(b[0])) || Number(a[1]) - Number(b[1]) || Number(a[2]) - Number(b[2])),
+    salesMonthly: (source.salesMonthly ?? [])
+      .map((row) => [row.year, row.month, row.plan ?? null])
+      .sort((a, b) => Number(a[0]) - Number(b[0]) || Number(a[1]) - Number(b[1])),
+  };
+  const serialized = JSON.stringify(plan);
+  const hasPlan = [
+    ...plan.progress.map((row) => row[2]),
+    ...plan.milestones.flatMap((row) => [row[1], row[2]]),
+    ...plan.costBudget.flatMap((row) => [row[2], row[3]]),
+    ...plan.costBudgetMonthly.map((row) => row[3]),
+    ...plan.salesMonthly.map((row) => row[2]),
+  ].some((value) => value != null);
+  return {
+    fingerprint: createHash("sha256").update(serialized).digest("hex"),
+    hasPlan,
+  };
+}
+
 class DuplicateCogsMonthError extends Error {}
 class DuplicateSalesMonthError extends Error {}
 class InvalidSalesRowError extends Error {}
@@ -59,7 +101,7 @@ const num = (v: string | null) => (v == null ? null : Number(v));
 const str = (v: number | null | undefined) => (v == null ? null : String(v));
 
 async function loadDetail(projectName: string) {
-  const [mrProjectRows, overviewRows, progress, milestones, costEstimation, costBudget, costBudgetMonthly, outsourcing, cashflow, cogsMonthly, salesMonthly, mrSalesMonthly, photos] = await Promise.all([
+  const [mrProjectRows, overviewRows, progress, milestones, costEstimation, costBudget, costBudgetMonthly, outsourcing, cashflow, cogsMonthly, salesMonthly, mrSalesMonthly, photos, planVersionRows] = await Promise.all([
     db
       .select({ siteCode: mrProjectsTable.siteCode })
       .from(mrProjectsTable)
@@ -130,6 +172,11 @@ async function loadDetail(projectName: string) {
       .from(pdPhotosTable)
       .where(eq(pdPhotosTable.projectName, projectName))
       .orderBy(asc(pdPhotosTable.sortOrder), asc(pdPhotosTable.id)),
+    db
+      .select({ version: pdPlanVersionsTable.version })
+      .from(pdPlanVersionsTable)
+      .where(eq(pdPlanVersionsTable.projectName, projectName))
+      .limit(1),
   ]);
 
   const ov = overviewRows[0];
@@ -171,6 +218,7 @@ async function loadDetail(projectName: string) {
 
   return {
     projectName,
+    planVersion: planVersionRows[0]?.version ?? 0,
     unit: "천 USD",
     overview: {
       siteCode: mrProjectRows[0]?.siteCode ?? null,
@@ -509,6 +557,9 @@ router.put("/projectdetail", requireAdmin, async (req, res) => {
   }
   const body = parsed.data;
   const projectName = body.projectName;
+  const previousDetail = await loadDetail(projectName);
+  const previousPlan = planFingerprint(previousDetail);
+  const incomingPlan = planFingerprint(body);
   const lockRows = await db
     .select({ sectionKey: pdSectionLocksTable.sectionKey, isClosed: pdSectionLocksTable.isClosed })
     .from(pdSectionLocksTable)
@@ -578,6 +629,18 @@ router.put("/projectdetail", requireAdmin, async (req, res) => {
         .from(pdOverviewTable)
         .where(eq(pdOverviewTable.projectName, projectName));
       const prevOv = existingOvRows[0];
+      const existingPlanVersions = await tx
+        .select()
+        .from(pdPlanVersionsTable)
+        .where(eq(pdPlanVersionsTable.projectName, projectName))
+        .limit(1);
+      const existingPlanVersion = existingPlanVersions[0];
+      const baselineVersion = existingPlanVersion?.version ?? (previousPlan.hasPlan ? 1 : 0);
+      const previousFingerprint = existingPlanVersion?.fingerprint ?? previousPlan.fingerprint;
+      const nextPlanVersion =
+        incomingPlan.hasPlan
+          ? Math.max(1, baselineVersion + (incomingPlan.fingerprint !== previousFingerprint ? 1 : 0))
+          : 0;
 
       if (!lockedSections.has("overview")) {
         await tx.delete(pdOverviewTable).where(eq(pdOverviewTable.projectName, projectName));
@@ -805,6 +868,26 @@ router.put("/projectdetail", requireAdmin, async (req, res) => {
             sortOrder: i,
           })),
         );
+      }
+      if (incomingPlan.hasPlan) {
+        await tx
+          .insert(pdPlanVersionsTable)
+          .values({
+            projectName,
+            version: nextPlanVersion,
+            fingerprint: incomingPlan.fingerprint,
+            updatedAt: new Date(),
+          })
+          .onConflictDoUpdate({
+            target: pdPlanVersionsTable.projectName,
+            set: {
+              version: nextPlanVersion,
+              fingerprint: incomingPlan.fingerprint,
+              updatedAt: new Date(),
+            },
+          });
+      } else {
+        await tx.delete(pdPlanVersionsTable).where(eq(pdPlanVersionsTable.projectName, projectName));
       }
     });
 

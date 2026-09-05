@@ -310,6 +310,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
   const [locksLoaded, setLocksLoaded] = useState(false);
   const [closingSection, setClosingSection] = useState<string | null>(null);
   const [closeMsg, setCloseMsg] = useState<string | null>(null);
+  const [planVersion, setPlanVersion] = useState(0);
 
   const mrProjectsQuery = useListMgmtreportProjects({ year: REPORT_YEAR });
   const currentProject = mrProjectsQuery.data?.projects.find((p) => p.name === projectName);
@@ -446,6 +447,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       setSalesMonthly(detail.salesMonthly ?? []);
       setPhotos(detail.photos ?? []);
       setSlideshowIntervalSeconds(detail.overview?.slideshowIntervalSeconds ?? 0);
+      setPlanVersion(detail.planVersion ?? 0);
       setLoaded(true);
     }
   }, [detail, loaded, cfRef, cfQuery.isLoading, cfQuery.data]);
@@ -659,7 +661,8 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
             saveRef.current();
           }
         },
-        onSuccess: () => {
+        onSuccess: (savedDetail) => {
+          setPlanVersion(savedDetail.planVersion ?? planVersion);
           report(t("common:saveSucceeded"));
           queryClient.invalidateQueries({ queryKey: getGetProjectdetailQueryKey({ projectName }) });
         },
@@ -708,7 +711,21 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
   // 카드별 저장 버튼 + 마감 버튼 + 결과 메시지가 있는 섹션 헤더
   const cardHead = (label: string, key: string) => (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
-      <span style={sectionTitle}>{label}</span>
+      <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
+        <span style={sectionTitle}>{label}</span>
+        {planVersion > 0 && (
+          <span style={{
+            padding: "2px 8px",
+            borderRadius: "999px",
+            backgroundColor: TABLE_HEADER_BG,
+            color: INK_NAVY,
+            fontSize: "11px",
+            fontWeight: 700,
+          }}>
+            {t("projectDataEntryTab:planVersion", { version: planVersion })}
+          </span>
+        )}
+      </span>
       <span style={{ display: "inline-flex", alignItems: "center", gap: "8px", pointerEvents: "auto" }}>
         {cardMsgs[key] && (
           <span style={{ fontSize: "13px", color: cardMsgs[key] === t("common:saveSucceeded") ? SUCCESS_GREEN : ACHIEVE_RED }}>

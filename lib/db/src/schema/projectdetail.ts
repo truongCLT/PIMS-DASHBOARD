@@ -53,6 +53,17 @@ export const pdSectionLocksTable = pgTable(
   (t) => [uniqueIndex("pd_section_locks_uq").on(t.projectName, t.sectionKey)],
 );
 
+// 데이터 입력 계획 변경 버전 — 프로젝트별 계획값 묶음의 변경 차수를 기록
+export const pdPlanVersionsTable = pgTable(
+  "pd_plan_versions",
+  {
+    projectName: text("project_name").primaryKey(),
+    version: integer("version").notNull().default(1),
+    fingerprint: text("fingerprint").notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+);
+
 // 공정 — 월별 공정률 (계획/실적 월간, 누계)
 export const pdProgressMonthlyTable = pgTable(
   "pd_progress_monthly",
