@@ -11,6 +11,7 @@ import { SaleProfitTab } from "./SaleProfitTab";
 import { ServiceOutsourcingTab } from "./ServiceOutsourcingTab";
 import { ServiceCashflowTab } from "./ServiceCashflowTab";
 import { ServiceBudgetTab } from "./ServiceBudgetTab";
+import { ServiceReportTab } from "./ServiceReportTab";
 import { ProjectDataEntryTab } from "./ProjectDataEntryTab";
 import { PimsvinaSyncPreviewModal, type PimsvinaPreviewData } from "./PimsvinaSyncPreviewModal";
 import { useProjectDetail, getGetProjectdetailQueryKey, fmtPct, ratioPct } from "../lib/projectDetailData";
@@ -22,11 +23,12 @@ import { chartTheme } from "../lib/chartTheme";
 import { cardStyle, sectionTitle, emptyNote, INK_NAVY, INK_BODY, INK_SECONDARY, INK_MUTED, CARD_BORDER, POINT_BLUE, DIVIDER, TABLE_HEADER_BG, MUTED_HINT, SUCCESS_GREEN, DISABLED_GRAY } from "../lib/uiTokens";
 import { ProjectContextBar } from "./ProjectContextBar";
 
-const TABS = ["Overview", "Sale & Profit", "Budget Execution", "Outsourcing", "Cashflow", "Data entry"];
+const TABS = ["Overview", "Report", "Sale & Profit", "Budget Execution", "Outsourcing", "Cashflow", "Data entry"];
 
 /** tab id → fully-qualified i18next key (may reference the shared "common" namespace) */
 const TAB_LABEL_KEYS: Record<string, string> = {
   Overview: "common:overview",
+  Report: "serviceProjectDashboard:reportTab",
   "Sale & Profit": "common:revenue",
   "Budget Execution": "serviceProjectDashboard:budgetExecutionTab",
   Outsourcing: "common:outsourcing",
@@ -487,7 +489,13 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
 
       {/* Body */}
       <div style={{ display: "flex", flexDirection: "column", gap: "8px", padding: "10px" }}>
-        {activeTab === "Sale & Profit" ? (
+        {activeTab === "Report" ? (
+          <ServiceReportTab
+            projectName={projectName}
+            referenceYear={toYear}
+            referenceMonth={Number(toMonth)}
+          />
+        ) : activeTab === "Sale & Profit" ? (
           <SaleProfitTab
             projectName={projectName}
             fromYear={fromYear}
