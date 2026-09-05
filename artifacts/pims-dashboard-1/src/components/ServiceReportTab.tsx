@@ -276,7 +276,7 @@ export function ServiceReportTab({
         </div>
 
         <div style={cardStyle}>
-          <div style={sectionTitle}>코멘트</div>
+          <div style={sectionTitle}>주요 이슈 및 대응방안</div>
           <ProjectCommentPanel projectName={projectName} />
         </div>
       </div>
