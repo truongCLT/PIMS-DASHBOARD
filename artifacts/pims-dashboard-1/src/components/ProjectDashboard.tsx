@@ -345,7 +345,7 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
           marginTop: "8px",
         }}
       >
-        {SIDE_TABS.filter((tab) => tab !== "Data entry" || isAdmin).map((tab) => {
+        {SIDE_TABS.filter((tab) => tab !== "Overview" && (tab !== "Data entry" || isAdmin)).map((tab) => {
           const active = tab === activeTab;
           return (
             <button
