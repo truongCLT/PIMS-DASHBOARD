@@ -858,48 +858,51 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-      <div style={{ ...cardStyle, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      <div style={{ ...cardStyle, display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
         <div style={{ fontSize: "14px", color: INK_BODY }}>
           <b>{projectName}</b> {t("projectDataEntryTab:headerDescPart1")} <b>VND</b> {t("projectDataEntryTab:headerDescPart2")} <b>%</b>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap", justifyContent: "flex-end" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", justifyContent: "flex-end" }}>
           <div
             role="radiogroup"
             aria-label="프로젝트 메뉴 위치"
             style={{
               display: "inline-flex",
               alignItems: "center",
-              gap: "8px",
-              padding: "4px 10px",
+              gap: "2px",
+              minHeight: "32px",
+              padding: "2px",
               border: `1px solid ${BORDER_MID}`,
               borderRadius: "6px",
               backgroundColor: TABLE_HEADER_BG,
             }}
           >
             {(["시공", "용역"] as const).map((businessType) => (
-              <label
+              <button
+                type="button"
+                role="radio"
+                aria-checked={currentBusinessType === businessType}
                 key={businessType}
+                disabled={divisionMutation.isPending || orgStructureQuery.isLoading || mrProjectsQuery.isLoading}
+                onClick={() => changeBusinessType(businessType)}
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
-                  gap: "4px",
+                  justifyContent: "center",
+                  minHeight: "26px",
+                  padding: "0 10px",
+                  border: currentBusinessType === businessType ? `1px solid ${BORDER_MID}` : "1px solid transparent",
+                  borderRadius: "4px",
+                  backgroundColor: currentBusinessType === businessType ? "#fff" : "transparent",
                   fontSize: "13px",
                   fontWeight: 600,
                   color: currentBusinessType === businessType ? ADMIN_NAVY : INK_MUTED,
                   cursor: divisionMutation.isPending ? "wait" : "pointer",
+                  opacity: divisionMutation.isPending || orgStructureQuery.isLoading || mrProjectsQuery.isLoading ? 0.6 : 1,
                 }}
               >
-                <input
-                  type="radio"
-                  name={`project-business-type-${projectName}`}
-                  value={businessType}
-                  checked={currentBusinessType === businessType}
-                  disabled={divisionMutation.isPending || orgStructureQuery.isLoading || mrProjectsQuery.isLoading}
-                  onChange={() => changeBusinessType(businessType)}
-                  style={{ margin: 0, accentColor: ADMIN_NAVY }}
-                />
                 {businessType}
-              </label>
+              </button>
             ))}
           </div>
           {divisionMsg && (
@@ -915,10 +918,15 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
           <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
             <span
               style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                minHeight: "32px",
                 fontSize: "13px",
                 fontWeight: 700,
-                padding: "3px 8px",
-                borderRadius: "10px",
+                padding: "0 11px",
+                border: `1px solid ${currentStatus === "closed" ? STATUS_CLOSED_TEXT : STATUS_OPEN_TEXT}`,
+                borderRadius: "6px",
                 backgroundColor: currentStatus === "closed" ? STATUS_CLOSED_BG : STATUS_OPEN_BG,
                 color: currentStatus === "closed" ? STATUS_CLOSED_TEXT : STATUS_OPEN_TEXT,
               }}
@@ -930,13 +938,18 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
               disabled={statusMutation.isPending || mrProjectsQuery.isLoading}
               title={t("projectDataEntryTab:statusToggleTooltip")}
               style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "5px",
+                minHeight: "32px",
                 fontSize: "13px",
                 fontWeight: 600,
                 color: ADMIN_NAVY,
                 backgroundColor: "#fff",
                 border: `1px solid ${BORDER_MID}`,
                 borderRadius: "6px",
-                padding: "5px 10px",
+                padding: "0 12px",
                 cursor: statusMutation.isPending ? "wait" : "pointer",
                 opacity: statusMutation.isPending ? 0.7 : 1,
               }}
@@ -958,15 +971,17 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
             onClick={() => save()}
             disabled={!locksLoaded || mutation.isPending || closedSections.size > 0}
             style={{
-              display: "flex",
+              display: "inline-flex",
               alignItems: "center",
-              gap: "6px",
+              justifyContent: "center",
+              gap: "5px",
+              minHeight: "32px",
               backgroundColor: ADMIN_NAVY,
               color: "#fff",
-              border: "none",
+              border: `1px solid ${ADMIN_NAVY}`,
               borderRadius: "6px",
-              padding: "8px 16px",
-              fontSize: "16px",
+              padding: "0 12px",
+              fontSize: "13px",
               fontWeight: 600,
               cursor: (!locksLoaded || mutation.isPending || closedSections.size > 0) ? "not-allowed" : "pointer",
               opacity: (!locksLoaded || mutation.isPending || closedSections.size > 0) ? 0.4 : 1,
