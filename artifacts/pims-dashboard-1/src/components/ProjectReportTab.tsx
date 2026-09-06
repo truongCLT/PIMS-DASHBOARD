@@ -48,6 +48,16 @@ const PROCESS_COST_PLAN_ITEMS = new Set([
   "Expense 2",
 ]);
 
+const PROCESS_COST_GROUPS = [
+  { label: "대공종", items: ["Common"] },
+  { label: "건축", items: ["외주 건축"] },
+  { label: "기계", items: ["외주 기계"] },
+  { label: "전기", items: ["외주 전기"] },
+  { label: "토목", items: ["외주 토목"] },
+  { label: "조경", items: ["외주 조경"] },
+  { label: "경비", items: ["외주 경비", "Expense 1", "Expense 2"] },
+] as const;
+
 // ─── Responsive grid helpers ───────────────────────────────────────────────
 
 /** auto-fit grid: items collapse to single column below ~minW × column-count */
@@ -245,11 +255,22 @@ export function ProjectReportTab({
     rows.some((row) => row[field] != null)
       ? rows.reduce<number>((sum, row) => sum + (row[field] ?? 0), 0)
       : null;
+  const makeCostBreakdown = (rows: typeof costPlanRows) =>
+    PROCESS_COST_GROUPS.map((group) => {
+      const groupRows = rows.filter((row) => group.items.some((item) => item === row.item));
+      return {
+        label: group.label,
+        plan: sumNullable(groupRows, "plan"),
+        actual: sumNullable(groupRows, "actual"),
+      };
+    });
   const costExecution = {
     monthlyPlan: sumNullable(selectedCostRows, "plan"),
     monthlyActual: sumNullable(selectedCostRows, "actual"),
     cumulativePlan: sumNullable(costPlanRows, "plan"),
     cumulativeActual: sumNullable(costPlanRows, "actual"),
+    monthlyBreakdown: makeCostBreakdown(selectedCostRows),
+    cumulativeBreakdown: makeCostBreakdown(costPlanRows),
   };
 
   const statusRows: StatusRowData[] = [

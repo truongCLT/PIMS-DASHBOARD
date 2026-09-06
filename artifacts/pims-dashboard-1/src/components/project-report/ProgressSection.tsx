@@ -24,6 +24,14 @@ interface CostExecutionData {
   monthlyActual: number | null;
   cumulativePlan: number | null;
   cumulativeActual: number | null;
+  monthlyBreakdown: CostExecutionRow[];
+  cumulativeBreakdown: CostExecutionRow[];
+}
+
+interface CostExecutionRow {
+  label: string;
+  plan: number | null;
+  actual: number | null;
 }
 
 interface Props {
@@ -82,6 +90,7 @@ export function ProgressSection({ progRows, resolvedMonth, costExecution }: Prop
                 title="월 원가집행"
                 plan={costExecution.monthlyPlan}
                 actual={costExecution.monthlyActual}
+                rows={costExecution.monthlyBreakdown}
                 fmtMoney={fmtMoney}
               />
             }
@@ -100,6 +109,7 @@ export function ProgressSection({ progRows, resolvedMonth, costExecution }: Prop
                 title="누계 원가집행"
                 plan={costExecution.cumulativePlan}
                 actual={costExecution.cumulativeActual}
+                rows={costExecution.cumulativeBreakdown}
                 fmtMoney={fmtMoney}
               />
             }
@@ -178,7 +188,8 @@ function PlanActualGroup({
             zIndex: 20,
             right: 0,
             top: "100%",
-            width: "190px",
+            width: "390px",
+            maxWidth: "calc(100vw - 48px)",
             padding: "8px 10px",
             borderRadius: "6px",
             backgroundColor: "#fff",
@@ -197,22 +208,28 @@ function CostExecutionTooltip({
   title,
   plan,
   actual,
+  rows,
   fmtMoney,
 }: {
   title: string;
   plan: number | null;
   actual: number | null;
+  rows: CostExecutionRow[];
   fmtMoney: (value: number | null | undefined) => string;
 }) {
   const achievement = ratioPct(actual, plan);
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
       <div style={{ fontSize: "11px", fontWeight: 700, color: INK_SECONDARY }}>{title}</div>
-      <DataKV label="계획 (공정별 원가 계획 합계)" value={fmtMoney(plan)} />
-      <DataKV label="실적 (공정별 원가 집행 합계)" value={fmtMoney(actual)} />
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span style={{ fontSize: "10px", color: INK_MUTED }}>원가집행 달성률</span>
-        <StatusBadge value={achievement} />
+      <div style={{ fontSize: "11px", fontWeight: 700, color: INK_SECONDARY, whiteSpace: "nowrap" }}>
+        계획 {fmtMoney(plan)} / 실적 {fmtMoney(actual)} (달성율 : {fmtPct(achievement)})
+      </div>
+      <div style={{ borderTop: `1px solid ${DIVIDER}`, paddingTop: "4px", display: "flex", flexDirection: "column", gap: "4px" }}>
+        {rows.map((row) => (
+          <div key={row.label} style={{ fontSize: "10px", color: INK_MUTED, whiteSpace: "nowrap" }}>
+            - {row.label} 계획 {fmtMoney(row.plan)} / 실적 {fmtMoney(row.actual)} (달성율 : {fmtPct(ratioPct(row.actual, row.plan))})
+          </div>
+        ))}
       </div>
     </div>
   );
