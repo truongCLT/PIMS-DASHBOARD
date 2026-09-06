@@ -188,7 +188,7 @@ function PlanActualGroup({
             zIndex: 20,
             right: 0,
             top: "100%",
-            width: "390px",
+            width: "273px",
             maxWidth: "calc(100vw - 48px)",
             padding: "8px 10px",
             borderRadius: "6px",
