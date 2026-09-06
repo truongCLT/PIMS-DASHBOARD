@@ -9,7 +9,9 @@
  *   Row 1 (auto-fit ≥240px): 공정 | 매출 | 현황 표
  *   Row 2 (auto-fit ≥240px): 원가 | 자금 | 코멘트
  */
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
+import { FileDown, Loader2 } from "lucide-react";
+import { Button } from "@workspace/aqua-glass/components/ui/button";
 import {
   useListSalescostSites,
   getListSalescostSitesQueryKey,
@@ -35,6 +37,7 @@ import { StatusTableSection } from "./project-report/StatusTableSection";
 import { CostSection } from "./project-report/CostSection";
 import { FundsSection } from "./project-report/FundsSection";
 import type { StatusRowData } from "./project-report/reportTypes";
+import { exportProjectReportPdf } from "../lib/exportProjectReport";
 
 const PROCESS_COST_PLAN_ITEMS = new Set([
   "외주 건축",
@@ -84,6 +87,8 @@ export function ProjectReportTab({
   onResolvedMonthChange: (month: number | null) => void;
 }) {
   const { detail, isLoading } = useProjectDetail(projectName);
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   // ── Construction progress ───────────────────────────────────────────────
   const progress = detail?.progress ?? [];
@@ -336,6 +341,25 @@ export function ProjectReportTab({
     cursor: "pointer",
     backgroundColor: "#fff",
   };
+  const reportCaptureId = "project-report-capture";
+  const handleReportExport = async () => {
+    if (isExporting) return;
+    setIsExporting(true);
+    setExportError(null);
+    try {
+      await exportProjectReportPdf({
+        elementId: reportCaptureId,
+        projectName,
+        reportYear: REPORT_YEAR,
+        reportMonth: resolvedMonth,
+      });
+    } catch (error) {
+      console.error("Project report PDF export failed", error);
+      setExportError("보고서 PDF 저장 중 오류가 발생했습니다. 다시 시도해 주세요.");
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   // ── Render ────────────────────────────────────────────────────────────────
   if (isLoading) {
@@ -367,16 +391,32 @@ export function ProjectReportTab({
           gap: "8px",
         }}
       >
-        <span
-          style={{
-            fontSize: "14px",
-            fontWeight: 700,
-            color: INK_NAVY,
-            letterSpacing: "0.02em",
-          }}
-        >
-          당월 보고서
-        </span>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <span
+            style={{
+              fontSize: "14px",
+              fontWeight: 700,
+              color: INK_NAVY,
+              letterSpacing: "0.02em",
+            }}
+          >
+            당월 보고서
+          </span>
+          <Button
+            type="button"
+            size="sm"
+            onClick={handleReportExport}
+            disabled={isExporting}
+            aria-label={isExporting ? "보고서 PDF 생성 중" : "보고서 PDF 출력"}
+          >
+            {isExporting ? (
+              <Loader2 aria-hidden="true" className="animate-spin" />
+            ) : (
+              <FileDown aria-hidden="true" />
+            )}
+            {isExporting ? "출력 중..." : "보고서 출력"}
+          </Button>
+        </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <span style={{ fontSize: "12px", color: INK_BODY, fontWeight: 600 }}>기준월:</span>
@@ -398,33 +438,43 @@ export function ProjectReportTab({
           </select>
         </div>
       </div>
-      {/* ── Row 1: 공정 | 매출 | 현황 표 ── */}
-      <div style={reportGrid("240px")}>
-        <ProgressSection
-          progRows={progRows}
-          resolvedMonth={resolvedMonth}
-          costExecution={costExecution}
-        />
-        <SalesSection
-          planMonths={planMonths}
-          actualMonths={revMonths}
-          resolvedMonth={resolvedMonth}
-          contractAmount={contractAmount}
-        />
-        <StatusTableSection rows={statusRows} />
-      </div>
-      {/* ── Row 2: 원가 | 자금 | 코멘트 ── */}
-      <div style={reportGrid("240px")}>
-        <CostSection budgetRows={allBudgetRows} />
-        <FundsSection
-          cashIn={cashIn}
-          cashOut={cashOut}
-          contractAmount={contractAmount}
-          cumRev={cumRev}
-        />
-        <div style={cardStyle}>
-          <div style={{ ...sectionTitle, marginBottom: "8px" }}>주요 이슈 및 대응방안</div>
-          <ProjectCommentPanel projectName={projectName} tab="budget" showHeader={false} />
+      {exportError && (
+        <div role="alert" style={{ fontSize: "12px", color: "var(--destructive)" }}>
+          {exportError}
+        </div>
+      )}
+      <div
+        id={reportCaptureId}
+        style={{ display: "flex", flexDirection: "column", gap: "8px" }}
+      >
+        {/* ── Row 1: 공정 | 매출 | 현황 표 ── */}
+        <div data-project-report-page="summary" style={reportGrid("240px")}>
+          <ProgressSection
+            progRows={progRows}
+            resolvedMonth={resolvedMonth}
+            costExecution={costExecution}
+          />
+          <SalesSection
+            planMonths={planMonths}
+            actualMonths={revMonths}
+            resolvedMonth={resolvedMonth}
+            contractAmount={contractAmount}
+          />
+          <StatusTableSection rows={statusRows} />
+        </div>
+        {/* ── Row 2: 원가 | 자금 | 코멘트 ── */}
+        <div data-project-report-page="details" style={reportGrid("240px")}>
+          <CostSection budgetRows={allBudgetRows} />
+          <FundsSection
+            cashIn={cashIn}
+            cashOut={cashOut}
+            contractAmount={contractAmount}
+            cumRev={cumRev}
+          />
+          <div style={cardStyle}>
+            <div style={{ ...sectionTitle, marginBottom: "8px" }}>주요 이슈 및 대응방안</div>
+            <ProjectCommentPanel projectName={projectName} tab="budget" showHeader={false} />
+          </div>
         </div>
       </div>
     </div>

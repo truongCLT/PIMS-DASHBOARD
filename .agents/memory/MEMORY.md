@@ -8,3 +8,4 @@
 - [Aqua Glass package ownership](aqua-glass-package-ownership.md) — only the design-system artifact may own @workspace/aqua-glass; a duplicate lib stub makes pnpm link consumers incorrectly.
 - [PIMS ZIP selective merge](pims-zip-selective-merge.md) — uploaded snapshots may be newer by date but delete active multi-artifact features; compare functional commits and merge selectively.
 - [Plan version semantics](plan-version-semantics.md) — version changes only when planning values change; actual-only edits retain the current version, and existing plans start at version 1.
+- [Async PDF downloads](async-pdf-downloads.md) — after long canvas capture, jsPDF.save may not emit a browser download; use an explicit Blob URL and temporary anchor.
