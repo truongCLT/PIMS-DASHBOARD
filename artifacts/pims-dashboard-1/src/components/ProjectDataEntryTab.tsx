@@ -294,16 +294,18 @@ const TRADE_GROUP_LABEL_KEY: Record<string, string> = {
   "조경": "tradeGroupLandscape",
 };
 
-const PROCESS_COST_PLAN_ITEMS = [
-  { key: "외주 건축", label: "processCostArchitecture" },
-  { key: "외주 기계", label: "processCostMechanical" },
-  { key: "외주 전기", label: "processCostElectrical" },
-  { key: "외주 토목", label: "processCostCivil" },
-  { key: "외주 조경", label: "processCostLandscape" },
-  { key: "외주 경비", label: "processCostOutsourcingExpense" },
-  { key: "Common", label: "processCostCommon" },
-  { key: "Expense 1", label: "processCostExpense1" },
-  { key: "Expense 2", label: "processCostExpense2" },
+const PROCESS_COST_ITEMS = [
+  { key: "Common", keys: ["Common"], label: "processCostMajorWork" },
+  { key: "외주 건축", keys: ["외주 건축"], label: "processCostArchitecture" },
+  { key: "외주 기계", keys: ["외주 기계"], label: "processCostMechanical" },
+  { key: "외주 전기", keys: ["외주 전기"], label: "processCostElectrical" },
+  { key: "외주 토목", keys: ["외주 토목"], label: "processCostCivil" },
+  { key: "외주 조경", keys: ["외주 조경"], label: "processCostLandscape" },
+  {
+    key: "외주 경비",
+    keys: ["외주 경비", "Expense 1", "Expense 2"],
+    label: "processCostExpense",
+  },
 ] as const;
 
 const EST_KINDS: { kind: "bidding" | "execution" | "completion"; label: string }[] = [
@@ -742,13 +744,48 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       return { year: Math.floor(index / 12), month: (index % 12) + 1 };
     },
   );
-  const getProcessCostPlan = (item: string, year: number, month: number) =>
-    costBudgetMonthly.find((row) => row.item === item && row.year === year && row.month === month)?.plan ?? null;
-  const setProcessCostPlan = (item: string, year: number, month: number, value: number | null) =>
+  const getProcessCostValue = (
+    items: readonly string[],
+    year: number,
+    month: number,
+    field: "plan" | "actual",
+  ) => {
+    const values = items.map(
+      (item) =>
+        costBudgetMonthly.find(
+          (row) => row.item === item && row.year === year && row.month === month,
+        )?.[field] ?? null,
+    );
+    return values.some((value) => value != null)
+      ? values.reduce<number>((sum, value) => sum + (value ?? 0), 0)
+      : null;
+  };
+  const setProcessCostValue = (
+    item: string,
+    groupedItems: readonly string[],
+    year: number,
+    month: number,
+    field: "plan" | "actual",
+    value: number | null,
+  ) =>
     setCostBudgetMonthly((rows) => {
+      const preservedGroupValue = groupedItems
+        .filter((groupedItem) => groupedItem !== item)
+        .reduce<number>(
+          (sum, groupedItem) =>
+            sum +
+            (rows.find(
+              (row) =>
+                row.item === groupedItem &&
+                row.year === year &&
+                row.month === month,
+            )?.[field] ?? 0),
+          0,
+        );
+      const storedValue = value == null ? null : value - preservedGroupValue;
       const index = rows.findIndex((row) => row.item === item && row.year === year && row.month === month);
-      if (index >= 0) return rows.map((row, i) => (i === index ? { ...row, plan: value } : row));
-      return [...rows, { item, year, month, plan: value, actual: null }];
+      if (index >= 0) return rows.map((row, i) => (i === index ? { ...row, [field]: storedValue } : row));
+      return [...rows, { item, year, month, plan: null, actual: null, [field]: storedValue }];
     });
   const getSalesPlan = (year: number, month: number) =>
     salesMonthly.find((row) => row.year === year && row.month === month)?.plan ?? null;
@@ -1243,53 +1280,70 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
         </div>
         <div style={{ overflowX: "auto", marginTop: "8px" }}>
           <div data-tbl="processCostPlan" onKeyDown={makeArrowNav("processCostPlan")}>
-            <table style={{ width: "100%", minWidth: "1460px", borderCollapse: "collapse", tableLayout: "fixed" }}>
+            <table style={{ width: "100%", minWidth: "2140px", borderCollapse: "collapse", tableLayout: "fixed" }}>
               <thead>
                 <tr>
                   <th style={{ ...th, width: "64px" }} rowSpan={2}>{t("common:year")}</th>
                   <th style={{ ...th, width: "52px" }} rowSpan={2}>{t("projectDataEntryTab:monthColumn")}</th>
-                  <th style={th} colSpan={6}>{t("projectDataEntryTab:processCostOutsourcing")}</th>
-                  <th style={th}>Common</th>
-                  <th style={th}>Expense 1</th>
-                  <th style={th}>Expense 2</th>
-                  <th style={{ ...th, width: "92px" }} rowSpan={2}>{t("common:total")}</th>
+                  {PROCESS_COST_ITEMS.map((item) => (
+                    <th key={item.key} style={th} colSpan={2}>{t(`projectDataEntryTab:${item.label}`)}</th>
+                  ))}
+                  <th style={{ ...th, width: "92px" }} rowSpan={2}>{t("projectDataEntryTab:totalPlan")}</th>
+                  <th style={{ ...th, width: "92px" }} rowSpan={2}>{t("projectDataEntryTab:totalActual")}</th>
                   <th style={{ ...th, width: "104px" }} rowSpan={2}>{t("projectDataEntryTab:monthlySales")}</th>
                   <th style={{ ...th, width: "78px" }} rowSpan={2}>{t("projectDataEntryTab:progressRate")}</th>
                 </tr>
                 <tr>
-                  {PROCESS_COST_PLAN_ITEMS.map((item) => (
-                    <th key={item.key} style={th}>{t(`projectDataEntryTab:${item.label}`)}</th>
-                  ))}
+                  {PROCESS_COST_ITEMS.flatMap((item) => [
+                    <th key={`${item.key}-plan`} style={th}>{t("common:plan")}</th>,
+                    <th key={`${item.key}-actual`} style={th}>{t("common:actual")}</th>,
+                  ])}
                 </tr>
               </thead>
               <tbody>
                 {processCostMonths.map(({ year, month }, rowIndex) => {
-                  const values = PROCESS_COST_PLAN_ITEMS.map((item) => getProcessCostPlan(item.key, year, month));
-                  const hasCost = values.some((value) => value != null);
-                  const total = hasCost ? values.reduce<number>((sum, value) => sum + (value ?? 0), 0) : null;
+                  const planValues = PROCESS_COST_ITEMS.map((item) => getProcessCostValue(item.keys, year, month, "plan"));
+                  const actualValues = PROCESS_COST_ITEMS.map((item) => getProcessCostValue(item.keys, year, month, "actual"));
+                  const totalPlan = planValues.some((value) => value != null)
+                    ? planValues.reduce<number>((sum, value) => sum + (value ?? 0), 0)
+                    : null;
+                  const totalActual = actualValues.some((value) => value != null)
+                    ? actualValues.reduce<number>((sum, value) => sum + (value ?? 0), 0)
+                    : null;
                   return (
                     <tr key={`${year}-${month}`}>
                       <td style={{ ...tdCell, textAlign: "center", fontSize: "13px", color: INK_BODY }}>{String(year).slice(2)}{t("projectDataEntryTab:yearSuffix")}</td>
                       <td style={{ ...tdCell, textAlign: "center", fontSize: "13px", color: INK_BODY }}>{t("projectDataEntryTab:monthSuffix", { month })}</td>
-                      {PROCESS_COST_PLAN_ITEMS.map((item, colIndex) => (
-                        <td key={item.key} style={tdCell}>
+                      {PROCESS_COST_ITEMS.flatMap((item, itemIndex) => [
+                        <td key={`${item.key}-plan`} style={tdCell}>
                           <VndInput
-                            valueKUsd={values[colIndex]}
-                            onChange={(value) => setProcessCostPlan(item.key, year, month, value)}
+                            valueKUsd={planValues[itemIndex]}
+                            onChange={(value) => setProcessCostValue(item.key, item.keys, year, month, "plan", value)}
                             data-row={rowIndex}
-                            data-col={colIndex}
+                            data-col={itemIndex * 2}
                           />
-                        </td>
-                      ))}
+                        </td>,
+                        <td key={`${item.key}-actual`} style={tdCell}>
+                          <VndInput
+                            valueKUsd={actualValues[itemIndex]}
+                            onChange={(value) => setProcessCostValue(item.key, item.keys, year, month, "actual", value)}
+                            data-row={rowIndex}
+                            data-col={itemIndex * 2 + 1}
+                          />
+                        </td>,
+                      ])}
                       <td style={{ ...tdCell, textAlign: "right", padding: "5px 6px", fontSize: "13px", fontWeight: 700, color: INK_NAVY, backgroundColor: TABLE_HEADER_BG }}>
-                        {fmtMoney(total)}
+                        {fmtMoney(totalPlan)}
+                      </td>
+                      <td style={{ ...tdCell, textAlign: "right", padding: "5px 6px", fontSize: "13px", fontWeight: 700, color: INK_NAVY, backgroundColor: TABLE_HEADER_BG }}>
+                        {fmtMoney(totalActual)}
                       </td>
                       <td style={tdCell}>
                         <VndInput
                           valueKUsd={getSalesPlan(year, month)}
                           onChange={(value) => setSalesPlan(year, month, value)}
                           data-row={rowIndex}
-                          data-col={PROCESS_COST_PLAN_ITEMS.length}
+                          data-col={PROCESS_COST_ITEMS.length * 2}
                         />
                       </td>
                       <td style={tdCell}>
@@ -1297,7 +1351,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                           value={getProgressPlan(year, month)}
                           onChange={(value) => setProgressPlan(year, month, value)}
                           data-row={rowIndex}
-                          data-col={PROCESS_COST_PLAN_ITEMS.length + 1}
+                          data-col={PROCESS_COST_ITEMS.length * 2 + 1}
                         />
                       </td>
                     </tr>

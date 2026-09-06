@@ -64,18 +64,23 @@ type PlanVersionSource = {
 function planFingerprint(source: PlanVersionSource): { fingerprint: string; hasPlan: boolean } {
   const plan = {
     progress: source.progress
+      .filter((row) => row.planPct != null)
       .map((row) => [row.year, row.month, row.planPct ?? null])
       .sort((a, b) => Number(a[0]) - Number(b[0]) || Number(a[1]) - Number(b[1])),
     milestones: source.milestones
+      .filter((row) => row.planStart != null || row.planEnd != null)
       .map((row) => [row.label.trim(), row.planStart ?? null, row.planEnd ?? null])
       .sort((a, b) => String(a[0]).localeCompare(String(b[0]))),
     costBudget: source.costBudget
+      .filter((row) => row.budget != null || row.plan != null)
       .map((row) => [row.category ?? null, row.item.trim(), row.budget ?? null, row.plan ?? null])
       .sort((a, b) => String(a[1]).localeCompare(String(b[1]))),
     costBudgetMonthly: (source.costBudgetMonthly ?? [])
+      .filter((row) => row.plan != null)
       .map((row) => [row.item.trim(), row.year, row.month, row.plan ?? null])
       .sort((a, b) => String(a[0]).localeCompare(String(b[0])) || Number(a[1]) - Number(b[1]) || Number(a[2]) - Number(b[2])),
     salesMonthly: (source.salesMonthly ?? [])
+      .filter((row) => row.plan != null)
       .map((row) => [row.year, row.month, row.plan ?? null])
       .sort((a, b) => Number(a[0]) - Number(b[0]) || Number(a[1]) - Number(b[1])),
   };
@@ -636,7 +641,7 @@ router.put("/projectdetail", requireAdmin, async (req, res) => {
         .limit(1);
       const existingPlanVersion = existingPlanVersions[0];
       const baselineVersion = existingPlanVersion?.version ?? (previousPlan.hasPlan ? 1 : 0);
-      const previousFingerprint = existingPlanVersion?.fingerprint ?? previousPlan.fingerprint;
+      const previousFingerprint = previousPlan.fingerprint;
       const nextPlanVersion =
         incomingPlan.hasPlan
           ? Math.max(1, baselineVersion + (incomingPlan.fingerprint !== previousFingerprint ? 1 : 0))
