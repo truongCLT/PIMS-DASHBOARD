@@ -534,6 +534,22 @@ export function SalesChart() {
             { key: "rate", label: t("common:achievementRate"), format: (v) => (v == null ? "-" : `${v}%`) },
           ]}
           rows={visibleData}
+          totalRow={(() => {
+            const plan = visibleData.reduce(
+              (sum, row) => sum + (typeof row.plan === "number" ? row.plan : 0),
+              0,
+            );
+            const actual = visibleData.reduce(
+              (sum, row) => sum + (typeof row.actual === "number" ? row.actual : 0),
+              0,
+            );
+            return {
+              month: "합계",
+              plan,
+              actual,
+              rate: plan > 0 ? Math.round((actual / plan) * 100) : null,
+            };
+          })()}
           onRowClick={(row) => {
             if (extractMonthIdx(row.month) != null) setDrillRow(row);
           }}

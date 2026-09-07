@@ -95,6 +95,8 @@ export function DetailDataTable<T extends object>({
   rowKey,
   onRowClick,
   isRowClickable,
+  totalRow,
+  totalLabel = "합계",
 }: {
   columns: DetailColumn<T>[];
   rows: T[];
@@ -103,6 +105,9 @@ export function DetailDataTable<T extends object>({
   onRowClick?: (row: T, index: number) => void;
   /** 특정 행만 클릭 가능하게 제한. 기본적으로 onRowClick이 있으면 모든 행이 클릭 가능 */
   isRowClickable?: (row: T) => boolean;
+  /** 표 맨 아래에 표시할 합계 값. 첫 번째 열에는 totalLabel이 표시됩니다. */
+  totalRow?: Partial<T>;
+  totalLabel?: React.ReactNode;
 }) {
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
   const hasClick = !!onRowClick;
@@ -144,7 +149,8 @@ export function DetailDataTable<T extends object>({
               </td>
             </tr>
           ) : (
-            rows.map((row, i) => {
+            <>
+            {rows.map((row, i) => {
               const clickable = hasClick && (!isRowClickable || isRowClickable(row));
               return (
                 <tr
@@ -203,7 +209,50 @@ export function DetailDataTable<T extends object>({
                   )}
                 </tr>
               );
-            })
+            })}
+            {totalRow && (
+              <tr
+                style={{
+                  backgroundColor: "#e7f1fd",
+                  borderTop: `2px solid ${CARD_BORDER}`,
+                }}
+              >
+                {columns.map((c, columnIndex) => {
+                  const raw = totalRow[c.key as keyof T];
+                  const content = columnIndex === 0
+                    ? totalLabel
+                    : c.format
+                      ? c.format(raw, totalRow as T)
+                      : typeof raw === "number"
+                        ? raw.toLocaleString()
+                        : (raw as React.ReactNode) ?? "-";
+                  return (
+                    <td
+                      key={c.key}
+                      style={{
+                        padding: "7px 10px",
+                        textAlign: c.align ?? "right",
+                        color: INK_NAVY,
+                        fontWeight: 700,
+                        borderBottom: `1px solid ${CARD_BORDER}`,
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {content}
+                    </td>
+                  );
+                })}
+                {hasClick && (
+                  <td
+                    style={{
+                      borderBottom: `1px solid ${CARD_BORDER}`,
+                      backgroundColor: "#e7f1fd",
+                    }}
+                  />
+                )}
+              </tr>
+            )}
+            </>
           )}
         </tbody>
       </table>
