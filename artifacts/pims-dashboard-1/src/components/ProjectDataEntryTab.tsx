@@ -267,6 +267,19 @@ const EMPTY_OVERVIEW: ProjectDetailOverview = {
   endDate: null,
   client: null,
   scale: null,
+  location: null,
+  siteArea: null,
+  grossFloorArea: null,
+  purpose: null,
+  ownershipStake: null,
+  partnerCompany: null,
+  contractMethod: null,
+  paymentTerms: null,
+  defectWarrantyPeriod: null,
+  defectWarrantyBond: null,
+  advancePayment: null,
+  retention: null,
+  veTerms: null,
   asOfMonth: null,
   scope: null,
   revenueAnnualTarget: null,
@@ -1164,6 +1177,74 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                   style={inputStyle}
                 />
               </td>
+            </tr>
+          </tbody>
+        </table>
+        <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px" }}>
+          <thead>
+            <tr>
+              <th style={th}>{t("projectDataEntryTab:location")}</th>
+              <th style={th}>{t("projectDataEntryTab:siteArea")}</th>
+              <th style={th}>{t("projectDataEntryTab:grossFloorArea")}</th>
+              <th style={th}>{t("projectDataEntryTab:purpose")}</th>
+              <th style={th}>{t("projectDataEntryTab:ownershipStake")}</th>
+              <th style={th}>{t("projectDataEntryTab:partnerCompany")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              {([
+                ["location", overview.location],
+                ["siteArea", overview.siteArea],
+                ["grossFloorArea", overview.grossFloorArea],
+                ["purpose", overview.purpose],
+                ["ownershipStake", overview.ownershipStake],
+                ["partnerCompany", overview.partnerCompany],
+              ] as const).map(([key, value], index) => (
+                <td key={key} style={tdCell}>
+                  <TextInput
+                    value={value}
+                    onChange={(next) => setOverview((o) => ({ ...o, [key]: next }))}
+                    data-row={1}
+                    data-col={index}
+                  />
+                </td>
+              ))}
+            </tr>
+          </tbody>
+        </table>
+        <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px" }}>
+          <thead>
+            <tr>
+              <th style={th}>{t("projectDataEntryTab:contractMethod")}</th>
+              <th style={th}>{t("projectDataEntryTab:paymentTerms")}</th>
+              <th style={th}>{t("projectDataEntryTab:defectWarrantyPeriod")}</th>
+              <th style={th}>{t("projectDataEntryTab:defectWarrantyBond")}</th>
+              <th style={th}>{t("projectDataEntryTab:advancePayment")}</th>
+              <th style={th}>{t("projectDataEntryTab:retention")}</th>
+              <th style={th}>{t("projectDataEntryTab:veTerms")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              {([
+                ["contractMethod", overview.contractMethod],
+                ["paymentTerms", overview.paymentTerms],
+                ["defectWarrantyPeriod", overview.defectWarrantyPeriod],
+                ["defectWarrantyBond", overview.defectWarrantyBond],
+                ["advancePayment", overview.advancePayment],
+                ["retention", overview.retention],
+                ["veTerms", overview.veTerms],
+              ] as const).map(([key, value], index) => (
+                <td key={key} style={tdCell}>
+                  <TextInput
+                    value={value}
+                    onChange={(next) => setOverview((o) => ({ ...o, [key]: next }))}
+                    data-row={2}
+                    data-col={index}
+                  />
+                </td>
+              ))}
             </tr>
           </tbody>
         </table>

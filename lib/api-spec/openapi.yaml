@@ -1969,6 +1969,58 @@ components:
           type: string
           nullable: true
           description: 공사규모
+        location:
+          type: string
+          nullable: true
+          description: 위치
+        siteArea:
+          type: string
+          nullable: true
+          description: 대지면적
+        grossFloorArea:
+          type: string
+          nullable: true
+          description: 연면적
+        purpose:
+          type: string
+          nullable: true
+          description: 용도
+        ownershipStake:
+          type: string
+          nullable: true
+          description: 지분
+        partnerCompany:
+          type: string
+          nullable: true
+          description: 파트너사
+        contractMethod:
+          type: string
+          nullable: true
+          description: 계약방식
+        paymentTerms:
+          type: string
+          nullable: true
+          description: 수금조건
+        defectWarrantyPeriod:
+          type: string
+          nullable: true
+          description: 하자보증기간
+        defectWarrantyBond:
+          type: string
+          nullable: true
+          description: 하자보증증권
+        advancePayment:
+          type: string
+          nullable: true
+          description: 선급금
+        retention:
+          type: string
+          nullable: true
+          description: 유보금
+        veTerms:
+          type: string
+          nullable: true
+          description: VE 조건
         asOfMonth:
           type: string
           nullable: true

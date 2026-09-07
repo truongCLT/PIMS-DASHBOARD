@@ -118,12 +118,12 @@ export function ProgressSection({ progRows, resolvedMonth, costExecution }: Prop
           <div style={{ borderTop: `1px solid ${DIVIDER}`, paddingTop: "6px" }}>
             <div style={{ display: "flex", justifyContent: "space-between" }}>
               <DataKV
-                label="공정율"
+                label="공경률"
                 value={fmtPct(actualCum)}
                 valueColor={rateColor(cumRate)}
               />
               <DataKV
-                label="공정율 - 누계 공정율"
+                label="공경률 - 누계 공경률"
                 value={
                   actualCum != null && actualM != null
                     ? fmtPct(actualCum - actualM)

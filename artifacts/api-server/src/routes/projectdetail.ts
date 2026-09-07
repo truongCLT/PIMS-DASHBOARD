@@ -104,6 +104,14 @@ class InvalidSalesRowError extends Error {}
 
 const num = (v: string | null) => (v == null ? null : Number(v));
 const str = (v: number | null | undefined) => (v == null ? null : String(v));
+const preserveOptionalText = (
+  incoming: string | null | undefined,
+  previous: string | null | undefined,
+) => incoming === undefined
+  ? (previous ?? null)
+  : incoming?.trim()
+    ? incoming.trim()
+    : null;
 
 async function loadDetail(projectName: string) {
   const [mrProjectRows, overviewRows, progress, milestones, costEstimation, costBudget, costBudgetMonthly, outsourcing, cashflow, cogsMonthly, salesMonthly, mrSalesMonthly, photos, planVersionRows] = await Promise.all([
@@ -232,6 +240,19 @@ async function loadDetail(projectName: string) {
       endDate: formatDateStr(ov?.endDate),
       client: ov?.client ?? null,
       scale: ov?.scale ?? null,
+      location: ov?.location ?? null,
+      siteArea: ov?.siteArea ?? null,
+      grossFloorArea: ov?.grossFloorArea ?? null,
+      purpose: ov?.purpose ?? null,
+      ownershipStake: ov?.ownershipStake ?? null,
+      partnerCompany: ov?.partnerCompany ?? null,
+      contractMethod: ov?.contractMethod ?? null,
+      paymentTerms: ov?.paymentTerms ?? null,
+      defectWarrantyPeriod: ov?.defectWarrantyPeriod ?? null,
+      defectWarrantyBond: ov?.defectWarrantyBond ?? null,
+      advancePayment: ov?.advancePayment ?? null,
+      retention: ov?.retention ?? null,
+      veTerms: ov?.veTerms ?? null,
       asOfMonth: ov?.asOfMonth ?? null,
       scope: ov?.scope ?? null,
       revenueAnnualTarget: ov ? num(ov.revenueAnnualTarget) : null,
@@ -681,6 +702,19 @@ router.put("/projectdetail", requireAdmin, async (req, res) => {
       const client = ov.client?.trim() ? ov.client.trim() : null;
       const scale = ov.scale?.trim() ? ov.scale.trim() : null;
       // 신규 필드: undefined(생략)는 기존 값 유지, null은 명시적 삭제
+      const location = preserveOptionalText(ov.location, prevOv?.location);
+      const siteArea = preserveOptionalText(ov.siteArea, prevOv?.siteArea);
+      const grossFloorArea = preserveOptionalText(ov.grossFloorArea, prevOv?.grossFloorArea);
+      const purpose = preserveOptionalText(ov.purpose, prevOv?.purpose);
+      const ownershipStake = preserveOptionalText(ov.ownershipStake, prevOv?.ownershipStake);
+      const partnerCompany = preserveOptionalText(ov.partnerCompany, prevOv?.partnerCompany);
+      const contractMethod = preserveOptionalText(ov.contractMethod, prevOv?.contractMethod);
+      const paymentTerms = preserveOptionalText(ov.paymentTerms, prevOv?.paymentTerms);
+      const defectWarrantyPeriod = preserveOptionalText(ov.defectWarrantyPeriod, prevOv?.defectWarrantyPeriod);
+      const defectWarrantyBond = preserveOptionalText(ov.defectWarrantyBond, prevOv?.defectWarrantyBond);
+      const advancePayment = preserveOptionalText(ov.advancePayment, prevOv?.advancePayment);
+      const retention = preserveOptionalText(ov.retention, prevOv?.retention);
+      const veTerms = preserveOptionalText(ov.veTerms, prevOv?.veTerms);
       const asOfMonth =
         ov.asOfMonth === undefined ? (prevOv?.asOfMonth ?? null) : ov.asOfMonth?.trim() ? ov.asOfMonth.trim() : null;
       const scope =
@@ -701,6 +735,19 @@ router.put("/projectdetail", requireAdmin, async (req, res) => {
         ov.endDate != null ||
         client != null ||
         scale != null ||
+        location != null ||
+        siteArea != null ||
+        grossFloorArea != null ||
+        purpose != null ||
+        ownershipStake != null ||
+        partnerCompany != null ||
+        contractMethod != null ||
+        paymentTerms != null ||
+        defectWarrantyPeriod != null ||
+        defectWarrantyBond != null ||
+        advancePayment != null ||
+        retention != null ||
+        veTerms != null ||
         asOfMonth != null ||
         scope != null ||
         revenueAnnualTarget != null ||
@@ -716,6 +763,19 @@ router.put("/projectdetail", requireAdmin, async (req, res) => {
           endDate: ov.endDate ?? null,
           client,
           scale,
+          location,
+          siteArea,
+          grossFloorArea,
+          purpose,
+          ownershipStake,
+          partnerCompany,
+          contractMethod,
+          paymentTerms,
+          defectWarrantyPeriod,
+          defectWarrantyBond,
+          advancePayment,
+          retention,
+          veTerms,
           asOfMonth,
           scope,
           revenueAnnualTarget,

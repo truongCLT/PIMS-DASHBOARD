@@ -29,6 +29,19 @@ export const pdOverviewTable = pgTable(
     endDate: text("end_date"), // 공사 종료일 'YYYY-MM-DD'
     client: text("client"), // 발주처
     scale: text("scale"), // 공사규모
+    location: text("location"), // 위치
+    siteArea: text("site_area"), // 대지면적
+    grossFloorArea: text("gross_floor_area"), // 연면적
+    purpose: text("purpose"), // 용도
+    ownershipStake: text("ownership_stake"), // 지분
+    partnerCompany: text("partner_company"), // 파트너사
+    contractMethod: text("contract_method"), // 계약방식
+    paymentTerms: text("payment_terms"), // 수금조건
+    defectWarrantyPeriod: text("defect_warranty_period"), // 하자보증기간
+    defectWarrantyBond: text("defect_warranty_bond"), // 하자보증증권
+    advancePayment: text("advance_payment"), // 선급금
+    retention: text("retention"), // 유보금
+    veTerms: text("ve_terms"), // VE 조건
     asOfMonth: text("as_of_month"), // 작성 기준월 'YYYY-MM'
     scope: text("scope"), // 수행내용 (용역)
     revenueAnnualTarget: numeric("revenue_annual_target", { precision: 24, scale: 8 }), // 연간 매출 목표 (천 USD)

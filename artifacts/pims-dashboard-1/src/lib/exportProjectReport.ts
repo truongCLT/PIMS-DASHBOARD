@@ -121,24 +121,31 @@ export async function exportProjectReportPdf({
   const availableHeight =
     pageHeight - PDF_MARGIN * 2 - PDF_HEADER_HEIGHT - PDF_SECTION_GAP;
 
-  canvases.forEach((canvas, index) => {
-    if (index > 0) pdf.addPage("a4", "landscape");
-    pdf.addImage(
-      headerImage,
-      "PNG",
-      PDF_MARGIN,
-      PDF_MARGIN,
-      availableWidth,
-      PDF_HEADER_HEIGHT,
-    );
+  pdf.addImage(
+    headerImage,
+    "PNG",
+    PDF_MARGIN,
+    PDF_MARGIN,
+    availableWidth,
+    PDF_HEADER_HEIGHT,
+  );
 
-    const widthScale = availableWidth / canvas.width;
-    const heightScale = availableHeight / canvas.height;
-    const renderScale = Math.min(widthScale, heightScale);
+  const contentGap = 8;
+  const maxCanvasWidth = Math.max(...canvases.map((canvas) => canvas.width));
+  const totalCanvasHeight = canvases.reduce(
+    (sum, canvas) => sum + canvas.height,
+    0,
+  );
+  const renderScale = Math.min(
+    availableWidth / maxCanvasWidth,
+    (availableHeight - contentGap * (canvases.length - 1)) / totalCanvasHeight,
+  );
+  let y = PDF_MARGIN + PDF_HEADER_HEIGHT + PDF_SECTION_GAP;
+
+  canvases.forEach((canvas) => {
     const renderWidth = canvas.width * renderScale;
     const renderHeight = canvas.height * renderScale;
     const x = (pageWidth - renderWidth) / 2;
-    const y = PDF_MARGIN + PDF_HEADER_HEIGHT + PDF_SECTION_GAP;
     pdf.addImage(
       canvas.toDataURL("image/jpeg", 0.96),
       "JPEG",
@@ -149,6 +156,7 @@ export async function exportProjectReportPdf({
       undefined,
       "FAST",
     );
+    y += renderHeight + contentGap;
   });
 
   const monthFilePart =

@@ -534,6 +534,32 @@ export interface ProjectDetailOverview {
   client: string | null;
   /** 공사규모 */
   scale: string | null;
+  /** 위치 */
+  location?: string | null;
+  /** 대지면적 */
+  siteArea?: string | null;
+  /** 연면적 */
+  grossFloorArea?: string | null;
+  /** 용도 */
+  purpose?: string | null;
+  /** 지분 */
+  ownershipStake?: string | null;
+  /** 파트너사 */
+  partnerCompany?: string | null;
+  /** 계약방식 */
+  contractMethod?: string | null;
+  /** 수금조건 */
+  paymentTerms?: string | null;
+  /** 하자보증기간 */
+  defectWarrantyPeriod?: string | null;
+  /** 하자보증증권 */
+  defectWarrantyBond?: string | null;
+  /** 선급금 */
+  advancePayment?: string | null;
+  /** 유보금 */
+  retention?: string | null;
+  /** VE 조건 */
+  veTerms?: string | null;
   /** 작성 기준월 YYYY-MM */
   asOfMonth?: string | null;
   /** 수행내용 (용역) */

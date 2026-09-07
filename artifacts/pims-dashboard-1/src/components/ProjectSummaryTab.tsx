@@ -3,12 +3,15 @@
  *
  * 레이아웃: [현장 사진] | [공사 정보 그룹 1] | [계약 정보 그룹 2]
  * 기준: 첨부 이미지(image_1788587015161.png) 레이아웃 충실 구현
- * API에 없는 필드는 "-" 표시 (계약방식, 수금조건, 하자보증기간, 하자보증증권, 선급금, 유보금, VE조건)
+ * 데이터 입력 탭에서 저장한 프로젝트 개요·계약 정보를 표시한다.
  */
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { ProjectDetailPhoto } from "@workspace/api-client-react";
-import { useGetPimsvinaSiterate } from "@workspace/api-client-react";
+import {
+  getGetPimsvinaSiterateQueryKey,
+  useGetPimsvinaSiterate,
+} from "@workspace/api-client-react";
 import projectPhoto from "../assets/project-photo.png";
 import { PhotoPager } from "./PhotoPager";
 import { useProjectDetail } from "../lib/projectDetailData";
@@ -202,10 +205,14 @@ export function ProjectSummaryTab({ projectName }: { projectName: string }) {
   const siteCode = ov?.siteCode ?? null;
 
   // 현장 환율
-  const siteRateQuery = useGetPimsvinaSiterate(
-    { siteCode: siteCode ?? "" },
-    { query: { enabled: !!siteCode, staleTime: 5 * 60_000 } },
-  );
+  const siteRateParams = { siteCode: siteCode ?? "" };
+  const siteRateQuery = useGetPimsvinaSiterate(siteRateParams, {
+    query: {
+      enabled: !!siteCode,
+      queryKey: getGetPimsvinaSiterateQueryKey(siteRateParams),
+      staleTime: 5 * 60_000,
+    },
+  });
   const rateUsd = siteRateQuery.data?.rateUsd ?? null;
   const rateKrw = siteRateQuery.data?.rateKrw ?? null;
 
@@ -279,7 +286,7 @@ export function ProjectSummaryTab({ projectName }: { projectName: string }) {
         />
         <InfoRow
           label="위치"
-          value={null}
+          value={ov?.location ?? null}
         />
         <InfoRow
           label={t("projectDashboard:constructionPeriod")}
@@ -303,15 +310,15 @@ export function ProjectSummaryTab({ projectName }: { projectName: string }) {
             ) : null
           }
         />
-        <InfoRow label="대지면적" value={null} />
-        <InfoRow label="연면적" value={null} />
-        <InfoRow label="용도" value={null} />
+        <InfoRow label="대지면적" value={ov?.siteArea ?? null} />
+        <InfoRow label="연면적" value={ov?.grossFloorArea ?? null} />
+        <InfoRow label="용도" value={ov?.purpose ?? null} />
         <InfoRow
           label={t("projectDashboard:constructionScale")}
           value={ov?.scale ?? null}
         />
-        <InfoRow label="지분" value={null} />
-        <InfoRow label="파트너사" value={null} />
+        <InfoRow label="지분" value={ov?.ownershipStake ?? null} />
+        <InfoRow label="파트너사" value={ov?.partnerCompany ?? null} />
 
       </div>
 
@@ -337,13 +344,13 @@ export function ProjectSummaryTab({ projectName }: { projectName: string }) {
           accent={contractAmt != null}
           note={`계약환율 ${siteRateQuery.isLoading ? "조회 중..." : siteRateLabel ?? "-"}`}
         />
-        <InfoRow label="계약방식" value={null} />
-        <InfoRow label="수금조건" value={null} />
-        <InfoRow label="하자보증기간" value={null} />
-        <InfoRow label="하자보증증권" value={null} />
-        <InfoRow label="선급금" value={null} />
-        <InfoRow label="유보금" value={null} />
-        <InfoRow label="VE 조건" value={null} />
+        <InfoRow label="계약방식" value={ov?.contractMethod ?? null} />
+        <InfoRow label="수금조건" value={ov?.paymentTerms ?? null} />
+        <InfoRow label="하자보증기간" value={ov?.defectWarrantyPeriod ?? null} />
+        <InfoRow label="하자보증증권" value={ov?.defectWarrantyBond ?? null} />
+        <InfoRow label="선급금" value={ov?.advancePayment ?? null} />
+        <InfoRow label="유보금" value={ov?.retention ?? null} />
+        <InfoRow label="VE 조건" value={ov?.veTerms ?? null} />
       </div>
     </div>
   );
