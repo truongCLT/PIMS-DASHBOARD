@@ -1,4 +1,4 @@
-/** StatusTableSection — KPI 목표/실적과 규칙 기반 상태등 카드. */
+/** StatusTableSection — 구분별 월/누계 계획·실적과 규칙 기반 상태등 카드. */
 import React from "react";
 import { fmtPct } from "../../lib/projectDetailData";
 import {
@@ -28,15 +28,16 @@ const thStyle: React.CSSProperties = {
 };
 
 const tdStyle: React.CSSProperties = {
-  padding: "8px 6px",
-  fontSize: "12px",
+  padding: "5px 5px",
+  fontSize: "11px",
   verticalAlign: "middle",
 };
 
 type StatusLevel = "green" | "yellow" | "red" | "empty";
 
-interface KpiRow {
+interface DisplayRow {
   category: string;
+  type: StatusRowData["type"];
   plan: number | null;
   actual: number | null;
   level: StatusLevel;
@@ -48,25 +49,17 @@ const statusColor: Record<Exclude<StatusLevel, "empty">, string> = {
   red: ACHIEVE_RED,
 };
 
-function getRow(rows: StatusRowData[], category: string, type: StatusRowData["type"]) {
-  return rows.find((row) => row.category === category && row.type === type);
-}
-
 function achievementPct(plan: number | null | undefined, actual: number | null | undefined) {
   if (plan == null || actual == null || plan <= 0) return null;
   return (actual / plan) * 100;
 }
 
-function progressLevel(
-  monthly: StatusRowData | undefined,
-  cumulative: StatusRowData | undefined,
-): StatusLevel {
-  if (cumulative?.plan == null || cumulative.actual == null) return "empty";
-  if (cumulative.actual < cumulative.plan) return "red";
-  if (monthly?.plan != null && monthly.actual != null && monthly.actual < monthly.plan) {
-    return "yellow";
-  }
-  return "green";
+function achievementLevel(plan: number | null, actual: number | null): StatusLevel {
+  if (plan == null || actual == null || plan <= 0) return "empty";
+  const rate = (actual / plan) * 100;
+  if (rate >= 100) return "green";
+  if (rate >= 90) return "yellow";
+  return "red";
 }
 
 function costLevel(plan: number | null, actual: number | null): StatusLevel {
@@ -85,40 +78,19 @@ function fundsLevel(plan: number | null, actual: number | null): StatusLevel {
   return receivable < 1_000 ? "yellow" : "red";
 }
 
-function buildKpiRows(rows: StatusRowData[]): KpiRow[] {
-  const progressMonth = getRow(rows, "공정", "월");
-  const progressCum = getRow(rows, "공정", "누계");
-  const salesMonth = getRow(rows, "매출", "월");
-  const salesCum = getRow(rows, "매출", "누계");
-  const costCum = getRow(rows, "원가", "누계");
-  const fundsCum = getRow(rows, "자금", "누계");
-
-  return [
-    {
-      category: "공정",
-      plan: progressCum?.plan ?? null,
-      actual: progressCum?.actual ?? null,
-      level: progressLevel(progressMonth, progressCum),
-    },
-    {
-      category: "매출",
-      plan: salesCum?.plan != null ? 100 : null,
-      actual: achievementPct(salesCum?.plan, salesCum?.actual),
-      level: progressLevel(salesMonth, salesCum),
-    },
-    {
-      category: "원가",
-      plan: costCum?.plan != null ? 100 : null,
-      actual: achievementPct(costCum?.plan, costCum?.actual),
-      level: costLevel(costCum?.plan ?? null, costCum?.actual ?? null),
-    },
-    {
-      category: "자금",
-      plan: fundsCum?.plan != null ? 100 : null,
-      actual: achievementPct(fundsCum?.plan, fundsCum?.actual),
-      level: fundsLevel(fundsCum?.plan ?? null, fundsCum?.actual ?? null),
-    },
-  ];
+function buildDisplayRows(rows: StatusRowData[]): DisplayRow[] {
+  return rows.map((row) => {
+    const isProgress = row.category === "공정";
+    const plan = isProgress ? row.plan : row.plan != null ? 100 : null;
+    const actual = isProgress ? row.actual : achievementPct(row.plan, row.actual);
+    const level =
+      row.category === "원가"
+        ? costLevel(row.plan, row.actual)
+        : row.category === "자금"
+          ? fundsLevel(row.plan, row.actual)
+          : achievementLevel(row.plan, row.actual);
+    return { category: row.category, type: row.type, plan, actual, level };
+  });
 }
 
 function StatusLight({ level }: { level: StatusLevel }) {
@@ -142,25 +114,50 @@ function StatusLight({ level }: { level: StatusLevel }) {
 }
 
 export function StatusTableSection({ rows }: Props) {
-  const kpiRows = buildKpiRows(rows);
+  const displayRows = buildDisplayRows(rows);
 
   return (
     <div style={cardStyle}>
-      <div style={{ ...sectionTitle, marginBottom: "8px" }}>현황</div>
-      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "11px" }}>
+      <div style={{ ...sectionTitle, marginBottom: "5px" }}>현황</div>
+      <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
         <thead>
           <tr style={{ borderBottom: `1px solid ${DIVIDER}` }}>
-            <th style={thStyle}>KPI</th>
-            <th style={{ ...thStyle, textAlign: "right" }}>목표</th>
+            <th style={{ ...thStyle, width: "25%" }} colSpan={2}>구분</th>
+            <th style={{ ...thStyle, width: "25%", textAlign: "right" }}>계획</th>
             <th style={{ ...thStyle, textAlign: "right" }}>실적</th>
-            <th style={{ ...thStyle, textAlign: "center" }}>상태</th>
+            <th style={{ ...thStyle, width: "15%", textAlign: "center" }}>상태</th>
           </tr>
         </thead>
         <tbody>
-          {kpiRows.map((row) => (
-            <tr key={row.category} style={{ borderBottom: `1px solid ${DIVIDER}` }}>
-              <td style={{ ...tdStyle, fontWeight: 600, color: INK_NAVY }}>
-                {row.category}
+          {displayRows.map((row, index) => {
+            const isFirstCategoryRow =
+              index === 0 || displayRows[index - 1]?.category !== row.category;
+            const isLastCategoryRow =
+              index === displayRows.length - 1 ||
+              displayRows[index + 1]?.category !== row.category;
+            return (
+            <tr
+              key={`${row.category}-${row.type}`}
+              style={{
+                borderBottom: `1px ${isLastCategoryRow ? "solid" : "dotted"} ${DIVIDER}`,
+              }}
+            >
+              {isFirstCategoryRow && (
+                <td
+                  rowSpan={2}
+                  style={{
+                    ...tdStyle,
+                    width: "15%",
+                    fontWeight: 600,
+                    color: INK_NAVY,
+                    verticalAlign: "middle",
+                  }}
+                >
+                  {row.category}
+                </td>
+              )}
+              <td style={{ ...tdStyle, width: "10%", color: INK_MUTED }}>
+                {row.type}
               </td>
               <td style={{ ...tdStyle, textAlign: "right", color: INK_BODY }}>
                 {fmtPct(row.plan)}
@@ -171,8 +168,9 @@ export function StatusTableSection({ rows }: Props) {
               <td style={{ ...tdStyle, textAlign: "center" }}>
                 <StatusLight level={row.level} />
               </td>
-              </tr>
-            ))}
+            </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>

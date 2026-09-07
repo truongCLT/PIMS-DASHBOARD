@@ -176,6 +176,14 @@ export function ProjectReportTab({
         });
   const cashIn = cfFiltered.reduce<number>((a, p) => a + (p.cashIn ?? 0), 0);
   const cashOut = cfFiltered.reduce<number>((a, p) => a + (p.cashOut ?? 0), 0);
+  const cashMonthIn =
+    resolvedMonth == null
+      ? null
+      : (cfPoints.find(
+          (point) =>
+            point.month ===
+            `${REPORT_YEAR}-${String(resolvedMonth).padStart(2, "0")}`,
+        )?.cashIn ?? null);
 
   // ── Cost budget ───────────────────────────────────────────────────────────
   const cb = detail?.costBudget ?? [];
@@ -313,8 +321,8 @@ export function ProjectReportTab({
     {
       category: "자금",
       type: "월",
-      plan: cumRev > 0 ? cumRev : null,
-      actual: cashIn > 0 ? cashIn : null,
+      plan: salesMonthActual,
+      actual: cashMonthIn,
     },
     {
       category: "자금",

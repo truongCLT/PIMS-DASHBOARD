@@ -1,200 +1,187 @@
-/**
- * CostSection — 원가 카드
- * Compact horizontal-bar summary of budget execution per cost item.
- * Mirrors the OverviewTab / CostingTab budget-execution pattern.
- */
 import React from "react";
-import { fmtPct, ratioPct } from "../../lib/projectDetailData";
 import { chartTheme } from "../../lib/chartTheme";
+import { useMoney } from "../../lib/displayUnit";
+import { ratioPct } from "../../lib/projectDetailData";
 import {
-  cardStyle,
-  sectionTitle,
-  INK_NAVY,
+  CARD_BORDER,
   INK_BODY,
   INK_MUTED,
-  CARD_BORDER,
+  INK_NAVY,
+  cardStyle,
   rateColor,
+  sectionTitle,
 } from "../../lib/uiTokens";
-import { useMoney } from "../../lib/displayUnit";
-import { DASH } from "./ReportPrimitives";
 import type { BudgetRowData } from "./reportTypes";
 
 interface Props {
   budgetRows: BudgetRowData[];
 }
 
+interface CostGroup {
+  label: string;
+  plan: number | null;
+  actual: number | null;
+}
+
+function sumNullable<T>(
+  rows: T[],
+  getValue: (row: T) => number | null,
+): number | null {
+  const values = rows.map(getValue);
+  return values.some((value) => value != null)
+    ? values.reduce<number>((sum, value) => sum + (value ?? 0), 0)
+    : null;
+}
+
 export function CostSection({ budgetRows }: Props) {
   const { fmtMoney, unitLabel } = useMoney();
-
-  const totalBudget = budgetRows.reduce<number>((a, r) => a + (r.budget ?? 0), 0);
-  const totalActual = budgetRows.reduce<number>((a, r) => a + (r.actual ?? 0), 0);
-  const totalPct = ratioPct(totalActual, totalBudget);
-  const maxBudget = Math.max(...budgetRows.map((r) => r.budget ?? 0), 1);
+  const getPlan = (row: BudgetRowData) => row.plan ?? row.budget;
+  const groups: CostGroup[] = [
+    {
+      label: "Direct Cost",
+      plan: sumNullable(
+        budgetRows.filter((row) => ["외주", "Common", "경비1"].includes(row.item)),
+        getPlan,
+      ),
+      actual: sumNullable(
+        budgetRows.filter((row) => ["외주", "Common", "경비1"].includes(row.item)),
+        (row) => row.actual,
+      ),
+    },
+    {
+      label: "Indirect Cost",
+      plan: sumNullable(
+        budgetRows.filter((row) => row.item === "경비2"),
+        getPlan,
+      ),
+      actual: sumNullable(
+        budgetRows.filter((row) => row.item === "경비2"),
+        (row) => row.actual,
+      ),
+    },
+    {
+      label: "Contingency",
+      plan: sumNullable(
+        budgetRows.filter((row) => row.item === "예비비"),
+        getPlan,
+      ),
+      actual: sumNullable(
+        budgetRows.filter((row) => row.item === "예비비"),
+        (row) => row.actual,
+      ),
+    },
+  ];
+  const totalPlan = sumNullable(groups, (group) => group.plan);
+  const totalActual = sumNullable(groups, (group) => group.actual);
+  const totalRate = ratioPct(totalActual, totalPlan);
+  const maxPlan = Math.max(...groups.map((group) => group.plan ?? 0), 1);
 
   return (
-    <div style={cardStyle}>
-      <div style={{ ...sectionTitle, marginBottom: "4px" }}>
-        원가
+    <div style={{ ...cardStyle, display: "flex", flexDirection: "column" }}>
+      <div style={{ ...sectionTitle, marginBottom: "14px" }}>
+        원가 (집행누계)
         <span
-          style={{ fontSize: "11px", fontWeight: 400, color: INK_MUTED, marginLeft: "6px" }}
+          style={{
+            marginLeft: "6px",
+            fontSize: "10px",
+            fontWeight: 400,
+            color: INK_MUTED,
+          }}
         >
-          {unitLabel}&nbsp;&nbsp;집행률{" "}
-          <span style={{ color: rateColor(totalPct), fontWeight: 700 }}>
-            {fmtPct(totalPct)}
-          </span>
+          단위: {unitLabel}
         </span>
       </div>
-      <div style={{ fontSize: "11px", color: INK_MUTED, marginBottom: "6px" }}>
-        ※ 현재의 "예산집행 현황" (외주, 공통, 경비1, 경비2, 예비비)
-      </div>
 
-      {budgetRows.length === 0 ? (
-        <div style={{ fontSize: "12px", color: INK_MUTED, padding: "8px 0" }}>{DASH}</div>
-      ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-          {budgetRows.map((row) => {
-            const pct = ratioPct(row.actual, row.budget);
-            const trackPct =
-              row.budget != null && row.budget > 0
-                ? Math.max((row.budget / maxBudget) * 100, 20)
-                : 20;
-            const actualW =
-              row.actual != null && row.budget != null && row.budget > 0
-                ? Math.min((row.actual / row.budget) * trackPct, trackPct)
-                : 0;
-            const planW =
-              row.plan != null && row.budget != null && row.budget > 0
-                ? Math.min((row.plan / row.budget) * trackPct, trackPct)
-                : 0;
-
-            return (
+      <div style={{ display: "flex", flexDirection: "column", gap: "9px" }}>
+        {groups.map((group) => {
+          const planWidth =
+            group.plan != null && group.plan > 0
+              ? Math.max((group.plan / maxPlan) * 100, 4)
+              : 0;
+          const actualWidth =
+            group.actual != null && group.actual > 0
+              ? Math.min(Math.max((group.actual / maxPlan) * 100, 2), 100)
+              : 0;
+          return (
+            <div
+              key={group.label}
+              style={{
+                display: "grid",
+                gridTemplateColumns: "92px minmax(0, 1fr)",
+                alignItems: "center",
+                gap: "8px",
+              }}
+            >
+              <span style={{ fontSize: "12px", color: INK_BODY, whiteSpace: "nowrap" }}>
+                {group.label}
+              </span>
               <div
-                key={row.item}
-                style={{ display: "flex", alignItems: "center", gap: "6px" }}
+                style={{
+                  position: "relative",
+                  height: "24px",
+                  border: `1px solid ${CARD_BORDER}`,
+                  backgroundColor: "#fff",
+                  overflow: "hidden",
+                }}
               >
-                <span
-                  style={{
-                    fontSize: "11px",
-                    color: INK_BODY,
-                    width: "60px",
-                    minWidth: "60px",
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                  }}
-                >
-                  {row.item}
-                </span>
                 <div
                   style={{
-                    flex: 1,
-                    position: "relative",
-                    height: "18px",
-                    backgroundColor: chartTheme.lightGray,
-                    borderRadius: "3px",
-                    overflow: "hidden",
+                    position: "absolute",
+                    inset: "0 auto 0 0",
+                    width: `${actualWidth}%`,
+                    backgroundColor: chartTheme.planBlue,
+                    opacity: 0.62,
                   }}
-                >
-                  {/* Actual fill */}
+                />
+                {planWidth > 0 && (
                   <div
                     style={{
                       position: "absolute",
-                      left: 0,
+                      left: `calc(${Math.min(planWidth, 100)}% - 1px)`,
                       top: 0,
-                      width: `${actualW}%`,
-                      height: "100%",
-                      backgroundColor: chartTheme.planBlue,
-                      borderRadius: "3px 0 0 3px",
+                      bottom: 0,
+                      width: "2px",
+                      backgroundColor: chartTheme.outflowRed,
                     }}
                   />
-                  {/* Plan marker */}
-                  {planW > 0 && (
-                    <div
-                      style={{
-                        position: "absolute",
-                        left: `${planW}%`,
-                        top: 0,
-                        width: "2px",
-                        height: "100%",
-                        backgroundColor: chartTheme.outflowRed,
-                        zIndex: 2,
-                      }}
-                    />
-                  )}
-                </div>
-                <span
-                  style={{
-                    fontSize: "11px",
-                    fontWeight: 700,
-                    color: rateColor(pct),
-                    width: "36px",
-                    textAlign: "right",
-                    flexShrink: 0,
-                  }}
-                >
-                  {fmtPct(pct)}
-                </span>
-                <span
-                  style={{
-                    fontSize: "10px",
-                    color: INK_MUTED,
-                    width: "52px",
-                    textAlign: "right",
-                    flexShrink: 0,
-                  }}
-                >
-                  {fmtMoney(row.actual)}
-                </span>
+                )}
               </div>
-            );
-          })}
+            </div>
+          );
+        })}
+      </div>
 
-          {/* Totals row */}
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "baseline",
-              paddingTop: "6px",
-              borderTop: `1px solid ${CARD_BORDER}`,
-            }}
-          >
-            <span style={{ fontSize: "12px", fontWeight: 700, color: INK_NAVY }}>합계</span>
-            <span style={{ fontSize: "12px", fontWeight: 700, color: rateColor(totalPct) }}>
-              {fmtMoney(totalActual)} / {fmtMoney(totalBudget)} ({fmtPct(totalPct)})
-            </span>
-          </div>
-
-          {/* Legend */}
-          <div
-            style={{
-              display: "flex",
-              gap: "10px",
-              alignItems: "center",
-              flexWrap: "wrap",
-              marginTop: "2px",
-            }}
-          >
-            {[
-              { label: "예산", color: chartTheme.lightGray },
-              { label: "계획", color: chartTheme.outflowRed },
-              { label: "실적", color: chartTheme.planBlue },
-            ].map(({ label, color }) => (
-              <div key={label} style={{ display: "flex", alignItems: "center", gap: "3px" }}>
-                <div
-                  style={{
-                    width: "10px",
-                    height: "10px",
-                    backgroundColor: color,
-                    borderRadius: "2px",
-                  }}
-                />
-                <span style={{ fontSize: "10px", color: INK_MUTED }}>{label}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      <div
+        style={{
+          marginTop: "auto",
+          paddingTop: "14px",
+          borderTop: `1px solid ${CARD_BORDER}`,
+          display: "grid",
+          gridTemplateColumns: "52px minmax(0, 1fr) 1px minmax(0, 1fr) 1px minmax(0, 1fr)",
+          alignItems: "center",
+          columnGap: "7px",
+          width: "100%",
+          whiteSpace: "nowrap",
+          fontSize: "10px",
+          color: INK_MUTED,
+        }}
+      >
+        <span style={{ fontSize: "12px", fontWeight: 700, color: INK_NAVY }}>합계</span>
+        <span style={{ textAlign: "center" }}>
+          계획 <strong style={{ color: INK_BODY }}>{fmtMoney(totalPlan)}</strong>
+        </span>
+        <span style={{ color: "#aab5c4" }}>|</span>
+        <span style={{ textAlign: "center" }}>
+          집행 <strong style={{ color: INK_BODY }}>{fmtMoney(totalActual)}</strong>
+        </span>
+        <span style={{ color: "#aab5c4" }}>|</span>
+        <span style={{ textAlign: "right" }}>
+          집행률{" "}
+          <strong style={{ color: rateColor(totalRate) }}>
+            {totalRate == null ? "-" : `${Math.round(totalRate * 10) / 10}%`}
+          </strong>
+        </span>
+      </div>
     </div>
   );
 }
