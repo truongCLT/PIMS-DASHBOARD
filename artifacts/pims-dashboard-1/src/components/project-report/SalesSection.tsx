@@ -360,22 +360,28 @@ function SalesSummaryRow({
   return (
     <div
       style={{
-        display: "flex",
+        display: "grid",
+        gridTemplateColumns: "44px minmax(0, 1fr) 1px minmax(0, 1fr) 1px minmax(0, 1fr)",
         alignItems: "center",
-        gap: "5px",
+        columnGap: "6px",
+        width: "100%",
         whiteSpace: "nowrap",
         fontSize: "9px",
         color: "#52627a",
       }}
     >
-      <span style={{ width: "42px", flexShrink: 0, fontWeight: 700, color: "#1a2d4d" }}>
+      <span style={{ fontWeight: 700, color: "#1a2d4d" }}>
         {label}
       </span>
-      <span>계획 <strong style={{ color: "#1a2d4d" }}>{fmtMoney(summary.plan)}</strong></span>
+      <span style={{ textAlign: "center" }}>
+        계획 <strong style={{ color: "#1a2d4d" }}>{fmtMoney(summary.plan)}</strong>
+      </span>
       <span style={{ color: "#aab5c4" }}>|</span>
-      <span>실적 <strong style={{ color: "#1a2d4d" }}>{fmtMoney(summary.actual)}</strong></span>
+      <span style={{ textAlign: "center" }}>
+        실적 <strong style={{ color: "#1a2d4d" }}>{fmtMoney(summary.actual)}</strong>
+      </span>
       <span style={{ color: "#aab5c4" }}>|</span>
-      <span>
+      <span style={{ textAlign: "right" }}>
         달성률{" "}
         <strong style={{ color: chartTheme.rateOrange }}>
           {summary.rate == null ? "-" : `${summary.rate}%`}
