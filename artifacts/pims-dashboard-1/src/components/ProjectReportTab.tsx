@@ -458,7 +458,7 @@ export function ProjectReportTab({
             planMonths={planMonths}
             actualMonths={revMonths}
             resolvedMonth={resolvedMonth}
-            contractAmount={contractAmount}
+            allSalesMonths={detail?.salesMonthly ?? []}
           />
           <StatusTableSection rows={statusRows} />
         </div>
