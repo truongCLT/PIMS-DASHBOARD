@@ -65,6 +65,7 @@ export * from './mgmtreportProjectStatus';
 export * from './mgmtreportProjectStatusUpdate';
 export * from './mgmtreportProjectStatusUpdateStatus';
 export * from './mgmtreportRevertResult';
+export * from './mgmtreportSettings';
 export * from './mgmtreportSummary';
 export * from './orgStructure';
 export * from './orgStructureInput';

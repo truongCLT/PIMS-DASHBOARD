@@ -981,6 +981,41 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/MgmtreportSummary"
+  /mgmtreport/settings:
+    get:
+      operationId: getMgmtreportSettings
+      tags: [mgmtreport]
+      summary: Get the company-wide management reference month
+      responses:
+        "200":
+          description: Current company-wide management reference month
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MgmtreportSettings"
+    put:
+      operationId: putMgmtreportSettings
+      tags: [mgmtreport]
+      summary: Set the company-wide management reference month. Admin only.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MgmtreportSettings"
+      responses:
+        "200":
+          description: Saved reference month
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MgmtreportSettings"
+        "401":
+          description: Admin authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorMessage"
   /mgmtreport/projects:
     get:
       operationId: listMgmtreportProjects
@@ -1841,6 +1876,18 @@ components:
         actualTotal:
           type: number
       required: [code, label, plan, actual, planTotal, actualTotal]
+    MgmtreportSettings:
+      type: object
+      properties:
+        year:
+          type: integer
+          minimum: 2000
+          maximum: 2100
+        month:
+          type: integer
+          minimum: 1
+          maximum: 12
+      required: [year, month]
     MgmtreportSummary:
       type: object
       properties:

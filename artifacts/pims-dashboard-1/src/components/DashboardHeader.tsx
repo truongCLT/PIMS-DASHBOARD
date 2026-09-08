@@ -1,7 +1,15 @@
 import React, { useEffect, useRef, useState } from "react";
 import { ChevronsDown, ChevronsUp, Download, FileSpreadsheet, FileText, RefreshCw, Upload } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { useListMgmtreportProjects } from "@workspace/api-client-react";
+import {
+  useListMgmtreportProjects,
+} from "@workspace/api-client-react";
+import {
+  getGetMgmtreportSettingsQueryKey,
+  useGetMgmtreportSettings,
+  usePutMgmtreportSettings,
+} from "@workspace/api-client-react/generated/api";
+import { useQueryClient } from "@tanstack/react-query";
 import { exportDashboardExcel, exportDashboardPdf } from "../lib/exportDashboard";
 import { MgmtReportUploadModal } from "./MgmtReportUploadModal";
 import { FxRateEditor } from "./FxRateEditor";
@@ -39,6 +47,18 @@ export function DashboardHeader({
 
   const { t } = useTranslation(["dashboardHeader", "common"]);
   const { isAdmin } = useAdminAuth();
+  const queryClient = useQueryClient();
+  const settingsQuery = useGetMgmtreportSettings();
+  const settingsMutation = usePutMgmtreportSettings({
+    mutation: {
+      onSuccess: (saved) => {
+        queryClient.setQueryData(getGetMgmtreportSettingsQueryKey(), saved);
+      },
+      onError: () => {
+        alert("기준 월을 저장하지 못했습니다. 다시 시도해 주세요.");
+      },
+    },
+  });
   const projectsQuery = useListMgmtreportProjects({ year: REPORT_YEAR });
   const projectOptions = (projectsQuery.data?.projects ?? []).filter((p) => !p.isGroup);
 
@@ -343,6 +363,34 @@ export function DashboardHeader({
             <option value="Month">{t("dashboardHeader:periodOptionMonth")}</option>
             <option value="Quarter">{t("dashboardHeader:periodOptionQuarter")}</option>
             <option value="Year">{t("common:annual")}</option>
+          </select>
+        </div>
+
+        {/* 전사 공통 기준 월: 관리자는 변경, 일반 사용자는 조회만 가능 */}
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <span style={{ fontSize: "12px", color: "#333", fontWeight: "600" }}>기준 월</span>
+          <select
+            aria-label="기준 월"
+            value={settingsQuery.data?.month ?? ""}
+            disabled={!isAdmin || settingsQuery.isLoading || settingsMutation.isPending}
+            onChange={(e) => {
+              const month = Number(e.target.value);
+              settingsMutation.mutate({ data: { year: REPORT_YEAR, month } });
+            }}
+            style={{
+              border: "1px solid #dde6f1",
+              borderRadius: "6px",
+              padding: "5px 26px 5px 10px",
+              fontSize: "12px",
+              color: "#333",
+              backgroundColor: isAdmin ? "#fff" : "#f4f6f9",
+              cursor: isAdmin ? "pointer" : "default",
+            }}
+          >
+            {settingsQuery.isLoading && <option value="">-</option>}
+            {Array.from({ length: 12 }, (_, index) => index + 1).map((month) => (
+              <option key={month} value={month}>{month}월</option>
+            ))}
           </select>
         </div>
 

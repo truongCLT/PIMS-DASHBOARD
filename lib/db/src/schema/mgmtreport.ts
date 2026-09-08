@@ -114,6 +114,21 @@ export const mrCommentsTable = pgTable(
   ],
 );
 
+/** 전사 공통 경영 기준 월 — id=1 단일 행 */
+export const mrSettingsTable = pgTable(
+  "mr_settings",
+  {
+    id: integer("id").primaryKey().default(1),
+    referenceYear: integer("reference_year").notNull(),
+    referenceMonth: integer("reference_month").notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    check("mr_settings_singleton_ck", sql`${t.id} = 1`),
+    check("mr_settings_month_ck", sql`${t.referenceMonth} BETWEEN 1 AND 12`),
+  ],
+);
+
 // Excel 반영 이력 — 반영 직전의 mr_* 전체 스냅샷을 보관해 되돌리기를 지원
 export const mrImportHistoryTable = pgTable("mr_import_history", {
   id: serial("id").primaryKey(),

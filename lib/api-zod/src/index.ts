@@ -11,4 +11,7 @@ export {
   AdminLoginBody,
   UpdateMgmtreportProjectDivisionBody,
   PatchProjectdetailCloseBody,
+  GetMgmtreportSettingsResponse,
+  PutMgmtreportSettingsBody,
+  PutMgmtreportSettingsResponse,
 } from "./generated/api";

@@ -4,7 +4,7 @@ import {
   useListMgmtreportProjects,
   getListMgmtreportProjectsQueryKey,
 } from "@workspace/api-client-react";
-import { lastClosedMonth } from "./monthRange";
+import { useGetMgmtreportSettings } from "@workspace/api-client-react/generated/api";
 import { classifyMrProject } from "../data/projects";
 import {
   useDashboardFilters,
@@ -466,6 +466,8 @@ export function getDashboardExportData(): DashboardData {
 export function useDashboardData() {
   const filters = useDashboardFilters();
   const query = useGetMgmtreportSummary();
+  const settingsQuery = useGetMgmtreportSettings();
+  const managementMonth = settingsQuery.data?.month ?? new Date().getMonth() + 1;
   const summaryForYear = query.data?.find((s) => s.year === REPORT_YEAR) ?? null;
 
   const projectSelected = filters.project !== "All";
@@ -486,7 +488,7 @@ export function useDashboardData() {
     if (!summaryForYear) return null;
     if (needProjects && !projectsQuery.data) return null;
 
-    const { from, to } = resolveMonthWindow(filters.startYm, filters.endYm);
+    const { from, to } = resolveMonthWindow(filters.startYm, filters.endYm, managementMonth);
     const convert = makeConverter(filters.currency, filters.unitIndex, filters.fxRateHistory);
     const unitLabel =
       filters.currency === "USD" && filters.unitIndex === 0
@@ -543,7 +545,7 @@ export function useDashboardData() {
       unitLabel,
       projectScope,
       salesFullYear: true,
-      managementMonth: new Date().getMonth() + 1,
+      managementMonth,
     });
   }, [
     summaryForYear,
@@ -560,23 +562,27 @@ export function useDashboardData() {
     filters.currency,
     filters.unitIndex,
     filters.fxRateHistory,
+    managementMonth,
   ]);
 
   /* 필터와 무관한 기본 스냅샷 (엑셀 보고서용) */
   const baseline = useMemo(
     () =>
       summaryForYear
-        ? deriveDashboardData(summaryForYear, defaultDeriveOptions(Math.max(lastClosedMonth(), 1)))
+        ? deriveDashboardData(summaryForYear, {
+            ...defaultDeriveOptions(managementMonth),
+            managementMonth,
+          })
         : null,
-    [summaryForYear],
+    [summaryForYear, managementMonth],
   );
 
   useEffect(() => {
     if (baseline) exportSnapshot = baseline;
   }, [baseline]);
 
-  const isLoading = query.isLoading || (needProjects && projectsQuery.isLoading);
-  const isError = query.isError || (needProjects && projectsQuery.isError);
+  const isLoading = query.isLoading || settingsQuery.isLoading || (needProjects && projectsQuery.isLoading);
+  const isError = query.isError || settingsQuery.isError || (needProjects && projectsQuery.isError);
 
   return { ...query, isLoading, isError, derived };
 }

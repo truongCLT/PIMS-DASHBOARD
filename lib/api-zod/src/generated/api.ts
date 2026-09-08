@@ -1074,6 +1074,50 @@ export const GetMgmtreportSummaryResponse = zod.array(GetMgmtreportSummaryRespon
 
 
 /**
+ * @summary Get the company-wide management reference month
+ */
+export const getMgmtreportSettingsResponseYearMin = 2000;
+export const getMgmtreportSettingsResponseYearMax = 2100;
+
+export const getMgmtreportSettingsResponseMonthMax = 12;
+
+
+
+export const GetMgmtreportSettingsResponse = zod.object({
+  "year": zod.number().min(getMgmtreportSettingsResponseYearMin).max(getMgmtreportSettingsResponseYearMax),
+  "month": zod.number().min(1).max(getMgmtreportSettingsResponseMonthMax)
+})
+
+
+/**
+ * @summary Set the company-wide management reference month. Admin only.
+ */
+export const putMgmtreportSettingsBodyYearMin = 2000;
+export const putMgmtreportSettingsBodyYearMax = 2100;
+
+export const putMgmtreportSettingsBodyMonthMax = 12;
+
+
+
+export const PutMgmtreportSettingsBody = zod.object({
+  "year": zod.number().min(putMgmtreportSettingsBodyYearMin).max(putMgmtreportSettingsBodyYearMax),
+  "month": zod.number().min(1).max(putMgmtreportSettingsBodyMonthMax)
+})
+
+export const putMgmtreportSettingsResponseYearMin = 2000;
+export const putMgmtreportSettingsResponseYearMax = 2100;
+
+export const putMgmtreportSettingsResponseMonthMax = 12;
+
+
+
+export const PutMgmtreportSettingsResponse = zod.object({
+  "year": zod.number().min(putMgmtreportSettingsResponseYearMin).max(putMgmtreportSettingsResponseYearMax),
+  "month": zod.number().min(1).max(putMgmtreportSettingsResponseMonthMax)
+})
+
+
+/**
  * @summary Per-project plan vs actual monthly revenue/cogs series and annual outlook
  */
 export const listMgmtreportProjectsQueryIncludeGroupsDefault = false;

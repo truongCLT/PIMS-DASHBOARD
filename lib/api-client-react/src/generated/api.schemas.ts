@@ -443,6 +443,19 @@ export interface MgmtreportLine {
   actualTotal: number;
 }
 
+export interface MgmtreportSettings {
+  /**
+     * @minimum 2000
+     * @maximum 2100
+     */
+  year: number;
+  /**
+     * @minimum 1
+     * @maximum 12
+     */
+  month: number;
+}
+
 export interface MgmtreportSummary {
   year: number;
   /** Amount unit (천 USD) */

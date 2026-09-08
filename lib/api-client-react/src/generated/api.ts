@@ -55,6 +55,7 @@ import type {
   MgmtreportProjectStatusUpdate,
   MgmtreportProjects,
   MgmtreportRevertResult,
+  MgmtreportSettings,
   MgmtreportSummary,
   OrgStructure,
   OrgStructureInput,
@@ -2530,6 +2531,154 @@ export function useGetMgmtreportSummary<TData = Awaited<ReturnType<typeof getMgm
 
 
 
+
+export const getGetMgmtreportSettingsUrl = () => {
+
+
+
+
+  return `/api/mgmtreport/settings`
+}
+
+/**
+ * @summary Get the company-wide management reference month
+ */
+export const getMgmtreportSettings = async ( options?: RequestInit): Promise<MgmtreportSettings> => {
+
+  return customFetch<MgmtreportSettings>(getGetMgmtreportSettingsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMgmtreportSettingsQueryKey = () => {
+    return [
+    `/api/mgmtreport/settings`
+    ] as const;
+    }
+
+
+export const getGetMgmtreportSettingsQueryOptions = <TData = Awaited<ReturnType<typeof getMgmtreportSettings>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMgmtreportSettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMgmtreportSettingsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMgmtreportSettings>>> = ({ signal }) => getMgmtreportSettings({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMgmtreportSettings>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMgmtreportSettingsQueryResult = NonNullable<Awaited<ReturnType<typeof getMgmtreportSettings>>>
+export type GetMgmtreportSettingsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get the company-wide management reference month
+ */
+
+export function useGetMgmtreportSettings<TData = Awaited<ReturnType<typeof getMgmtreportSettings>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMgmtreportSettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMgmtreportSettingsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getPutMgmtreportSettingsUrl = () => {
+
+
+
+
+  return `/api/mgmtreport/settings`
+}
+
+/**
+ * @summary Set the company-wide management reference month. Admin only.
+ */
+export const putMgmtreportSettings = async (mgmtreportSettings: MgmtreportSettings, options?: RequestInit): Promise<MgmtreportSettings> => {
+
+  return customFetch<MgmtreportSettings>(getPutMgmtreportSettingsUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(mgmtreportSettings)
+  }
+);}
+
+
+
+
+
+export const getPutMgmtreportSettingsMutationOptions = <TError = ErrorType<ApiErrorMessage>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putMgmtreportSettings>>, TError,{data: BodyType<MgmtreportSettings>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof putMgmtreportSettings>>, TError,{data: BodyType<MgmtreportSettings>}, TContext> => {
+
+const mutationKey = ['putMgmtreportSettings'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof putMgmtreportSettings>>, {data: BodyType<MgmtreportSettings>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  putMgmtreportSettings(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PutMgmtreportSettingsMutationResult = NonNullable<Awaited<ReturnType<typeof putMgmtreportSettings>>>
+    export type PutMgmtreportSettingsMutationBody = BodyType<MgmtreportSettings>
+    export type PutMgmtreportSettingsMutationError = ErrorType<ApiErrorMessage>
+
+    /**
+ * @summary Set the company-wide management reference month. Admin only.
+ */
+export const usePutMgmtreportSettings = <TError = ErrorType<ApiErrorMessage>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putMgmtreportSettings>>, TError,{data: BodyType<MgmtreportSettings>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof putMgmtreportSettings>>,
+        TError,
+        {data: BodyType<MgmtreportSettings>},
+        TContext
+      > => {
+      return useMutation(getPutMgmtreportSettingsMutationOptions(options));
+    }
 
 export const getListMgmtreportProjectsUrl = (params: ListMgmtreportProjectsParams,) => {
   const normalizedParams = new URLSearchParams();

@@ -12,6 +12,7 @@ import {
   companiesTable,
   pdOverviewTable,
 } from "@workspace/db";
+import { mrSettingsTable } from "@workspace/db/schema/mgmtreport";
 import {
   GetMgmtreportSummaryResponse,
   ListMgmtreportProjectsQueryParams,
@@ -30,6 +31,11 @@ import {
   UpdateMgmtreportProjectDivisionResponse,
 } from "@workspace/api-zod";
 import {
+  GetMgmtreportSettingsResponse,
+  PutMgmtreportSettingsBody,
+  PutMgmtreportSettingsResponse,
+} from "@workspace/api-zod/generated/api";
+import {
   parseMgmtreportWorkbook,
   buildPreview,
   applyMgmtreportImport,
@@ -41,6 +47,43 @@ import {
 import { requireAdmin } from "../middlewares/adminAuth";
 
 const router: IRouter = Router();
+
+router.get("/mgmtreport/settings", async (req, res) => {
+  try {
+    const [saved] = await db.select().from(mrSettingsTable).where(eq(mrSettingsTable.id, 1)).limit(1);
+    const now = new Date();
+    const response = saved
+      ? { year: saved.referenceYear, month: saved.referenceMonth }
+      : { year: now.getFullYear(), month: now.getMonth() + 1 };
+    res.json(response);
+  } catch (err) {
+    req.log.error({ err }, "failed to load mgmtreport settings");
+    res.status(500).json({ error: "기준 월을 불러오지 못했습니다." });
+  }
+});
+
+router.put("/mgmtreport/settings", requireAdmin, async (req, res) => {
+  const parsed = PutMgmtreportSettingsBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "기준 월이 올바르지 않습니다." });
+    return;
+  }
+  try {
+    const { year, month } = parsed.data;
+    await db
+      .insert(mrSettingsTable)
+      .values({ id: 1, referenceYear: year, referenceMonth: month, updatedAt: new Date() })
+      .onConflictDoUpdate({
+        target: mrSettingsTable.id,
+        set: { referenceYear: year, referenceMonth: month, updatedAt: new Date() },
+      });
+    const response = { year, month };
+    res.json(response);
+  } catch (err) {
+    req.log.error({ err }, "failed to save mgmtreport settings");
+    res.status(500).json({ error: "기준 월을 저장하지 못했습니다." });
+  }
+});
 
 const upload = multer({
   storage: multer.memoryStorage(),

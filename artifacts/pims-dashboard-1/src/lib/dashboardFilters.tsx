@@ -216,7 +216,11 @@ export function useDashboardFilters(): DashboardFilterContextValue {
 }
 
 /** "YYYY-MM" 문자열들을 REPORT_YEAR 내 월 범위 [from, to]로 변환. from > to 이면 데이터 없음. */
-export function resolveMonthWindow(startYm: string, endYm: string): { from: number; to: number } {
+export function resolveMonthWindow(
+  startYm: string,
+  endYm: string,
+  referenceMonth = lastClosedMonth(),
+): { from: number; to: number } {
   const parse = (ym: string): { y: number; m: number } | null => {
     const match = /^(\d{4})-(\d{2})$/.exec(ym);
     if (!match) return null;
@@ -224,7 +228,7 @@ export function resolveMonthWindow(startYm: string, endYm: string): { from: numb
   };
   const s = parse(startYm);
   const e = parse(endYm);
-  const defaultTo = Math.max(Math.min(lastClosedMonth(), 12), 1);
+  const defaultTo = Math.max(Math.min(referenceMonth, 12), 1);
 
   let from = 1;
   if (s) {
