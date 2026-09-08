@@ -434,7 +434,7 @@ export function KPICards() {
           compact={unitIndex === 1}
           cardIndex={i}
           stripColor={isStrip ? stripColors[i % 4] : undefined}
-          periodLabel={kpi.title.startsWith("당월 누적") ? ytdPeriod : fullYearPeriod}
+          periodLabel={i < 2 ? ytdPeriod : fullYearPeriod}
           unitLabel={derived?.unitLabel}
         />
       ))}
