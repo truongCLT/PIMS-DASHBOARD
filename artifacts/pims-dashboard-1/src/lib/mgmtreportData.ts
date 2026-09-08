@@ -365,7 +365,6 @@ export function deriveDashboardData(
     pRow("매출이익", gross, revenue),
     pRow("판관비", sga),
     pRow("영업이익", op1, revenue),
-    pRow("영업외손익", op2),
     pRow("경상이익", ordinary, revenue),
   ];
 
