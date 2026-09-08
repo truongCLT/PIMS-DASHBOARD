@@ -55,6 +55,7 @@ export function DashboardHeader({
         queryClient.setQueryData(getGetMgmtreportSettingsQueryKey(), saved);
       },
       onError: () => {
+        queryClient.invalidateQueries({ queryKey: getGetMgmtreportSettingsQueryKey() });
         alert("기준 월을 저장하지 못했습니다. 다시 시도해 주세요.");
       },
     },
@@ -366,16 +367,18 @@ export function DashboardHeader({
           </select>
         </div>
 
-        {/* 전사 공통 기준 월: 관리자는 변경, 일반 사용자는 조회만 가능 */}
+        {/* 기준 월: 선택 즉시 화면 반영, 관리자는 전사 공통 설정으로 저장 */}
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <span style={{ fontSize: "12px", color: "#333", fontWeight: "600" }}>기준 월</span>
           <select
             aria-label="기준 월"
             value={settingsQuery.data?.month ?? ""}
-            disabled={!isAdmin || settingsQuery.isLoading || settingsMutation.isPending}
+            disabled={settingsQuery.isLoading || settingsMutation.isPending}
             onChange={(e) => {
               const month = Number(e.target.value);
-              settingsMutation.mutate({ data: { year: REPORT_YEAR, month } });
+              const selected = { year: REPORT_YEAR, month };
+              queryClient.setQueryData(getGetMgmtreportSettingsQueryKey(), selected);
+              if (isAdmin) settingsMutation.mutate({ data: selected });
             }}
             style={{
               border: "1px solid #dde6f1",
@@ -383,8 +386,8 @@ export function DashboardHeader({
               padding: "5px 26px 5px 10px",
               fontSize: "12px",
               color: "#333",
-              backgroundColor: isAdmin ? "#fff" : "#f4f6f9",
-              cursor: isAdmin ? "pointer" : "default",
+              backgroundColor: "#fff",
+              cursor: "pointer",
             }}
           >
             {settingsQuery.isLoading && <option value="">-</option>}
