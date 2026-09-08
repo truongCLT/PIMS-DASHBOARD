@@ -30,9 +30,6 @@ const ORANGE = chartTheme.sgaOrange;
 /* 대우 예시1 스타일 색상 (첨부 이미지) */
 const DW_OP  = chartTheme.dwOp;
 const DW_SGA = chartTheme.dwSga;
-const DW_NON = chartTheme.dwNon;
-const DW_POS = chartTheme.dwPos;
-const DW_NEG = chartTheme.dwNeg;
 
 const Y0   = 400; // bottom of plot area
 const YTOP = 20;
@@ -224,7 +221,9 @@ export function ProfitChart() {
       { label: t("common:operatingProfit"),             value: d.op.toLocaleString("ko-KR"),                                       color: NAVY   },
       { label: t("profitChart:ordinaryProfit"),         value: `${d.ord.toLocaleString("ko-KR")} (${d.ordPct})`,                   color: GREEN  },
       { label: t("common:sga"),                         value: `${d.sga} (${d.sgaPct})`,                                           color: ORANGE },
-      { label: t("profitChart:nonOperatingProfitLoss"), value: `${d.non >= 0 ? "+" : ""}${d.non.toLocaleString("ko-KR")}`,         color: GREEN  },
+      ...(!daewoo
+        ? [{ label: t("profitChart:nonOperatingProfitLoss"), value: `${d.non >= 0 ? "+" : ""}${d.non.toLocaleString("ko-KR")}`, color: GREEN }]
+        : []),
     ];
 
     return (
@@ -283,7 +282,6 @@ export function ProfitChart() {
           {[
             { c: DW_OP, l: t("common:operatingProfit"), round: false },
             { c: DW_SGA, l: t("common:sga"), round: false },
-            { c: DW_NON, l: t("profitChart:nonOperatingProfitLoss"), round: true },
           ].map((it) => (
             <div key={it.l} style={{ display: "flex", alignItems: "center", gap: "4px" }}>
               <div style={{ width: it.round ? "10px" : "13px", height: it.round ? "10px" : "11px", backgroundColor: it.c, borderRadius: it.round ? "50%" : "3px" }} />
@@ -345,11 +343,11 @@ export function ProfitChart() {
           const labelTopY = Math.min(yv(nonTop), yGross, yOrd);
 
           if (daewoo) {
-            /* ── 대우 예시1: 영업이익(진한색)+판관비(연한 캡) = 매출이익 · 영업외손익은 상단 고정 칩 행 ── */
-            const chipText = `${d.non >= 0 ? "+" : ""}${d.non.toLocaleString("ko-KR")}`;
-            const chipColor = d.non >= 0 ? DW_POS : DW_NEG;
-            const chipBg = d.non >= 0 ? chartTheme.chipPosBg : chartTheme.chipNegBg;
-            const chipFs = fs(13);
+            /* ── 대우 예시1: 영업이익(진한색)+판관비(연한 캡) = 매출이익 ── */
+            const chipText = d.op.toLocaleString("ko-KR");
+            const chipColor = DW_OP;
+            const chipBg = chartTheme.opRateBg;
+            const chipFs = fs(11);
             const chipH = chipFs + 12;
             const chipW = Math.max(56, chipText.length * chipFs * 0.62 + 22);
             const capTop = yGross;               // 막대 전체(매출이익) 상단
@@ -365,10 +363,10 @@ export function ProfitChart() {
                 <text x={cx} y={Math.min(capTop, opTop) - 10} textAnchor="middle" fontSize={axisFs} fill={chartTheme.axisSmall}>{d.totalPct}</text>
                 {/* 월 라벨 */}
                 <text x={cx} y={Y0 + 34} textAnchor="middle" fontSize={fs(13)} fontWeight="600" fill={chartTheme.axisText}>{d.m}</text>
-                {/* 영업외손익 칩 — 월 라벨 하단 */}
+                {/* 영업이익 칩 — 월 라벨 하단 */}
                 <rect x={cx - chipW / 2} y={Y0 + 46} width={chipW} height={chipH} rx={chipH / 2} fill={chipBg} />
                 <text x={cx} y={Y0 + 46 + chipH / 2} textAnchor="middle" dominantBaseline="central" fontSize={chipFs} fontWeight="700" fill={chipColor}>{chipText}</text>
-                {/* 영업이익률 칩 — 영업외손익 칩 하단 */}
+                {/* 영업이익률 칩 — 영업이익 칩 하단 */}
                 {(() => {
                   const opFs = fs(11);
                   const opH  = opFs + 10;
@@ -439,7 +437,7 @@ export function ProfitChart() {
         {/* zero baseline */}
         <line x1={plotLeft} y1={yZero} x2={plotRight} y2={yZero} stroke={chartTheme.refLine} strokeWidth={1.5} />
 
-        {/* 영업외손익·영업이익률 라벨 — 맨 왼쪽에 한 번씩만 */}
+        {/* 영업이익·영업이익률 라벨 — 맨 왼쪽에 한 번씩만 */}
         {daewoo && data.length > 0 && (() => {
           const chipFs = fs(13);
           const chipH  = chipFs + 12;
@@ -449,7 +447,7 @@ export function ProfitChart() {
           return (
             <>
               <text x={plotLeft - 8} y={Y0 + 46 + chipH / 2} textAnchor="end" dominantBaseline="central" fontSize={fs(9)} fill={chartTheme.axisSmall}>
-                {t("profitChart:nonOperatingProfitLoss")}
+                {t("common:operatingProfit")}
               </text>
               <text x={plotLeft - 8} y={opY + opH / 2} textAnchor="end" dominantBaseline="central" fontSize={fs(9)} fill={chartTheme.axisSmall}>
                 {t("profitChart:operatingMarginRate")}
