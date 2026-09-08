@@ -100,6 +100,8 @@ export interface OrderStatusData {
 export interface DashboardData {
   year: number;
   month: number;
+  /** YTD KPI 누계 기준 관리월. 기본 조회 종료월과 독립적으로 현재월을 사용한다. */
+  managementMonth: number;
   orderMonthActual: number | null;
   kpi: KpiItem[];
   performanceRows: PerformanceRow[];
@@ -188,6 +190,8 @@ export interface DeriveOptions {
   projectScope: ProjectScope | null;
   /** 매출 차트 데이터를 조회 기간과 무관하게 12개월 전체로 생성 (엑셀 보고서용) */
   salesFullYear?: boolean;
+  /** YTD KPI 누계 기준월. 생략하면 조회 종료월을 사용한다. */
+  managementMonth?: number;
 }
 
 export function defaultDeriveOptions(month: number): DeriveOptions {
@@ -210,6 +214,10 @@ export function deriveDashboardData(
   const emptyRange = from > to;
   const M = Math.min(Math.max(to, 1), 12);
   const F = Math.min(Math.max(from, 1), 12);
+  const managementMonth = Math.min(
+    Math.max(opts.managementMonth ?? M, 1),
+    12,
+  );
 
   const lines = summary?.lines ?? [];
   const byCode = new Map(lines.map((l) => [l.code, l]));
@@ -291,8 +299,8 @@ export function deriveDashboardData(
       p = line.plan[M - 1] ?? 0;
       a = line.actual[M - 1] ?? 0;
     } else if (mode === "ytd") {
-      p = rangeSum(line.plan, 1, M);
-      a = rangeSum(line.actual, 1, M);
+      p = rangeSum(line.plan, 1, managementMonth);
+      a = rangeSum(line.actual, 1, managementMonth);
     } else {
       p = line.planTotal;
       a = line.actualTotal;
@@ -432,6 +440,7 @@ export function deriveDashboardData(
   return {
     year: summary.year,
     month: M,
+    managementMonth,
     orderMonthActual: orders?.actual[M - 1] ?? null,
     kpi,
     performanceRows,
@@ -535,6 +544,7 @@ export function useDashboardData() {
       unitLabel,
       projectScope,
       salesFullYear: true,
+      managementMonth: new Date().getMonth() + 1,
     });
   }, [
     summaryForYear,

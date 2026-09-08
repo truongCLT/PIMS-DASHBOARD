@@ -19,14 +19,19 @@ interface Line {
   actualTotal: number;
 }
 
-function kpiCalc(line: Line, mode: "monthly" | "ytd" | "fullYear", M: number) {
+function kpiCalc(
+  line: Line,
+  mode: "monthly" | "ytd" | "fullYear",
+  M: number,
+  managementMonth = M,
+) {
   const plan =
     mode === "monthly" ? line.plan[M - 1]
-    : mode === "ytd"   ? rangeSum(line.plan, 1, M)
+    : mode === "ytd"   ? rangeSum(line.plan, 1, managementMonth)
     :                    line.planTotal;
   const actual =
     mode === "monthly" ? line.actual[M - 1]
-    : mode === "ytd"   ? rangeSum(line.actual, 1, M)
+    : mode === "ytd"   ? rangeSum(line.actual, 1, managementMonth)
     :                    line.actualTotal;
   return { plan, actual };
 }
@@ -75,6 +80,12 @@ describe("kpiCalc · ytd 모드 (당월 누적)", () => {
     expect(ytd.plan).toBe(2800);
     expect(ytd.plan).toBeGreaterThan(monthly.plan);
   });
+
+  it("조회 종료월이 8월이어도 관리월이 9월이면 YTD는 1~9월 합계여야 한다", () => {
+    const result = kpiCalc(LINE, "ytd", 8, 9);
+    expect(result.plan).toBe(rangeSum(PLAN_ARR, 1, 9));
+    expect(result.actual).toBe(rangeSum(ACTUAL_ARR, 1, 9));
+  });
 });
 
 /* ── 전체연도 모드 ── */
@@ -108,5 +119,6 @@ describe("기간 배지 라벨 생성", () => {
 
   it("M=1이면 단월 표시", () => expect(ytdPeriodLabel(1)).toBe("1월"));
   it("M=7이면 범위 표시",  () => expect(ytdPeriodLabel(7)).toBe("1~7월"));
+  it("관리월이 9월이면 1~9월 표시", () => expect(ytdPeriodLabel(9)).toBe("1~9월"));
   it("M=12이면 전체 표시", () => expect(ytdPeriodLabel(12)).toBe("1~12월"));
 });

@@ -406,9 +406,9 @@ export function KPICards() {
   const { t: tc } = useTranslation("common");
   /** 당월 누적: "1~M월" */
   const ytdPeriod = derived
-    ? derived.month > 1
-      ? tc("periodRange", { from: 1, to: derived.month })
-      : tc("periodSingle", { month: derived.month })
+    ? derived.managementMonth > 1
+      ? tc("periodRange", { from: 1, to: derived.managementMonth })
+      : tc("periodSingle", { month: derived.managementMonth })
     : undefined;
   /** 연간 누적: "1~12월" */
   const fullYearPeriod = derived ? tc("periodRange", { from: 1, to: 12 }) : undefined;
