@@ -1071,6 +1071,90 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiErrorMessage"
+  /orders/import/preview:
+    post:
+      operationId: previewOrderImport
+      tags: [mgmtreport]
+      security: [{ adminBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file: { type: string, format: binary }
+                year: { type: integer }
+              required: [file, year]
+      responses:
+        "200":
+          description: Parsed order workbook preview
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OrderImportPreview" }
+  /orders/import/apply:
+    post:
+      operationId: applyOrderImport
+      tags: [mgmtreport]
+      security: [{ adminBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file: { type: string, format: binary }
+                year: { type: integer }
+              required: [file, year]
+      responses:
+        "200":
+          description: Order workbook applied
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OrderImportResult" }
+  /orders/import/history:
+    get:
+      operationId: listOrderImportHistory
+      tags: [mgmtreport]
+      security: [{ adminBearer: [] }]
+      responses:
+        "200":
+          description: Recent order imports
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OrderImportHistoryList" }
+  /orders/import/revert:
+    post:
+      operationId: revertOrderImport
+      tags: [mgmtreport]
+      security: [{ adminBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/OrderImportRevertInput" }
+      responses:
+        "200":
+          description: Previous order data restored
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OrderImportRevertResult" }
+  /orders/current.xlsx:
+    get:
+      operationId: downloadCurrentOrders
+      tags: [mgmtreport]
+      parameters:
+        - name: year
+          in: query
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Current order data workbook
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: { type: string, format: binary }
   /mgmtreport/import/preview:
     post:
       operationId: previewMgmtreportImport
@@ -1581,6 +1665,68 @@ components:
             $ref: "#/components/schemas/MgmtreportImportProjectPreview"
       required:
         [year, unit, projectCount, monthlyCount, annualCount, pnlCount, monthsWithActual, totals, projects]
+    OrderImportEntry:
+      type: object
+      properties:
+        projectName: { type: string }
+        planAmount: { type: [number, "null"] }
+        planDate: { type: [string, "null"] }
+        actualAmount: { type: [number, "null"] }
+        actualDate: { type: [string, "null"] }
+      required: [projectName, planAmount, planDate, actualAmount, actualDate]
+    OrderImportPreview:
+      type: object
+      properties:
+        year: { type: integer }
+        referenceMonth: { type: integer }
+        unit: { type: string }
+        projectCount: { type: integer }
+        totals:
+          type: object
+          properties:
+            plan: { type: number }
+            actual: { type: number }
+          required: [plan, actual]
+        entries:
+          type: array
+          items: { $ref: "#/components/schemas/OrderImportEntry" }
+      required: [year, referenceMonth, unit, projectCount, totals, entries]
+    OrderImportResult:
+      allOf:
+        - $ref: "#/components/schemas/OrderImportPreview"
+        - type: object
+          properties:
+            applied: { type: boolean }
+          required: [applied]
+    OrderImportHistoryEntry:
+      type: object
+      properties:
+        id: { type: integer }
+        createdAt: { type: string }
+        filename: { type: string }
+        year: { type: integer }
+        referenceMonth: { type: integer }
+        snapshotEmpty: { type: boolean }
+      required: [id, createdAt, filename, year, referenceMonth, snapshotEmpty]
+    OrderImportHistoryList:
+      type: object
+      properties:
+        entries:
+          type: array
+          items: { $ref: "#/components/schemas/OrderImportHistoryEntry" }
+      required: [entries]
+    OrderImportRevertInput:
+      type: object
+      properties:
+        historyId: { type: integer }
+      required: [historyId]
+    OrderImportRevertResult:
+      type: object
+      properties:
+        filename: { type: string }
+        year: { type: integer }
+        restoredProjects: { type: integer }
+      required: [filename, year, restoredProjects]
     MgmtreportImportResult:
       allOf:
         - $ref: "#/components/schemas/MgmtreportImportPreview"

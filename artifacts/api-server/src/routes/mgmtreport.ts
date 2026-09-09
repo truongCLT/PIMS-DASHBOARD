@@ -11,6 +11,7 @@ import {
   divisionsTable,
   companiesTable,
   pdOverviewTable,
+  orderEntriesTable,
 } from "@workspace/db";
 import { mrSettingsTable } from "@workspace/db/schema/mgmtreport";
 import {
@@ -44,6 +45,15 @@ import {
   MgmtreportParseError,
   MgmtreportRevertError,
 } from "../lib/mgmtreportImport";
+import {
+  applyOrderImport,
+  buildCurrentOrderWorkbook,
+  buildOrderPreview,
+  listOrderImportHistory,
+  OrderImportError,
+  parseOrderWorkbook,
+  revertOrderImport,
+} from "../lib/orderImport";
 import { requireAdmin } from "../middlewares/adminAuth";
 
 const router: IRouter = Router();
@@ -204,6 +214,69 @@ router.post("/mgmtreport/import/revert", requireAdmin, async (req, res) => {
   }
 });
 
+router.post("/orders/import/preview", requireAdmin, async (req, res) => {
+  const r = await readUpload(req, res);
+  if ("error" in r) return void res.status(400).json({ error: r.error });
+  try {
+    res.json(buildOrderPreview(await parseOrderWorkbook(r.file.buffer, r.year)));
+  } catch (err) {
+    if (err instanceof OrderImportError) return void res.status(422).json({ error: err.message });
+    req.log.error({ err }, "failed to preview order import");
+    res.status(500).json({ error: "수주 계획 Excel 분석에 실패했습니다." });
+  }
+});
+
+router.post("/orders/import/apply", requireAdmin, async (req, res) => {
+  const r = await readUpload(req, res);
+  if ("error" in r) return void res.status(400).json({ error: r.error });
+  try {
+    const parsed = await parseOrderWorkbook(r.file.buffer, r.year);
+    const filename = Buffer.from(r.file.originalname, "latin1").toString("utf8");
+    await applyOrderImport(parsed, filename);
+    res.json({ ...buildOrderPreview(parsed), applied: true });
+  } catch (err) {
+    if (err instanceof OrderImportError) return void res.status(422).json({ error: err.message });
+    req.log.error({ err }, "failed to apply order import");
+    res.status(500).json({ error: "수주 계획 반영에 실패했습니다. 기존 데이터는 변경되지 않았습니다." });
+  }
+});
+
+router.get("/orders/import/history", requireAdmin, async (req, res) => {
+  try {
+    res.json({ entries: await listOrderImportHistory() });
+  } catch (err) {
+    req.log.error({ err }, "failed to list order import history");
+    res.status(500).json({ error: "수주 계획 반영 이력 조회에 실패했습니다." });
+  }
+});
+
+router.post("/orders/import/revert", requireAdmin, async (req, res) => {
+  const historyId = Number(req.body?.historyId);
+  if (!Number.isInteger(historyId)) return void res.status(400).json({ error: "잘못된 요청입니다." });
+  try {
+    res.json(await revertOrderImport(historyId));
+  } catch (err) {
+    if (err instanceof OrderImportError) return void res.status(422).json({ error: err.message });
+    req.log.error({ err }, "failed to revert order import");
+    res.status(500).json({ error: "수주 계획 되돌리기에 실패했습니다." });
+  }
+});
+
+router.get("/orders/current.xlsx", async (req, res) => {
+  const year = parseYearField(req.query.year);
+  if (year == null) return void res.status(400).json({ error: "연도가 올바르지 않습니다." });
+  try {
+    const workbook = await buildCurrentOrderWorkbook(year);
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.setHeader("Content-Disposition", `attachment; filename=\"orders-${year}.xlsx\"`);
+    res.send(workbook);
+  } catch (err) {
+    if (err instanceof OrderImportError) return void res.status(404).json({ error: err.message });
+    req.log.error({ err }, "failed to download order workbook");
+    res.status(500).json({ error: "수주 계획 Excel 다운로드에 실패했습니다." });
+  }
+});
+
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
 router.get("/mgmtreport/summary", async (req, res) => {
@@ -212,6 +285,7 @@ router.get("/mgmtreport/summary", async (req, res) => {
       .select()
       .from(mrPnlTable)
       .orderBy(asc(mrPnlTable.year), asc(mrPnlTable.sortOrder));
+    const orderRows = await db.select().from(orderEntriesTable);
 
     type Line = {
       code: string;
@@ -252,6 +326,35 @@ router.get("/mgmtreport/summary", async (req, res) => {
         l.plan[r.month - 1] = round2(v);
       } else {
         l.actual[r.month - 1] = round2(v);
+      }
+    }
+
+    const initializedOrderYears = new Set<number>();
+    for (const r of orderRows) {
+      let lines = linesByYear.get(r.year);
+      if (!lines) {
+        lines = new Map();
+        linesByYear.set(r.year, lines);
+      }
+      const line: Line = initializedOrderYears.has(r.year) && lines.get("new_orders") ? lines.get("new_orders")! : {
+        code: "new_orders",
+        label: "수 주",
+        plan: Array(12).fill(0),
+        actual: Array(12).fill(0),
+        planTotal: 0,
+        actualTotal: 0,
+        planTotalOverride: null,
+        actualTotalOverride: null,
+      };
+      initializedOrderYears.add(r.year);
+      lines.set("new_orders", line);
+      if (r.planAmount != null && r.planDate?.startsWith(`${r.year}-`)) {
+        const month = Number(r.planDate.slice(5, 7));
+        line.plan[month - 1] = round2(line.plan[month - 1] + Number(r.planAmount));
+      }
+      if (r.actualAmount != null && r.actualDate?.startsWith(`${r.year}-`)) {
+        const month = Number(r.actualDate.slice(5, 7));
+        line.actual[month - 1] = round2(line.actual[month - 1] + Number(r.actualAmount));
       }
     }
 

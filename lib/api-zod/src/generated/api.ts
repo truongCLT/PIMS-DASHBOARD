@@ -1168,6 +1168,86 @@ export const UpdateMgmtreportProjectStatusResponse = zod.object({
 })
 
 
+export const PreviewOrderImportBody = zod.object({
+  "file": zod.instanceof(File),
+  "year": zod.number()
+})
+
+export const PreviewOrderImportResponse = zod.object({
+  "year": zod.number(),
+  "referenceMonth": zod.number(),
+  "unit": zod.string(),
+  "projectCount": zod.number(),
+  "totals": zod.object({
+  "plan": zod.number(),
+  "actual": zod.number()
+}),
+  "entries": zod.array(zod.object({
+  "projectName": zod.string(),
+  "planAmount": zod.number().nullable(),
+  "planDate": zod.string().nullable(),
+  "actualAmount": zod.number().nullable(),
+  "actualDate": zod.string().nullable()
+}))
+})
+
+
+export const ApplyOrderImportBody = zod.object({
+  "file": zod.instanceof(File),
+  "year": zod.number()
+})
+
+export const ApplyOrderImportResponse = zod.object({
+  "year": zod.number(),
+  "referenceMonth": zod.number(),
+  "unit": zod.string(),
+  "projectCount": zod.number(),
+  "totals": zod.object({
+  "plan": zod.number(),
+  "actual": zod.number()
+}),
+  "entries": zod.array(zod.object({
+  "projectName": zod.string(),
+  "planAmount": zod.number().nullable(),
+  "planDate": zod.string().nullable(),
+  "actualAmount": zod.number().nullable(),
+  "actualDate": zod.string().nullable()
+}))
+}).and(zod.object({
+  "applied": zod.boolean()
+}))
+
+
+export const ListOrderImportHistoryResponse = zod.object({
+  "entries": zod.array(zod.object({
+  "id": zod.number(),
+  "createdAt": zod.string(),
+  "filename": zod.string(),
+  "year": zod.number(),
+  "referenceMonth": zod.number(),
+  "snapshotEmpty": zod.boolean()
+}))
+})
+
+
+export const RevertOrderImportBody = zod.object({
+  "historyId": zod.number()
+})
+
+export const RevertOrderImportResponse = zod.object({
+  "filename": zod.string(),
+  "year": zod.number(),
+  "restoredProjects": zod.number()
+})
+
+
+export const DownloadCurrentOrdersQueryParams = zod.object({
+  "year": zod.coerce.number()
+})
+
+export const DownloadCurrentOrdersResponse = zod.unknown()
+
+
 /**
  * @summary Parse an uploaded 경영관리보고회 Excel and return a preview (no DB changes)
  */

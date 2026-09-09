@@ -277,6 +277,59 @@ export interface MgmtreportImportPreview {
   projects: MgmtreportImportProjectPreview[];
 }
 
+export interface OrderImportEntry {
+  projectName: string;
+  /** @nullable */
+  planAmount: number | null;
+  /** @nullable */
+  planDate: string | null;
+  /** @nullable */
+  actualAmount: number | null;
+  /** @nullable */
+  actualDate: string | null;
+}
+
+export type OrderImportPreviewTotals = {
+  plan: number;
+  actual: number;
+};
+
+export interface OrderImportPreview {
+  year: number;
+  referenceMonth: number;
+  unit: string;
+  projectCount: number;
+  totals: OrderImportPreviewTotals;
+  entries: OrderImportEntry[];
+}
+
+export type OrderImportResult = OrderImportPreview & {
+  applied: boolean;
+};
+
+export interface OrderImportHistoryEntry {
+  id: number;
+  createdAt: string;
+  filename: string;
+  year: number;
+  referenceMonth: number;
+  snapshotEmpty: boolean;
+}
+
+export interface OrderImportHistoryList {
+  entries: OrderImportHistoryEntry[];
+}
+
+export interface OrderImportRevertInput {
+  historyId: number;
+}
+
+export interface OrderImportRevertResult {
+  filename: string;
+  year: number;
+  restoredProjects: number;
+}
+
 export type MgmtreportImportResult = MgmtreportImportPreview & {
   applied: boolean;
 };
@@ -910,6 +963,20 @@ year: number;
  * Include corporate rollup rows (DECV법인 취합본)
  */
 includeGroups?: boolean;
+};
+
+export type PreviewOrderImportBody = {
+  file: Blob;
+  year: number;
+};
+
+export type ApplyOrderImportBody = {
+  file: Blob;
+  year: number;
+};
+
+export type DownloadCurrentOrdersParams = {
+year: number;
 };
 
 export type PreviewMgmtreportImportBody = {
