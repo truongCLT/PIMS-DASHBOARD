@@ -15,6 +15,8 @@
   "colCategory": "카테고리",
   "colBizType": "사업유형",
   "colShare": "비율",
-  "noSiteData": "해당 월의 현장별 데이터가 없습니다.",
+  "noSiteData": "해당 월의 현장별 실적이 없습니다.",
+  "siteDataNotReceived": "회사 전체 실적은 있으나 프로젝트별 원천 데이터가 수신되지 않았습니다.",
+  "summaryDifference": "회사 전체 매출이익 대비 차이: {{value}}",
   "loadingSiteData": "현장 데이터 로딩 중…"
 }

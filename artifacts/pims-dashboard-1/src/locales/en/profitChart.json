@@ -15,6 +15,8 @@
   "colCategory": "Category",
   "colBizType": "Business Type",
   "colShare": "Share",
-  "noSiteData": "No site-level data for this month.",
+  "noSiteData": "There is no site-level activity for this month.",
+  "siteDataNotReceived": "Company totals exist, but project-level source data has not been received.",
+  "summaryDifference": "Difference from company gross profit: {{value}}",
   "loadingSiteData": "Loading site data…"
 }

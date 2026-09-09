@@ -11,3 +11,4 @@
 - [Async PDF downloads](async-pdf-downloads.md) — after long canvas capture, jsPDF.save may not emit a browser download; use an explicit Blob URL and temporary anchor.
 - [Safe additive DB changes](safe-additive-db-changes.md) — schema push may surface unrelated destructive prompts; apply only the requested additive columns instead of forcing.
 - [YTD management month](ytd-management-month.md) — YTD KPI uses the current management month, not the default query window's last closed month.
+- [Project profit drilldown source](project-profit-drilldown-source.md) — monthly project drilldowns must use management-report project data, not the independently imported salescost snapshot.

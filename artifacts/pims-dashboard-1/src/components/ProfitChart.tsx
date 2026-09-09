@@ -1,8 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  useListSalescostSites,
-  getListSalescostSitesQueryKey,
   useListMgmtreportProjects,
   getListMgmtreportProjectsQueryKey,
 } from "@workspace/api-client-react";
@@ -69,78 +67,41 @@ export function ProfitChart() {
   const { unitIndex, currency, fxRates, project, division, statusFilter } = filters;
   const convert = makeConverter(currency, unitIndex, fxRates);
 
-  /* ── 현장별 매출/원가 데이터 프리패치 ── */
-  const revParams = { year: REPORT_YEAR, metric: "revenue" as const };
-  const cogsParams = { year: REPORT_YEAR, metric: "cogs" as const };
-  const revQuery = useListSalescostSites(revParams, {
-    query: { queryKey: getListSalescostSitesQueryKey(revParams) },
-  });
-  const cogsQuery = useListSalescostSites(cogsParams, {
-    query: { queryKey: getListSalescostSitesQueryKey(cogsParams) },
-  });
-
-  /* ── siteCode 스코프 필터 (SalesChart와 동일 로직) ── */
+  /* ── 경영보고 프로젝트별 월 매출/원가 ── */
   const projectSelected = project !== "All";
   const divisionSelected = !projectSelected && division != null;
-  const needProjectsList = projectSelected || divisionSelected;
   const projectsQuery = useListMgmtreportProjects(
     { year: REPORT_YEAR },
     {
       query: {
         queryKey: getListMgmtreportProjectsQueryKey({ year: REPORT_YEAR }),
-        enabled: needProjectsList,
       },
     },
   );
-  const scopedSiteCodes = useMemo<Set<string> | null>(() => {
-    if (!needProjectsList) return null;
-    const projects = projectsQuery.data?.projects ?? [];
-    if (projectSelected) {
-      const p = projects.find((x) => x.name === project);
-      if (!p?.siteCode) return new Set();
-      return new Set([p.siteCode]);
-    }
-    if (divisionSelected && division) {
-      const codes = projects
-        .filter(
-          (p) =>
-            !p.isGroup &&
-            (p.businessType ?? classifyMrProject(p.name)) === division &&
-            (statusFilter == null || (p.status ?? "ongoing") === statusFilter) &&
-            p.siteCode != null,
-        )
-        .map((p) => p.siteCode as string);
-      return new Set(codes);
-    }
-    return null;
-  }, [needProjectsList, projectSelected, divisionSelected, project, division, statusFilter, projectsQuery.data]);
 
   /* ── 드릴다운 rows 계산 ── */
   const drillMonthIdx = drillRow ? extractMonthIdx(drillRow.m) : null;
   const drillSiteRows = useMemo(() => {
     if (drillMonthIdx == null) return [];
-    const revSites = revQuery.data?.sites ?? [];
-    const cogsSites = cogsQuery.data?.sites ?? [];
-    // 매출 또는 원가가 있는 모든 현장 코드의 합집합 (cost-only 현장도 포함)
-    const revMap = new Map(revSites.map((s) => [s.code, s]));
-    const cogsMap = new Map(cogsSites.map((s) => [s.code, s]));
-    const allCodes = new Set([...revMap.keys(), ...cogsMap.keys()]);
-    // 스코프 적용
-    const targetCodes = scopedSiteCodes == null
-      ? allCodes
-      : new Set([...allCodes].filter((code) => scopedSiteCodes.has(code)));
+    const projects = (projectsQuery.data?.projects ?? []).filter((p) => {
+      if (p.isGroup) return false;
+      if (projectSelected) return p.name === project;
+      if (!divisionSelected || !division) return true;
+      return (
+        (p.businessType ?? classifyMrProject(p.name)) === division &&
+        (statusFilter == null || (p.status ?? "ongoing") === statusFilter)
+      );
+    });
 
-    return [...targetCodes]
-      .map((code) => {
-        const rs = revMap.get(code);
-        const cs = cogsMap.get(code);
-        const rev = convert(rs?.months[drillMonthIdx] ?? 0);
-        const cogs = convert(cs?.months[drillMonthIdx] ?? 0);
+    return projects
+      .map((p) => {
+        const rev = convert(p.revenueActual[drillMonthIdx] ?? 0);
+        const cogs = convert(p.cogsActual[drillMonthIdx] ?? 0);
         const gross = rev - cogs;
         return {
-          name: rs?.name ?? cs?.name ?? code,
-          category: rs?.category ?? cs?.category ?? "-",
-          bizType: rs?.bizType ?? cs?.bizType ?? "-",
+          name: p.name,
+          category: p.companyLabel ?? "-",
+          bizType: p.businessType ?? classifyMrProject(p.name),
           revenue: Math.round(rev),
           cogs: Math.round(cogs),
           gross: Math.round(gross),
@@ -148,16 +109,27 @@ export function ProfitChart() {
       })
       .filter((r) => r.revenue !== 0 || r.cogs !== 0)
       .sort((a, b) => b.gross - a.gross);
-  }, [drillMonthIdx, revQuery.data, cogsQuery.data, scopedSiteCodes, convert]);
+  }, [
+    drillMonthIdx,
+    projectsQuery.data,
+    projectSelected,
+    project,
+    divisionSelected,
+    division,
+    statusFilter,
+    convert,
+  ]);
 
   const drillGrossTotal = drillSiteRows.reduce((acc, r) => acc + r.gross, 0);
+  const drillRevenueTotal = drillSiteRows.reduce((acc, r) => acc + r.revenue, 0);
+  const drillCogsTotal = drillSiteRows.reduce((acc, r) => acc + r.cogs, 0);
+  const drillGrossDifference = drillRow == null ? 0 : drillGrossTotal - drillRow.total;
   const drillRowsWithShare = drillSiteRows.map((r) => ({
     ...r,
     share: drillGrossTotal !== 0 ? `${((r.gross / drillGrossTotal) * 100).toFixed(1)}%` : "-",
   }));
 
-  const drillIsLoading =
-    revQuery.isLoading || cogsQuery.isLoading || (needProjectsList && projectsQuery.isLoading);
+  const drillIsLoading = projectsQuery.isLoading;
   const { theme } = useTheme();
   const daewoo = theme.charts?.profitVariant === "daewoo"; // 대우 예시1 스타일
   const compact     = unitIndex === 1;                 // 단위 기반 폰트 축소
@@ -562,28 +534,43 @@ export function ProfitChart() {
           <div style={{ ...emptyNote, padding: "28px 16px" }}>
             {t("profitChart:loadingSiteData")}
           </div>
-        ) : (revQuery.isError || cogsQuery.isError) ? (
+        ) : projectsQuery.isError ? (
           <div style={{ ...emptyNote, padding: "28px 16px", color: ACHIEVE_RED }}>
             {t("profitChart:dataLoadFailed")}
           </div>
         ) : drillRowsWithShare.length === 0 ? (
           <div style={{ ...emptyNote, padding: "28px 16px" }}>
-            {t("profitChart:noSiteData")}
+            {drillRow && drillRow.total !== 0
+              ? t("profitChart:siteDataNotReceived")
+              : t("profitChart:noSiteData")}
           </div>
         ) : (
-          <DetailDataTable
-            rowKey={(row) => row.name}
-            columns={[
-              { key: "name", label: t("profitChart:colSiteName"), align: "left" },
-              { key: "category", label: t("profitChart:colCategory"), align: "left" },
-              { key: "bizType", label: t("profitChart:colBizType"), align: "left" },
-              { key: "revenue", label: t("common:revenue"), align: "right", format: (v) => typeof v === "number" ? v.toLocaleString("ko-KR") : "-" },
-              { key: "cogs", label: t("common:cogs"), align: "right", format: (v) => typeof v === "number" ? v.toLocaleString("ko-KR") : "-" },
-              { key: "gross", label: t("common:grossProfit"), align: "right", format: (v) => typeof v === "number" ? v.toLocaleString("ko-KR") : "-" },
-              { key: "share", label: t("profitChart:colShare"), align: "right" },
-            ]}
-            rows={drillRowsWithShare}
-          />
+          <>
+            <DetailDataTable
+              rowKey={(row) => row.name}
+              columns={[
+                { key: "name", label: t("profitChart:colSiteName"), align: "left" },
+                { key: "category", label: t("profitChart:colCategory"), align: "left" },
+                { key: "bizType", label: t("profitChart:colBizType"), align: "left" },
+                { key: "revenue", label: t("common:revenue"), align: "right", format: (v) => typeof v === "number" ? v.toLocaleString("ko-KR") : "-" },
+                { key: "cogs", label: t("common:cogs"), align: "right", format: (v) => typeof v === "number" ? v.toLocaleString("ko-KR") : "-" },
+                { key: "gross", label: t("common:grossProfit"), align: "right", format: (v) => typeof v === "number" ? v.toLocaleString("ko-KR") : "-" },
+                { key: "share", label: t("profitChart:colShare"), align: "right" },
+              ]}
+              rows={drillRowsWithShare}
+              totalRow={{
+                revenue: drillRevenueTotal,
+                cogs: drillCogsTotal,
+                gross: drillGrossTotal,
+                share: "100.0%",
+              }}
+            />
+            <div style={{ ...emptyNote, padding: "8px 12px 0", textAlign: "right" }}>
+              {t("profitChart:summaryDifference", {
+                value: drillGrossDifference.toLocaleString("ko-KR"),
+              })}
+            </div>
+          </>
         )}
       </DetailModal>
     </div>
