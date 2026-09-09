@@ -14,8 +14,6 @@ import {
   Cell,
 } from "recharts";
 import {
-  useListSalescostSites,
-  getListSalescostSitesQueryKey,
   useListMgmtreportProjects,
   getListMgmtreportProjectsQueryKey,
 } from "@workspace/api-client-react";
@@ -140,77 +138,48 @@ export function SalesChart() {
   const PlanRateLabel = makePlanRateLabel(visibleData);
   const ActualRateLabel = makeActualRateLabel(visibleData);
 
-  /* ── 현장별 매출 데이터 — 항상 프리패치(드릴다운 클릭 즉시 표시) ── */
-  const sitesParams = { year: REPORT_YEAR, metric: "revenue" as const };
-  const sitesQuery = useListSalescostSites(sitesParams, {
-    query: { queryKey: getListSalescostSitesQueryKey(sitesParams) },
-  });
-
   /* ── 프로젝트/부문 스코프 결정 ── */
   const projectSelected = project !== "All";
   const divisionSelected = !projectSelected && division != null;
-  const needProjectsList = projectSelected || divisionSelected;
 
   const projectsQuery = useListMgmtreportProjects(
     { year: REPORT_YEAR },
     {
       query: {
         queryKey: getListMgmtreportProjectsQueryKey({ year: REPORT_YEAR }),
-        enabled: needProjectsList,
       },
     },
   );
 
   /**
-   * 현재 필터 스코프에 해당하는 sc_sites.code 집합.
-   * null = 전체 현장(필터 없음).
-   * 빈 Set = 스코프 내 siteCode 매핑이 없음 → 현장 상세 없음.
-   *
-   * mr_projects.siteCode → sc_sites.code 로 연결하는 것이 올바른 방식.
-   * (이름 기반 매칭은 별개 식별자이므로 사용하지 않음.)
+   * 회사 총매출과 동일한 경영관리보고 프로젝트 월 데이터를 사용한다.
+   * 별도 salescost 현장 집계는 최신 경영보고보다 입력 기간이 짧을 수 있어
+   * 총매출은 있는데 현장 상세가 비는 불일치를 만들 수 있다.
    */
-  const scopedSiteCodes = useMemo<Set<string> | null>(() => {
-    if (!needProjectsList) return null; // 전체: 필터링 불필요
+  const scopedProjects = useMemo(() => {
     const projects = projectsQuery.data?.projects ?? [];
     if (projectSelected) {
-      // 단일 프로젝트: 해당 프로젝트의 siteCode 한 개
-      const p = projects.find((x) => x.name === project);
-      if (!p?.siteCode) return new Set(); // 매핑 없음 → 현장 데이터 없음
-      return new Set([p.siteCode]);
+      return projects.filter((p) => p.name === project);
     }
-    if (divisionSelected && division) {
-      const codes = projects
-        .filter(
-          (p) =>
-            !p.isGroup &&
-            (p.businessType ?? classifyMrProject(p.name)) === division &&
-            (statusFilter == null || (p.status ?? "ongoing") === statusFilter) &&
-            p.siteCode != null,
-        )
-        .map((p) => p.siteCode as string);
-      return new Set(codes);
-    }
-    return null;
-  }, [needProjectsList, projectSelected, divisionSelected, project, division, statusFilter, projectsQuery.data]);
+    return projects.filter(
+      (p) =>
+        !p.isGroup &&
+        (!divisionSelected || !division || (p.businessType ?? classifyMrProject(p.name)) === division) &&
+        (statusFilter == null || (p.status ?? "ongoing") === statusFilter),
+    );
+  }, [projectSelected, divisionSelected, project, division, statusFilter, projectsQuery.data]);
 
   /* ── 클릭된 월의 현장별 rows 계산 ── */
   const drillMonthIdx = drillRow ? extractMonthIdx(drillRow.month) : null;
 
   const drillSiteRows = useMemo(() => {
     if (drillMonthIdx == null) return [];
-    const allSites = sitesQuery.data?.sites ?? [];
-    // 스코프 적용: 선택된 프로젝트/부문에 속한 현장만
-    const scoped =
-      scopedSiteCodes == null
-        ? allSites
-        : allSites.filter((s) => scopedSiteCodes.has(s.code));
-
-    const mapped = scoped
-      .map((s) => ({
-        name: s.name,
-        category: s.category ?? "-",
-        bizType: s.bizType ?? "-",
-        amount: Math.round(convert(s.months[drillMonthIdx] ?? 0)),
+    const mapped = scopedProjects
+      .map((p) => ({
+        name: p.name,
+        category: p.companyLabel ?? "-",
+        bizType: p.businessType ?? classifyMrProject(p.name),
+        amount: Math.round(convert(p.revenueActual[drillMonthIdx] ?? 0)),
       }))
       // 0인 현장은 제외, 마이너스(조정 역분개 등)는 유지
       .filter((r) => r.amount !== 0)
@@ -221,12 +190,11 @@ export function SalesChart() {
       ...r,
       share: total !== 0 ? `${((r.amount / total) * 100).toFixed(1)}%` : "-",
     }));
-  }, [drillMonthIdx, sitesQuery.data, scopedSiteCodes, convert]);
+  }, [drillMonthIdx, scopedProjects, convert]);
 
   /* ── 드릴다운 로딩 상태 ──
    * 부문/프로젝트 스코프가 있는데 projects 목록이 아직 오는 중이면 "loading" 표시 */
-  const drillIsLoading =
-    sitesQuery.isLoading || (needProjectsList && projectsQuery.isLoading);
+  const drillIsLoading = projectsQuery.isLoading;
 
   /* month + 달성률 pill chip tick */
   const MonthRateTick = (props: any) => {
@@ -568,7 +536,7 @@ export function SalesChart() {
           <div style={{ ...emptyNote, padding: "28px 16px" }}>
             {t("salesChart:loadingSiteData")}
           </div>
-        ) : sitesQuery.isError ? (
+        ) : projectsQuery.isError ? (
           <div style={{ ...emptyNote, padding: "28px 16px", color: ACHIEVE_RED }}>
             {t("salesChart:errorLoadFailed")}
           </div>
