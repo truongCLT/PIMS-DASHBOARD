@@ -354,6 +354,9 @@ router.get("/mgmtreport/summary", async (req, res) => {
       }
       if (r.actualAmount != null && r.actualDate?.startsWith(`${r.year}-`)) {
         const month = Number(r.actualDate.slice(5, 7));
+        line.actualTotalOverride = round2(
+          (line.actualTotalOverride ?? 0) + Number(r.actualAmount),
+        );
         // The workbook column is "실적 및 전망": dates through 기준월 are
         // confirmed actuals, while later dates are forecasts. Only confirmed
         // actuals contribute to 수주 실적 and 연간 수주 계획 대비.

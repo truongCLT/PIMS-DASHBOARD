@@ -8,5 +8,7 @@
   "orderActual": "Orders received",
   "remainingUnordered": "Remaining (unordered)",
   "annualOrderPlan": "Annual order plan",
+  "annualOrderForecast": "Annual order forecast",
+  "forecastVsPlan": "({{percent}}% of plan)",
   "vsAnnualPlan": "vs. annual order plan"
 }

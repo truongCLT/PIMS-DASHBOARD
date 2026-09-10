@@ -13,7 +13,9 @@ export function OrderStatus() {
   const planTotal = derived?.orderStatus?.planTotal ?? 0;
   const ordered = derived?.orderStatus?.ordered ?? 0;
   const remaining = derived?.orderStatus?.remaining ?? 0;
+  const annualForecast = derived?.orderStatus?.annualForecast ?? 0;
   const pct = planTotal ? Math.round((ordered / planTotal) * 100) : 0;
+  const forecastPct = planTotal ? Math.round((annualForecast / planTotal) * 100) : 0;
 
   if (unavailable) {
     return (
@@ -51,10 +53,16 @@ export function OrderStatus() {
   const pctColor = pct >= 100 ? "#2e9e5b" : "#c0392b";
   const unit = derived?.unitLabel;
 
-  const rows = [
+  const rows: Array<{ dot: string; label: string; value: number; detail?: string }> = [
     { dot: "#3d6fdc", label: t("orderStatus:orderActual"), value: ordered },
     { dot: "#e3e7ee", label: t("orderStatus:remainingUnordered"), value: remaining },
     { dot: "#1a2233", label: t("orderStatus:annualOrderPlan"), value: planTotal },
+    {
+      dot: "#2e9e5b",
+      label: t("orderStatus:annualOrderForecast"),
+      value: annualForecast,
+      detail: t("orderStatus:forecastVsPlan", { percent: forecastPct }),
+    },
   ];
 
   return (
@@ -135,7 +143,14 @@ export function OrderStatus() {
             borderBottom: i < rows.length - 1 ? "1px solid #f2f4f8" : "none",
           }}>
             <span style={{ width: "9px", height: "9px", borderRadius: "3px", backgroundColor: r.dot, flexShrink: 0 }} />
-            <span style={{ fontSize: "12px", color: "#333", flex: 1, minWidth: 0 }}>{r.label}</span>
+            <span style={{ fontSize: "12px", color: "#333", flex: 1, minWidth: 0 }}>
+              {r.label}
+              {r.detail && (
+                <span style={{ display: "block", marginTop: "2px", fontSize: "10px", color: "#2e9e5b", fontWeight: 600 }}>
+                  {r.detail}
+                </span>
+              )}
+            </span>
             <span style={{ fontSize: statFont === "12px" ? "12px" : "15px", fontWeight: 700, color: "#1a2d4d" }}>
               {r.value.toLocaleString()}
             </span>

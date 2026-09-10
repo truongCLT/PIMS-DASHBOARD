@@ -95,6 +95,7 @@ export interface OrderStatusData {
   planTotal: number;
   ordered: number;
   remaining: number;
+  annualForecast: number;
 }
 
 export interface DashboardData {
@@ -426,6 +427,7 @@ export function deriveDashboardData(
       planTotal: roundSmart(pY),
       ordered: roundSmart(aM),
       remaining: roundSmart(Math.max(0, pY - aM)),
+      annualForecast: roundSmart(orders.actualTotal),
     };
   }
 

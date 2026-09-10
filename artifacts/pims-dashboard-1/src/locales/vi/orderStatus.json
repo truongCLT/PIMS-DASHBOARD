@@ -8,5 +8,7 @@
   "orderActual": "Thực tế nhận thầu",
   "remainingUnordered": "Còn lại (chưa nhận)",
   "annualOrderPlan": "Kế hoạch nhận thầu năm",
+  "annualOrderForecast": "Dự báo nhận thầu năm",
+  "forecastVsPlan": "({{percent}}% kế hoạch)",
   "vsAnnualPlan": "So với kế hoạch năm"
 }

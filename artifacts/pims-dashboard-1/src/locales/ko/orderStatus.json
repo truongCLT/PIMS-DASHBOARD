@@ -8,5 +8,7 @@
   "orderActual": "수주 실적",
   "remainingUnordered": "잔여 (미수주)",
   "annualOrderPlan": "연간 수주 계획",
+  "annualOrderForecast": "연간 수주 전망",
+  "forecastVsPlan": "(계획대비 {{percent}}%)",
   "vsAnnualPlan": "연간 수주 계획 대비"
 }
