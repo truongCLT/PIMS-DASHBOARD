@@ -10,10 +10,10 @@ const STRIP_ICONS = [TrendingUp, DollarSign, BarChart2, Activity];
 
 /** raw Korean title (fixed set produced by mgmtreportData.ts) → translation key */
 const KPI_TITLE_KEY: Record<string, string> = {
-  "당월 매출":          "ytdRevenue",
-  "당월 영업이익":      "ytdOperatingProfit",
-  "연간 누적 매출":     "fullYearRevenue",
-  "연간 누적 영업이익": "fullYearOperatingProfit",
+  "누적 매출":          "ytdRevenue",
+  "당월 누적 영업이익": "ytdOperatingProfit",
+  "연간 매출":          "fullYearRevenue",
+  "연간 영업이익":      "fullYearOperatingProfit",
 };
 
 interface KPICardProps {

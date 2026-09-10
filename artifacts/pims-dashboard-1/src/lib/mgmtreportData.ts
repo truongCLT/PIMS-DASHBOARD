@@ -315,10 +315,10 @@ export function deriveDashboardData(
   };
 
   const kpi: KpiItem[] = [
-    kpiOf("당월 매출", revenue, "ytd"),
-    kpiOf("당월 영업이익", op1 ?? gross, "ytd"),
-    kpiOf("연간 누적 매출", revenue, "fullYear"),
-    kpiOf("연간 누적 영업이익", op1 ?? gross, "fullYear"),
+    kpiOf("누적 매출", revenue, "ytd"),
+    kpiOf("당월 누적 영업이익", op1 ?? gross, "ytd"),
+    kpiOf("연간 매출", revenue, "fullYear"),
+    kpiOf("연간 영업이익", op1 ?? gross, "fullYear"),
   ];
 
   const pRow = (label: string, line: Line | null, subLine?: Line | null): PerformanceRow => {
