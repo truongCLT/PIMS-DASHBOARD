@@ -6,3 +6,46 @@ id = "jK273Ubz5Pc23BLg85e_j"
 uri = "file://exports/PIMS_대시보드2_데이터_업로드양식.xlsx"
 type = "table"
 title = "PIMS 대시보드2 데이터 업로드 양식"
+logical_id = "6ea2d6a5-14b2-4469-934c-5de4dca0bca4"
+
+[[outputs]]
+id = "gyv8cKwli7d6m9XX_t-xT"
+uri = "file://attached_assets/mgmtreport-2026-07-20260905-1128-restored.xlsx"
+type = "table"
+title = "Báo cáo tháng 07 — bản 11:28"
+description = "Bản Excel phục hồi từ snapshot production ngày 05/09/2026."
+logical_id = "df1f5ea0-a2f4-4869-91c1-eb4fc24424bd"
+content_hash = "sha256:271d795d5c6ff53c726cf17b8b7c79f78d5ff11eb7cde94545b48d0d870180f8"
+size = 36478
+mtime_ms = 1789035186056
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:c5dbf71e-e1df-4556-8ca8-f8dcf0f373f3/df1f5ea0-a2f4-4869-91c1-eb4fc24424bd/6b1b91c8-f6e1-4fd4-8a9c-3230eb593b7c"
+storage_version_token = "1789035197058211"
+content_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+[[outputs]]
+id = "m3309icyoGvo0CBtcENT-"
+uri = "file://attached_assets/mgmtreport-2026-07-20260905-1140-restored.xlsx"
+type = "table"
+title = "Báo cáo tháng 07 — bản 11:40"
+description = "Bản Excel phục hồi từ snapshot production ngày 05/09/2026."
+logical_id = "a37828ed-cccd-46b2-90df-b67b77e852a6"
+content_hash = "sha256:5b38f3d16fe00b57f697b08ff5206d366619ce6197546e225fe89e05981e2a7c"
+size = 36431
+mtime_ms = 1789035186060
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:c5dbf71e-e1df-4556-8ca8-f8dcf0f373f3/a37828ed-cccd-46b2-90df-b67b77e852a6/d02c6360-069d-451a-a8b2-f8a39b7a0f27"
+storage_version_token = "1789035198458906"
+content_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+[[outputs]]
+id = "uQI1QONvk0YxSqBYaLYmm"
+uri = "file://attached_assets/mgmtreport-2026-08-20260910-1402-restored.xlsx"
+type = "table"
+title = "Báo cáo tháng 08 — bản 14:02"
+description = "Bản Excel phục hồi từ dữ liệu production hiện tại ngày 10/09/2026."
+logical_id = "05f91ab5-c467-4820-ac88-102ab1a7fc87"
+content_hash = "sha256:b4e5b51eed5d8ac706171d9793ba3b26bd32e9e77c531b3e837156dde666bf28"
+size = 34770
+mtime_ms = 1789035186064
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:c5dbf71e-e1df-4556-8ca8-f8dcf0f373f3/05f91ab5-c467-4820-ac88-102ab1a7fc87/e5b874a9-3d16-4230-b157-91659e4ae561"
+storage_version_token = "1789035199782070"
+content_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
