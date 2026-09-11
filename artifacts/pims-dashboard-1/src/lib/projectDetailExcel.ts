@@ -4,6 +4,7 @@ import type {
   ProjectDetailMilestone,
   ProjectDetailCostEstimation,
   ProjectDetailCostBudget,
+  ProjectDetailCostBudgetMonthly,
   ProjectDetailOutsourcing,
   ProjectDetailCashflowPoint,
   ProjectDetailCogsPoint,
@@ -18,6 +19,7 @@ const SHEETS = {
   milestones: "2.마일스톤",
   costEstimation: "3.원가율",
   costBudget: "4.예산집행",
+  costBudgetMonthly: "4-1.공정별월간원가",
   outsourcing: "5.외주자재",
   cashflow: "6.월별자금",
   cogsMonthly: "7.월별매출원가",
@@ -31,6 +33,7 @@ const HEADERS: Record<string, string[]> = {
   [SHEETS.milestones]: ["구분", "계획 시작(YYYY-MM-DD)", "계획 종료(YYYY-MM-DD)", "실제 시작(YYYY-MM-DD)", "실제 종료(YYYY-MM-DD)"],
   [SHEETS.costEstimation]: ["구분(bidding/execution/completion)", "기준연도", "기준월", "도급액(Bil.VND)", "원가(Bil.VND)"],
   [SHEETS.costBudget]: ["구분", "항목", "예산(Bil.VND)", "계획(Bil.VND)", "실적(Bil.VND)"],
+  [SHEETS.costBudgetMonthly]: ["항목", "연도", "월", "계획(Bil.VND)", "실적(Bil.VND)"],
   [SHEETS.outsourcing]: [
     "대공종",
     "세부공종",
@@ -93,8 +96,8 @@ export async function downloadProjectDetailTemplate(
     const ws = wb.addWorksheet(SHEETS.guide);
     const flow =
       businessType === "시공"
-        ? ["개요", "1.공정률", "2.마일스톤", "8.월별매출", "3.원가율", "4.예산집행", "5.외주자재", "6.월별자금"]
-        : ["개요", "8.월별매출", "7.월별매출원가", "3.원가율", "4.예산집행", "5.외주자재", "6.월별자금"];
+        ? ["개요", "1.공정률", "2.마일스톤", "8.월별매출", "3.원가율", "4.예산집행", "4-1.공정별월간원가", "5.외주자재", "6.월별자금"]
+        : ["개요", "8.월별매출", "7.월별매출원가", "3.원가율", "4.예산집행", "4-1.공정별월간원가", "5.외주자재", "6.월별자금"];
     ws.mergeCells("A1:D1");
     const title = ws.getCell("A1");
     title.value = `${businessType} 프로젝트 데이터 입력 안내`;
@@ -162,6 +165,10 @@ export async function downloadProjectDetailTemplate(
   addSheet(
     SHEETS.costBudget,
     detail.costBudget.map((b) => [b.category ?? null, b.item, tv(b.budget), tv(b.plan), tv(b.actual)]),
+  );
+  addSheet(
+    SHEETS.costBudgetMonthly,
+    (detail.costBudgetMonthly ?? []).map((b) => [b.item, b.year, b.month, tv(b.plan), tv(b.actual)]),
   );
   addSheet(
     SHEETS.outsourcing,
@@ -447,6 +454,47 @@ export async function parseProjectDetailWorkbook(file: File, existing: ProjectDe
         });
       });
       result.costBudget = out;
+    }
+  }
+
+  // 공정별 월간 원가 계획/실적
+  {
+    const rows = rowsOf(SHEETS.costBudgetMonthly, true);
+    if (rows) {
+      const out: ProjectDetailCostBudgetMonthly[] = [];
+      const seen = new Set<string>();
+      rows.forEach((r, i) => {
+        const item = cellStr(r[0]);
+        const yearRaw = cellNum(r[1]);
+        const monthRaw = cellNum(r[2]);
+        if (!item) {
+          throw new ExcelParseError(`[${SHEETS.costBudgetMonthly}] ${i + 2}행: 항목이 비어 있습니다.`);
+        }
+        if (yearRaw == null || monthRaw == null) {
+          throw new ExcelParseError(`[${SHEETS.costBudgetMonthly}] ${i + 2}행: 연도/월이 비어 있습니다.`);
+        }
+        if (!Number.isInteger(yearRaw) || !Number.isInteger(monthRaw)) {
+          throw new ExcelParseError(`[${SHEETS.costBudgetMonthly}] ${i + 2}행: 연도/월은 정수여야 합니다. (${yearRaw}/${monthRaw})`);
+        }
+        if (monthRaw < 1 || monthRaw > 12) {
+          throw new ExcelParseError(`[${SHEETS.costBudgetMonthly}] ${i + 2}행: 월(${monthRaw})이 올바르지 않습니다.`);
+        }
+        const key = `${item.trim().toLowerCase()}:${yearRaw}-${monthRaw}`;
+        if (seen.has(key)) {
+          throw new ExcelParseError(
+            `[${SHEETS.costBudgetMonthly}] 같은 항목과 월(${item}, ${yearRaw}.${String(monthRaw).padStart(2, "0")})이 중복 입력되었습니다.`,
+          );
+        }
+        seen.add(key);
+        out.push({
+          item,
+          year: yearRaw,
+          month: monthRaw,
+          plan: fv(r[3]),
+          actual: fv(r[4]),
+        });
+      });
+      result.costBudgetMonthly = out;
     }
   }
 
