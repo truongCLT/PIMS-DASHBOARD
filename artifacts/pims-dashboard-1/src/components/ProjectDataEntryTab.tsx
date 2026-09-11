@@ -129,22 +129,41 @@ function VndInput({
 function NumInput({
   value,
   onChange,
+  min,
+  max,
+  step = "any",
   "data-row": dataRow,
   "data-col": dataCol,
 }: {
   value: number | null | undefined;
   onChange: (v: number | null) => void;
+  min?: number;
+  max?: number;
+  step?: number | "any";
   "data-row"?: string | number;
   "data-col"?: string | number;
 }) {
+  const normalize = (raw: string) => {
+    if (raw === "") {
+      onChange(null);
+      return;
+    }
+    const parsed = Number(raw);
+    if (!Number.isFinite(parsed)) return;
+    const stepped = step === 1 ? Math.round(parsed) : parsed;
+    onChange(Math.min(max ?? Infinity, Math.max(min ?? -Infinity, stepped)));
+  };
+
   return (
     <input
       type="number"
-      step="any"
+      min={min}
+      max={max}
+      step={step}
       value={value ?? ""}
       data-row={dataRow}
       data-col={dataCol}
-      onChange={(e) => onChange(e.target.value === "" ? null : Number(e.target.value))}
+      onChange={(e) => normalize(e.target.value)}
       onWheel={(e) => (e.target as HTMLElement).blur()}
       style={{ ...inputStyle, textAlign: "right" }}
     />
@@ -1274,7 +1293,17 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
             {progress.map((p, i) => (
               <tr key={i}>
                 <td style={tdCell}><NumInput value={p.year} onChange={(v) => updateProgressAt(i, { year: v ?? 0 })} data-row={i} data-col={0} /></td>
-                <td style={tdCell}><NumInput value={p.month} onChange={(v) => updateProgressAt(i, { month: v ?? 0 })} data-row={i} data-col={1} /></td>
+                <td style={tdCell}>
+                  <NumInput
+                    value={p.month}
+                    min={1}
+                    max={12}
+                    step={1}
+                    onChange={(v) => updateProgressAt(i, { month: v ?? 1 })}
+                    data-row={i}
+                    data-col={1}
+                  />
+                </td>
                 <td style={tdCell}><NumInput value={p.planPct} onChange={(v) => updateProgressAt(i, { planPct: v })} data-row={i} data-col={2} /></td>
                 <td style={tdCell}><NumInput value={p.actualPct} onChange={(v) => updateProgressAt(i, { actualPct: v })} data-row={i} data-col={3} /></td>
                 <td style={tdCell}>
