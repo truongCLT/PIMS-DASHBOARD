@@ -1,7 +1,7 @@
 /**
  * ProjectSummaryTab — 개요 탭 (새 첫 번째 탭)
  *
- * 레이아웃: [현장 사진] | [공사 정보 그룹 1] | [계약 정보 그룹 2]
+ * 레이아웃: [현장 사진] | [공사 정보 / 계약 정보 세로 배치]
  * 기준: 첨부 이미지(image_1788587015161.png) 레이아웃 충실 구현
  * 데이터 입력 탭에서 저장한 프로젝트 개요·계약 정보를 표시한다.
  */
@@ -262,91 +262,92 @@ export function ProjectSummaryTab({ projectName }: { projectName: string }) {
         slideshowIntervalSeconds={ov?.slideshowIntervalSeconds ?? 0}
       />
 
-      {/* ── 중: 공사 정보 ── */}
-      <div
-        style={{
-          ...cardStyle,
-          padding: 0,
-          minWidth: 0,
-          overflow: "hidden",
-        }}
-      >
-        <GroupHeader title="공사 정보" />
+      {/* ── 우: 공사 정보 / 계약 정보 상하 배치 ── */}
+      <div style={{ display: "flex", flexDirection: "column", gap: "10px", minWidth: 0 }}>
+        <div
+          style={{
+            ...cardStyle,
+            padding: 0,
+            minWidth: 0,
+            overflow: "hidden",
+          }}
+        >
+          <GroupHeader title="공사 정보" />
 
-        <InfoRow
-          label="PJ"
-          value={
-            siteCode
-              ? `${projectName} [${siteCode}]`
-              : projectName
-          }
-        />
-        <InfoRow
-          label="위치"
-          value={ov?.location ?? null}
-        />
-        <InfoRow
-          label={t("projectDashboard:constructionPeriod")}
-          value={
-            startDate || endDate ? (
-              <span>
-                {periodLabel}
-                {monthsLabel && (
-                  <span
-                    style={{
-                      marginLeft: "6px",
-                      fontSize: "11px",
-                      color: INK_MUTED,
-                      fontWeight: 500,
-                    }}
-                  >
-                    ({monthsLabel})
-                  </span>
-                )}
-              </span>
-            ) : null
-          }
-        />
-        <InfoRow label="대지면적" value={ov?.siteArea ?? null} />
-        <InfoRow label="연면적" value={ov?.grossFloorArea ?? null} />
-        <InfoRow label="용도" value={ov?.purpose ?? null} />
-        <InfoRow
-          label={t("projectDashboard:constructionScale")}
-          value={ov?.scale ?? null}
-        />
-        <InfoRow label="지분" value={ov?.ownershipStake ?? null} />
-        <InfoRow label="파트너사" value={ov?.partnerCompany ?? null} />
+          <InfoRow
+            label="PJ"
+            value={
+              siteCode
+                ? `${projectName} [${siteCode}]`
+                : projectName
+            }
+          />
+          <InfoRow
+            label="위치"
+            value={ov?.location ?? null}
+          />
+          <InfoRow
+            label={t("projectDashboard:constructionPeriod")}
+            value={
+              startDate || endDate ? (
+                <span>
+                  {periodLabel}
+                  {monthsLabel && (
+                    <span
+                      style={{
+                        marginLeft: "6px",
+                        fontSize: "11px",
+                        color: INK_MUTED,
+                        fontWeight: 500,
+                      }}
+                    >
+                      ({monthsLabel})
+                    </span>
+                  )}
+                </span>
+              ) : null
+            }
+          />
+          <InfoRow label="대지면적" value={ov?.siteArea ?? null} />
+          <InfoRow label="연면적" value={ov?.grossFloorArea ?? null} />
+          <InfoRow label="용도" value={ov?.purpose ?? null} />
+          <InfoRow
+            label={t("projectDashboard:constructionScale")}
+            value={ov?.scale ?? null}
+          />
+          <InfoRow label="지분" value={ov?.ownershipStake ?? null} />
+          <InfoRow label="파트너사" value={ov?.partnerCompany ?? null} />
 
-      </div>
+        </div>
 
-      {/* ── 우: 계약 정보 ── */}
-      <div
-        style={{
-          ...cardStyle,
-          padding: 0,
-          minWidth: 0,
-          overflow: "hidden",
-        }}
-      >
-        <GroupHeader title="계약 정보" />
+        <div
+          style={{
+            ...cardStyle,
+            padding: 0,
+            minWidth: 0,
+            overflow: "hidden",
+          }}
+        >
+          <GroupHeader title="계약 정보" />
 
-        <InfoRow
-          label={t("projectDashboard:client")}
-          value={ov?.client ?? null}
-        />
-        <InfoRow
-          label={`${t("common:contractAmount")} (전체)`}
-          value={contractAmt != null ? contractAmtLabel : null}
-          accent={contractAmt != null}
-          note={`계약환율 ${siteRateQuery.isLoading ? "조회 중..." : siteRateLabel ?? "-"}`}
-        />
-        <InfoRow label="계약방식" value={ov?.contractMethod ?? null} />
-        <InfoRow label="수금조건" value={ov?.paymentTerms ?? null} />
-        <InfoRow label="하자보증기간" value={ov?.defectWarrantyPeriod ?? null} />
-        <InfoRow label="하자보증증권" value={ov?.defectWarrantyBond ?? null} />
-        <InfoRow label="선급금" value={ov?.advancePayment ?? null} />
-        <InfoRow label="유보금" value={ov?.retention ?? null} />
-        <InfoRow label="VE 조건" value={ov?.veTerms ?? null} />
+          <InfoRow
+            label={t("projectDashboard:client")}
+            value={ov?.client ?? null}
+          />
+          <InfoRow
+            label={`${t("common:contractAmount")} (전체)`}
+            value={contractAmt != null ? contractAmtLabel : null}
+            accent={contractAmt != null}
+            note={`계약환율 ${siteRateQuery.isLoading ? "조회 중..." : siteRateLabel ?? "-"}`}
+          />
+          <InfoRow label="계약방식" value={ov?.contractMethod ?? null} />
+          <InfoRow label="수금조건" value={ov?.paymentTerms ?? null} />
+          <InfoRow label="하자보증기간" value={ov?.defectWarrantyPeriod ?? null} />
+          <InfoRow label="하자보증증권" value={ov?.defectWarrantyBond ?? null} />
+          <InfoRow label="선급금" value={ov?.advancePayment ?? null} />
+          <InfoRow label="유보금" value={ov?.retention ?? null} />
+          <InfoRow label="VE 조건" value={ov?.veTerms ?? null} />
+        </div>
       </div>
     </div>
   );
