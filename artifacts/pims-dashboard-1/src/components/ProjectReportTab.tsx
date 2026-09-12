@@ -37,7 +37,10 @@ import { StatusTableSection } from "./project-report/StatusTableSection";
 import { CostSection } from "./project-report/CostSection";
 import { FundsSection } from "./project-report/FundsSection";
 import type { StatusRowData } from "./project-report/reportTypes";
-import { exportProjectReportPdf } from "../lib/exportProjectReport";
+import {
+  exportProjectReportPdf,
+  runProjectReportExport,
+} from "../lib/exportProjectReport";
 
 const PROCESS_COST_PLAN_ITEMS = new Set([
   "외주 건축",
@@ -352,21 +355,17 @@ export function ProjectReportTab({
   const reportCaptureId = "project-report-capture";
   const handleReportExport = async () => {
     if (isExporting) return;
-    setIsExporting(true);
-    setExportError(null);
-    try {
-      await exportProjectReportPdf({
-        elementId: reportCaptureId,
-        projectName,
-        reportYear: REPORT_YEAR,
-        reportMonth: resolvedMonth,
-      });
-    } catch (error) {
-      console.error("Project report PDF export failed", error);
-      setExportError("보고서 PDF 저장 중 오류가 발생했습니다. 다시 시도해 주세요.");
-    } finally {
-      setIsExporting(false);
-    }
+    await runProjectReportExport({
+      exportAction: () =>
+        exportProjectReportPdf({
+          elementId: reportCaptureId,
+          projectName,
+          reportYear: REPORT_YEAR,
+          reportMonth: resolvedMonth,
+        }),
+      setExporting: setIsExporting,
+      setError: setExportError,
+    });
   };
 
   // ── Render ────────────────────────────────────────────────────────────────

@@ -6,6 +6,30 @@ const PDF_MARGIN = 24;
 const PDF_HEADER_HEIGHT = 42;
 const PDF_SECTION_GAP = 12;
 
+export const PROJECT_REPORT_EXPORT_ERROR =
+  "보고서 PDF 저장 중 오류가 발생했습니다. 다시 시도해 주세요.";
+
+export async function runProjectReportExport({
+  exportAction,
+  setExporting,
+  setError,
+}: {
+  exportAction: () => Promise<void>;
+  setExporting: (value: boolean) => void;
+  setError: (value: string | null) => void;
+}): Promise<void> {
+  setExporting(true);
+  setError(null);
+  try {
+    await exportAction();
+  } catch (error) {
+    console.error("Project report PDF export failed", error);
+    setError(PROJECT_REPORT_EXPORT_ERROR);
+  } finally {
+    setExporting(false);
+  }
+}
+
 function safeFilePart(value: string): string {
   return value
     .trim()
@@ -121,28 +145,20 @@ export async function exportProjectReportPdf({
   const availableHeight =
     pageHeight - PDF_MARGIN * 2 - PDF_HEADER_HEIGHT - PDF_SECTION_GAP;
 
-  pdf.addImage(
-    headerImage,
-    "PNG",
-    PDF_MARGIN,
-    PDF_MARGIN,
-    availableWidth,
-    PDF_HEADER_HEIGHT,
-  );
-
-  const contentGap = 8;
-  const maxCanvasWidth = Math.max(...canvases.map((canvas) => canvas.width));
-  const totalCanvasHeight = canvases.reduce(
-    (sum, canvas) => sum + canvas.height,
-    0,
-  );
-  const renderScale = Math.min(
-    availableWidth / maxCanvasWidth,
-    (availableHeight - contentGap * (canvases.length - 1)) / totalCanvasHeight,
-  );
-  let y = PDF_MARGIN + PDF_HEADER_HEIGHT + PDF_SECTION_GAP;
-
-  canvases.forEach((canvas) => {
+  canvases.forEach((canvas, index) => {
+    if (index > 0) pdf.addPage();
+    pdf.addImage(
+      headerImage,
+      "PNG",
+      PDF_MARGIN,
+      PDF_MARGIN,
+      availableWidth,
+      PDF_HEADER_HEIGHT,
+    );
+    const renderScale = Math.min(
+      availableWidth / canvas.width,
+      availableHeight / canvas.height,
+    );
     const renderWidth = canvas.width * renderScale;
     const renderHeight = canvas.height * renderScale;
     const x = (pageWidth - renderWidth) / 2;
@@ -150,13 +166,12 @@ export async function exportProjectReportPdf({
       canvas.toDataURL("image/jpeg", 0.96),
       "JPEG",
       x,
-      y,
+      PDF_MARGIN + PDF_HEADER_HEIGHT + PDF_SECTION_GAP,
       renderWidth,
       renderHeight,
       undefined,
       "FAST",
     );
-    y += renderHeight + contentGap;
   });
 
   const monthFilePart =

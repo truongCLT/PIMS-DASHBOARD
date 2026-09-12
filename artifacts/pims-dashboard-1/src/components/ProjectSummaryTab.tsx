@@ -172,7 +172,6 @@ function SitePhotoPanel({
         display: "flex",
         flexDirection: "column",
         minHeight: "260px",
-        flex: "0 0 280px",
         alignSelf: "stretch",
       }}
     >
@@ -186,7 +185,7 @@ function SitePhotoPanel({
           total={total}
           current={hasPhotos ? safeIdx : 0}
           onChange={setActive}
-          imgStyle={{ minHeight: "190px", maxHeight: "260px" }}
+          imgStyle={{ minHeight: "190px", height: "100%", maxHeight: "none" }}
           autoPlayIntervalSeconds={slideshowIntervalSeconds}
         />
       </div>
@@ -249,12 +248,11 @@ export function ProjectSummaryTab({ projectName }: { projectName: string }) {
 
   return (
     <div
+      className="project-summary-grid"
       style={{
-        display: "flex",
-        flexDirection: "row",
         gap: "10px",
         alignItems: "stretch",
-        flexWrap: "wrap",
+        minHeight: "620px",
       }}
     >
       {/* ── 좌: 현장 사진 ── */}
@@ -269,8 +267,7 @@ export function ProjectSummaryTab({ projectName }: { projectName: string }) {
         style={{
           ...cardStyle,
           padding: 0,
-          flex: "1 1 240px",
-          minWidth: "220px",
+          minWidth: 0,
           overflow: "hidden",
         }}
       >
@@ -327,8 +324,7 @@ export function ProjectSummaryTab({ projectName }: { projectName: string }) {
         style={{
           ...cardStyle,
           padding: 0,
-          flex: "1 1 240px",
-          minWidth: "220px",
+          minWidth: 0,
           overflow: "hidden",
         }}
       >

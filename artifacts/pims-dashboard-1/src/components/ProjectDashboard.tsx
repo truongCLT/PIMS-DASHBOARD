@@ -447,11 +447,11 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
       {/* Body: content */}
       <div style={{ display: "flex", flexDirection: "column", gap: "8px", padding: "10px" }}>
         {activeTab === "Summary" ? (
-          <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ flex: 1, minWidth: 0, minHeight: "620px" }}>
             <ProjectSummaryTab projectName={projectName} />
           </div>
         ) : activeTab === "Report" ? (
-          <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ flex: 1, minWidth: 0, minHeight: "620px" }}>
             <ProjectReportTab
               projectName={projectName}
               selectedMonth={reportMonth}
