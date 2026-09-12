@@ -8,6 +8,7 @@ export const modules: ModuleMap = {
   "./components/mockups/pims-dashboard/VariantC.tsx": () => import("../components/mockups/pims-dashboard/VariantC.tsx"),
   "./components/mockups/pims-dashboard/VariantD.tsx": () => import("../components/mockups/pims-dashboard/VariantD.tsx"),
   "./components/mockups/pims-dashboard/VariantE.tsx": () => import("../components/mockups/pims-dashboard/VariantE.tsx"),
+  "./components/mockups/templates/MissionControlBentoDashboard-JsCY6D/Dashboard.tsx": () => import("../components/mockups/templates/MissionControlBentoDashboard-JsCY6D/Dashboard.tsx"),
   "./components/mockups/pims-dashboard/components/CashFlowChart.tsx": () => import("../components/mockups/pims-dashboard/components/CashFlowChart.tsx"),
   "./components/mockups/pims-dashboard/components/CommentPanel.tsx": () => import("../components/mockups/pims-dashboard/components/CommentPanel.tsx"),
   "./components/mockups/pims-dashboard/components/Dashboard.tsx": () => import("../components/mockups/pims-dashboard/components/Dashboard.tsx"),
@@ -18,6 +19,5 @@ export const modules: ModuleMap = {
   "./components/mockups/pims-dashboard/components/ProfitChart.tsx": () => import("../components/mockups/pims-dashboard/components/ProfitChart.tsx"),
   "./components/mockups/pims-dashboard/components/SalesChart.tsx": () => import("../components/mockups/pims-dashboard/components/SalesChart.tsx"),
   "./components/mockups/pims-dashboard/components/Sidebar.tsx": () => import("../components/mockups/pims-dashboard/components/Sidebar.tsx"),
-  "./components/mockups/pims-dashboard/components/TopNav.tsx": () => import("../components/mockups/pims-dashboard/components/TopNav.tsx"),
-  "./components/mockups/templates/MissionControlBentoDashboard-JsCY6D/Dashboard.tsx": () => import("../components/mockups/templates/MissionControlBentoDashboard-JsCY6D/Dashboard.tsx")
+  "./components/mockups/pims-dashboard/components/TopNav.tsx": () => import("../components/mockups/pims-dashboard/components/TopNav.tsx")
 };
