@@ -20,6 +20,90 @@ export const PIMSVINA_TABLE_KEYS = [
 
 const MAX_ROWS = 300;
 
+/**
+ * Nhãn cột tra theo (bảng, tên cột thô từ Oracle/REST) → cùng key i18n đang dùng ở tab "Nhập liệu"
+ * (ProjectDataEntryTab) để 2 màn hình hiển thị nhất quán tên trường, thay vì lộ tên cột DB (fldcode,
+ * contract_amount, as_of_month...). Cột nào không có tương đương ở Nhập liệu (khoá kỹ thuật, giá trị
+ * tính sẵn chỉ để đối chiếu) thì dùng các key "col*" riêng của namespace pimsvinaSyncPreview.
+ */
+const COMMON_COLUMN_LABELS: Record<string, [string, string]> = {
+  fldcode: ["pimsvinaSyncPreview", "colFldcode"],
+  site_code: ["pimsvinaSyncPreview", "colSiteCode"],
+  project_name: ["pimsvinaSyncPreview", "colProjectName"],
+  sort_order: ["pimsvinaSyncPreview", "colSortOrder"],
+  year: ["common", "year"],
+  month: ["projectDataEntryTab", "monthColumn"],
+  as_of_month: ["projectDataEntryTab", "baseMonthOfRecord"],
+};
+
+const TABLE_COLUMN_LABELS: Partial<Record<(typeof PIMSVINA_TABLE_KEYS)[number], Record<string, [string, string]>>> = {
+  pdOverview: {
+    contract_amount: ["projectDataEntryTab", "contractAmountVnd"],
+    start_date: ["projectDataEntryTab", "constructionStartDate"],
+    end_date: ["projectDataEntryTab", "constructionEndDate"],
+    client: ["projectDataEntryTab", "client"],
+    scale: ["projectDataEntryTab", "scale"],
+    scope: ["projectDataEntryTab", "scopeOfWork"],
+    revenue_annual_target: ["projectDataEntryTab", "annualRevenueTargetVnd"],
+    revenue_total: ["projectDataEntryTab", "cumulativeRevenueActualVnd"],
+    cash_confirmed: ["pimsvinaSyncPreview", "colCashConfirmed"],
+    cash_collection: ["pimsvinaSyncPreview", "colCashCollection"],
+  },
+  pdProgress: {
+    plan_pct: ["projectDataEntryTab", "monthlyPlanPercent"],
+    actual_pct: ["projectDataEntryTab", "monthlyActualPercent"],
+    plan_cum_pct: ["projectDataEntryTab", "cumulativePlanPercent"],
+    actual_cum_pct: ["projectDataEntryTab", "cumulativeActualPercent"],
+  },
+  pdMilestones: {
+    label: ["projectDataEntryTab", "itemNameColumn"],
+    plan_start: ["projectDataEntryTab", "planStartColumn"],
+    plan_end: ["projectDataEntryTab", "planEndColumn"],
+    actual_start: ["projectDataEntryTab", "actualStartColumn"],
+    actual_end: ["projectDataEntryTab", "actualEndColumn"],
+  },
+  pdSales: {
+    plan: ["projectDataEntryTab", "salesPlanVnd"],
+    actual: ["projectDataEntryTab", "salesActualVnd"],
+    monthly_achievement_pct: ["pimsvinaSyncPreview", "colMonthlyAchievementPct"],
+    actual_ytd: ["pimsvinaSyncPreview", "colActualYtd"],
+    annual_plan_target: ["pimsvinaSyncPreview", "colAnnualPlanTarget"],
+    annual_target_achievement_pct: ["pimsvinaSyncPreview", "colAnnualTargetAchievementPct"],
+  },
+  pdCogs: {
+    acct_cogs: ["projectDataEntryTab", "acctCogsVnd"],
+    wip_cogs: ["projectDataEntryTab", "wipCogsVnd"],
+    cumulative_acct_cogs: ["pimsvinaSyncPreview", "colCumulativeAcctCogs"],
+    cumulative_wip_cogs: ["pimsvinaSyncPreview", "colCumulativeWipCogs"],
+  },
+  pdCostBudget: {
+    category: ["projectDataEntryTab", "categoryColumn"],
+    item: ["projectDataEntryTab", "itemColumn"],
+    budget: ["projectDataEntryTab", "budgetVnd"],
+    plan: ["projectDataEntryTab", "progressPaymentPlanVnd"],
+    actual: ["projectDataEntryTab", "progressPaymentActualVnd"],
+    execution_rate: ["pimsvinaSyncPreview", "colExecutionRate"],
+  },
+  pdOutsourcing: {
+    trade_group: ["projectDataEntryTab", "tradeGroupColumn"],
+    trade: ["projectDataEntryTab", "tradeColumn"],
+    vendor: ["projectDataEntryTab", "vendorColumn"],
+    category: ["projectDataEntryTab", "categoryColumn"],
+    contract_date: ["projectDataEntryTab", "contractDateColumn"],
+    change_no: ["projectDataEntryTab", "changeNoColumn"],
+    budget: ["projectDataEntryTab", "budgetAVnd"],
+    executed_budget: ["projectDataEntryTab", "executedBudgetVnd"],
+    resolved: ["projectDataEntryTab", "resolvedBVnd"],
+    this_month: ["projectDataEntryTab", "thisMonthVnd"],
+    accum: ["projectDataEntryTab", "accumCVnd"],
+  },
+  pdCashflow: {
+    cash_in: ["projectDataEntryTab", "cashInVnd"],
+    cash_out: ["projectDataEntryTab", "cashOutVnd"],
+    equivalent: ["projectDataEntryTab", "equivalentVnd"],
+  },
+};
+
 export function PimsvinaSyncPreviewModal({
   data,
   confirming,
@@ -31,14 +115,19 @@ export function PimsvinaSyncPreviewModal({
   onConfirm: () => void;
   onClose: () => void;
 }) {
-  const { t } = useTranslation(["pimsvinaSyncPreview", "common"]);
+  const { t } = useTranslation(["pimsvinaSyncPreview", "projectDataEntryTab", "common"]);
   const [activeKey, setActiveKey] = useState<string>(PIMSVINA_TABLE_KEYS[0]);
   const rows = data[activeKey] ?? [];
   const columns: DetailColumn<Record<string, unknown>>[] = useMemo(() => {
     const first = rows[0];
     if (!first) return [];
-    return Object.keys(first).map((k) => ({ key: k, label: k, align: "left" as const }));
-  }, [rows]);
+    const perTable = TABLE_COLUMN_LABELS[activeKey as (typeof PIMSVINA_TABLE_KEYS)[number]] ?? {};
+    return Object.keys(first).map((k) => {
+      const [ns, key] = perTable[k] ?? COMMON_COLUMN_LABELS[k] ?? [];
+      const label = ns ? t(`${ns}:${key}`) : k;
+      return { key: k, label, align: "left" as const };
+    });
+  }, [rows, activeKey, t]);
   const visibleRows = rows.slice(0, MAX_ROWS);
   const totalRows = PIMSVINA_TABLE_KEYS.reduce((sum, k) => sum + (data[k]?.length ?? 0), 0);
 
