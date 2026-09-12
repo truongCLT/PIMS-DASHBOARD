@@ -114,6 +114,17 @@ export function normalizeOrderSnapshot(raw: unknown, fallbackReferenceMonth: num
     entries: Array.isArray(value?.entries) ? value.entries : [],
   };
 }
+
+export function requireRestorableOrderSnapshot(
+  raw: unknown,
+  fallbackReferenceMonth: number,
+): Snapshot {
+  const snapshot = normalizeOrderSnapshot(raw, fallbackReferenceMonth);
+  if (snapshot.entries.length === 0) {
+    throw new OrderImportError("이전 수주 데이터가 없어 되돌릴 수 없습니다.");
+  }
+  return snapshot;
+}
 const HISTORY_KEEP = 5;
 
 export async function applyOrderImport(parsed: ParsedOrderWorkbook, filename: string) {
@@ -159,8 +170,7 @@ export async function revertOrderImport(historyId: number) {
   return db.transaction(async (tx) => {
     const [row] = await tx.select().from(orderImportHistoryTable).where(eq(orderImportHistoryTable.id, historyId));
     if (!row) throw new OrderImportError("해당 수주 반영 이력을 찾을 수 없습니다.");
-    const snapshot = normalizeOrderSnapshot(row.snapshot, row.referenceMonth);
-    if (snapshot.entries.length === 0) throw new OrderImportError("이전 수주 데이터가 없어 되돌릴 수 없습니다.");
+    const snapshot = requireRestorableOrderSnapshot(row.snapshot, row.referenceMonth);
     await tx.delete(orderEntriesTable).where(eq(orderEntriesTable.year, row.year));
     await tx.insert(orderEntriesTable).values(snapshot.entries.map((e) => ({
       year: row.year, referenceMonth: snapshot.referenceMonth, projectName: e.projectName,
@@ -175,8 +185,14 @@ export async function revertOrderImport(historyId: number) {
   });
 }
 
-export async function buildCurrentOrderWorkbook(year: number): Promise<Buffer> {
-  const rows = await db.select().from(orderEntriesTable).where(eq(orderEntriesTable.year, year));
+interface OrderWorkbookRow extends OrderEntry {
+  referenceMonth: number;
+}
+
+export async function buildOrderWorkbook(
+  rows: OrderWorkbookRow[],
+  year: number,
+): Promise<Buffer> {
   if (rows.length === 0) throw new OrderImportError("다운로드할 수주 데이터가 없습니다.");
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet("Sheet1");
@@ -207,4 +223,19 @@ export async function buildCurrentOrderWorkbook(year: number): Promise<Buffer> {
   ws.columns = [{ width: 28 }, { width: 14 }, { width: 14 }, { width: 14 }, { width: 14 }, { width: 3 }, { width: 10 }, { width: 8 }];
   ws.getColumn(3).numFmt = "yyyy-mm-dd"; ws.getColumn(5).numFmt = "yyyy-mm-dd";
   return Buffer.from(await wb.xlsx.writeBuffer());
+}
+
+export async function buildCurrentOrderWorkbook(year: number): Promise<Buffer> {
+  const rows = await db.select().from(orderEntriesTable).where(eq(orderEntriesTable.year, year));
+  return buildOrderWorkbook(
+    rows.map((row) => ({
+      referenceMonth: row.referenceMonth,
+      projectName: row.projectName,
+      planAmount: row.planAmount == null ? null : Number(row.planAmount),
+      planDate: row.planDate,
+      actualAmount: row.actualAmount == null ? null : Number(row.actualAmount),
+      actualDate: row.actualDate,
+    })),
+    year,
+  );
 }
