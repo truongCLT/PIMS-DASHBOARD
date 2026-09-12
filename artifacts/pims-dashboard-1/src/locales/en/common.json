@@ -59,5 +59,11 @@
   "underPlan": "Below Plan",
   "progressStatus": "Progress",
   "periodRange": "M{{from}}–M{{to}}",
-  "periodSingle": "M{{month}}"
+  "periodSingle": "M{{month}}",
+  "monthlyReportTitle": "Monthly Report",
+  "exportReport": "Export Report",
+  "exporting": "Exporting...",
+  "latestMonth": "Latest Month",
+  "keyIssuesTitle": "Key Issues & Action Plans",
+  "detailView": "View Detail"
 }

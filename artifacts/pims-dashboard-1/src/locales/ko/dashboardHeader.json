@@ -19,6 +19,7 @@
   "syncing": "동기화 중...",
   "syncButtonLabel": "PIMSVINA 동기화",
   "generatingLabel": "생성 중...",
-  "excelDownloadOption": "엑셀 다운로드 (.xlsx)",
-  "pdfDownloadOption": "PDF 다운로드 (.pdf)"
+  "excelDownloadOption": "Excel 다운로드 (.xlsx)",
+  "pdfDownloadOption": "PDF 다운로드 (.pdf)",
+  "asOfMonthLabel": "기준 월"
 }

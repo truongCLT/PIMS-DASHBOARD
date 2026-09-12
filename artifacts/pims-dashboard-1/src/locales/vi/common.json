@@ -58,6 +58,12 @@
   "overPlan": "Vượt kế hoạch",
   "underPlan": "Dưới kế hoạch",
   "progressStatus": "Tiến độ",
-  "periodRange": "T{{from}}–T{{to}}",
-  "periodSingle": "T{{month}}"
+  "periodRange": "Th{{from}}–Th{{to}}",
+  "periodSingle": "Th{{month}}",
+  "monthlyReportTitle": "Báo cáo tháng",
+  "exportReport": "Xuất báo cáo",
+  "exporting": "Đang xuất...",
+  "latestMonth": "Tháng mới nhất",
+  "keyIssuesTitle": "Vấn đề chính & Giải pháp",
+  "detailView": "Xem chi tiết"
 }

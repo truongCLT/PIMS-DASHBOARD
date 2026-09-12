@@ -37,5 +37,9 @@
   "indirectCostLabel": "Indirect Cost",
   "totalRowLabel": "Total",
   "revenueProgressLabel": "Revenue progress",
-  "collectionRateLabel": "Collection rate"
+  "collectionRateLabel": "Collection rate",
+  "reportTitle": "Service Monthly Report",
+  "criteriaHeader": "Assessment Criteria",
+  "signalHeader": "Status Signal",
+  "priorityHeader": "Priority"
 }

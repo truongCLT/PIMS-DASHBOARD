@@ -20,5 +20,6 @@
   "syncButtonLabel": "Sync PIMSVINA",
   "generatingLabel": "Generating...",
   "excelDownloadOption": "Download Excel (.xlsx)",
-  "pdfDownloadOption": "Download PDF (.pdf)"
+  "pdfDownloadOption": "Download PDF (.pdf)",
+  "asOfMonthLabel": "As of Month"
 }

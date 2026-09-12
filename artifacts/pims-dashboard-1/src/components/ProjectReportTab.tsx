@@ -76,6 +76,8 @@ function reportGrid(minColW: string): React.CSSProperties {
 
 // ─── Main component ────────────────────────────────────────────────────────
 
+import { useTranslation } from "react-i18next";
+
 export function ProjectReportTab({
   projectName,
   selectedMonth,
@@ -87,6 +89,7 @@ export function ProjectReportTab({
   onSelectedMonthChange: (month: number | null) => void;
   onResolvedMonthChange: (month: number | null) => void;
 }) {
+  const { t } = useTranslation(["common", "dashboardHeader"]);
   const { detail, isLoading } = useProjectDetail(projectName);
   const [isExporting, setIsExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
@@ -376,7 +379,7 @@ export function ProjectReportTab({
           color: INK_MUTED,
         }}
       >
-        불러오는 중...
+        {t("common:loading", "불러오는 중...")}
       </div>
     );
   }
@@ -403,26 +406,26 @@ export function ProjectReportTab({
               letterSpacing: "0.02em",
             }}
           >
-            당월 보고서
+            {t("common:monthlyReportTitle", "당월 보고서")}
           </span>
           <Button
             type="button"
             size="sm"
             onClick={handleReportExport}
             disabled={isExporting}
-            aria-label={isExporting ? "보고서 PDF 생성 중" : "보고서 PDF 출력"}
+            aria-label={isExporting ? t("common:exporting", "보고서 PDF 생성 중") : t("common:exportReport", "보고서 PDF 출력")}
           >
             {isExporting ? (
               <Loader2 aria-hidden="true" className="animate-spin" />
             ) : (
               <FileDown aria-hidden="true" />
             )}
-            {isExporting ? "출력 중..." : "보고서 출력"}
+            {isExporting ? t("common:exporting", "출력 중...") : t("common:exportReport", "보고서 출력")}
           </Button>
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span style={{ fontSize: "12px", color: INK_BODY, fontWeight: 600 }}>기준월:</span>
+          <span style={{ fontSize: "12px", color: INK_BODY, fontWeight: 600 }}>{t("dashboardHeader:asOfMonthLabel", "기준월")}:</span>
           <select
             value={selectedMonth ?? ""}
             onChange={(e) =>
@@ -431,7 +434,7 @@ export function ProjectReportTab({
             style={monthSelectStyle}
           >
             <option value="">
-              최신월{latestMonthLabel ? ` (${latestMonthLabel})` : ""}
+              {t("common:latestMonth", "최신월")}{latestMonthLabel ? ` (${latestMonthLabel})` : ""}
             </option>
             {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
               <option key={m} value={m}>
@@ -476,7 +479,7 @@ export function ProjectReportTab({
             cumRev={cumRev}
           />
           <div style={cardStyle}>
-            <div style={{ ...sectionTitle, marginBottom: "8px" }}>주요 이슈 및 대응방안</div>
+            <div style={{ ...sectionTitle, marginBottom: "8px" }}>{t("common:keyIssuesTitle", "주요 이슈 및 대응방안")}</div>
             <ProjectCommentPanel projectName={projectName} tab="budget" showHeader={false} />
           </div>
         </div>

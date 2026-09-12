@@ -118,6 +118,7 @@
   "outsourcingItem": "Outsourcing",
   "planVndLabel": "Plan",
   "actualVndLabel": "Actual",
+  "yearSuffix": "",
   "monthSuffix": "Month {{month}}",
   "outsourcingTitleService": "5. Outsourcing/Materials (Outsourcing tab)",
   "outsourcingTitleConstruction": "6. Outsourcing/Materials (Outsourcing tab)",

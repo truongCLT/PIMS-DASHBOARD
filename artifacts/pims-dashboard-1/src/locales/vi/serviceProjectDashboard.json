@@ -37,5 +37,11 @@
   "indirectCostLabel": "Chi phí gián tiếp",
   "totalRowLabel": "Tổng cộng",
   "revenueProgressLabel": "Tiến độ doanh thu",
-  "collectionRateLabel": "Tỷ lệ thu tiền"
+  "collectionRateLabel": "Tỷ lệ thu hồi vốn",
+  "yearSuffix": "",
+  "monthSuffix": "",
+  "reportTitle": "Báo cáo tháng dịch vụ",
+  "criteriaHeader": "Tiêu chí đánh giá",
+  "signalHeader": "Tín hiệu",
+  "priorityHeader": "Độ ưu tiên"
 }
