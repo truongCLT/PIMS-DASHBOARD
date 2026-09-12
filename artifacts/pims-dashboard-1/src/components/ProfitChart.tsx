@@ -246,7 +246,7 @@ export function ProfitChart() {
         style={daewoo
           ? { width: "100%", height: "100%", minHeight: 0, display: "block", fontFamily: chartTypography.fontFamily }
           : { width: "100%", display: "block", fontFamily: chartTypography.fontFamily }}
-        preserveAspectRatio={daewoo ? "xMidYMax meet" : undefined}
+        preserveAspectRatio={daewoo ? "xMidYMin meet" : undefined}
         onMouseLeave={() => setHoveredIdx(null)}
       >
         {/* Grid lines + y labels */}
