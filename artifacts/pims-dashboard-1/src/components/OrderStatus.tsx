@@ -6,7 +6,7 @@ import {
   type OrderDetailEntry,
   useGetOrderDetails,
 } from "@workspace/api-client-react";
-import { Button } from "@workspace/aqua-glass/components/ui/button";
+import { Button } from "./ui/button";
 import {
   DetailDataTable,
   DetailModal,

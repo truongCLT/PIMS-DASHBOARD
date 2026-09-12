@@ -21,6 +21,41 @@ export const PIMSVINA_TABLE_KEYS = [
 
 const MAX_ROWS = 300;
 
+const COLUMN_LABEL_MAP: Record<string, string> = {
+  fldcode: "Field Code",
+  site_code: "Site Code",
+  project_name: "Project Name",
+  contract_amount: "Contract Amount (VND)",
+  start_date: "Construction Start Date",
+  end_date: "Construction End Date",
+  client: "Ordering Party / Client",
+  scale: "Construction Scale",
+  as_of_month: "Base Month of Record",
+  rate_usd: "USD Exchange Rate",
+  year: "Year",
+  month: "Month",
+  plan_pct: "Monthly Plan %",
+  actual_pct: "Monthly Actual %",
+  plan_cum_pct: "Cumulative Plan %",
+  actual_cum_pct: "Cumulative Actual %",
+  milestone_name: "Milestone Name",
+  target_date: "Planned Completion Date",
+  actual_date: "Actual Completion Date",
+  status: "Milestone Status",
+  sales_plan: "Monthly Sales Plan",
+  sales_actual: "Monthly Sales Actual",
+  wip_cogs: "WIP & Cost of Goods Sold",
+  trade: "Work Type / Trade",
+  vendor: "Contractor / Vendor Name",
+  budget: "Execution Budget",
+  resolved: "Implementation Resolution Amount",
+  this_month: "This Month Billing",
+  accum: "Cumulative Billing",
+  cash_in: "Monthly Cash In",
+  cash_out: "Monthly Cash Out",
+  equivalent: "Cash Equivalent Balance",
+};
+
 export function PimsvinaSyncPreviewModal({
   data,
   confirming,
@@ -38,7 +73,11 @@ export function PimsvinaSyncPreviewModal({
   const columns: DetailColumn<Record<string, unknown>>[] = useMemo(() => {
     const first = rows[0];
     if (!first) return [];
-    return Object.keys(first).map((k) => ({ key: k, label: k, align: "left" as const }));
+    return Object.keys(first).map((k) => ({
+      key: k,
+      label: COLUMN_LABEL_MAP[k] ?? k,
+      align: "left" as const,
+    }));
   }, [rows]);
   const visibleRows = rows.slice(0, MAX_ROWS);
   const totalRows = PIMSVINA_TABLE_KEYS.reduce((sum, k) => sum + (data[k]?.length ?? 0), 0);

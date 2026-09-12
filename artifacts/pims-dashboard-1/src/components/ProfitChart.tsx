@@ -11,11 +11,11 @@ import { filterProfitProjects } from "../lib/mgmtreportReconciliation";
 import { chartTheme, chartTypography } from "../lib/chartTheme";
 import { INK_BODY, INK_MUTED, POINT_BLUE, CARD_BORDER, emptyNote, ACHIEVE_RED } from "../lib/uiTokens";
 import { useTheme } from "../lib/theme";
-import { ChartTooltipPanel } from "@workspace/aqua-glass/components/ui/chart";
+import { ChartTooltipPanel } from "./ui/chart";
 import {
   Empty,
   EmptyDescription,
-} from "@workspace/aqua-glass/components/ui/empty";
+} from "./ui/empty";
 import { DetailModal, DetailDataTable } from "./DetailModal";
 
 /** "N월" → 0-based 월 인덱스. 월 형식 아니면 null. */

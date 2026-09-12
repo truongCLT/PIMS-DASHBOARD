@@ -24,11 +24,11 @@ import { useTheme } from "../lib/theme";
 import {
   ChartTooltip,
   ChartTooltipPanel,
-} from "@workspace/aqua-glass/components/ui/chart";
+} from "./ui/chart";
 import {
   Empty,
   EmptyDescription,
-} from "@workspace/aqua-glass/components/ui/empty";
+} from "./ui/empty";
 import { DetailModal, DetailDataTable } from "./DetailModal";
 import { emptyNote, ACHIEVE_RED, INK_MUTED } from "../lib/uiTokens";
 
