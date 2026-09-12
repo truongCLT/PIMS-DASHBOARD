@@ -10,6 +10,11 @@ import { classifyMrProject } from "../data/projects";
 import { chartTheme } from "../lib/chartTheme";
 import { INK_BODY, INK_MUTED, POINT_BLUE, CARD_BORDER, emptyNote, ACHIEVE_RED } from "../lib/uiTokens";
 import { useTheme } from "../lib/theme";
+import { ChartTooltipPanel } from "@workspace/aqua-glass/components/ui/chart";
+import {
+  Empty,
+  EmptyDescription,
+} from "@workspace/aqua-glass/components/ui/empty";
 import { DetailModal, DetailDataTable } from "./DetailModal";
 
 /** "N월" → 0-based 월 인덱스. 월 형식 아니면 null. */
@@ -41,14 +46,21 @@ function niceStep(raw: number): number {
   return 10 * mag;
 }
 
-/** 툴팁 한 줄 */
-interface TipLine { label: string; value: string; color: string }
-
 export function ProfitChart() {
   const { t } = useTranslation(["profitChart", "common"]);
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [drillRow, setDrillRow] = useState<ProfitRow | null>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [cardContentWidth, setCardContentWidth] = useState(600);
+
+  useEffect(() => {
+    const el = cardRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([entry]) => setCardContentWidth(entry.contentRect.width));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   /* SVG 실제 너비를 측정해 viewBox(1000) 기준 역스케일 계산
      → non-daewoo 폰트를 SalesChart CSS px 기준(11px)에 맞춤 */
@@ -177,55 +189,19 @@ export function ProfitChart() {
   for (let v = minVal; v <= maxVal + 1e-9; v += step) gridVals.push(v);
   const yZero = yv(0);
 
-  // ── 툴팁 렌더링 ──────────────────────────────────────────────────
-  const TW = 460;   // SVG 단위 툴팁 너비
-  const TH = 175;   // SVG 단위 툴팁 높이
-  const TF = 28;    // 툴팁 내부 폰트 크기
-
-  function renderTooltip(idx: number) {
-    const d   = data[idx];
-    const cx  = plotLeft + slot * (idx + 0.5);
-    // 가장자리 클램핑
-    const tx  = Math.max(plotLeft, Math.min(cx - TW / 2, plotRight - TW));
-    const ty  = YTOP + 2;
-
-    const lines: TipLine[] = [
-      { label: t("common:operatingProfit"),             value: d.op.toLocaleString("ko-KR"),                                       color: NAVY   },
-      { label: t("profitChart:ordinaryProfit"),         value: `${d.ord.toLocaleString("ko-KR")} (${d.ordPct})`,                   color: GREEN  },
-      { label: t("common:sga"),                         value: `${d.sga} (${d.sgaPct})`,                                           color: ORANGE },
-      ...(!daewoo
-        ? [{ label: t("profitChart:nonOperatingProfitLoss"), value: `${d.non >= 0 ? "+" : ""}${d.non.toLocaleString("ko-KR")}`, color: GREEN }]
-        : []),
-    ];
-
-    return (
-      <g key="tooltip" style={{ pointerEvents: "none" }}>
-        {/* 배경 */}
-        <rect
-          x={tx} y={ty} width={TW} height={TH}
-          rx={5} ry={5}
-          fill="white"
-          stroke={chartTheme.neutralStroke}
-          strokeWidth="1.5"
-          filter="url(#tip-shadow)"
-        />
-        {/* 월 헤더 */}
-        <text x={tx + TW / 2} y={ty + 26} textAnchor="middle" fontSize={TF} fontWeight="700" fill={chartTheme.titleNavy}>
-          {d.m}
-        </text>
-        {/* 항목 줄 */}
-        {lines.map((l, i) => (
-          <g key={l.label}>
-            <text x={tx + 18}       y={ty + 56 + i * (TF + 3)} fontSize={TF} fill={chartTheme.axisText}>{l.label}</text>
-            <text x={tx + TW - 18}  y={ty + 56 + i * (TF + 3)} fontSize={TF} fontWeight="600" fill={l.color} textAnchor="end">{l.value}</text>
-          </g>
-        ))}
-      </g>
-    );
-  }
+  const hoveredRow = hoveredIdx == null ? null : data[hoveredIdx];
+  const tooltipWidth = Math.max(0, Math.min(240, cardContentWidth - 16));
+  const tooltipCenter =
+    hoveredIdx == null || data.length === 0
+      ? 0
+      : cardContentWidth * ((hoveredIdx + 0.5) / data.length);
+  const tooltipLeft = Math.max(
+    8,
+    Math.min(tooltipCenter - tooltipWidth / 2, cardContentWidth - tooltipWidth - 8),
+  );
 
   return (
-    <div style={{
+    <div ref={cardRef} style={{
       backgroundColor: "#fff",
       border: `1px solid ${CARD_BORDER}`,
       borderRadius: "6px",
@@ -265,27 +241,24 @@ export function ProfitChart() {
       )}
 
       {data.length === 0 ? (
-        <div style={{ height: "200px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", color: INK_MUTED, textAlign: "center", padding: "0 20px" }}>
-          {isError
-            ? t("profitChart:dataLoadFailed")
-            : derived?.profitNote ?? t("profitChart:dataLoading")}
-        </div>
+        <Empty className="min-h-40 rounded-none p-5">
+          <EmptyDescription className="text-xs">
+            {isError
+              ? t("profitChart:dataLoadFailed")
+              : derived?.profitNote ?? t("profitChart:dataLoading")}
+          </EmptyDescription>
+        </Empty>
       ) : (
+      <div style={{ position: "relative", width: "100%", flex: daewoo ? 1 : undefined, minHeight: daewoo ? 0 : undefined }}>
       <svg
         ref={svgRef}
         viewBox={daewoo ? "0 0 1000 530" : "0 0 1000 445"}
         style={daewoo
-          ? { width: "100%", flex: 1, minHeight: 0, display: "block" }
+          ? { width: "100%", height: "100%", minHeight: 0, display: "block" }
           : { width: "100%", display: "block" }}
         preserveAspectRatio={daewoo ? "xMidYMid meet" : undefined}
         onMouseLeave={() => setHoveredIdx(null)}
       >
-        <defs>
-          <filter id="tip-shadow" x="-5%" y="-10%" width="115%" height="130%">
-            <feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="#00000022" />
-          </filter>
-        </defs>
-
         {/* Grid lines + y labels */}
         {gridVals.map((v) => (
           <g key={v}>
@@ -443,9 +416,33 @@ export function ProfitChart() {
           />
         ))}
 
-        {/* 툴팁 */}
-        {hoveredIdx != null && renderTooltip(hoveredIdx)}
       </svg>
+      {hoveredRow && (
+        <ChartTooltipPanel
+          title={hoveredRow.m}
+          lines={[
+            { label: t("common:operatingProfit"), value: hoveredRow.op.toLocaleString("ko-KR"), color: NAVY },
+            { label: t("profitChart:ordinaryProfit"), value: `${hoveredRow.ord.toLocaleString("ko-KR")} (${hoveredRow.ordPct})`, color: GREEN },
+            { label: t("common:sga"), value: `${hoveredRow.sga} (${hoveredRow.sgaPct})`, color: ORANGE },
+            ...(!daewoo
+              ? [{
+                  label: t("profitChart:nonOperatingProfitLoss"),
+                  value: `${hoveredRow.non >= 0 ? "+" : ""}${hoveredRow.non.toLocaleString("ko-KR")}`,
+                  color: GREEN,
+                }]
+              : []),
+          ]}
+          style={{
+            position: "absolute",
+            top: "8px",
+            left: `${tooltipLeft}px`,
+            zIndex: 2,
+            width: `${tooltipWidth}px`,
+            maxWidth: "calc(100% - 16px)",
+          }}
+        />
+      )}
+      </div>
       )}
 
       {/* Legend (기존 스타일: 차트 아래) */}

@@ -8,7 +8,6 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip,
   ResponsiveContainer,
   LabelList,
   Cell,
@@ -22,6 +21,14 @@ import { useDashboardFilters, makeConverter } from "../lib/dashboardFilters";
 import { classifyMrProject } from "../data/projects";
 import { chartTheme } from "../lib/chartTheme";
 import { useTheme } from "../lib/theme";
+import {
+  ChartTooltip,
+  ChartTooltipPanel,
+} from "@workspace/aqua-glass/components/ui/chart";
+import {
+  Empty,
+  EmptyDescription,
+} from "@workspace/aqua-glass/components/ui/empty";
 import { DetailModal, DetailDataTable } from "./DetailModal";
 import { emptyNote, ACHIEVE_RED, INK_MUTED } from "../lib/uiTokens";
 
@@ -98,15 +105,31 @@ const CustomTooltip = ({ active, payload, label, colors }: any) => {
   const actualLabel = actual?.payload?.isForecast
     ? t("salesChart:salesForecast")
     : t("salesChart:salesActual");
+  const lines = [
+    ...(plan
+      ? [{
+          label: t("salesChart:salesPlan"),
+          value: Number(plan.value).toLocaleString("ko-KR"),
+          color: c.plan,
+        }]
+      : []),
+    ...(actual
+      ? [{
+          label: actualLabel,
+          value: Number(actual.value).toLocaleString("ko-KR"),
+          color: c.actual,
+        }]
+      : []),
+    ...(rate != null
+      ? [{
+          label: t("common:achievementRate"),
+          value: `${rate}%`,
+          color: c.rate,
+        }]
+      : []),
+  ];
   return (
-    <div style={{ backgroundColor: "#fff", border: "1px solid #e2e9f3", borderRadius: "4px", padding: "8px 10px", fontSize: "12px" }}>
-      <div style={{ fontWeight: 700, marginBottom: "4px", color: "#16294a" }}>{label}</div>
-      {plan && <div style={{ color: c.plan }}>{t("salesChart:salesPlan")}: {Number(plan.value).toLocaleString("ko-KR")}</div>}
-      {actual && <div style={{ color: c.actual }}>{actualLabel}: {Number(actual.value).toLocaleString("ko-KR")}</div>}
-      {rate != null && (
-        <div style={{ color: c.rate, fontWeight: 700, marginTop: "4px" }}>{t("common:achievementRate")}: {rate}%</div>
-      )}
-    </div>
+    <ChartTooltipPanel title={label} lines={lines} style={{ maxWidth: "100%" }} />
   );
 };
 
@@ -318,13 +341,15 @@ export function SalesChart() {
       {/* Chart */}
       <div style={{ flex: 1, minHeight: "160px" }}>
         {visibleData.length === 0 ? (
-          <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", color: "#888" }}>
-            {isError
-              ? t("salesChart:errorLoadFailed")
-              : derived?.emptyRange
-                ? t("salesChart:noDataForPeriod")
-                : t("salesChart:loadingData")}
-          </div>
+          <Empty className="min-h-40 rounded-none p-5">
+            <EmptyDescription className="text-xs">
+              {isError
+                ? t("salesChart:errorLoadFailed")
+                : derived?.emptyRange
+                  ? t("salesChart:noDataForPeriod")
+                  : t("salesChart:loadingData")}
+            </EmptyDescription>
+          </Empty>
         ) : (
         <ResponsiveContainer width="100%" height="100%">
           {variant === "bars" ? (
@@ -346,7 +371,11 @@ export function SalesChart() {
                 axisLine={false}
                 tickLine={false}
               />
-              <Tooltip content={<CustomTooltip colors={{ plan: planColor, actual: actualColor, rate: rateColor }} />} cursor={{ fill: "rgba(68,114,202,0.06)" }} />
+              <ChartTooltip
+                content={<CustomTooltip colors={{ plan: planColor, actual: actualColor, rate: rateColor }} />}
+                cursor={{ fill: "rgba(68,114,202,0.06)" }}
+                wrapperStyle={{ maxWidth: "calc(100% - 16px)" }}
+              />
               <Bar
                 dataKey="plan"
                 name={t("salesChart:salesPlan")}
@@ -403,7 +432,10 @@ export function SalesChart() {
                 axisLine={false}
                 tickLine={false}
               />
-              <Tooltip content={<CustomTooltip colors={{ plan: planColor, actual: actualColor, rate: rateColor }} />} />
+              <ChartTooltip
+                content={<CustomTooltip colors={{ plan: planColor, actual: actualColor, rate: rateColor }} />}
+                wrapperStyle={{ maxWidth: "calc(100% - 16px)" }}
+              />
               <Line
                 type="monotone"
                 dataKey="plan"
@@ -453,7 +485,7 @@ export function SalesChart() {
               axisLine={false}
               tickLine={false}
             />
-            <Tooltip content={<CustomTooltip />} />
+            <ChartTooltip content={<CustomTooltip />} wrapperStyle={{ maxWidth: "calc(100% - 16px)" }} />
             <Line
               type="linear"
               dataKey="actual"

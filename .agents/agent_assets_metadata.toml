@@ -91,3 +91,17 @@ mtime_ms = 1789177959489
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:c5dbf71e-e1df-4556-8ca8-f8dcf0f373f3/49e0d593-8ae5-436d-b8e8-701df3b70945/9a9bcf2d-721f-4d85-8da9-84236410d8c4"
 storage_version_token = "1789178036105044"
 content_type = "image/jpeg"
+
+[[outputs]]
+id = "ZNgB3-MPSdLu2tu85Dmwf"
+uri = "file://screenshots/sales-profit-unified-state-narrow.jpg"
+type = "image"
+title = "매출·손익 상태 표현 통일 확인"
+description = "1024px 화면에서 변경 후 대시보드 카드가 정상 렌더링되는지 확인한 캡처입니다."
+logical_id = "6e1e441c-8520-4126-a6bb-2bb647033af6"
+content_hash = "sha256:7dfec25363f933c75e20fbad869ed0b52e83237abf786bd80e31ddc792d47344"
+size = 113177
+mtime_ms = 1789178384962
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:c5dbf71e-e1df-4556-8ca8-f8dcf0f373f3/6e1e441c-8520-4126-a6bb-2bb647033af6/50389add-6112-4a38-ac4e-01a76a826d23"
+storage_version_token = "1789178435736034"
+content_type = "image/jpeg"
