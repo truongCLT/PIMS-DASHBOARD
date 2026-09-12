@@ -9,6 +9,7 @@ import {
   check,
   timestamp,
   jsonb,
+  date,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
@@ -114,6 +115,21 @@ export const mrCommentsTable = pgTable(
   ],
 );
 
+/** 전사 공통 경영 기준 월 — id=1 단일 행 */
+export const mrSettingsTable = pgTable(
+  "mr_settings",
+  {
+    id: integer("id").primaryKey().default(1),
+    referenceYear: integer("reference_year").notNull(),
+    referenceMonth: integer("reference_month").notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    check("mr_settings_singleton_ck", sql`${t.id} = 1`),
+    check("mr_settings_month_ck", sql`${t.referenceMonth} BETWEEN 1 AND 12`),
+  ],
+);
+
 // Excel 반영 이력 — 반영 직전의 mr_* 전체 스냅샷을 보관해 되돌리기를 지원
 export const mrImportHistoryTable = pgTable("mr_import_history", {
   id: serial("id").primaryKey(),
@@ -121,6 +137,34 @@ export const mrImportHistoryTable = pgTable("mr_import_history", {
   filename: text("filename").notNull(), // 업로드된 Excel 파일명
   year: integer("year").notNull(), // 반영 대상 연도
   snapshot: jsonb("snapshot").notNull(), // 반영 직전 mr_projects/mr_monthly/mr_annual/mr_pnl 전체
+});
+
+/** 수주 계획/실적·전망 — 다른 경영보고 업로드와 독립적으로 관리 */
+export const orderEntriesTable = pgTable(
+  "order_entries",
+  {
+    id: serial("id").primaryKey(),
+    year: integer("year").notNull(),
+    referenceMonth: integer("reference_month").notNull(),
+    projectName: text("project_name").notNull(),
+    planAmount: numeric("plan_amount", { precision: 18, scale: 4 }),
+    planDate: date("plan_date", { mode: "string" }),
+    actualAmount: numeric("actual_amount", { precision: 18, scale: 4 }),
+    actualDate: date("actual_date", { mode: "string" }),
+  },
+  (t) => [
+    uniqueIndex("order_entries_year_project_uq").on(t.year, t.projectName),
+    check("order_entries_reference_month_ck", sql`${t.referenceMonth} BETWEEN 1 AND 12`),
+  ],
+);
+
+export const orderImportHistoryTable = pgTable("order_import_history", {
+  id: serial("id").primaryKey(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  filename: text("filename").notNull(),
+  year: integer("year").notNull(),
+  referenceMonth: integer("reference_month").notNull(),
+  snapshot: jsonb("snapshot").notNull(),
 });
 
 export type MrImportHistory = typeof mrImportHistoryTable.$inferSelect;

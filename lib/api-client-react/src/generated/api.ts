@@ -25,6 +25,7 @@ import type {
   ApiErrorMessage,
   ApplyCashflowImportBody,
   ApplyMgmtreportImportBody,
+  ApplyOrderImportBody,
   ApplySalescostImportBody,
   CashflowAggregateSeries,
   CashflowImportPreview,
@@ -33,11 +34,13 @@ import type {
   CashflowProject,
   CreateMgmtreportComment,
   CreateProjectdetailComment,
+  DownloadCurrentOrdersParams,
   ErrorEnvelope,
   FxRateHistoryEntry,
   FxRates,
   GetCashflowAggregateParams,
   GetCashflowMonthlyParams,
+  GetOrderDetailsParams,
   GetPimsvinaSiterateParams,
   GetProjectdetailParams,
   GetSalescostSummaryParams,
@@ -55,7 +58,14 @@ import type {
   MgmtreportProjectStatusUpdate,
   MgmtreportProjects,
   MgmtreportRevertResult,
+  MgmtreportSettings,
   MgmtreportSummary,
+  OrderDetailList,
+  OrderImportHistoryList,
+  OrderImportPreview,
+  OrderImportResult,
+  OrderImportRevertInput,
+  OrderImportRevertResult,
   OrgStructure,
   OrgStructureInput,
   PatchProjectdetailClose200,
@@ -64,6 +74,7 @@ import type {
   PimsvinaSiteRate,
   PreviewCashflowImportBody,
   PreviewMgmtreportImportBody,
+  PreviewOrderImportBody,
   PreviewSalescostImportBody,
   ProjectDetail,
   ProjectdetailComment,
@@ -2531,6 +2542,154 @@ export function useGetMgmtreportSummary<TData = Awaited<ReturnType<typeof getMgm
 
 
 
+export const getGetMgmtreportSettingsUrl = () => {
+
+
+
+
+  return `/api/mgmtreport/settings`
+}
+
+/**
+ * @summary Get the company-wide management reference month
+ */
+export const getMgmtreportSettings = async ( options?: RequestInit): Promise<MgmtreportSettings> => {
+
+  return customFetch<MgmtreportSettings>(getGetMgmtreportSettingsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMgmtreportSettingsQueryKey = () => {
+    return [
+    `/api/mgmtreport/settings`
+    ] as const;
+    }
+
+
+export const getGetMgmtreportSettingsQueryOptions = <TData = Awaited<ReturnType<typeof getMgmtreportSettings>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMgmtreportSettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMgmtreportSettingsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMgmtreportSettings>>> = ({ signal }) => getMgmtreportSettings({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMgmtreportSettings>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMgmtreportSettingsQueryResult = NonNullable<Awaited<ReturnType<typeof getMgmtreportSettings>>>
+export type GetMgmtreportSettingsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get the company-wide management reference month
+ */
+
+export function useGetMgmtreportSettings<TData = Awaited<ReturnType<typeof getMgmtreportSettings>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMgmtreportSettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMgmtreportSettingsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getPutMgmtreportSettingsUrl = () => {
+
+
+
+
+  return `/api/mgmtreport/settings`
+}
+
+/**
+ * @summary Set the company-wide management reference month. Admin only.
+ */
+export const putMgmtreportSettings = async (mgmtreportSettings: MgmtreportSettings, options?: RequestInit): Promise<MgmtreportSettings> => {
+
+  return customFetch<MgmtreportSettings>(getPutMgmtreportSettingsUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(mgmtreportSettings)
+  }
+);}
+
+
+
+
+
+export const getPutMgmtreportSettingsMutationOptions = <TError = ErrorType<ApiErrorMessage>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putMgmtreportSettings>>, TError,{data: BodyType<MgmtreportSettings>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof putMgmtreportSettings>>, TError,{data: BodyType<MgmtreportSettings>}, TContext> => {
+
+const mutationKey = ['putMgmtreportSettings'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof putMgmtreportSettings>>, {data: BodyType<MgmtreportSettings>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  putMgmtreportSettings(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PutMgmtreportSettingsMutationResult = NonNullable<Awaited<ReturnType<typeof putMgmtreportSettings>>>
+    export type PutMgmtreportSettingsMutationBody = BodyType<MgmtreportSettings>
+    export type PutMgmtreportSettingsMutationError = ErrorType<ApiErrorMessage>
+
+    /**
+ * @summary Set the company-wide management reference month. Admin only.
+ */
+export const usePutMgmtreportSettings = <TError = ErrorType<ApiErrorMessage>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putMgmtreportSettings>>, TError,{data: BodyType<MgmtreportSettings>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof putMgmtreportSettings>>,
+        TError,
+        {data: BodyType<MgmtreportSettings>},
+        TContext
+      > => {
+      return useMutation(getPutMgmtreportSettingsMutationOptions(options));
+    }
+
 export const getListMgmtreportProjectsUrl = (params: ListMgmtreportProjectsParams,) => {
   const normalizedParams = new URLSearchParams();
 
@@ -2685,6 +2844,440 @@ export const useUpdateMgmtreportProjectStatus = <TError = ErrorType<ApiErrorMess
       > => {
       return useMutation(getUpdateMgmtreportProjectStatusMutationOptions(options));
     }
+
+export const getPreviewOrderImportUrl = () => {
+
+
+
+
+  return `/api/orders/import/preview`
+}
+
+export const previewOrderImport = async (previewOrderImportBody: PreviewOrderImportBody, options?: RequestInit): Promise<OrderImportPreview> => {
+    const formData = new FormData();
+formData.append(`file`, previewOrderImportBody.file);
+formData.append(`year`, previewOrderImportBody.year.toString())
+
+  return customFetch<OrderImportPreview>(getPreviewOrderImportUrl(),
+  {
+    ...options,
+    method: 'POST'
+    ,
+    body: formData
+  }
+);}
+
+
+
+
+
+export const getPreviewOrderImportMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof previewOrderImport>>, TError,{data: BodyType<PreviewOrderImportBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof previewOrderImport>>, TError,{data: BodyType<PreviewOrderImportBody>}, TContext> => {
+
+const mutationKey = ['previewOrderImport'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof previewOrderImport>>, {data: BodyType<PreviewOrderImportBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  previewOrderImport(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PreviewOrderImportMutationResult = NonNullable<Awaited<ReturnType<typeof previewOrderImport>>>
+    export type PreviewOrderImportMutationBody = BodyType<PreviewOrderImportBody>
+    export type PreviewOrderImportMutationError = ErrorType<unknown>
+
+    export const usePreviewOrderImport = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof previewOrderImport>>, TError,{data: BodyType<PreviewOrderImportBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof previewOrderImport>>,
+        TError,
+        {data: BodyType<PreviewOrderImportBody>},
+        TContext
+      > => {
+      return useMutation(getPreviewOrderImportMutationOptions(options));
+    }
+
+export const getApplyOrderImportUrl = () => {
+
+
+
+
+  return `/api/orders/import/apply`
+}
+
+export const applyOrderImport = async (applyOrderImportBody: ApplyOrderImportBody, options?: RequestInit): Promise<OrderImportResult> => {
+    const formData = new FormData();
+formData.append(`file`, applyOrderImportBody.file);
+formData.append(`year`, applyOrderImportBody.year.toString())
+
+  return customFetch<OrderImportResult>(getApplyOrderImportUrl(),
+  {
+    ...options,
+    method: 'POST'
+    ,
+    body: formData
+  }
+);}
+
+
+
+
+
+export const getApplyOrderImportMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof applyOrderImport>>, TError,{data: BodyType<ApplyOrderImportBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof applyOrderImport>>, TError,{data: BodyType<ApplyOrderImportBody>}, TContext> => {
+
+const mutationKey = ['applyOrderImport'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof applyOrderImport>>, {data: BodyType<ApplyOrderImportBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  applyOrderImport(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ApplyOrderImportMutationResult = NonNullable<Awaited<ReturnType<typeof applyOrderImport>>>
+    export type ApplyOrderImportMutationBody = BodyType<ApplyOrderImportBody>
+    export type ApplyOrderImportMutationError = ErrorType<unknown>
+
+    export const useApplyOrderImport = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof applyOrderImport>>, TError,{data: BodyType<ApplyOrderImportBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof applyOrderImport>>,
+        TError,
+        {data: BodyType<ApplyOrderImportBody>},
+        TContext
+      > => {
+      return useMutation(getApplyOrderImportMutationOptions(options));
+    }
+
+export const getListOrderImportHistoryUrl = () => {
+
+
+
+
+  return `/api/orders/import/history`
+}
+
+export const listOrderImportHistory = async ( options?: RequestInit): Promise<OrderImportHistoryList> => {
+
+  return customFetch<OrderImportHistoryList>(getListOrderImportHistoryUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListOrderImportHistoryQueryKey = () => {
+    return [
+    `/api/orders/import/history`
+    ] as const;
+    }
+
+
+export const getListOrderImportHistoryQueryOptions = <TData = Awaited<ReturnType<typeof listOrderImportHistory>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listOrderImportHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListOrderImportHistoryQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listOrderImportHistory>>> = ({ signal }) => listOrderImportHistory({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listOrderImportHistory>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListOrderImportHistoryQueryResult = NonNullable<Awaited<ReturnType<typeof listOrderImportHistory>>>
+export type ListOrderImportHistoryQueryError = ErrorType<unknown>
+
+
+
+export function useListOrderImportHistory<TData = Awaited<ReturnType<typeof listOrderImportHistory>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listOrderImportHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListOrderImportHistoryQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getRevertOrderImportUrl = () => {
+
+
+
+
+  return `/api/orders/import/revert`
+}
+
+export const revertOrderImport = async (orderImportRevertInput: OrderImportRevertInput, options?: RequestInit): Promise<OrderImportRevertResult> => {
+
+  return customFetch<OrderImportRevertResult>(getRevertOrderImportUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(orderImportRevertInput)
+  }
+);}
+
+
+
+
+
+export const getRevertOrderImportMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revertOrderImport>>, TError,{data: BodyType<OrderImportRevertInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof revertOrderImport>>, TError,{data: BodyType<OrderImportRevertInput>}, TContext> => {
+
+const mutationKey = ['revertOrderImport'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof revertOrderImport>>, {data: BodyType<OrderImportRevertInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  revertOrderImport(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RevertOrderImportMutationResult = NonNullable<Awaited<ReturnType<typeof revertOrderImport>>>
+    export type RevertOrderImportMutationBody = BodyType<OrderImportRevertInput>
+    export type RevertOrderImportMutationError = ErrorType<unknown>
+
+    export const useRevertOrderImport = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revertOrderImport>>, TError,{data: BodyType<OrderImportRevertInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof revertOrderImport>>,
+        TError,
+        {data: BodyType<OrderImportRevertInput>},
+        TContext
+      > => {
+      return useMutation(getRevertOrderImportMutationOptions(options));
+    }
+
+export const getDownloadCurrentOrdersUrl = (params: DownloadCurrentOrdersParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/orders/current.xlsx?${stringifiedParams}` : `/api/orders/current.xlsx`
+}
+
+export const downloadCurrentOrders = async (params: DownloadCurrentOrdersParams, options?: RequestInit): Promise<Blob> => {
+
+  return customFetch<Blob>(getDownloadCurrentOrdersUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getDownloadCurrentOrdersQueryKey = (params?: DownloadCurrentOrdersParams,) => {
+    return [
+    `/api/orders/current.xlsx`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getDownloadCurrentOrdersQueryOptions = <TData = Awaited<ReturnType<typeof downloadCurrentOrders>>, TError = ErrorType<unknown>>(params: DownloadCurrentOrdersParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof downloadCurrentOrders>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getDownloadCurrentOrdersQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof downloadCurrentOrders>>> = ({ signal }) => downloadCurrentOrders(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof downloadCurrentOrders>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type DownloadCurrentOrdersQueryResult = NonNullable<Awaited<ReturnType<typeof downloadCurrentOrders>>>
+export type DownloadCurrentOrdersQueryError = ErrorType<unknown>
+
+
+
+export function useDownloadCurrentOrders<TData = Awaited<ReturnType<typeof downloadCurrentOrders>>, TError = ErrorType<unknown>>(
+ params: DownloadCurrentOrdersParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof downloadCurrentOrders>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getDownloadCurrentOrdersQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetOrderDetailsUrl = (params: GetOrderDetailsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/orders/current?${stringifiedParams}` : `/api/orders/current`
+}
+
+/**
+ * @summary List project-level order plan and actual or forecast values
+ */
+export const getOrderDetails = async (params: GetOrderDetailsParams, options?: RequestInit): Promise<OrderDetailList> => {
+
+  return customFetch<OrderDetailList>(getGetOrderDetailsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetOrderDetailsQueryKey = (params?: GetOrderDetailsParams,) => {
+    return [
+    `/api/orders/current`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetOrderDetailsQueryOptions = <TData = Awaited<ReturnType<typeof getOrderDetails>>, TError = ErrorType<ApiErrorMessage>>(params: GetOrderDetailsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOrderDetails>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetOrderDetailsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getOrderDetails>>> = ({ signal }) => getOrderDetails(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getOrderDetails>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetOrderDetailsQueryResult = NonNullable<Awaited<ReturnType<typeof getOrderDetails>>>
+export type GetOrderDetailsQueryError = ErrorType<ApiErrorMessage>
+
+
+/**
+ * @summary List project-level order plan and actual or forecast values
+ */
+
+export function useGetOrderDetails<TData = Awaited<ReturnType<typeof getOrderDetails>>, TError = ErrorType<ApiErrorMessage>>(
+ params: GetOrderDetailsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOrderDetails>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetOrderDetailsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getPreviewMgmtreportImportUrl = () => {
 

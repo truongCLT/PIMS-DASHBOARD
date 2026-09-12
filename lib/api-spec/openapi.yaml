@@ -981,6 +981,41 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/MgmtreportSummary"
+  /mgmtreport/settings:
+    get:
+      operationId: getMgmtreportSettings
+      tags: [mgmtreport]
+      summary: Get the company-wide management reference month
+      responses:
+        "200":
+          description: Current company-wide management reference month
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MgmtreportSettings"
+    put:
+      operationId: putMgmtreportSettings
+      tags: [mgmtreport]
+      summary: Set the company-wide management reference month. Admin only.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MgmtreportSettings"
+      responses:
+        "200":
+          description: Saved reference month
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MgmtreportSettings"
+        "401":
+          description: Admin authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorMessage"
   /mgmtreport/projects:
     get:
       operationId: listMgmtreportProjects
@@ -1036,6 +1071,115 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiErrorMessage"
+  /orders/import/preview:
+    post:
+      operationId: previewOrderImport
+      tags: [mgmtreport]
+      security: [{ adminBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file: { type: string, format: binary }
+                year: { type: integer }
+              required: [file, year]
+      responses:
+        "200":
+          description: Parsed order workbook preview
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OrderImportPreview" }
+  /orders/import/apply:
+    post:
+      operationId: applyOrderImport
+      tags: [mgmtreport]
+      security: [{ adminBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file: { type: string, format: binary }
+                year: { type: integer }
+              required: [file, year]
+      responses:
+        "200":
+          description: Order workbook applied
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OrderImportResult" }
+  /orders/import/history:
+    get:
+      operationId: listOrderImportHistory
+      tags: [mgmtreport]
+      security: [{ adminBearer: [] }]
+      responses:
+        "200":
+          description: Recent order imports
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OrderImportHistoryList" }
+  /orders/import/revert:
+    post:
+      operationId: revertOrderImport
+      tags: [mgmtreport]
+      security: [{ adminBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/OrderImportRevertInput" }
+      responses:
+        "200":
+          description: Previous order data restored
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OrderImportRevertResult" }
+  /orders/current.xlsx:
+    get:
+      operationId: downloadCurrentOrders
+      tags: [mgmtreport]
+      parameters:
+        - name: year
+          in: query
+          required: true
+          schema: { type: integer, format: int32, minimum: 2000, maximum: 2100 }
+      responses:
+        "200":
+          description: Current order data workbook
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: { type: string, format: binary }
+  /orders/current:
+    get:
+      operationId: getOrderDetails
+      tags: [mgmtreport]
+      summary: List project-level order plan and actual or forecast values
+      parameters:
+        - name: year
+          in: query
+          required: true
+          schema: { type: integer, format: int32, minimum: 2000, maximum: 2100 }
+        - name: referenceMonth
+          in: query
+          required: true
+          schema: { type: integer, format: int32, minimum: 1, maximum: 12 }
+      responses:
+        "200":
+          description: Project-level order details for the selected period
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OrderDetailList" }
+        "400":
+          description: Invalid year or reference month
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ApiErrorMessage" }
   /mgmtreport/import/preview:
     post:
       operationId: previewMgmtreportImport
@@ -1546,6 +1690,89 @@ components:
             $ref: "#/components/schemas/MgmtreportImportProjectPreview"
       required:
         [year, unit, projectCount, monthlyCount, annualCount, pnlCount, monthsWithActual, totals, projects]
+    OrderImportEntry:
+      type: object
+      properties:
+        projectName: { type: string }
+        planAmount: { type: [number, "null"] }
+        planDate: { type: [string, "null"] }
+        actualAmount: { type: [number, "null"] }
+        actualDate: { type: [string, "null"] }
+      required: [projectName, planAmount, planDate, actualAmount, actualDate]
+    OrderImportPreview:
+      type: object
+      properties:
+        year: { type: integer }
+        referenceMonth: { type: integer }
+        unit: { type: string }
+        projectCount: { type: integer }
+        totals:
+          type: object
+          properties:
+            plan: { type: number }
+            actual: { type: number }
+          required: [plan, actual]
+        entries:
+          type: array
+          items: { $ref: "#/components/schemas/OrderImportEntry" }
+      required: [year, referenceMonth, unit, projectCount, totals, entries]
+    OrderImportResult:
+      allOf:
+        - $ref: "#/components/schemas/OrderImportPreview"
+        - type: object
+          properties:
+            applied: { type: boolean }
+          required: [applied]
+    OrderDetailEntry:
+      type: object
+      properties:
+        projectName: { type: string }
+        planAmount: { type: [number, "null"] }
+        planDate: { type: [string, "null"] }
+        actualAmount: { type: [number, "null"] }
+        actualDate: { type: [string, "null"] }
+        actualKind:
+          type: string
+          enum: [actual, forecast, none]
+      required: [projectName, planAmount, planDate, actualAmount, actualDate, actualKind]
+    OrderDetailList:
+      type: object
+      properties:
+        year: { type: integer }
+        referenceMonth: { type: integer }
+        entries:
+          type: array
+          items: { $ref: "#/components/schemas/OrderDetailEntry" }
+      required: [year, referenceMonth, entries]
+    OrderImportHistoryEntry:
+      type: object
+      properties:
+        id: { type: integer }
+        createdAt: { type: string }
+        filename: { type: string }
+        year: { type: integer }
+        referenceMonth: { type: integer }
+        snapshotEmpty: { type: boolean }
+      required: [id, createdAt, filename, year, referenceMonth, snapshotEmpty]
+    OrderImportHistoryList:
+      type: object
+      properties:
+        entries:
+          type: array
+          items: { $ref: "#/components/schemas/OrderImportHistoryEntry" }
+      required: [entries]
+    OrderImportRevertInput:
+      type: object
+      properties:
+        historyId: { type: integer }
+      required: [historyId]
+    OrderImportRevertResult:
+      type: object
+      properties:
+        filename: { type: string }
+        year: { type: integer }
+        restoredProjects: { type: integer }
+      required: [filename, year, restoredProjects]
     MgmtreportImportResult:
       allOf:
         - $ref: "#/components/schemas/MgmtreportImportPreview"
@@ -1841,6 +2068,18 @@ components:
         actualTotal:
           type: number
       required: [code, label, plan, actual, planTotal, actualTotal]
+    MgmtreportSettings:
+      type: object
+      properties:
+        year:
+          type: integer
+          minimum: 2000
+          maximum: 2100
+        month:
+          type: integer
+          minimum: 1
+          maximum: 12
+      required: [year, month]
     MgmtreportSummary:
       type: object
       properties:
@@ -1969,6 +2208,58 @@ components:
           type: string
           nullable: true
           description: 공사규모
+        location:
+          type: string
+          nullable: true
+          description: 위치
+        siteArea:
+          type: string
+          nullable: true
+          description: 대지면적
+        grossFloorArea:
+          type: string
+          nullable: true
+          description: 연면적
+        purpose:
+          type: string
+          nullable: true
+          description: 용도
+        ownershipStake:
+          type: string
+          nullable: true
+          description: 지분
+        partnerCompany:
+          type: string
+          nullable: true
+          description: 파트너사
+        contractMethod:
+          type: string
+          nullable: true
+          description: 계약방식
+        paymentTerms:
+          type: string
+          nullable: true
+          description: 수금조건
+        defectWarrantyPeriod:
+          type: string
+          nullable: true
+          description: 하자보증기간
+        defectWarrantyBond:
+          type: string
+          nullable: true
+          description: 하자보증증권
+        advancePayment:
+          type: string
+          nullable: true
+          description: 선급금
+        retention:
+          type: string
+          nullable: true
+          description: 유보금
+        veTerms:
+          type: string
+          nullable: true
+          description: VE 조건
         asOfMonth:
           type: string
           nullable: true
@@ -2211,6 +2502,9 @@ components:
       properties:
         projectName:
           type: string
+        planVersion:
+          type: integer
+          description: 계획 데이터 변경 차수. 계획이 없으면 0.
         unit:
           type: string
           description: Amount unit (천 USD)
@@ -2250,6 +2544,16 @@ components:
             $ref: "#/components/schemas/ProjectDetailCogsPoint"
         salesMonthly:
           type: array
+          items:
+            $ref: "#/components/schemas/ProjectDetailSalesPoint"
+        canonicalCogsMonthly:
+          type: array
+          description: 표시용 월별 원가. 경영보고 값 우선, 없는 월은 ERP/데이터입력 값으로 보완.
+          items:
+            $ref: "#/components/schemas/ProjectDetailCogsPoint"
+        canonicalSalesMonthly:
+          type: array
+          description: 표시용 월별 매출. 경영보고 값 우선, 없는 월은 ERP/데이터입력 값으로 보완.
           items:
             $ref: "#/components/schemas/ProjectDetailSalesPoint"
         photos:

@@ -19,6 +19,8 @@ import type { ProjectDetailSalesPoint } from './projectDetailSalesPoint';
 
 export interface ProjectDetail {
   projectName: string;
+  /** 계획 데이터 변경 차수. 계획이 없으면 0. */
+  planVersion?: number;
   /** Amount unit (천 USD) */
   unit: string;
   overview: ProjectDetailOverview;
@@ -31,5 +33,9 @@ export interface ProjectDetail {
   cashflow: ProjectDetailCashflowPoint[];
   cogsMonthly?: ProjectDetailCogsPoint[];
   salesMonthly?: ProjectDetailSalesPoint[];
+  /** 표시용 월별 원가. 경영보고 값 우선, 없는 월은 ERP/데이터입력 값으로 보완. */
+  canonicalCogsMonthly?: ProjectDetailCogsPoint[];
+  /** 표시용 월별 매출. 경영보고 값 우선, 없는 월은 ERP/데이터입력 값으로 보완. */
+  canonicalSalesMonthly?: ProjectDetailSalesPoint[];
   photos: ProjectDetailPhoto[];
 }

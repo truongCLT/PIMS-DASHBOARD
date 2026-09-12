@@ -277,6 +277,87 @@ export interface MgmtreportImportPreview {
   projects: MgmtreportImportProjectPreview[];
 }
 
+export interface OrderImportEntry {
+  projectName: string;
+  /** @nullable */
+  planAmount: number | null;
+  /** @nullable */
+  planDate: string | null;
+  /** @nullable */
+  actualAmount: number | null;
+  /** @nullable */
+  actualDate: string | null;
+}
+
+export type OrderImportPreviewTotals = {
+  plan: number;
+  actual: number;
+};
+
+export interface OrderImportPreview {
+  year: number;
+  referenceMonth: number;
+  unit: string;
+  projectCount: number;
+  totals: OrderImportPreviewTotals;
+  entries: OrderImportEntry[];
+}
+
+export type OrderImportResult = OrderImportPreview & {
+  applied: boolean;
+};
+
+export type OrderDetailEntryActualKind = typeof OrderDetailEntryActualKind[keyof typeof OrderDetailEntryActualKind];
+
+
+export const OrderDetailEntryActualKind = {
+  actual: 'actual',
+  forecast: 'forecast',
+  none: 'none',
+} as const;
+
+export interface OrderDetailEntry {
+  projectName: string;
+  /** @nullable */
+  planAmount: number | null;
+  /** @nullable */
+  planDate: string | null;
+  /** @nullable */
+  actualAmount: number | null;
+  /** @nullable */
+  actualDate: string | null;
+  actualKind: OrderDetailEntryActualKind;
+}
+
+export interface OrderDetailList {
+  year: number;
+  referenceMonth: number;
+  entries: OrderDetailEntry[];
+}
+
+export interface OrderImportHistoryEntry {
+  id: number;
+  createdAt: string;
+  filename: string;
+  year: number;
+  referenceMonth: number;
+  snapshotEmpty: boolean;
+}
+
+export interface OrderImportHistoryList {
+  entries: OrderImportHistoryEntry[];
+}
+
+export interface OrderImportRevertInput {
+  historyId: number;
+}
+
+export interface OrderImportRevertResult {
+  filename: string;
+  year: number;
+  restoredProjects: number;
+}
+
 export type MgmtreportImportResult = MgmtreportImportPreview & {
   applied: boolean;
 };
@@ -443,6 +524,19 @@ export interface MgmtreportLine {
   actualTotal: number;
 }
 
+export interface MgmtreportSettings {
+  /**
+     * @minimum 2000
+     * @maximum 2100
+     */
+  year: number;
+  /**
+     * @minimum 1
+     * @maximum 12
+     */
+  month: number;
+}
+
 export interface MgmtreportSummary {
   year: number;
   /** Amount unit (천 USD) */
@@ -534,6 +628,32 @@ export interface ProjectDetailOverview {
   client: string | null;
   /** 공사규모 */
   scale: string | null;
+  /** 위치 */
+  location?: string | null;
+  /** 대지면적 */
+  siteArea?: string | null;
+  /** 연면적 */
+  grossFloorArea?: string | null;
+  /** 용도 */
+  purpose?: string | null;
+  /** 지분 */
+  ownershipStake?: string | null;
+  /** 파트너사 */
+  partnerCompany?: string | null;
+  /** 계약방식 */
+  contractMethod?: string | null;
+  /** 수금조건 */
+  paymentTerms?: string | null;
+  /** 하자보증기간 */
+  defectWarrantyPeriod?: string | null;
+  /** 하자보증증권 */
+  defectWarrantyBond?: string | null;
+  /** 선급금 */
+  advancePayment?: string | null;
+  /** 유보금 */
+  retention?: string | null;
+  /** VE 조건 */
+  veTerms?: string | null;
   /** 작성 기준월 YYYY-MM */
   asOfMonth?: string | null;
   /** 수행내용 (용역) */
@@ -702,6 +822,8 @@ export interface ProjectDetailPhoto {
 
 export interface ProjectDetail {
   projectName: string;
+  /** 계획 데이터 변경 차수. 계획이 없으면 0. */
+  planVersion?: number;
   /** Amount unit (천 USD) */
   unit: string;
   overview: ProjectDetailOverview;
@@ -714,6 +836,10 @@ export interface ProjectDetail {
   cashflow: ProjectDetailCashflowPoint[];
   cogsMonthly?: ProjectDetailCogsPoint[];
   salesMonthly?: ProjectDetailSalesPoint[];
+  /** 표시용 월별 원가. 경영보고 값 우선, 없는 월은 ERP/데이터입력 값으로 보완. */
+  canonicalCogsMonthly?: ProjectDetailCogsPoint[];
+  /** 표시용 월별 매출. 경영보고 값 우선, 없는 월은 ERP/데이터입력 값으로 보완. */
+  canonicalSalesMonthly?: ProjectDetailSalesPoint[];
   photos: ProjectDetailPhoto[];
 }
 
@@ -869,6 +995,37 @@ year: number;
  * Include corporate rollup rows (DECV법인 취합본)
  */
 includeGroups?: boolean;
+};
+
+export type PreviewOrderImportBody = {
+  file: Blob;
+  year: number;
+};
+
+export type ApplyOrderImportBody = {
+  file: Blob;
+  year: number;
+};
+
+export type DownloadCurrentOrdersParams = {
+/**
+ * @minimum 2000
+ * @maximum 2100
+ */
+year: number;
+};
+
+export type GetOrderDetailsParams = {
+/**
+ * @minimum 2000
+ * @maximum 2100
+ */
+year: number;
+/**
+ * @minimum 1
+ * @maximum 12
+ */
+referenceMonth: number;
 };
 
 export type PreviewMgmtreportImportBody = {

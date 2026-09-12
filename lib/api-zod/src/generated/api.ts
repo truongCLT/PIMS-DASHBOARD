@@ -352,10 +352,15 @@ export const getProjectdetailResponseCogsMonthlyItemMonthMax = 12;
 
 export const getProjectdetailResponseSalesMonthlyItemMonthMax = 12;
 
+export const getProjectdetailResponseCanonicalCogsMonthlyItemMonthMax = 12;
+
+export const getProjectdetailResponseCanonicalSalesMonthlyItemMonthMax = 12;
+
 
 
 export const GetProjectdetailResponse = zod.object({
   "projectName": zod.string(),
+  "planVersion": zod.number().optional().describe('계획 데이터 변경 차수. 계획이 없으면 0.'),
   "unit": zod.string().describe('Amount unit (천 USD)'),
   "overview": zod.object({
   "siteCode": zod.string().nullish().describe('PIMSVINA 현장 코드 (mr_projects.site_code), 현장 계약 환율 조회에 사용'),
@@ -364,6 +369,19 @@ export const GetProjectdetailResponse = zod.object({
   "endDate": zod.string().nullable().describe('공사 종료일 YYYY-MM-DD'),
   "client": zod.string().nullable().describe('발주처'),
   "scale": zod.string().nullable().describe('공사규모'),
+  "location": zod.string().nullish().describe('위치'),
+  "siteArea": zod.string().nullish().describe('대지면적'),
+  "grossFloorArea": zod.string().nullish().describe('연면적'),
+  "purpose": zod.string().nullish().describe('용도'),
+  "ownershipStake": zod.string().nullish().describe('지분'),
+  "partnerCompany": zod.string().nullish().describe('파트너사'),
+  "contractMethod": zod.string().nullish().describe('계약방식'),
+  "paymentTerms": zod.string().nullish().describe('수금조건'),
+  "defectWarrantyPeriod": zod.string().nullish().describe('하자보증기간'),
+  "defectWarrantyBond": zod.string().nullish().describe('하자보증증권'),
+  "advancePayment": zod.string().nullish().describe('선급금'),
+  "retention": zod.string().nullish().describe('유보금'),
+  "veTerms": zod.string().nullish().describe('VE 조건'),
   "asOfMonth": zod.string().nullish().describe('작성 기준월 YYYY-MM'),
   "scope": zod.string().nullish().describe('수행내용 (용역)'),
   "revenueAnnualTarget": zod.number().nullish().describe('연간 매출 목표 (천 USD)'),
@@ -441,6 +459,18 @@ export const GetProjectdetailResponse = zod.object({
   "plan": zod.number().nullish().describe('매출 계획 (천 USD)'),
   "actual": zod.number().nullish().describe('매출 실적 (천 USD)')
 })).optional(),
+  "canonicalCogsMonthly": zod.array(zod.object({
+  "year": zod.number(),
+  "month": zod.number().min(1).max(getProjectdetailResponseCanonicalCogsMonthlyItemMonthMax),
+  "acctCogs": zod.number().nullish().describe('회계 매출원가 (천 USD)'),
+  "wipCogs": zod.number().nullish().describe('집행 매출원가 (WIP) (천 USD)')
+})).optional().describe('표시용 월별 원가. 경영보고 값 우선, 없는 월은 ERP\/데이터입력 값으로 보완.'),
+  "canonicalSalesMonthly": zod.array(zod.object({
+  "year": zod.number(),
+  "month": zod.number().min(1).max(getProjectdetailResponseCanonicalSalesMonthlyItemMonthMax),
+  "plan": zod.number().nullish().describe('매출 계획 (천 USD)'),
+  "actual": zod.number().nullish().describe('매출 실적 (천 USD)')
+})).optional().describe('표시용 월별 매출. 경영보고 값 우선, 없는 월은 ERP\/데이터입력 값으로 보완.'),
   "photos": zod.array(zod.object({
   "objectPath": zod.string().describe('Object storage path (\'\/objects\/uploads\/<uuid>\')')
 }))
@@ -479,10 +509,15 @@ export const putProjectdetailBodyCogsMonthlyItemMonthMax = 12;
 
 export const putProjectdetailBodySalesMonthlyItemMonthMax = 12;
 
+export const putProjectdetailBodyCanonicalCogsMonthlyItemMonthMax = 12;
+
+export const putProjectdetailBodyCanonicalSalesMonthlyItemMonthMax = 12;
+
 
 
 export const PutProjectdetailBody = zod.object({
   "projectName": zod.string(),
+  "planVersion": zod.number().optional().describe('계획 데이터 변경 차수. 계획이 없으면 0.'),
   "unit": zod.string().describe('Amount unit (천 USD)'),
   "overview": zod.object({
   "siteCode": zod.string().nullish().describe('PIMSVINA 현장 코드 (mr_projects.site_code), 현장 계약 환율 조회에 사용'),
@@ -491,6 +526,19 @@ export const PutProjectdetailBody = zod.object({
   "endDate": zod.string().nullable().describe('공사 종료일 YYYY-MM-DD'),
   "client": zod.string().nullable().describe('발주처'),
   "scale": zod.string().nullable().describe('공사규모'),
+  "location": zod.string().nullish().describe('위치'),
+  "siteArea": zod.string().nullish().describe('대지면적'),
+  "grossFloorArea": zod.string().nullish().describe('연면적'),
+  "purpose": zod.string().nullish().describe('용도'),
+  "ownershipStake": zod.string().nullish().describe('지분'),
+  "partnerCompany": zod.string().nullish().describe('파트너사'),
+  "contractMethod": zod.string().nullish().describe('계약방식'),
+  "paymentTerms": zod.string().nullish().describe('수금조건'),
+  "defectWarrantyPeriod": zod.string().nullish().describe('하자보증기간'),
+  "defectWarrantyBond": zod.string().nullish().describe('하자보증증권'),
+  "advancePayment": zod.string().nullish().describe('선급금'),
+  "retention": zod.string().nullish().describe('유보금'),
+  "veTerms": zod.string().nullish().describe('VE 조건'),
   "asOfMonth": zod.string().nullish().describe('작성 기준월 YYYY-MM'),
   "scope": zod.string().nullish().describe('수행내용 (용역)'),
   "revenueAnnualTarget": zod.number().nullish().describe('연간 매출 목표 (천 USD)'),
@@ -568,6 +616,18 @@ export const PutProjectdetailBody = zod.object({
   "plan": zod.number().nullish().describe('매출 계획 (천 USD)'),
   "actual": zod.number().nullish().describe('매출 실적 (천 USD)')
 })).optional(),
+  "canonicalCogsMonthly": zod.array(zod.object({
+  "year": zod.number(),
+  "month": zod.number().min(1).max(putProjectdetailBodyCanonicalCogsMonthlyItemMonthMax),
+  "acctCogs": zod.number().nullish().describe('회계 매출원가 (천 USD)'),
+  "wipCogs": zod.number().nullish().describe('집행 매출원가 (WIP) (천 USD)')
+})).optional().describe('표시용 월별 원가. 경영보고 값 우선, 없는 월은 ERP\/데이터입력 값으로 보완.'),
+  "canonicalSalesMonthly": zod.array(zod.object({
+  "year": zod.number(),
+  "month": zod.number().min(1).max(putProjectdetailBodyCanonicalSalesMonthlyItemMonthMax),
+  "plan": zod.number().nullish().describe('매출 계획 (천 USD)'),
+  "actual": zod.number().nullish().describe('매출 실적 (천 USD)')
+})).optional().describe('표시용 월별 매출. 경영보고 값 우선, 없는 월은 ERP\/데이터입력 값으로 보완.'),
   "photos": zod.array(zod.object({
   "objectPath": zod.string().describe('Object storage path (\'\/objects\/uploads\/<uuid>\')')
 }))
@@ -602,10 +662,15 @@ export const putProjectdetailResponseCogsMonthlyItemMonthMax = 12;
 
 export const putProjectdetailResponseSalesMonthlyItemMonthMax = 12;
 
+export const putProjectdetailResponseCanonicalCogsMonthlyItemMonthMax = 12;
+
+export const putProjectdetailResponseCanonicalSalesMonthlyItemMonthMax = 12;
+
 
 
 export const PutProjectdetailResponse = zod.object({
   "projectName": zod.string(),
+  "planVersion": zod.number().optional().describe('계획 데이터 변경 차수. 계획이 없으면 0.'),
   "unit": zod.string().describe('Amount unit (천 USD)'),
   "overview": zod.object({
   "siteCode": zod.string().nullish().describe('PIMSVINA 현장 코드 (mr_projects.site_code), 현장 계약 환율 조회에 사용'),
@@ -614,6 +679,19 @@ export const PutProjectdetailResponse = zod.object({
   "endDate": zod.string().nullable().describe('공사 종료일 YYYY-MM-DD'),
   "client": zod.string().nullable().describe('발주처'),
   "scale": zod.string().nullable().describe('공사규모'),
+  "location": zod.string().nullish().describe('위치'),
+  "siteArea": zod.string().nullish().describe('대지면적'),
+  "grossFloorArea": zod.string().nullish().describe('연면적'),
+  "purpose": zod.string().nullish().describe('용도'),
+  "ownershipStake": zod.string().nullish().describe('지분'),
+  "partnerCompany": zod.string().nullish().describe('파트너사'),
+  "contractMethod": zod.string().nullish().describe('계약방식'),
+  "paymentTerms": zod.string().nullish().describe('수금조건'),
+  "defectWarrantyPeriod": zod.string().nullish().describe('하자보증기간'),
+  "defectWarrantyBond": zod.string().nullish().describe('하자보증증권'),
+  "advancePayment": zod.string().nullish().describe('선급금'),
+  "retention": zod.string().nullish().describe('유보금'),
+  "veTerms": zod.string().nullish().describe('VE 조건'),
   "asOfMonth": zod.string().nullish().describe('작성 기준월 YYYY-MM'),
   "scope": zod.string().nullish().describe('수행내용 (용역)'),
   "revenueAnnualTarget": zod.number().nullish().describe('연간 매출 목표 (천 USD)'),
@@ -691,6 +769,18 @@ export const PutProjectdetailResponse = zod.object({
   "plan": zod.number().nullish().describe('매출 계획 (천 USD)'),
   "actual": zod.number().nullish().describe('매출 실적 (천 USD)')
 })).optional(),
+  "canonicalCogsMonthly": zod.array(zod.object({
+  "year": zod.number(),
+  "month": zod.number().min(1).max(putProjectdetailResponseCanonicalCogsMonthlyItemMonthMax),
+  "acctCogs": zod.number().nullish().describe('회계 매출원가 (천 USD)'),
+  "wipCogs": zod.number().nullish().describe('집행 매출원가 (WIP) (천 USD)')
+})).optional().describe('표시용 월별 원가. 경영보고 값 우선, 없는 월은 ERP\/데이터입력 값으로 보완.'),
+  "canonicalSalesMonthly": zod.array(zod.object({
+  "year": zod.number(),
+  "month": zod.number().min(1).max(putProjectdetailResponseCanonicalSalesMonthlyItemMonthMax),
+  "plan": zod.number().nullish().describe('매출 계획 (천 USD)'),
+  "actual": zod.number().nullish().describe('매출 실적 (천 USD)')
+})).optional().describe('표시용 월별 매출. 경영보고 값 우선, 없는 월은 ERP\/데이터입력 값으로 보완.'),
   "photos": zod.array(zod.object({
   "objectPath": zod.string().describe('Object storage path (\'\/objects\/uploads\/<uuid>\')')
 }))
@@ -1032,6 +1122,50 @@ export const GetMgmtreportSummaryResponse = zod.array(GetMgmtreportSummaryRespon
 
 
 /**
+ * @summary Get the company-wide management reference month
+ */
+export const getMgmtreportSettingsResponseYearMin = 2000;
+export const getMgmtreportSettingsResponseYearMax = 2100;
+
+export const getMgmtreportSettingsResponseMonthMax = 12;
+
+
+
+export const GetMgmtreportSettingsResponse = zod.object({
+  "year": zod.number().min(getMgmtreportSettingsResponseYearMin).max(getMgmtreportSettingsResponseYearMax),
+  "month": zod.number().min(1).max(getMgmtreportSettingsResponseMonthMax)
+})
+
+
+/**
+ * @summary Set the company-wide management reference month. Admin only.
+ */
+export const putMgmtreportSettingsBodyYearMin = 2000;
+export const putMgmtreportSettingsBodyYearMax = 2100;
+
+export const putMgmtreportSettingsBodyMonthMax = 12;
+
+
+
+export const PutMgmtreportSettingsBody = zod.object({
+  "year": zod.number().min(putMgmtreportSettingsBodyYearMin).max(putMgmtreportSettingsBodyYearMax),
+  "month": zod.number().min(1).max(putMgmtreportSettingsBodyMonthMax)
+})
+
+export const putMgmtreportSettingsResponseYearMin = 2000;
+export const putMgmtreportSettingsResponseYearMax = 2100;
+
+export const putMgmtreportSettingsResponseMonthMax = 12;
+
+
+
+export const PutMgmtreportSettingsResponse = zod.object({
+  "year": zod.number().min(putMgmtreportSettingsResponseYearMin).max(putMgmtreportSettingsResponseYearMax),
+  "month": zod.number().min(1).max(putMgmtreportSettingsResponseMonthMax)
+})
+
+
+/**
  * @summary Per-project plan vs actual monthly revenue/cogs series and annual outlook
  */
 export const listMgmtreportProjectsQueryIncludeGroupsDefault = false;
@@ -1079,6 +1213,120 @@ export const UpdateMgmtreportProjectStatusBody = zod.object({
 export const UpdateMgmtreportProjectStatusResponse = zod.object({
   "name": zod.string(),
   "status": zod.enum(['ongoing', 'closed'])
+})
+
+
+export const PreviewOrderImportBody = zod.object({
+  "file": zod.instanceof(File),
+  "year": zod.number()
+})
+
+export const PreviewOrderImportResponse = zod.object({
+  "year": zod.number(),
+  "referenceMonth": zod.number(),
+  "unit": zod.string(),
+  "projectCount": zod.number(),
+  "totals": zod.object({
+  "plan": zod.number(),
+  "actual": zod.number()
+}),
+  "entries": zod.array(zod.object({
+  "projectName": zod.string(),
+  "planAmount": zod.number().nullable(),
+  "planDate": zod.string().nullable(),
+  "actualAmount": zod.number().nullable(),
+  "actualDate": zod.string().nullable()
+}))
+})
+
+
+export const ApplyOrderImportBody = zod.object({
+  "file": zod.instanceof(File),
+  "year": zod.number()
+})
+
+export const ApplyOrderImportResponse = zod.object({
+  "year": zod.number(),
+  "referenceMonth": zod.number(),
+  "unit": zod.string(),
+  "projectCount": zod.number(),
+  "totals": zod.object({
+  "plan": zod.number(),
+  "actual": zod.number()
+}),
+  "entries": zod.array(zod.object({
+  "projectName": zod.string(),
+  "planAmount": zod.number().nullable(),
+  "planDate": zod.string().nullable(),
+  "actualAmount": zod.number().nullable(),
+  "actualDate": zod.string().nullable()
+}))
+}).and(zod.object({
+  "applied": zod.boolean()
+}))
+
+
+export const ListOrderImportHistoryResponse = zod.object({
+  "entries": zod.array(zod.object({
+  "id": zod.number(),
+  "createdAt": zod.string(),
+  "filename": zod.string(),
+  "year": zod.number(),
+  "referenceMonth": zod.number(),
+  "snapshotEmpty": zod.boolean()
+}))
+})
+
+
+export const RevertOrderImportBody = zod.object({
+  "historyId": zod.number()
+})
+
+export const RevertOrderImportResponse = zod.object({
+  "filename": zod.string(),
+  "year": zod.number(),
+  "restoredProjects": zod.number()
+})
+
+
+export const downloadCurrentOrdersQueryYearMin = 2000;
+export const downloadCurrentOrdersQueryYearMax = 2100;
+
+
+
+export const DownloadCurrentOrdersQueryParams = zod.object({
+  "year": zod.coerce.number().min(downloadCurrentOrdersQueryYearMin).max(downloadCurrentOrdersQueryYearMax)
+})
+
+export const DownloadCurrentOrdersResponse = zod.unknown()
+
+
+/**
+ * @summary List project-level order plan and actual or forecast values
+ */
+export const getOrderDetailsQueryYearMin = 2000;
+export const getOrderDetailsQueryYearMax = 2100;
+
+export const getOrderDetailsQueryReferenceMonthMax = 12;
+
+
+
+export const GetOrderDetailsQueryParams = zod.object({
+  "year": zod.coerce.number().min(getOrderDetailsQueryYearMin).max(getOrderDetailsQueryYearMax),
+  "referenceMonth": zod.coerce.number().min(1).max(getOrderDetailsQueryReferenceMonthMax)
+})
+
+export const GetOrderDetailsResponse = zod.object({
+  "year": zod.number(),
+  "referenceMonth": zod.number(),
+  "entries": zod.array(zod.object({
+  "projectName": zod.string(),
+  "planAmount": zod.number().nullable(),
+  "planDate": zod.string().nullable(),
+  "actualAmount": zod.number().nullable(),
+  "actualDate": zod.string().nullable(),
+  "actualKind": zod.enum(['actual', 'forecast', 'none'])
+}))
 })
 
 
