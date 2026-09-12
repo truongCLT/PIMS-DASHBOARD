@@ -35,8 +35,8 @@ const ORANGE = chartTheme.sgaOrange;
 const DW_OP  = chartTheme.dwOp;
 const DW_SGA = chartTheme.dwSga;
 
-const Y0   = 400; // bottom of plot area
-const YTOP = 20;
+const Y0   = 414; // 매출 차트의 하단 플롯 기준선에 맞춤
+const YTOP = 40;  // 매출 차트의 상단 그리드 시작 위치에 맞춤
 
 function niceStep(raw: number): number {
   const mag = Math.pow(10, Math.floor(Math.log10(Math.max(raw, 1))));
@@ -53,7 +53,9 @@ export function ProfitChart() {
   const [detailOpen, setDetailOpen] = useState(false);
   const [drillRow, setDrillRow] = useState<ProfitRow | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
+  const chartAreaRef = useRef<HTMLDivElement>(null);
   const [cardContentWidth, setCardContentWidth] = useState(600);
+  const [chartAreaSize, setChartAreaSize] = useState({ width: 600, height: 315 });
 
   useEffect(() => {
     const el = cardRef.current;
@@ -137,6 +139,20 @@ export function ProfitChart() {
   const compact     = unitIndex === 1;                 // 단위 기반 폰트 축소
   const data = derived?.profitData ?? [];
 
+  useEffect(() => {
+    const el = chartAreaRef.current;
+    if (!el || data.length === 0) return;
+    const updateSize = (width: number, height: number) => {
+      if (width > 0 && height > 0) setChartAreaSize({ width, height });
+    };
+    updateSize(el.clientWidth, el.clientHeight);
+    const ro = new ResizeObserver(([entry]) => {
+      updateSize(entry.contentRect.width, entry.contentRect.height);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [data.length, daewoo]);
+
   // ≥6개 버킷이면 경상이익·판관비를 그래프에서 숨기고 툴팁에만 표시
   const isCondensed = data.length >= 6;
 
@@ -149,17 +165,31 @@ export function ProfitChart() {
     return daewoo ? scaled : Math.min(scaled, 14);
   };
 
-  /* 카드의 실제 렌더 폭을 기준으로 CSS 픽셀 목표값을 viewBox 단위로 변환한다. */
-  const _inv   = 1000 / Math.max(cardContentWidth, 1);
+  /*
+   * 대우형 손익 차트는 SVG를 카드 높이에 맞춰 균일 확대한다.
+   * 확대 후 보이는 가로 범위 안에 12개월을 다시 배치해 좌우 잘림을 방지한다.
+   */
+  const daewooScale = Math.max(
+    chartAreaSize.width / 1000,
+    chartAreaSize.height / 530,
+  );
+  const renderScale = daewoo ? daewooScale : cardContentWidth / 1000;
+  const _inv = 1 / Math.max(renderScale, 0.001);
   const axisFs  = chartTypography.axis * _inv;
   const monthFs = chartTypography.month * _inv;
   const valueFs = chartTypography.value * _inv;
   const rateFs  = chartTypography.rate * _inv;
 
-  const plotLeft  = daewoo ? (compact ? 160 : 115) : compact ? 130 : 80;
-  const plotRight = 950;
+  const visibleSvgWidth = daewoo
+    ? chartAreaSize.width / Math.max(daewooScale, 0.001)
+    : 1000;
+  const visibleLeft = (1000 - visibleSvgWidth) / 2;
+  const plotLeft = daewoo
+    ? visibleLeft + (compact ? 90 : 70)
+    : compact ? 130 : 80;
+  const plotRight = daewoo ? 1000 - visibleLeft - 24 : 950;
   const slot = data.length > 0 ? (plotRight - plotLeft) / data.length : 0;
-  const barW = 58;
+  const barW = daewoo ? Math.min(42, Math.max(18, slot * 0.58)) : 58;
 
   const rawMax = Math.max(
     1,
@@ -240,13 +270,13 @@ export function ProfitChart() {
           </EmptyDescription>
         </Empty>
       ) : (
-      <div style={{ position: "relative", width: "100%", flex: daewoo ? 1 : undefined, minHeight: daewoo ? 0 : undefined }}>
+      <div ref={chartAreaRef} style={{ position: "relative", width: "100%", flex: daewoo ? 1 : undefined, minHeight: daewoo ? 0 : undefined }}>
       <svg
         viewBox={daewoo ? "0 0 1000 530" : "0 0 1000 445"}
         style={daewoo
           ? { width: "100%", height: "100%", minHeight: 0, display: "block", fontFamily: chartTypography.fontFamily }
           : { width: "100%", display: "block", fontFamily: chartTypography.fontFamily }}
-        preserveAspectRatio={daewoo ? "xMidYMin meet" : undefined}
+        preserveAspectRatio={daewoo ? "xMidYMid slice" : undefined}
         onMouseLeave={() => setHoveredIdx(null)}
       >
         {/* Grid lines + y labels */}

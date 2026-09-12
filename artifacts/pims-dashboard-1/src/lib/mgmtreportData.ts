@@ -75,13 +75,13 @@ export interface SalesRow {
   plan: number | null;
   actual: number | null;
   rate: number | null;
-  /** 조회 기준월 이후 연간 예상값이면 true */
+  /** 오늘 날짜의 전월 이후(당월 포함) 전망값이면 true */
   isForecast?: boolean;
 }
 
 export interface ProfitRow {
   m: string;
-  /** 조회 기준월 이후 연간 예상값이면 true */
+  /** 오늘 날짜의 전월 이후(당월 포함) 전망값이면 true */
   isForecast: boolean;
   op: number;
   opPct: string;
@@ -199,6 +199,19 @@ export interface DeriveOptions {
   salesFullYear?: boolean;
   /** YTD KPI 누계 기준월. 생략하면 조회 종료월을 사용한다. */
   managementMonth?: number;
+  /** 실적/전망 경계 계산 기준일. 테스트 외에는 오늘 날짜를 사용한다. */
+  asOfDate?: Date;
+}
+
+/**
+ * 해당 보고 연도에서 실적으로 표시할 마지막 월.
+ * 현재 연도는 오늘 날짜의 전월, 과거 연도는 12월, 미래 연도는 0월(전체 전망)이다.
+ */
+export function getActualThroughMonth(reportYear: number, asOfDate = new Date()): number {
+  const currentYear = asOfDate.getFullYear();
+  if (reportYear < currentYear) return 12;
+  if (reportYear > currentYear) return 0;
+  return asOfDate.getMonth();
 }
 
 export function defaultDeriveOptions(month: number): DeriveOptions {
@@ -225,6 +238,7 @@ export function deriveDashboardData(
     Math.max(opts.managementMonth ?? M, 1),
     12,
   );
+  const actualThroughMonth = getActualThroughMonth(summary.year, opts.asOfDate);
 
   const lines = summary?.lines ?? [];
   const byCode = new Map(lines.map((l) => [l.code, l]));
@@ -383,8 +397,8 @@ export function deriveDashboardData(
   const salesData: SalesRow[] = buckets.map((b) => {
     const plan = rangeSum(revenue.plan, b.months[0], b.months[b.months.length - 1]);
     const actual = rangeSum(revenue.actual, b.months[0], b.months[b.months.length - 1]);
-    const inside = b.months.every((m) => m <= M);
-    const isForecast = b.months.every((m) => m > M);
+    const inside = b.months.every((m) => m <= actualThroughMonth);
+    const isForecast = b.months.every((m) => m > actualThroughMonth);
     return {
       month: b.label,
       net: inside ? actual - plan : null,
@@ -410,7 +424,7 @@ export function deriveDashboardData(
 
     return {
       m: b.label,
-      isForecast: b.months.every((month) => month > M),
+      isForecast: b.months.every((month) => month > actualThroughMonth),
       op: roundSmart(opA),
       opPct: ratioStr(opA, revA),
       non: roundSmart(op2A),
