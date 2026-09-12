@@ -16,3 +16,4 @@
 - [ERP-owned value lifecycle](erp-owned-value-lifecycle.md) — preserve ERP ownership through unrelated saves; clear missing values only within an independently verified complete sync scope.
 - [Full-year actual and forecast charts](full-year-forecast-charts.md) — sales and profit charts always show 12 months; filled values are actuals and outlined dashed values are forecasts.
 - [Project report PDF format](project-report-pdf-format.md) — exported monthly reports use DAEWOOVINA, omit visible dates, and fit every section onto one landscape A4 page.
+- [SVG chart typography](svg-chart-typography.md) — compare rendered glyph size, not SVG font attributes; convert shared CSS-pixel targets using the live card width.

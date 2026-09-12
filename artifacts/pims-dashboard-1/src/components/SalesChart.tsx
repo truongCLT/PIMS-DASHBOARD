@@ -76,7 +76,7 @@ const makePlanRateLabel = (chartData: SalesRow[]) => (props: any) => {
   if (!d || d.rate == null || d.plan == null || d.actual == null) return null;
   if (d.plan > d.actual) return null;
   return (
-    <text x={x} y={y + 18} textAnchor="middle" fill={RATE_COLOR} fontSize={chartTypography.axis} fontFamily={chartTypography.fontFamily} fontWeight={700}>
+    <text x={x} y={y + 18} textAnchor="middle" fill={RATE_COLOR} fontSize={chartTypography.rate} fontFamily={chartTypography.fontFamily} fontWeight={700}>
       {d.rate}%
     </text>
   );
@@ -89,7 +89,7 @@ const makeActualRateLabel = (chartData: SalesRow[]) => (props: any) => {
   if (!d || d.rate == null || d.plan == null || d.actual == null) return null;
   if (d.actual >= d.plan) return null;
   return (
-    <text x={x} y={y + 18} textAnchor="middle" fill={RATE_COLOR} fontSize={chartTypography.axis} fontFamily={chartTypography.fontFamily} fontWeight={700}>
+    <text x={x} y={y + 18} textAnchor="middle" fill={RATE_COLOR} fontSize={chartTypography.rate} fontFamily={chartTypography.fontFamily} fontWeight={700}>
       {d.rate}%
     </text>
   );
@@ -229,12 +229,12 @@ export function SalesChart() {
     const chipW = chipText ? Math.max(34, chipText.length * 6.2 + 12) : 0;
     return (
       <g>
-        <text x={x} y={y + 12} textAnchor="middle" fontSize={chartTypography.axis} fontFamily={chartTypography.fontFamily} fill={chartTheme.axisText}>{payload.value}</text>
+        <text x={x} y={y + 12} textAnchor="middle" fontSize={chartTypography.month} fontFamily={chartTypography.fontFamily} fontWeight={600} fill={chartTheme.axisText}>{payload.value}</text>
         {chipText && (
           <g>
             <rect x={x - chipW / 2} y={y + 19} width={chipW} height={16} rx={8}
               fill={ok ? "#e7f5ec" : "#fdecec"} />
-            <text x={x} y={y + 30.5} textAnchor="middle" fontSize={10} fontWeight={700}
+            <text x={x} y={y + 30.5} textAnchor="middle" fontSize={chartTypography.rate} fontFamily={chartTypography.fontFamily} fontWeight={700}
               fill={ok ? "#2e9e5b" : "#cf4d4d"}>{chipText}</text>
           </g>
         )}
@@ -306,7 +306,7 @@ export function SalesChart() {
               <circle cx="20" cy="4" r="2.5" fill={planColor} />
             </svg>
           )}
-          <span style={{ fontSize: `${chartTypography.legend}px`, color: "#555" }}>{t("salesChart:salesPlan")}</span>
+          <span style={{ fontSize: `${chartTypography.legend}px`, color: "#555", fontWeight: 600 }}>{t("salesChart:salesPlan")}</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
           {variant === "bars" ? (
@@ -318,7 +318,7 @@ export function SalesChart() {
               <circle cx="20" cy="4" r="2.5" fill={actualColor} />
             </svg>
           )}
-          <span style={{ fontSize: `${chartTypography.legend}px`, color: "#555" }}>
+          <span style={{ fontSize: `${chartTypography.legend}px`, color: "#555", fontWeight: 600 }}>
             {variant === "bars" ? t("salesChart:salesActual") : t("salesChart:salesActualForecast")}
           </span>
         </div>
@@ -327,15 +327,15 @@ export function SalesChart() {
             <svg width="14" height="10">
               <rect x="1" y="1" width="12" height="8" rx="2" fill="#fff" stroke={actualColor} strokeWidth="1.4" strokeDasharray="3 2" />
             </svg>
-            <span style={{ fontSize: `${chartTypography.legend}px`, color: "#555" }}>{t("salesChart:salesForecast")}</span>
+            <span style={{ fontSize: `${chartTypography.legend}px`, color: "#555", fontWeight: 600 }}>{t("salesChart:salesForecast")}</span>
           </div>
         )}
         {variant === "bars" ? (
-          <span style={{ fontSize: `${chartTypography.legend}px`, color: INK_MUTED }}>{t("salesChart:bottomChipRate")}</span>
+          <span style={{ fontSize: `${chartTypography.legend}px`, color: INK_MUTED, fontWeight: 600 }}>{t("salesChart:bottomChipRate")}</span>
         ) : (
           <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
             <span style={{ fontSize: `${chartTypography.legend}px`, fontWeight: 700, color: rateColor }}>%</span>
-            <span style={{ fontSize: `${chartTypography.legend}px`, color: "#555" }}>{t("common:achievementRate")}</span>
+            <span style={{ fontSize: `${chartTypography.legend}px`, color: "#555", fontWeight: 600 }}>{t("common:achievementRate")}</span>
           </div>
         )}
       </div>
@@ -367,7 +367,7 @@ export function SalesChart() {
               <XAxis dataKey="month" xAxisId="overlay" hide />
               <YAxis
                 domain={[0, "auto"]}
-                tick={{ fontSize: chartTypography.axis, fontFamily: chartTypography.fontFamily, fill: chartTheme.axisText }}
+                tick={{ fontSize: chartTypography.month, fontFamily: chartTypography.fontFamily, fill: chartTheme.axisText }}
                 width={compact ? 88 : 60}
                 tickFormatter={(v: number) => v.toLocaleString("ko-KR")}
                 axisLine={false}
@@ -474,7 +474,7 @@ export function SalesChart() {
             <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.gridLine} vertical={false} />
             <XAxis
               dataKey="month"
-              tick={{ fontSize: chartTypography.axis, fontFamily: chartTypography.fontFamily, fill: chartTheme.axisText }}
+              tick={{ fontSize: chartTypography.month, fontFamily: chartTypography.fontFamily, fill: chartTheme.axisText }}
               axisLine={false}
               tickLine={false}
               padding={{ left: 18, right: 6 }}

@@ -63,18 +63,6 @@ export function ProfitChart() {
     return () => ro.disconnect();
   }, []);
 
-  /* SVG 실제 너비를 측정해 viewBox(1000) 기준 역스케일 계산
-     → non-daewoo 폰트를 SalesChart CSS px 기준(11px)에 맞춤 */
-  const svgRef = useRef<SVGSVGElement>(null);
-  const [svgWidth, setSvgWidth] = useState(600);
-  useEffect(() => {
-    const el = svgRef.current;
-    if (!el) return;
-    const ro = new ResizeObserver(([e]) => setSvgWidth(e.contentRect.width));
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-
   const { derived, isError } = useDashboardData();
   const filters = useDashboardFilters();
   const { unitIndex, currency, fxRates, project, division, statusFilter } = filters;
@@ -161,12 +149,12 @@ export function ProfitChart() {
     return daewoo ? scaled : Math.min(scaled, 14);
   };
 
-  /* non-daewoo: SVG viewBox(1000) 역스케일로 SalesChart CSS px에 정확히 매핑
-     axisFs  = Y축 숫자  (SalesChart 기준 compact?9:11 px)
-     valueFs = 바 위 숫자 (SalesChart 기준 compact?9.5:11 px) */
-  const _inv   = 1000 / Math.max(svgWidth, 1);
+  /* 카드의 실제 렌더 폭을 기준으로 CSS 픽셀 목표값을 viewBox 단위로 변환한다. */
+  const _inv   = 1000 / Math.max(cardContentWidth, 1);
   const axisFs  = chartTypography.axis * _inv;
+  const monthFs = chartTypography.month * _inv;
   const valueFs = chartTypography.value * _inv;
+  const rateFs  = chartTypography.rate * _inv;
 
   const plotLeft  = daewoo ? (compact ? 160 : 115) : compact ? 130 : 80;
   const plotRight = 950;
@@ -254,7 +242,6 @@ export function ProfitChart() {
       ) : (
       <div style={{ position: "relative", width: "100%", flex: daewoo ? 1 : undefined, minHeight: daewoo ? 0 : undefined }}>
       <svg
-        ref={svgRef}
         viewBox={daewoo ? "0 0 1000 530" : "0 0 1000 445"}
         style={daewoo
           ? { width: "100%", height: "100%", minHeight: 0, display: "block", fontFamily: chartTypography.fontFamily }
@@ -297,7 +284,7 @@ export function ProfitChart() {
             const chipText = d.op.toLocaleString("ko-KR");
             const chipColor = DW_OP;
             const chipBg = chartTheme.opRateBg;
-            const chipFs = fs(11);
+            const chipFs = valueFs;
             const chipH = chipFs + 12;
             const chipW = Math.max(56, chipText.length * chipFs * 0.62 + 22);
             const capTop = yGross;               // 막대 전체(매출이익) 상단
@@ -330,15 +317,15 @@ export function ProfitChart() {
                 />
                 {/* 매출이익 값 + 비율 (막대 바로 위) */}
                 <text x={cx} y={Math.min(capTop, opTop) - 34} textAnchor="middle" fontSize={valueFs} fontWeight="700" fill={chartTheme.valueFill}>{gross.toLocaleString("ko-KR")}</text>
-                <text x={cx} y={Math.min(capTop, opTop) - 10} textAnchor="middle" fontSize={axisFs} fill={chartTheme.axisSmall}>{d.totalPct}</text>
+                <text x={cx} y={Math.min(capTop, opTop) - 10} textAnchor="middle" fontSize={rateFs} fontWeight="700" fill={chartTheme.axisSmall}>{d.totalPct}</text>
                 {/* 월 라벨 */}
-                <text x={cx} y={Y0 + 34} textAnchor="middle" fontSize={fs(13)} fontWeight="600" fill={chartTheme.axisText}>{d.m}</text>
+                <text x={cx} y={Y0 + 34} textAnchor="middle" fontSize={monthFs} fontWeight="600" fill={chartTheme.axisText}>{d.m}</text>
                 {/* 영업이익 칩 — 월 라벨 하단 */}
                 <rect x={cx - chipW / 2} y={Y0 + 46} width={chipW} height={chipH} rx={chipH / 2} fill={chipBg} />
                 <text x={cx} y={Y0 + 46 + chipH / 2} textAnchor="middle" dominantBaseline="central" fontSize={chipFs} fontWeight="700" fill={chipColor}>{chipText}</text>
                 {/* 영업이익률 칩 — 영업이익 칩 하단 */}
                 {(() => {
-                  const opFs = fs(11);
+                  const opFs = rateFs;
                   const opH  = opFs + 10;
                   const opW  = Math.max(48, d.opPct.length * opFs * 0.62 + 16);
                   const opY  = Y0 + 46 + chipH + 6;
@@ -399,7 +386,7 @@ export function ProfitChart() {
 
               {/* 매출이익 label above bar */}
               <text x={cx} y={labelTopY - 32} textAnchor="middle" fontSize={valueFs} fontWeight="700" fill={NAVY}>{gross.toLocaleString("ko-KR")}</text>
-              <text x={cx} y={labelTopY - 10} textAnchor="middle" fontSize={axisFs} fontWeight="600" fill={NAVY}>({d.totalPct})</text>
+              <text x={cx} y={labelTopY - 10} textAnchor="middle" fontSize={rateFs} fontWeight="700" fill={NAVY}>({d.totalPct})</text>
 
               {/* 판관비 bracket — 6개 미만일 때만 표시 */}
               {!isCondensed && (
@@ -420,7 +407,7 @@ export function ProfitChart() {
               )}
 
               {/* Month label */}
-              <text x={cx} y={Y0 + 32} textAnchor="middle" fontSize={fs(17)} fontWeight="600" fill={chartTheme.axisText}>{d.m}</text>
+              <text x={cx} y={Y0 + 32} textAnchor="middle" fontSize={monthFs} fontWeight="600" fill={chartTheme.axisText}>{d.m}</text>
             </g>
           );
         })}
@@ -430,17 +417,17 @@ export function ProfitChart() {
 
         {/* 영업이익·영업이익률 라벨 — 맨 왼쪽에 한 번씩만 */}
         {daewoo && data.length > 0 && (() => {
-          const chipFs = fs(13);
+          const chipFs = valueFs;
           const chipH  = chipFs + 12;
-          const opFs   = fs(11);
+          const opFs   = rateFs;
           const opH    = opFs + 10;
           const opY    = Y0 + 46 + chipH + 6;
           return (
             <>
-              <text x={plotLeft - 8} y={Y0 + 46 + chipH / 2} textAnchor="end" dominantBaseline="central" fontSize={fs(9)} fill={chartTheme.axisSmall}>
+              <text x={plotLeft - 8} y={Y0 + 46 + chipH / 2} textAnchor="end" dominantBaseline="central" fontSize={axisFs} fill={chartTheme.axisSmall}>
                 {t("common:operatingProfit")}
               </text>
-              <text x={plotLeft - 8} y={opY + opH / 2} textAnchor="end" dominantBaseline="central" fontSize={fs(9)} fill={chartTheme.axisSmall}>
+              <text x={plotLeft - 8} y={opY + opH / 2} textAnchor="end" dominantBaseline="central" fontSize={axisFs} fill={chartTheme.axisSmall}>
                 {t("profitChart:operatingMarginRate")}
               </text>
             </>

@@ -63,7 +63,9 @@ export const chartTypography = {
   unit: 10,
   action: 11,
   legend: 11,
-  axis: 11,
-  value: 12,
+  axis: 9,
+  month: 9,
+  value: 8,
+  rate: 8,
   hint: 10,
 } as const;
