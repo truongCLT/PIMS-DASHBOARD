@@ -7,6 +7,10 @@ import {
 import { useGetMgmtreportSettings } from "@workspace/api-client-react/generated/api";
 import { classifyMrProject } from "../data/projects";
 import {
+  filterProfitProjects,
+  sumProjectMonths,
+} from "./mgmtreportReconciliation";
+import {
   useDashboardFilters,
   resolveMonthWindow,
   makeConverter,
@@ -511,20 +515,14 @@ export function useDashboardData() {
         };
       }
     } else if (divisionSelected && filters.division) {
-      const members = (projectsQuery.data?.projects ?? []).filter(
-        (p) =>
-          !p.isGroup &&
-          (p.businessType ?? classifyMrProject(p.name)) === filters.division &&
-          (filters.statusFilter == null || (p.status ?? "ongoing") === filters.statusFilter),
+      const members = filterProfitProjects(
+        projectsQuery.data?.projects ?? [],
+        {
+          division: filters.division,
+          status: filters.statusFilter,
+        },
+        classifyMrProject,
       );
-      const sum12 = (pick: (p: (typeof members)[number]) => number[]): number[] => {
-        const out = Array(12).fill(0) as number[];
-        for (const p of members) {
-          const arr = pick(p);
-          for (let i = 0; i < 12; i += 1) out[i] += arr[i] ?? 0;
-        }
-        return out;
-      };
       projectScope = {
         name:
           filters.statusFilter == null
@@ -532,10 +530,10 @@ export function useDashboardData() {
             : `${filters.division} 부문 (${filters.statusFilter === "ongoing" ? "진행중" : "종료"})`,
         kind: "division",
         empty: members.length === 0,
-        revenuePlan: sum12((p) => p.revenuePlan),
-        revenueActual: sum12((p) => p.revenueActual),
-        cogsPlan: sum12((p) => p.cogsPlan),
-        cogsActual: sum12((p) => p.cogsActual),
+        revenuePlan: sumProjectMonths(members, "revenuePlan"),
+        revenueActual: sumProjectMonths(members, "revenueActual"),
+        cogsPlan: sumProjectMonths(members, "cogsPlan"),
+        cogsActual: sumProjectMonths(members, "cogsActual"),
       };
     }
 

@@ -55,6 +55,13 @@ import {
   revertOrderImport,
 } from "../lib/orderImport";
 import { requireAdmin } from "../middlewares/adminAuth";
+import {
+  aggregatePnlRows,
+  applyProjectMonthlyRows,
+  roundMgmtreportAmount,
+  serializePnlSummary,
+  type AggregatedPnlLine,
+} from "../lib/mgmtreportAggregation";
 
 const router: IRouter = Router();
 
@@ -277,7 +284,7 @@ router.get("/orders/current.xlsx", async (req, res) => {
   }
 });
 
-const round2 = (n: number) => Math.round(n * 100) / 100;
+const round2 = roundMgmtreportAmount;
 
 router.get("/mgmtreport/summary", async (req, res) => {
   try {
@@ -287,47 +294,7 @@ router.get("/mgmtreport/summary", async (req, res) => {
       .orderBy(asc(mrPnlTable.year), asc(mrPnlTable.sortOrder));
     const orderRows = await db.select().from(orderEntriesTable);
 
-    type Line = {
-      code: string;
-      label: string;
-      plan: number[];
-      actual: number[];
-      planTotal: number;
-      actualTotal: number;
-      planTotalOverride: number | null;
-      actualTotalOverride: number | null;
-    };
-    const linesByYear = new Map<number, Map<string, Line>>();
-    for (const r of rows) {
-      let lines = linesByYear.get(r.year);
-      if (!lines) {
-        lines = new Map<string, Line>();
-        linesByYear.set(r.year, lines);
-      }
-      let l = lines.get(r.lineCode);
-      if (!l) {
-        l = {
-          code: r.lineCode,
-          label: r.lineLabel,
-          plan: Array(12).fill(0),
-          actual: Array(12).fill(0),
-          planTotal: 0,
-          actualTotal: 0,
-          planTotalOverride: null,
-          actualTotalOverride: null,
-        };
-        lines.set(r.lineCode, l);
-      }
-      const v = Number(r.amountUsd);
-      if (r.month == null) {
-        if (r.scenario === "plan") l.planTotalOverride = v;
-        else l.actualTotalOverride = v;
-      } else if (r.scenario === "plan") {
-        l.plan[r.month - 1] = round2(v);
-      } else {
-        l.actual[r.month - 1] = round2(v);
-      }
-    }
+    const linesByYear = aggregatePnlRows(rows);
 
     const initializedOrderYears = new Set<number>();
     for (const r of orderRows) {
@@ -336,13 +303,11 @@ router.get("/mgmtreport/summary", async (req, res) => {
         lines = new Map();
         linesByYear.set(r.year, lines);
       }
-      const line: Line = initializedOrderYears.has(r.year) && lines.get("new_orders") ? lines.get("new_orders")! : {
+      const line: AggregatedPnlLine = initializedOrderYears.has(r.year) && lines.get("new_orders") ? lines.get("new_orders")! : {
         code: "new_orders",
         label: "수 주",
         plan: Array(12).fill(0),
         actual: Array(12).fill(0),
-        planTotal: 0,
-        actualTotal: 0,
         planTotalOverride: null,
         actualTotalOverride: null,
       };
@@ -366,20 +331,7 @@ router.get("/mgmtreport/summary", async (req, res) => {
       }
     }
 
-    const out = [...linesByYear.entries()]
-      .sort(([a], [b]) => a - b)
-      .map(([year, lines]) => ({
-        year,
-        unit: "천 USD",
-        lines: [...lines.values()].map((l) => ({
-          code: l.code,
-          label: l.label,
-          plan: l.plan,
-          actual: l.actual,
-          planTotal: round2(l.planTotalOverride ?? l.plan.reduce((a, b) => a + b, 0)),
-          actualTotal: round2(l.actualTotalOverride ?? l.actual.reduce((a, b) => a + b, 0)),
-        })),
-      }));
+    const out = serializePnlSummary(linesByYear);
 
     res.json(GetMgmtreportSummaryResponse.parse(out));
   } catch (err) {
@@ -455,20 +407,7 @@ router.get("/mgmtreport/projects", async (req, res) => {
         hasPimsvinaDetail: namesWithPdOverview.has(p.name),
       });
     }
-    for (const m of monthly) {
-      const p = byId.get(m.projectId);
-      if (!p) continue;
-      const v = round2(Number(m.amountUsd));
-      const arr =
-        m.metric === "revenue"
-          ? m.scenario === "plan"
-            ? p.revenuePlan
-            : p.revenueActual
-          : m.scenario === "plan"
-            ? p.cogsPlan
-            : p.cogsActual;
-      arr[m.month - 1] = v;
-    }
+    applyProjectMonthlyRows(byId, monthly);
     const annKey = new Map<string, { year: number; scenario: string; revenue: number; cogs: number }>();
     for (const a of annual) {
       const p = byId.get(a.projectId);

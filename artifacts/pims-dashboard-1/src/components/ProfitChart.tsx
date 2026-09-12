@@ -7,6 +7,7 @@ import {
 import { useDashboardData, type ProfitRow, REPORT_YEAR } from "../lib/mgmtreportData";
 import { useDashboardFilters, makeConverter } from "../lib/dashboardFilters";
 import { classifyMrProject } from "../data/projects";
+import { filterProfitProjects } from "../lib/mgmtreportReconciliation";
 import { chartTheme } from "../lib/chartTheme";
 import { INK_BODY, INK_MUTED, POINT_BLUE, CARD_BORDER, emptyNote, ACHIEVE_RED } from "../lib/uiTokens";
 import { useTheme } from "../lib/theme";
@@ -95,15 +96,16 @@ export function ProfitChart() {
   const drillMonthIdx = drillRow ? extractMonthIdx(drillRow.m) : null;
   const drillSiteRows = useMemo(() => {
     if (drillMonthIdx == null) return [];
-    const projects = (projectsQuery.data?.projects ?? []).filter((p) => {
-      if (p.isGroup) return false;
-      if (projectSelected) return p.name === project;
-      if (!divisionSelected || !division) return true;
-      return (
-        (p.businessType ?? classifyMrProject(p.name)) === division &&
-        (statusFilter == null || (p.status ?? "ongoing") === statusFilter)
-      );
-    });
+    const projects = filterProfitProjects(
+      projectsQuery.data?.projects ?? [],
+      projectSelected
+        ? { projectName: project }
+        : {
+            division: divisionSelected ? division : null,
+            status: divisionSelected ? statusFilter : null,
+          },
+      classifyMrProject,
+    );
 
     return projects
       .map((p) => {
