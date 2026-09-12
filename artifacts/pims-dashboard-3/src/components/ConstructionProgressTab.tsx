@@ -359,10 +359,10 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
           </div>
         </div>
 
-        {/* Progress */}
+        {/* Progress / Time Elapsed (공경률) */}
         <div style={{ ...cardStyle, display: "flex", flexDirection: "column" }}>
           <div style={{ display: "flex", justifyContent: "space-between" }}>
-            <span style={sectionTitle}>{t("common:process")}</span>
+            <span style={sectionTitle}>공경률 (공사기간 진척도)</span>
             <span
               style={{
                 fontSize: "11px",
@@ -374,11 +374,11 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
                 fontWeight: 700,
               }}
             >
-              (B-A) {diff != null ? `${diff >= 0 ? "+" : ""}${diff.toFixed(1)}%` : "-"}
+              공경률 - 누계 공정율 {diff != null ? `${diff >= 0 ? "+" : ""}${diff.toFixed(1)}%` : "-"}
             </span>
           </div>
           <div style={{ textAlign: "center", fontSize: "12px", color: "#333", marginTop: "4px" }}>
-            {t("constructionProgressTab:planProcessA")}
+            계획 공경률 (시간 경과 비율 A)
           </div>
           <div style={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "center", margin: "4px 0 2px", position: "relative", minHeight: 0 }}>
             <Donut
@@ -395,7 +395,7 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
             </span>
           </div>
           <div style={{ textAlign: "center", fontSize: "12px", color: "#16294a", fontWeight: 600 }}>
-            {t("constructionProgressTab:actualProcessB")}
+            실적 누계 공정률 (실제 투입 비율 B)
           </div>
           <div
             style={{

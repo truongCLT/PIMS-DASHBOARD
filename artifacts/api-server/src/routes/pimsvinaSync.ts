@@ -309,6 +309,13 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
   for (const [projectName, items] of pdOutsourcingByProject) {
     await db.delete(pdOutsourcingTable).where(eq(pdOutsourcingTable.projectName, projectName));
     for (const item of items) {
+      const budgetVal = toK(item.budget);
+      const resolvedVal = toK(item.resolved);
+      const accumVal = toK(item.accum);
+      const residualVal = (resolvedVal != null && accumVal != null) 
+        ? String(Math.max(0, Number(resolvedVal) - Number(accumVal))) 
+        : null;
+
       await db.insert(pdOutsourcingTable).values({
         projectName,
         fldCode: item.fldcode || null,
@@ -319,11 +326,11 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
         category: item.category || null,
         contractDate: item.contract_date || null,
         changeNo: item.change_no != null ? String(item.change_no) : null,
-        budget: toK(item.budget),
+        budget: budgetVal,
         executedBudget: toK(item.executed_budget),
-        resolved: toK(item.resolved),
+        resolved: resolvedVal,
         thisMonth: toK(item.this_month),
-        accum: toK(item.accum),
+        accum: accumVal,
         sortOrder: Number(item.sort_order) || 0,
       });
       counts.pdOutsourcing++;

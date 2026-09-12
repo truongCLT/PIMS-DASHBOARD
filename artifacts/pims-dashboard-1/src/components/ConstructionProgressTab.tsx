@@ -374,10 +374,10 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
           </div>
         </div>
 
-        {/* Progress */}
+        {/* Progress / Time Elapsed (공경률) */}
         <div style={{ ...cardStyle, display: "flex", flexDirection: "column" }}>
           <div style={{ display: "flex", justifyContent: "space-between" }}>
-            <span style={sectionTitle}>{t("common:process")}</span>
+            <span style={sectionTitle}>공경률 (공사기간 진척도)</span>
             <span
               style={{
                 fontSize: "11px",
@@ -389,7 +389,7 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
                 fontWeight: 700,
               }}
             >
-              (B-A) {diff != null ? `${diff >= 0 ? "+" : ""}${diff.toFixed(1)}%` : "-"}
+              공경률 - 누계 공정율 {diff != null ? `${diff >= 0 ? "+" : ""}${diff.toFixed(1)}%` : "-"}
             </span>
           </div>
           {/* 3-column: 월(막대) / 연(도넛) / 누계(도넛) */}
