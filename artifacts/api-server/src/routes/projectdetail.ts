@@ -20,6 +20,7 @@ import {
   pdSectionLocksTable,
   pdPlanVersionsTable,
 } from "@workspace/db";
+import { buildProjectMonthlyReadModel } from "../lib/canonicalProjectMonthly";
 import {
   GetProjectdetailQueryParams,
   GetProjectdetailResponse,
@@ -114,7 +115,7 @@ const preserveOptionalText = (
     : null;
 
 async function loadDetail(projectName: string) {
-  const [mrProjectRows, overviewRows, progress, milestones, costEstimation, costBudget, costBudgetMonthly, outsourcing, cashflow, cogsMonthly, salesMonthly, mrSalesMonthly, photos, planVersionRows] = await Promise.all([
+  const [mrProjectRows, overviewRows, progress, milestones, costEstimation, costBudget, costBudgetMonthly, outsourcing, cashflow, cogsMonthly, salesMonthly, mrProjectMonthly, photos, planVersionRows] = await Promise.all([
     db
       .select({ siteCode: mrProjectsTable.siteCode })
       .from(mrProjectsTable)
@@ -174,11 +175,12 @@ async function loadDetail(projectName: string) {
         year: mrMonthlyTable.year,
         month: mrMonthlyTable.month,
         scenario: mrMonthlyTable.scenario,
+        metric: mrMonthlyTable.metric,
         amountUsd: mrMonthlyTable.amountUsd,
       })
       .from(mrMonthlyTable)
       .innerJoin(mrProjectsTable, eq(mrMonthlyTable.projectId, mrProjectsTable.id))
-      .where(and(eq(mrProjectsTable.name, projectName), eq(mrMonthlyTable.metric, "revenue")))
+      .where(eq(mrProjectsTable.name, projectName))
       .orderBy(asc(mrMonthlyTable.year), asc(mrMonthlyTable.month)),
     db
       .select()
@@ -193,33 +195,11 @@ async function loadDetail(projectName: string) {
   ]);
 
   const ov = overviewRows[0];
-  const resolvedSalesMonthly = new Map<
-    string,
-    { year: number; month: number; plan: number | null; actual: number | null }
-  >();
-  for (const row of salesMonthly) {
-    resolvedSalesMonthly.set(`${row.year}-${row.month}`, {
-      year: row.year,
-      month: row.month,
-      plan: num(row.plan),
-      actual: num(row.actual),
-    });
-  }
-  for (const row of mrSalesMonthly) {
-    const key = `${row.year}-${row.month}`;
-    const current = resolvedSalesMonthly.get(key) ?? {
-      year: row.year,
-      month: row.month,
-      plan: null,
-      actual: null,
-    };
-    const amount = Number(row.amountUsd);
-    if (Number.isFinite(amount)) {
-      if (row.scenario === "plan" && current.plan == null) current.plan = amount;
-      if (row.scenario === "actual" && current.actual == null) current.actual = amount;
-    }
-    resolvedSalesMonthly.set(key, current);
-  }
+  const monthlyReadModel = buildProjectMonthlyReadModel({
+    projectDetailSales: salesMonthly,
+    projectDetailCogs: cogsMonthly,
+    managementReportMonthly: mrProjectMonthly,
+  });
   const formatDateStr = (d: string | null | undefined) => {
     if (!d) return null;
     const clean = d.trim();
@@ -321,15 +301,7 @@ async function loadDetail(projectName: string) {
       cashOut: num(c.cashOut),
       equivalent: num(c.equivalent),
     })),
-    cogsMonthly: cogsMonthly.map((c) => ({
-      year: c.year,
-      month: c.month,
-      acctCogs: num(c.acctCogs),
-      wipCogs: num(c.wipCogs),
-    })),
-    salesMonthly: [...resolvedSalesMonthly.values()].sort(
-      (a, b) => a.year - b.year || a.month - b.month,
-    ),
+    ...monthlyReadModel,
     photos: photos.map((p) => ({ objectPath: p.objectPath })),
   };
 }

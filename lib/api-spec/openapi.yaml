@@ -2500,6 +2500,16 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ProjectDetailSalesPoint"
+        canonicalCogsMonthly:
+          type: array
+          description: 표시용 월별 원가. 경영보고 값 우선, 없는 월은 ERP/데이터입력 값으로 보완.
+          items:
+            $ref: "#/components/schemas/ProjectDetailCogsPoint"
+        canonicalSalesMonthly:
+          type: array
+          description: 표시용 월별 매출. 경영보고 값 우선, 없는 월은 ERP/데이터입력 값으로 보완.
+          items:
+            $ref: "#/components/schemas/ProjectDetailSalesPoint"
         photos:
           type: array
           items:

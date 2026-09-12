@@ -14,6 +14,6 @@ export {
   GetMgmtreportSettingsResponse,
   PutMgmtreportSettingsBody,
   PutMgmtreportSettingsResponse,
+  PreviewOrderImportBody,
+  ApplyOrderImportBody,
 } from "./generated/api";
-export * from './generated/api';
-export * from './generated/types';

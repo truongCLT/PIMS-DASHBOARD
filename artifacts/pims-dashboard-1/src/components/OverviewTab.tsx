@@ -2,8 +2,6 @@ import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { ProjectDetailPhoto } from "@workspace/api-client-react";
 import {
-  useListSalescostSites,
-  getListSalescostSitesQueryKey,
   useGetCashflowMonthly,
   getGetCashflowMonthlyQueryKey,
 } from "@workspace/api-client-react";
@@ -12,7 +10,7 @@ import { PhotoPager } from "./PhotoPager";
 import { Donut, MiniBar } from "./charts";
 import { useProjectDetail, fmtPct, ratioPct } from "../lib/projectDetailData";
 import { useMoney } from "../lib/displayUnit";
-import { getMrCashflowRef, useMrProject } from "../data/mrProjectLinks";
+import { getMrCashflowRef } from "../data/mrProjectLinks";
 import { REPORT_YEAR } from "../lib/mgmtreportData";
 import { chartTheme } from "../lib/chartTheme";
 import { cardStyle, sectionTitle, emptyNote, INK_NAVY, INK_BODY, INK_SECONDARY, INK_MUTED, CARD_BORDER, DIVIDER, PROGRESS_TRACK, ACHIEVE_GREEN, ACHIEVE_RED, rateColor } from "../lib/uiTokens";
@@ -126,27 +124,31 @@ export function OverviewTab({ projectName }: { projectName: string }) {
   const { detail } = useProjectDetail(projectName);
   const { fmtMoney, unitLabel } = useMoney();
 
-  // ---- 매출 (salescost — mr_projects.site_code 로 자동 연결, 없으면 mr_monthly 폴백) ----
-  const mr = useMrProject(projectName, REPORT_YEAR);
-  const siteCode = mr.project?.siteCode ?? null;
-  const revParams = { year: REPORT_YEAR, metric: "revenue" as const };
-  const cogsParams = { year: REPORT_YEAR, metric: "cogs" as const };
-  const revQ = useListSalescostSites(revParams, {
-    query: { enabled: siteCode != null, queryKey: getListSalescostSitesQueryKey(revParams) },
-  });
-  const cogsQ = useListSalescostSites(cogsParams, {
-    query: { enabled: siteCode != null, queryKey: getListSalescostSitesQueryKey(cogsParams) },
-  });
-  const scRevMonths = revQ.data?.sites.find((s) => s.code === siteCode)?.months ?? [];
-  const scCogsMonths = cogsQ.data?.sites.find((s) => s.code === siteCode)?.months ?? [];
-  const scHasAny = scRevMonths.some((v) => (v ?? 0) !== 0);
-  // sc 데이터가 없으면 경영관리보고회 월별 실적(mr_monthly)으로 폴백
-  const revMonths = scHasAny ? scRevMonths : (mr.project?.revenueActual ?? []);
-  const cogsMonths = scHasAny ? scCogsMonths : (mr.project?.cogsActual ?? []);
+  // ---- 매출·원가 (서버 통합 월별 읽기 모델) ----
+  const canonicalSales = (detail?.canonicalSalesMonthly ?? []).filter(
+    (row) => row.year === REPORT_YEAR,
+  );
+  const canonicalCogs = (detail?.canonicalCogsMonthly ?? []).filter(
+    (row) => row.year === REPORT_YEAR,
+  );
+  const revMonths = Array.from(
+    { length: 12 },
+    (_, index) =>
+      canonicalSales.find((row) => row.month === index + 1)?.actual ?? 0,
+  );
+  const cogsMonths = Array.from(
+    { length: 12 },
+    (_, index) =>
+      canonicalCogs.find((row) => row.month === index + 1)?.acctCogs ?? 0,
+  );
   let lastMonthIdx = -1;
   for (let i = 0; i < revMonths.length; i++) if ((revMonths[i] ?? 0) !== 0) lastMonthIdx = i;
   const thisMonthRev = lastMonthIdx >= 0 ? (revMonths[lastMonthIdx] ?? 0) : null;
-  const planMonths = mr.project?.revenuePlan ?? [];
+  const planMonths = Array.from(
+    { length: 12 },
+    (_, index) =>
+      canonicalSales.find((row) => row.month === index + 1)?.plan ?? 0,
+  );
   const thisMonthPlan = lastMonthIdx >= 0 ? (planMonths[lastMonthIdx] ?? 0) : null;
   const annualPlanRev = planMonths.reduce((a, b) => a + (b ?? 0), 0);
   const cumRev = revMonths.reduce((a, b) => a + (b ?? 0), 0);
@@ -470,7 +472,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
             title={t("common:revenue")}
             unit={unitLabel}
           />
-          {mr.isLoading || (siteCode != null && (revQ.isLoading || cogsQ.isLoading)) ? (
+          {!detail ? (
             <div style={emptyNote}>{t("overviewTab:loadingRevenue")}</div>
           ) : !hasRevenue ? (
             <div style={emptyNote}>{t("overviewTab:noRevenueData", { year: REPORT_YEAR })}</div>
@@ -791,7 +793,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
           const outstanding = Math.max(0, confirmed - collection); // 채권 (A-B)
           const cashMax = Math.max(revenue, confirmed, collection, outstanding, 1);
           const hasFundData = revenue !== 0 || confirmed !== 0 || collection !== 0;
-          const isLoadingFund = (cfRef != null && cfQ.isLoading) || mr.isLoading;
+          const isLoadingFund = cfRef != null && cfQ.isLoading;
           return (
             <div style={cardStyle}>
               <CardHeader

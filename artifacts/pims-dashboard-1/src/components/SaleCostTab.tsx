@@ -9,12 +9,6 @@
  */
 import React from "react";
 import { useTranslation } from "react-i18next";
-import {
-  useListSalescostSites,
-  getListSalescostSitesQueryKey,
-} from "@workspace/api-client-react";
-import { useMrProject } from "../data/mrProjectLinks";
-import { REPORT_YEAR } from "../lib/mgmtreportData";
 import { useMoney } from "../lib/displayUnit";
 import { useProjectDetail, fmtPct, ratioPct } from "../lib/projectDetailData";
 import { ProjectCommentPanel } from "./ProjectCommentPanel";
@@ -24,7 +18,6 @@ import { chartTheme } from "../lib/chartTheme";
 import {
   buildEffectivePeriod,
   buildFilterPeriod,
-  extractYears,
   buildChartData,
   buildBudgetRows,
 } from "./sale-cost/helpers";
@@ -35,13 +28,6 @@ import { BudgetExecutionSection } from "./sale-cost/BudgetExecutionSection";
 // ---------------------------------------------------------------------------
 // Local helpers
 // ---------------------------------------------------------------------------
-
-function useSiteMonths(year: number, metric: "revenue" | "cogs", enabled: boolean) {
-  const params = { year, metric };
-  return useListSalescostSites(params, {
-    query: { enabled, queryKey: getListSalescostSitesQueryKey(params) },
-  });
-}
 
 function Notice({ children, error }: { children: React.ReactNode; error?: boolean }) {
   return (
@@ -82,79 +68,37 @@ export function SaleCostTab({
 }) {
   const { t } = useTranslation(["saleCostTab", "costingTab"]);
   const { convert, fmtMoney } = useMoney();
-  const { detail: pdDetail, isLoading: pdLoading } = useProjectDetail(projectName);
+  const {
+    detail: pdDetail,
+    isLoading,
+    isError: hardError,
+  } = useProjectDetail(projectName);
 
   // ── 기간 계산 ─────────────────────────────────────────────────────────────
   const filterPeriod  = buildFilterPeriod(fromYear, fromMonth, months);
-  const [yearA, yearB, yearC] = extractYears(filterPeriod);
 
   // pd salesMonthly가 있으면 전체 기간 사용, 없으면 필터 기간 폴백
-  const salesMonthly  = pdDetail?.salesMonthly ?? [];
+  const salesMonthly  = pdDetail?.canonicalSalesMonthly ?? [];
   const pdSalesHasAny = salesMonthly.some((s) => s.plan != null || s.actual != null);
   const effectivePeriod = buildEffectivePeriod(
     pdSalesHasAny ? salesMonthly : [],
     filterPeriod,
   );
 
-  // ── sc_sites 쿼리 (site_code 연결) ────────────────────────────────────────
-  const mrMain   = useMrProject(projectName, REPORT_YEAR);
-  const siteCode = mrMain.project?.siteCode ?? null;
-  const hasSite  = siteCode != null;
-
-  const revA  = useSiteMonths(yearA,        "revenue", hasSite);
-  const cogsA = useSiteMonths(yearA,        "cogs",    hasSite);
-  const revB  = useSiteMonths(yearB ?? 0,   "revenue", hasSite && yearB != null);
-  const cogsB = useSiteMonths(yearB ?? 0,   "cogs",    hasSite && yearB != null);
-  const revC  = useSiteMonths(yearC ?? 0,   "revenue", hasSite && yearC != null);
-  const cogsC = useSiteMonths(yearC ?? 0,   "cogs",    hasSite && yearC != null);
-
-  // ── mr_projects 폴백 쿼리 ─────────────────────────────────────────────────
-  const mrA = useMrProject(projectName, yearA);
-  const mrB = useMrProject(projectName, yearB ?? 0, yearB != null);
-  const mrC = useMrProject(projectName, yearC ?? 0, yearC != null);
-
-  // ── 로딩 / 오류 판정 ──────────────────────────────────────────────────────
-  const scQueries = hasSite
-    ? [revA, cogsA, ...(yearB != null ? [revB, cogsB] : []), ...(yearC != null ? [revC, cogsC] : [])]
-    : [];
-  const allQueries = [...scQueries, mrMain, mrA, ...(yearB != null ? [mrB] : []), ...(yearC != null ? [mrC] : [])];
-  const isLoading  = allQueries.some((q) => q.isLoading);
-  const hardError  = allQueries.some((q) =>
-    "isError" in q && typeof q.isError === "boolean"
-      ? q.isError && ((q as { error?: { status?: number } | null }).error?.status ?? 0) !== 404
-      : false,
-  );
-
-  // ── sc / mr 값 조회 함수 ──────────────────────────────────────────────────
-  const scLookup = (year: number, metric: "revenue" | "cogs", month: number): number => {
-    const q =
-      year === yearA ? (metric === "revenue" ? revA : cogsA)
-      : year === yearB ? (metric === "revenue" ? revB : cogsB)
-      : year === yearC ? (metric === "revenue" ? revC : cogsC)
-      : null;
-    return q?.data?.sites.find((s) => s.code === siteCode)?.months[month - 1] ?? 0;
-  };
-
-  const mrLookup = (year: number, metric: "revenue" | "cogs", month: number): number => {
-    const q = year === yearA ? mrA : year === yearB ? mrB : year === yearC ? mrC : null;
-    const arr = metric === "revenue" ? q?.project?.revenueActual : q?.project?.cogsActual;
-    return arr?.[month - 1] ?? 0;
-  };
-
-  // ── pd 원가 맵 ────────────────────────────────────────────────────────────
+  // 서버가 경영보고 기준 + ERP/데이터입력 월별 보완으로 통합한 단일 읽기 모델
   const pdCogsLookup = new Map<string, number>();
-  for (const c of pdDetail?.cogsMonthly ?? []) {
+  for (const c of pdDetail?.canonicalCogsMonthly ?? []) {
     if (c.acctCogs != null) pdCogsLookup.set(`${c.year}-${c.month}`, c.acctCogs);
   }
   const pdCogsHasAny  = filterPeriod.some(({ year, month }) => pdCogsLookup.has(`${year}-${month}`));
-  const scHasAny      = hasSite && filterPeriod.some(({ year, month }) => scLookup(year, "revenue", month) !== 0);
-  const lookup        = scHasAny ? scLookup : mrLookup;
-
-  // ── pd 매출 맵 ────────────────────────────────────────────────────────────
   const pdSalesMap = new Map<string, { plan: number | null; actual: number | null }>();
   for (const s of salesMonthly) {
     pdSalesMap.set(`${s.year}-${s.month}`, { plan: s.plan ?? null, actual: s.actual ?? null });
   }
+  const lookup = (year: number, metric: "revenue" | "cogs", month: number) =>
+    metric === "revenue"
+      ? (pdSalesMap.get(`${year}-${month}`)?.actual ?? 0)
+      : (pdCogsLookup.get(`${year}-${month}`) ?? 0);
 
   // ── 차트 데이터 ───────────────────────────────────────────────────────────
   const chartData = buildChartData(effectivePeriod, {
@@ -171,7 +115,7 @@ export function SaleCostTab({
   let lastRatioIdx   = -1;
   chartData.forEach((d, i) => { if (d.ratio != null) lastRatioIdx = i; });
   const referenceIndex = toYear * 12 + toMonth - 1;
-  const serviceCogs = pdDetail?.cogsMonthly ?? [];
+  const serviceCogs = pdDetail?.canonicalCogsMonthly ?? [];
   const sumNullable = (values: Array<number | null | undefined>) =>
     values.some((value) => value != null)
       ? values.reduce<number>((sum, value) => sum + (value ?? 0), 0)
@@ -179,13 +123,15 @@ export function SaleCostTab({
   const cogsBeforeReference = serviceCogs.filter((row) => row.year * 12 + row.month - 1 <= referenceIndex);
   const cogsAfterReference = serviceCogs.filter((row) => row.year * 12 + row.month - 1 > referenceIndex);
   const serviceCostSummary = {
-    plan: sumNullable(serviceCogs.map((row) => row.plan)),
-    wipActual: sumNullable(cogsBeforeReference.map((row) => row.wipCogs ?? row.actual)),
-    wipForecast: sumNullable(cogsAfterReference.map((row) => row.wipCogs ?? row.actual)),
-    acctActual: sumNullable(cogsBeforeReference.map((row) => row.acctCogs ?? row.actual)),
-    acctForecast: sumNullable(cogsAfterReference.map((row) => row.acctCogs ?? row.actual)),
+    plan: null,
+    wipActual: sumNullable(cogsBeforeReference.map((row) => row.wipCogs)),
+    wipForecast: sumNullable(cogsAfterReference.map((row) => row.wipCogs)),
+    acctActual: sumNullable(cogsBeforeReference.map((row) => row.acctCogs)),
+    acctForecast: sumNullable(cogsAfterReference.map((row) => row.acctCogs)),
   };
-  const forecastRevenue = sumNullable((pdDetail?.salesMonthly ?? []).map((row) => row.actual));
+  const forecastRevenue = sumNullable(
+    (pdDetail?.canonicalSalesMonthly ?? []).map((row) => row.actual),
+  );
   const forecastCost =
     serviceCostSummary.acctActual != null || serviceCostSummary.acctForecast != null
       ? (serviceCostSummary.acctActual ?? 0) + (serviceCostSummary.acctForecast ?? 0)
@@ -216,7 +162,7 @@ export function SaleCostTab({
   );
 
   // ── 로딩 / 오류 / 빈 데이터 ──────────────────────────────────────────────
-  if (isLoading || pdLoading) {
+  if (isLoading) {
     return <div style={cardStyle}><Notice>{t("saleCostTab:loadingNotice")}</Notice></div>;
   }
   if (hardError) {
@@ -285,7 +231,7 @@ export function SaleCostTab({
         estimation={estimation}
         toYear={toYear}
         toMonth={toMonth}
-        isLoading={pdLoading}
+        isLoading={isLoading}
       />
 
       {/* 4. 예산 집행 현황 */}

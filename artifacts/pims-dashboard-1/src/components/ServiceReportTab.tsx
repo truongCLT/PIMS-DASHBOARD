@@ -95,7 +95,7 @@ export function ServiceReportTab({
   const atReference = <T extends { year: number; month: number }>(rows: T[]) =>
     rows.filter((row) => row.year === referenceYear && row.month === referenceMonth);
 
-  const salesRows = detail?.salesMonthly ?? [];
+  const salesRows = detail?.canonicalSalesMonthly ?? [];
   const cashRows = detail?.cashflow ?? [];
   const progressRows = detail?.progress ?? [];
   const monthSales = atReference(salesRows);

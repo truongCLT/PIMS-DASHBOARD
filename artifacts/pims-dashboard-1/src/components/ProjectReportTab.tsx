@@ -13,14 +13,12 @@ import React, { useEffect, useState } from "react";
 import { FileDown, Loader2 } from "lucide-react";
 import { Button } from "@workspace/aqua-glass/components/ui/button";
 import {
-  useListSalescostSites,
-  getListSalescostSitesQueryKey,
   useGetCashflowMonthly,
   getGetCashflowMonthlyQueryKey,
 } from "@workspace/api-client-react";
 import { ProjectCommentPanel } from "./ProjectCommentPanel";
 import { useProjectDetail } from "../lib/projectDetailData";
-import { useMrProject, getMrCashflowRef } from "../data/mrProjectLinks";
+import { getMrCashflowRef } from "../data/mrProjectLinks";
 import { REPORT_YEAR } from "../lib/mgmtreportData";
 import {
   cardStyle,
@@ -105,22 +103,20 @@ export function ProjectReportTab({
         p.actualPct != null,
     );
 
-  // ── Revenue (sc_sites → mr_monthly fallback) ────────────────────────────
-  const mr = useMrProject(projectName, REPORT_YEAR);
-  const siteCode = mr.project?.siteCode ?? null;
-  const revParams = { year: REPORT_YEAR, metric: "revenue" as const };
-  const revQ = useListSalescostSites(revParams, {
-    query: {
-      enabled: siteCode != null,
-      queryKey: getListSalescostSitesQueryKey(revParams),
-    },
-  });
-  const scRevMonths = revQ.data?.sites.find((s) => s.code === siteCode)?.months ?? [];
-  const scHasAny = scRevMonths.some((v) => (v ?? 0) !== 0);
-  const revMonths: (number | null)[] = scHasAny
-    ? scRevMonths
-    : (mr.project?.revenueActual ?? []);
-  const planMonths: (number | null)[] = mr.project?.revenuePlan ?? [];
+  // ── Revenue (canonical project-detail monthly read model) ────────────────
+  const reportSales = (detail?.canonicalSalesMonthly ?? []).filter(
+    (row) => row.year === REPORT_YEAR,
+  );
+  const revMonths: (number | null)[] = Array.from(
+    { length: 12 },
+    (_, index) =>
+      reportSales.find((row) => row.month === index + 1)?.actual ?? null,
+  );
+  const planMonths: (number | null)[] = Array.from(
+    { length: 12 },
+    (_, index) =>
+      reportSales.find((row) => row.month === index + 1)?.plan ?? null,
+  );
 
   // Last month with actual revenue
   let lastActualIdx = -1;
@@ -465,7 +461,7 @@ export function ProjectReportTab({
             planMonths={planMonths}
             actualMonths={revMonths}
             resolvedMonth={resolvedMonth}
-            allSalesMonths={detail?.salesMonthly ?? []}
+            allSalesMonths={detail?.canonicalSalesMonthly ?? []}
           />
           <StatusTableSection rows={statusRows} />
         </div>

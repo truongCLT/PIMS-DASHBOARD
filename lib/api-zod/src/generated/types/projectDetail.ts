@@ -33,5 +33,9 @@ export interface ProjectDetail {
   cashflow: ProjectDetailCashflowPoint[];
   cogsMonthly?: ProjectDetailCogsPoint[];
   salesMonthly?: ProjectDetailSalesPoint[];
+  /** 표시용 월별 원가. 경영보고 값 우선, 없는 월은 ERP/데이터입력 값으로 보완. */
+  canonicalCogsMonthly?: ProjectDetailCogsPoint[];
+  /** 표시용 월별 매출. 경영보고 값 우선, 없는 월은 ERP/데이터입력 값으로 보완. */
+  canonicalSalesMonthly?: ProjectDetailSalesPoint[];
   photos: ProjectDetailPhoto[];
 }
