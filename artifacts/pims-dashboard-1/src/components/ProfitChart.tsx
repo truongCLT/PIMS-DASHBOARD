@@ -8,7 +8,7 @@ import { useDashboardData, type ProfitRow, REPORT_YEAR } from "../lib/mgmtreport
 import { useDashboardFilters, makeConverter } from "../lib/dashboardFilters";
 import { classifyMrProject } from "../data/projects";
 import { filterProfitProjects } from "../lib/mgmtreportReconciliation";
-import { chartTheme } from "../lib/chartTheme";
+import { chartTheme, chartTypography } from "../lib/chartTheme";
 import { INK_BODY, INK_MUTED, POINT_BLUE, CARD_BORDER, emptyNote, ACHIEVE_RED } from "../lib/uiTokens";
 import { useTheme } from "../lib/theme";
 import { ChartTooltipPanel } from "@workspace/aqua-glass/components/ui/chart";
@@ -165,8 +165,8 @@ export function ProfitChart() {
      axisFs  = Y축 숫자  (SalesChart 기준 compact?9:11 px)
      valueFs = 바 위 숫자 (SalesChart 기준 compact?9.5:11 px) */
   const _inv   = 1000 / Math.max(svgWidth, 1);
-  const axisFs  = 11 * _inv;   // Y축·비율 라벨 → 항상 11px
-  const valueFs = 12 * _inv;   // 바 위 실적 숫자 → 항상 12px
+  const axisFs  = chartTypography.axis * _inv;
+  const valueFs = chartTypography.value * _inv;
 
   const plotLeft  = daewoo ? (compact ? 160 : 115) : compact ? 130 : 80;
   const plotRight = 950;
@@ -212,15 +212,16 @@ export function ProfitChart() {
       boxSizing: "border-box",
       display: "flex",
       flexDirection: "column",
+      fontFamily: chartTypography.fontFamily,
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
-          <span style={{ fontSize: "12px", fontWeight: "600", color: chartTheme.titleNavy }}>{t("profitChart:profitLossStatus")}</span>
-          {derived && <span style={{ fontSize: "10px", color: INK_MUTED }}>{t("common:unit")}: {derived.unitLabel}</span>}
+          <span style={{ fontSize: `${chartTypography.title}px`, fontWeight: "600", color: chartTheme.titleNavy }}>{t("profitChart:profitLossStatus")}</span>
+          {derived && <span style={{ fontSize: `${chartTypography.unit}px`, color: INK_MUTED }}>{t("common:unit")}: {derived.unitLabel}</span>}
         </div>
         <button
           onClick={() => setDetailOpen(true)}
-          style={{ fontSize: "11px", color: POINT_BLUE, background: "none", border: "none", cursor: "pointer" }}
+          style={{ fontSize: `${chartTypography.action}px`, color: POINT_BLUE, background: "none", border: "none", cursor: "pointer" }}
         >
           {t("profitChart:viewDetails")}
         </button>
@@ -235,10 +236,10 @@ export function ProfitChart() {
           ].map((it) => (
             <div key={it.l} style={{ display: "flex", alignItems: "center", gap: "4px" }}>
               <div style={{ width: it.round ? "10px" : "13px", height: it.round ? "10px" : "11px", backgroundColor: it.c, borderRadius: it.round ? "50%" : "3px" }} />
-              <span style={{ fontSize: "11px", color: INK_BODY, fontWeight: 600 }}>{it.l}</span>
+              <span style={{ fontSize: `${chartTypography.legend}px`, color: INK_BODY, fontWeight: 600 }}>{it.l}</span>
             </div>
           ))}
-          <span style={{ fontSize: "11px", color: chartTheme.subLabel, fontWeight: 600 }}>{t("profitChart:barTotalGross")}</span>
+          <span style={{ fontSize: `${chartTypography.legend}px`, color: chartTheme.subLabel, fontWeight: 600 }}>{t("profitChart:barTotalGross")}</span>
         </div>
       )}
 
@@ -256,8 +257,8 @@ export function ProfitChart() {
         ref={svgRef}
         viewBox={daewoo ? "0 0 1000 530" : "0 0 1000 445"}
         style={daewoo
-          ? { width: "100%", height: "100%", minHeight: 0, display: "block" }
-          : { width: "100%", display: "block" }}
+          ? { width: "100%", height: "100%", minHeight: 0, display: "block", fontFamily: chartTypography.fontFamily }
+          : { width: "100%", display: "block", fontFamily: chartTypography.fontFamily }}
         preserveAspectRatio={daewoo ? "xMidYMid meet" : undefined}
         onMouseLeave={() => setHoveredIdx(null)}
       >
@@ -288,6 +289,8 @@ export function ProfitChart() {
           const yOrd     = yv(d.ord);
           const brX      = bx + barW + 7;
           const labelTopY = Math.min(yv(nonTop), yGross, yOrd);
+          const forecastFill = d.isForecast ? "#fff" : undefined;
+          const forecastDash = d.isForecast ? "5 3" : undefined;
 
           if (daewoo) {
             /* ── 대우 예시1: 영업이익(진한색)+판관비(연한 캡) = 매출이익 ── */
@@ -302,9 +305,29 @@ export function ProfitChart() {
             return (
               <g key={d.m}>
                 {/* 영업이익: 0 → op (음수면 0선 아래로) */}
-                <rect x={bx} y={Math.min(yv(0), opTop)} width={barW} height={Math.abs(opTop - yv(0))} rx={7} fill={DW_OP} />
+                <rect
+                  x={bx}
+                  y={Math.min(yv(0), opTop)}
+                  width={barW}
+                  height={Math.abs(opTop - yv(0))}
+                  rx={7}
+                  fill={forecastFill ?? DW_OP}
+                  stroke={d.isForecast ? DW_OP : undefined}
+                  strokeWidth={d.isForecast ? 1.8 : 0}
+                  strokeDasharray={forecastDash}
+                />
                 {/* 판관비 캡: op → gross */}
-                <rect x={bx} y={Math.min(capTop, opTop)} width={barW} height={Math.abs(opTop - capTop)} rx={7} fill={DW_SGA} />
+                <rect
+                  x={bx}
+                  y={Math.min(capTop, opTop)}
+                  width={barW}
+                  height={Math.abs(opTop - capTop)}
+                  rx={7}
+                  fill={forecastFill ?? DW_SGA}
+                  stroke={d.isForecast ? DW_SGA : undefined}
+                  strokeWidth={d.isForecast ? 1.8 : 0}
+                  strokeDasharray={forecastDash}
+                />
                 {/* 매출이익 값 + 비율 (막대 바로 위) */}
                 <text x={cx} y={Math.min(capTop, opTop) - 34} textAnchor="middle" fontSize={valueFs} fontWeight="700" fill={chartTheme.valueFill}>{gross.toLocaleString("ko-KR")}</text>
                 <text x={cx} y={Math.min(capTop, opTop) - 10} textAnchor="middle" fontSize={axisFs} fill={chartTheme.axisSmall}>{d.totalPct}</text>
@@ -333,7 +356,16 @@ export function ProfitChart() {
           return (
             <g key={d.m}>
               {/* 영업이익 (navy, from zero) */}
-              <rect x={bx} y={yOpTop} width={barW} height={Math.max(yOpBot - yOpTop, 0)} fill={NAVY} />
+              <rect
+                x={bx}
+                y={yOpTop}
+                width={barW}
+                height={Math.max(yOpBot - yOpTop, 0)}
+                fill={forecastFill ?? NAVY}
+                stroke={d.isForecast ? NAVY : undefined}
+                strokeWidth={d.isForecast ? 1.8 : 0}
+                strokeDasharray={forecastDash}
+              />
               {yOpBot - yOpTop > 44 && (
                 <text x={cx} y={(yOpTop + yOpBot) / 2 + 7} textAnchor="middle" fontSize={valueFs} fontWeight="700" fill="#fff">{d.op.toLocaleString("ko-KR")}</text>
               )}
@@ -342,11 +374,23 @@ export function ProfitChart() {
               <rect
                 x={bx} y={Math.min(yGross, yOpTop)}
                 width={barW} height={Math.abs(yOpTop - yGross)}
-                fill={LIGHT} stroke={NAVY} strokeWidth="1.5"
+                fill={forecastFill ?? LIGHT}
+                stroke={NAVY}
+                strokeWidth="1.5"
+                strokeDasharray={forecastDash}
               />
 
               {/* 영업외손익 (green segment) */}
-              <rect x={bx} y={yv(nonTop)} width={barW} height={Math.max(yv(nonBot) - yv(nonTop), 0)} fill={GREEN} />
+              <rect
+                x={bx}
+                y={yv(nonTop)}
+                width={barW}
+                height={Math.max(yv(nonBot) - yv(nonTop), 0)}
+                fill={forecastFill ?? GREEN}
+                stroke={d.isForecast ? GREEN : undefined}
+                strokeWidth={d.isForecast ? 1.8 : 0}
+                strokeDasharray={forecastDash}
+              />
               {Math.abs(yv(nonBot) - yv(nonTop)) > 22 && (
                 <text x={cx} y={(yv(nonTop) + yv(nonBot)) / 2 + 7} textAnchor="middle" fontSize={valueFs} fontWeight="700" fill="#fff">
                   {d.non >= 0 ? "+" : ""}{d.non.toLocaleString("ko-KR")}
@@ -421,7 +465,7 @@ export function ProfitChart() {
       </svg>
       {hoveredRow && (
         <ChartTooltipPanel
-          title={hoveredRow.m}
+          title={`${hoveredRow.m} · ${hoveredRow.isForecast ? t("profitChart:forecast") : t("profitChart:actual")}`}
           lines={[
             { label: t("common:operatingProfit"), value: hoveredRow.op.toLocaleString("ko-KR"), color: NAVY },
             { label: t("profitChart:ordinaryProfit"), value: `${hoveredRow.ord.toLocaleString("ko-KR")} (${hoveredRow.ordPct})`, color: GREEN },
@@ -451,16 +495,24 @@ export function ProfitChart() {
       {!daewoo && (
       <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginTop: "6px", justifyContent: "center" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+          <div style={{ width: "14px", height: "11px", backgroundColor: NAVY, borderRadius: "2px" }} />
+          <span style={{ fontSize: `${chartTypography.legend}px`, color: INK_BODY }}>{t("profitChart:actual")}</span>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+          <div style={{ width: "14px", height: "11px", backgroundColor: "#fff", border: `1.5px dashed ${NAVY}`, borderRadius: "2px" }} />
+          <span style={{ fontSize: `${chartTypography.legend}px`, color: INK_BODY }}>{t("profitChart:forecast")}</span>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
           <div style={{ width: "14px", height: "11px", backgroundColor: LIGHT, border: `1.5px solid ${NAVY}`, borderRadius: "2px" }} />
-          <span style={{ fontSize: "11px", color: INK_BODY }}>{t("profitChart:sgaArea")}</span>
+          <span style={{ fontSize: `${chartTypography.legend}px`, color: INK_BODY }}>{t("profitChart:sgaArea")}</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
           <div style={{ width: "14px", height: "11px", backgroundColor: NAVY, borderRadius: "2px" }} />
-          <span style={{ fontSize: "11px", color: INK_BODY }}>{t("common:operatingProfit")}</span>
+          <span style={{ fontSize: `${chartTypography.legend}px`, color: INK_BODY }}>{t("common:operatingProfit")}</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
           <div style={{ width: "14px", height: "11px", backgroundColor: GREEN, borderRadius: "2px" }} />
-          <span style={{ fontSize: "11px", color: INK_BODY }}>{t("profitChart:nonOperatingProfitLoss")}</span>
+          <span style={{ fontSize: `${chartTypography.legend}px`, color: INK_BODY }}>{t("profitChart:nonOperatingProfitLoss")}</span>
         </div>
         {/* 6개 미만일 때만 판관비·경상이익 범례 표시 */}
         {!isCondensed && (
@@ -508,6 +560,12 @@ export function ProfitChart() {
           rowKey={(row) => String(row.m)}
           columns={[
             { key: "m", label: t("profitChart:month"), align: "left" },
+            {
+              key: "isForecast",
+              label: t("profitChart:actualForecastType"),
+              align: "center",
+              format: (value) => value ? t("profitChart:forecast") : t("profitChart:actual"),
+            },
             { key: "op", label: t("common:operatingProfit"), format: (_v, row) => `${row.op.toLocaleString()} (${row.opPct})` },
             { key: "non", label: t("profitChart:nonOperatingProfitLoss"), format: (_v, row) => `${row.non >= 0 ? "+" : ""}${row.non.toLocaleString()}` },
             { key: "ord", label: t("profitChart:ordinaryProfit"), format: (_v, row) => `${row.ord.toLocaleString()} (${row.ordPct})` },

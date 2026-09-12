@@ -55,3 +55,15 @@ export const chartTheme = {
   // SaleProfitTab 계획 막대
   planGray:   "#c9d2dd", // 매출이익 월간 계획 막대 (연한 회색-파랑)
 } as const;
+
+/** 매출·손익 카드가 함께 사용하는 손익현황 기준 타이포그래피 */
+export const chartTypography = {
+  fontFamily: "var(--font-sans)",
+  title: 12,
+  unit: 10,
+  action: 11,
+  legend: 11,
+  axis: 11,
+  value: 12,
+  hint: 10,
+} as const;

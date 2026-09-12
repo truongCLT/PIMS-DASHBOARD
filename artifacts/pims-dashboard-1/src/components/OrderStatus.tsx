@@ -3,25 +3,15 @@ import { useTranslation } from "react-i18next";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import {
   getGetOrderDetailsQueryKey,
+  type OrderDetailEntry,
   useGetOrderDetails,
 } from "@workspace/api-client-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@workspace/aqua-glass/components/ui/dialog";
 import { Button } from "@workspace/aqua-glass/components/ui/button";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableFooter,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@workspace/aqua-glass/components/ui/table";
+  DetailDataTable,
+  DetailModal,
+  type DetailColumn,
+} from "./DetailModal";
 import { useDashboardData } from "../lib/mgmtreportData";
 import {
   makeConverter,
@@ -71,19 +61,51 @@ export function OrderStatus() {
   const detailEntries = detailQuery.data?.entries ?? [];
   const detailTotals = detailEntries.reduce(
     (totals, row) => ({
-      plan:
-        totals.plan +
-        (row.planAmount == null
-          ? 0
-          : convert(row.planAmount, derived?.year, derived?.month)),
-      actual:
-        totals.actual +
-        (row.actualAmount == null
-          ? 0
-          : convert(row.actualAmount, derived?.year, derived?.month)),
+      plan: totals.plan + (row.planAmount ?? 0),
+      actual: totals.actual + (row.actualAmount ?? 0),
     }),
     { plan: 0, actual: 0 },
   );
+  const detailColumns: DetailColumn<OrderDetailEntry>[] = [
+    {
+      key: "projectName",
+      label: t("orderStatus:projectName"),
+      align: "left",
+    },
+    {
+      key: "planAmount",
+      label: t("orderStatus:planAmount"),
+      format: (value) => formatAmount(typeof value === "number" ? value : null),
+    },
+    {
+      key: "planDate",
+      label: t("orderStatus:planDate"),
+      align: "center",
+      format: (value) => formatDate(typeof value === "string" ? value : null),
+    },
+    {
+      key: "actualAmount",
+      label: t("orderStatus:actualForecastAmount"),
+      format: (value) => formatAmount(typeof value === "number" ? value : null),
+    },
+    {
+      key: "actualDate",
+      label: t("orderStatus:actualForecastDate"),
+      align: "center",
+      format: (value) => formatDate(typeof value === "string" ? value : null),
+    },
+    {
+      key: "actualKind",
+      label: t("orderStatus:status"),
+      align: "center",
+      format: (value) =>
+        value === "actual"
+          ? t("orderStatus:actual")
+          : value === "forecast"
+            ? t("orderStatus:forecast")
+            : "-",
+    },
+  ];
 
   if (unavailable) {
     return (
@@ -217,98 +239,59 @@ export function OrderStatus() {
             <span style={{ width: "9px", height: "9px", borderRadius: "3px", backgroundColor: r.dot, flexShrink: 0 }} />
             <span style={{ fontSize: "12px", color: "#333", flex: 1, minWidth: 0 }}>
               {r.label}
+            </span>
+            <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", flexShrink: 0 }}>
+              <span style={{ display: "flex", alignItems: "baseline", gap: "4px" }}>
+                <span style={{ fontSize: statFont === "12px" ? "12px" : "15px", fontWeight: 700, color: "#1a2d4d" }}>
+                  {r.value.toLocaleString()}
+                </span>
+                {unit && <span style={{ fontSize: "10px", color: "#8a99b5" }}>{unit}</span>}
+              </span>
               {r.detail && (
-                <span style={{ display: "block", marginTop: "2px", fontSize: "10px", color: "#2e9e5b", fontWeight: 600 }}>
+                <span style={{ marginTop: "2px", fontSize: "10px", color: "#2e9e5b", fontWeight: 600 }}>
                   {r.detail}
                 </span>
               )}
             </span>
-            <span style={{ fontSize: statFont === "12px" ? "12px" : "15px", fontWeight: 700, color: "#1a2d4d" }}>
-              {r.value.toLocaleString()}
-            </span>
-            {unit && <span style={{ fontSize: "10px", color: "#8a99b5" }}>{unit}</span>}
           </div>
         ))}
       </div>
 
-      <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
-        <DialogContent className="max-h-[88vh] max-w-5xl overflow-hidden p-0">
-          <DialogHeader className="border-b px-6 py-4 pr-12">
-            <DialogTitle>{t("orderStatus:detailTitle")}</DialogTitle>
-            <DialogDescription>
-              {t("orderStatus:detailSubtitle", {
-                year: derived?.year,
-                month: derived?.month,
-                unit: unitLabelOf(currency, unitIndex),
-              })}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="overflow-auto px-6 pb-6">
-            {detailQuery.isLoading ? (
-              <div className="py-12 text-center text-sm text-muted-foreground">
-                {t("orderStatus:detailLoading")}
-              </div>
-            ) : detailQuery.isError ? (
-              <div role="alert" className="py-12 text-center text-sm text-destructive">
-                {t("orderStatus:detailError")}
-              </div>
-            ) : detailEntries.length === 0 ? (
-              <div className="py-12 text-center text-sm text-muted-foreground">
-                {t("orderStatus:detailEmpty")}
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t("orderStatus:projectName")}</TableHead>
-                    <TableHead className="text-right">{t("orderStatus:planAmount")}</TableHead>
-                    <TableHead className="text-center">{t("orderStatus:planDate")}</TableHead>
-                    <TableHead className="text-right">{t("orderStatus:actualForecastAmount")}</TableHead>
-                    <TableHead className="text-center">{t("orderStatus:actualForecastDate")}</TableHead>
-                    <TableHead className="text-center">{t("orderStatus:status")}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {detailEntries.map((row) => (
-                    <TableRow key={row.projectName}>
-                      <TableCell className="font-medium">{row.projectName}</TableCell>
-                      <TableCell className="text-right tabular-nums">
-                        {formatAmount(row.planAmount)}
-                      </TableCell>
-                      <TableCell className="text-center">{formatDate(row.planDate)}</TableCell>
-                      <TableCell className="text-right tabular-nums">
-                        {formatAmount(row.actualAmount)}
-                      </TableCell>
-                      <TableCell className="text-center">{formatDate(row.actualDate)}</TableCell>
-                      <TableCell className="text-center font-medium">
-                        {row.actualKind === "actual"
-                          ? t("orderStatus:actual")
-                          : row.actualKind === "forecast"
-                            ? t("orderStatus:forecast")
-                            : "-"}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-                <TableFooter>
-                  <TableRow>
-                    <TableCell>{t("orderStatus:total")}</TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {roundSmart(detailTotals.plan).toLocaleString()}
-                    </TableCell>
-                    <TableCell />
-                    <TableCell className="text-right tabular-nums">
-                      {roundSmart(detailTotals.actual).toLocaleString()}
-                    </TableCell>
-                    <TableCell />
-                    <TableCell />
-                  </TableRow>
-                </TableFooter>
-              </Table>
-            )}
+      <DetailModal
+        open={detailOpen}
+        onClose={() => setDetailOpen(false)}
+        title={t("orderStatus:detailTitle")}
+        subtitle={t("orderStatus:detailSubtitle", {
+          year: derived?.year,
+          month: derived?.month,
+          unit: unitLabelOf(currency, unitIndex),
+        })}
+      >
+        {detailQuery.isLoading ? (
+          <div style={{ padding: "32px", textAlign: "center", color: "#7c8ba3", fontSize: "12px" }}>
+            {t("orderStatus:detailLoading")}
           </div>
-        </DialogContent>
-      </Dialog>
+        ) : detailQuery.isError ? (
+          <div role="alert" style={{ padding: "32px", textAlign: "center", color: "#c0392b", fontSize: "12px" }}>
+            {t("orderStatus:detailError")}
+          </div>
+        ) : detailEntries.length === 0 ? (
+          <div style={{ padding: "32px", textAlign: "center", color: "#7c8ba3", fontSize: "12px" }}>
+            {t("orderStatus:detailEmpty")}
+          </div>
+        ) : (
+          <DetailDataTable
+            columns={detailColumns}
+            rows={detailEntries}
+            rowKey={(row) => row.projectName}
+            totalLabel={t("orderStatus:total")}
+            totalRow={{
+              planAmount: detailTotals.plan,
+              actualAmount: detailTotals.actual,
+            }}
+          />
+        )}
+      </DetailModal>
     </div>
   );
 }

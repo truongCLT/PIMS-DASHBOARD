@@ -19,7 +19,7 @@ import {
 import { useDashboardData, type SalesRow, REPORT_YEAR } from "../lib/mgmtreportData";
 import { useDashboardFilters, makeConverter } from "../lib/dashboardFilters";
 import { classifyMrProject } from "../data/projects";
-import { chartTheme } from "../lib/chartTheme";
+import { chartTheme, chartTypography } from "../lib/chartTheme";
 import { useTheme } from "../lib/theme";
 import {
   ChartTooltip,
@@ -42,7 +42,7 @@ const BadgeLabel = (fill: string, compact = false, n = 12) => (props: any) => {
   if (value == null || x == null || y == null) return null;
   const text = Number(value).toLocaleString("ko-KR");
   const colPitch = Math.max(20, 320 / Math.max(1, n));
-  const maxFs = compact ? 9 : 11.5;
+  const maxFs = chartTypography.value;
   const fontSize = Math.max(7.5, Math.min(maxFs, colPitch / (text.length * 0.62)));
   const charW = fontSize * 0.62;
   const h = fontSize + 7;
@@ -60,6 +60,7 @@ const BadgeLabel = (fill: string, compact = false, n = 12) => (props: any) => {
         dominantBaseline="central"
         fill="#fff"
         fontSize={fontSize}
+        fontFamily={chartTypography.fontFamily}
         fontWeight={700}
       >
         {text}
@@ -75,7 +76,7 @@ const makePlanRateLabel = (chartData: SalesRow[]) => (props: any) => {
   if (!d || d.rate == null || d.plan == null || d.actual == null) return null;
   if (d.plan > d.actual) return null;
   return (
-    <text x={x} y={y + 18} textAnchor="middle" fill={RATE_COLOR} fontSize={10} fontWeight={700}>
+    <text x={x} y={y + 18} textAnchor="middle" fill={RATE_COLOR} fontSize={chartTypography.axis} fontFamily={chartTypography.fontFamily} fontWeight={700}>
       {d.rate}%
     </text>
   );
@@ -88,7 +89,7 @@ const makeActualRateLabel = (chartData: SalesRow[]) => (props: any) => {
   if (!d || d.rate == null || d.plan == null || d.actual == null) return null;
   if (d.actual >= d.plan) return null;
   return (
-    <text x={x} y={y + 18} textAnchor="middle" fill={RATE_COLOR} fontSize={10} fontWeight={700}>
+    <text x={x} y={y + 18} textAnchor="middle" fill={RATE_COLOR} fontSize={chartTypography.axis} fontFamily={chartTypography.fontFamily} fontWeight={700}>
       {d.rate}%
     </text>
   );
@@ -228,7 +229,7 @@ export function SalesChart() {
     const chipW = chipText ? Math.max(34, chipText.length * 6.2 + 12) : 0;
     return (
       <g>
-        <text x={x} y={y + 12} textAnchor="middle" fontSize={11} fill={chartTheme.axisText}>{payload.value}</text>
+        <text x={x} y={y + 12} textAnchor="middle" fontSize={chartTypography.axis} fontFamily={chartTypography.fontFamily} fill={chartTheme.axisText}>{payload.value}</text>
         {chipText && (
           <g>
             <rect x={x - chipW / 2} y={y + 19} width={chipW} height={16} rx={8}
@@ -247,7 +248,7 @@ export function SalesChart() {
     const d = visibleData[index];
     if (!d || d.actual == null || !Number.isFinite(Number(d.actual))) return null;
     const text = Number(d.actual).toLocaleString("ko-KR");
-    const fontSize = 12;
+    const fontSize = chartTypography.value;
     let topY = y;
     if (
       d.plan != null && Number.isFinite(Number(d.plan)) && d.plan > 0 &&
@@ -258,7 +259,7 @@ export function SalesChart() {
     }
     return (
       <text x={x + width / 2} y={topY - 4} textAnchor="middle"
-        fontSize={fontSize} fontWeight={700} fill="#1a2d4d">
+        fontSize={fontSize} fontFamily={chartTypography.fontFamily} fontWeight={700} fill="#1a2d4d">
         {text}
       </text>
     );
@@ -274,17 +275,18 @@ export function SalesChart() {
       boxSizing: "border-box",
       display: "flex",
       flexDirection: "column",
+      fontFamily: chartTypography.fontFamily,
     }}>
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
-          <span style={{ fontSize: "13px", fontWeight: "600", color: chartTheme.titleNavy }}>{t("salesChart:title")}</span>
-          {derived && <span style={{ fontSize: "11px", color: INK_MUTED }}>{t("common:unit")}: {derived.unitLabel}</span>}
+          <span style={{ fontSize: `${chartTypography.title}px`, fontWeight: "600", color: chartTheme.titleNavy }}>{t("salesChart:title")}</span>
+          {derived && <span style={{ fontSize: `${chartTypography.unit}px`, color: INK_MUTED }}>{t("common:unit")}: {derived.unitLabel}</span>}
         </div>
         <button
           onClick={() => setDetailOpen(true)}
           style={{
-            fontSize: "12px",
+            fontSize: `${chartTypography.action}px`,
             color: "#2f7cf6",
             background: "none",
             border: "none",
@@ -304,7 +306,7 @@ export function SalesChart() {
               <circle cx="20" cy="4" r="2.5" fill={planColor} />
             </svg>
           )}
-          <span style={{ fontSize: "12px", color: "#555" }}>{t("salesChart:salesPlan")}</span>
+          <span style={{ fontSize: `${chartTypography.legend}px`, color: "#555" }}>{t("salesChart:salesPlan")}</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
           {variant === "bars" ? (
@@ -316,7 +318,7 @@ export function SalesChart() {
               <circle cx="20" cy="4" r="2.5" fill={actualColor} />
             </svg>
           )}
-          <span style={{ fontSize: "12px", color: "#555" }}>
+          <span style={{ fontSize: `${chartTypography.legend}px`, color: "#555" }}>
             {variant === "bars" ? t("salesChart:salesActual") : t("salesChart:salesActualForecast")}
           </span>
         </div>
@@ -325,15 +327,15 @@ export function SalesChart() {
             <svg width="14" height="10">
               <rect x="1" y="1" width="12" height="8" rx="2" fill="#fff" stroke={actualColor} strokeWidth="1.4" strokeDasharray="3 2" />
             </svg>
-            <span style={{ fontSize: "12px", color: "#555" }}>{t("salesChart:salesForecast")}</span>
+            <span style={{ fontSize: `${chartTypography.legend}px`, color: "#555" }}>{t("salesChart:salesForecast")}</span>
           </div>
         )}
         {variant === "bars" ? (
-          <span style={{ fontSize: "11px", color: INK_MUTED }}>{t("salesChart:bottomChipRate")}</span>
+          <span style={{ fontSize: `${chartTypography.legend}px`, color: INK_MUTED }}>{t("salesChart:bottomChipRate")}</span>
         ) : (
           <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-            <span style={{ fontSize: "12px", fontWeight: 700, color: rateColor }}>%</span>
-            <span style={{ fontSize: "12px", color: "#555" }}>{t("common:achievementRate")}</span>
+            <span style={{ fontSize: `${chartTypography.legend}px`, fontWeight: 700, color: rateColor }}>%</span>
+            <span style={{ fontSize: `${chartTypography.legend}px`, color: "#555" }}>{t("common:achievementRate")}</span>
           </div>
         )}
       </div>
@@ -365,7 +367,7 @@ export function SalesChart() {
               <XAxis dataKey="month" xAxisId="overlay" hide />
               <YAxis
                 domain={[0, "auto"]}
-                tick={{ fontSize: compact ? 9 : 11, fill: chartTheme.axisText }}
+                tick={{ fontSize: chartTypography.axis, fontFamily: chartTypography.fontFamily, fill: chartTheme.axisText }}
                 width={compact ? 88 : 60}
                 tickFormatter={(v: number) => v.toLocaleString("ko-KR")}
                 axisLine={false}
@@ -419,14 +421,14 @@ export function SalesChart() {
               <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.gridLine} vertical={false} />
               <XAxis
                 dataKey="month"
-                tick={{ fontSize: 11, fill: chartTheme.axisText }}
+                tick={{ fontSize: chartTypography.axis, fontFamily: chartTypography.fontFamily, fill: chartTheme.axisText }}
                 axisLine={false}
                 tickLine={false}
                 padding={{ left: 18, right: 6 }}
               />
               <YAxis
                 domain={[0, "auto"]}
-                tick={{ fontSize: compact ? 9 : 11, fill: chartTheme.axisText }}
+                tick={{ fontSize: chartTypography.axis, fontFamily: chartTypography.fontFamily, fill: chartTheme.axisText }}
                 width={compact ? 88 : 60}
                 tickFormatter={(v: number) => v.toLocaleString("ko-KR")}
                 axisLine={false}
@@ -463,7 +465,7 @@ export function SalesChart() {
                   position="top"
                   offset={10}
                   formatter={(v: number) => (v == null ? "" : v.toLocaleString("ko-KR"))}
-                  style={{ fontSize: compact ? 9 : 10.5, fontWeight: 700, fill: actualColor }}
+                  style={{ fontSize: chartTypography.value, fontFamily: chartTypography.fontFamily, fontWeight: 700, fill: actualColor }}
                 />
               </Area>
             </ComposedChart>
@@ -472,14 +474,14 @@ export function SalesChart() {
             <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.gridLine} vertical={false} />
             <XAxis
               dataKey="month"
-              tick={{ fontSize: 11, fill: chartTheme.axisText }}
+              tick={{ fontSize: chartTypography.axis, fontFamily: chartTypography.fontFamily, fill: chartTheme.axisText }}
               axisLine={false}
               tickLine={false}
               padding={{ left: 18, right: 6 }}
             />
             <YAxis
               domain={["auto", "auto"]}
-              tick={{ fontSize: compact ? 9 : 11, fill: chartTheme.axisText }}
+              tick={{ fontSize: chartTypography.axis, fontFamily: chartTypography.fontFamily, fill: chartTheme.axisText }}
               width={compact ? 88 : 60}
               tickFormatter={(v: number) => v.toLocaleString("ko-KR")}
               axisLine={false}

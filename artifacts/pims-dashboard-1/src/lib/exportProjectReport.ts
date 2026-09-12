@@ -134,11 +134,7 @@ export async function exportProjectReportPdf({
     target.style.maxWidth = previousMaxWidth;
   }
 
-  const monthLabel =
-    reportMonth == null
-      ? `${reportYear}년 최신월`
-      : `${reportYear}년 ${String(reportMonth).padStart(2, "0")}월`;
-  const title = `${projectName} · ${monthLabel} 당월 보고서`;
+  const title = `DAEWOOVINA · ${projectName} · 당월 보고서`;
   const headerImage = makeHeaderImage(title);
   const pdf = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
   const pageWidth = pdf.internal.pageSize.getWidth();
@@ -147,8 +143,7 @@ export async function exportProjectReportPdf({
   const availableHeight =
     pageHeight - PDF_MARGIN * 2 - PDF_HEADER_HEIGHT - PDF_SECTION_GAP;
 
-  canvases.forEach((canvas, index) => {
-    if (index > 0) pdf.addPage();
+  canvases.forEach((canvas) => {
     pdf.addImage(
       headerImage,
       "PNG",

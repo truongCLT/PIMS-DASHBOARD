@@ -18,5 +18,8 @@
   "noSiteData": "There is no site-level activity for this month.",
   "siteDataNotReceived": "Company totals exist, but project-level source data has not been received.",
   "summaryDifference": "Difference from company gross profit: {{value}}",
-  "loadingSiteData": "Loading site data…"
+  "loadingSiteData": "Loading site data…",
+  "actual": "Actual",
+  "forecast": "Forecast",
+  "actualForecastType": "Type"
 }

@@ -18,5 +18,8 @@
   "noSiteData": "Không có phát sinh theo công trình trong tháng này.",
   "siteDataNotReceived": "Có số liệu tổng công ty nhưng chưa nhận được dữ liệu nguồn theo dự án.",
   "summaryDifference": "Chênh lệch so với lợi nhuận gộp toàn công ty: {{value}}",
-  "loadingSiteData": "Đang tải dữ liệu công trình…"
+  "loadingSiteData": "Đang tải dữ liệu công trình…",
+  "actual": "Thực tế",
+  "forecast": "Dự báo",
+  "actualForecastType": "Phân loại"
 }

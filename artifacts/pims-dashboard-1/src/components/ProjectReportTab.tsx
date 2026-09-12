@@ -448,10 +448,11 @@ export function ProjectReportTab({
       )}
       <div
         id={reportCaptureId}
+        data-project-report-page="report"
         style={{ display: "flex", flexDirection: "column", gap: "8px" }}
       >
         {/* ── Row 1: 공정 | 매출 | 현황 표 ── */}
-        <div data-project-report-page="summary" style={reportGrid("240px")}>
+        <div style={reportGrid("240px")}>
           <ProgressSection
             progRows={progRows}
             resolvedMonth={resolvedMonth}
@@ -466,7 +467,7 @@ export function ProjectReportTab({
           <StatusTableSection rows={statusRows} />
         </div>
         {/* ── Row 2: 원가 | 자금 | 코멘트 ── */}
-        <div data-project-report-page="details" style={reportGrid("240px")}>
+        <div style={reportGrid("240px")}>
           <CostSection budgetRows={allBudgetRows} />
           <FundsSection
             cashIn={cashIn}

@@ -81,6 +81,8 @@ export interface SalesRow {
 
 export interface ProfitRow {
   m: string;
+  /** 조회 기준월 이후 연간 예상값이면 true */
+  isForecast: boolean;
   op: number;
   opPct: string;
   non: number;
@@ -394,7 +396,7 @@ export function deriveDashboardData(
     };
   });
 
-  const pBuckets = makeBuckets(F, M, bucket);
+  const pBuckets = makeBuckets(1, 12, "Month");
   const profitData: ProfitRow[] = pBuckets.map((b) => {
     const fromM = b.months[0];
     const toM = b.months[b.months.length - 1];
@@ -408,6 +410,7 @@ export function deriveDashboardData(
 
     return {
       m: b.label,
+      isForecast: b.months.every((month) => month > M),
       op: roundSmart(opA),
       opPct: ratioStr(opA, revA),
       non: roundSmart(op2A),
