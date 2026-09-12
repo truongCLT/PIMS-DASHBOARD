@@ -100,6 +100,54 @@ ${colorConfig
 
 const ChartTooltip = RechartsPrimitive.Tooltip
 
+type ChartTooltipPanelLine = {
+  label: React.ReactNode
+  value: React.ReactNode
+  color?: string
+}
+
+function ChartTooltipPanel({
+  title,
+  lines,
+  className,
+  style,
+}: {
+  title: React.ReactNode
+  lines: ChartTooltipPanelLine[]
+  className?: string
+  style?: React.CSSProperties
+}) {
+  return (
+    <div
+      className={cn(
+        "pointer-events-none grid w-60 min-w-0 max-w-full overflow-hidden rounded-lg border border-border/50 bg-background px-2.5 py-1.5 text-xs text-foreground shadow-xl",
+        className
+      )}
+      style={style}
+    >
+      <div className="min-w-0 break-words font-medium">{title}</div>
+      <div className="grid min-w-0 gap-1">
+        {lines.map((line, index) => (
+          <div
+            key={index}
+            className="grid min-w-0 grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-baseline gap-3"
+          >
+            <span className="min-w-0 break-words text-muted-foreground">
+              {line.label}
+            </span>
+            <span
+              className="min-w-0 max-w-full break-all text-right font-mono font-medium tabular-nums"
+              style={{ color: line.color }}
+            >
+              {line.value}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 const ChartTooltipContent = React.forwardRef<
   HTMLDivElement,
   React.ComponentProps<typeof RechartsPrimitive.Tooltip> &
@@ -360,6 +408,7 @@ function getPayloadConfigFromPayload(
 export {
   ChartContainer,
   ChartTooltip,
+  ChartTooltipPanel,
   ChartTooltipContent,
   ChartLegend,
   ChartLegendContent,

@@ -12,6 +12,7 @@ import {
   ChartLegendContent,
   ChartTooltip,
   ChartTooltipContent,
+  ChartTooltipPanel,
 } from '../../components/ui/chart';
 
 const chartConfig: ChartConfig = {
@@ -45,6 +46,19 @@ export function ChartDemo() {
           <Bar dataKey="mobile" fill="var(--color-mobile)" radius={4} />
         </BarChart>
       </ChartContainer>
+      <div className="mt-4 w-44">
+        <ChartTooltipPanel
+          title="May"
+          lines={[
+            { label: 'Desktop', value: '209', color: 'var(--color-chart-1)' },
+            {
+              label: 'Non-Operating Profit/Loss',
+              value: '+130 (12.4%)',
+              color: 'var(--color-chart-2)',
+            },
+          ]}
+        />
+      </div>
     </div>
   );
 }

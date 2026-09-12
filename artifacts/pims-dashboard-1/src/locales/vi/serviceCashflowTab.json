@@ -1,4 +1,8 @@
 {
+  "actualCashIn": "Thu thực tế",
+  "actualCashOut": "Chi thực tế",
+  "forecastCashIn": "Dự báo thu",
+  "forecastCashOut": "Dự báo chi",
   "monthLabel": "Th{{month}}/{{yy}}",
   "entryGuide": "Đăng nhập với quyền quản trị để nhập dữ liệu thu chi trong bảng \"Thu chi theo tháng\" ở tab \"Nhập dữ liệu\".",
   "loadingCashflow": "Đang tải dữ liệu thu chi…",
@@ -8,5 +12,8 @@
   "noDataInPeriod": "Không có dữ liệu thu chi trong khoảng thời gian đã chọn.",
   "cashIn": "Thu tiền",
   "cashOut": "Chi tiền",
-  "balance": "Số dư"
+  "balance": "Số dư",
+  "referenceMonth": "Tháng tham chiếu",
+  "outlookAfterReference": "Dự báo sau tháng tham chiếu",
+  "fromMonth": "Từ {{month}}/{{year}}"
 }

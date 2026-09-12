@@ -1,7 +1,15 @@
 import React, { useEffect, useRef, useState } from "react";
-import { ChevronsUp, Download, FileSpreadsheet, FileText, RefreshCw, Upload } from "lucide-react";
+import { ChevronsDown, ChevronsUp, Download, FileSpreadsheet, FileText, RefreshCw, Upload } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { useListMgmtreportProjects } from "@workspace/api-client-react";
+import {
+  useListMgmtreportProjects,
+} from "@workspace/api-client-react";
+import {
+  getGetMgmtreportSettingsQueryKey,
+  useGetMgmtreportSettings,
+  usePutMgmtreportSettings,
+} from "@workspace/api-client-react/generated/api";
+import { useQueryClient } from "@tanstack/react-query";
 import { exportDashboardExcel, exportDashboardPdf } from "../lib/exportDashboard";
 import { MgmtReportUploadModal } from "./MgmtReportUploadModal";
 import { FxRateEditor } from "./FxRateEditor";
@@ -39,6 +47,19 @@ export function DashboardHeader({
 
   const { t } = useTranslation(["dashboardHeader", "common"]);
   const { isAdmin } = useAdminAuth();
+  const queryClient = useQueryClient();
+  const settingsQuery = useGetMgmtreportSettings();
+  const settingsMutation = usePutMgmtreportSettings({
+    mutation: {
+      onSuccess: (saved) => {
+        queryClient.setQueryData(getGetMgmtreportSettingsQueryKey(), saved);
+      },
+      onError: () => {
+        queryClient.invalidateQueries({ queryKey: getGetMgmtreportSettingsQueryKey() });
+        alert("기준 월을 저장하지 못했습니다. 다시 시도해 주세요.");
+      },
+    },
+  });
   const projectsQuery = useListMgmtreportProjects({ year: REPORT_YEAR });
   const projectOptions = (projectsQuery.data?.projects ?? []).filter((p) => !p.isGroup);
 
@@ -49,6 +70,7 @@ export function DashboardHeader({
   const [syncing, setSyncing] = useState(false);
   const [syncPreview, setSyncPreview] = useState<PimsvinaPreviewData | null>(null);
   const [confirming, setConfirming] = useState(false);
+  const [controlsVisible, setControlsVisible] = useState(true);
   const downloadRef = useRef<HTMLDivElement>(null);
 
   const adminFetch = (path: string, body?: any) => {
@@ -194,7 +216,12 @@ export function DashboardHeader({
           fontWeight: "700",
           margin: "0 0 12px",
         }}>{t("dashboardHeader:title")}</h1>
-        <button style={{
+        <button
+          type="button"
+          aria-expanded={controlsVisible}
+          aria-label={controlsVisible ? t("dashboardHeader:collapseControls") : t("dashboardHeader:expandControls")}
+          onClick={() => setControlsVisible((visible) => !visible)}
+          style={{
           backgroundColor: "#ffffff",
           border: "1px solid #d5dfe9",
           borderRadius: "8px",
@@ -205,12 +232,12 @@ export function DashboardHeader({
           display: "flex",
           alignItems: "center",
         }}>
-          <ChevronsUp size={16} />
+          {controlsVisible ? <ChevronsUp size={16} /> : <ChevronsDown size={16} />}
         </button>
       </div>
 
       {/* Filter bar — white rounded box */}
-      <div style={{
+      {controlsVisible && <div style={{
         position: "relative",
         backgroundColor: "#ffffff",
         borderRadius: "10px",
@@ -337,6 +364,36 @@ export function DashboardHeader({
             <option value="Month">{t("dashboardHeader:periodOptionMonth")}</option>
             <option value="Quarter">{t("dashboardHeader:periodOptionQuarter")}</option>
             <option value="Year">{t("common:annual")}</option>
+          </select>
+        </div>
+
+        {/* 기준 월: 선택 즉시 화면 반영, 관리자는 전사 공통 설정으로 저장 */}
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <span style={{ fontSize: "12px", color: "#333", fontWeight: "600" }}>기준 월</span>
+          <select
+            aria-label="기준 월"
+            value={settingsQuery.data?.month ?? ""}
+            disabled={settingsQuery.isLoading || settingsMutation.isPending}
+            onChange={(e) => {
+              const month = Number(e.target.value);
+              const selected = { year: REPORT_YEAR, month };
+              queryClient.setQueryData(getGetMgmtreportSettingsQueryKey(), selected);
+              if (isAdmin) settingsMutation.mutate({ data: selected });
+            }}
+            style={{
+              border: "1px solid #dde6f1",
+              borderRadius: "6px",
+              padding: "5px 26px 5px 10px",
+              fontSize: "12px",
+              color: "#333",
+              backgroundColor: "#fff",
+              cursor: "pointer",
+            }}
+          >
+            {settingsQuery.isLoading && <option value="">-</option>}
+            {Array.from({ length: 12 }, (_, index) => index + 1).map((month) => (
+              <option key={month} value={month}>{month}월</option>
+            ))}
           </select>
         </div>
 
@@ -511,7 +568,7 @@ export function DashboardHeader({
             </div>
           )}
         </div>
-      </div>
+      </div>}
 
       {uploadOpen && <MgmtReportUploadModal onClose={() => setUploadOpen(false)} />}
       {syncPreview && (

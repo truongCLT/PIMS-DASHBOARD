@@ -12,24 +12,11 @@ import {
   LabelList,
   Legend,
 } from "recharts";
-import {
-  useListSalescostSites,
-  getListSalescostSitesQueryKey,
-} from "@workspace/api-client-react";
-import { useMrProject } from "../data/mrProjectLinks";
-import { REPORT_YEAR } from "../lib/mgmtreportData";
 import { chartTheme } from "../lib/chartTheme";
 import { useMoney } from "../lib/displayUnit";
 import { useProjectDetail } from "../lib/projectDetailData";
 import { ProjectCommentPanel } from "./ProjectCommentPanel";
 import { cardStyle, sectionTitle, emptyNote, INK_MUTED } from "../lib/uiTokens";
-
-function useSiteMonths(year: number, metric: "revenue" | "cogs", enabled: boolean) {
-  const params = { year, metric };
-  return useListSalescostSites(params, {
-    query: { enabled, queryKey: getListSalescostSitesQueryKey(params) },
-  });
-}
 
 function Notice({ children, error }: { children: React.ReactNode; error?: boolean }) {
   return (
@@ -52,7 +39,11 @@ export function SaleProfitTab({
 }) {
   const { t } = useTranslation(["saleProfitTab", "common"]);
   const { convert, unitLabel } = useMoney();
-  const { detail: pdDetail, isLoading: pdLoading } = useProjectDetail(projectName);
+  const {
+    detail: pdDetail,
+    isLoading,
+    isError: hardError,
+  } = useProjectDetail(projectName);
   // Build the requested (year, month) list from the period filter
   const period: { year: number; month: number }[] = [];
   {
@@ -67,74 +58,9 @@ export function SaleProfitTab({
       }
     }
   }
-  // A 24-month capped range spans at most 3 calendar years — one fixed query slot per year
-  const years = [...new Set(period.map((p) => p.year))];
-  const yearA = years[0];
-  const yearB = years[1] ?? null;
-  const yearC = years[2] ?? null;
-
-  // mr_projects.site_code 로 sc_sites 자동 연결 (기준 연도 목록에서 siteCode 조회)
-  const mrMain = useMrProject(projectName, REPORT_YEAR);
-  const siteCode = mrMain.project?.siteCode ?? null;
-  const hasSite = siteCode != null;
-
-  const revA = useSiteMonths(yearA, "revenue", hasSite);
-  const cogsA = useSiteMonths(yearA, "cogs", hasSite);
-  const revB = useSiteMonths(yearB ?? 0, "revenue", hasSite && yearB != null);
-  const cogsB = useSiteMonths(yearB ?? 0, "cogs", hasSite && yearB != null);
-  const revC = useSiteMonths(yearC ?? 0, "revenue", hasSite && yearC != null);
-  const cogsC = useSiteMonths(yearC ?? 0, "cogs", hasSite && yearC != null);
-
-  // sc 데이터가 없을 때 폴백: mr_monthly (경영관리보고회 프로젝트별 월별 매출/원가 실적)
-  const mrA = useMrProject(projectName, yearA);
-  const mrB = useMrProject(projectName, yearB ?? 0, yearB != null);
-  const mrC = useMrProject(projectName, yearC ?? 0, yearC != null);
-
-  const queries = [
-    ...(hasSite
-      ? [revA, cogsA, ...(yearB != null ? [revB, cogsB] : []), ...(yearC != null ? [revC, cogsC] : [])]
-      : []),
-    mrMain,
-    mrA,
-    ...(yearB != null ? [mrB] : []),
-    ...(yearC != null ? [mrC] : []),
-  ];
-  const isLoading = queries.some((q) => q.isLoading);
-  // 404 (해당 연도 데이터 없음) is treated as "no data", not a failure
-  const hardError = queries.some((q) =>
-    "isError" in q && typeof q.isError === "boolean"
-      ? q.isError && ((q as { error?: { status?: number } | null }).error?.status ?? 0) !== 404
-      : false,
-  );
-
-  const scLookup = (year: number, metric: "revenue" | "cogs", month: number): number => {
-    const q =
-      year === yearA
-        ? metric === "revenue"
-          ? revA
-          : cogsA
-        : year === yearB
-          ? metric === "revenue"
-            ? revB
-            : cogsB
-          : year === yearC
-            ? metric === "revenue"
-              ? revC
-              : cogsC
-            : null;
-    const site = q?.data?.sites.find((s) => s.code === siteCode);
-    return site?.months[month - 1] ?? 0;
-  };
-
-  const mrLookup = (year: number, metric: "revenue" | "cogs", month: number): number => {
-    const q = year === yearA ? mrA : year === yearB ? mrB : year === yearC ? mrC : null;
-    const arr = metric === "revenue" ? q?.project?.revenueActual : q?.project?.cogsActual;
-    return arr?.[month - 1] ?? 0;
-  };
-
-  // 데이터 입력 탭의 월별 매출 (계획/실적) — 입력된 데이터가 있으면 최우선 사용
+  // 서버가 경영보고 기준 + ERP/데이터입력 월별 보완으로 통합한 단일 읽기 모델
   const salesMap = new Map<string, { plan: number | null; actual: number | null }>();
-  for (const s of pdDetail?.salesMonthly ?? []) {
+  for (const s of pdDetail?.canonicalSalesMonthly ?? []) {
     salesMap.set(`${s.year}-${s.month}`, { plan: s.plan ?? null, actual: s.actual ?? null });
   }
   const pdSalesHasAny = period.some(({ year, month }) => {
@@ -142,15 +68,8 @@ export function SaleProfitTab({
     return row != null && (row.plan != null || row.actual != null);
   });
 
-  // sc 데이터가 기간 내에 하나라도 있으면 sc 우선, 없으면 mr 폴백
-  const scHasAny =
-    hasSite && period.some(({ year, month }) => scLookup(year, "revenue", month) !== 0);
-  const lookup = scHasAny ? scLookup : mrLookup;
-
-  // 원가율의 원가 소스는 매출 소스와 일치시킨다:
-  // pd 매출 사용 시 → pd 월별 매출원가(회계), 아니면 sc/mr 원가
   const pdCogsLookup = new Map<string, number>();
-  for (const c of pdDetail?.cogsMonthly ?? []) {
+  for (const c of pdDetail?.canonicalCogsMonthly ?? []) {
     if (c.acctCogs != null) pdCogsLookup.set(`${c.year}-${c.month}`, c.acctCogs);
   }
   const pdCogsHasAny = period.some(({ year, month }) => pdCogsLookup.has(`${year}-${month}`));
@@ -160,11 +79,9 @@ export function SaleProfitTab({
   let cumPlan = 0;
   const chartData = period.map(({ year, month }) => {
     const pdRow = pdSalesHasAny ? salesMap.get(`${year}-${month}`) : undefined;
-    const revenue = pdSalesHasAny ? (pdRow?.actual ?? 0) : lookup(year, "revenue", month);
-    const plan = pdSalesHasAny ? (pdRow?.plan ?? 0) : 0;
-    const cogs = pdSalesHasAny
-      ? (pdCogsHasAny ? (pdCogsLookup.get(`${year}-${month}`) ?? 0) : 0)
-      : lookup(year, "cogs", month);
+    const revenue = pdRow?.actual ?? 0;
+    const plan = pdRow?.plan ?? 0;
+    const cogs = pdCogsLookup.get(`${year}-${month}`) ?? 0;
     cumulative += revenue;
     cumCogs += cogs;
     cumPlan += plan;
@@ -189,7 +106,7 @@ export function SaleProfitTab({
 
   // 데이터 입력 탭의 월별 매출원가 (회계 vs 집행 WIP) — Cost 차트
   const cogsMap = new Map<string, { acctCogs: number | null; wipCogs: number | null }>();
-  for (const c of pdDetail?.cogsMonthly ?? []) {
+  for (const c of pdDetail?.canonicalCogsMonthly ?? []) {
     cogsMap.set(`${c.year}-${c.month}`, { acctCogs: c.acctCogs ?? null, wipCogs: c.wipCogs ?? null });
   }
   let cumAcct = 0;
@@ -215,7 +132,7 @@ export function SaleProfitTab({
     : cogsChartData;
 
   const hasData = chartData.some((d) => d.revenue !== 0 || d.cumulative !== 0 || d.plan !== 0);
-  if (isLoading || pdLoading) {
+  if (isLoading) {
     return (
       <div style={cardStyle}>
         <Notice>{t("saleProfitTab:loadingNotice")}</Notice>

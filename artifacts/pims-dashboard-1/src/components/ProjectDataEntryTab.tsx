@@ -1,16 +1,17 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { Plus, Trash2, Save, Upload, X, Lock, LockOpen } from "lucide-react";
+import { Plus, Trash2, Save, Upload, X, Lock, LockOpen, ChevronRight } from "lucide-react";
 import { readAdminToken } from "../lib/adminAuth";
 import {
   usePutProjectdetail,
   useListMgmtreportProjects,
   useUpdateMgmtreportProjectStatus,
+  useUpdateMgmtreportProjectDivision,
+  useGetOrgStructure,
   getListMgmtreportProjectsQueryKey,
   useGetCashflowMonthly,
   getGetCashflowMonthlyQueryKey,
-  usePatchProjectdetailClose,
 } from "@workspace/api-client-react";
 import type {
   ProjectDetail,
@@ -28,7 +29,7 @@ import type {
 import { useProjectDetail, getGetProjectdetailQueryKey } from "../lib/projectDetailData";
 import { REPORT_YEAR } from "../lib/mgmtreportData";
 import { getMrCashflowRef } from "../data/mrProjectLinks";
-import { cardStyle, sectionTitle, emptyNote, INK_NAVY, INK_BODY, INK_MUTED, POINT_BLUE, TABLE_HEADER_BG, CARD_BORDER, ACHIEVE_RED, SUCCESS_GREEN, ADMIN_NAVY, BORDER_STRONG, BORDER_MID, BORDER_LIGHT, STATUS_CLOSED_BG, STATUS_OPEN_BG, STATUS_CLOSED_TEXT, STATUS_OPEN_TEXT, WARNING_BG, WARNING_TEXT, WARNING_BORDER } from "../lib/uiTokens";
+import { cardStyle, sectionTitle, emptyNote, INK_NAVY, INK_BODY, INK_MUTED, POINT_BLUE, TABLE_HEADER_BG, CARD_BORDER, ACHIEVE_RED, SUCCESS_GREEN, ADMIN_NAVY, BORDER_STRONG, BORDER_MID, BORDER_LIGHT, STATUS_CLOSED_BG, STATUS_OPEN_BG, STATUS_CLOSED_TEXT, STATUS_OPEN_TEXT } from "../lib/uiTokens";
 import { chartTheme } from "../lib/chartTheme";
 
 const th: React.CSSProperties = {
@@ -128,22 +129,41 @@ function VndInput({
 function NumInput({
   value,
   onChange,
+  min,
+  max,
+  step = "any",
   "data-row": dataRow,
   "data-col": dataCol,
 }: {
   value: number | null | undefined;
   onChange: (v: number | null) => void;
+  min?: number;
+  max?: number;
+  step?: number | "any";
   "data-row"?: string | number;
   "data-col"?: string | number;
 }) {
+  const normalize = (raw: string) => {
+    if (raw === "") {
+      onChange(null);
+      return;
+    }
+    const parsed = Number(raw);
+    if (!Number.isFinite(parsed)) return;
+    const stepped = step === 1 ? Math.round(parsed) : parsed;
+    onChange(Math.min(max ?? Infinity, Math.max(min ?? -Infinity, stepped)));
+  };
+
   return (
     <input
       type="number"
-      step="any"
+      min={min}
+      max={max}
+      step={step}
       value={value ?? ""}
       data-row={dataRow}
       data-col={dataCol}
-      onChange={(e) => onChange(e.target.value === "" ? null : Number(e.target.value))}
+      onChange={(e) => normalize(e.target.value)}
       onWheel={(e) => (e.target as HTMLElement).blur()}
       style={{ ...inputStyle, textAlign: "right" }}
     />
@@ -266,6 +286,19 @@ const EMPTY_OVERVIEW: ProjectDetailOverview = {
   endDate: null,
   client: null,
   scale: null,
+  location: null,
+  siteArea: null,
+  grossFloorArea: null,
+  purpose: null,
+  ownershipStake: null,
+  partnerCompany: null,
+  contractMethod: null,
+  paymentTerms: null,
+  defectWarrantyPeriod: null,
+  defectWarrantyBond: null,
+  advancePayment: null,
+  retention: null,
+  veTerms: null,
   asOfMonth: null,
   scope: null,
   revenueAnnualTarget: null,
@@ -293,6 +326,20 @@ const TRADE_GROUP_LABEL_KEY: Record<string, string> = {
   "조경": "tradeGroupLandscape",
 };
 
+const PROCESS_COST_ITEMS = [
+  { key: "Common", keys: ["Common"], label: "processCostMajorWork" },
+  { key: "외주 건축", keys: ["외주 건축"], label: "processCostArchitecture" },
+  { key: "외주 기계", keys: ["외주 기계"], label: "processCostMechanical" },
+  { key: "외주 전기", keys: ["외주 전기"], label: "processCostElectrical" },
+  { key: "외주 토목", keys: ["외주 토목"], label: "processCostCivil" },
+  { key: "외주 조경", keys: ["외주 조경"], label: "processCostLandscape" },
+  {
+    key: "외주 경비",
+    keys: ["외주 경비", "Expense 1", "Expense 2"],
+    label: "processCostExpense",
+  },
+] as const;
+
 const EST_KINDS: { kind: "bidding" | "execution" | "completion"; label: string }[] = [
   { kind: "bidding", label: "estKindBidding" },
   { kind: "execution", label: "estKindExecution" },
@@ -301,19 +348,49 @@ const EST_KINDS: { kind: "bidding" | "execution" | "completion"; label: string }
 
 export function ProjectDataEntryTab({ projectName, service = false }: { projectName: string; service?: boolean }) {
   const { t } = useTranslation(["projectDataEntryTab", "common"]);
+  const { fmtMoney } = useMoney();
   const { detail, isLoading } = useProjectDetail(projectName);
   const queryClient = useQueryClient();
   const mutation = usePutProjectdetail();
-  const closeMutation = usePatchProjectdetailClose();
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
-  const [isClosed, setIsClosed] = useState(false);
+  const [closedSections, setClosedSections] = useState<Set<string>>(new Set());
+  const [locksLoaded, setLocksLoaded] = useState(false);
+  const [closingSection, setClosingSection] = useState<string | null>(null);
   const [closeMsg, setCloseMsg] = useState<string | null>(null);
+  const [planVersion, setPlanVersion] = useState(0);
 
   const mrProjectsQuery = useListMgmtreportProjects({ year: REPORT_YEAR });
-  const currentStatus =
-    mrProjectsQuery.data?.projects.find((p) => p.name === projectName)?.status ?? "ongoing";
+  const currentProject = mrProjectsQuery.data?.projects.find((p) => p.name === projectName);
+  const currentStatus = currentProject?.status ?? "ongoing";
+  const currentBusinessType = currentProject?.businessType ?? (service ? "용역" : "시공");
   const statusMutation = useUpdateMgmtreportProjectStatus();
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
+  const orgStructureQuery = useGetOrgStructure();
+  const divisionMutation = useUpdateMgmtreportProjectDivision();
+  const [divisionMsg, setDivisionMsg] = useState<string | null>(null);
+  const changeBusinessType = (businessType: "시공" | "용역") => {
+    if (businessType === currentBusinessType) return;
+    const companies = orgStructureQuery.data?.companies ?? [];
+    const currentCompany = companies.find((company) => company.label === currentProject?.companyLabel);
+    const targetDivision =
+      currentCompany?.divisions.find((division) => division.businessType === businessType) ??
+      companies.flatMap((company) => company.divisions).find((division) => division.businessType === businessType);
+    if (!targetDivision) {
+      setDivisionMsg(`${businessType} 부문을 찾을 수 없습니다.`);
+      return;
+    }
+    setDivisionMsg(null);
+    divisionMutation.mutate(
+      { name: projectName, data: { divisionId: targetDivision.id } },
+      {
+        onSuccess: () => {
+          setDivisionMsg(`${businessType} 메뉴로 변경되었습니다.`);
+          queryClient.invalidateQueries({ queryKey: getListMgmtreportProjectsQueryKey() });
+        },
+        onError: () => setDivisionMsg("프로젝트 메뉴 변경에 실패했습니다."),
+      },
+    );
+  };
   const toggleStatus = () => {
     const next = currentStatus === "closed" ? "ongoing" : "closed";
     setStatusMsg(null);
@@ -346,6 +423,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
   const photoInputRef = useRef<HTMLInputElement>(null);
   const [loaded, setLoaded] = useState(false);
   const [cfPrefilled, setCfPrefilled] = useState(false);
+  const lastLockStateRef = useRef<string | null>(null);
 
   // 자금수지 Excel(cf_*) DB 데이터 — 데이터 입력 이력이 없으면 표에 미리 채워 수정할 수 있게 함
   const cfRef = getMrCashflowRef(projectName);
@@ -364,6 +442,8 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
   useEffect(() => {
     setLoaded(false);
     setCfPrefilled(false);
+    setLocksLoaded(false);
+    lastLockStateRef.current = null;
   }, [projectName]);
 
   useEffect(() => {
@@ -414,7 +494,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       setSalesMonthly(detail.salesMonthly ?? []);
       setPhotos(detail.photos ?? []);
       setSlideshowIntervalSeconds(detail.overview?.slideshowIntervalSeconds ?? 0);
-      setIsClosed(detail.overview?.isClosed ?? false);
+      setPlanVersion(detail.planVersion ?? 0);
       setLoaded(true);
     }
   }, [detail, loaded, cfRef, cfQuery.isLoading, cfQuery.data]);
@@ -505,20 +585,54 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
     if (photoInputRef.current) photoInputRef.current.value = "";
   };
 
-  const handleToggleClose = () => {
-    const next = !isClosed;
+  useEffect(() => {
+    let cancelled = false;
+    setClosedSections(new Set());
+    setLocksLoaded(false);
+    fetch(`/api/projectdetail/section-locks?projectName=${encodeURIComponent(projectName)}`)
+      .then(async (response) => {
+        if (!response.ok) throw new Error();
+        return response.json() as Promise<{ closedSections: string[] }>;
+      })
+      .then((data) => {
+        if (!cancelled) {
+          setClosedSections(new Set(data.closedSections));
+          setLocksLoaded(true);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setLocksLoaded(false);
+          setCloseMsg(t("projectDataEntryTab:closeToggleFailed"));
+        }
+      });
+    return () => { cancelled = true; };
+  }, [projectName, t]);
+
+  const handleToggleClose = async (section: string) => {
+    const next = !closedSections.has(section);
     setCloseMsg(null);
-    closeMutation.mutate(
-      { data: { projectName, closed: next } },
-      {
-        onSuccess: () => {
-          setIsClosed(next);
-          setCloseMsg(null);
-          queryClient.invalidateQueries({ queryKey: getGetProjectdetailQueryKey({ projectName }) });
-        },
-        onError: () => setCloseMsg(t("projectDataEntryTab:closeToggleFailed")),
-      },
-    );
+    setClosingSection(section);
+    try {
+      const token = readAdminToken();
+      const response = await fetch("/api/projectdetail/close", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ projectName, section, closed: next }),
+      });
+      if (!response.ok) throw new Error();
+      setClosedSections((current) => {
+        const updated = new Set(current);
+        if (next) updated.add(section);
+        else updated.delete(section);
+        return updated;
+      });
+      queryClient.invalidateQueries({ queryKey: getGetProjectdetailQueryKey({ projectName }) });
+    } catch {
+      setCloseMsg(t("projectDataEntryTab:closeToggleFailed"));
+    } finally {
+      setClosingSection(null);
+    }
   };
 
   const pendingRef = useRef(false);
@@ -526,7 +640,9 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
   const [cardMsgs, setCardMsgs] = useState<Record<string, string | null>>({});
 
   const save = (card?: string) => {
-    if (isClosed) return;
+    if (!locksLoaded) return;
+    if (!card && closedSections.size > 0) return;
+    if (card && closedSections.has(card)) return;
     if (pendingRef.current) {
       queuedRef.current = true;
       return;
@@ -592,7 +708,8 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
             saveRef.current();
           }
         },
-        onSuccess: () => {
+        onSuccess: (savedDetail) => {
+          setPlanVersion(savedDetail.planVersion ?? planVersion);
           report(t("common:saveSucceeded"));
           queryClient.invalidateQueries({ queryKey: getGetProjectdetailQueryKey({ projectName }) });
         },
@@ -616,13 +733,20 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
   }, [projectName]);
   useEffect(() => {
     if (!loaded) return;
+    const lockState = `${locksLoaded}:${[...closedSections].sort().join(",")}`;
+    const lockStateChanged = lastLockStateRef.current !== lockState;
+    lastLockStateRef.current = lockState;
+    if (!locksLoaded || lockStateChanged) {
+      if (locksLoaded) skipAutoSaveRef.current = false;
+      return;
+    }
     if (skipAutoSaveRef.current) {
       skipAutoSaveRef.current = false;
       return;
     }
     const t = setTimeout(() => saveRef.current(), 1000);
     return () => clearTimeout(t);
-  }, [loaded, overview, progress, milestones, costEstimation, costBudget, costBudgetMonthly, outsourcing, cashflow, cogsMonthly, salesMonthly, photos, slideshowIntervalSeconds]);
+  }, [loaded, locksLoaded, closedSections, overview, progress, milestones, costEstimation, costBudget, costBudgetMonthly, outsourcing, cashflow, cogsMonthly, salesMonthly, photos, slideshowIntervalSeconds]);
 
 
   if (isLoading && !loaded) {
@@ -630,11 +754,109 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
   }
 
   const nowYear = new Date().getFullYear();
+  const toMonthIndex = (value: string | null | undefined) => {
+    const match = /^(\d{4})-(\d{1,2})/.exec(value ?? "");
+    return match ? Number(match[1]) * 12 + Number(match[2]) - 1 : null;
+  };
+  const dataMonthIndexes = [
+    ...progress.map((row) => row.year * 12 + row.month - 1),
+    ...salesMonthly.map((row) => row.year * 12 + row.month - 1),
+    ...costBudgetMonthly.map((row) => row.year * 12 + row.month - 1),
+  ].filter((value) => Number.isFinite(value));
+  const projectStartIndex =
+    toMonthIndex(overview.startDate) ??
+    (dataMonthIndexes.length > 0 ? Math.min(...dataMonthIndexes) : nowYear * 12);
+  const projectEndIndex =
+    toMonthIndex(overview.endDate) ??
+    (dataMonthIndexes.length > 0 ? Math.max(...dataMonthIndexes) : projectStartIndex + 11);
+  const processCostMonths = Array.from(
+    { length: Math.min(120, Math.max(1, projectEndIndex - projectStartIndex + 1)) },
+    (_, offset) => {
+      const index = projectStartIndex + offset;
+      return { year: Math.floor(index / 12), month: (index % 12) + 1 };
+    },
+  );
+  const getProcessCostValue = (
+    items: readonly string[],
+    year: number,
+    month: number,
+    field: "plan" | "actual",
+  ) => {
+    const values = items.map(
+      (item) =>
+        costBudgetMonthly.find(
+          (row) => row.item === item && row.year === year && row.month === month,
+        )?.[field] ?? null,
+    );
+    return values.some((value) => value != null)
+      ? values.reduce<number>((sum, value) => sum + (value ?? 0), 0)
+      : null;
+  };
+  const setProcessCostValue = (
+    item: string,
+    groupedItems: readonly string[],
+    year: number,
+    month: number,
+    field: "plan" | "actual",
+    value: number | null,
+  ) =>
+    setCostBudgetMonthly((rows) => {
+      const preservedGroupValue = groupedItems
+        .filter((groupedItem) => groupedItem !== item)
+        .reduce<number>(
+          (sum, groupedItem) =>
+            sum +
+            (rows.find(
+              (row) =>
+                row.item === groupedItem &&
+                row.year === year &&
+                row.month === month,
+            )?.[field] ?? 0),
+          0,
+        );
+      const storedValue = value == null ? null : value - preservedGroupValue;
+      const index = rows.findIndex((row) => row.item === item && row.year === year && row.month === month);
+      if (index >= 0) return rows.map((row, i) => (i === index ? { ...row, [field]: storedValue } : row));
+      return [...rows, { item, year, month, plan: null, actual: null, [field]: storedValue }];
+    });
+  const getSalesPlan = (year: number, month: number) =>
+    salesMonthly.find((row) => row.year === year && row.month === month)?.plan ?? null;
+  const setSalesPlan = (year: number, month: number, value: number | null) =>
+    setSalesMonthly((rows) => {
+      const index = rows.findIndex((row) => row.year === year && row.month === month);
+      if (index >= 0) return rows.map((row, i) => (i === index ? { ...row, plan: value } : row));
+      return [...rows, { year, month, plan: value, actual: null }];
+    });
+  const getProgressPlan = (year: number, month: number) =>
+    progress.find((row) => row.year === year && row.month === month)?.planPct ?? null;
+  const setProgressPlan = (year: number, month: number, value: number | null) =>
+    setProgress((rows) => {
+      const index = rows.findIndex((row) => row.year === year && row.month === month);
+      const next =
+        index >= 0
+          ? rows.map((row, i) => (i === index ? { ...row, planPct: value } : row))
+          : [...rows, { year, month, planPct: value, actualPct: null, planCumPct: null, actualCumPct: null }];
+      return calculateProgressPlanCumulative(next);
+    });
 
   // 카드별 저장 버튼 + 마감 버튼 + 결과 메시지가 있는 섹션 헤더
   const cardHead = (label: string, key: string) => (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
-      <span style={sectionTitle}>{label}</span>
+      <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
+        <span style={sectionTitle}>{label}</span>
+        {planVersion > 0 && (
+          <span style={{
+            padding: "2px 8px",
+            borderRadius: "999px",
+            backgroundColor: TABLE_HEADER_BG,
+            color: INK_NAVY,
+            fontSize: "11px",
+            fontWeight: 700,
+          }}>
+            {t("projectDataEntryTab:planVersion", { version: planVersion })}
+          </span>
+        )}
+      </span>
       <span style={{ display: "inline-flex", alignItems: "center", gap: "8px", pointerEvents: "auto" }}>
         {cardMsgs[key] && (
           <span style={{ fontSize: "13px", color: cardMsgs[key] === t("common:saveSucceeded") ? SUCCESS_GREEN : ACHIEVE_RED }}>
@@ -646,28 +868,28 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
         )}
         {/* 마감 설정/해지 버튼 */}
         <button
-          onClick={handleToggleClose}
-          disabled={closeMutation.isPending}
+          onClick={() => handleToggleClose(key)}
+          disabled={!locksLoaded || closingSection != null}
           style={{
             display: "inline-flex", alignItems: "center", gap: "4px",
             padding: "4px 12px",
             fontSize: "13px",
             fontWeight: 600,
-            backgroundColor: isClosed ? INK_MUTED : "#fff",
-            color: isClosed ? "#fff" : INK_MUTED,
-            border: `1px solid ${isClosed ? INK_MUTED : BORDER_STRONG}`,
+            backgroundColor: closedSections.has(key) ? INK_MUTED : "#fff",
+            color: closedSections.has(key) ? "#fff" : INK_MUTED,
+            border: `1px solid ${closedSections.has(key) ? INK_MUTED : BORDER_STRONG}`,
             borderRadius: "4px",
-            cursor: closeMutation.isPending ? "wait" : "pointer",
-            opacity: closeMutation.isPending ? 0.6 : 1,
+            cursor: !locksLoaded || closingSection != null ? "wait" : "pointer",
+            opacity: !locksLoaded || closingSection != null ? 0.6 : 1,
             pointerEvents: "auto",
           }}
         >
-          {isClosed ? <><LockOpen size={12} />{t("projectDataEntryTab:closeUnlock")}</> : <><Lock size={12} />{t("projectDataEntryTab:closeLock")}</>}
+          {closedSections.has(key) ? <><LockOpen size={12} />{t("projectDataEntryTab:closeUnlock")}</> : <><Lock size={12} />{t("projectDataEntryTab:closeLock")}</>}
         </button>
         {/* 저장 버튼 */}
         <button
           onClick={() => save(key)}
-          disabled={isClosed || mutation.isPending}
+          disabled={!locksLoaded || closedSections.has(key) || mutation.isPending}
           style={{
             padding: "4px 14px",
             fontSize: "13px",
@@ -676,8 +898,8 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
             color: "#fff",
             border: "none",
             borderRadius: "4px",
-            cursor: (isClosed || mutation.isPending) ? "not-allowed" : "pointer",
-            opacity: (isClosed || mutation.isPending) ? 0.45 : 1,
+            cursor: (!locksLoaded || closedSections.has(key) || mutation.isPending) ? "not-allowed" : "pointer",
+            opacity: (!locksLoaded || closedSections.has(key) || mutation.isPending) ? 0.45 : 1,
           }}
         >
           {t("common:save")}
@@ -784,11 +1006,58 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-      <div style={{ ...cardStyle, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      <div style={{ ...cardStyle, display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
         <div style={{ fontSize: "14px", color: INK_BODY }}>
           <b>{projectName}</b> {t("projectDataEntryTab:headerDescPart1")} <b>VND</b> {t("projectDataEntryTab:headerDescPart2")} <b>%</b>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", justifyContent: "flex-end" }}>
+          <div
+            role="radiogroup"
+            aria-label="프로젝트 메뉴 위치"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "2px",
+              minHeight: "32px",
+              padding: "2px",
+              border: `1px solid ${BORDER_MID}`,
+              borderRadius: "6px",
+              backgroundColor: TABLE_HEADER_BG,
+            }}
+          >
+            {(["시공", "용역"] as const).map((businessType) => (
+              <button
+                type="button"
+                role="radio"
+                aria-checked={currentBusinessType === businessType}
+                key={businessType}
+                disabled={divisionMutation.isPending || orgStructureQuery.isLoading || mrProjectsQuery.isLoading}
+                onClick={() => changeBusinessType(businessType)}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  minHeight: "26px",
+                  padding: "0 10px",
+                  border: currentBusinessType === businessType ? `1px solid ${BORDER_MID}` : "1px solid transparent",
+                  borderRadius: "4px",
+                  backgroundColor: currentBusinessType === businessType ? "#fff" : "transparent",
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  color: currentBusinessType === businessType ? ADMIN_NAVY : INK_MUTED,
+                  cursor: divisionMutation.isPending ? "wait" : "pointer",
+                  opacity: divisionMutation.isPending || orgStructureQuery.isLoading || mrProjectsQuery.isLoading ? 0.6 : 1,
+                }}
+              >
+                {businessType}
+              </button>
+            ))}
+          </div>
+          {divisionMsg && (
+            <span style={{ fontSize: "13px", color: divisionMsg.includes("실패") || divisionMsg.includes("없습니다") ? ACHIEVE_RED : SUCCESS_GREEN, fontWeight: 600 }}>
+              {divisionMsg}
+            </span>
+          )}
           {statusMsg && (
             <span style={{ fontSize: "13px", color: statusMsg === t("projectDataEntryTab:statusChangeFailed") ? ACHIEVE_RED : SUCCESS_GREEN, fontWeight: 600 }}>
               {statusMsg}
@@ -797,10 +1066,15 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
           <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
             <span
               style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                minHeight: "32px",
                 fontSize: "13px",
                 fontWeight: 700,
-                padding: "3px 8px",
-                borderRadius: "10px",
+                padding: "0 11px",
+                border: `1px solid ${currentStatus === "closed" ? STATUS_CLOSED_TEXT : STATUS_OPEN_TEXT}`,
+                borderRadius: "6px",
                 backgroundColor: currentStatus === "closed" ? STATUS_CLOSED_BG : STATUS_OPEN_BG,
                 color: currentStatus === "closed" ? STATUS_CLOSED_TEXT : STATUS_OPEN_TEXT,
               }}
@@ -812,17 +1086,23 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
               disabled={statusMutation.isPending || mrProjectsQuery.isLoading}
               title={t("projectDataEntryTab:statusToggleTooltip")}
               style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "5px",
+                minHeight: "32px",
                 fontSize: "13px",
                 fontWeight: 600,
                 color: ADMIN_NAVY,
                 backgroundColor: "#fff",
                 border: `1px solid ${BORDER_MID}`,
                 borderRadius: "6px",
-                padding: "5px 10px",
+                padding: "0 12px",
                 cursor: statusMutation.isPending ? "wait" : "pointer",
                 opacity: statusMutation.isPending ? 0.7 : 1,
               }}
             >
+              <ChevronRight size={12} />
               {statusMutation.isPending
                 ? t("projectDataEntryTab:changingStatus")
                 : currentStatus === "closed"
@@ -837,20 +1117,22 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
           )}
           <button
             onClick={() => save()}
-            disabled={isClosed || mutation.isPending}
+            disabled={!locksLoaded || mutation.isPending || closedSections.size > 0}
             style={{
-              display: "flex",
+              display: "inline-flex",
               alignItems: "center",
-              gap: "6px",
+              justifyContent: "center",
+              gap: "5px",
+              minHeight: "32px",
               backgroundColor: ADMIN_NAVY,
               color: "#fff",
-              border: "none",
+              border: `1px solid ${ADMIN_NAVY}`,
               borderRadius: "6px",
-              padding: "8px 16px",
-              fontSize: "16px",
+              padding: "0 12px",
+              fontSize: "13px",
               fontWeight: 600,
-              cursor: (isClosed || mutation.isPending) ? "not-allowed" : "pointer",
-              opacity: (isClosed || mutation.isPending) ? 0.4 : 1,
+              cursor: (!locksLoaded || mutation.isPending || closedSections.size > 0) ? "not-allowed" : "pointer",
+              opacity: (!locksLoaded || mutation.isPending || closedSections.size > 0) ? 0.4 : 1,
             }}
           >
             <Save size={13} />
@@ -859,33 +1141,11 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
         </div>
       </div>
 
-      {/* 마감 배너 */}
-      {isClosed && (
-        <div style={{
-          backgroundColor: WARNING_BG,
-          border: `1px solid ${WARNING_BORDER}`,
-          borderRadius: "6px",
-          padding: "10px 16px",
-          fontSize: "13px",
-          fontWeight: 600,
-          color: WARNING_TEXT,
-          display: "flex",
-          alignItems: "center",
-          gap: "8px",
-        }}>
-          <Lock size={14} />
-          {t("projectDataEntryTab:closedBanner")}
-        </div>
-      )}
-
-      {/* 마감 시 입력 차단 래퍼 (cardHead의 마감 버튼은 pointerEvents:auto로 여전히 동작) */}
-      <div style={{ pointerEvents: isClosed ? "none" : "auto", opacity: isClosed ? 0.65 : 1 }}>
-
       {/* 0. 개요 정보 */}
       {!service && (
       <>
       <div style={cardStyle}>
-        <span style={sectionTitle}>{t("projectDataEntryTab:overviewTitle")}</span>
+        {cardHead(t("projectDataEntryTab:overviewTitle"), "overview")}
         <div data-tbl="overview" onKeyDown={makeArrowNav("overview")}>
         <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px" }}>
           <thead>
@@ -939,6 +1199,74 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
             </tr>
           </tbody>
         </table>
+        <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px" }}>
+          <thead>
+            <tr>
+              <th style={th}>{t("projectDataEntryTab:location")}</th>
+              <th style={th}>{t("projectDataEntryTab:siteArea")}</th>
+              <th style={th}>{t("projectDataEntryTab:grossFloorArea")}</th>
+              <th style={th}>{t("projectDataEntryTab:purpose")}</th>
+              <th style={th}>{t("projectDataEntryTab:ownershipStake")}</th>
+              <th style={th}>{t("projectDataEntryTab:partnerCompany")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              {([
+                ["location", overview.location],
+                ["siteArea", overview.siteArea],
+                ["grossFloorArea", overview.grossFloorArea],
+                ["purpose", overview.purpose],
+                ["ownershipStake", overview.ownershipStake],
+                ["partnerCompany", overview.partnerCompany],
+              ] as const).map(([key, value], index) => (
+                <td key={key} style={tdCell}>
+                  <TextInput
+                    value={value}
+                    onChange={(next) => setOverview((o) => ({ ...o, [key]: next }))}
+                    data-row={1}
+                    data-col={index}
+                  />
+                </td>
+              ))}
+            </tr>
+          </tbody>
+        </table>
+        <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px" }}>
+          <thead>
+            <tr>
+              <th style={th}>{t("projectDataEntryTab:contractMethod")}</th>
+              <th style={th}>{t("projectDataEntryTab:paymentTerms")}</th>
+              <th style={th}>{t("projectDataEntryTab:defectWarrantyPeriod")}</th>
+              <th style={th}>{t("projectDataEntryTab:defectWarrantyBond")}</th>
+              <th style={th}>{t("projectDataEntryTab:advancePayment")}</th>
+              <th style={th}>{t("projectDataEntryTab:retention")}</th>
+              <th style={th}>{t("projectDataEntryTab:veTerms")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              {([
+                ["contractMethod", overview.contractMethod],
+                ["paymentTerms", overview.paymentTerms],
+                ["defectWarrantyPeriod", overview.defectWarrantyPeriod],
+                ["defectWarrantyBond", overview.defectWarrantyBond],
+                ["advancePayment", overview.advancePayment],
+                ["retention", overview.retention],
+                ["veTerms", overview.veTerms],
+              ] as const).map(([key, value], index) => (
+                <td key={key} style={tdCell}>
+                  <TextInput
+                    value={value}
+                    onChange={(next) => setOverview((o) => ({ ...o, [key]: next }))}
+                    data-row={2}
+                    data-col={index}
+                  />
+                </td>
+              ))}
+            </tr>
+          </tbody>
+        </table>
         <div style={{ fontSize: "12px", color: INK_MUTED, marginTop: "6px" }}>
           {t("projectDataEntryTab:overviewCostRateNote")}
         </div>
@@ -965,7 +1293,17 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
             {progress.map((p, i) => (
               <tr key={i}>
                 <td style={tdCell}><NumInput value={p.year} onChange={(v) => updateProgressAt(i, { year: v ?? 0 })} data-row={i} data-col={0} /></td>
-                <td style={tdCell}><NumInput value={p.month} onChange={(v) => updateProgressAt(i, { month: v ?? 0 })} data-row={i} data-col={1} /></td>
+                <td style={tdCell}>
+                  <NumInput
+                    value={p.month}
+                    min={1}
+                    max={12}
+                    step={1}
+                    onChange={(v) => updateProgressAt(i, { month: v ?? 1 })}
+                    data-row={i}
+                    data-col={1}
+                  />
+                </td>
                 <td style={tdCell}><NumInput value={p.planPct} onChange={(v) => updateProgressAt(i, { planPct: v })} data-row={i} data-col={2} /></td>
                 <td style={tdCell}><NumInput value={p.actualPct} onChange={(v) => updateProgressAt(i, { actualPct: v })} data-row={i} data-col={3} /></td>
                 <td style={tdCell}>
@@ -1042,6 +1380,97 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
         >
           <Plus size={12} /> {t("projectDataEntryTab:addMilestone")}
         </button>
+      </div>
+
+      {/* 공정별 원가 계획 */}
+      <div style={cardStyle}>
+        {cardHead(t("projectDataEntryTab:processCostPlanTitle"), "costBudget")}
+        <div style={{ fontSize: "12px", color: INK_MUTED, marginTop: "4px" }}>
+          {t("projectDataEntryTab:processCostPlanNote")}
+        </div>
+        <div style={{ overflowX: "auto", marginTop: "8px" }}>
+          <div data-tbl="processCostPlan" onKeyDown={makeArrowNav("processCostPlan")}>
+            <table style={{ width: "100%", minWidth: "2140px", borderCollapse: "collapse", tableLayout: "fixed" }}>
+              <thead>
+                <tr>
+                  <th style={{ ...th, width: "64px" }} rowSpan={2}>{t("common:year")}</th>
+                  <th style={{ ...th, width: "52px" }} rowSpan={2}>{t("projectDataEntryTab:monthColumn")}</th>
+                  {PROCESS_COST_ITEMS.map((item) => (
+                    <th key={item.key} style={th} colSpan={2}>{t(`projectDataEntryTab:${item.label}`)}</th>
+                  ))}
+                  <th style={{ ...th, width: "92px" }} rowSpan={2}>{t("projectDataEntryTab:totalPlan")}</th>
+                  <th style={{ ...th, width: "92px" }} rowSpan={2}>{t("projectDataEntryTab:totalActual")}</th>
+                  <th style={{ ...th, width: "104px" }} rowSpan={2}>{t("projectDataEntryTab:monthlySales")}</th>
+                  <th style={{ ...th, width: "78px" }} rowSpan={2}>{t("projectDataEntryTab:progressRate")}</th>
+                </tr>
+                <tr>
+                  {PROCESS_COST_ITEMS.flatMap((item) => [
+                    <th key={`${item.key}-plan`} style={th}>{t("common:plan")}</th>,
+                    <th key={`${item.key}-actual`} style={th}>{t("common:actual")}</th>,
+                  ])}
+                </tr>
+              </thead>
+              <tbody>
+                {processCostMonths.map(({ year, month }, rowIndex) => {
+                  const planValues = PROCESS_COST_ITEMS.map((item) => getProcessCostValue(item.keys, year, month, "plan"));
+                  const actualValues = PROCESS_COST_ITEMS.map((item) => getProcessCostValue(item.keys, year, month, "actual"));
+                  const totalPlan = planValues.some((value) => value != null)
+                    ? planValues.reduce<number>((sum, value) => sum + (value ?? 0), 0)
+                    : null;
+                  const totalActual = actualValues.some((value) => value != null)
+                    ? actualValues.reduce<number>((sum, value) => sum + (value ?? 0), 0)
+                    : null;
+                  return (
+                    <tr key={`${year}-${month}`}>
+                      <td style={{ ...tdCell, textAlign: "center", fontSize: "13px", color: INK_BODY }}>{String(year).slice(2)}{t("projectDataEntryTab:yearSuffix")}</td>
+                      <td style={{ ...tdCell, textAlign: "center", fontSize: "13px", color: INK_BODY }}>{t("projectDataEntryTab:monthSuffix", { month })}</td>
+                      {PROCESS_COST_ITEMS.flatMap((item, itemIndex) => [
+                        <td key={`${item.key}-plan`} style={tdCell}>
+                          <VndInput
+                            valueKUsd={planValues[itemIndex]}
+                            onChange={(value) => setProcessCostValue(item.key, item.keys, year, month, "plan", value)}
+                            data-row={rowIndex}
+                            data-col={itemIndex * 2}
+                          />
+                        </td>,
+                        <td key={`${item.key}-actual`} style={tdCell}>
+                          <VndInput
+                            valueKUsd={actualValues[itemIndex]}
+                            onChange={(value) => setProcessCostValue(item.key, item.keys, year, month, "actual", value)}
+                            data-row={rowIndex}
+                            data-col={itemIndex * 2 + 1}
+                          />
+                        </td>,
+                      ])}
+                      <td style={{ ...tdCell, textAlign: "right", padding: "5px 6px", fontSize: "13px", fontWeight: 700, color: INK_NAVY, backgroundColor: TABLE_HEADER_BG }}>
+                        {fmtMoney(totalPlan)}
+                      </td>
+                      <td style={{ ...tdCell, textAlign: "right", padding: "5px 6px", fontSize: "13px", fontWeight: 700, color: INK_NAVY, backgroundColor: TABLE_HEADER_BG }}>
+                        {fmtMoney(totalActual)}
+                      </td>
+                      <td style={tdCell}>
+                        <VndInput
+                          valueKUsd={getSalesPlan(year, month)}
+                          onChange={(value) => setSalesPlan(year, month, value)}
+                          data-row={rowIndex}
+                          data-col={PROCESS_COST_ITEMS.length * 2}
+                        />
+                      </td>
+                      <td style={tdCell}>
+                        <NumInput
+                          value={getProgressPlan(year, month)}
+                          onChange={(value) => setProgressPlan(year, month, value)}
+                          data-row={rowIndex}
+                          data-col={PROCESS_COST_ITEMS.length * 2 + 1}
+                        />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
       {/* 시공: 매출 탭 순서(공정 다음) */}
       {salesMonthlyCard}
@@ -1483,7 +1912,6 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
         </div>
       </div>
 
-      </div>{/* end 마감 잠금 래퍼 */}
     </div>
   );
 }

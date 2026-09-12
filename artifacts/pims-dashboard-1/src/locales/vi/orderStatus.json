@@ -8,5 +8,21 @@
   "orderActual": "Thực tế nhận thầu",
   "remainingUnordered": "Còn lại (chưa nhận)",
   "annualOrderPlan": "Kế hoạch nhận thầu năm",
-  "vsAnnualPlan": "So với kế hoạch năm"
+  "annualOrderForecast": "Dự báo nhận thầu năm",
+  "forecastVsPlan": "({{percent}}% kế hoạch)",
+  "vsAnnualPlan": "So với kế hoạch năm",
+  "detailTitle": "Nhận thầu theo dự án",
+  "detailSubtitle": "Tính đến tháng {{month}}/{{year}} · Đơn vị {{unit}}",
+  "detailLoading": "Đang tải chi tiết nhận thầu...",
+  "detailError": "Không thể tải chi tiết nhận thầu.",
+  "detailEmpty": "Không có dữ liệu nhận thầu theo dự án cho năm đã chọn.",
+  "projectName": "Dự án",
+  "planAmount": "Giá trị kế hoạch",
+  "planDate": "Thời điểm kế hoạch",
+  "actualForecastAmount": "Thực tế / dự báo",
+  "actualForecastDate": "Thời điểm thực tế / dự báo",
+  "status": "Phân loại",
+  "actual": "Thực tế",
+  "forecast": "Dự báo",
+  "total": "Tổng"
 }

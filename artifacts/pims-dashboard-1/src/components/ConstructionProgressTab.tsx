@@ -25,6 +25,7 @@ import {
 } from "../lib/projectDetailData";
 import { chartTheme } from "../lib/chartTheme";
 import { cardStyle, sectionTitle, emptyNote, INK_NAVY, INK_BODY, INK_SECONDARY, INK_MUTED, DIVIDER, MUTED_HINT, STATUS_POS_BG, STATUS_NEG_BG } from "../lib/uiTokens";
+import { useMoney } from "../lib/displayUnit";
 
 const emptyStyle = emptyNote;
 
@@ -110,6 +111,28 @@ function dateRange(s: string | null | undefined, e: string | null | undefined): 
   return `${sf} ~ ${ef}`;
 }
 
+function dateDiffDays(plan: string | null | undefined, actual: string | null | undefined): number | null {
+  if (!plan || !actual) return null;
+  const planDate = new Date(`${plan.slice(0, 10)}T00:00:00Z`);
+  const actualDate = new Date(`${actual.slice(0, 10)}T00:00:00Z`);
+  if (Number.isNaN(planDate.getTime()) || Number.isNaN(actualDate.getTime())) return null;
+  return Math.round((actualDate.getTime() - planDate.getTime()) / 86_400_000);
+}
+
+function milestoneTooltip(m: ProjectDetail["milestones"][number]): string {
+  const startDiff = dateDiffDays(m.planStart, m.actualStart);
+  const endDiff = dateDiffDays(m.planEnd, m.actualEnd);
+  const fmtDiff = (value: number | null) =>
+    value == null ? "-" : value === 0 ? "차이 없음" : `${Math.abs(value)}일 ${value > 0 ? "지연" : "단축"}`;
+  return [
+    m.label,
+    `계획: ${dateRange(m.planStart, m.planEnd) || "-"}`,
+    `실적: ${dateRange(m.actualStart, m.actualEnd) || "-"}`,
+    `착수 차이: ${fmtDiff(startDiff)}`,
+    `완료 차이: ${fmtDiff(endDiff)}`,
+  ].join("\n");
+}
+
 function MilestoneChart({ milestones }: { milestones: ProjectDetail["milestones"] }) {
   const { t } = useTranslation(["constructionProgressTab", "common"]);
   // 축 범위 계산 (계획/실적 시작~종료 월 전체)
@@ -182,9 +205,11 @@ function MilestoneChart({ milestones }: { milestones: ProjectDetail["milestones"
             const actual = barPos(m.actualStart, m.actualEnd);
             const planLabel = dateRange(m.planStart, m.planEnd);
             const actualLabel = dateRange(m.actualStart, m.actualEnd);
+            const tooltip = milestoneTooltip(m);
             return (
               <div
                 key={`${m.label}-${mi}`}
+                title={tooltip}
                 style={{
                   display: "flex",
                   alignItems: "flex-start",
@@ -212,6 +237,7 @@ function MilestoneChart({ milestones }: { milestones: ProjectDetail["milestones"
                   {/* Plan bar */}
                   {plan && (
                     <div
+                      title={tooltip}
                       style={{
                         position: "absolute",
                         top: "5px",
@@ -226,6 +252,7 @@ function MilestoneChart({ milestones }: { milestones: ProjectDetail["milestones"
                   {/* Plan date label */}
                   {planLabel && (
                     <div
+                      title={tooltip}
                       style={{
                         position: "absolute",
                         top: "13px",
@@ -303,16 +330,27 @@ function MilestoneChart({ milestones }: { milestones: ProjectDetail["milestones"
   );
 }
 
-export function ConstructionProgressTab({ projectName }: { projectName: string }) {
+export function ConstructionProgressTab({
+  projectName,
+  referenceYear,
+  referenceMonth,
+}: {
+  projectName: string;
+  referenceYear: number;
+  referenceMonth: number;
+}) {
   const { t } = useTranslation(["constructionProgressTab", "common"]);
   const { detail, isLoading } = useProjectDetail(projectName);
+  const { fmtMoney, unitLabel } = useMoney();
   const [photoIdx, setPhotoIdx] = useState(0);
   useEffect(() => { setPhotoIdx(0); }, [projectName]);
 
   const progress = detail?.progress ?? [];
   const milestones = detail?.milestones ?? [];
 
-  const lifecycleData = progress.map((p) => ({
+  const referenceIndex = referenceYear * 12 + referenceMonth;
+  const progressToReference = progress.filter((p) => p.year * 12 + p.month <= referenceIndex);
+  const lifecycleData = progressToReference.map((p) => ({
     month: `${String(p.year).slice(-2)}/${String(p.month).padStart(2, "0")}`,
     plan: p.planPct,
     actual: p.actualPct,
@@ -321,7 +359,10 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
   }));
 
   // 최신(마지막) 누계 공정률
-  const latest = [...progress].reverse().find((p) => p.planCumPct != null || p.actualCumPct != null) ?? null;
+  const latest =
+    [...progressToReference]
+      .sort((a, b) => b.year * 12 + b.month - (a.year * 12 + a.month))
+      .find((p) => p.planCumPct != null || p.actualCumPct != null) ?? null;
   const planCum = latest?.planCumPct ?? null;
   const actualCum = latest?.actualCumPct ?? null;
   const diff = planCum != null && actualCum != null ? actualCum - planCum : null;
@@ -336,13 +377,34 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
 
   // 연간 공정률 합계 (기준월 연도)
   const latestYear = latest?.year ?? null;
-  const annualRows = latestYear != null ? progress.filter((p) => p.year === latestYear) : [];
+  const annualRows =
+    latestYear != null
+      ? progressToReference.filter((p) => p.year === latestYear)
+      : [];
   const planAnnual = annualRows.some((p) => p.planPct != null)
     ? Math.min(annualRows.reduce((s, p) => s + (p.planPct ?? 0), 0), 100)
     : null;
   const actualAnnual = annualRows.some((p) => p.actualPct != null)
     ? Math.min(annualRows.reduce((s, p) => s + (p.actualPct ?? 0), 0), 100)
     : null;
+
+  const costRows = detail?.costBudget ?? [];
+  const outsourcingRows = detail?.outsourcing ?? [];
+  const costPlanAmount =
+    costRows.some((row) => row.plan != null) || outsourcingRows.some((row) => row.executedBudget != null)
+      ? costRows.reduce((sum, row) => sum + (row.plan ?? 0), 0) +
+        outsourcingRows.reduce((sum, row) => sum + (row.executedBudget ?? 0), 0)
+      : null;
+  const costActualAmount =
+    costRows.some((row) => row.actual != null) ||
+    outsourcingRows.some((row) => row.accum != null || row.resolved != null)
+      ? costRows.reduce((sum, row) => sum + (row.actual ?? 0), 0) +
+        outsourcingRows.reduce((sum, row) => sum + (row.accum ?? row.resolved ?? 0), 0)
+      : null;
+  const monthlyAchievement =
+    planMonth != null && planMonth > 0 && actualMonth != null
+      ? (actualMonth / planMonth) * 100
+      : null;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -367,17 +429,18 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
                   current={hasPhotos ? safeIdx : 0}
                   onChange={setPhotoIdx}
                   imgStyle={{ minHeight: "230px" }}
-                  autoPlayIntervalSeconds={detail?.overview?.slideshowIntervalSeconds ?? 0}
+                  autoPlayIntervalSeconds={detail?.overview?.slideshowIntervalSeconds || 5}
+                  loop
                 />
               );
             })()}
           </div>
         </div>
 
-        {/* Progress / Time Elapsed (공경률) */}
+        {/* Progress */}
         <div style={{ ...cardStyle, display: "flex", flexDirection: "column" }}>
           <div style={{ display: "flex", justifyContent: "space-between" }}>
-            <span style={sectionTitle}>공경률 (공사기간 진척도)</span>
+            <span style={sectionTitle}>{t("common:process")}</span>
             <span
               style={{
                 fontSize: "11px",
@@ -389,7 +452,7 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
                 fontWeight: 700,
               }}
             >
-              공경률 - 누계 공정율 {diff != null ? `${diff >= 0 ? "+" : ""}${diff.toFixed(1)}%` : "-"}
+              (B-A) {diff != null ? `${diff >= 0 ? "+" : ""}${diff.toFixed(1)}%` : "-"}
             </span>
           </div>
           {/* 3-column: 월(막대) / 연(도넛) / 누계(도넛) */}
@@ -420,13 +483,25 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
                         formatter={(v: number) => actualMonth != null ? `${v.toFixed(1)}%` : "-"}
                       />
                     </Bar>
-                    <Legend wrapperStyle={{ fontSize: "11px" }} />
                   </ComposedChart>
                 </ResponsiveContainer>
               </div>
               <span style={{ fontSize: "13px", color: INK_SECONDARY, fontWeight: 700, marginTop: "4px" }}>
                 {t("common:monthly").replace("별", "")}
               </span>
+              <div style={{ fontSize: "11px", color: INK_SECONDARY, marginTop: "5px", textAlign: "center", lineHeight: 1.6 }}>
+                <div>
+                  <span style={{ color: chartTheme.planBlue, fontWeight: 700 }}>계획</span>{" "}
+                  {fmtMoney(costPlanAmount)} {unitLabel}
+                </div>
+                <div>
+                  <span style={{ color: chartTheme.outflowRed, fontWeight: 700 }}>실적</span>{" "}
+                  {fmtMoney(costActualAmount)} {unitLabel}
+                </div>
+                <div style={{ fontWeight: 700, color: INK_NAVY }}>
+                  달성률 {monthlyAchievement != null ? fmtPct(monthlyAchievement) : "-"}
+                </div>
+              </div>
             </div>
 
             <div style={{ width: "1px", backgroundColor: DIVIDER, alignSelf: "stretch", margin: "0 6px" }} />
@@ -496,7 +571,7 @@ export function ConstructionProgressTab({ projectName }: { projectName: string }
         ) : lifecycleData.length === 0 ? (
           <div style={emptyStyle}>{t("constructionProgressTab:noMonthlyProcessData")}</div>
         ) : (
-          <div style={{ width: "100%", height: "240px" }}>
+          <div style={{ width: "100%", height: "320px" }}>
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={lifecycleData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                 <CartesianGrid stroke={chartTheme.gridLine} vertical={false} />

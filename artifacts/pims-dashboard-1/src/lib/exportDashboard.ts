@@ -616,9 +616,7 @@ export async function exportDashboardPdf(): Promise<void> {
   }
 
   // Compose a titled canvas: report title on top, dashboard capture below.
-  const d = new Date();
-  const dateLabel = `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
-  const title = `DAEWOO E&C 경영현황 보고서 - ${dateLabel}`;
+  const title = "DAEWOOVINA 경영현황 보고서";
 
   const TITLE_HEIGHT = 110;
   const titled = document.createElement("canvas");

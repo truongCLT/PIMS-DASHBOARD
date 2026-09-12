@@ -1,4 +1,8 @@
 {
+  "actualCashIn": "Actual cash-in",
+  "actualCashOut": "Actual cash-out",
+  "forecastCashIn": "Forecast cash-in",
+  "forecastCashOut": "Forecast cash-out",
   "monthLabel": "{{month}}/{{yy}}",
   "entryGuide": "Log in as an administrator to enter cash flow data in the \"Monthly Cash\" table under the \"Data Entry\" tab.",
   "loadingCashflow": "Loading cash flow data…",
@@ -8,5 +12,8 @@
   "noDataInPeriod": "No cash flow data for the selected period.",
   "cashIn": "Cash In",
   "cashOut": "Cash Out",
-  "balance": "Balance"
+  "balance": "Balance",
+  "referenceMonth": "Reference month",
+  "outlookAfterReference": "Outlook after reference month",
+  "fromMonth": "From {{month}}/{{year}}"
 }

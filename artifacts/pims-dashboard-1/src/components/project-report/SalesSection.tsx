@@ -1,0 +1,392 @@
+import React from "react";
+import {
+  Bar,
+  CartesianGrid,
+  Cell,
+  ComposedChart,
+  LabelList,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+import type { ProjectDetailSalesPoint } from "@workspace/api-client-react";
+import { chartTheme } from "../../lib/chartTheme";
+import { useMoney } from "../../lib/displayUnit";
+import { REPORT_YEAR } from "../../lib/mgmtreportData";
+import { ratioPct } from "../../lib/projectDetailData";
+import { cardStyle, INK_MUTED, sectionTitle } from "../../lib/uiTokens";
+
+interface Props {
+  planMonths: (number | null)[];
+  actualMonths: (number | null)[];
+  resolvedMonth: number | null;
+  allSalesMonths: ProjectDetailSalesPoint[];
+}
+
+interface SalesChartRow {
+  month: string;
+  plan: number | null;
+  actual: number | null;
+  rate: number | null;
+  isForecast: boolean;
+}
+
+const PLAN_COLOR = chartTheme.planBlue;
+const ACTUAL_COLOR = chartTheme.actualGreen;
+
+function LegendItem({
+  label,
+  color,
+  forecast = false,
+}: {
+  label: string;
+  color: string;
+  forecast?: boolean;
+}) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+      <svg width="12" height="9" aria-hidden="true">
+        <rect
+          x="1"
+          y="1"
+          width="10"
+          height="7"
+          rx="2"
+          fill={forecast ? "#fff" : color}
+          stroke={forecast ? color : undefined}
+          strokeWidth={forecast ? 1.3 : 0}
+          strokeDasharray={forecast ? "3 2" : undefined}
+        />
+      </svg>
+      <span style={{ fontSize: "10px", color: "#555" }}>{label}</span>
+    </div>
+  );
+}
+
+function SalesTooltip({
+  active,
+  payload,
+  label,
+  fmtMoney,
+}: {
+  active?: boolean;
+  payload?: Array<{ dataKey?: string; value?: number; payload?: SalesChartRow }>;
+  label?: string;
+  fmtMoney: (value: number | null | undefined) => string;
+}) {
+  if (!active || !payload?.length) return null;
+  const plan = payload.find((item) => item.dataKey === "plan");
+  const actual = payload.find((item) => item.dataKey === "actual");
+  const row = actual?.payload ?? plan?.payload;
+  return (
+    <div
+      style={{
+        backgroundColor: "#fff",
+        border: "1px solid #e2e9f3",
+        borderRadius: "4px",
+        padding: "7px 9px",
+        fontSize: "11px",
+      }}
+    >
+      <div style={{ fontWeight: 700, color: "#16294a", marginBottom: "3px" }}>{label}</div>
+      {plan && <div style={{ color: PLAN_COLOR }}>매출(계획): {fmtMoney(plan.value)}</div>}
+      {actual && (
+        <div style={{ color: ACTUAL_COLOR }}>
+          매출({row?.isForecast ? "전망" : "실적"}): {fmtMoney(actual.value)}
+        </div>
+      )}
+      {!row?.isForecast && row?.rate != null && (
+        <div style={{ color: chartTheme.rateOrange, fontWeight: 700 }}>
+          달성률: {row.rate}%
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function SalesSection({
+  planMonths,
+  actualMonths,
+  resolvedMonth,
+  allSalesMonths,
+}: Props) {
+  const { fmtMoney, unitLabel } = useMoney();
+  const latestActualIdx = actualMonths.reduce<number>(
+    (latest, value, index) => ((value ?? 0) !== 0 ? index : latest),
+    -1,
+  );
+  const actualThroughIdx = Math.max(
+    -1,
+    Math.min((resolvedMonth ?? latestActualIdx + 1) - 1, 11),
+  );
+  const chartData: SalesChartRow[] = Array.from({ length: 12 }, (_, index) => {
+    const plan = planMonths[index] ?? null;
+    const isForecast = index > actualThroughIdx;
+    const actual = isForecast ? plan : (actualMonths[index] ?? null);
+    const rawRate = isForecast ? null : ratioPct(actual, plan);
+    return {
+      month: `${index + 1}월`,
+      plan,
+      actual,
+      rate: rawRate == null ? null : Math.round(rawRate * 10) / 10,
+      isForecast,
+    };
+  });
+  const hasData = chartData.some(
+    (row) => (row.plan ?? 0) !== 0 || (row.actual ?? 0) !== 0,
+  );
+  const refMonth = Math.max(1, Math.min(resolvedMonth ?? latestActualIdx + 1, 12));
+  const hasAllPeriodData = allSalesMonths.some(
+    (row) => row.plan != null || row.actual != null,
+  );
+  const annualRows = hasAllPeriodData
+    ? allSalesMonths.filter(
+        (row) => row.year === REPORT_YEAR && row.month <= refMonth,
+      )
+    : chartData.slice(0, refMonth);
+  const overallRows = hasAllPeriodData
+    ? allSalesMonths.filter(
+        (row) =>
+          row.year < REPORT_YEAR ||
+          (row.year === REPORT_YEAR && row.month <= refMonth),
+      )
+    : annualRows;
+  const summarize = (
+    rows: Array<{ plan?: number | null; actual?: number | null }>,
+  ) => {
+    const plan = rows.reduce((sum, row) => sum + (row.plan ?? 0), 0);
+    const actual = rows.reduce((sum, row) => sum + (row.actual ?? 0), 0);
+    const rate = ratioPct(actual, plan);
+    return {
+      plan,
+      actual,
+      rate: rate == null ? null : Math.round(rate * 10) / 10,
+    };
+  };
+  const annualSummary = summarize(annualRows);
+  const overallSummary = summarize(overallRows);
+
+  const MonthRateTick = ({
+    x,
+    y,
+    payload,
+  }: {
+    x?: number;
+    y?: number;
+    payload?: { value?: string };
+  }) => {
+    if (x == null || y == null || !payload?.value) return null;
+    const row = chartData.find((item) => item.month === payload.value);
+    const rowIndex = chartData.findIndex((item) => item.month === payload.value);
+    const chipText = row?.rate != null ? `${row.rate}%` : null;
+    const chipWidth = chipText
+      ? Math.max(14, Math.min(17, chipText.length * 2.2 + 5))
+      : 0;
+    const chipY = y + 14 + (rowIndex % 2) * 11;
+    const achieved = (row?.rate ?? 0) >= 100;
+    return (
+      <g>
+        <text x={x} y={y + 10} textAnchor="middle" fontSize={8} fill={chartTheme.axisText}>
+          {payload.value.replace("월", "")}
+        </text>
+        {chipText && (
+          <g>
+            <rect
+              x={x - chipWidth / 2}
+              y={chipY}
+              width={chipWidth}
+              height={8}
+              rx={4}
+              fill={achieved ? "#e7f5ec" : "#fdecec"}
+            />
+            <text
+              x={x}
+              y={chipY + 5.7}
+              textAnchor="middle"
+              fontSize={3.7}
+              fontWeight={700}
+              fill={achieved ? "#2e9e5b" : "#cf4d4d"}
+            >
+              {chipText}
+            </text>
+          </g>
+        )}
+      </g>
+    );
+  };
+
+  const ActualValueLabel = ({
+    x,
+    y,
+    width,
+    value,
+  }: {
+    x?: number;
+    y?: number;
+    width?: number;
+    value?: number;
+  }) => {
+    if (x == null || y == null || width == null || value == null) return null;
+    const text = Number(value).toLocaleString("ko-KR");
+    return (
+      <text
+        x={x + width / 2}
+        y={y - 3}
+        textAnchor="middle"
+        fontSize={text.length > 5 ? 6.5 : 7.5}
+        fontWeight={700}
+        fill="#1a2d4d"
+      >
+        {text}
+      </text>
+    );
+  };
+
+  return (
+    <div style={{ ...cardStyle, display: "flex", flexDirection: "column" }}>
+      <div style={{ ...sectionTitle, marginBottom: "5px" }}>
+        매출 실적 및 전망
+        <span style={{ fontSize: "10px", fontWeight: 400, color: INK_MUTED, marginLeft: "5px" }}>
+          단위: {unitLabel}
+        </span>
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: "9px", marginBottom: "3px" }}>
+        <LegendItem label="매출(계획)" color={PLAN_COLOR} />
+        <LegendItem label="매출(실적)" color={ACTUAL_COLOR} />
+        <LegendItem label="매출(전망)" color={ACTUAL_COLOR} forecast />
+      </div>
+
+      {!hasData ? (
+        <div
+          style={{
+            minHeight: "190px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: "12px",
+            color: INK_MUTED,
+          }}
+        >
+          -
+        </div>
+      ) : (
+        <div style={{ flex: 1, minHeight: "180px" }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <ComposedChart
+              data={chartData}
+              margin={{ top: 20, right: 4, left: -24, bottom: 2 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.gridLine} vertical={false} />
+              <XAxis
+                dataKey="month"
+                tick={<MonthRateTick />}
+                axisLine={false}
+                tickLine={false}
+                height={42}
+                interval={0}
+              />
+              <XAxis dataKey="month" xAxisId="overlay" hide />
+              <YAxis
+                domain={[0, "auto"]}
+                tick={{ fontSize: 7.5, fill: chartTheme.axisText }}
+                width={42}
+                tickFormatter={(value: number) => value.toLocaleString("ko-KR")}
+                axisLine={false}
+                tickLine={false}
+              />
+              <Tooltip content={<SalesTooltip fmtMoney={fmtMoney} />} />
+              <Bar
+                dataKey="plan"
+                name="매출(계획)"
+                fill={PLAN_COLOR}
+                barSize={18}
+                maxBarSize={18}
+                radius={[4, 4, 0, 0]}
+                isAnimationActive={false}
+              />
+              <Bar
+                dataKey="actual"
+                xAxisId="overlay"
+                name="매출(실적/전망)"
+                fill={ACTUAL_COLOR}
+                barSize={9}
+                maxBarSize={9}
+                radius={[3, 3, 0, 0]}
+                isAnimationActive={false}
+              >
+                {chartData.map((row, index) => (
+                  <Cell
+                    key={`${row.month}-${index}`}
+                    fill={row.isForecast ? "#ffffff" : ACTUAL_COLOR}
+                    fillOpacity={row.isForecast ? 0.65 : 1}
+                    stroke={row.isForecast ? ACTUAL_COLOR : undefined}
+                    strokeWidth={row.isForecast ? 1.3 : 0}
+                    strokeDasharray={row.isForecast ? "4 2" : undefined}
+                  />
+                ))}
+                <LabelList dataKey="actual" content={<ActualValueLabel />} />
+              </Bar>
+            </ComposedChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+      <div
+        style={{
+          borderTop: "1px solid #dfe6ef",
+          marginTop: "4px",
+          paddingTop: "5px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "3px",
+        }}
+      >
+        <SalesSummaryRow label="연 누계" summary={annualSummary} fmtMoney={fmtMoney} />
+        <SalesSummaryRow label="전체 누계" summary={overallSummary} fmtMoney={fmtMoney} />
+      </div>
+    </div>
+  );
+}
+
+function SalesSummaryRow({
+  label,
+  summary,
+  fmtMoney,
+}: {
+  label: string;
+  summary: { plan: number; actual: number; rate: number | null };
+  fmtMoney: (value: number | null | undefined) => string;
+}) {
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "44px minmax(0, 1fr) 1px minmax(0, 1fr) 1px minmax(0, 1fr)",
+        alignItems: "center",
+        columnGap: "6px",
+        width: "100%",
+        whiteSpace: "nowrap",
+        fontSize: "9px",
+        color: "#52627a",
+      }}
+    >
+      <span style={{ fontWeight: 700, color: "#1a2d4d" }}>
+        {label}
+      </span>
+      <span style={{ textAlign: "center" }}>
+        계획 <strong style={{ color: "#1a2d4d" }}>{fmtMoney(summary.plan)}</strong>
+      </span>
+      <span style={{ color: "#aab5c4" }}>|</span>
+      <span style={{ textAlign: "center" }}>
+        실적 <strong style={{ color: "#1a2d4d" }}>{fmtMoney(summary.actual)}</strong>
+      </span>
+      <span style={{ color: "#aab5c4" }}>|</span>
+      <span style={{ textAlign: "right" }}>
+        달성률{" "}
+        <strong style={{ color: chartTheme.rateOrange }}>
+          {summary.rate == null ? "-" : `${summary.rate}%`}
+        </strong>
+      </span>
+    </div>
+  );
+}

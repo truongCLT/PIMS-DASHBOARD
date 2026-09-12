@@ -1,7 +1,7 @@
 import React, { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
-import { FileSpreadsheet, History, RotateCcw, Upload, X } from "lucide-react";
+import { Download, FileSpreadsheet, History, RotateCcw, Upload, X } from "lucide-react";
 import {
   getPreviewMgmtreportImportUrl,
   getApplyMgmtreportImportUrl,
@@ -9,18 +9,25 @@ import {
   getApplyCashflowImportUrl,
   getPreviewSalescostImportUrl,
   getApplySalescostImportUrl,
+  getPreviewOrderImportUrl,
+  getApplyOrderImportUrl,
+  useListOrderImportHistory,
+  getListOrderImportHistoryQueryKey,
+  revertOrderImport,
+  downloadCurrentOrders,
   useListMgmtreportImportHistory,
   getListMgmtreportImportHistoryQueryKey,
   revertMgmtreportImport,
   type MgmtreportImportPreview,
   type CashflowImportPreview,
   type SalescostImportPreview,
+  type OrderImportPreview,
 } from "@workspace/api-client-react";
 import { REPORT_YEAR } from "../lib/mgmtreportData";
 import { TABLE_HEADER_BG, INK_MUTED, ACHIEVE_RED } from "../lib/uiTokens";
 import { uploadWithProgress, type UploadProgress } from "../lib/uploadWithProgress";
 
-type Dataset = "mgmtreport" | "cashflow" | "salescost";
+type Dataset = "mgmtreport" | "cashflow" | "salescost" | "orders";
 
 const DATASET_META: Record<
   Dataset,
@@ -41,12 +48,18 @@ const DATASET_META: Record<
     needsYear: true,
     descriptionKey: "datasetDescSalescost",
   },
+  orders: {
+    labelKey: "datasetLabelOrders",
+    needsYear: true,
+    descriptionKey: "datasetDescOrders",
+  },
 };
 
 type PreviewState =
   | { kind: "mgmtreport"; data: MgmtreportImportPreview }
   | { kind: "cashflow"; data: CashflowImportPreview }
-  | { kind: "salescost"; data: SalescostImportPreview };
+  | { kind: "salescost"; data: SalescostImportPreview }
+  | { kind: "orders"; data: OrderImportPreview };
 
 function errorMessage(err: unknown, t: (key: string) => string): string {
   const data = (err as { data?: { error?: string } } | null)?.data;
@@ -101,19 +114,26 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
       queryKey: getListMgmtreportImportHistoryQueryKey(),
     },
   });
-  const history = historyQuery.data?.entries ?? [];
+  const orderHistoryQuery = useListOrderImportHistory({
+    query: { enabled: dataset === "orders", queryKey: getListOrderImportHistoryQueryKey() },
+  });
+  const history = dataset === "orders"
+    ? (orderHistoryQuery.data?.entries ?? [])
+    : (historyQuery.data?.entries ?? []);
 
   const handleRevert = async (historyId: number) => {
     setLoading("revert");
     setError(null);
     setRevertDone(null);
     try {
-      const res = await revertMgmtreportImport({ historyId });
+      const res = dataset === "orders"
+        ? await revertOrderImport({ historyId })
+        : await revertMgmtreportImport({ historyId });
       setRevertDone(
         t("mgmtReportUploadModal:revertDoneMessage", {
           filename: res.filename,
           restoredProjects: res.restoredProjects,
-          restoredMonthly: fmt(res.restoredMonthly),
+          restoredMonthly: "restoredMonthly" in res ? fmt(Number(res.restoredMonthly)) : 0,
         }),
       );
       setConfirmRevertId(null);
@@ -168,13 +188,18 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
           setProgress,
         );
         setPreview({ kind: "cashflow", data: res });
-      } else {
+      } else if (dataset === "salescost") {
         const res = await uploadWithProgress<SalescostImportPreview>(
           getPreviewSalescostImportUrl(),
           form,
           setProgress,
         );
         setPreview({ kind: "salescost", data: res });
+      } else {
+        const res = await uploadWithProgress<OrderImportPreview>(
+          getPreviewOrderImportUrl(), form, setProgress,
+        );
+        setPreview({ kind: "orders", data: res });
       }
     } catch (err) {
       setPreview(null);
@@ -198,8 +223,10 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
         await uploadWithProgress(getApplyMgmtreportImportUrl(), form, setProgress);
       } else if (preview.kind === "cashflow") {
         await uploadWithProgress(getApplyCashflowImportUrl(), form, setProgress);
-      } else {
+      } else if (preview.kind === "salescost") {
         await uploadWithProgress(getApplySalescostImportUrl(), form, setProgress);
+      } else {
+        await uploadWithProgress(getApplyOrderImportUrl(), form, setProgress);
       }
       setDone(true);
       await queryClient.invalidateQueries();
@@ -212,6 +239,19 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
   };
 
   const busy = loading != null;
+
+  const handleDownload = async () => {
+    setError(null);
+    try {
+      const blob = await downloadCurrentOrders({ year });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = `수주-계획-및-실적-${year}.xlsx`;
+      document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(errorMessage(err, t));
+    }
+  };
 
   return (
     <div
@@ -350,6 +390,15 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
                 />
               </label>
             )}
+            {dataset === "orders" && (
+              <button onClick={handleDownload} disabled={busy} style={{
+                display: "inline-flex", alignItems: "center", gap: "5px",
+                border: "1px solid #9db3cc", borderRadius: "6px", padding: "7px 10px",
+                background: "#fff", color: "#1e3a6e", fontSize: "12px", cursor: "pointer",
+              }}>
+                <Download size={12} />{t("mgmtReportUploadModal:downloadCurrentOrders")}
+              </button>
+            )}
             <button
               onClick={handlePreview}
               disabled={busy || !file}
@@ -463,7 +512,7 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
             </div>
           )}
 
-          {dataset === "mgmtreport" && history.length > 0 && (
+          {(dataset === "mgmtreport" || dataset === "orders") && history.length > 0 && (
             <div style={{ border: "1px solid #e2e9f3", borderRadius: "10px", overflow: "hidden", marginBottom: "12px" }}>
               <div
                 style={{
@@ -567,6 +616,39 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+
+          {preview?.kind === "orders" && (
+            <div style={{ border: "1px solid #e2e9f3", borderRadius: "10px", overflow: "hidden" }}>
+              <div style={{ backgroundColor: "#f2f6fb", padding: "10px 14px", fontSize: "12px", color: "#16294a", fontWeight: 700 }}>
+                {t("mgmtReportUploadModal:previewHeaderOrders", { year: preview.data.year, unit: preview.data.unit, month: preview.data.referenceMonth })}
+              </div>
+              <div style={statRow}>
+                <span>{t("mgmtReportUploadModal:statProjectPrefix")}<b>{preview.data.projectCount}</b>{t("mgmtReportUploadModal:countSuffixGae")}</span>
+                <span>{t("mgmtReportUploadModal:statOrderPlanTotal")} <b>{fmt(preview.data.totals.plan)}</b></span>
+                <span>{t("mgmtReportUploadModal:statOrderActualTotal")} <b>{fmt(preview.data.totals.actual)}</b></span>
+              </div>
+              <div style={{ maxHeight: "250px", overflowY: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "11px" }}>
+                  <thead><tr style={{ backgroundColor: TABLE_HEADER_BG, color: INK_MUTED }}>
+                    <th style={thLeft}>{t("common:project")}</th>
+                    <th style={thRight}>{t("mgmtReportUploadModal:colOrderPlan")}</th>
+                    <th style={thRight}>{t("mgmtReportUploadModal:colOrderPlanDate")}</th>
+                    <th style={thRight}>{t("mgmtReportUploadModal:colOrderActual")}</th>
+                    <th style={thRightEdge}>{t("mgmtReportUploadModal:colOrderActualDate")}</th>
+                  </tr></thead>
+                  <tbody>{preview.data.entries.map((e) => (
+                    <tr key={e.projectName} style={{ borderTop: "1px solid #eef2f7" }}>
+                      <td style={{ padding: "6px 14px", color: "#16294a" }}>{e.projectName}</td>
+                      <td style={tdRight}>{e.planAmount == null ? "-" : fmt(e.planAmount)}</td>
+                      <td style={tdRight}>{e.planDate ?? "-"}</td>
+                      <td style={tdRight}>{e.actualAmount == null ? "-" : fmt(e.actualAmount)}</td>
+                      <td style={tdRightEdge}>{e.actualDate ?? "-"}</td>
+                    </tr>
+                  ))}</tbody>
+                </table>
+              </div>
             </div>
           )}
 
@@ -724,23 +806,25 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
           >
             {t("common:close")}
           </button>
-          <button
-            onClick={handleApply}
-            disabled={busy || !preview || done}
-            style={{
-              backgroundColor: "#1c7a5a",
-              color: "#fff",
-              border: "none",
-              borderRadius: "6px",
-              padding: "8px 18px",
-              fontSize: "12px",
-              fontWeight: 700,
-              cursor: busy || !preview || done ? "not-allowed" : "pointer",
-              opacity: busy || !preview || done ? 0.55 : 1,
-            }}
-          >
-            {loading === "apply" ? t("mgmtReportUploadModal:applying") : t("mgmtReportUploadModal:apply")}
-          </button>
+          {!done && (
+            <button
+              onClick={handleApply}
+              disabled={busy || !preview}
+              style={{
+                backgroundColor: "#1c7a5a",
+                color: "#fff",
+                border: "none",
+                borderRadius: "6px",
+                padding: "8px 18px",
+                fontSize: "12px",
+                fontWeight: 700,
+                cursor: busy || !preview ? "not-allowed" : "pointer",
+                opacity: busy || !preview ? 0.55 : 1,
+              }}
+            >
+              {loading === "apply" ? t("mgmtReportUploadModal:applying") : t("mgmtReportUploadModal:apply")}
+            </button>
+          )}
         </div>
       </div>
     </div>

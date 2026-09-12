@@ -1,8 +1,21 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @plugin "@tailwindcss/typography";
+@source "../../aqua-glass/src/components";
 
 @custom-variant dark (&:is(.dark *));
+
+.project-summary-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 4fr) minmax(0, 3fr) minmax(0, 3fr);
+}
+
+@media (max-width: 900px) {
+  .project-summary-grid {
+    grid-template-columns: 1fr;
+    min-height: auto !important;
+  }
+}
 
 @theme inline {
   --color-background: hsl(var(--background));

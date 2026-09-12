@@ -8,6 +8,8 @@
   "report": "Report",
   "salesPlan": "Sales (Plan)",
   "salesActualForecast": "Sales (Actual & Forecast)",
+  "salesActual": "Sales (Actual)",
+  "salesForecast": "Sales (Forecast)",
   "month": "Month",
   "bottomChipRate": "Bottom chip = achievement",
   "siteDetailTitle": "Site Sales Detail – {{month}}",

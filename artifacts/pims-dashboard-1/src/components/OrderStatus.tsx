@@ -1,19 +1,111 @@
-import React from "react";
+import React, { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
+import {
+  getGetOrderDetailsQueryKey,
+  type OrderDetailEntry,
+  useGetOrderDetails,
+} from "@workspace/api-client-react";
+import { Button } from "@workspace/aqua-glass/components/ui/button";
+import {
+  DetailDataTable,
+  DetailModal,
+  type DetailColumn,
+} from "./DetailModal";
 import { useDashboardData } from "../lib/mgmtreportData";
-import { useDashboardFilters } from "../lib/dashboardFilters";
+import {
+  makeConverter,
+  roundSmart,
+  unitLabelOf,
+  useDashboardFilters,
+} from "../lib/dashboardFilters";
 
 export function OrderStatus() {
   const { t } = useTranslation(["orderStatus", "common"]);
   const { derived } = useDashboardData();
-  const { unitIndex } = useDashboardFilters();
+  const { unitIndex, currency, fxRateHistory } = useDashboardFilters();
+  const [detailOpen, setDetailOpen] = useState(false);
   const statFont = unitIndex === 1 ? "12px" : "20px";
   const unavailable = derived != null && derived.orderStatus == null;
   const planTotal = derived?.orderStatus?.planTotal ?? 0;
   const ordered = derived?.orderStatus?.ordered ?? 0;
   const remaining = derived?.orderStatus?.remaining ?? 0;
+  const annualForecast = derived?.orderStatus?.annualForecast ?? 0;
   const pct = planTotal ? Math.round((ordered / planTotal) * 100) : 0;
+  const forecastPct = planTotal ? Math.round((annualForecast / planTotal) * 100) : 0;
+  const detailParams = {
+    year: derived?.year ?? new Date().getFullYear(),
+    referenceMonth: derived?.month ?? new Date().getMonth() + 1,
+  };
+  const detailQuery = useGetOrderDetails(detailParams, {
+    query: {
+      queryKey: getGetOrderDetailsQueryKey(detailParams),
+      enabled: detailOpen && derived != null,
+    },
+  });
+  const convert = useMemo(
+    () => makeConverter(currency, unitIndex, fxRateHistory),
+    [currency, unitIndex, fxRateHistory],
+  );
+  const formatDate = (date: string | null) =>
+    date ? date.slice(0, 7).replace("-", ".") : "-";
+  const formatAmount = (amount: number | null) => {
+    if (amount == null) return "-";
+    const converted = convert(
+      amount,
+      derived?.year,
+      derived?.month,
+    );
+    return roundSmart(converted).toLocaleString();
+  };
+  const detailEntries = detailQuery.data?.entries ?? [];
+  const detailTotals = detailEntries.reduce(
+    (totals, row) => ({
+      plan: totals.plan + (row.planAmount ?? 0),
+      actual: totals.actual + (row.actualAmount ?? 0),
+    }),
+    { plan: 0, actual: 0 },
+  );
+  const detailColumns: DetailColumn<OrderDetailEntry>[] = [
+    {
+      key: "projectName",
+      label: t("orderStatus:projectName"),
+      align: "left",
+    },
+    {
+      key: "planAmount",
+      label: t("orderStatus:planAmount"),
+      format: (value) => formatAmount(typeof value === "number" ? value : null),
+    },
+    {
+      key: "planDate",
+      label: t("orderStatus:planDate"),
+      align: "center",
+      format: (value) => formatDate(typeof value === "string" ? value : null),
+    },
+    {
+      key: "actualAmount",
+      label: t("orderStatus:actualForecastAmount"),
+      format: (value) => formatAmount(typeof value === "number" ? value : null),
+    },
+    {
+      key: "actualDate",
+      label: t("orderStatus:actualForecastDate"),
+      align: "center",
+      format: (value) => formatDate(typeof value === "string" ? value : null),
+    },
+    {
+      key: "actualKind",
+      label: t("orderStatus:status"),
+      align: "center",
+      format: (value) =>
+        value === "actual"
+          ? t("orderStatus:actual")
+          : value === "forecast"
+            ? t("orderStatus:forecast")
+            : "-",
+    },
+  ];
 
   if (unavailable) {
     return (
@@ -51,10 +143,16 @@ export function OrderStatus() {
   const pctColor = pct >= 100 ? "#2e9e5b" : "#c0392b";
   const unit = derived?.unitLabel;
 
-  const rows = [
+  const rows: Array<{ dot: string; label: string; value: number; detail?: string }> = [
     { dot: "#3d6fdc", label: t("orderStatus:orderActual"), value: ordered },
     { dot: "#e3e7ee", label: t("orderStatus:remainingUnordered"), value: remaining },
     { dot: "#1a2233", label: t("orderStatus:annualOrderPlan"), value: planTotal },
+    {
+      dot: "#2e9e5b",
+      label: t("orderStatus:annualOrderForecast"),
+      value: annualForecast,
+      detail: t("orderStatus:forecastVsPlan", { percent: forecastPct }),
+    },
   ];
 
   return (
@@ -75,12 +173,16 @@ export function OrderStatus() {
           <span style={{ fontSize: "13px", fontWeight: "600", color: "#16294a" }}>{t("orderStatus:title")}</span>
           {unit && <span style={{ fontSize: "11px", color: "#7c8ba3" }}>{unit}</span>}
         </div>
-        <button style={{
-          fontSize: "12px", color: "#2f7cf6", background: "none",
-          border: "none", cursor: "pointer", padding: 0,
-        }}>
+        <Button
+          type="button"
+          variant="link"
+          size="sm"
+          onClick={() => setDetailOpen(true)}
+          aria-haspopup="dialog"
+          className="h-auto min-h-0 p-0 text-xs"
+        >
           {t("orderStatus:viewDetails")}
-        </button>
+        </Button>
       </div>
 
       {/* Donut chart with center label */}
@@ -135,14 +237,61 @@ export function OrderStatus() {
             borderBottom: i < rows.length - 1 ? "1px solid #f2f4f8" : "none",
           }}>
             <span style={{ width: "9px", height: "9px", borderRadius: "3px", backgroundColor: r.dot, flexShrink: 0 }} />
-            <span style={{ fontSize: "12px", color: "#333", flex: 1, minWidth: 0 }}>{r.label}</span>
-            <span style={{ fontSize: statFont === "12px" ? "12px" : "15px", fontWeight: 700, color: "#1a2d4d" }}>
-              {r.value.toLocaleString()}
+            <span style={{ fontSize: "12px", color: "#333", flex: 1, minWidth: 0 }}>
+              {r.label}
             </span>
-            {unit && <span style={{ fontSize: "10px", color: "#8a99b5" }}>{unit}</span>}
+            <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", flexShrink: 0 }}>
+              <span style={{ display: "flex", alignItems: "baseline", gap: "4px" }}>
+                <span style={{ fontSize: statFont === "12px" ? "12px" : "15px", fontWeight: 700, color: "#1a2d4d" }}>
+                  {r.value.toLocaleString()}
+                </span>
+                {unit && <span style={{ fontSize: "10px", color: "#8a99b5" }}>{unit}</span>}
+              </span>
+              {r.detail && (
+                <span style={{ marginTop: "2px", fontSize: "10px", color: "#2e9e5b", fontWeight: 600 }}>
+                  {r.detail}
+                </span>
+              )}
+            </span>
           </div>
         ))}
       </div>
+
+      <DetailModal
+        open={detailOpen}
+        onClose={() => setDetailOpen(false)}
+        title={t("orderStatus:detailTitle")}
+        subtitle={t("orderStatus:detailSubtitle", {
+          year: derived?.year,
+          month: derived?.month,
+          unit: unitLabelOf(currency, unitIndex),
+        })}
+      >
+        {detailQuery.isLoading ? (
+          <div style={{ padding: "32px", textAlign: "center", color: "#7c8ba3", fontSize: "12px" }}>
+            {t("orderStatus:detailLoading")}
+          </div>
+        ) : detailQuery.isError ? (
+          <div role="alert" style={{ padding: "32px", textAlign: "center", color: "#c0392b", fontSize: "12px" }}>
+            {t("orderStatus:detailError")}
+          </div>
+        ) : detailEntries.length === 0 ? (
+          <div style={{ padding: "32px", textAlign: "center", color: "#7c8ba3", fontSize: "12px" }}>
+            {t("orderStatus:detailEmpty")}
+          </div>
+        ) : (
+          <DetailDataTable
+            columns={detailColumns}
+            rows={detailEntries}
+            rowKey={(row) => row.projectName}
+            totalLabel={t("orderStatus:total")}
+            totalRow={{
+              planAmount: detailTotals.plan,
+              actualAmount: detailTotals.actual,
+            }}
+          />
+        )}
+      </DetailModal>
     </div>
   );
 }

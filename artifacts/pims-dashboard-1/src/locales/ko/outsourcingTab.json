@@ -16,5 +16,7 @@
   "detailedTrade": "세부공종",
   "thisMonth": "이번달",
   "ratio": "비율",
-  "noOutsourcingData": "외주/자재 데이터가 없습니다. ( - )"
+  "noOutsourcingData": "외주/자재 데이터가 없습니다. ( - )",
+  "remainingBilling": "잔여 기성",
+  "asOf": "'{{year}}.{{month}} 기준"
 }

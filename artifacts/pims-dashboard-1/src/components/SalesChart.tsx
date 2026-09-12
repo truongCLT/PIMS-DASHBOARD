@@ -8,22 +8,27 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip,
   ResponsiveContainer,
   LabelList,
   Cell,
 } from "recharts";
 import {
-  useListSalescostSites,
-  getListSalescostSitesQueryKey,
   useListMgmtreportProjects,
   getListMgmtreportProjectsQueryKey,
 } from "@workspace/api-client-react";
 import { useDashboardData, type SalesRow, REPORT_YEAR } from "../lib/mgmtreportData";
 import { useDashboardFilters, makeConverter } from "../lib/dashboardFilters";
 import { classifyMrProject } from "../data/projects";
-import { chartTheme } from "../lib/chartTheme";
+import { chartTheme, chartTypography } from "../lib/chartTheme";
 import { useTheme } from "../lib/theme";
+import {
+  ChartTooltip,
+  ChartTooltipPanel,
+} from "@workspace/aqua-glass/components/ui/chart";
+import {
+  Empty,
+  EmptyDescription,
+} from "@workspace/aqua-glass/components/ui/empty";
 import { DetailModal, DetailDataTable } from "./DetailModal";
 import { emptyNote, ACHIEVE_RED, INK_MUTED } from "../lib/uiTokens";
 
@@ -37,7 +42,7 @@ const BadgeLabel = (fill: string, compact = false, n = 12) => (props: any) => {
   if (value == null || x == null || y == null) return null;
   const text = Number(value).toLocaleString("ko-KR");
   const colPitch = Math.max(20, 320 / Math.max(1, n));
-  const maxFs = compact ? 9 : 11.5;
+  const maxFs = chartTypography.value;
   const fontSize = Math.max(7.5, Math.min(maxFs, colPitch / (text.length * 0.62)));
   const charW = fontSize * 0.62;
   const h = fontSize + 7;
@@ -55,6 +60,7 @@ const BadgeLabel = (fill: string, compact = false, n = 12) => (props: any) => {
         dominantBaseline="central"
         fill="#fff"
         fontSize={fontSize}
+        fontFamily={chartTypography.fontFamily}
         fontWeight={700}
       >
         {text}
@@ -70,7 +76,7 @@ const makePlanRateLabel = (chartData: SalesRow[]) => (props: any) => {
   if (!d || d.rate == null || d.plan == null || d.actual == null) return null;
   if (d.plan > d.actual) return null;
   return (
-    <text x={x} y={y + 18} textAnchor="middle" fill={RATE_COLOR} fontSize={10} fontWeight={700}>
+    <text x={x} y={y + 18} textAnchor="middle" fill={RATE_COLOR} fontSize={chartTypography.rate} fontFamily={chartTypography.fontFamily} fontWeight={700}>
       {d.rate}%
     </text>
   );
@@ -83,7 +89,7 @@ const makeActualRateLabel = (chartData: SalesRow[]) => (props: any) => {
   if (!d || d.rate == null || d.plan == null || d.actual == null) return null;
   if (d.actual >= d.plan) return null;
   return (
-    <text x={x} y={y + 18} textAnchor="middle" fill={RATE_COLOR} fontSize={10} fontWeight={700}>
+    <text x={x} y={y + 18} textAnchor="middle" fill={RATE_COLOR} fontSize={chartTypography.rate} fontFamily={chartTypography.fontFamily} fontWeight={700}>
       {d.rate}%
     </text>
   );
@@ -97,15 +103,34 @@ const CustomTooltip = ({ active, payload, label, colors }: any) => {
   const plan = payload.find((p: any) => p.dataKey === "plan");
   const actual = payload.find((p: any) => p.dataKey === "actual");
   const rate = plan?.payload?.rate ?? actual?.payload?.rate;
+  const actualLabel = actual?.payload?.isForecast
+    ? t("salesChart:salesForecast")
+    : t("salesChart:salesActual");
+  const lines = [
+    ...(plan
+      ? [{
+          label: t("salesChart:salesPlan"),
+          value: Number(plan.value).toLocaleString("ko-KR"),
+          color: c.plan,
+        }]
+      : []),
+    ...(actual
+      ? [{
+          label: actualLabel,
+          value: Number(actual.value).toLocaleString("ko-KR"),
+          color: c.actual,
+        }]
+      : []),
+    ...(rate != null
+      ? [{
+          label: t("common:achievementRate"),
+          value: `${rate}%`,
+          color: c.rate,
+        }]
+      : []),
+  ];
   return (
-    <div style={{ backgroundColor: "#fff", border: "1px solid #e2e9f3", borderRadius: "4px", padding: "8px 10px", fontSize: "12px" }}>
-      <div style={{ fontWeight: 700, marginBottom: "4px", color: "#16294a" }}>{label}</div>
-      {plan && <div style={{ color: c.plan }}>{t("salesChart:salesPlan")}: {Number(plan.value).toLocaleString("ko-KR")}</div>}
-      {actual && <div style={{ color: c.actual }}>{t("salesChart:salesActualForecast")}: {Number(actual.value).toLocaleString("ko-KR")}</div>}
-      {rate != null && (
-        <div style={{ color: c.rate, fontWeight: 700, marginTop: "4px" }}>{t("common:achievementRate")}: {rate}%</div>
-      )}
-    </div>
+    <ChartTooltipPanel title={label} lines={lines} style={{ maxWidth: "100%" }} />
   );
 };
 
@@ -137,77 +162,48 @@ export function SalesChart() {
   const PlanRateLabel = makePlanRateLabel(visibleData);
   const ActualRateLabel = makeActualRateLabel(visibleData);
 
-  /* ── 현장별 매출 데이터 — 항상 프리패치(드릴다운 클릭 즉시 표시) ── */
-  const sitesParams = { year: REPORT_YEAR, metric: "revenue" as const };
-  const sitesQuery = useListSalescostSites(sitesParams, {
-    query: { queryKey: getListSalescostSitesQueryKey(sitesParams) },
-  });
-
   /* ── 프로젝트/부문 스코프 결정 ── */
   const projectSelected = project !== "All";
   const divisionSelected = !projectSelected && division != null;
-  const needProjectsList = projectSelected || divisionSelected;
 
   const projectsQuery = useListMgmtreportProjects(
     { year: REPORT_YEAR },
     {
       query: {
         queryKey: getListMgmtreportProjectsQueryKey({ year: REPORT_YEAR }),
-        enabled: needProjectsList,
       },
     },
   );
 
   /**
-   * 현재 필터 스코프에 해당하는 sc_sites.code 집합.
-   * null = 전체 현장(필터 없음).
-   * 빈 Set = 스코프 내 siteCode 매핑이 없음 → 현장 상세 없음.
-   *
-   * mr_projects.siteCode → sc_sites.code 로 연결하는 것이 올바른 방식.
-   * (이름 기반 매칭은 별개 식별자이므로 사용하지 않음.)
+   * 회사 총매출과 동일한 경영관리보고 프로젝트 월 데이터를 사용한다.
+   * 별도 salescost 현장 집계는 최신 경영보고보다 입력 기간이 짧을 수 있어
+   * 총매출은 있는데 현장 상세가 비는 불일치를 만들 수 있다.
    */
-  const scopedSiteCodes = useMemo<Set<string> | null>(() => {
-    if (!needProjectsList) return null; // 전체: 필터링 불필요
+  const scopedProjects = useMemo(() => {
     const projects = projectsQuery.data?.projects ?? [];
     if (projectSelected) {
-      // 단일 프로젝트: 해당 프로젝트의 siteCode 한 개
-      const p = projects.find((x) => x.name === project);
-      if (!p?.siteCode) return new Set(); // 매핑 없음 → 현장 데이터 없음
-      return new Set([p.siteCode]);
+      return projects.filter((p) => p.name === project);
     }
-    if (divisionSelected && division) {
-      const codes = projects
-        .filter(
-          (p) =>
-            !p.isGroup &&
-            classifyMrProject(p.name) === division &&
-            (statusFilter == null || (p.status ?? "ongoing") === statusFilter) &&
-            p.siteCode != null,
-        )
-        .map((p) => p.siteCode as string);
-      return new Set(codes);
-    }
-    return null;
-  }, [needProjectsList, projectSelected, divisionSelected, project, division, statusFilter, projectsQuery.data]);
+    return projects.filter(
+      (p) =>
+        !p.isGroup &&
+        (!divisionSelected || !division || (p.businessType ?? classifyMrProject(p.name)) === division) &&
+        (statusFilter == null || (p.status ?? "ongoing") === statusFilter),
+    );
+  }, [projectSelected, divisionSelected, project, division, statusFilter, projectsQuery.data]);
 
   /* ── 클릭된 월의 현장별 rows 계산 ── */
   const drillMonthIdx = drillRow ? extractMonthIdx(drillRow.month) : null;
 
   const drillSiteRows = useMemo(() => {
     if (drillMonthIdx == null) return [];
-    const allSites = sitesQuery.data?.sites ?? [];
-    // 스코프 적용: 선택된 프로젝트/부문에 속한 현장만
-    const scoped =
-      scopedSiteCodes == null
-        ? allSites
-        : allSites.filter((s) => scopedSiteCodes.has(s.code));
-
-    const mapped = scoped
-      .map((s) => ({
-        name: s.name,
-        category: s.category ?? "-",
-        bizType: s.bizType ?? "-",
-        amount: Math.round(convert(s.months[drillMonthIdx] ?? 0)),
+    const mapped = scopedProjects
+      .map((p) => ({
+        name: p.name,
+        category: p.companyLabel ?? "-",
+        bizType: p.businessType ?? classifyMrProject(p.name),
+        amount: Math.round(convert(p.revenueActual[drillMonthIdx] ?? 0)),
       }))
       // 0인 현장은 제외, 마이너스(조정 역분개 등)는 유지
       .filter((r) => r.amount !== 0)
@@ -218,12 +214,11 @@ export function SalesChart() {
       ...r,
       share: total !== 0 ? `${((r.amount / total) * 100).toFixed(1)}%` : "-",
     }));
-  }, [drillMonthIdx, sitesQuery.data, scopedSiteCodes, convert]);
+  }, [drillMonthIdx, scopedProjects, convert]);
 
   /* ── 드릴다운 로딩 상태 ──
    * 부문/프로젝트 스코프가 있는데 projects 목록이 아직 오는 중이면 "loading" 표시 */
-  const drillIsLoading =
-    sitesQuery.isLoading || (needProjectsList && projectsQuery.isLoading);
+  const drillIsLoading = projectsQuery.isLoading;
 
   /* month + 달성률 pill chip tick */
   const MonthRateTick = (props: any) => {
@@ -234,12 +229,12 @@ export function SalesChart() {
     const chipW = chipText ? Math.max(34, chipText.length * 6.2 + 12) : 0;
     return (
       <g>
-        <text x={x} y={y + 12} textAnchor="middle" fontSize={11} fill={chartTheme.axisText}>{payload.value}</text>
+        <text x={x} y={y + 12} textAnchor="middle" fontSize={chartTypography.month} fontFamily={chartTypography.fontFamily} fontWeight={600} fill={chartTheme.axisText}>{payload.value}</text>
         {chipText && (
           <g>
             <rect x={x - chipW / 2} y={y + 19} width={chipW} height={16} rx={8}
               fill={ok ? "#e7f5ec" : "#fdecec"} />
-            <text x={x} y={y + 30.5} textAnchor="middle" fontSize={10} fontWeight={700}
+            <text x={x} y={y + 30.5} textAnchor="middle" fontSize={chartTypography.rate} fontFamily={chartTypography.fontFamily} fontWeight={700}
               fill={ok ? "#2e9e5b" : "#cf4d4d"}>{chipText}</text>
           </g>
         )}
@@ -253,7 +248,7 @@ export function SalesChart() {
     const d = visibleData[index];
     if (!d || d.actual == null || !Number.isFinite(Number(d.actual))) return null;
     const text = Number(d.actual).toLocaleString("ko-KR");
-    const fontSize = 12;
+    const fontSize = chartTypography.value;
     let topY = y;
     if (
       d.plan != null && Number.isFinite(Number(d.plan)) && d.plan > 0 &&
@@ -264,7 +259,7 @@ export function SalesChart() {
     }
     return (
       <text x={x + width / 2} y={topY - 4} textAnchor="middle"
-        fontSize={fontSize} fontWeight={700} fill="#1a2d4d">
+        fontSize={fontSize} fontFamily={chartTypography.fontFamily} fontWeight={700} fill="#1a2d4d">
         {text}
       </text>
     );
@@ -280,17 +275,18 @@ export function SalesChart() {
       boxSizing: "border-box",
       display: "flex",
       flexDirection: "column",
+      fontFamily: chartTypography.fontFamily,
     }}>
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
-          <span style={{ fontSize: "13px", fontWeight: "600", color: chartTheme.titleNavy }}>{t("salesChart:title")}</span>
-          {derived && <span style={{ fontSize: "11px", color: INK_MUTED }}>{t("common:unit")}: {derived.unitLabel}</span>}
+          <span style={{ fontSize: `${chartTypography.title}px`, fontWeight: "600", color: chartTheme.titleNavy }}>{t("salesChart:title")}</span>
+          {derived && <span style={{ fontSize: `${chartTypography.unit}px`, color: INK_MUTED }}>{t("common:unit")}: {derived.unitLabel}</span>}
         </div>
         <button
           onClick={() => setDetailOpen(true)}
           style={{
-            fontSize: "12px",
+            fontSize: `${chartTypography.action}px`,
             color: "#2f7cf6",
             background: "none",
             border: "none",
@@ -310,7 +306,7 @@ export function SalesChart() {
               <circle cx="20" cy="4" r="2.5" fill={planColor} />
             </svg>
           )}
-          <span style={{ fontSize: "12px", color: "#555" }}>{t("salesChart:salesPlan")}</span>
+          <span style={{ fontSize: `${chartTypography.legend}px`, color: "#555", fontWeight: 600 }}>{t("salesChart:salesPlan")}</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
           {variant === "bars" ? (
@@ -322,14 +318,24 @@ export function SalesChart() {
               <circle cx="20" cy="4" r="2.5" fill={actualColor} />
             </svg>
           )}
-          <span style={{ fontSize: "12px", color: "#555" }}>{t("salesChart:salesActualForecast")}</span>
+          <span style={{ fontSize: `${chartTypography.legend}px`, color: "#555", fontWeight: 600 }}>
+            {variant === "bars" ? t("salesChart:salesActual") : t("salesChart:salesActualForecast")}
+          </span>
         </div>
+        {variant === "bars" && (
+          <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+            <svg width="14" height="10">
+              <rect x="1" y="1" width="12" height="8" rx="2" fill="#fff" stroke={actualColor} strokeWidth="1.4" strokeDasharray="3 2" />
+            </svg>
+            <span style={{ fontSize: `${chartTypography.legend}px`, color: "#555", fontWeight: 600 }}>{t("salesChart:salesForecast")}</span>
+          </div>
+        )}
         {variant === "bars" ? (
-          <span style={{ fontSize: "11px", color: INK_MUTED }}>{t("salesChart:bottomChipRate")}</span>
+          <span style={{ fontSize: `${chartTypography.legend}px`, color: INK_MUTED, fontWeight: 600 }}>{t("salesChart:bottomChipRate")}</span>
         ) : (
           <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-            <span style={{ fontSize: "12px", fontWeight: 700, color: rateColor }}>%</span>
-            <span style={{ fontSize: "12px", color: "#555" }}>{t("common:achievementRate")}</span>
+            <span style={{ fontSize: `${chartTypography.legend}px`, fontWeight: 700, color: rateColor }}>%</span>
+            <span style={{ fontSize: `${chartTypography.legend}px`, color: "#555", fontWeight: 600 }}>{t("common:achievementRate")}</span>
           </div>
         )}
       </div>
@@ -337,13 +343,15 @@ export function SalesChart() {
       {/* Chart */}
       <div style={{ flex: 1, minHeight: "160px" }}>
         {visibleData.length === 0 ? (
-          <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", color: "#888" }}>
-            {isError
-              ? t("salesChart:errorLoadFailed")
-              : derived?.emptyRange
-                ? t("salesChart:noDataForPeriod")
-                : t("salesChart:loadingData")}
-          </div>
+          <Empty className="min-h-40 rounded-none p-5">
+            <EmptyDescription className="text-xs">
+              {isError
+                ? t("salesChart:errorLoadFailed")
+                : derived?.emptyRange
+                  ? t("salesChart:noDataForPeriod")
+                  : t("salesChart:loadingData")}
+            </EmptyDescription>
+          </Empty>
         ) : (
         <ResponsiveContainer width="100%" height="100%">
           {variant === "bars" ? (
@@ -359,13 +367,17 @@ export function SalesChart() {
               <XAxis dataKey="month" xAxisId="overlay" hide />
               <YAxis
                 domain={[0, "auto"]}
-                tick={{ fontSize: compact ? 9 : 11, fill: chartTheme.axisText }}
+                tick={{ fontSize: chartTypography.month, fontFamily: chartTypography.fontFamily, fill: chartTheme.axisText }}
                 width={compact ? 88 : 60}
                 tickFormatter={(v: number) => v.toLocaleString("ko-KR")}
                 axisLine={false}
                 tickLine={false}
               />
-              <Tooltip content={<CustomTooltip colors={{ plan: planColor, actual: actualColor, rate: rateColor }} />} cursor={{ fill: "rgba(68,114,202,0.06)" }} />
+              <ChartTooltip
+                content={<CustomTooltip colors={{ plan: planColor, actual: actualColor, rate: rateColor }} />}
+                cursor={{ fill: "rgba(68,114,202,0.06)" }}
+                wrapperStyle={{ maxWidth: "calc(100% - 16px)" }}
+              />
               <Bar
                 dataKey="plan"
                 name={t("salesChart:salesPlan")}
@@ -409,20 +421,23 @@ export function SalesChart() {
               <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.gridLine} vertical={false} />
               <XAxis
                 dataKey="month"
-                tick={{ fontSize: 11, fill: chartTheme.axisText }}
+                tick={{ fontSize: chartTypography.axis, fontFamily: chartTypography.fontFamily, fill: chartTheme.axisText }}
                 axisLine={false}
                 tickLine={false}
                 padding={{ left: 18, right: 6 }}
               />
               <YAxis
                 domain={[0, "auto"]}
-                tick={{ fontSize: compact ? 9 : 11, fill: chartTheme.axisText }}
+                tick={{ fontSize: chartTypography.axis, fontFamily: chartTypography.fontFamily, fill: chartTheme.axisText }}
                 width={compact ? 88 : 60}
                 tickFormatter={(v: number) => v.toLocaleString("ko-KR")}
                 axisLine={false}
                 tickLine={false}
               />
-              <Tooltip content={<CustomTooltip colors={{ plan: planColor, actual: actualColor, rate: rateColor }} />} />
+              <ChartTooltip
+                content={<CustomTooltip colors={{ plan: planColor, actual: actualColor, rate: rateColor }} />}
+                wrapperStyle={{ maxWidth: "calc(100% - 16px)" }}
+              />
               <Line
                 type="monotone"
                 dataKey="plan"
@@ -450,7 +465,7 @@ export function SalesChart() {
                   position="top"
                   offset={10}
                   formatter={(v: number) => (v == null ? "" : v.toLocaleString("ko-KR"))}
-                  style={{ fontSize: compact ? 9 : 10.5, fontWeight: 700, fill: actualColor }}
+                  style={{ fontSize: chartTypography.value, fontFamily: chartTypography.fontFamily, fontWeight: 700, fill: actualColor }}
                 />
               </Area>
             </ComposedChart>
@@ -459,20 +474,20 @@ export function SalesChart() {
             <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.gridLine} vertical={false} />
             <XAxis
               dataKey="month"
-              tick={{ fontSize: 11, fill: chartTheme.axisText }}
+              tick={{ fontSize: chartTypography.month, fontFamily: chartTypography.fontFamily, fill: chartTheme.axisText }}
               axisLine={false}
               tickLine={false}
               padding={{ left: 18, right: 6 }}
             />
             <YAxis
               domain={["auto", "auto"]}
-              tick={{ fontSize: compact ? 9 : 11, fill: chartTheme.axisText }}
+              tick={{ fontSize: chartTypography.axis, fontFamily: chartTypography.fontFamily, fill: chartTheme.axisText }}
               width={compact ? 88 : 60}
               tickFormatter={(v: number) => v.toLocaleString("ko-KR")}
               axisLine={false}
               tickLine={false}
             />
-            <Tooltip content={<CustomTooltip />} />
+            <ChartTooltip content={<CustomTooltip />} wrapperStyle={{ maxWidth: "calc(100% - 16px)" }} />
             <Line
               type="linear"
               dataKey="actual"
@@ -521,6 +536,22 @@ export function SalesChart() {
             { key: "rate", label: t("common:achievementRate"), format: (v) => (v == null ? "-" : `${v}%`) },
           ]}
           rows={visibleData}
+          totalRow={(() => {
+            const plan = visibleData.reduce(
+              (sum, row) => sum + (typeof row.plan === "number" ? row.plan : 0),
+              0,
+            );
+            const actual = visibleData.reduce(
+              (sum, row) => sum + (typeof row.actual === "number" ? row.actual : 0),
+              0,
+            );
+            return {
+              month: "합계",
+              plan,
+              actual,
+              rate: plan > 0 ? Math.round((actual / plan) * 100) : null,
+            };
+          })()}
           onRowClick={(row) => {
             if (extractMonthIdx(row.month) != null) setDrillRow(row);
           }}
@@ -539,7 +570,7 @@ export function SalesChart() {
           <div style={{ ...emptyNote, padding: "28px 16px" }}>
             {t("salesChart:loadingSiteData")}
           </div>
-        ) : sitesQuery.isError ? (
+        ) : projectsQuery.isError ? (
           <div style={{ ...emptyNote, padding: "28px 16px", color: ACHIEVE_RED }}>
             {t("salesChart:errorLoadFailed")}
           </div>

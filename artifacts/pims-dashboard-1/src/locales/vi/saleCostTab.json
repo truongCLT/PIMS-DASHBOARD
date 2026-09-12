@@ -1,0 +1,23 @@
+{
+  "forecast": "Dự báo",
+  "serviceCostTitle": "Giá vốn WIP & kế toán",
+  "costBasis": "Phân loại",
+  "wipCost": "Giá vốn WIP",
+  "accountingCost": "Giá vốn kế toán",
+  "forecastCostRatio": "Tỷ lệ chi phí dự báo (lũy kế chi phí / doanh thu)",
+  "loadingNotice": "Dang tai du lieu doanh thu/chi phi...",
+  "errorNotice": "Khong the tai du lieu doanh thu/chi phi. Vui long thu lai sau.",
+  "noDataNotice": "Khong co du lieu trong khoang thoi gian da chon.",
+  "monthlyRevenueTitle": "Doanh thu ({{unit}})",
+  "monthlyPlan": "Ke hoach thang",
+  "monthlyRevenue": "Doanh thu thang",
+  "costRatioLineTitle": "Ty le gia von luy ke (%)",
+  "cumulativeCostRatio": "Ty le gia von luy ke",
+  "costRatioTitle": "Ty le chi phi",
+  "estBidding": "Du thau",
+  "estExecutionBudget": "Lap ngan sach thuc hien",
+  "estStandardCompletion": "Ty le gia von uoc tinh tieu chuan",
+  "totalBudget": "Tong ngan sach",
+  "budgetLegendPlan": "Ke hoach thuc hien",
+  "budgetLegendActual": "Thuc te (ty le thuc hien)"
+}

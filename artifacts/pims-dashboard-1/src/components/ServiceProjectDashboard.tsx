@@ -7,10 +7,10 @@ import { Download, FileSpreadsheet, Upload, RefreshCw } from "lucide-react";
 import { downloadProjectDetailTemplate, parseProjectDetailWorkbook, ExcelParseError } from "../lib/projectDetailExcel";
 import { MiniBar } from "./ProjectDashboard";
 import { Donut } from "./charts";
-import { SaleProfitTab } from "./SaleProfitTab";
-import { ServiceOutsourcingTab } from "./ServiceOutsourcingTab";
+import { SaleCostTab } from "./SaleCostTab";
+import { OutsourcingTab } from "./OutsourcingTab";
 import { ServiceCashflowTab } from "./ServiceCashflowTab";
-import { ServiceBudgetTab } from "./ServiceBudgetTab";
+import { ServiceReportTab } from "./ServiceReportTab";
 import { ProjectDataEntryTab } from "./ProjectDataEntryTab";
 import { PimsvinaSyncPreviewModal, type PimsvinaPreviewData } from "./PimsvinaSyncPreviewModal";
 import { useProjectDetail, getGetProjectdetailQueryKey, fmtPct, ratioPct } from "../lib/projectDetailData";
@@ -20,14 +20,15 @@ import { useDashboardFilters } from "../lib/dashboardFilters";
 import { CardHeader, rateColor } from "./OverviewTab";
 import { chartTheme } from "../lib/chartTheme";
 import { cardStyle, sectionTitle, emptyNote, INK_NAVY, INK_BODY, INK_SECONDARY, INK_MUTED, CARD_BORDER, POINT_BLUE, DIVIDER, TABLE_HEADER_BG, MUTED_HINT, SUCCESS_GREEN, DISABLED_GRAY } from "../lib/uiTokens";
+import { ProjectContextBar } from "./ProjectContextBar";
 
-const TABS = ["Overview", "Sale & Profit", "Budget Execution", "Outsourcing", "Cashflow", "Data entry"];
+const TABS = ["Overview", "Report", "Sale & Cost", "Outsourcing", "Cashflow", "Data entry"];
 
 /** tab id → fully-qualified i18next key (may reference the shared "common" namespace) */
 const TAB_LABEL_KEYS: Record<string, string> = {
   Overview: "common:overview",
-  "Sale & Profit": "common:revenue",
-  "Budget Execution": "serviceProjectDashboard:budgetExecutionTab",
+  Report: "serviceProjectDashboard:reportTab",
+  "Sale & Cost": "serviceProjectDashboard:saleCostTab",
   Outsourcing: "common:outsourcing",
   Cashflow: "serviceProjectDashboard:cashLabel",
   "Data entry": "serviceProjectDashboard:dataEntryTab",
@@ -148,7 +149,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
     setExcelMsg(null);
     setExcelMsgIsSuccess(false);
     try {
-      await downloadProjectDetailTemplate(projectName, detail, fxRates.VND);
+      await downloadProjectDetailTemplate(projectName, detail, fxRates.VND, "용역");
     } catch (err) {
       console.error("Excel template download failed", err);
       setExcelMsg(t("serviceProjectDashboard:templateDownloadFailed"));
@@ -444,34 +445,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
         />
       )}
 
-      {/* Project info bar — always visible */}
-      <div style={{ ...cardStyle, margin: "8px 10px 0", display: "flex", gap: "10px", alignItems: "stretch" }}>
-        <div style={{ flex: 1 }}>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 0", fontSize: "12px", color: INK_NAVY }}>
-            <span style={{ fontWeight: 700, paddingRight: "14px" }}>
-              Project : {projectName}
-              {siteCode && <span style={{ fontWeight: 400, color: INK_BODY }}> [{siteCode}]</span>}
-            </span>
-            {ov?.asOfMonth && (
-              <span style={{ borderLeft: `1px solid ${CARD_BORDER}`, padding: "0 14px" }}>
-                {t("serviceProjectDashboard:asOfMonth", { year: ov.asOfMonth.slice(0, 4), month: Number(ov.asOfMonth.slice(5, 7)) })}
-              </span>
-            )}
-            {ov?.client && (
-              <span style={{ borderLeft: `1px solid ${CARD_BORDER}`, padding: "0 14px" }}>{t("serviceProjectDashboard:clientLabel")} : {ov.client}</span>
-            )}
-            {periodLabel && (
-              <span style={{ borderLeft: `1px solid ${CARD_BORDER}`, padding: "0 14px" }}>{t("serviceProjectDashboard:periodLabel")} : {periodLabel}</span>
-            )}
-            {ov?.scope && (
-              <span style={{ borderLeft: `1px solid ${CARD_BORDER}`, padding: "0 14px" }}>{t("serviceProjectDashboard:scopeLabel")} : {ov.scope}</span>
-            )}
-            <span style={{ borderLeft: `1px solid ${CARD_BORDER}`, padding: "0 14px" }}>
-              {t("common:contractAmount")} : {contractAmount != null ? `${formatMoney(contractAmount, currency, unitOn)} ${moneyUnitLabel(currency, unitOn)}` : "-"}
-            </span>
-          </div>
-        </div>
-      </div>
+      <ProjectContextBar projectName={siteCode ? `${projectName} [${siteCode}]` : projectName} businessType="용역" client={ov?.client} period={periodLabel} primaryValue={ov?.scope} contractValue={contractAmount != null ? `${formatMoney(contractAmount, currency, unitOn)} ${moneyUnitLabel(currency, unitOn)}` : "-"} referenceMonth={ov?.asOfMonth} isClosed={ov?.isClosed} labels={{ client: t("serviceProjectDashboard:clientLabel"), period: t("serviceProjectDashboard:periodLabel"), primary: t("serviceProjectDashboard:scopeLabel"), contract: t("common:contractAmount"), referenceMonth: t("common:baseMonth"), closed: t("common:closed"), ongoing: t("common:inProgress") }} />
 
       {/* Horizontal tab bar */}
       <div
@@ -513,8 +487,15 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
 
       {/* Body */}
       <div style={{ display: "flex", flexDirection: "column", gap: "8px", padding: "10px" }}>
-        {activeTab === "Sale & Profit" ? (
-          <SaleProfitTab
+        {activeTab === "Report" ? (
+          <ServiceReportTab
+            projectName={projectName}
+            referenceYear={toYear}
+            referenceMonth={Number(toMonth)}
+            krwPerUsd={siteRates.KRW}
+          />
+        ) : activeTab === "Sale & Cost" ? (
+          <SaleCostTab
             projectName={projectName}
             fromYear={fromYear}
             fromMonth={Number(fromMonth)}
@@ -522,9 +503,20 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
               24,
               Math.max(1, (toYear - fromYear) * 12 + (Number(toMonth) - Number(fromMonth)) + 1),
             )}
+            toYear={toYear}
+            toMonth={Number(toMonth)}
+            showCostRatioLine={false}
+            showBudgetExecution={false}
+            showRevenueCumulativeLine={false}
+            splitRevenueForecast
+            serviceCostBreakdown
           />
         ) : activeTab === "Outsourcing" ? (
-          <ServiceOutsourcingTab projectName={projectName} />
+          <OutsourcingTab
+            projectName={projectName}
+            referenceYear={toYear}
+            referenceMonth={Number(toMonth)}
+          />
         ) : activeTab === "Cashflow" ? (
           <ServiceCashflowTab
             projectName={projectName}
@@ -534,9 +526,9 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
               24,
               Math.max(1, (toYear - fromYear) * 12 + (Number(toMonth) - Number(fromMonth)) + 1),
             )}
+            toYear={toYear}
+            toMonth={Number(toMonth)}
           />
-        ) : activeTab === "Budget Execution" ? (
-          <ServiceBudgetTab projectName={projectName} />
         ) : activeTab === "Data entry" ? (
           <>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "8px" }}>

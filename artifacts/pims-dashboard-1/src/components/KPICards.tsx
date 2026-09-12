@@ -12,8 +12,8 @@ const STRIP_ICONS = [TrendingUp, DollarSign, BarChart2, Activity];
 const KPI_TITLE_KEY: Record<string, string> = {
   "당월 누적 매출":     "ytdRevenue",
   "당월 누적 영업이익": "ytdOperatingProfit",
-  "연간 합계 매출":     "fullYearRevenue",
-  "연간 합계 영업이익": "fullYearOperatingProfit",
+  "연간 매출":          "fullYearRevenue",
+  "연간 영업이익":      "fullYearOperatingProfit",
 };
 
 interface KPICardProps {
@@ -115,7 +115,7 @@ function KPICard({
     const diff = planN != null && actualN != null ? actualN - planN : null;
     const diffText = diff != null ? `${diff > 0 ? "+" : diff < 0 ? "-" : ""}${Math.abs(diff).toLocaleString()}` : "-";
     const diffColor = diff != null && diff >= 0 ? "#2e9e5b" : "#e05252";
-    const isMonthly = title.startsWith("당월 누적");
+    const isMonthly = title.startsWith("당월 ");
 
     /* 예시1 (첨부 이미지와 동일): 제목+기간 배지 · 링 게이지+값 · 계획 대비/진척 상태 */
     if (isGaugeRing) {
@@ -406,9 +406,9 @@ export function KPICards() {
   const { t: tc } = useTranslation("common");
   /** 당월 누적: "1~M월" */
   const ytdPeriod = derived
-    ? derived.month > 1
-      ? tc("periodRange", { from: 1, to: derived.month })
-      : tc("periodSingle", { month: derived.month })
+    ? derived.managementMonth > 1
+      ? tc("periodRange", { from: 1, to: derived.managementMonth })
+      : tc("periodSingle", { month: derived.managementMonth })
     : undefined;
   /** 연간 누적: "1~12월" */
   const fullYearPeriod = derived ? tc("periodRange", { from: 1, to: 12 }) : undefined;
@@ -434,7 +434,7 @@ export function KPICards() {
           compact={unitIndex === 1}
           cardIndex={i}
           stripColor={isStrip ? stripColors[i % 4] : undefined}
-          periodLabel={kpi.title.startsWith("당월 누적") ? ytdPeriod : fullYearPeriod}
+          periodLabel={i < 2 ? ytdPeriod : fullYearPeriod}
           unitLabel={derived?.unitLabel}
         />
       ))}

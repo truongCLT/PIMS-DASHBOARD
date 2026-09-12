@@ -1,17 +1,21 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  useListSalescostSites,
-  getListSalescostSitesQueryKey,
   useListMgmtreportProjects,
   getListMgmtreportProjectsQueryKey,
 } from "@workspace/api-client-react";
 import { useDashboardData, type ProfitRow, REPORT_YEAR } from "../lib/mgmtreportData";
 import { useDashboardFilters, makeConverter } from "../lib/dashboardFilters";
 import { classifyMrProject } from "../data/projects";
-import { chartTheme } from "../lib/chartTheme";
+import { filterProfitProjects } from "../lib/mgmtreportReconciliation";
+import { chartTheme, chartTypography } from "../lib/chartTheme";
 import { INK_BODY, INK_MUTED, POINT_BLUE, CARD_BORDER, emptyNote, ACHIEVE_RED } from "../lib/uiTokens";
 import { useTheme } from "../lib/theme";
+import { ChartTooltipPanel } from "@workspace/aqua-glass/components/ui/chart";
+import {
+  Empty,
+  EmptyDescription,
+} from "@workspace/aqua-glass/components/ui/empty";
 import { DetailModal, DetailDataTable } from "./DetailModal";
 
 /** "N월" → 0-based 월 인덱스. 월 형식 아니면 null. */
@@ -30,12 +34,9 @@ const ORANGE = chartTheme.sgaOrange;
 /* 대우 예시1 스타일 색상 (첨부 이미지) */
 const DW_OP  = chartTheme.dwOp;
 const DW_SGA = chartTheme.dwSga;
-const DW_NON = chartTheme.dwNon;
-const DW_POS = chartTheme.dwPos;
-const DW_NEG = chartTheme.dwNeg;
 
-const Y0   = 400; // bottom of plot area
-const YTOP = 20;
+const Y0   = 414; // 매출 차트의 하단 플롯 기준선에 맞춤
+const YTOP = 40;  // 매출 차트의 상단 그리드 시작 위치에 맞춤
 
 function niceStep(raw: number): number {
   const mag = Math.pow(10, Math.floor(Math.log10(Math.max(raw, 1))));
@@ -46,23 +47,20 @@ function niceStep(raw: number): number {
   return 10 * mag;
 }
 
-/** 툴팁 한 줄 */
-interface TipLine { label: string; value: string; color: string }
-
 export function ProfitChart() {
   const { t } = useTranslation(["profitChart", "common"]);
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [drillRow, setDrillRow] = useState<ProfitRow | null>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const chartAreaRef = useRef<HTMLDivElement>(null);
+  const [cardContentWidth, setCardContentWidth] = useState(600);
+  const [chartAreaSize, setChartAreaSize] = useState({ width: 600, height: 315 });
 
-  /* SVG 실제 너비를 측정해 viewBox(1000) 기준 역스케일 계산
-     → non-daewoo 폰트를 SalesChart CSS px 기준(11px)에 맞춤 */
-  const svgRef = useRef<SVGSVGElement>(null);
-  const [svgWidth, setSvgWidth] = useState(600);
   useEffect(() => {
-    const el = svgRef.current;
+    const el = cardRef.current;
     if (!el) return;
-    const ro = new ResizeObserver(([e]) => setSvgWidth(e.contentRect.width));
+    const ro = new ResizeObserver(([entry]) => setCardContentWidth(entry.contentRect.width));
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
@@ -72,78 +70,42 @@ export function ProfitChart() {
   const { unitIndex, currency, fxRates, project, division, statusFilter } = filters;
   const convert = makeConverter(currency, unitIndex, fxRates);
 
-  /* ── 현장별 매출/원가 데이터 프리패치 ── */
-  const revParams = { year: REPORT_YEAR, metric: "revenue" as const };
-  const cogsParams = { year: REPORT_YEAR, metric: "cogs" as const };
-  const revQuery = useListSalescostSites(revParams, {
-    query: { queryKey: getListSalescostSitesQueryKey(revParams) },
-  });
-  const cogsQuery = useListSalescostSites(cogsParams, {
-    query: { queryKey: getListSalescostSitesQueryKey(cogsParams) },
-  });
-
-  /* ── siteCode 스코프 필터 (SalesChart와 동일 로직) ── */
+  /* ── 경영보고 프로젝트별 월 매출/원가 ── */
   const projectSelected = project !== "All";
   const divisionSelected = !projectSelected && division != null;
-  const needProjectsList = projectSelected || divisionSelected;
   const projectsQuery = useListMgmtreportProjects(
     { year: REPORT_YEAR },
     {
       query: {
         queryKey: getListMgmtreportProjectsQueryKey({ year: REPORT_YEAR }),
-        enabled: needProjectsList,
       },
     },
   );
-  const scopedSiteCodes = useMemo<Set<string> | null>(() => {
-    if (!needProjectsList) return null;
-    const projects = projectsQuery.data?.projects ?? [];
-    if (projectSelected) {
-      const p = projects.find((x) => x.name === project);
-      if (!p?.siteCode) return new Set();
-      return new Set([p.siteCode]);
-    }
-    if (divisionSelected && division) {
-      const codes = projects
-        .filter(
-          (p) =>
-            !p.isGroup &&
-            classifyMrProject(p.name) === division &&
-            (statusFilter == null || (p.status ?? "ongoing") === statusFilter) &&
-            p.siteCode != null,
-        )
-        .map((p) => p.siteCode as string);
-      return new Set(codes);
-    }
-    return null;
-  }, [needProjectsList, projectSelected, divisionSelected, project, division, statusFilter, projectsQuery.data]);
 
   /* ── 드릴다운 rows 계산 ── */
   const drillMonthIdx = drillRow ? extractMonthIdx(drillRow.m) : null;
   const drillSiteRows = useMemo(() => {
     if (drillMonthIdx == null) return [];
-    const revSites = revQuery.data?.sites ?? [];
-    const cogsSites = cogsQuery.data?.sites ?? [];
-    // 매출 또는 원가가 있는 모든 현장 코드의 합집합 (cost-only 현장도 포함)
-    const revMap = new Map(revSites.map((s) => [s.code, s]));
-    const cogsMap = new Map(cogsSites.map((s) => [s.code, s]));
-    const allCodes = new Set([...revMap.keys(), ...cogsMap.keys()]);
-    // 스코프 적용
-    const targetCodes = scopedSiteCodes == null
-      ? allCodes
-      : new Set([...allCodes].filter((code) => scopedSiteCodes.has(code)));
+    const projects = filterProfitProjects(
+      projectsQuery.data?.projects ?? [],
+      projectSelected
+        ? { projectName: project }
+        : {
+            division: divisionSelected ? division : null,
+            status: divisionSelected ? statusFilter : null,
+          },
+      classifyMrProject,
+    );
 
-    return [...targetCodes]
-      .map((code) => {
-        const rs = revMap.get(code);
-        const cs = cogsMap.get(code);
-        const rev = convert(rs?.months[drillMonthIdx] ?? 0);
-        const cogs = convert(cs?.months[drillMonthIdx] ?? 0);
+    return projects
+      .map((p) => {
+        const rev = convert(p.revenueActual[drillMonthIdx] ?? 0);
+        const cogs = convert(p.cogsActual[drillMonthIdx] ?? 0);
         const gross = rev - cogs;
         return {
-          name: rs?.name ?? cs?.name ?? code,
-          category: rs?.category ?? cs?.category ?? "-",
-          bizType: rs?.bizType ?? cs?.bizType ?? "-",
+          name: p.name,
+          category: p.companyLabel ?? "-",
+          bizType: p.businessType ?? classifyMrProject(p.name),
           revenue: Math.round(rev),
           cogs: Math.round(cogs),
           gross: Math.round(gross),
@@ -151,20 +113,45 @@ export function ProfitChart() {
       })
       .filter((r) => r.revenue !== 0 || r.cogs !== 0)
       .sort((a, b) => b.gross - a.gross);
-  }, [drillMonthIdx, revQuery.data, cogsQuery.data, scopedSiteCodes, convert]);
+  }, [
+    drillMonthIdx,
+    projectsQuery.data,
+    projectSelected,
+    project,
+    divisionSelected,
+    division,
+    statusFilter,
+    convert,
+  ]);
 
   const drillGrossTotal = drillSiteRows.reduce((acc, r) => acc + r.gross, 0);
+  const drillRevenueTotal = drillSiteRows.reduce((acc, r) => acc + r.revenue, 0);
+  const drillCogsTotal = drillSiteRows.reduce((acc, r) => acc + r.cogs, 0);
+  const drillGrossDifference = drillRow == null ? 0 : drillGrossTotal - drillRow.total;
   const drillRowsWithShare = drillSiteRows.map((r) => ({
     ...r,
     share: drillGrossTotal !== 0 ? `${((r.gross / drillGrossTotal) * 100).toFixed(1)}%` : "-",
   }));
 
-  const drillIsLoading =
-    revQuery.isLoading || cogsQuery.isLoading || (needProjectsList && projectsQuery.isLoading);
+  const drillIsLoading = projectsQuery.isLoading;
   const { theme } = useTheme();
   const daewoo = theme.charts?.profitVariant === "daewoo"; // 대우 예시1 스타일
   const compact     = unitIndex === 1;                 // 단위 기반 폰트 축소
   const data = derived?.profitData ?? [];
+
+  useEffect(() => {
+    const el = chartAreaRef.current;
+    if (!el || data.length === 0) return;
+    const updateSize = (width: number, height: number) => {
+      if (width > 0 && height > 0) setChartAreaSize({ width, height });
+    };
+    updateSize(el.clientWidth, el.clientHeight);
+    const ro = new ResizeObserver(([entry]) => {
+      updateSize(entry.contentRect.width, entry.contentRect.height);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [data.length, daewoo]);
 
   // ≥6개 버킷이면 경상이익·판관비를 그래프에서 숨기고 툴팁에만 표시
   const isCondensed = data.length >= 6;
@@ -178,17 +165,31 @@ export function ProfitChart() {
     return daewoo ? scaled : Math.min(scaled, 14);
   };
 
-  /* non-daewoo: SVG viewBox(1000) 역스케일로 SalesChart CSS px에 정확히 매핑
-     axisFs  = Y축 숫자  (SalesChart 기준 compact?9:11 px)
-     valueFs = 바 위 숫자 (SalesChart 기준 compact?9.5:11 px) */
-  const _inv   = 1000 / Math.max(svgWidth, 1);
-  const axisFs  = 11 * _inv;   // Y축·비율 라벨 → 항상 11px
-  const valueFs = 12 * _inv;   // 바 위 실적 숫자 → 항상 12px
+  /*
+   * 대우형 손익 차트는 SVG를 카드 높이에 맞춰 균일 확대한다.
+   * 확대 후 보이는 가로 범위 안에 12개월을 다시 배치해 좌우 잘림을 방지한다.
+   */
+  const daewooScale = Math.max(
+    chartAreaSize.width / 1000,
+    chartAreaSize.height / 530,
+  );
+  const renderScale = daewoo ? daewooScale : cardContentWidth / 1000;
+  const _inv = 1 / Math.max(renderScale, 0.001);
+  const axisFs  = chartTypography.axis * _inv;
+  const monthFs = chartTypography.month * _inv;
+  const valueFs = chartTypography.value * _inv;
+  const rateFs  = chartTypography.rate * _inv;
 
-  const plotLeft  = daewoo ? (compact ? 160 : 115) : compact ? 130 : 80;
-  const plotRight = 950;
+  const visibleSvgWidth = daewoo
+    ? chartAreaSize.width / Math.max(daewooScale, 0.001)
+    : 1000;
+  const visibleLeft = (1000 - visibleSvgWidth) / 2;
+  const plotLeft = daewoo
+    ? visibleLeft + (compact ? 90 : 70)
+    : compact ? 130 : 80;
+  const plotRight = daewoo ? 1000 - visibleLeft - 24 : 950;
   const slot = data.length > 0 ? (plotRight - plotLeft) / data.length : 0;
-  const barW = 58;
+  const barW = daewoo ? Math.min(42, Math.max(18, slot * 0.58)) : 58;
 
   const rawMax = Math.max(
     1,
@@ -208,53 +209,19 @@ export function ProfitChart() {
   for (let v = minVal; v <= maxVal + 1e-9; v += step) gridVals.push(v);
   const yZero = yv(0);
 
-  // ── 툴팁 렌더링 ──────────────────────────────────────────────────
-  const TW = 460;   // SVG 단위 툴팁 너비
-  const TH = 175;   // SVG 단위 툴팁 높이
-  const TF = 28;    // 툴팁 내부 폰트 크기
-
-  function renderTooltip(idx: number) {
-    const d   = data[idx];
-    const cx  = plotLeft + slot * (idx + 0.5);
-    // 가장자리 클램핑
-    const tx  = Math.max(plotLeft, Math.min(cx - TW / 2, plotRight - TW));
-    const ty  = YTOP + 2;
-
-    const lines: TipLine[] = [
-      { label: t("common:operatingProfit"),             value: d.op.toLocaleString("ko-KR"),                                       color: NAVY   },
-      { label: t("profitChart:ordinaryProfit"),         value: `${d.ord.toLocaleString("ko-KR")} (${d.ordPct})`,                   color: GREEN  },
-      { label: t("common:sga"),                         value: `${d.sga} (${d.sgaPct})`,                                           color: ORANGE },
-      { label: t("profitChart:nonOperatingProfitLoss"), value: `${d.non >= 0 ? "+" : ""}${d.non.toLocaleString("ko-KR")}`,         color: GREEN  },
-    ];
-
-    return (
-      <g key="tooltip" style={{ pointerEvents: "none" }}>
-        {/* 배경 */}
-        <rect
-          x={tx} y={ty} width={TW} height={TH}
-          rx={5} ry={5}
-          fill="white"
-          stroke={chartTheme.neutralStroke}
-          strokeWidth="1.5"
-          filter="url(#tip-shadow)"
-        />
-        {/* 월 헤더 */}
-        <text x={tx + TW / 2} y={ty + 26} textAnchor="middle" fontSize={TF} fontWeight="700" fill={chartTheme.titleNavy}>
-          {d.m}
-        </text>
-        {/* 항목 줄 */}
-        {lines.map((l, i) => (
-          <g key={l.label}>
-            <text x={tx + 18}       y={ty + 56 + i * (TF + 3)} fontSize={TF} fill={chartTheme.axisText}>{l.label}</text>
-            <text x={tx + TW - 18}  y={ty + 56 + i * (TF + 3)} fontSize={TF} fontWeight="600" fill={l.color} textAnchor="end">{l.value}</text>
-          </g>
-        ))}
-      </g>
-    );
-  }
+  const hoveredRow = hoveredIdx == null ? null : data[hoveredIdx];
+  const tooltipWidth = Math.max(0, Math.min(240, cardContentWidth - 16));
+  const tooltipCenter =
+    hoveredIdx == null || data.length === 0
+      ? 0
+      : cardContentWidth * ((hoveredIdx + 0.5) / data.length);
+  const tooltipLeft = Math.max(
+    8,
+    Math.min(tooltipCenter - tooltipWidth / 2, cardContentWidth - tooltipWidth - 8),
+  );
 
   return (
-    <div style={{
+    <div ref={cardRef} style={{
       backgroundColor: "#fff",
       border: `1px solid ${CARD_BORDER}`,
       borderRadius: "6px",
@@ -263,15 +230,16 @@ export function ProfitChart() {
       boxSizing: "border-box",
       display: "flex",
       flexDirection: "column",
+      fontFamily: chartTypography.fontFamily,
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
-          <span style={{ fontSize: "12px", fontWeight: "600", color: chartTheme.titleNavy }}>{t("profitChart:profitLossStatus")}</span>
-          {derived && <span style={{ fontSize: "10px", color: INK_MUTED }}>{t("common:unit")}: {derived.unitLabel}</span>}
+          <span style={{ fontSize: `${chartTypography.title}px`, fontWeight: "600", color: chartTheme.titleNavy }}>{t("profitChart:profitLossStatus")}</span>
+          {derived && <span style={{ fontSize: `${chartTypography.unit}px`, color: INK_MUTED }}>{t("common:unit")}: {derived.unitLabel}</span>}
         </div>
         <button
           onClick={() => setDetailOpen(true)}
-          style={{ fontSize: "11px", color: POINT_BLUE, background: "none", border: "none", cursor: "pointer" }}
+          style={{ fontSize: `${chartTypography.action}px`, color: POINT_BLUE, background: "none", border: "none", cursor: "pointer" }}
         >
           {t("profitChart:viewDetails")}
         </button>
@@ -283,39 +251,34 @@ export function ProfitChart() {
           {[
             { c: DW_OP, l: t("common:operatingProfit"), round: false },
             { c: DW_SGA, l: t("common:sga"), round: false },
-            { c: DW_NON, l: t("profitChart:nonOperatingProfitLoss"), round: true },
           ].map((it) => (
             <div key={it.l} style={{ display: "flex", alignItems: "center", gap: "4px" }}>
               <div style={{ width: it.round ? "10px" : "13px", height: it.round ? "10px" : "11px", backgroundColor: it.c, borderRadius: it.round ? "50%" : "3px" }} />
-              <span style={{ fontSize: "11px", color: INK_BODY, fontWeight: 600 }}>{it.l}</span>
+              <span style={{ fontSize: `${chartTypography.legend}px`, color: INK_BODY, fontWeight: 600 }}>{it.l}</span>
             </div>
           ))}
-          <span style={{ fontSize: "11px", color: chartTheme.subLabel, fontWeight: 600 }}>{t("profitChart:barTotalGross")}</span>
+          <span style={{ fontSize: `${chartTypography.legend}px`, color: chartTheme.subLabel, fontWeight: 600 }}>{t("profitChart:barTotalGross")}</span>
         </div>
       )}
 
       {data.length === 0 ? (
-        <div style={{ height: "200px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", color: INK_MUTED, textAlign: "center", padding: "0 20px" }}>
-          {isError
-            ? t("profitChart:dataLoadFailed")
-            : derived?.profitNote ?? t("profitChart:dataLoading")}
-        </div>
+        <Empty className="min-h-40 rounded-none p-5">
+          <EmptyDescription className="text-xs">
+            {isError
+              ? t("profitChart:dataLoadFailed")
+              : derived?.profitNote ?? t("profitChart:dataLoading")}
+          </EmptyDescription>
+        </Empty>
       ) : (
+      <div ref={chartAreaRef} style={{ position: "relative", width: "100%", flex: daewoo ? 1 : undefined, minHeight: daewoo ? 0 : undefined }}>
       <svg
-        ref={svgRef}
         viewBox={daewoo ? "0 0 1000 530" : "0 0 1000 445"}
         style={daewoo
-          ? { width: "100%", flex: 1, minHeight: 0, display: "block" }
-          : { width: "100%", display: "block" }}
-        preserveAspectRatio={daewoo ? "xMidYMid meet" : undefined}
+          ? { width: "100%", height: "100%", minHeight: 0, display: "block", fontFamily: chartTypography.fontFamily }
+          : { width: "100%", display: "block", fontFamily: chartTypography.fontFamily }}
+        preserveAspectRatio={daewoo ? "xMidYMid slice" : undefined}
         onMouseLeave={() => setHoveredIdx(null)}
       >
-        <defs>
-          <filter id="tip-shadow" x="-5%" y="-10%" width="115%" height="130%">
-            <feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="#00000022" />
-          </filter>
-        </defs>
-
         {/* Grid lines + y labels */}
         {gridVals.map((v) => (
           <g key={v}>
@@ -343,13 +306,15 @@ export function ProfitChart() {
           const yOrd     = yv(d.ord);
           const brX      = bx + barW + 7;
           const labelTopY = Math.min(yv(nonTop), yGross, yOrd);
+          const forecastFill = d.isForecast ? "#fff" : undefined;
+          const forecastDash = d.isForecast ? "5 3" : undefined;
 
           if (daewoo) {
-            /* ── 대우 예시1: 영업이익(진한색)+판관비(연한 캡) = 매출이익 · 영업외손익은 상단 고정 칩 행 ── */
-            const chipText = `${d.non >= 0 ? "+" : ""}${d.non.toLocaleString("ko-KR")}`;
-            const chipColor = d.non >= 0 ? DW_POS : DW_NEG;
-            const chipBg = d.non >= 0 ? chartTheme.chipPosBg : chartTheme.chipNegBg;
-            const chipFs = fs(13);
+            /* ── 대우 예시1: 영업이익(진한색)+판관비(연한 캡) = 매출이익 ── */
+            const chipText = d.op.toLocaleString("ko-KR");
+            const chipColor = DW_OP;
+            const chipBg = chartTheme.opRateBg;
+            const chipFs = valueFs;
             const chipH = chipFs + 12;
             const chipW = Math.max(56, chipText.length * chipFs * 0.62 + 22);
             const capTop = yGross;               // 막대 전체(매출이익) 상단
@@ -357,20 +322,40 @@ export function ProfitChart() {
             return (
               <g key={d.m}>
                 {/* 영업이익: 0 → op (음수면 0선 아래로) */}
-                <rect x={bx} y={Math.min(yv(0), opTop)} width={barW} height={Math.abs(opTop - yv(0))} rx={7} fill={DW_OP} />
+                <rect
+                  x={bx}
+                  y={Math.min(yv(0), opTop)}
+                  width={barW}
+                  height={Math.abs(opTop - yv(0))}
+                  rx={7}
+                  fill={forecastFill ?? DW_OP}
+                  stroke={d.isForecast ? DW_OP : undefined}
+                  strokeWidth={d.isForecast ? 1.8 : 0}
+                  strokeDasharray={forecastDash}
+                />
                 {/* 판관비 캡: op → gross */}
-                <rect x={bx} y={Math.min(capTop, opTop)} width={barW} height={Math.abs(opTop - capTop)} rx={7} fill={DW_SGA} />
+                <rect
+                  x={bx}
+                  y={Math.min(capTop, opTop)}
+                  width={barW}
+                  height={Math.abs(opTop - capTop)}
+                  rx={7}
+                  fill={forecastFill ?? DW_SGA}
+                  stroke={d.isForecast ? DW_SGA : undefined}
+                  strokeWidth={d.isForecast ? 1.8 : 0}
+                  strokeDasharray={forecastDash}
+                />
                 {/* 매출이익 값 + 비율 (막대 바로 위) */}
                 <text x={cx} y={Math.min(capTop, opTop) - 34} textAnchor="middle" fontSize={valueFs} fontWeight="700" fill={chartTheme.valueFill}>{gross.toLocaleString("ko-KR")}</text>
-                <text x={cx} y={Math.min(capTop, opTop) - 10} textAnchor="middle" fontSize={axisFs} fill={chartTheme.axisSmall}>{d.totalPct}</text>
+                <text x={cx} y={Math.min(capTop, opTop) - 10} textAnchor="middle" fontSize={rateFs} fontWeight="700" fill={chartTheme.axisSmall}>{d.totalPct}</text>
                 {/* 월 라벨 */}
-                <text x={cx} y={Y0 + 34} textAnchor="middle" fontSize={fs(13)} fontWeight="600" fill={chartTheme.axisText}>{d.m}</text>
-                {/* 영업외손익 칩 — 월 라벨 하단 */}
+                <text x={cx} y={Y0 + 34} textAnchor="middle" fontSize={monthFs} fontWeight="600" fill={chartTheme.axisText}>{d.m}</text>
+                {/* 영업이익 칩 — 월 라벨 하단 */}
                 <rect x={cx - chipW / 2} y={Y0 + 46} width={chipW} height={chipH} rx={chipH / 2} fill={chipBg} />
                 <text x={cx} y={Y0 + 46 + chipH / 2} textAnchor="middle" dominantBaseline="central" fontSize={chipFs} fontWeight="700" fill={chipColor}>{chipText}</text>
-                {/* 영업이익률 칩 — 영업외손익 칩 하단 */}
+                {/* 영업이익률 칩 — 영업이익 칩 하단 */}
                 {(() => {
-                  const opFs = fs(11);
+                  const opFs = rateFs;
                   const opH  = opFs + 10;
                   const opW  = Math.max(48, d.opPct.length * opFs * 0.62 + 16);
                   const opY  = Y0 + 46 + chipH + 6;
@@ -388,7 +373,16 @@ export function ProfitChart() {
           return (
             <g key={d.m}>
               {/* 영업이익 (navy, from zero) */}
-              <rect x={bx} y={yOpTop} width={barW} height={Math.max(yOpBot - yOpTop, 0)} fill={NAVY} />
+              <rect
+                x={bx}
+                y={yOpTop}
+                width={barW}
+                height={Math.max(yOpBot - yOpTop, 0)}
+                fill={forecastFill ?? NAVY}
+                stroke={d.isForecast ? NAVY : undefined}
+                strokeWidth={d.isForecast ? 1.8 : 0}
+                strokeDasharray={forecastDash}
+              />
               {yOpBot - yOpTop > 44 && (
                 <text x={cx} y={(yOpTop + yOpBot) / 2 + 7} textAnchor="middle" fontSize={valueFs} fontWeight="700" fill="#fff">{d.op.toLocaleString("ko-KR")}</text>
               )}
@@ -397,11 +391,23 @@ export function ProfitChart() {
               <rect
                 x={bx} y={Math.min(yGross, yOpTop)}
                 width={barW} height={Math.abs(yOpTop - yGross)}
-                fill={LIGHT} stroke={NAVY} strokeWidth="1.5"
+                fill={forecastFill ?? LIGHT}
+                stroke={NAVY}
+                strokeWidth="1.5"
+                strokeDasharray={forecastDash}
               />
 
               {/* 영업외손익 (green segment) */}
-              <rect x={bx} y={yv(nonTop)} width={barW} height={Math.max(yv(nonBot) - yv(nonTop), 0)} fill={GREEN} />
+              <rect
+                x={bx}
+                y={yv(nonTop)}
+                width={barW}
+                height={Math.max(yv(nonBot) - yv(nonTop), 0)}
+                fill={forecastFill ?? GREEN}
+                stroke={d.isForecast ? GREEN : undefined}
+                strokeWidth={d.isForecast ? 1.8 : 0}
+                strokeDasharray={forecastDash}
+              />
               {Math.abs(yv(nonBot) - yv(nonTop)) > 22 && (
                 <text x={cx} y={(yv(nonTop) + yv(nonBot)) / 2 + 7} textAnchor="middle" fontSize={valueFs} fontWeight="700" fill="#fff">
                   {d.non >= 0 ? "+" : ""}{d.non.toLocaleString("ko-KR")}
@@ -410,7 +416,7 @@ export function ProfitChart() {
 
               {/* 매출이익 label above bar */}
               <text x={cx} y={labelTopY - 32} textAnchor="middle" fontSize={valueFs} fontWeight="700" fill={NAVY}>{gross.toLocaleString("ko-KR")}</text>
-              <text x={cx} y={labelTopY - 10} textAnchor="middle" fontSize={axisFs} fontWeight="600" fill={NAVY}>({d.totalPct})</text>
+              <text x={cx} y={labelTopY - 10} textAnchor="middle" fontSize={rateFs} fontWeight="700" fill={NAVY}>({d.totalPct})</text>
 
               {/* 판관비 bracket — 6개 미만일 때만 표시 */}
               {!isCondensed && (
@@ -431,7 +437,7 @@ export function ProfitChart() {
               )}
 
               {/* Month label */}
-              <text x={cx} y={Y0 + 32} textAnchor="middle" fontSize={fs(17)} fontWeight="600" fill={chartTheme.axisText}>{d.m}</text>
+              <text x={cx} y={Y0 + 32} textAnchor="middle" fontSize={monthFs} fontWeight="600" fill={chartTheme.axisText}>{d.m}</text>
             </g>
           );
         })}
@@ -439,19 +445,19 @@ export function ProfitChart() {
         {/* zero baseline */}
         <line x1={plotLeft} y1={yZero} x2={plotRight} y2={yZero} stroke={chartTheme.refLine} strokeWidth={1.5} />
 
-        {/* 영업외손익·영업이익률 라벨 — 맨 왼쪽에 한 번씩만 */}
+        {/* 영업이익·영업이익률 라벨 — 맨 왼쪽에 한 번씩만 */}
         {daewoo && data.length > 0 && (() => {
-          const chipFs = fs(13);
+          const chipFs = valueFs;
           const chipH  = chipFs + 12;
-          const opFs   = fs(11);
+          const opFs   = rateFs;
           const opH    = opFs + 10;
           const opY    = Y0 + 46 + chipH + 6;
           return (
             <>
-              <text x={plotLeft - 8} y={Y0 + 46 + chipH / 2} textAnchor="end" dominantBaseline="central" fontSize={fs(9)} fill={chartTheme.axisSmall}>
-                {t("profitChart:nonOperatingProfitLoss")}
+              <text x={plotLeft - 8} y={Y0 + 46 + chipH / 2} textAnchor="end" dominantBaseline="central" fontSize={axisFs} fill={chartTheme.axisSmall}>
+                {t("common:operatingProfit")}
               </text>
-              <text x={plotLeft - 8} y={opY + opH / 2} textAnchor="end" dominantBaseline="central" fontSize={fs(9)} fill={chartTheme.axisSmall}>
+              <text x={plotLeft - 8} y={opY + opH / 2} textAnchor="end" dominantBaseline="central" fontSize={axisFs} fill={chartTheme.axisSmall}>
                 {t("profitChart:operatingMarginRate")}
               </text>
             </>
@@ -473,25 +479,57 @@ export function ProfitChart() {
           />
         ))}
 
-        {/* 툴팁 */}
-        {hoveredIdx != null && renderTooltip(hoveredIdx)}
       </svg>
+      {hoveredRow && (
+        <ChartTooltipPanel
+          title={`${hoveredRow.m} · ${hoveredRow.isForecast ? t("profitChart:forecast") : t("profitChart:actual")}`}
+          lines={[
+            { label: t("common:operatingProfit"), value: hoveredRow.op.toLocaleString("ko-KR"), color: NAVY },
+            { label: t("profitChart:ordinaryProfit"), value: `${hoveredRow.ord.toLocaleString("ko-KR")} (${hoveredRow.ordPct})`, color: GREEN },
+            { label: t("common:sga"), value: `${hoveredRow.sga} (${hoveredRow.sgaPct})`, color: ORANGE },
+            ...(!daewoo
+              ? [{
+                  label: t("profitChart:nonOperatingProfitLoss"),
+                  value: `${hoveredRow.non >= 0 ? "+" : ""}${hoveredRow.non.toLocaleString("ko-KR")}`,
+                  color: GREEN,
+                }]
+              : []),
+          ]}
+          style={{
+            position: "absolute",
+            top: "8px",
+            left: `${tooltipLeft}px`,
+            zIndex: 2,
+            width: `${tooltipWidth}px`,
+            maxWidth: "calc(100% - 16px)",
+          }}
+        />
+      )}
+      </div>
       )}
 
       {/* Legend (기존 스타일: 차트 아래) */}
       {!daewoo && (
       <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginTop: "6px", justifyContent: "center" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+          <div style={{ width: "14px", height: "11px", backgroundColor: NAVY, borderRadius: "2px" }} />
+          <span style={{ fontSize: `${chartTypography.legend}px`, color: INK_BODY }}>{t("profitChart:actual")}</span>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+          <div style={{ width: "14px", height: "11px", backgroundColor: "#fff", border: `1.5px dashed ${NAVY}`, borderRadius: "2px" }} />
+          <span style={{ fontSize: `${chartTypography.legend}px`, color: INK_BODY }}>{t("profitChart:forecast")}</span>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
           <div style={{ width: "14px", height: "11px", backgroundColor: LIGHT, border: `1.5px solid ${NAVY}`, borderRadius: "2px" }} />
-          <span style={{ fontSize: "11px", color: INK_BODY }}>{t("profitChart:sgaArea")}</span>
+          <span style={{ fontSize: `${chartTypography.legend}px`, color: INK_BODY }}>{t("profitChart:sgaArea")}</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
           <div style={{ width: "14px", height: "11px", backgroundColor: NAVY, borderRadius: "2px" }} />
-          <span style={{ fontSize: "11px", color: INK_BODY }}>{t("common:operatingProfit")}</span>
+          <span style={{ fontSize: `${chartTypography.legend}px`, color: INK_BODY }}>{t("common:operatingProfit")}</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
           <div style={{ width: "14px", height: "11px", backgroundColor: GREEN, borderRadius: "2px" }} />
-          <span style={{ fontSize: "11px", color: INK_BODY }}>{t("profitChart:nonOperatingProfitLoss")}</span>
+          <span style={{ fontSize: `${chartTypography.legend}px`, color: INK_BODY }}>{t("profitChart:nonOperatingProfitLoss")}</span>
         </div>
         {/* 6개 미만일 때만 판관비·경상이익 범례 표시 */}
         {!isCondensed && (
@@ -539,6 +577,12 @@ export function ProfitChart() {
           rowKey={(row) => String(row.m)}
           columns={[
             { key: "m", label: t("profitChart:month"), align: "left" },
+            {
+              key: "isForecast",
+              label: t("profitChart:actualForecastType"),
+              align: "center",
+              format: (value) => value ? t("profitChart:forecast") : t("profitChart:actual"),
+            },
             { key: "op", label: t("common:operatingProfit"), format: (_v, row) => `${row.op.toLocaleString()} (${row.opPct})` },
             { key: "non", label: t("profitChart:nonOperatingProfitLoss"), format: (_v, row) => `${row.non >= 0 ? "+" : ""}${row.non.toLocaleString()}` },
             { key: "ord", label: t("profitChart:ordinaryProfit"), format: (_v, row) => `${row.ord.toLocaleString()} (${row.ordPct})` },
@@ -564,28 +608,43 @@ export function ProfitChart() {
           <div style={{ ...emptyNote, padding: "28px 16px" }}>
             {t("profitChart:loadingSiteData")}
           </div>
-        ) : (revQuery.isError || cogsQuery.isError) ? (
+        ) : projectsQuery.isError ? (
           <div style={{ ...emptyNote, padding: "28px 16px", color: ACHIEVE_RED }}>
             {t("profitChart:dataLoadFailed")}
           </div>
         ) : drillRowsWithShare.length === 0 ? (
           <div style={{ ...emptyNote, padding: "28px 16px" }}>
-            {t("profitChart:noSiteData")}
+            {drillRow && drillRow.total !== 0
+              ? t("profitChart:siteDataNotReceived")
+              : t("profitChart:noSiteData")}
           </div>
         ) : (
-          <DetailDataTable
-            rowKey={(row) => row.name}
-            columns={[
-              { key: "name", label: t("profitChart:colSiteName"), align: "left" },
-              { key: "category", label: t("profitChart:colCategory"), align: "left" },
-              { key: "bizType", label: t("profitChart:colBizType"), align: "left" },
-              { key: "revenue", label: t("common:revenue"), align: "right", format: (v) => typeof v === "number" ? v.toLocaleString("ko-KR") : "-" },
-              { key: "cogs", label: t("common:cogs"), align: "right", format: (v) => typeof v === "number" ? v.toLocaleString("ko-KR") : "-" },
-              { key: "gross", label: t("common:grossProfit"), align: "right", format: (v) => typeof v === "number" ? v.toLocaleString("ko-KR") : "-" },
-              { key: "share", label: t("profitChart:colShare"), align: "right" },
-            ]}
-            rows={drillRowsWithShare}
-          />
+          <>
+            <DetailDataTable
+              rowKey={(row) => row.name}
+              columns={[
+                { key: "name", label: t("profitChart:colSiteName"), align: "left" },
+                { key: "category", label: t("profitChart:colCategory"), align: "left" },
+                { key: "bizType", label: t("profitChart:colBizType"), align: "left" },
+                { key: "revenue", label: t("common:revenue"), align: "right", format: (v) => typeof v === "number" ? v.toLocaleString("ko-KR") : "-" },
+                { key: "cogs", label: t("common:cogs"), align: "right", format: (v) => typeof v === "number" ? v.toLocaleString("ko-KR") : "-" },
+                { key: "gross", label: t("common:grossProfit"), align: "right", format: (v) => typeof v === "number" ? v.toLocaleString("ko-KR") : "-" },
+                { key: "share", label: t("profitChart:colShare"), align: "right" },
+              ]}
+              rows={drillRowsWithShare}
+              totalRow={{
+                revenue: drillRevenueTotal,
+                cogs: drillCogsTotal,
+                gross: drillGrossTotal,
+                share: "100.0%",
+              }}
+            />
+            <div style={{ ...emptyNote, padding: "8px 12px 0", textAlign: "right" }}>
+              {t("profitChart:summaryDifference", {
+                value: drillGrossDifference.toLocaleString("ko-KR"),
+              })}
+            </div>
+          </>
         )}
       </DetailModal>
     </div>

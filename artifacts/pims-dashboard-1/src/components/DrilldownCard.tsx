@@ -1,6 +1,9 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { useListMgmtreportProjects } from "@workspace/api-client-react";
+import {
+  getListMgmtreportProjectsQueryKey,
+  useListMgmtreportProjects,
+} from "@workspace/api-client-react";
 import { useDashboardData, REPORT_YEAR } from "../lib/mgmtreportData";
 import { lastClosedMonth } from "../lib/monthRange";
 import { useDashboardFilters, makeConverter, roundSmart } from "../lib/dashboardFilters";
@@ -33,7 +36,18 @@ export function DrilldownCard() {
   const { t } = useTranslation(["drilldownCard", "common"]);
   const { derived, isError } = useDashboardData();
   const { currency, unitIndex, fxRates } = useDashboardFilters();
-  const projectsQuery = useListMgmtreportProjects({ year: REPORT_YEAR });
+  const reportYear = derived?.year ?? REPORT_YEAR;
+  const projectsQuery = useListMgmtreportProjects(
+    { year: reportYear },
+    {
+      query: {
+        queryKey: getListMgmtreportProjectsQueryKey({ year: reportYear }),
+        enabled: derived != null,
+        staleTime: 0,
+        refetchOnMount: "always",
+      },
+    },
+  );
 
   const unitLabel = derived?.unitLabel ?? "천 USD";
   const convert = makeConverter(currency, unitIndex, fxRates);
@@ -49,7 +63,12 @@ export function DrilldownCard() {
   // 2. 금월 주요 매출: top-3 projects by current-month actual revenue (groups excluded server-side)
   const topRevenue = (projectsQuery.data?.projects ?? [])
     .filter((p) => !p.isGroup)
-    .map((p) => ({ name: p.name, value: month > 0 ? convert(p.revenueActual[month - 1] ?? 0) : 0 }))
+    .map((p) => ({
+      name: p.name,
+      value: month > 0
+        ? convert(p.revenueActual[month - 1] ?? 0, reportYear, month)
+        : 0,
+    }))
     .filter((p) => p.value > 0)
     .sort((a, b) => b.value - a.value)
     .slice(0, 3);

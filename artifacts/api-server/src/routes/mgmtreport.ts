@@ -11,7 +11,9 @@ import {
   divisionsTable,
   companiesTable,
   pdOverviewTable,
+  orderEntriesTable,
 } from "@workspace/db";
+import { mrSettingsTable } from "@workspace/db/schema/mgmtreport";
 import {
   GetMgmtreportSummaryResponse,
   ListMgmtreportProjectsQueryParams,
@@ -28,7 +30,14 @@ import {
   UpdateMgmtreportProjectStatusBody,
   UpdateMgmtreportProjectDivisionBody,
   UpdateMgmtreportProjectDivisionResponse,
+  GetOrderDetailsQueryParams,
+  GetOrderDetailsResponse,
 } from "@workspace/api-zod";
+import {
+  GetMgmtreportSettingsResponse,
+  PutMgmtreportSettingsBody,
+  PutMgmtreportSettingsResponse,
+} from "@workspace/api-zod/generated/api";
 import {
   parseMgmtreportWorkbook,
   buildPreview,
@@ -38,9 +47,65 @@ import {
   MgmtreportParseError,
   MgmtreportRevertError,
 } from "../lib/mgmtreportImport";
+import {
+  applyOrderImport,
+  buildCurrentOrderWorkbook,
+  buildOrderPreview,
+  listOrderImportHistory,
+  OrderImportError,
+  parseOrderWorkbook,
+  revertOrderImport,
+} from "../lib/orderImport";
 import { requireAdmin } from "../middlewares/adminAuth";
+import {
+  aggregatePnlRows,
+  applyProjectMonthlyRows,
+  roundMgmtreportAmount,
+  serializePnlSummary,
+} from "../lib/mgmtreportAggregation";
+import {
+  applyOrderRowsToPnlSummary,
+  classifyOrderActual,
+} from "../lib/orderSummaryOverlay";
 
 const router: IRouter = Router();
+
+router.get("/mgmtreport/settings", async (req, res) => {
+  try {
+    const [saved] = await db.select().from(mrSettingsTable).where(eq(mrSettingsTable.id, 1)).limit(1);
+    const now = new Date();
+    const response = saved
+      ? { year: saved.referenceYear, month: saved.referenceMonth }
+      : { year: now.getFullYear(), month: now.getMonth() + 1 };
+    res.json(response);
+  } catch (err) {
+    req.log.error({ err }, "failed to load mgmtreport settings");
+    res.status(500).json({ error: "기준 월을 불러오지 못했습니다." });
+  }
+});
+
+router.put("/mgmtreport/settings", requireAdmin, async (req, res) => {
+  const parsed = PutMgmtreportSettingsBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "기준 월이 올바르지 않습니다." });
+    return;
+  }
+  try {
+    const { year, month } = parsed.data;
+    await db
+      .insert(mrSettingsTable)
+      .values({ id: 1, referenceYear: year, referenceMonth: month, updatedAt: new Date() })
+      .onConflictDoUpdate({
+        target: mrSettingsTable.id,
+        set: { referenceYear: year, referenceMonth: month, updatedAt: new Date() },
+      });
+    const response = { year, month };
+    res.json(response);
+  } catch (err) {
+    req.log.error({ err }, "failed to save mgmtreport settings");
+    res.status(500).json({ error: "기준 월을 저장하지 못했습니다." });
+  }
+});
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -161,7 +226,122 @@ router.post("/mgmtreport/import/revert", requireAdmin, async (req, res) => {
   }
 });
 
-const round2 = (n: number) => Math.round(n * 100) / 100;
+router.post("/orders/import/preview", requireAdmin, async (req, res) => {
+  const r = await readUpload(req, res);
+  if ("error" in r) return void res.status(400).json({ error: r.error });
+  try {
+    res.json(buildOrderPreview(await parseOrderWorkbook(r.file.buffer, r.year)));
+  } catch (err) {
+    if (err instanceof OrderImportError) return void res.status(422).json({ error: err.message });
+    req.log.error({ err }, "failed to preview order import");
+    res.status(500).json({ error: "수주 계획 Excel 분석에 실패했습니다." });
+  }
+});
+
+router.post("/orders/import/apply", requireAdmin, async (req, res) => {
+  const r = await readUpload(req, res);
+  if ("error" in r) return void res.status(400).json({ error: r.error });
+  try {
+    const parsed = await parseOrderWorkbook(r.file.buffer, r.year);
+    const filename = Buffer.from(r.file.originalname, "latin1").toString("utf8");
+    await applyOrderImport(parsed, filename);
+    res.json({ ...buildOrderPreview(parsed), applied: true });
+  } catch (err) {
+    if (err instanceof OrderImportError) return void res.status(422).json({ error: err.message });
+    req.log.error({ err }, "failed to apply order import");
+    res.status(500).json({ error: "수주 계획 반영에 실패했습니다. 기존 데이터는 변경되지 않았습니다." });
+  }
+});
+
+router.get("/orders/import/history", requireAdmin, async (req, res) => {
+  try {
+    res.json({ entries: await listOrderImportHistory() });
+  } catch (err) {
+    req.log.error({ err }, "failed to list order import history");
+    res.status(500).json({ error: "수주 계획 반영 이력 조회에 실패했습니다." });
+  }
+});
+
+router.post("/orders/import/revert", requireAdmin, async (req, res) => {
+  const historyId = Number(req.body?.historyId);
+  if (!Number.isInteger(historyId)) return void res.status(400).json({ error: "잘못된 요청입니다." });
+  try {
+    res.json(await revertOrderImport(historyId));
+  } catch (err) {
+    if (err instanceof OrderImportError) return void res.status(422).json({ error: err.message });
+    req.log.error({ err }, "failed to revert order import");
+    res.status(500).json({ error: "수주 계획 되돌리기에 실패했습니다." });
+  }
+});
+
+router.get("/orders/current.xlsx", async (req, res) => {
+  const year = parseYearField(req.query.year);
+  if (year == null) return void res.status(400).json({ error: "연도가 올바르지 않습니다." });
+  try {
+    const workbook = await buildCurrentOrderWorkbook(year);
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.setHeader("Content-Disposition", `attachment; filename=\"orders-${year}.xlsx\"`);
+    res.send(workbook);
+  } catch (err) {
+    if (err instanceof OrderImportError) return void res.status(404).json({ error: err.message });
+    req.log.error({ err }, "failed to download order workbook");
+    res.status(500).json({ error: "수주 계획 Excel 다운로드에 실패했습니다." });
+  }
+});
+
+router.get("/orders/current", async (req, res) => {
+  const parsed = GetOrderDetailsQueryParams.safeParse(req.query);
+  if (
+    !parsed.success ||
+    !Number.isInteger(parsed.data.year) ||
+    parsed.data.year < 2000 ||
+    parsed.data.year > 2100 ||
+    !Number.isInteger(parsed.data.referenceMonth)
+  ) {
+    res.status(400).json({ error: "연도 또는 기준월이 올바르지 않습니다." });
+    return;
+  }
+  const { year, referenceMonth } = parsed.data;
+  try {
+    const rows = await db
+      .select()
+      .from(orderEntriesTable)
+      .where(eq(orderEntriesTable.year, year))
+      .orderBy(asc(orderEntriesTable.projectName));
+    const entries = rows.map((row) => {
+      const planAmount =
+        row.planAmount != null && row.planDate?.startsWith(`${year}-`)
+          ? Number(row.planAmount)
+          : null;
+      const actualAmount =
+        row.actualAmount != null && row.actualDate?.startsWith(`${year}-`)
+          ? Number(row.actualAmount)
+          : null;
+      return {
+        projectName: row.projectName,
+        planAmount,
+        planDate: row.planDate,
+        actualAmount,
+        actualDate: row.actualDate,
+        actualKind: classifyOrderActual(
+          {
+            year,
+            referenceMonth: row.referenceMonth,
+            actualAmount,
+            actualDate: row.actualDate,
+          },
+          referenceMonth,
+        ),
+      };
+    });
+    res.json(GetOrderDetailsResponse.parse({ year, referenceMonth, entries }));
+  } catch (err) {
+    req.log.error({ err }, "failed to get order details");
+    res.status(500).json({ error: "수주 상세 조회에 실패했습니다." });
+  }
+});
+
+const round2 = roundMgmtreportAmount;
 
 router.get("/mgmtreport/summary", async (req, res) => {
   try {
@@ -169,63 +349,13 @@ router.get("/mgmtreport/summary", async (req, res) => {
       .select()
       .from(mrPnlTable)
       .orderBy(asc(mrPnlTable.year), asc(mrPnlTable.sortOrder));
+    const orderRows = await db.select().from(orderEntriesTable);
 
-    type Line = {
-      code: string;
-      label: string;
-      plan: number[];
-      actual: number[];
-      planTotal: number;
-      actualTotal: number;
-      planTotalOverride: number | null;
-      actualTotalOverride: number | null;
-    };
-    const linesByYear = new Map<number, Map<string, Line>>();
-    for (const r of rows) {
-      let lines = linesByYear.get(r.year);
-      if (!lines) {
-        lines = new Map<string, Line>();
-        linesByYear.set(r.year, lines);
-      }
-      let l = lines.get(r.lineCode);
-      if (!l) {
-        l = {
-          code: r.lineCode,
-          label: r.lineLabel,
-          plan: Array(12).fill(0),
-          actual: Array(12).fill(0),
-          planTotal: 0,
-          actualTotal: 0,
-          planTotalOverride: null,
-          actualTotalOverride: null,
-        };
-        lines.set(r.lineCode, l);
-      }
-      const v = Number(r.amountUsd);
-      if (r.month == null) {
-        if (r.scenario === "plan") l.planTotalOverride = v;
-        else l.actualTotalOverride = v;
-      } else if (r.scenario === "plan") {
-        l.plan[r.month - 1] = round2(v);
-      } else {
-        l.actual[r.month - 1] = round2(v);
-      }
-    }
+    const linesByYear = aggregatePnlRows(rows);
 
-    const out = [...linesByYear.entries()]
-      .sort(([a], [b]) => a - b)
-      .map(([year, lines]) => ({
-        year,
-        unit: "천 USD",
-        lines: [...lines.values()].map((l) => ({
-          code: l.code,
-          label: l.label,
-          plan: l.plan,
-          actual: l.actual,
-          planTotal: round2(l.planTotalOverride ?? l.plan.reduce((a, b) => a + b, 0)),
-          actualTotal: round2(l.actualTotalOverride ?? l.actual.reduce((a, b) => a + b, 0)),
-        })),
-      }));
+    applyOrderRowsToPnlSummary(linesByYear, orderRows);
+
+    const out = serializePnlSummary(linesByYear);
 
     res.json(GetMgmtreportSummaryResponse.parse(out));
   } catch (err) {
@@ -301,20 +431,7 @@ router.get("/mgmtreport/projects", async (req, res) => {
         hasPimsvinaDetail: namesWithPdOverview.has(p.name),
       });
     }
-    for (const m of monthly) {
-      const p = byId.get(m.projectId);
-      if (!p) continue;
-      const v = round2(Number(m.amountUsd));
-      const arr =
-        m.metric === "revenue"
-          ? m.scenario === "plan"
-            ? p.revenuePlan
-            : p.revenueActual
-          : m.scenario === "plan"
-            ? p.cogsPlan
-            : p.cogsActual;
-      arr[m.month - 1] = v;
-    }
+    applyProjectMonthlyRows(byId, monthly);
     const annKey = new Map<string, { year: number; scenario: string; revenue: number; cogs: number }>();
     for (const a of annual) {
       const p = byId.get(a.projectId);
@@ -377,7 +494,12 @@ router.patch("/mgmtreport/projects/:name/division", requireAdmin, async (req, re
     res.status(400).json({ error: "잘못된 요청 본문입니다." });
     return;
   }
-  const { name } = req.params;
+  const paramName = req.params.name;
+  const name = Array.isArray(paramName) ? paramName[0] : paramName;
+  if (!name) {
+    res.status(400).json({ error: "프로젝트 이름이 필요합니다." });
+    return;
+  }
   const { divisionId } = parsed.data;
   try {
     const [updated] = await db

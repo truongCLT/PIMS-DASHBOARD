@@ -117,3 +117,18 @@ export async function fetchPimsvinaApi(endpoint: string, params: Record<string, 
     return [];
   }
 }
+
+export async function fetchPimsvinaOracleQueryResult(
+  endpoint: string,
+  params: Record<string, string> = {},
+): Promise<{ ok: boolean; data: any[] }> {
+  const oracleQuery = ORACLE_DASHBOARD_QUERIES[endpoint];
+  if (!oracleQuery) return { ok: false, data: [] };
+  try {
+    const binds = oracleQuery.binds ? oracleQuery.binds(params) : {};
+    return { ok: true, data: await queryOracle(oracleQuery.sql, binds) };
+  } catch (err: any) {
+    console.error(`[PIMSVINA Oracle Error] ${endpoint}:`, err.message);
+    return { ok: false, data: [] };
+  }
+}

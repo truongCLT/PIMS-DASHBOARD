@@ -15,6 +15,11 @@
   "colCategory": "Danh mục",
   "colBizType": "Loại hình",
   "colShare": "Tỷ trọng",
-  "noSiteData": "Không có dữ liệu công trình cho tháng này.",
-  "loadingSiteData": "Đang tải dữ liệu công trình…"
+  "noSiteData": "Không có phát sinh theo công trình trong tháng này.",
+  "siteDataNotReceived": "Có số liệu tổng công ty nhưng chưa nhận được dữ liệu nguồn theo dự án.",
+  "summaryDifference": "Chênh lệch so với lợi nhuận gộp toàn công ty: {{value}}",
+  "loadingSiteData": "Đang tải dữ liệu công trình…",
+  "actual": "Thực tế",
+  "forecast": "Dự báo",
+  "actualForecastType": "Phân loại"
 }

@@ -4,8 +4,12 @@ import {
   useListMgmtreportProjects,
   getListMgmtreportProjectsQueryKey,
 } from "@workspace/api-client-react";
-import { lastClosedMonth } from "./monthRange";
+import { useGetMgmtreportSettings } from "@workspace/api-client-react/generated/api";
 import { classifyMrProject } from "../data/projects";
+import {
+  filterProfitProjects,
+  sumProjectMonths,
+} from "./mgmtreportReconciliation";
 import {
   useDashboardFilters,
   resolveMonthWindow,
@@ -71,10 +75,14 @@ export interface SalesRow {
   plan: number | null;
   actual: number | null;
   rate: number | null;
+  /** 오늘 날짜의 전월 이후(당월 포함) 전망값이면 true */
+  isForecast?: boolean;
 }
 
 export interface ProfitRow {
   m: string;
+  /** 오늘 날짜의 전월 이후(당월 포함) 전망값이면 true */
+  isForecast: boolean;
   op: number;
   opPct: string;
   non: number;
@@ -93,11 +101,14 @@ export interface OrderStatusData {
   planTotal: number;
   ordered: number;
   remaining: number;
+  annualForecast: number;
 }
 
 export interface DashboardData {
   year: number;
   month: number;
+  /** YTD KPI 누계 기준 관리월. 기본 조회 종료월과 독립적으로 현재월을 사용한다. */
+  managementMonth: number;
   orderMonthActual: number | null;
   kpi: KpiItem[];
   performanceRows: PerformanceRow[];
@@ -186,6 +197,21 @@ export interface DeriveOptions {
   projectScope: ProjectScope | null;
   /** 매출 차트 데이터를 조회 기간과 무관하게 12개월 전체로 생성 (엑셀 보고서용) */
   salesFullYear?: boolean;
+  /** YTD KPI 누계 기준월. 생략하면 조회 종료월을 사용한다. */
+  managementMonth?: number;
+  /** 실적/전망 경계 계산 기준일. 테스트 외에는 오늘 날짜를 사용한다. */
+  asOfDate?: Date;
+}
+
+/**
+ * 해당 보고 연도에서 실적으로 표시할 마지막 월.
+ * 현재 연도는 오늘 날짜의 전월, 과거 연도는 12월, 미래 연도는 0월(전체 전망)이다.
+ */
+export function getActualThroughMonth(reportYear: number, asOfDate = new Date()): number {
+  const currentYear = asOfDate.getFullYear();
+  if (reportYear < currentYear) return 12;
+  if (reportYear > currentYear) return 0;
+  return asOfDate.getMonth();
 }
 
 export function defaultDeriveOptions(month: number): DeriveOptions {
@@ -208,6 +234,11 @@ export function deriveDashboardData(
   const emptyRange = from > to;
   const M = Math.min(Math.max(to, 1), 12);
   const F = Math.min(Math.max(from, 1), 12);
+  const managementMonth = Math.min(
+    Math.max(opts.managementMonth ?? M, 1),
+    12,
+  );
+  const actualThroughMonth = getActualThroughMonth(summary.year, opts.asOfDate);
 
   const lines = summary?.lines ?? [];
   const byCode = new Map(lines.map((l) => [l.code, l]));
@@ -289,8 +320,8 @@ export function deriveDashboardData(
       p = line.plan[M - 1] ?? 0;
       a = line.actual[M - 1] ?? 0;
     } else if (mode === "ytd") {
-      p = rangeSum(line.plan, 1, M);
-      a = rangeSum(line.actual, 1, M);
+      p = rangeSum(line.plan, 1, managementMonth);
+      a = rangeSum(line.actual, 1, managementMonth);
     } else {
       p = line.planTotal;
       a = line.actualTotal;
@@ -305,10 +336,10 @@ export function deriveDashboardData(
   };
 
   const kpi: KpiItem[] = [
-    kpiOf("YTD Revenue", revenue, "ytd"),
-    kpiOf("YTD Operating Profit", op1 ?? gross, "ytd"),
-    kpiOf("Full Year Revenue", revenue, "fullYear"),
-    kpiOf("Full Year Operating Profit", op1 ?? gross, "fullYear"),
+    kpiOf("당월 누적 매출", revenue, "ytd"),
+    kpiOf("당월 누적 영업이익", op1 ?? gross, "ytd"),
+    kpiOf("연간 매출", revenue, "fullYear"),
+    kpiOf("연간 영업이익", op1 ?? gross, "fullYear"),
   ];
 
   const pRow = (label: string, line: Line | null, subLine?: Line | null): PerformanceRow => {
@@ -355,26 +386,31 @@ export function deriveDashboardData(
     pRow("매출이익", gross, revenue),
     pRow("판관비", sga),
     pRow("영업이익", op1, revenue),
-    pRow("영업외손익", op2),
     pRow("경상이익", ordinary, revenue),
   ];
 
-  const buckets = makeBuckets(opts.salesFullYear ? 1 : F, opts.salesFullYear ? 12 : M, bucket);
+  const buckets = makeBuckets(
+    opts.salesFullYear ? 1 : F,
+    opts.salesFullYear ? 12 : M,
+    opts.salesFullYear ? "Month" : bucket,
+  );
   const salesData: SalesRow[] = buckets.map((b) => {
     const plan = rangeSum(revenue.plan, b.months[0], b.months[b.months.length - 1]);
     const actual = rangeSum(revenue.actual, b.months[0], b.months[b.months.length - 1]);
-    const inside = b.months.every((m) => m >= F && m <= M);
+    const inside = b.months.every((m) => m <= actualThroughMonth);
+    const isForecast = b.months.every((m) => m > actualThroughMonth);
     return {
       month: b.label,
       net: inside ? actual - plan : null,
       report: inside ? actual : null,
       plan: roundSmart(plan),
-      actual: inside ? roundSmart(actual) : null,
-      rate: plan ? Math.round((actual / plan) * 100) : null,
+      actual: roundSmart(actual),
+      rate: inside && plan ? Math.round((actual / plan) * 100) : null,
+      isForecast,
     };
   });
 
-  const pBuckets = makeBuckets(F, M, bucket);
+  const pBuckets = makeBuckets(1, 12, "Month");
   const profitData: ProfitRow[] = pBuckets.map((b) => {
     const fromM = b.months[0];
     const toM = b.months[b.months.length - 1];
@@ -388,6 +424,7 @@ export function deriveDashboardData(
 
     return {
       m: b.label,
+      isForecast: b.months.every((month) => month > actualThroughMonth),
       op: roundSmart(opA),
       opPct: ratioStr(opA, revA),
       non: roundSmart(op2A),
@@ -411,6 +448,7 @@ export function deriveDashboardData(
       planTotal: roundSmart(pY),
       ordered: roundSmart(aM),
       remaining: roundSmart(Math.max(0, pY - aM)),
+      annualForecast: roundSmart(orders.actualTotal),
     };
   }
 
@@ -424,6 +462,7 @@ export function deriveDashboardData(
   return {
     year: summary.year,
     month: M,
+    managementMonth,
     orderMonthActual: orders?.actual[M - 1] ?? null,
     kpi,
     performanceRows,
@@ -450,6 +489,8 @@ export function getDashboardExportData(): DashboardData {
 export function useDashboardData() {
   const filters = useDashboardFilters();
   const query = useGetMgmtreportSummary();
+  const settingsQuery = useGetMgmtreportSettings();
+  const managementMonth = settingsQuery.data?.month ?? new Date().getMonth() + 1;
   const summaryForYear = query.data?.find((s) => s.year === REPORT_YEAR) ?? null;
 
   const projectSelected = filters.project !== "All";
@@ -470,7 +511,7 @@ export function useDashboardData() {
     if (!summaryForYear) return null;
     if (needProjects && !projectsQuery.data) return null;
 
-    const { from, to } = resolveMonthWindow(filters.startYm, filters.endYm);
+    const { from, to } = resolveMonthWindow(filters.startYm, filters.endYm, managementMonth);
     const convert = makeConverter(filters.currency, filters.unitIndex, filters.fxRateHistory);
     const unitLabel =
       filters.currency === "USD" && filters.unitIndex === 0
@@ -491,20 +532,14 @@ export function useDashboardData() {
         };
       }
     } else if (divisionSelected && filters.division) {
-      const members = (projectsQuery.data?.projects ?? []).filter(
-        (p) =>
-          !p.isGroup &&
-          (p.businessType ?? classifyMrProject(p.name)) === filters.division &&
-          (filters.statusFilter == null || (p.status ?? "ongoing") === filters.statusFilter),
+      const members = filterProfitProjects(
+        projectsQuery.data?.projects ?? [],
+        {
+          division: filters.division,
+          status: filters.statusFilter,
+        },
+        classifyMrProject,
       );
-      const sum12 = (pick: (p: (typeof members)[number]) => number[]): number[] => {
-        const out = Array(12).fill(0) as number[];
-        for (const p of members) {
-          const arr = pick(p);
-          for (let i = 0; i < 12; i += 1) out[i] += arr[i] ?? 0;
-        }
-        return out;
-      };
       projectScope = {
         name:
           filters.statusFilter == null
@@ -512,10 +547,10 @@ export function useDashboardData() {
             : `${filters.division} 부문 (${filters.statusFilter === "ongoing" ? "진행중" : "종료"})`,
         kind: "division",
         empty: members.length === 0,
-        revenuePlan: sum12((p) => p.revenuePlan),
-        revenueActual: sum12((p) => p.revenueActual),
-        cogsPlan: sum12((p) => p.cogsPlan),
-        cogsActual: sum12((p) => p.cogsActual),
+        revenuePlan: sumProjectMonths(members, "revenuePlan"),
+        revenueActual: sumProjectMonths(members, "revenueActual"),
+        cogsPlan: sumProjectMonths(members, "cogsPlan"),
+        cogsActual: sumProjectMonths(members, "cogsActual"),
       };
     }
 
@@ -526,6 +561,8 @@ export function useDashboardData() {
       convert,
       unitLabel,
       projectScope,
+      salesFullYear: true,
+      managementMonth,
     });
   }, [
     summaryForYear,
@@ -542,23 +579,27 @@ export function useDashboardData() {
     filters.currency,
     filters.unitIndex,
     filters.fxRateHistory,
+    managementMonth,
   ]);
 
   /* 필터와 무관한 기본 스냅샷 (엑셀 보고서용) */
   const baseline = useMemo(
     () =>
       summaryForYear
-        ? deriveDashboardData(summaryForYear, defaultDeriveOptions(Math.max(lastClosedMonth(), 1)))
+        ? deriveDashboardData(summaryForYear, {
+            ...defaultDeriveOptions(managementMonth),
+            managementMonth,
+          })
         : null,
-    [summaryForYear],
+    [summaryForYear, managementMonth],
   );
 
   useEffect(() => {
     if (baseline) exportSnapshot = baseline;
   }, [baseline]);
 
-  const isLoading = query.isLoading || (needProjects && projectsQuery.isLoading);
-  const isError = query.isError || (needProjects && projectsQuery.isError);
+  const isLoading = query.isLoading || settingsQuery.isLoading || (needProjects && projectsQuery.isLoading);
+  const isError = query.isError || settingsQuery.isError || (needProjects && projectsQuery.isError);
 
   return { ...query, isLoading, isError, derived };
 }

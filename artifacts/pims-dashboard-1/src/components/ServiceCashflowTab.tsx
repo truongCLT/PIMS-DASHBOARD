@@ -46,11 +46,15 @@ export function ServiceCashflowTab({
   fromYear,
   fromMonth,
   months,
+  toYear,
+  toMonth,
 }: {
   projectName: string;
   fromYear: number;
   fromMonth: number;
   months: number;
+  toYear: number;
+  toMonth: number;
 }) {
   const { t } = useTranslation(["serviceCashflowTab", "common"]);
   // Cashflow 탭은 (사이트별 계약 환율이 아닌) PIMSVINA의 공식 월별 환율(최신월)을 사용한다.
@@ -71,11 +75,27 @@ export function ServiceCashflowTab({
 
   // 보조: 데이터 입력 탭에서 저장한 프로젝트별 자금 데이터 (pd_cashflow_monthly)
   const { detail, isLoading: pdLoading } = useProjectDetail(projectName);
-  const startIdx = fromYear * 12 + (fromMonth - 1);
+  const parseYm = (value: string | null | undefined) => {
+    const match = /^(\d{4})-(\d{1,2})/.exec(value ?? "");
+    return match ? { year: Number(match[1]), month: Number(match[2]) } : null;
+  };
+  const siteStart = parseYm(detail?.overview?.startDate);
+  const siteEnd = parseYm(detail?.overview?.endDate);
+  const effectiveFromYear = siteStart?.year ?? fromYear;
+  const effectiveFromMonth = siteStart?.month ?? fromMonth;
+  const siteRangeMonths =
+    siteStart && siteEnd
+      ? Math.max(
+          1,
+          (siteEnd.year - siteStart.year) * 12 + (siteEnd.month - siteStart.month) + 1,
+        )
+      : months;
+  const effectiveMonths = Math.min(siteRangeMonths, 120);
+  const startIdx = effectiveFromYear * 12 + (effectiveFromMonth - 1);
   const pdPoints = (detail?.cashflow ?? [])
     .filter((c: any) => {
       const idx = c.year * 12 + (c.month - 1);
-      return idx >= startIdx && idx < startIdx + months;
+      return idx >= startIdx && idx < startIdx + effectiveMonths;
     })
     .map((c: any) => ({
       month: `${c.year}-${String(c.month).padStart(2, "0")}`,
@@ -92,9 +112,9 @@ export function ServiceCashflowTab({
   const params = {
     projectName: cfRef?.name ?? "",
     division: cfRef?.division,
-    fromYear,
-    fromMonth,
-    months,
+    fromYear: effectiveFromYear,
+    fromMonth: effectiveFromMonth,
+    months: effectiveMonths,
   };
   const query = useGetCashflowMonthly(params, {
     query: {
@@ -116,9 +136,17 @@ export function ServiceCashflowTab({
     month: monthLabel(p.month, t),
     cashIn: cv(p.cashIn),
     cashOut: -cv(p.cashOut),
+    cashInActual: Number(p.month.slice(0, 4)) * 12 + Number(p.month.slice(5, 7)) - 1 <= toYear * 12 + toMonth - 1 ? cv(p.cashIn) : 0,
+    cashOutActual: Number(p.month.slice(0, 4)) * 12 + Number(p.month.slice(5, 7)) - 1 <= toYear * 12 + toMonth - 1 ? -cv(p.cashOut) : 0,
+    cashInForecast: Number(p.month.slice(0, 4)) * 12 + Number(p.month.slice(5, 7)) - 1 > toYear * 12 + toMonth - 1 ? cv(p.cashIn) : 0,
+    cashOutForecast: Number(p.month.slice(0, 4)) * 12 + Number(p.month.slice(5, 7)) - 1 > toYear * 12 + toMonth - 1 ? -cv(p.cashOut) : 0,
     equivalent: cv(p.equivalent),
     different: cv(p.cashIn) - cv(p.cashOut),
   }));
+  const referenceLabel = monthLabel(
+    `${toYear}-${String(toMonth).padStart(2, "0")}`,
+    t,
+  );
 
   const maxVal = Math.max(...chartData.map((d: any) => Math.max(d.cashIn, d.equivalent, 0)), 0);
   const minVal = Math.min(...chartData.map((d: any) => Math.min(d.cashOut, d.equivalent, 0)), 0);
@@ -203,9 +231,22 @@ export function ServiceCashflowTab({
             />
             <Legend wrapperStyle={{ fontSize: "14px", fontWeight: 600 }} iconSize={14} />
             <ReferenceLine y={0} stroke={chartTheme.sgaOrange} strokeDasharray="3 3" />
+            {chartData.some((point) => point.month === referenceLabel) && (
+              <ReferenceLine
+                x={referenceLabel}
+                stroke={chartTheme.outflowRed}
+                strokeDasharray="4 4"
+                label={{
+                  value: t("serviceCashflowTab:referenceMonth"),
+                  position: "insideTopRight",
+                  fontSize: 11,
+                  fill: INK_MUTED,
+                }}
+              />
+            )}
             <Bar
-              dataKey="cashIn"
-              name={t("serviceCashflowTab:cashIn")}
+              dataKey="cashInActual"
+              name={t("serviceCashflowTab:actualCashIn")}
               fill={chartTheme.inflowBlue}
               barSize={barSize}
               stackId="cash"
@@ -213,15 +254,15 @@ export function ServiceCashflowTab({
               radius={[4, 4, 0, 0]}
             >
               <LabelList
-                dataKey="cashIn"
+                dataKey="cashInActual"
                 position="center"
                 style={{ fontSize: "13px", fill: "#fff", fontWeight: 700 }}
                 formatter={(v: number) => (v !== 0 ? v.toLocaleString(undefined, { maximumFractionDigits: 0 }) : "")}
               />
             </Bar>
             <Bar
-              dataKey="cashOut"
-              name={t("serviceCashflowTab:cashOut")}
+              dataKey="cashOutActual"
+              name={t("serviceCashflowTab:actualCashOut")}
               fill={chartTheme.actualGreen}
               barSize={barSize}
               stackId="cash"
@@ -229,9 +270,45 @@ export function ServiceCashflowTab({
               radius={[0, 0, 4, 4]}
             >
               <LabelList
-                dataKey="cashOut"
+                dataKey="cashOutActual"
                 position="center"
                 style={{ fontSize: "13px", fill: "#fff", fontWeight: 700 }}
+                formatter={(v: number) => (v !== 0 ? v.toLocaleString(undefined, { maximumFractionDigits: 0 }) : "")}
+              />
+            </Bar>
+            <Bar
+              dataKey="cashInForecast"
+              name={t("serviceCashflowTab:forecastCashIn")}
+              fill="#fff"
+              stroke={chartTheme.inflowBlue}
+              strokeWidth={1.5}
+              strokeDasharray="4 3"
+              barSize={barSize}
+              stackId="cash"
+              isAnimationActive={false}
+            >
+              <LabelList
+                dataKey="cashInForecast"
+                position="center"
+                style={{ fontSize: "13px", fill: chartTheme.inflowBlue, fontWeight: 700 }}
+                formatter={(v: number) => (v !== 0 ? v.toLocaleString(undefined, { maximumFractionDigits: 0 }) : "")}
+              />
+            </Bar>
+            <Bar
+              dataKey="cashOutForecast"
+              name={t("serviceCashflowTab:forecastCashOut")}
+              fill="#fff"
+              stroke={chartTheme.actualGreen}
+              strokeWidth={1.5}
+              strokeDasharray="4 3"
+              barSize={barSize}
+              stackId="cash"
+              isAnimationActive={false}
+            >
+              <LabelList
+                dataKey="cashOutForecast"
+                position="center"
+                style={{ fontSize: "13px", fill: chartTheme.actualGreen, fontWeight: 700 }}
                 formatter={(v: number) => (v !== 0 ? v.toLocaleString(undefined, { maximumFractionDigits: 0 }) : "")}
               />
             </Bar>
@@ -265,7 +342,17 @@ export function ServiceCashflowTab({
       {/* Cashflow */}
       <div style={cardStyle}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span style={sectionTitle}>{t("common:cashFlow")}</span>
+          <span style={sectionTitle}>
+            {t("common:cashFlow")}
+            <span style={{ fontSize: "11px", fontWeight: 400, color: INK_MUTED, marginLeft: "6px" }}>
+              ({siteStart && siteEnd
+                ? `${siteStart.year}.${String(siteStart.month).padStart(2, "0")} ~ ${siteEnd.year}.${String(siteEnd.month).padStart(2, "0")}`
+                : t("serviceCashflowTab:fromMonth", {
+                    year: effectiveFromYear,
+                    month: String(effectiveFromMonth).padStart(2, "0"),
+                  })} · {t("serviceCashflowTab:outlookAfterReference")})
+            </span>
+          </span>
           <span style={{ fontSize: "11px", color: INK_MUTED }}>
             {useCf && query.data
               ? `${t("common:unit")}: ${cfConvertible ? unitLabel : query.data.unit}`

@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { useCallback, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePutProjectdetail, useGetPimsvinaSiterate, getBaseUrl } from "@workspace/api-client-react";
@@ -6,23 +6,26 @@ import { ProjectCommentPanel } from "./ProjectCommentPanel";
 import { Upload, FileSpreadsheet, RefreshCw } from "lucide-react";
 import projectPhoto from "../assets/project-photo.png";
 import { ConstructionProgressTab } from "./ConstructionProgressTab";
-import { CostingTab } from "./CostingTab";
+import { SaleCostTab } from "./SaleCostTab";
 import { OutsourcingTab } from "./OutsourcingTab";
 import { ServiceCashflowTab } from "./ServiceCashflowTab";
 import { ProjectDataEntryTab } from "./ProjectDataEntryTab";
-import { SaleProfitTab } from "./SaleProfitTab";
 import { OverviewTab } from "./OverviewTab";
+import { ProjectSummaryTab } from "./ProjectSummaryTab";
+import { ProjectReportTab } from "./ProjectReportTab";
 import { useProjectDetail, getGetProjectdetailQueryKey } from "../lib/projectDetailData";
 import { downloadProjectDetailTemplate, parseProjectDetailWorkbook, ExcelParseError } from "../lib/projectDetailExcel";
 import { DisplayUnitProvider, DEFAULT_EXCHANGE_RATES, formatMoney, moneyUnitLabel } from "../lib/displayUnit";
 import { useAdminAuth, readAdminToken } from "../lib/adminAuth";
 import { useDashboardFilters } from "../lib/dashboardFilters";
 import { PimsvinaSyncPreviewModal, type PimsvinaPreviewData } from "./PimsvinaSyncPreviewModal";
-import { cardStyle, sectionTitle } from "../lib/uiTokens";
+import { cardStyle } from "../lib/uiTokens";
+import { ProjectContextBar } from "./ProjectContextBar";
+import { REPORT_YEAR } from "../lib/mgmtreportData";
 export { Donut, MiniBar } from "./charts";
 
 
-const SIDE_TABS = ["Overview", "Construction progress", "Sale & Profit", "Costing", "Outsourcing", "Cashflow", "Data entry"];
+const SIDE_TABS = ["Summary", "Report", "Overview", "Construction progress", "Sale & Cost", "Outsourcing", "Cashflow", "Data entry"];
 
 const YEARS = Array.from({ length: 21 }, (_, i) => 2015 + i); // 2015 ~ 2035
 const MONTHS = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"];
@@ -42,10 +45,11 @@ const selectStyle: React.CSSProperties = {
 export function ProjectDashboard({ projectName }: { projectName: string }) {
   const { t } = useTranslation(["projectDashboard", "common"]);
   const SIDE_TAB_LABELS: Record<string, string> = {
-    Overview: t("common:overview"),
+    Summary: "개요",
+    Report: "보고서",
+    Overview: "개요(2)",
     "Construction progress": t("common:process"),
-    "Sale & Profit": t("common:revenue"),
-    Costing: t("projectDashboard:costing"),
+    "Sale & Cost": "매출/원가",
     Outsourcing: t("common:outsourcing"),
     Cashflow: t("projectDashboard:cashflow"),
     "Data entry": t("projectDashboard:dataEntry"),
@@ -53,7 +57,7 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
   const { fxRates } = useDashboardFilters();
   const [currency, setCurrency] = useState("USD");
   const [unitOn, setUnitOn] = useState(true);
-  const [activeTab, setActiveTab] = useState("Overview");
+  const [activeTab, setActiveTab] = useState("Summary");
   const { isAdmin } = useAdminAuth();
   const [syncing, setSyncing] = useState(false);
   const [syncPreview, setSyncPreview] = useState<PimsvinaPreviewData | null>(null);
@@ -65,6 +69,16 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
   const [fromMonth, setFromMonth] = useState("01");
   const [toYear, setToYear] = useState(prevMonthDate.getFullYear());
   const [toMonth, setToMonth] = useState(String(prevMonthDate.getMonth() + 1).padStart(2, "0"));
+  const [reportMonth, setReportMonth] = useState<number | null>(null);
+  const handleReportMonthChange = (month: number | null) => {
+    setReportMonth(month);
+  };
+  const handleResolvedReportMonthChange = useCallback((month: number | null) => {
+    if (month != null) {
+      setToYear(REPORT_YEAR);
+      setToMonth(String(month).padStart(2, "0"));
+    }
+  }, []);
   const periodMonths = Math.min(
     24,
     Math.max(1, (toYear - fromYear) * 12 + (Number(toMonth) - Number(fromMonth)) + 1),
@@ -99,7 +113,7 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
     setExcelMsg(null);
     setExcelStatus(null);
     try {
-      await downloadProjectDetailTemplate(projectName, detail, fxRates.VND);
+      await downloadProjectDetailTemplate(projectName, detail, fxRates.VND, "시공");
     } catch (err) {
       console.error("Excel template download failed", err);
       setExcelMsg(t("projectDashboard:templateDownloadFailed"));
@@ -318,29 +332,7 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
         />
       )}
 
-      {/* Project info bar — always visible */}
-      <div style={{ ...cardStyle, margin: "8px 10px 0", display: "flex", gap: "10px", alignItems: "stretch" }}>
-        <div style={{ flex: 1 }}>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 0", fontSize: "12px", color: "#16294a" }}>
-            <span style={{ fontWeight: 700, paddingRight: "14px" }}>
-              {t("common:project")} : {projectName}
-              {siteCode && <span style={{ fontWeight: 400, color: "#556" }}> [{siteCode}]</span>}
-            </span>
-            <span style={{ borderLeft: "1px solid #e2e9f3", padding: "0 14px" }}>{t("projectDashboard:client")} : {ov.client ?? "-"}</span>
-            <span style={{ borderLeft: "1px solid #e2e9f3", padding: "0 14px" }}>
-              {t("projectDashboard:constructionPeriod")} : {periodLabel}
-            </span>
-          </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 0", fontSize: "12px", color: "#16294a", marginTop: "8px" }}>
-            <span style={{ paddingRight: "14px" }}>
-              {t("common:contractAmount")} : {formatMoney(ov.contractAmount, currency, unitOn)} {moneyUnitLabel(currency, unitOn)}
-            </span>
-            <span style={{ borderLeft: "1px solid #e2e9f3", padding: "0 14px" }}>
-              {t("projectDashboard:constructionScale")} : {ov.scale ?? "-"}
-            </span>
-          </div>
-        </div>
-      </div>
+      <ProjectContextBar projectName={siteCode ? `${projectName} [${siteCode}]` : projectName} businessType="시공" client={ov.client} period={periodLabel} primaryValue={ov.scale} contractValue={`${formatMoney(ov.contractAmount, currency, unitOn)} ${moneyUnitLabel(currency, unitOn)}`} referenceMonth={ov.asOfMonth} isClosed={ov.isClosed} labels={{ client: t("projectDashboard:client"), period: t("projectDashboard:constructionPeriod"), primary: t("projectDashboard:constructionScale"), contract: t("common:contractAmount"), referenceMonth: t("common:baseMonth"), closed: t("common:closed"), ongoing: t("common:inProgress") }} />
 
       {/* Horizontal tab bar */}
       <div
@@ -353,7 +345,7 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
           marginTop: "8px",
         }}
       >
-        {SIDE_TABS.filter((tab) => tab !== "Data entry" || isAdmin).map((tab) => {
+        {SIDE_TABS.filter((tab) => tab !== "Overview" && (tab !== "Data entry" || isAdmin)).map((tab) => {
           const active = tab === activeTab;
           return (
             <button
@@ -454,17 +446,34 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
 
       {/* Body: content */}
       <div style={{ display: "flex", flexDirection: "column", gap: "8px", padding: "10px" }}>
-        {activeTab === "Construction progress" ? (
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <ConstructionProgressTab projectName={projectName} />
+        {activeTab === "Summary" ? (
+          <div style={{ flex: 1, minWidth: 0, minHeight: "620px" }}>
+            <ProjectSummaryTab projectName={projectName} />
           </div>
-        ) : activeTab === "Costing" ? (
+        ) : activeTab === "Report" ? (
+          <div style={{ flex: 1, minWidth: 0, minHeight: "620px" }}>
+            <ProjectReportTab
+              projectName={projectName}
+              selectedMonth={reportMonth}
+              onSelectedMonthChange={handleReportMonthChange}
+              onResolvedMonthChange={handleResolvedReportMonthChange}
+            />
+          </div>
+        ) : activeTab === "Construction progress" ? (
           <div style={{ flex: 1, minWidth: 0 }}>
-            <CostingTab projectName={projectName} toYear={toYear} toMonth={Number(toMonth)} />
+            <ConstructionProgressTab
+              projectName={projectName}
+              referenceYear={toYear}
+              referenceMonth={Number(toMonth)}
+            />
           </div>
         ) : activeTab === "Outsourcing" ? (
           <div style={{ flex: 1, minWidth: 0 }}>
-            <OutsourcingTab projectName={projectName} />
+            <OutsourcingTab
+              projectName={projectName}
+              referenceYear={toYear}
+              referenceMonth={Number(toMonth)}
+            />
           </div>
         ) : activeTab === "Data entry" ? (
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -477,18 +486,23 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
               fromYear={fromYear}
               fromMonth={Number(fromMonth)}
               months={periodMonths}
+              toYear={toYear}
+              toMonth={Number(toMonth)}
             />
           </div>
-        ) : activeTab === "Sale & Profit" ? (
+        ) : activeTab === "Sale & Cost" ? (
           <div style={{ flex: 1, minWidth: 0 }}>
-            <SaleProfitTab
+            <SaleCostTab
               projectName={projectName}
               fromYear={fromYear}
               fromMonth={Number(fromMonth)}
               months={periodMonths}
+              toYear={toYear}
+              toMonth={Number(toMonth)}
             />
           </div>
         ) : (
+        /* Overview (개요(2)) — original OverviewTab + comment panel */
         <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: "8px" }}>
           <OverviewTab projectName={projectName} />
 

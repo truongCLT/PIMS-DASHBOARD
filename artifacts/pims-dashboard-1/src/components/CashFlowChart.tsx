@@ -19,6 +19,7 @@ import {
   getGetCashflowAggregateQueryKey,
   getCashflowAggregate,
 } from "@workspace/api-client-react";
+import { useGetMgmtreportSettings } from "@workspace/api-client-react/generated/api";
 import type { DashboardScope } from "./Sidebar";
 import { PROJECT_GROUPS } from "../data/projects";
 import { getCashflowProjectRef } from "../data/cashflowProjectMap";
@@ -150,7 +151,9 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
 
   const config = getScopeConfig(scope, t);
   const filters = useDashboardFilters();
-  const { from, to } = resolveMonthWindow(filters.startYm, filters.endYm);
+  const settingsQuery = useGetMgmtreportSettings();
+  const referenceMonth = settingsQuery.data?.month ?? new Date().getMonth() + 1;
+  const { from, to } = resolveMonthWindow(filters.startYm, filters.endYm, referenceMonth);
   const emptyRange = from > to;
   const projectSelected = filters.project !== "All";
   const compact = filters.unitIndex === 1;
