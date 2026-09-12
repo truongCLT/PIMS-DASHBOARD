@@ -87,9 +87,11 @@ export async function exportProjectReportPdf({
     throw new Error("보고서 영역을 찾을 수 없습니다.");
   }
 
-  const reportPages = Array.from(
-    target.querySelectorAll<HTMLElement>("[data-project-report-page]"),
-  );
+  const reportPages = target.matches("[data-project-report-page]")
+    ? [target]
+    : Array.from(
+        target.querySelectorAll<HTMLElement>("[data-project-report-page]"),
+      );
   if (reportPages.length === 0) {
     throw new Error("출력할 보고서 내용이 없습니다.");
   }

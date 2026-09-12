@@ -1,8 +1,14 @@
-import React from "react";
+import React, { useState } from "react";
+import { FileDown, Loader2 } from "lucide-react";
+import { Button } from "@workspace/aqua-glass/components/ui/button";
 import { ProjectCommentPanel } from "./ProjectCommentPanel";
 import { useProjectDetail, fmtPct, ratioPct } from "../lib/projectDetailData";
 import { useMoney } from "../lib/displayUnit";
 import { chartTheme } from "../lib/chartTheme";
+import {
+  exportProjectReportPdf,
+  runProjectReportExport,
+} from "../lib/exportProjectReport";
 import {
   cardStyle,
   sectionTitle,
@@ -85,6 +91,8 @@ export function ServiceReportTab({
 }) {
   const { detail, isLoading } = useProjectDetail(projectName);
   const { fmtMoney, unitLabel } = useMoney();
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   if (isLoading) return <div style={{ ...cardStyle, padding: "40px", textAlign: "center", color: INK_MUTED }}>불러오는 중...</div>;
 
@@ -196,14 +204,55 @@ export function ServiceReportTab({
     { label: "원가", ...costSignal },
     { label: "자금", ...fundsSignal, priority: DASH },
   ];
+  const reportCaptureId = "service-report-capture";
+  const handleReportExport = async () => {
+    if (isExporting) return;
+    await runProjectReportExport({
+      exportAction: () =>
+        exportProjectReportPdf({
+          elementId: reportCaptureId,
+          projectName,
+          reportYear: referenceYear,
+          reportMonth: referenceMonth,
+        }),
+      setExporting: setIsExporting,
+      setError: setExportError,
+    });
+  };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "2px" }}>
-        <span style={{ fontSize: "14px", fontWeight: 700, color: INK_NAVY }}>용역 당월 보고서</span>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px", flexWrap: "wrap", padding: "2px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <span style={{ fontSize: "14px", fontWeight: 700, color: INK_NAVY }}>용역 당월 보고서</span>
+          <Button
+            type="button"
+            size="sm"
+            onClick={handleReportExport}
+            disabled={isExporting}
+            aria-label={isExporting ? "보고서 PDF 생성 중" : "보고서 PDF 출력"}
+          >
+            {isExporting ? (
+              <Loader2 aria-hidden="true" className="animate-spin" />
+            ) : (
+              <FileDown aria-hidden="true" />
+            )}
+            {isExporting ? "출력 중..." : "보고서 출력"}
+          </Button>
+        </div>
         <span style={{ fontSize: "11px", color: INK_MUTED }}>기준월 '{String(referenceYear).slice(2)}.{String(referenceMonth).padStart(2, "0")} · {unitLabel}</span>
       </div>
+      {exportError && (
+        <div role="alert" style={{ fontSize: "12px", color: "var(--destructive)" }}>
+          {exportError}
+        </div>
+      )}
 
+      <div
+        id={reportCaptureId}
+        data-project-report-page="service"
+        style={{ display: "flex", flexDirection: "column", gap: "8px" }}
+      >
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "8px" }}>
         <div style={cardStyle}>
           <div style={sectionTitle}>개요</div>
@@ -277,8 +326,9 @@ export function ServiceReportTab({
 
         <div style={cardStyle}>
           <div style={sectionTitle}>주요 이슈 및 대응방안</div>
-          <ProjectCommentPanel projectName={projectName} />
+          <ProjectCommentPanel projectName={projectName} tab="service" showHeader={false} />
         </div>
+      </div>
       </div>
     </div>
   );
