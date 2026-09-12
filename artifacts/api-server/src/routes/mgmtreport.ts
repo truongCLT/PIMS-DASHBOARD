@@ -60,8 +60,8 @@ import {
   applyProjectMonthlyRows,
   roundMgmtreportAmount,
   serializePnlSummary,
-  type AggregatedPnlLine,
 } from "../lib/mgmtreportAggregation";
+import { applyOrderRowsToPnlSummary } from "../lib/orderSummaryOverlay";
 
 const router: IRouter = Router();
 
@@ -296,40 +296,7 @@ router.get("/mgmtreport/summary", async (req, res) => {
 
     const linesByYear = aggregatePnlRows(rows);
 
-    const initializedOrderYears = new Set<number>();
-    for (const r of orderRows) {
-      let lines = linesByYear.get(r.year);
-      if (!lines) {
-        lines = new Map();
-        linesByYear.set(r.year, lines);
-      }
-      const line: AggregatedPnlLine = initializedOrderYears.has(r.year) && lines.get("new_orders") ? lines.get("new_orders")! : {
-        code: "new_orders",
-        label: "수 주",
-        plan: Array(12).fill(0),
-        actual: Array(12).fill(0),
-        planTotalOverride: null,
-        actualTotalOverride: null,
-      };
-      initializedOrderYears.add(r.year);
-      lines.set("new_orders", line);
-      if (r.planAmount != null && r.planDate?.startsWith(`${r.year}-`)) {
-        const month = Number(r.planDate.slice(5, 7));
-        line.plan[month - 1] = round2(line.plan[month - 1] + Number(r.planAmount));
-      }
-      if (r.actualAmount != null && r.actualDate?.startsWith(`${r.year}-`)) {
-        const month = Number(r.actualDate.slice(5, 7));
-        line.actualTotalOverride = round2(
-          (line.actualTotalOverride ?? 0) + Number(r.actualAmount),
-        );
-        // The workbook column is "실적 및 전망": dates through 기준월 are
-        // confirmed actuals, while later dates are forecasts. Only confirmed
-        // actuals contribute to 수주 실적 and 연간 수주 계획 대비.
-        if (month <= r.referenceMonth) {
-          line.actual[month - 1] = round2(line.actual[month - 1] + Number(r.actualAmount));
-        }
-      }
-    }
+    applyOrderRowsToPnlSummary(linesByYear, orderRows);
 
     const out = serializePnlSummary(linesByYear);
 
