@@ -307,6 +307,34 @@ export type OrderImportResult = OrderImportPreview & {
   applied: boolean;
 };
 
+export type OrderDetailEntryActualKind = typeof OrderDetailEntryActualKind[keyof typeof OrderDetailEntryActualKind];
+
+
+export const OrderDetailEntryActualKind = {
+  actual: 'actual',
+  forecast: 'forecast',
+  none: 'none',
+} as const;
+
+export interface OrderDetailEntry {
+  projectName: string;
+  /** @nullable */
+  planAmount: number | null;
+  /** @nullable */
+  planDate: string | null;
+  /** @nullable */
+  actualAmount: number | null;
+  /** @nullable */
+  actualDate: string | null;
+  actualKind: OrderDetailEntryActualKind;
+}
+
+export interface OrderDetailList {
+  year: number;
+  referenceMonth: number;
+  entries: OrderDetailEntry[];
+}
+
 export interface OrderImportHistoryEntry {
   id: number;
   createdAt: string;
@@ -980,7 +1008,24 @@ export type ApplyOrderImportBody = {
 };
 
 export type DownloadCurrentOrdersParams = {
+/**
+ * @minimum 2000
+ * @maximum 2100
+ */
 year: number;
+};
+
+export type GetOrderDetailsParams = {
+/**
+ * @minimum 2000
+ * @maximum 2100
+ */
+year: number;
+/**
+ * @minimum 1
+ * @maximum 12
+ */
+referenceMonth: number;
 };
 
 export type PreviewMgmtreportImportBody = {

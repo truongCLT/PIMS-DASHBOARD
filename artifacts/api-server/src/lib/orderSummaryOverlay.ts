@@ -10,6 +10,33 @@ export interface OrderSummaryRow {
   actualDate: string | null;
 }
 
+export type OrderActualKind = "actual" | "forecast" | "none";
+
+export function classifyOrderActual(
+  row: Pick<
+    OrderSummaryRow,
+    "year" | "referenceMonth" | "actualAmount" | "actualDate"
+  >,
+  selectedReferenceMonth: number,
+): OrderActualKind {
+  if (
+    row.actualAmount == null ||
+    !row.actualDate?.startsWith(`${row.year}-`)
+  ) {
+    return "none";
+  }
+  const actualMonth = Number(row.actualDate.slice(5, 7));
+  const effectiveReferenceMonth = Math.min(
+    selectedReferenceMonth,
+    row.referenceMonth,
+  );
+  return Number.isInteger(actualMonth) &&
+    actualMonth >= 1 &&
+    actualMonth <= effectiveReferenceMonth
+    ? "actual"
+    : "forecast";
+}
+
 /**
  * Replaces only the new_orders summary line for years with dedicated order
  * rows. All other management-report P&L lines remain owned by mr_pnl.

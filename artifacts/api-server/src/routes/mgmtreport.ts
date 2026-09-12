@@ -30,6 +30,8 @@ import {
   UpdateMgmtreportProjectStatusBody,
   UpdateMgmtreportProjectDivisionBody,
   UpdateMgmtreportProjectDivisionResponse,
+  GetOrderDetailsQueryParams,
+  GetOrderDetailsResponse,
 } from "@workspace/api-zod";
 import {
   GetMgmtreportSettingsResponse,
@@ -61,7 +63,10 @@ import {
   roundMgmtreportAmount,
   serializePnlSummary,
 } from "../lib/mgmtreportAggregation";
-import { applyOrderRowsToPnlSummary } from "../lib/orderSummaryOverlay";
+import {
+  applyOrderRowsToPnlSummary,
+  classifyOrderActual,
+} from "../lib/orderSummaryOverlay";
 
 const router: IRouter = Router();
 
@@ -281,6 +286,58 @@ router.get("/orders/current.xlsx", async (req, res) => {
     if (err instanceof OrderImportError) return void res.status(404).json({ error: err.message });
     req.log.error({ err }, "failed to download order workbook");
     res.status(500).json({ error: "수주 계획 Excel 다운로드에 실패했습니다." });
+  }
+});
+
+router.get("/orders/current", async (req, res) => {
+  const parsed = GetOrderDetailsQueryParams.safeParse(req.query);
+  if (
+    !parsed.success ||
+    !Number.isInteger(parsed.data.year) ||
+    parsed.data.year < 2000 ||
+    parsed.data.year > 2100 ||
+    !Number.isInteger(parsed.data.referenceMonth)
+  ) {
+    res.status(400).json({ error: "연도 또는 기준월이 올바르지 않습니다." });
+    return;
+  }
+  const { year, referenceMonth } = parsed.data;
+  try {
+    const rows = await db
+      .select()
+      .from(orderEntriesTable)
+      .where(eq(orderEntriesTable.year, year))
+      .orderBy(asc(orderEntriesTable.projectName));
+    const entries = rows.map((row) => {
+      const planAmount =
+        row.planAmount != null && row.planDate?.startsWith(`${year}-`)
+          ? Number(row.planAmount)
+          : null;
+      const actualAmount =
+        row.actualAmount != null && row.actualDate?.startsWith(`${year}-`)
+          ? Number(row.actualAmount)
+          : null;
+      return {
+        projectName: row.projectName,
+        planAmount,
+        planDate: row.planDate,
+        actualAmount,
+        actualDate: row.actualDate,
+        actualKind: classifyOrderActual(
+          {
+            year,
+            referenceMonth: row.referenceMonth,
+            actualAmount,
+            actualDate: row.actualDate,
+          },
+          referenceMonth,
+        ),
+      };
+    });
+    res.json(GetOrderDetailsResponse.parse({ year, referenceMonth, entries }));
+  } catch (err) {
+    req.log.error({ err }, "failed to get order details");
+    res.status(500).json({ error: "수주 상세 조회에 실패했습니다." });
   }
 });
 

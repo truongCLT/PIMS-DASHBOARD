@@ -1148,13 +1148,38 @@ paths:
         - name: year
           in: query
           required: true
-          schema: { type: integer }
+          schema: { type: integer, format: int32, minimum: 2000, maximum: 2100 }
       responses:
         "200":
           description: Current order data workbook
           content:
             application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
               schema: { type: string, format: binary }
+  /orders/current:
+    get:
+      operationId: getOrderDetails
+      tags: [mgmtreport]
+      summary: List project-level order plan and actual or forecast values
+      parameters:
+        - name: year
+          in: query
+          required: true
+          schema: { type: integer, format: int32, minimum: 2000, maximum: 2100 }
+        - name: referenceMonth
+          in: query
+          required: true
+          schema: { type: integer, format: int32, minimum: 1, maximum: 12 }
+      responses:
+        "200":
+          description: Project-level order details for the selected period
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OrderDetailList" }
+        "400":
+          description: Invalid year or reference month
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ApiErrorMessage" }
   /mgmtreport/import/preview:
     post:
       operationId: previewMgmtreportImport
@@ -1698,6 +1723,27 @@ components:
           properties:
             applied: { type: boolean }
           required: [applied]
+    OrderDetailEntry:
+      type: object
+      properties:
+        projectName: { type: string }
+        planAmount: { type: [number, "null"] }
+        planDate: { type: [string, "null"] }
+        actualAmount: { type: [number, "null"] }
+        actualDate: { type: [string, "null"] }
+        actualKind:
+          type: string
+          enum: [actual, forecast, none]
+      required: [projectName, planAmount, planDate, actualAmount, actualDate, actualKind]
+    OrderDetailList:
+      type: object
+      properties:
+        year: { type: integer }
+        referenceMonth: { type: integer }
+        entries:
+          type: array
+          items: { $ref: "#/components/schemas/OrderDetailEntry" }
+      required: [year, referenceMonth, entries]
     OrderImportHistoryEntry:
       type: object
       properties:

@@ -10,5 +10,19 @@
   "annualOrderPlan": "연간 수주 계획",
   "annualOrderForecast": "연간 수주 전망",
   "forecastVsPlan": "(계획대비 {{percent}}%)",
-  "vsAnnualPlan": "연간 수주 계획 대비"
+  "vsAnnualPlan": "연간 수주 계획 대비",
+  "detailTitle": "프로젝트별 수주 현황",
+  "detailSubtitle": "{{year}}년 {{month}}월 기준 · 단위 {{unit}}",
+  "detailLoading": "수주 상세를 불러오는 중...",
+  "detailError": "수주 상세를 불러오지 못했습니다.",
+  "detailEmpty": "선택한 연도에 프로젝트별 수주 데이터가 없습니다.",
+  "projectName": "프로젝트",
+  "planAmount": "계획 금액",
+  "planDate": "계획 시기",
+  "actualForecastAmount": "실적·전망 금액",
+  "actualForecastDate": "실적·전망 시기",
+  "status": "구분",
+  "actual": "실적",
+  "forecast": "전망",
+  "total": "합계"
 }

@@ -6,10 +6,15 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type DownloadCurrentOrdersParams = {
+export type GetOrderDetailsParams = {
 /**
  * @minimum 2000
  * @maximum 2100
  */
 year: number;
+/**
+ * @minimum 1
+ * @maximum 12
+ */
+referenceMonth: number;
 };

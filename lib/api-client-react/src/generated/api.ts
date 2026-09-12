@@ -40,6 +40,7 @@ import type {
   FxRates,
   GetCashflowAggregateParams,
   GetCashflowMonthlyParams,
+  GetOrderDetailsParams,
   GetPimsvinaSiterateParams,
   GetProjectdetailParams,
   GetSalescostSummaryParams,
@@ -59,6 +60,7 @@ import type {
   MgmtreportRevertResult,
   MgmtreportSettings,
   MgmtreportSummary,
+  OrderDetailList,
   OrderImportHistoryList,
   OrderImportPreview,
   OrderImportResult,
@@ -3181,6 +3183,90 @@ export function useDownloadCurrentOrders<TData = Awaited<ReturnType<typeof downl
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getDownloadCurrentOrdersQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetOrderDetailsUrl = (params: GetOrderDetailsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/orders/current?${stringifiedParams}` : `/api/orders/current`
+}
+
+/**
+ * @summary List project-level order plan and actual or forecast values
+ */
+export const getOrderDetails = async (params: GetOrderDetailsParams, options?: RequestInit): Promise<OrderDetailList> => {
+
+  return customFetch<OrderDetailList>(getGetOrderDetailsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetOrderDetailsQueryKey = (params?: GetOrderDetailsParams,) => {
+    return [
+    `/api/orders/current`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetOrderDetailsQueryOptions = <TData = Awaited<ReturnType<typeof getOrderDetails>>, TError = ErrorType<ApiErrorMessage>>(params: GetOrderDetailsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOrderDetails>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetOrderDetailsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getOrderDetails>>> = ({ signal }) => getOrderDetails(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getOrderDetails>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetOrderDetailsQueryResult = NonNullable<Awaited<ReturnType<typeof getOrderDetails>>>
+export type GetOrderDetailsQueryError = ErrorType<ApiErrorMessage>
+
+
+/**
+ * @summary List project-level order plan and actual or forecast values
+ */
+
+export function useGetOrderDetails<TData = Awaited<ReturnType<typeof getOrderDetails>>, TError = ErrorType<ApiErrorMessage>>(
+ params: GetOrderDetailsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOrderDetails>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetOrderDetailsQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

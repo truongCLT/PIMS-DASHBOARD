@@ -1289,11 +1289,45 @@ export const RevertOrderImportResponse = zod.object({
 })
 
 
+export const downloadCurrentOrdersQueryYearMin = 2000;
+export const downloadCurrentOrdersQueryYearMax = 2100;
+
+
+
 export const DownloadCurrentOrdersQueryParams = zod.object({
-  "year": zod.coerce.number()
+  "year": zod.coerce.number().min(downloadCurrentOrdersQueryYearMin).max(downloadCurrentOrdersQueryYearMax)
 })
 
 export const DownloadCurrentOrdersResponse = zod.unknown()
+
+
+/**
+ * @summary List project-level order plan and actual or forecast values
+ */
+export const getOrderDetailsQueryYearMin = 2000;
+export const getOrderDetailsQueryYearMax = 2100;
+
+export const getOrderDetailsQueryReferenceMonthMax = 12;
+
+
+
+export const GetOrderDetailsQueryParams = zod.object({
+  "year": zod.coerce.number().min(getOrderDetailsQueryYearMin).max(getOrderDetailsQueryYearMax),
+  "referenceMonth": zod.coerce.number().min(1).max(getOrderDetailsQueryReferenceMonthMax)
+})
+
+export const GetOrderDetailsResponse = zod.object({
+  "year": zod.number(),
+  "referenceMonth": zod.number(),
+  "entries": zod.array(zod.object({
+  "projectName": zod.string(),
+  "planAmount": zod.number().nullable(),
+  "planDate": zod.string().nullable(),
+  "actualAmount": zod.number().nullable(),
+  "actualDate": zod.string().nullable(),
+  "actualKind": zod.enum(['actual', 'forecast', 'none'])
+}))
+})
 
 
 /**

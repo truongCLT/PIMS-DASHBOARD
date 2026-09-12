@@ -1,7 +1,10 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import type { AggregatedPnlLine } from "./mgmtreportAggregation";
-import { applyOrderRowsToPnlSummary } from "./orderSummaryOverlay";
+import {
+  applyOrderRowsToPnlSummary,
+  classifyOrderActual,
+} from "./orderSummaryOverlay";
 
 const pnlLine = (
   code: string,
@@ -17,6 +20,25 @@ const pnlLine = (
 });
 
 describe("order data isolation from management-report replacement", () => {
+  it("classifies actuals using the earlier of selected and imported reference months", () => {
+    const row = {
+      year: 2026,
+      referenceMonth: 8,
+      actualAmount: 100,
+      actualDate: "2026-09-30",
+    };
+    expect(classifyOrderActual(row, 10)).toBe("forecast");
+    expect(
+      classifyOrderActual({ ...row, actualDate: "2026-07-31" }, 6),
+    ).toBe("forecast");
+    expect(
+      classifyOrderActual({ ...row, actualDate: "2026-07-31" }, 10),
+    ).toBe("actual");
+    expect(
+      classifyOrderActual({ ...row, actualDate: "2027-01-31" }, 10),
+    ).toBe("none");
+  });
+
   it("keeps management-report apply and restore ownership away from order tables", () => {
     const source = readFileSync(
       "artifacts/api-server/src/lib/mgmtreportImport.ts",

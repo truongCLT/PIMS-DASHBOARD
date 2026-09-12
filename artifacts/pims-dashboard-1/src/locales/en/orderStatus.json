@@ -10,5 +10,19 @@
   "annualOrderPlan": "Annual order plan",
   "annualOrderForecast": "Annual order forecast",
   "forecastVsPlan": "({{percent}}% of plan)",
-  "vsAnnualPlan": "vs. annual order plan"
+  "vsAnnualPlan": "vs. annual order plan",
+  "detailTitle": "Orders by Project",
+  "detailSubtitle": "As of {{month}}/{{year}} · Unit {{unit}}",
+  "detailLoading": "Loading order details...",
+  "detailError": "Unable to load order details.",
+  "detailEmpty": "No project-level order data for the selected year.",
+  "projectName": "Project",
+  "planAmount": "Plan amount",
+  "planDate": "Plan date",
+  "actualForecastAmount": "Actual / forecast",
+  "actualForecastDate": "Actual / forecast date",
+  "status": "Status",
+  "actual": "Actual",
+  "forecast": "Forecast",
+  "total": "Total"
 }

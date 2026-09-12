@@ -1,13 +1,40 @@
-import React from "react";
+import React, { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
+import {
+  getGetOrderDetailsQueryKey,
+  useGetOrderDetails,
+} from "@workspace/api-client-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@workspace/aqua-glass/components/ui/dialog";
+import { Button } from "@workspace/aqua-glass/components/ui/button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableFooter,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@workspace/aqua-glass/components/ui/table";
 import { useDashboardData } from "../lib/mgmtreportData";
-import { useDashboardFilters } from "../lib/dashboardFilters";
+import {
+  makeConverter,
+  roundSmart,
+  unitLabelOf,
+  useDashboardFilters,
+} from "../lib/dashboardFilters";
 
 export function OrderStatus() {
   const { t } = useTranslation(["orderStatus", "common"]);
   const { derived } = useDashboardData();
-  const { unitIndex } = useDashboardFilters();
+  const { unitIndex, currency, fxRateHistory } = useDashboardFilters();
+  const [detailOpen, setDetailOpen] = useState(false);
   const statFont = unitIndex === 1 ? "12px" : "20px";
   const unavailable = derived != null && derived.orderStatus == null;
   const planTotal = derived?.orderStatus?.planTotal ?? 0;
@@ -16,6 +43,47 @@ export function OrderStatus() {
   const annualForecast = derived?.orderStatus?.annualForecast ?? 0;
   const pct = planTotal ? Math.round((ordered / planTotal) * 100) : 0;
   const forecastPct = planTotal ? Math.round((annualForecast / planTotal) * 100) : 0;
+  const detailParams = {
+    year: derived?.year ?? new Date().getFullYear(),
+    referenceMonth: derived?.month ?? new Date().getMonth() + 1,
+  };
+  const detailQuery = useGetOrderDetails(detailParams, {
+    query: {
+      queryKey: getGetOrderDetailsQueryKey(detailParams),
+      enabled: detailOpen && derived != null,
+    },
+  });
+  const convert = useMemo(
+    () => makeConverter(currency, unitIndex, fxRateHistory),
+    [currency, unitIndex, fxRateHistory],
+  );
+  const formatDate = (date: string | null) =>
+    date ? date.slice(0, 7).replace("-", ".") : "-";
+  const formatAmount = (amount: number | null) => {
+    if (amount == null) return "-";
+    const converted = convert(
+      amount,
+      derived?.year,
+      derived?.month,
+    );
+    return roundSmart(converted).toLocaleString();
+  };
+  const detailEntries = detailQuery.data?.entries ?? [];
+  const detailTotals = detailEntries.reduce(
+    (totals, row) => ({
+      plan:
+        totals.plan +
+        (row.planAmount == null
+          ? 0
+          : convert(row.planAmount, derived?.year, derived?.month)),
+      actual:
+        totals.actual +
+        (row.actualAmount == null
+          ? 0
+          : convert(row.actualAmount, derived?.year, derived?.month)),
+    }),
+    { plan: 0, actual: 0 },
+  );
 
   if (unavailable) {
     return (
@@ -83,12 +151,16 @@ export function OrderStatus() {
           <span style={{ fontSize: "13px", fontWeight: "600", color: "#16294a" }}>{t("orderStatus:title")}</span>
           {unit && <span style={{ fontSize: "11px", color: "#7c8ba3" }}>{unit}</span>}
         </div>
-        <button style={{
-          fontSize: "12px", color: "#2f7cf6", background: "none",
-          border: "none", cursor: "pointer", padding: 0,
-        }}>
+        <Button
+          type="button"
+          variant="link"
+          size="sm"
+          onClick={() => setDetailOpen(true)}
+          aria-haspopup="dialog"
+          className="h-auto min-h-0 p-0 text-xs"
+        >
           {t("orderStatus:viewDetails")}
-        </button>
+        </Button>
       </div>
 
       {/* Donut chart with center label */}
@@ -158,6 +230,85 @@ export function OrderStatus() {
           </div>
         ))}
       </div>
+
+      <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
+        <DialogContent className="max-h-[88vh] max-w-5xl overflow-hidden p-0">
+          <DialogHeader className="border-b px-6 py-4 pr-12">
+            <DialogTitle>{t("orderStatus:detailTitle")}</DialogTitle>
+            <DialogDescription>
+              {t("orderStatus:detailSubtitle", {
+                year: derived?.year,
+                month: derived?.month,
+                unit: unitLabelOf(currency, unitIndex),
+              })}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="overflow-auto px-6 pb-6">
+            {detailQuery.isLoading ? (
+              <div className="py-12 text-center text-sm text-muted-foreground">
+                {t("orderStatus:detailLoading")}
+              </div>
+            ) : detailQuery.isError ? (
+              <div role="alert" className="py-12 text-center text-sm text-destructive">
+                {t("orderStatus:detailError")}
+              </div>
+            ) : detailEntries.length === 0 ? (
+              <div className="py-12 text-center text-sm text-muted-foreground">
+                {t("orderStatus:detailEmpty")}
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t("orderStatus:projectName")}</TableHead>
+                    <TableHead className="text-right">{t("orderStatus:planAmount")}</TableHead>
+                    <TableHead className="text-center">{t("orderStatus:planDate")}</TableHead>
+                    <TableHead className="text-right">{t("orderStatus:actualForecastAmount")}</TableHead>
+                    <TableHead className="text-center">{t("orderStatus:actualForecastDate")}</TableHead>
+                    <TableHead className="text-center">{t("orderStatus:status")}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {detailEntries.map((row) => (
+                    <TableRow key={row.projectName}>
+                      <TableCell className="font-medium">{row.projectName}</TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {formatAmount(row.planAmount)}
+                      </TableCell>
+                      <TableCell className="text-center">{formatDate(row.planDate)}</TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {formatAmount(row.actualAmount)}
+                      </TableCell>
+                      <TableCell className="text-center">{formatDate(row.actualDate)}</TableCell>
+                      <TableCell className="text-center font-medium">
+                        {row.actualKind === "actual"
+                          ? t("orderStatus:actual")
+                          : row.actualKind === "forecast"
+                            ? t("orderStatus:forecast")
+                            : "-"}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+                <TableFooter>
+                  <TableRow>
+                    <TableCell>{t("orderStatus:total")}</TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {roundSmart(detailTotals.plan).toLocaleString()}
+                    </TableCell>
+                    <TableCell />
+                    <TableCell className="text-right tabular-nums">
+                      {roundSmart(detailTotals.actual).toLocaleString()}
+                    </TableCell>
+                    <TableCell />
+                    <TableCell />
+                  </TableRow>
+                </TableFooter>
+              </Table>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
