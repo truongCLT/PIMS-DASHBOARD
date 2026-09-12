@@ -1,5 +1,8 @@
 import { Router, type IRouter } from "express";
-import { fetchPimsvinaApi } from "../lib/pimsvinaClient";
+import {
+  fetchPimsvinaApi,
+  fetchPimsvinaOracleQueryResult,
+} from "../lib/pimsvinaClient";
 import {
   db,
   cfProjectsTable,
@@ -17,6 +20,7 @@ import {
   pdCogsMonthlyTable,
   pdSalesMonthlyTable,
   pdCostBudgetTable,
+  pdCostBudgetMonthlyTable,
   pdCostEstimationTable,
   pdMilestonesTable,
   fxRatesTable,
@@ -25,6 +29,14 @@ import {
 } from "@workspace/db";
 import { eq, and, isNull } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/adminAuth";
+import {
+  mapPimsvinaTradeItem,
+  parsePimsvinaKusd,
+  findStalePimsvinaTradeCosts,
+  tradeCostKey,
+  tradeCostScope,
+  sumPimsvinaKusdValues,
+} from "../lib/pimsvinaTradeCost";
 
 /** SRS와 동일한 서비스 부문 키워드 — CATB_BUSILINE.CLASSIFICATION이 없거나 인식 불가할 때 부문명으로 추정 (프론트 classifyMrProject와 동일 기준) */
 const SERVICE_DIVISION_KEYWORDS = ["용역", "프리콘", "인허가", "산출", "유지관리", "운영관리", "분양대행"];
@@ -46,6 +58,8 @@ async function fetchAllPimsvinaData() {
     pdOverview,
     pdProgress,
     pdOutsourcing,
+    pdTradeCostMonthlyResult,
+    pdTradeCostScopesResult,
     pdCashflow,
     pdCogs,
     pdSales,
@@ -56,6 +70,8 @@ async function fetchAllPimsvinaData() {
     fetchPimsvinaApi("dashboard_pd_overview_1q.jsp"),
     fetchPimsvinaApi("dashboard_pd_progress_1q.jsp"),
     fetchPimsvinaApi("dashboard_pd_outsourcing_1q.jsp"),
+    fetchPimsvinaOracleQueryResult("dashboard_pd_trade_cost_monthly_1q.jsp"),
+    fetchPimsvinaOracleQueryResult("dashboard_pd_trade_cost_scopes_1q.jsp"),
     fetchPimsvinaApi("dashboard_pd_cashflow_1q.jsp"),
     fetchPimsvinaApi("dashboard_pd_cogs_monthly_1q.jsp"),
     fetchPimsvinaApi("dashboard_pd_sales_1q.jsp"),
@@ -63,10 +79,169 @@ async function fetchAllPimsvinaData() {
     fetchPimsvinaApi("dashboard_pd_costestimation_1q.jsp"),
     fetchPimsvinaApi("dashboard_pd_milestones_1q.jsp"),
   ]);
+  const pdTradeCostMonthlyRaw = pdTradeCostMonthlyResult.data;
+  const pdTradeCostScopesRaw = pdTradeCostScopesResult.data;
+  const tradeCostSnapshotComplete =
+    pdTradeCostMonthlyResult.ok && pdTradeCostScopesResult.ok;
+  const projects = await db
+    .select({
+      name: mrProjectsTable.name,
+      siteCode: mrProjectsTable.siteCode,
+      fldCode: mrProjectsTable.fldCode,
+    })
+    .from(mrProjectsTable);
+  const existingTradeCosts = await db.select().from(pdCostBudgetMonthlyTable);
+  const projectBySiteCode = new Map(
+    projects
+      .filter((project) => project.siteCode)
+      .map((project) => [project.siteCode!.trim().toUpperCase(), project.name]),
+  );
+  const projectByFldCode = new Map(
+    projects
+      .filter((project) => project.fldCode)
+      .map((project) => [project.fldCode!.trim().toUpperCase(), project.name]),
+  );
+  const existingByKey = new Map(
+    existingTradeCosts.map((row) => [
+      `${row.projectName}|${row.item}|${row.year}|${row.month}`,
+      row.actual == null ? null : Number(row.actual),
+    ]),
+  );
+  const normalizedTradeCosts = pdTradeCostMonthlyRaw.map((row: any) => {
+    const siteCode = String(row.site_code ?? "").trim().toUpperCase();
+    const fldCode = String(row.fldcode ?? "").trim().toUpperCase();
+    const projectName =
+      projectBySiteCode.get(siteCode) ??
+      projectByFldCode.get(fldCode) ??
+      projectBySiteCode.get(fldCode) ??
+      null;
+    const mappedItem = mapPimsvinaTradeItem(row.trade);
+    return {
+      ...row,
+      mapped_project_name: projectName,
+      mapped_item: mappedItem,
+    };
+  });
+  const aggregatedTradeCosts = new Map<string, any>();
+  const unmappedTradeCosts: any[] = [];
+  for (const row of normalizedTradeCosts) {
+    if (!row.mapped_project_name || !row.mapped_item) {
+      unmappedTradeCosts.push(row);
+      continue;
+    }
+    const key = `${row.mapped_project_name}|${row.mapped_item}|${Number(row.year)}|${Number(row.month)}`;
+    const existing = aggregatedTradeCosts.get(key);
+    if (existing) {
+      existing.actual_vnd = Number(existing.actual_vnd) + Number(row.actual_vnd);
+      existing.actual_kusd_values.push(row.actual_kusd);
+      existing.trade_code = [existing.trade_code, row.trade_code].filter(Boolean).join(", ");
+      existing.trade = [existing.trade, row.trade].filter(Boolean).join(" / ");
+    } else {
+      aggregatedTradeCosts.set(key, {
+        ...row,
+        actual_vnd: Number(row.actual_vnd),
+        actual_kusd_values: [row.actual_kusd],
+      });
+    }
+  }
+  for (const row of aggregatedTradeCosts.values()) {
+    row.actual_kusd = sumPimsvinaKusdValues(row.actual_kusd_values);
+    delete row.actual_kusd_values;
+  }
+  const incomingTradeCostKeys = new Set(aggregatedTradeCosts.keys());
+  const pdTradeCostScopes = pdTradeCostScopesRaw.map((row: any) => {
+    const siteCode = String(row.site_code ?? "").trim().toUpperCase();
+    const fldCode = String(row.fldcode ?? "").trim().toUpperCase();
+    return {
+      ...row,
+      mapped_project_name:
+        projectBySiteCode.get(siteCode) ??
+        projectByFldCode.get(fldCode) ??
+        projectBySiteCode.get(fldCode) ??
+        null,
+    };
+  });
+  const incomingTradeCostScopes = new Set(
+    pdTradeCostScopes
+      .filter(
+        (row: any) =>
+          row.mapped_project_name && Number.isInteger(Number(row.year)),
+      )
+      .map((row: any) =>
+        tradeCostScope({
+          projectName: row.mapped_project_name,
+          year: Number(row.year),
+        }),
+      ),
+  );
+  const staleTradeCosts = findStalePimsvinaTradeCosts(
+    existingTradeCosts,
+    incomingTradeCostKeys,
+    incomingTradeCostScopes,
+    tradeCostSnapshotComplete,
+  );
+  for (const row of staleTradeCosts) {
+    const key = tradeCostKey(row);
+    aggregatedTradeCosts.set(key, {
+      fldcode: null,
+      site_code: null,
+      project_name: row.projectName,
+      trade_group: null,
+      trade_code: null,
+      trade: row.item,
+      year: row.year,
+      month: row.month,
+      source_currency: "VND",
+      actual_vnd: null,
+      actual_kusd: null,
+      mapped_project_name: row.projectName,
+      mapped_item: row.item,
+      clear_actual: true,
+    });
+  }
+  const pdTradeCostMonthly = [
+    ...Array.from(aggregatedTradeCosts.values()),
+    ...unmappedTradeCosts,
+  ].map((row: any) => {
+    const projectName = row.mapped_project_name as string | null;
+    const mappedItem = row.mapped_item as string | null;
+    const incomingActual = parsePimsvinaKusd(row.actual_kusd);
+    const existingActual =
+      projectName && mappedItem
+        ? (existingByKey.get(
+            `${projectName}|${mappedItem}|${Number(row.year)}|${Number(row.month)}`,
+          ) ?? null)
+        : null;
+    return {
+      ...row,
+      existing_actual: existingActual,
+      incoming_actual: incomingActual,
+      change:
+        !projectName || !mappedItem || incomingActual == null
+          ? row.clear_actual
+            ? "삭제"
+            : "건너뜀"
+          : existingActual == null
+            ? "신규"
+            : Math.abs(existingActual - incomingActual) > 0.00000001
+              ? "변경"
+              : "동일",
+    };
+  });
+
   return {
     pdOverview,
     pdProgress,
     pdOutsourcing,
+    pdTradeCostMonthly,
+    pdTradeCostScopes,
+    pdTradeCostSyncStatus: [
+      {
+        complete: tradeCostSnapshotComplete,
+        monthlyQueryOk: pdTradeCostMonthlyResult.ok,
+        scopeQueryOk: pdTradeCostScopesResult.ok,
+      },
+    ],
     pdCashflow,
     pdCogs,
     pdSales,
@@ -83,6 +258,12 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
   const pdOverview = fetched.pdOverview ?? [];
   const pdProgress = fetched.pdProgress ?? [];
   const pdOutsourcing = fetched.pdOutsourcing ?? [];
+  const pdTradeCostMonthly = fetched.pdTradeCostMonthly ?? [];
+  const pdTradeCostScopes = fetched.pdTradeCostScopes ?? [];
+  const tradeCostSnapshotComplete =
+    fetched.pdTradeCostSyncStatus?.[0]?.complete === true &&
+    fetched.pdTradeCostSyncStatus?.[0]?.monthlyQueryOk === true &&
+    fetched.pdTradeCostSyncStatus?.[0]?.scopeQueryOk === true;
   const pdCashflow = fetched.pdCashflow ?? [];
   const pdCogs = fetched.pdCogs ?? [];
   const pdSales = fetched.pdSales ?? [];
@@ -94,6 +275,7 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
     pdOverview: 0,
     pdProgress: 0,
     pdOutsourcing: 0,
+    pdTradeCostMonthly: 0,
     pdCashflow: 0,
     pdCogs: 0,
     pdSales: 0,
@@ -141,13 +323,20 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
   // khớp với mr_projects.site_code. Dòng nào không tra được site_code/tên tương ứng sẽ được TỰ ĐỘNG
   // TẠO MỚI trong mr_projects (thay vì bỏ qua) để site mới xuất hiện ngay trên sidebar.
   const allProjects = await db
-    .select({ name: mrProjectsTable.name, siteCode: mrProjectsTable.siteCode, sortOrder: mrProjectsTable.sortOrder })
+    .select({
+      name: mrProjectsTable.name,
+      siteCode: mrProjectsTable.siteCode,
+      fldCode: mrProjectsTable.fldCode,
+      sortOrder: mrProjectsTable.sortOrder,
+    })
     .from(mrProjectsTable);
   const siteCodeToName = new Map<string, string>();
+  const fldCodeToName = new Map<string, string>();
   const knownNames = new Set<string>();
   let nextSortOrder = 1;
   for (const p of allProjects) {
     if (p.siteCode) siteCodeToName.set(p.siteCode.trim().toUpperCase(), p.name);
+    if (p.fldCode) fldCodeToName.set(p.fldCode.trim().toUpperCase(), p.name);
     knownNames.add(p.name);
     if (p.sortOrder >= nextSortOrder) nextSortOrder = p.sortOrder + 1;
   }
@@ -195,6 +384,16 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
     newProjectNames.add(name);
     if (code) siteCodeToName.set(code, name);
     return name;
+  };
+  const resolveTradeProjectName = (item: any): string | null => {
+    const siteCode = String(item.site_code ?? "").trim().toUpperCase();
+    const fldCode = String(item.fldcode ?? "").trim().toUpperCase();
+    return (
+      siteCodeToName.get(siteCode) ??
+      fldCodeToName.get(fldCode) ??
+      siteCodeToName.get(fldCode) ??
+      null
+    );
   };
 
   // 1. Sync Project Detail Overview
@@ -328,6 +527,103 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
       });
       counts.pdOutsourcing++;
     }
+  }
+
+  // 11b. Sync monthly actual cost by explicit ERP trade. Plans stay manual.
+  // Multiple ERP contract codes may map to the same standard trade/month, so
+  // aggregate before upsert instead of allowing the last contract to win.
+  if (tradeCostSnapshotComplete) {
+  const tradeCostUpdates = new Map<
+    string,
+    { projectName: string; item: NonNullable<ReturnType<typeof mapPimsvinaTradeItem>>; year: number; month: number; rawActual: number }
+  >();
+  const invalidIncomingTradeCostKeys = new Set<string>();
+  for (const item of pdTradeCostMonthly) {
+    const projectName = resolveTradeProjectName(item);
+    const mappedItem = mapPimsvinaTradeItem(item.mapped_item ?? item.trade);
+    const year = Number(item.year);
+    const month = Number(item.month);
+    const actualKusd = parsePimsvinaKusd(item.actual_kusd);
+    const hasValidIdentity =
+      projectName != null &&
+      mappedItem != null &&
+      Number.isInteger(year) &&
+      Number.isInteger(month) &&
+      month >= 1 &&
+      month <= 12;
+    if (hasValidIdentity && actualKusd == null) {
+      invalidIncomingTradeCostKeys.add(
+        tradeCostKey({ projectName, item: mappedItem, year, month }),
+      );
+    }
+    if (
+      !hasValidIdentity ||
+      actualKusd == null
+    ) {
+      if (!projectName) trackSkipped(item);
+      continue;
+    }
+    const key = `${projectName}|${mappedItem}|${year}|${month}`;
+    const existing = tradeCostUpdates.get(key);
+    if (existing) existing.rawActual += actualKusd;
+    else tradeCostUpdates.set(key, { projectName, item: mappedItem, year, month, rawActual: actualKusd });
+  }
+  for (const update of tradeCostUpdates.values()) {
+    const actual = parsePimsvinaKusd(update.rawActual);
+    if (actual == null) continue;
+    await db
+      .insert(pdCostBudgetMonthlyTable)
+      .values({
+        projectName: update.projectName,
+        item: update.item,
+        year: update.year,
+        month: update.month,
+        actual: String(actual),
+        actualSource: "pimsvina",
+      })
+      .onConflictDoUpdate({
+        target: [
+          pdCostBudgetMonthlyTable.projectName,
+          pdCostBudgetMonthlyTable.item,
+          pdCostBudgetMonthlyTable.year,
+          pdCostBudgetMonthlyTable.month,
+        ],
+        set: { actual: String(actual), actualSource: "pimsvina" },
+      });
+    counts.pdTradeCostMonthly++;
+  }
+  const incomingKeys = new Set([
+    ...tradeCostUpdates.keys(),
+    ...invalidIncomingTradeCostKeys,
+  ]);
+  const incomingScopes = new Set(
+    pdTradeCostScopes
+      .map((row: any) => ({
+        projectName: resolveTradeProjectName(row),
+        year: Number(row.year),
+      }))
+      .filter(
+        (row): row is { projectName: string; year: number } =>
+          row.projectName != null && Number.isInteger(row.year),
+      )
+      .map((row) => tradeCostScope(row)),
+  );
+  const existingErpRows = await db
+    .select()
+    .from(pdCostBudgetMonthlyTable)
+    .where(eq(pdCostBudgetMonthlyTable.actualSource, "pimsvina"));
+  const staleErpRows = findStalePimsvinaTradeCosts(
+    existingErpRows,
+    incomingKeys,
+    incomingScopes,
+    tradeCostSnapshotComplete,
+  );
+  for (const row of staleErpRows) {
+    await db
+      .update(pdCostBudgetMonthlyTable)
+      .set({ actual: null, actualSource: null })
+      .where(eq(pdCostBudgetMonthlyTable.id, row.id));
+  }
   }
 
   // 12. Sync Project Detail Cashflow Monthly (cash in/out per project per month)
@@ -587,6 +883,9 @@ const PIMSVINA_DATA_KEYS = [
   "pdOverview",
   "pdProgress",
   "pdOutsourcing",
+  "pdTradeCostMonthly",
+  "pdTradeCostScopes",
+  "pdTradeCostSyncStatus",
   "pdCashflow",
   "pdCogs",
   "pdSales",

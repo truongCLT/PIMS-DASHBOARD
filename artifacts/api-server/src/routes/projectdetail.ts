@@ -34,6 +34,7 @@ import {
   UpdateProjectdetailCommentResponse,
 } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/adminAuth";
+import { preservePimsvinaActualSource } from "../lib/pimsvinaTradeCost";
 
 const router: IRouter = Router();
 const SECTION_KEYS = [
@@ -627,6 +628,18 @@ router.put("/projectdetail", requireAdmin, async (req, res) => {
         .from(pdOverviewTable)
         .where(eq(pdOverviewTable.projectName, projectName));
       const prevOv = existingOvRows[0];
+      const existingCostBudgetMonthlyRows = !lockedSections.has("costBudget")
+        ? await tx
+            .select()
+            .from(pdCostBudgetMonthlyTable)
+            .where(eq(pdCostBudgetMonthlyTable.projectName, projectName))
+        : [];
+      const existingCostBudgetMonthlyByKey = new Map(
+        existingCostBudgetMonthlyRows.map((row) => [
+          `${row.item}|${row.year}|${row.month}`,
+          row,
+        ]),
+      );
       const existingPlanVersions = await tx
         .select()
         .from(pdPlanVersionsTable)
@@ -813,14 +826,24 @@ router.put("/projectdetail", requireAdmin, async (req, res) => {
       );
       if (!lockedSections.has("costBudget") && cbmRows.length > 0) {
         await tx.insert(pdCostBudgetMonthlyTable).values(
-          cbmRows.map((c) => ({
-            projectName,
-            item: c.item,
-            year: c.year,
-            month: c.month,
-            plan: str(c.plan),
-            actual: str(c.actual),
-          })),
+          cbmRows.map((c) => {
+            const existing = existingCostBudgetMonthlyByKey.get(
+              `${c.item}|${c.year}|${c.month}`,
+            );
+            return {
+              projectName,
+              item: c.item,
+              year: c.year,
+              month: c.month,
+              plan: str(c.plan),
+              actual: str(c.actual),
+              actualSource: preservePimsvinaActualSource(
+                existing?.actualSource,
+                existing?.actual,
+                c.actual,
+              ),
+            };
+          }),
         );
       }
       if (!lockedSections.has("outsourcing") && body.outsourcing.length > 0) {

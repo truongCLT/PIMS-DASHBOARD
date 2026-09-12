@@ -163,6 +163,7 @@ export const pdCostBudgetMonthlyTable = pgTable(
     month: integer("month").notNull(), // 1..12
     plan: numeric("plan", { precision: 24, scale: 8 }),
     actual: numeric("actual", { precision: 24, scale: 8 }),
+    actualSource: text("actual_source"), // null=manual/import, 'pimsvina'=ERP-owned actual
   },
   (t) => [
     uniqueIndex("pd_cost_budget_monthly_uq").on(t.projectName, t.item, t.year, t.month),

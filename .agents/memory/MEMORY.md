@@ -13,3 +13,4 @@
 - [YTD management month](ytd-management-month.md) — YTD KPI uses the current management month, not the default query window's last closed month.
 - [Project profit drilldown source](project-profit-drilldown-source.md) — monthly project drilldowns must use management-report project data, not the independently imported salescost snapshot.
 - [Order import isolation](order-import-isolation.md) — uploaded order plans stay independent from replace-all management reports and overlay only the new-orders summary line.
+- [ERP-owned value lifecycle](erp-owned-value-lifecycle.md) — preserve ERP ownership through unrelated saves; clear missing values only within an independently verified complete sync scope.
