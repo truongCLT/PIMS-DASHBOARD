@@ -376,9 +376,9 @@ export function deriveDashboardData(
       const spY = subLine.planTotal;
       const saY = subLine.actualTotal;
       row.sub = "이익률";
-      row.subActual = ratioStr(saM, aM);
-      row.subForecast = ratioStr(saY, aY);
-      row.subAch = ratioStr(saY, pY ? (saM / spM) * pY : 0);
+      row.subActual = ratioStr(aM, saM);
+      row.subForecast = ratioStr(pY, spY);
+      row.subAch = ratioStr(aY, saY);
     }
     return row;
   };
