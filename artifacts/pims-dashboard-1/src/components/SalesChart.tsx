@@ -18,7 +18,7 @@ import {
 } from "@workspace/api-client-react";
 import { useDashboardData, type SalesRow, REPORT_YEAR } from "../lib/mgmtreportData";
 import { useDashboardFilters, makeConverter } from "../lib/dashboardFilters";
-import { classifyMrProject } from "../data/projects";
+import { resolveProjectBusinessType } from "../data/projects";
 import { chartTheme, chartTypography } from "../lib/chartTheme";
 import { useTheme } from "../lib/theme";
 import {
@@ -188,7 +188,7 @@ export function SalesChart() {
     return projects.filter(
       (p) =>
         !p.isGroup &&
-        (!divisionSelected || !division || (p.businessType ?? classifyMrProject(p.name)) === division) &&
+        (!divisionSelected || !division || resolveProjectBusinessType(p.name, p.businessType) === division) &&
         (statusFilter == null || (p.status ?? "ongoing") === statusFilter),
     );
   }, [projectSelected, divisionSelected, project, division, statusFilter, projectsQuery.data]);
@@ -202,7 +202,7 @@ export function SalesChart() {
       .map((p) => ({
         name: p.name,
         category: p.companyLabel ?? "-",
-        bizType: p.businessType ?? classifyMrProject(p.name),
+        bizType: resolveProjectBusinessType(p.name, p.businessType),
         amount: Math.round(convert(p.revenueActual[drillMonthIdx] ?? 0)),
       }))
       // 0인 현장은 제외, 마이너스(조정 역분개 등)는 유지

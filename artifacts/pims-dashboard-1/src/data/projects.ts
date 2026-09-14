@@ -22,8 +22,9 @@ const SERVICE_KEYWORDS = [
   "운영관리",
   "분양대행",
   "테스트 파일",
-  "모델하우스",
 ];
+
+export type ProjectBusinessType = "시공" | "용역";
 
 /** 테스트 프로젝트 여부 (사이드바에서 최상단 정렬용) */
 export function isTestMrProject(projectName: string): boolean {
@@ -31,8 +32,19 @@ export function isTestMrProject(projectName: string): boolean {
 }
 
 /** mr 프로젝트명 기반 시공/용역 분류 (키워드 매칭, 기본값 시공) */
-export function classifyMrProject(projectName: string): "시공" | "용역" {
+export function classifyMrProject(projectName: string): ProjectBusinessType {
   return SERVICE_KEYWORDS.some((k) => projectName.includes(k)) ? "용역" : "시공";
+}
+
+/**
+ * 서버 조직 구조에 명시된 사업 유형을 우선하고, 미매핑 프로젝트만 이름으로 분류한다.
+ * 사이드바와 상세 화면 라우팅이 반드시 같은 결과를 사용하도록 이 함수를 공유한다.
+ */
+export function resolveProjectBusinessType(
+  projectName: string,
+  explicitBusinessType?: ProjectBusinessType | null,
+): ProjectBusinessType {
+  return explicitBusinessType ?? classifyMrProject(projectName);
 }
 
 export function getProjectDivision(projectName: string): string | null {

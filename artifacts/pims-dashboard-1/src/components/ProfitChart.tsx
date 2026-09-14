@@ -6,7 +6,7 @@ import {
 } from "@workspace/api-client-react";
 import { useDashboardData, type ProfitRow, REPORT_YEAR } from "../lib/mgmtreportData";
 import { useDashboardFilters, makeConverter } from "../lib/dashboardFilters";
-import { classifyMrProject } from "../data/projects";
+import { classifyMrProject, resolveProjectBusinessType } from "../data/projects";
 import { filterProfitProjects } from "../lib/mgmtreportReconciliation";
 import { chartTheme, chartTypography } from "../lib/chartTheme";
 import { INK_BODY, INK_MUTED, POINT_BLUE, CARD_BORDER, emptyNote, ACHIEVE_RED } from "../lib/uiTokens";
@@ -105,7 +105,7 @@ export function ProfitChart() {
         return {
           name: p.name,
           category: p.companyLabel ?? "-",
-          bizType: p.businessType ?? classifyMrProject(p.name),
+          bizType: resolveProjectBusinessType(p.name, p.businessType),
           revenue: Math.round(rev),
           cogs: Math.round(cogs),
           gross: Math.round(gross),

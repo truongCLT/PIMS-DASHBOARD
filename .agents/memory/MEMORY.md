@@ -18,3 +18,4 @@
 - [Project report PDF format](project-report-pdf-format.md) — exported monthly reports use DAEWOOVINA, omit visible dates, and fit every section onto one landscape A4 page.
 - [SVG chart typography](svg-chart-typography.md) — compare rendered glyph size, not SVG font attributes; convert shared CSS-pixel targets using the live card width.
 - [Merge ancestry after checkpoints](merge-ancestry-checkpoints.md) — automatic checkpoints can save resolved files without the remote merge parent; verify ancestry, not just a clean status.
+- [Model-house business type](model-house-business-type.md) — PIMS 모델하우스 projects are 도급/시공, not 용역; they must retain the construction progress tab.

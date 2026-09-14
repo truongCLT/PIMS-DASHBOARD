@@ -5,7 +5,7 @@ import {
   getListMgmtreportProjectsQueryKey,
 } from "@workspace/api-client-react";
 import { useGetMgmtreportSettings } from "@workspace/api-client-react/generated/api";
-import { classifyMrProject } from "../data/projects";
+import { classifyMrProject, resolveProjectBusinessType } from "../data/projects";
 import {
   filterProfitProjects,
   sumProjectMonths,
@@ -34,7 +34,7 @@ export function useProjectBusinessType(projectName: string | null): "시공" | "
   if (!projectName) return null;
   const project = projectsQuery.data?.projects.find((p) => p.name === projectName);
   if (!project) return null;
-  return project.businessType ?? classifyMrProject(projectName);
+  return resolveProjectBusinessType(projectName, project.businessType);
 }
 
 interface Line {
