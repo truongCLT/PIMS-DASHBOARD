@@ -5,6 +5,9 @@ import { ProjectCommentPanel } from "./ProjectCommentPanel";
 import { useProjectDetail, fmtPct, ratioPct } from "../lib/projectDetailData";
 import { useMoney } from "../lib/displayUnit";
 import { chartTheme } from "../lib/chartTheme";
+import { SalesSection } from "./project-report/SalesSection";
+import { CostSection } from "./project-report/CostSection";
+import { FundsSection } from "./project-report/FundsSection";
 import {
   exportProjectReportPdf,
   runProjectReportExport,
@@ -116,6 +119,18 @@ export function ServiceReportTab({
   const salesMonthActual = sumNullable(monthSales, (row) => row.actual);
   const salesCumPlan = sumNullable(cumSales, (row) => row.plan);
   const salesCumActual = sumNullable(cumSales, (row) => row.actual);
+  const salesPlanMonths = Array.from({ length: 12 }, (_, index) =>
+    sumNullable(
+      salesRows.filter((row) => row.year === referenceYear && row.month === index + 1),
+      (row) => row.plan,
+    ),
+  );
+  const salesActualMonths = Array.from({ length: 12 }, (_, index) =>
+    sumNullable(
+      salesRows.filter((row) => row.year === referenceYear && row.month === index + 1),
+      (row) => row.actual,
+    ),
+  );
   const cashMonthIn = sumNullable(monthCash, (row) => row.cashIn);
   const cashMonthOut = sumNullable(monthCash, (row) => row.cashOut);
   const cashCumIn = sumNullable(cumCash, (row) => row.cashIn);
@@ -136,6 +151,30 @@ export function ServiceReportTab({
   ];
   const budgetPlan = sumNullable(budgetItems, (row) => row.plan);
   const budgetActual = sumNullable(budgetItems, (row) => row.actual);
+  const reportBudgetRows = [
+    {
+      item: "외주",
+      budget: sumNullable(outsourcingRows, (row) => row.budget),
+      plan: sumNullable(outsourcingRows, (row) => row.executedBudget),
+      actual: sumNullable(outsourcingRows, (row) => row.accum ?? row.resolved),
+    },
+    ...["Common", "Expense 1", "Expense 2", "Contingency"].map((item) => {
+      const row = budgetRows.find((entry) => entry.item === item);
+      return {
+        item:
+          item === "Expense 1"
+            ? "경비1"
+            : item === "Expense 2"
+              ? "경비2"
+              : item === "Contingency"
+                ? "예비비"
+                : item,
+        budget: row?.budget ?? null,
+        plan: row?.plan ?? null,
+        actual: row?.actual ?? null,
+      };
+    }),
+  ].filter((row) => row.budget != null || row.plan != null || row.actual != null);
   const durationMonths = (() => {
     const start = /^(\d{4})-(\d{1,2})/.exec(overview?.startDate ?? "");
     const end = /^(\d{4})-(\d{1,2})/.exec(overview?.endDate ?? "");
@@ -263,14 +302,13 @@ export function ServiceReportTab({
           <MetricRow label="수금조건" value={contractConditions ?? DASH} />
         </div>
 
-        <div style={cardStyle}>
-          <div style={sectionTitle}>매출</div>
-          <MetricRow label="월 계획" value={fmtMoney(salesMonthPlan)} />
-          <MetricRow label="월 실적(전망)" value={fmtMoney(salesMonthActual)} />
-          <MetricRow label="누계 계획" value={fmtMoney(salesCumPlan)} />
-          <MetricRow label="누계 실적" value={fmtMoney(salesCumActual)} />
-          <MetricRow label="전체 도급액" value={fmtMoney(overview?.contractAmount)} strong />
-        </div>
+        <SalesSection
+          planMonths={salesPlanMonths}
+          actualMonths={salesActualMonths}
+          resolvedMonth={referenceMonth}
+          allSalesMonths={salesRows}
+          contractAmount={overview?.contractAmount ?? null}
+        />
 
         <div style={{ ...cardStyle, overflowX: "auto" }}>
           <div style={sectionTitle}>현황</div>
@@ -298,31 +336,14 @@ export function ServiceReportTab({
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "8px" }}>
-        <div style={cardStyle}>
-          <div style={sectionTitle}>원가</div>
-          {budgetItems.map((row) => (
-            <div key={row.label} style={{ padding: "3px 0", borderBottom: `1px solid ${DIVIDER}` }}>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: INK_BODY }}>
-                <span>{row.label}</span>
-                <span>{fmtMoney(row.actual)} / {fmtMoney(row.plan)}</span>
-              </div>
-              <PlanActualBar plan={ratioPct(row.plan, budgetPlan)} actual={ratioPct(row.actual, row.plan)} />
-            </div>
-          ))}
-          <MetricRow label="예산집행 현황" value={`${fmtMoney(budgetActual)} / ${fmtMoney(budgetPlan)}`} strong />
-        </div>
+        <CostSection budgetRows={reportBudgetRows} />
 
-        <div style={cardStyle}>
-          <div style={sectionTitle}>자금</div>
-          <MetricRow label="월 입금" value={fmtMoney(cashMonthIn)} />
-          <MetricRow label="월 출금" value={fmtMoney(cashMonthOut)} />
-          <MetricRow label="누계 입금" value={fmtMoney(cashCumIn)} />
-          <MetricRow label="누계 출금" value={fmtMoney(cashCumOut)} />
-          <div style={{ marginTop: "8px", fontSize: "11px", fontWeight: 700, color: INK_NAVY }}>상세보기</div>
-          <MetricRow label="매출" value={fmtMoney(salesCumActual)} />
-          <MetricRow label="인정" value={fmtMoney(recognized)} />
-          <MetricRow label="수금 채권" value={fmtMoney(receivable)} strong />
-        </div>
+        <FundsSection
+          cashIn={cashCumIn ?? 0}
+          cashOut={cashCumOut ?? 0}
+          contractAmount={overview?.contractAmount ?? null}
+          cumRev={salesCumActual ?? 0}
+        />
 
         <div style={cardStyle}>
           <div style={sectionTitle}>주요 이슈 및 대응방안</div>
