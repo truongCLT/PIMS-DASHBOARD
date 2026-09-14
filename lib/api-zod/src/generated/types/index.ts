@@ -119,6 +119,7 @@ export * from './salescostSummary';
 export * from './salescostSummaryPoint';
 export * from './updateMgmtreportComment';
 export * from './updateMgmtreportProjectDivisionBody';
+export * from './updateMgmtreportProjectDivisionBodyBusinessType';
 export * from './updateProjectdetailComment';
 export * from './uploadUrlRequest';
 export * from './uploadUrlResponse';

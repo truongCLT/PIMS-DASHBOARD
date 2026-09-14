@@ -5,8 +5,11 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { UpdateMgmtreportProjectDivisionBodyBusinessType } from './updateMgmtreportProjectDivisionBodyBusinessType';
 
 export interface UpdateMgmtreportProjectDivisionBody {
-  /** null이면 매핑 해제 (기존 키워드 추정 방식으로 폴백) */
+  /** 기존 클라이언트 호환용 부문 ID. businessType이 있으면 서버가 최신 조직 구조에서 목표 부문을 다시 선택함. */
   divisionId: number | null;
+  /** 변경할 사업 유형. 지정하면 오래된 divisionId 대신 서버의 최신 조직 구조를 기준으로 매핑함. */
+  businessType?: UpdateMgmtreportProjectDivisionBodyBusinessType;
 }

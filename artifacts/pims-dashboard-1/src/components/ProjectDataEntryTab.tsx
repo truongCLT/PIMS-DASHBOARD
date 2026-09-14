@@ -8,7 +8,6 @@ import {
   useListMgmtreportProjects,
   useUpdateMgmtreportProjectStatus,
   useUpdateMgmtreportProjectDivision,
-  useGetOrgStructure,
   getListMgmtreportProjectsQueryKey,
   useGetCashflowMonthly,
   getGetCashflowMonthlyQueryKey,
@@ -365,27 +364,19 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
   const currentBusinessType = currentProject?.businessType ?? (service ? "용역" : "시공");
   const statusMutation = useUpdateMgmtreportProjectStatus();
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
-  const orgStructureQuery = useGetOrgStructure();
   const divisionMutation = useUpdateMgmtreportProjectDivision();
   const [divisionMsg, setDivisionMsg] = useState<string | null>(null);
   const changeBusinessType = (businessType: "시공" | "용역") => {
     if (businessType === currentBusinessType) return;
-    const companies = orgStructureQuery.data?.companies ?? [];
-    const currentCompany = companies.find((company) => company.label === currentProject?.companyLabel);
-    const targetDivision =
-      currentCompany?.divisions.find((division) => division.businessType === businessType) ??
-      companies.flatMap((company) => company.divisions).find((division) => division.businessType === businessType);
-    if (!targetDivision) {
-      setDivisionMsg(`${businessType} 부문을 찾을 수 없습니다.`);
-      return;
-    }
     setDivisionMsg(null);
+    setStatusMsg(null);
+    setSaveMsg(null);
     divisionMutation.mutate(
-      { name: projectName, data: { divisionId: targetDivision.id } },
+      { name: projectName, data: { divisionId: null, businessType } },
       {
-        onSuccess: () => {
+        onSuccess: async () => {
           setDivisionMsg(`${businessType} 메뉴로 변경되었습니다.`);
-          queryClient.invalidateQueries({ queryKey: getListMgmtreportProjectsQueryKey() });
+          await queryClient.invalidateQueries({ queryKey: getListMgmtreportProjectsQueryKey() });
         },
         onError: () => setDivisionMsg("프로젝트 메뉴 변경에 실패했습니다."),
       },
@@ -393,6 +384,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
   };
   const toggleStatus = () => {
     const next = currentStatus === "closed" ? "ongoing" : "closed";
+    setDivisionMsg(null);
     setStatusMsg(null);
     statusMutation.mutate(
       { data: { name: projectName, status: next } },
@@ -1031,7 +1023,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                 role="radio"
                 aria-checked={currentBusinessType === businessType}
                 key={businessType}
-                disabled={divisionMutation.isPending || orgStructureQuery.isLoading || mrProjectsQuery.isLoading}
+                disabled={divisionMutation.isPending || mrProjectsQuery.isLoading}
                 onClick={() => changeBusinessType(businessType)}
                 style={{
                   display: "inline-flex",
@@ -1046,7 +1038,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                   fontWeight: 600,
                   color: currentBusinessType === businessType ? ADMIN_NAVY : INK_MUTED,
                   cursor: divisionMutation.isPending ? "wait" : "pointer",
-                  opacity: divisionMutation.isPending || orgStructureQuery.isLoading || mrProjectsQuery.isLoading ? 0.6 : 1,
+                  opacity: divisionMutation.isPending || mrProjectsQuery.isLoading ? 0.6 : 1,
                 }}
               >
                 {businessType}

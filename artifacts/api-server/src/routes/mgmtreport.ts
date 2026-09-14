@@ -67,6 +67,7 @@ import {
   applyOrderRowsToPnlSummary,
   classifyOrderActual,
 } from "../lib/orderSummaryOverlay";
+import { selectTargetDivision } from "../lib/projectDivision";
 
 const router: IRouter = Router();
 
@@ -500,11 +501,39 @@ router.patch("/mgmtreport/projects/:name/division", requireAdmin, async (req, re
     res.status(400).json({ error: "프로젝트 이름이 필요합니다." });
     return;
   }
-  const { divisionId } = parsed.data;
+  const { divisionId, businessType } = parsed.data;
   try {
+    const [project] = await db
+      .select()
+      .from(mrProjectsTable)
+      .where(eq(mrProjectsTable.name, name))
+      .limit(1);
+    if (!project) {
+      res.status(404).json({ error: "해당 이름의 프로젝트를 찾을 수 없습니다." });
+      return;
+    }
+
+    const divisions = await db.select().from(divisionsTable).orderBy(asc(divisionsTable.sortOrder), asc(divisionsTable.id));
+    const currentDivision = project.divisionId != null ? divisions.find((division) => division.id === project.divisionId) : undefined;
+    const targetDivision = businessType
+      ? selectTargetDivision(divisions, businessType, currentDivision?.companyId ?? null)
+      : divisionId != null
+        ? divisions.find((division) => division.id === divisionId)
+        : undefined;
+
+    if ((businessType || divisionId != null) && !targetDivision) {
+      res.status(400).json({
+        error: businessType
+          ? `${businessType} 부문이 조직 구조에 등록되어 있지 않습니다.`
+          : "선택한 부문이 조직 구조에 존재하지 않습니다.",
+      });
+      return;
+    }
+
+    const resolvedDivisionId = targetDivision?.id ?? null;
     const [updated] = await db
       .update(mrProjectsTable)
-      .set({ divisionId })
+      .set({ divisionId: resolvedDivisionId })
       .where(eq(mrProjectsTable.name, name))
       .returning();
     if (!updated) {
@@ -512,14 +541,17 @@ router.patch("/mgmtreport/projects/:name/division", requireAdmin, async (req, re
       return;
     }
 
-    const division = divisionId != null ? (await db.select().from(divisionsTable).where(eq(divisionsTable.id, divisionId)))[0] : undefined;
+    const division = targetDivision;
     const company = division ? (await db.select().from(companiesTable).where(eq(companiesTable.id, division.companyId)))[0] : undefined;
     const [pdOverviewRow] = await db
       .select({ projectName: pdOverviewTable.projectName })
       .from(pdOverviewTable)
       .where(eq(pdOverviewTable.projectName, updated.name));
 
-    req.log.info({ name, divisionId }, "mgmtreport project division updated");
+    req.log.info(
+      { name, requestedDivisionId: divisionId, resolvedDivisionId, businessType: division?.businessType ?? null },
+      "mgmtreport project division updated",
+    );
     res.json(
       UpdateMgmtreportProjectDivisionResponse.parse({
         name: updated.name,
