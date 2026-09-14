@@ -375,7 +375,7 @@ export function deriveDashboardData(
       const saM = rangeSum(subLine.actual, F, M);
       const spY = subLine.planTotal;
       const saY = subLine.actualTotal;
-      row.sub = `${label} 달성률 / 이익률`;
+      row.sub = "이익률";
       row.subActual = ratioStr(saM, aM);
       row.subForecast = ratioStr(saY, aY);
       row.subAch = ratioStr(saY, pY ? (saM / spM) * pY : 0);
