@@ -457,12 +457,15 @@ export function ProjectReportTab({
             progRows={progRows}
             resolvedMonth={resolvedMonth}
             costExecution={costExecution}
+            startDate={detail?.overview?.startDate}
+            endDate={detail?.overview?.endDate}
           />
           <SalesSection
             planMonths={planMonths}
             actualMonths={revMonths}
             resolvedMonth={resolvedMonth}
             allSalesMonths={detail?.canonicalSalesMonthly ?? []}
+            contractAmount={detail?.overview?.contractAmount ?? null}
           />
           <StatusTableSection rows={statusRows} />
         </div>
