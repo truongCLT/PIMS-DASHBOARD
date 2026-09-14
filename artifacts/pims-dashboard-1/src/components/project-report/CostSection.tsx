@@ -19,6 +19,7 @@ interface Props {
 
 interface CostGroup {
   label: string;
+  koreanLabel: string;
   plan: number | null;
   actual: number | null;
 }
@@ -39,6 +40,7 @@ export function CostSection({ budgetRows }: Props) {
   const groups: CostGroup[] = [
     {
       label: "Direct Cost",
+      koreanLabel: "직접비",
       plan: sumNullable(
         budgetRows.filter((row) => ["외주", "Common", "경비1"].includes(row.item)),
         getPlan,
@@ -50,6 +52,7 @@ export function CostSection({ budgetRows }: Props) {
     },
     {
       label: "Indirect Cost",
+      koreanLabel: "간접비",
       plan: sumNullable(
         budgetRows.filter((row) => row.item === "경비2"),
         getPlan,
@@ -61,6 +64,7 @@ export function CostSection({ budgetRows }: Props) {
     },
     {
       label: "Contingency",
+      koreanLabel: "예비비",
       plan: sumNullable(
         budgetRows.filter((row) => row.item === "예비비"),
         getPlan,
@@ -94,6 +98,7 @@ export function CostSection({ budgetRows }: Props) {
 
       <div style={{ display: "flex", flexDirection: "column", gap: "9px" }}>
         {groups.map((group) => {
+          const groupRate = ratioPct(group.actual, group.plan);
           const planWidth =
             group.plan != null && group.plan > 0
               ? Math.max((group.plan / maxPlan) * 100, 4)
@@ -112,39 +117,49 @@ export function CostSection({ budgetRows }: Props) {
                 gap: "8px",
               }}
             >
-              <span style={{ fontSize: "12px", color: INK_BODY, whiteSpace: "nowrap" }}>
-                {group.label}
+              <span style={{ display: "flex", flexDirection: "column", lineHeight: 1.25 }}>
+                <span style={{ fontSize: "11px", fontWeight: 700, color: INK_BODY, whiteSpace: "nowrap" }}>
+                  {group.label}
+                </span>
+                <span style={{ fontSize: "10px", color: INK_MUTED }}>{group.koreanLabel}</span>
               </span>
-              <div
-                style={{
-                  position: "relative",
-                  height: "24px",
-                  border: `1px solid ${CARD_BORDER}`,
-                  backgroundColor: "#fff",
-                  overflow: "hidden",
-                }}
-              >
+              <div>
                 <div
                   style={{
-                    position: "absolute",
-                    inset: "0 auto 0 0",
-                    width: `${actualWidth}%`,
-                    backgroundColor: chartTheme.planBlue,
-                    opacity: 0.62,
+                    position: "relative",
+                    height: "20px",
+                    border: `1px solid ${CARD_BORDER}`,
+                    backgroundColor: "#fff",
+                    overflow: "hidden",
                   }}
-                />
-                {planWidth > 0 && (
+                >
                   <div
                     style={{
                       position: "absolute",
-                      left: `calc(${Math.min(planWidth, 100)}% - 1px)`,
-                      top: 0,
-                      bottom: 0,
-                      width: "2px",
-                      backgroundColor: chartTheme.outflowRed,
+                      inset: "0 auto 0 0",
+                      width: `${actualWidth}%`,
+                      backgroundColor: chartTheme.planBlue,
+                      opacity: 0.62,
                     }}
                   />
-                )}
+                  {planWidth > 0 && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        left: `calc(${Math.min(planWidth, 100)}% - 1px)`,
+                        top: 0,
+                        bottom: 0,
+                        width: "2px",
+                        backgroundColor: chartTheme.outflowRed,
+                      }}
+                    />
+                  )}
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: "5px", marginTop: "2px", fontSize: "9px", color: INK_MUTED, whiteSpace: "nowrap" }}>
+                  <span>계획 <strong style={{ color: INK_BODY }}>{fmtMoney(group.plan)}</strong></span>
+                  <span>집행 <strong style={{ color: INK_BODY }}>{fmtMoney(group.actual)}</strong></span>
+                  <span>집행률 <strong style={{ color: rateColor(groupRate) }}>{groupRate == null ? "-" : `${Math.round(groupRate * 10) / 10}%`}</strong></span>
+                </div>
               </div>
             </div>
           );
