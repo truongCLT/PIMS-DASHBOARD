@@ -383,12 +383,24 @@ export function deriveDashboardData(
     return row;
   };
 
+  const nonOperatingProfit: Line | null =
+    ordinary && op1
+      ? {
+          code: "calculated_non_operating_profit",
+          label: "영업외 이익",
+          plan: ordinary.plan.map((value, index) => value - (op1.plan[index] ?? 0)),
+          actual: ordinary.actual.map((value, index) => value - (op1.actual[index] ?? 0)),
+          planTotal: ordinary.planTotal - op1.planTotal,
+          actualTotal: ordinary.actualTotal - op1.actualTotal,
+        }
+      : null;
+
   const performanceRows: PerformanceRow[] = [
     pRow("매출액", revenue),
     pRow("매출이익", gross, revenue),
     pRow("판관비", sga),
     pRow("영업이익", op1, revenue),
-    pRow("영업외 이익", op2),
+    pRow("영업외 이익", nonOperatingProfit),
     pRow("경상이익", ordinary, revenue),
   ];
 
