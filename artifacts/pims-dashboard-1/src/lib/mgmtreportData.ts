@@ -83,6 +83,8 @@ export interface ProfitRow {
   m: string;
   /** 오늘 날짜의 전월 이후(당월 포함) 전망값이면 true */
   isForecast: boolean;
+  /** 손익률 합계 재계산용 매출 실적 */
+  revenueValue: number;
   op: number;
   opPct: string;
   non: number;
@@ -425,6 +427,7 @@ export function deriveDashboardData(
     return {
       m: b.label,
       isForecast: b.months.every((month) => month > actualThroughMonth),
+      revenueValue: roundSmart(revA),
       op: roundSmart(opA),
       opPct: ratioStr(opA, revA),
       non: roundSmart(op2A),
