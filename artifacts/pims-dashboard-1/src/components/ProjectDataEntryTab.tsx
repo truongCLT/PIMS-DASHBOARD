@@ -1259,9 +1259,6 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
             </tr>
           </tbody>
         </table>
-        <div style={{ fontSize: "12px", color: INK_MUTED, marginTop: "6px" }}>
-          {t("projectDataEntryTab:overviewCostRateNote")}
-        </div>
         </div>
       </div>
 
