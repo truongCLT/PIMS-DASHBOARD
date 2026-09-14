@@ -119,6 +119,21 @@ function dateDiffDays(plan: string | null | undefined, actual: string | null | u
   return Math.round((actualDate.getTime() - planDate.getTime()) / 86_400_000);
 }
 
+function durationRateAtMonthEnd(
+  startDate: string | null | undefined,
+  endDate: string | null | undefined,
+  year: number,
+  month: number,
+): number | null {
+  if (!startDate || !endDate) return null;
+  const start = Date.parse(startDate);
+  const end = Date.parse(endDate);
+  const monthEnd = Date.UTC(year, month, 0);
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return null;
+  const elapsed = Math.min(Math.max(monthEnd - start, 0), end - start);
+  return (elapsed / (end - start)) * 100;
+}
+
 function milestoneTooltip(m: ProjectDetail["milestones"][number]): string {
   const startDiff = dateDiffDays(m.planStart, m.actualStart);
   const endDiff = dateDiffDays(m.planEnd, m.actualEnd);
@@ -365,22 +380,22 @@ export function ConstructionProgressTab({
       .find((p) => p.planCumPct != null || p.actualCumPct != null) ?? null;
   const planCum = latest?.planCumPct ?? null;
   const actualCum = latest?.actualCumPct ?? null;
-  const diff = planCum != null && actualCum != null ? actualCum - planCum : null;
+  const durationRate = durationRateAtMonthEnd(
+    detail?.overview?.startDate,
+    detail?.overview?.endDate,
+    referenceYear,
+    referenceMonth,
+  );
 
   // 기준월 당월 공정률
-  const planMonth = latest != null
-    ? (progress.find((p) => p.year === latest.year && p.month === latest.month)?.planPct ?? null)
-    : null;
-  const actualMonth = latest != null
-    ? (progress.find((p) => p.year === latest.year && p.month === latest.month)?.actualPct ?? null)
-    : null;
+  const referenceProgress = progress.find(
+    (p) => p.year === referenceYear && p.month === referenceMonth,
+  );
+  const planMonth = referenceProgress?.planPct ?? null;
+  const actualMonth = referenceProgress?.actualPct ?? null;
 
   // 연간 공정률 합계 (기준월 연도)
-  const latestYear = latest?.year ?? null;
-  const annualRows =
-    latestYear != null
-      ? progressToReference.filter((p) => p.year === latestYear)
-      : [];
+  const annualRows = progressToReference.filter((p) => p.year === referenceYear);
   const planAnnual = annualRows.some((p) => p.planPct != null)
     ? Math.min(annualRows.reduce((s, p) => s + (p.planPct ?? 0), 0), 100)
     : null;
@@ -388,18 +403,16 @@ export function ConstructionProgressTab({
     ? Math.min(annualRows.reduce((s, p) => s + (p.actualPct ?? 0), 0), 100)
     : null;
 
-  const costRows = detail?.costBudget ?? [];
-  const outsourcingRows = detail?.outsourcing ?? [];
+  const referenceCostRows = (detail?.costBudgetMonthly ?? []).filter(
+    (row) => row.year === referenceYear && row.month === referenceMonth,
+  );
   const costPlanAmount =
-    costRows.some((row) => row.plan != null) || outsourcingRows.some((row) => row.executedBudget != null)
-      ? costRows.reduce((sum, row) => sum + (row.plan ?? 0), 0) +
-        outsourcingRows.reduce((sum, row) => sum + (row.executedBudget ?? 0), 0)
+    referenceCostRows.some((row) => row.plan != null)
+      ? referenceCostRows.reduce((sum, row) => sum + (row.plan ?? 0), 0)
       : null;
   const costActualAmount =
-    costRows.some((row) => row.actual != null) ||
-    outsourcingRows.some((row) => row.accum != null || row.resolved != null)
-      ? costRows.reduce((sum, row) => sum + (row.actual ?? 0), 0) +
-        outsourcingRows.reduce((sum, row) => sum + (row.accum ?? row.resolved ?? 0), 0)
+    referenceCostRows.some((row) => row.actual != null)
+      ? referenceCostRows.reduce((sum, row) => sum + (row.actual ?? 0), 0)
       : null;
   const monthlyAchievement =
     planMonth != null && planMonth > 0 && actualMonth != null
@@ -444,15 +457,15 @@ export function ConstructionProgressTab({
             <span
               style={{
                 fontSize: "11px",
-                backgroundColor: diff != null && diff < 0 ? STATUS_NEG_BG : STATUS_POS_BG,
-                color: diff != null && diff < 0 ? chartTheme.outflowRed : chartTheme.profitGreen,
+                backgroundColor: STATUS_POS_BG,
+                color: chartTheme.planBlue,
                 borderRadius: "3px",
                 padding: "2px 6px",
                 height: "fit-content",
                 fontWeight: 700,
               }}
             >
-              (B-A) {diff != null ? `${diff >= 0 ? "+" : ""}${diff.toFixed(1)}%` : "-"}
+              공기율 {durationRate != null ? fmtPct(durationRate) : "-"}
             </span>
           </div>
           {/* 3-column: 월(막대) / 연(도넛) / 누계(도넛) */}
