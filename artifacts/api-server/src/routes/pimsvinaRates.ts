@@ -44,7 +44,7 @@ router.get("/pimsvina/exchangerate", async (req, res) => {
   try {
     const rows = await fetchPimsvinaApi("dashboard_common_exchangerate_1q.jsp", {}).catch(() => []);
     const usdRow = Array.isArray(rows) ? rows.find((r) => r.basemoney === "VND" && r.chgmoney === "USD") : null;
-    const krwRow = Array.isArray(rows) ? rows.find((r) => r.basemoney === "KRW" && r.chgmoney === "KRW") : null;
+    const krwRow = Array.isArray(rows) ? rows.find((r) => r.basemoney === "VND" && r.chgmoney === "KRW") : null;
 
     const result: Array<{ currency: "USD" | "KRW"; yymm: string; rate: number }> = [];
     if (usdRow?.rate != null) result.push({ currency: "USD", yymm: String(usdRow.yymm), rate: Number(usdRow.rate) });
