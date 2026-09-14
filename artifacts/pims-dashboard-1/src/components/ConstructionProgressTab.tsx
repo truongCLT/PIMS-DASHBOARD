@@ -358,6 +358,7 @@ export function ConstructionProgressTab({
   const { detail, isLoading } = useProjectDetail(projectName);
   const { fmtMoney, unitLabel } = useMoney();
   const [photoIdx, setPhotoIdx] = useState(0);
+  const progressCardHeight = "390px";
   useEffect(() => { setPhotoIdx(0); }, [projectName]);
 
   const progress = detail?.progress ?? [];
@@ -422,7 +423,7 @@ export function ConstructionProgressTab({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
       {/* Row 1: Construction site progress + Progress */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", height: progressCardHeight }}>
         {/* Construction site progress */}
         <div style={{ ...cardStyle, display: "flex", flexDirection: "column" }}>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
@@ -575,7 +576,7 @@ export function ConstructionProgressTab({
       </div>
 
       {/* Row 2: Project lifecycle progress */}
-      <div style={cardStyle}>
+      <div style={{ ...cardStyle, height: progressCardHeight, display: "flex", flexDirection: "column" }}>
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
           <span style={sectionTitle}>{t("constructionProgressTab:projectLifecycleProcess")}</span>
         </div>
@@ -584,7 +585,7 @@ export function ConstructionProgressTab({
         ) : lifecycleData.length === 0 ? (
           <div style={emptyStyle}>{t("constructionProgressTab:noMonthlyProcessData")}</div>
         ) : (
-          <div style={{ width: "100%", height: "320px" }}>
+          <div style={{ width: "100%", flex: 1, minHeight: 0 }}>
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={lifecycleData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                 <CartesianGrid stroke={chartTheme.gridLine} vertical={false} />
