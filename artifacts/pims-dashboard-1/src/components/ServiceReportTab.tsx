@@ -1,11 +1,13 @@
 import React, { useState } from "react";
-import { useTranslation } from "react-i18next";
 import { FileDown, Loader2 } from "lucide-react";
 import { Button } from "./ui/button";
 import { ProjectCommentPanel } from "./ProjectCommentPanel";
 import { useProjectDetail, fmtPct, ratioPct } from "../lib/projectDetailData";
 import { useMoney } from "../lib/displayUnit";
 import { chartTheme } from "../lib/chartTheme";
+import { SalesSection } from "./project-report/SalesSection";
+import { CostSection } from "./project-report/CostSection";
+import { FundsSection } from "./project-report/FundsSection";
 import {
   exportProjectReportPdf,
   runProjectReportExport,
@@ -90,13 +92,12 @@ export function ServiceReportTab({
   referenceMonth: number;
   krwPerUsd: number;
 }) {
-  const { t } = useTranslation(["common", "serviceProjectDashboard", "dashboardHeader"]);
   const { detail, isLoading } = useProjectDetail(projectName);
   const { fmtMoney, unitLabel } = useMoney();
   const [isExporting, setIsExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
 
-  if (isLoading) return <div style={{ ...cardStyle, padding: "40px", textAlign: "center", color: INK_MUTED }}>{t("common:loading", "불러오는 중...")}</div>;
+  if (isLoading) return <div style={{ ...cardStyle, padding: "40px", textAlign: "center", color: INK_MUTED }}>불러오는 중...</div>;
 
   const overview = detail?.overview;
   const monthIndex = referenceYear * 12 + referenceMonth - 1;
@@ -118,6 +119,18 @@ export function ServiceReportTab({
   const salesMonthActual = sumNullable(monthSales, (row) => row.actual);
   const salesCumPlan = sumNullable(cumSales, (row) => row.plan);
   const salesCumActual = sumNullable(cumSales, (row) => row.actual);
+  const salesPlanMonths = Array.from({ length: 12 }, (_, index) =>
+    sumNullable(
+      salesRows.filter((row) => row.year === referenceYear && row.month === index + 1),
+      (row) => row.plan,
+    ),
+  );
+  const salesActualMonths = Array.from({ length: 12 }, (_, index) =>
+    sumNullable(
+      salesRows.filter((row) => row.year === referenceYear && row.month === index + 1),
+      (row) => row.actual,
+    ),
+  );
   const cashMonthIn = sumNullable(monthCash, (row) => row.cashIn);
   const cashMonthOut = sumNullable(monthCash, (row) => row.cashOut);
   const cashCumIn = sumNullable(cumCash, (row) => row.cashIn);
@@ -138,6 +151,30 @@ export function ServiceReportTab({
   ];
   const budgetPlan = sumNullable(budgetItems, (row) => row.plan);
   const budgetActual = sumNullable(budgetItems, (row) => row.actual);
+  const reportBudgetRows = [
+    {
+      item: "외주",
+      budget: sumNullable(outsourcingRows, (row) => row.budget),
+      plan: sumNullable(outsourcingRows, (row) => row.executedBudget),
+      actual: sumNullable(outsourcingRows, (row) => row.accum ?? row.resolved),
+    },
+    ...["Common", "Expense 1", "Expense 2", "Contingency"].map((item) => {
+      const row = budgetRows.find((entry) => entry.item === item);
+      return {
+        item:
+          item === "Expense 1"
+            ? "경비1"
+            : item === "Expense 2"
+              ? "경비2"
+              : item === "Contingency"
+                ? "예비비"
+                : item,
+        budget: row?.budget ?? null,
+        plan: row?.plan ?? null,
+        actual: row?.actual ?? null,
+      };
+    }),
+  ].filter((row) => row.budget != null || row.plan != null || row.actual != null);
   const durationMonths = (() => {
     const start = /^(\d{4})-(\d{1,2})/.exec(overview?.startDate ?? "");
     const end = /^(\d{4})-(\d{1,2})/.exec(overview?.endDate ?? "");
@@ -226,23 +263,23 @@ export function ServiceReportTab({
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px", flexWrap: "wrap", padding: "2px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span style={{ fontSize: "14px", fontWeight: 700, color: INK_NAVY }}>{t("serviceProjectDashboard:reportTitle", "용역 당월 보고서")}</span>
+          <span style={{ fontSize: "14px", fontWeight: 700, color: INK_NAVY }}>용역 당월 보고서</span>
           <Button
             type="button"
             size="sm"
             onClick={handleReportExport}
             disabled={isExporting}
-            aria-label={isExporting ? t("common:exporting", "보고서 PDF 생성 중") : t("common:exportReport", "보고서 PDF 출력")}
+            aria-label={isExporting ? "보고서 PDF 생성 중" : "보고서 PDF 출력"}
           >
             {isExporting ? (
               <Loader2 aria-hidden="true" className="animate-spin" />
             ) : (
               <FileDown aria-hidden="true" />
             )}
-            {isExporting ? t("common:exporting", "출력 중...") : t("common:exportReport", "보고서 출력")}
+            {isExporting ? "출력 중..." : "보고서 출력"}
           </Button>
         </div>
-        <span style={{ fontSize: "11px", color: INK_MUTED }}>{t("dashboardHeader:asOfMonthLabel", "기준월")} '{String(referenceYear).slice(2)}.{String(referenceMonth).padStart(2, "0")} · {unitLabel}</span>
+        <span style={{ fontSize: "11px", color: INK_MUTED }}>기준월 '{String(referenceYear).slice(2)}.{String(referenceMonth).padStart(2, "0")} · {unitLabel}</span>
       </div>
       {exportError && (
         <div role="alert" style={{ fontSize: "12px", color: "var(--destructive)" }}>
@@ -257,7 +294,7 @@ export function ServiceReportTab({
       >
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "8px" }}>
         <div style={cardStyle}>
-          <div style={sectionTitle}>{t("common:overview", "개요")}</div>
+          <div style={sectionTitle}>개요</div>
           <MetricRow label="PJ" value={projectName} strong />
           <MetricRow label="수행기간 (개월)" value={durationMonths != null ? `${durationMonths}` : DASH} />
           <MetricRow label="발주처" value={overview?.client ?? DASH} />
@@ -265,24 +302,23 @@ export function ServiceReportTab({
           <MetricRow label="수금조건" value={contractConditions ?? DASH} />
         </div>
 
-        <div style={cardStyle}>
-          <div style={sectionTitle}>{t("common:revenue", "매출")}</div>
-          <MetricRow label="월 계획" value={fmtMoney(salesMonthPlan)} />
-          <MetricRow label="월 실적(전망)" value={fmtMoney(salesMonthActual)} />
-          <MetricRow label="누계 계획" value={fmtMoney(salesCumPlan)} />
-          <MetricRow label="누계 실적" value={fmtMoney(salesCumActual)} />
-          <MetricRow label="전체 도급액" value={fmtMoney(overview?.contractAmount)} strong />
-        </div>
+        <SalesSection
+          planMonths={salesPlanMonths}
+          actualMonths={salesActualMonths}
+          resolvedMonth={referenceMonth}
+          allSalesMonths={salesRows}
+          contractAmount={overview?.contractAmount ?? null}
+        />
 
         <div style={{ ...cardStyle, overflowX: "auto" }}>
-          <div style={sectionTitle}>{t("common:status", "현황")}</div>
+          <div style={sectionTitle}>현황</div>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "10px" }}>
             <thead>
               <tr>
-                <th style={{ padding: "4px", background: TABLE_HEADER_BG }}>{t("common:division", "구분")}</th>
-                <th style={{ padding: "4px", background: TABLE_HEADER_BG }}>{t("serviceProjectDashboard:criteriaHeader", "판정 기준")}</th>
-                <th style={{ padding: "4px", background: TABLE_HEADER_BG }}>{t("serviceProjectDashboard:signalHeader", "신호등")}</th>
-                <th style={{ padding: "4px", background: TABLE_HEADER_BG }}>{t("serviceProjectDashboard:priorityHeader", "우선순위")}</th>
+                <th style={{ padding: "4px", background: TABLE_HEADER_BG }}>구분</th>
+                <th style={{ padding: "4px", background: TABLE_HEADER_BG }}>판정 기준</th>
+                <th style={{ padding: "4px", background: TABLE_HEADER_BG }}>신호등</th>
+                <th style={{ padding: "4px", background: TABLE_HEADER_BG }}>우선순위</th>
               </tr>
             </thead>
             <tbody>
@@ -300,34 +336,17 @@ export function ServiceReportTab({
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "8px" }}>
-        <div style={cardStyle}>
-          <div style={sectionTitle}>{t("common:costOfRevenue", "원가")}</div>
-          {budgetItems.map((row) => (
-            <div key={row.label} style={{ padding: "3px 0", borderBottom: `1px solid ${DIVIDER}` }}>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: INK_BODY }}>
-                <span>{row.label}</span>
-                <span>{fmtMoney(row.actual)} / {fmtMoney(row.plan)}</span>
-              </div>
-              <PlanActualBar plan={ratioPct(row.plan, budgetPlan)} actual={ratioPct(row.actual, row.plan)} />
-            </div>
-          ))}
-          <MetricRow label="예산집행 현황" value={`${fmtMoney(budgetActual)} / ${fmtMoney(budgetPlan)}`} strong />
-        </div>
+        <CostSection budgetRows={reportBudgetRows} />
+
+        <FundsSection
+          cashIn={cashCumIn ?? 0}
+          cashOut={cashCumOut ?? 0}
+          contractAmount={overview?.contractAmount ?? null}
+          cumRev={salesCumActual ?? 0}
+        />
 
         <div style={cardStyle}>
-          <div style={sectionTitle}>{t("common:cashFlow", "자금")}</div>
-          <MetricRow label="월 입금" value={fmtMoney(cashMonthIn)} />
-          <MetricRow label="월 출금" value={fmtMoney(cashMonthOut)} />
-          <MetricRow label="누계 입금" value={fmtMoney(cashCumIn)} />
-          <MetricRow label="누계 출금" value={fmtMoney(cashCumOut)} />
-          <div style={{ marginTop: "8px", fontSize: "11px", fontWeight: 700, color: INK_NAVY }}>{t("common:detailView", "상세보기")}</div>
-          <MetricRow label="매출" value={fmtMoney(salesCumActual)} />
-          <MetricRow label="인정" value={fmtMoney(recognized)} />
-          <MetricRow label="수금 채권" value={fmtMoney(receivable)} strong />
-        </div>
-
-        <div style={cardStyle}>
-          <div style={sectionTitle}>{t("common:keyIssuesTitle", "주요 이슈 및 대응방안")}</div>
+          <div style={sectionTitle}>주요 이슈 및 대응방안</div>
           <ProjectCommentPanel projectName={projectName} tab="service" showHeader={false} />
         </div>
       </div>

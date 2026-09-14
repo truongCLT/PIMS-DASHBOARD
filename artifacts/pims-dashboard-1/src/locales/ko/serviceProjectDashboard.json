@@ -36,10 +36,6 @@
   "directCostLabel": "Direct Cost",
   "indirectCostLabel": "Indirect Cost",
   "totalRowLabel": "합계",
-  "revenueProgressLabel": "매출 진행률",
-  "collectionRateLabel": "수금률",
-  "reportTitle": "용역 당월 보고서",
-  "criteriaHeader": "판정 기준",
-  "signalHeader": "신호등",
-  "priorityHeader": "우선순위"
+  "revenueProgressLabel": "매출 진도",
+  "collectionRateLabel": "수금률"
 }

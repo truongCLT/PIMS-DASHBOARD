@@ -19,7 +19,6 @@
   "syncing": "Đang đồng bộ...",
   "syncButtonLabel": "Đồng bộ PIMSVINA",
   "generatingLabel": "Đang tạo...",
-  "excelDownloadOption": "Tải xuống Excel (.xlsx)",
-  "pdfDownloadOption": "Tải xuống PDF (.pdf)",
-  "asOfMonthLabel": "Tháng báo cáo"
+  "excelDownloadOption": "Tải Excel (.xlsx)",
+  "pdfDownloadOption": "Tải PDF (.pdf)"
 }

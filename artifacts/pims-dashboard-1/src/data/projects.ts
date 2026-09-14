@@ -35,17 +35,6 @@ export function classifyMrProject(projectName: string): "시공" | "용역" {
   return SERVICE_KEYWORDS.some((k) => projectName.includes(k)) ? "용역" : "시공";
 }
 
-export function getProjectDivision(projectName: string): string | null {
-  for (const group of PROJECT_GROUPS) {
-    for (const division of group.divisions) {
-      if (division.projects.some((p) => p.name === projectName)) {
-        return division.label;
-      }
-    }
-  }
-  return classifyMrProject(projectName);
-}
-
 export const PROJECT_GROUPS: ProjectGroup[] = [
   {
     label: "DECV",

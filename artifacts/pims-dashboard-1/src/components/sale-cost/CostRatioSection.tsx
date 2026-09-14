@@ -1,5 +1,5 @@
 /**
- * 원가율 도넛 카드 — 실행예산 편성 먼저(왼쪽), 입찰, 표준추정원가율.
+ * 원가율 도넛 카드 — 입찰, 실행예산 편성, 표준추정원가율.
  * 각 도넛 hover 시 도급액 / 추정원가 금액을 title 속성으로 표시한다.
  */
 import React from "react";
@@ -62,7 +62,7 @@ function Donut({
 }
 
 // ---------------------------------------------------------------------------
-// 도넛 순서: 실행예산 편성 → 입찰 → 표준추정원가율
+// 도넛 순서: 입찰 → 실행예산 편성 → 표준추정원가율
 // ---------------------------------------------------------------------------
 
 const EST_META: {
@@ -70,8 +70,8 @@ const EST_META: {
   labelKey: string;
   color: string;
 }[] = [
-  { kind: "execution",  labelKey: "estExecutionBudget",    color: chartTheme.planBlue    },
   { kind: "bidding",    labelKey: "estBidding",             color: chartTheme.paleBlue    },
+  { kind: "execution",  labelKey: "estExecutionBudget",    color: chartTheme.planBlue    },
   { kind: "completion", labelKey: "estStandardCompletion",  color: chartTheme.headingNavy },
 ];
 
@@ -142,10 +142,23 @@ export function CostRatioCard({
                 : estimation.find((e) => e.kind === meta.kind);
             const contract = row?.contractAmount ?? null;
             const cost     = row?.costAmount ?? null;
-            const pct      = ratioPct(cost, contract);
+            const directCostRate = ratioPct(cost, contract);
+            const completionProfitRate =
+              meta.kind === "completion" &&
+              contract != null &&
+              contract > 0 &&
+              cost != null
+                ? ratioPct(contract - cost, contract)
+                : null;
+            const pct =
+              meta.kind === "completion" && completionProfitRate != null
+                ? 100 - completionProfitRate
+                : directCostRate;
             const hoverTitle =
               contract != null || cost != null
-                ? `도급액: ${fmtMoney(contract)} / 추정원가: ${fmtMoney(cost)}`
+                ? meta.kind === "completion"
+                  ? `도급액: ${fmtMoney(contract)} / 사업예산: ${fmtMoney(cost)} / 이익률: ${fmtPct(completionProfitRate)}`
+                  : `도급액: ${fmtMoney(contract)} / 원가: ${fmtMoney(cost)}`
                 : undefined;
             const baseMonth =
               meta.kind === "completion" && row?.year != null && row?.month != null

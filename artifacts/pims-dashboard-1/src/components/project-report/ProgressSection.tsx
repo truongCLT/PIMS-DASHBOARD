@@ -38,9 +38,34 @@ interface Props {
   progRows: ProgRowData[];
   resolvedMonth: number | null;
   costExecution: CostExecutionData;
+  startDate: string | null | undefined;
+  endDate: string | null | undefined;
 }
 
-export function ProgressSection({ progRows, resolvedMonth, costExecution }: Props) {
+export function calculateDurationRate(
+  startDate: string | null | undefined,
+  endDate: string | null | undefined,
+  year: number,
+  month: number | null,
+): number | null {
+  if (!startDate || !endDate || month == null) return null;
+
+  const start = Date.parse(startDate);
+  const end = Date.parse(endDate);
+  const reportMonthEnd = Date.UTC(year, month, 0);
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return null;
+
+  const elapsed = Math.min(Math.max(reportMonthEnd - start, 0), end - start);
+  return (elapsed / (end - start)) * 100;
+}
+
+export function ProgressSection({
+  progRows,
+  resolvedMonth,
+  costExecution,
+  startDate,
+  endDate,
+}: Props) {
   const { fmtMoney } = useMoney();
   const latest =
     resolvedMonth != null
@@ -56,6 +81,9 @@ export function ProgressSection({ progRows, resolvedMonth, costExecution }: Prop
   const actualCum = latest?.actualCumPct ?? null;
   const monthlyRate = ratioPct(actualM, planM);
   const cumRate = ratioPct(actualCum, planCum);
+  const durationRate = calculateDurationRate(startDate, endDate, REPORT_YEAR, resolvedMonth);
+  const progressGap =
+    durationRate != null && actualCum != null ? durationRate - actualCum : null;
 
   const monthLabel = latest
     ? `'${String(latest.year).slice(2)}.${String(latest.month).padStart(2, "0")}`
@@ -118,16 +146,18 @@ export function ProgressSection({ progRows, resolvedMonth, costExecution }: Prop
           <div style={{ borderTop: `1px solid ${DIVIDER}`, paddingTop: "6px" }}>
             <div style={{ display: "flex", justifyContent: "space-between" }}>
               <DataKV
-                label="공경률"
-                value={fmtPct(actualCum)}
-                valueColor={rateColor(cumRate)}
+                label="공기율"
+                value={fmtPct(durationRate)}
               />
               <DataKV
-                label="공경률 - 누계 공경률"
-                value={
-                  actualCum != null && actualM != null
-                    ? fmtPct(actualCum - actualM)
-                    : DASH
+                label="공기율 - 누계 공정률"
+                value={fmtPct(progressGap)}
+                valueColor={
+                  progressGap == null
+                    ? undefined
+                    : progressGap > 0
+                      ? chartTheme.outflowRed
+                      : chartTheme.actualGreen
                 }
               />
             </div>
