@@ -467,7 +467,10 @@ export function ProjectReportTab({
             allSalesMonths={detail?.canonicalSalesMonthly ?? []}
             contractAmount={detail?.overview?.contractAmount ?? null}
           />
-          <StatusTableSection rows={statusRows} />
+          <StatusTableSection
+            rows={statusRows}
+            costBreakdown={costExecution.cumulativeBreakdown}
+          />
         </div>
         {/* ── Row 2: 원가 | 자금 | 코멘트 ── */}
         <div style={reportGrid("240px")}>

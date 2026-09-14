@@ -13,9 +13,11 @@ import {
   WARNING_BORDER,
 } from "../../lib/uiTokens";
 import type { StatusRowData } from "./reportTypes";
+import type { BudgetRowData } from "./reportTypes";
 
 interface Props {
   rows: StatusRowData[];
+  costBreakdown?: BudgetRowData[];
 }
 
 const thStyle: React.CSSProperties = {
@@ -62,12 +64,19 @@ function achievementLevel(plan: number | null, actual: number | null): StatusLev
   return "red";
 }
 
-function costLevel(plan: number | null, actual: number | null): StatusLevel {
-  if (plan == null || actual == null || plan <= 0) return "empty";
-  const overrunPct = ((actual - plan) / plan) * 100;
-  if (overrunPct <= 2) return "green";
-  if (overrunPct <= 5) return "yellow";
-  return "red";
+function costCategoryLevel(rows: BudgetRowData[]): StatusLevel {
+  const comparableRows = rows.filter(
+    (row) => row.plan != null && row.actual != null && row.plan > 0,
+  );
+  if (comparableRows.length === 0) return "empty";
+  const overrunRates = comparableRows.map(
+    (row) => (((row.actual ?? 0) - (row.plan ?? 0)) / (row.plan ?? 1)) * 100,
+  );
+  if (overrunRates.some((rate) => rate > 5)) return "red";
+  if (overrunRates.filter((rate) => rate > 2 && rate <= 5).length >= 3) {
+    return "yellow";
+  }
+  return "green";
 }
 
 function fundsLevel(plan: number | null, actual: number | null): StatusLevel {
@@ -84,13 +93,34 @@ function buildDisplayRows(rows: StatusRowData[]): DisplayRow[] {
     const plan = isProgress ? row.plan : row.plan != null ? 100 : null;
     const actual = isProgress ? row.actual : achievementPct(row.plan, row.actual);
     const level =
-      row.category === "원가"
-        ? costLevel(row.plan, row.actual)
-        : row.category === "자금"
+      row.category === "자금"
           ? fundsLevel(row.plan, row.actual)
           : achievementLevel(row.plan, row.actual);
     return { category: row.category, type: row.type, plan, actual, level };
   });
+}
+
+function achievementCategoryLevel(rows: DisplayRow[]): StatusLevel {
+  const cumulative = rows.find((row) => row.type === "누계");
+  const monthly = rows.find((row) => row.type === "월");
+  if (
+    !cumulative ||
+    cumulative.plan == null ||
+    cumulative.actual == null ||
+    cumulative.plan <= 0
+  ) {
+    return "empty";
+  }
+  if (cumulative.actual < cumulative.plan) return "red";
+  if (
+    monthly?.plan != null &&
+    monthly.actual != null &&
+    monthly.plan > 0 &&
+    monthly.actual < monthly.plan
+  ) {
+    return "yellow";
+  }
+  return "green";
 }
 
 function StatusLight({ level }: { level: StatusLevel }) {
@@ -113,7 +143,7 @@ function StatusLight({ level }: { level: StatusLevel }) {
   );
 }
 
-export function StatusTableSection({ rows }: Props) {
+export function StatusTableSection({ rows, costBreakdown = [] }: Props) {
   const displayRows = buildDisplayRows(rows);
 
   return (
@@ -135,6 +165,15 @@ export function StatusTableSection({ rows }: Props) {
             const isLastCategoryRow =
               index === displayRows.length - 1 ||
               displayRows[index + 1]?.category !== row.category;
+            const categoryRows = displayRows.filter(
+              (candidate) => candidate.category === row.category,
+            );
+            const cumulativeLevel =
+              row.category === "원가"
+                ? costCategoryLevel(costBreakdown)
+                : row.category === "자금"
+                  ? categoryRows.find((candidate) => candidate.type === "누계")?.level ?? "empty"
+                  : achievementCategoryLevel(categoryRows);
             return (
             <tr
               key={`${row.category}-${row.type}`}
@@ -165,9 +204,18 @@ export function StatusTableSection({ rows }: Props) {
               <td style={{ ...tdStyle, textAlign: "right", color: INK_BODY }}>
                 {fmtPct(row.actual)}
               </td>
-              <td style={{ ...tdStyle, textAlign: "center" }}>
-                <StatusLight level={row.level} />
-              </td>
+              {isFirstCategoryRow && (
+                <td
+                  rowSpan={2}
+                  style={{
+                    ...tdStyle,
+                    textAlign: "center",
+                    verticalAlign: "middle",
+                  }}
+                >
+                  <StatusLight level={cumulativeLevel} />
+                </td>
+              )}
             </tr>
             );
           })}

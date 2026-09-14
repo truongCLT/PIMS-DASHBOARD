@@ -928,7 +928,9 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
             <tr>
               <th style={{ ...th, width: "110px" }}>{t("projectDataEntryTab:salesScenario")}</th>
               {mainSalesMonths.map(({ month }) => (
-                <th key={month} style={th}>{month}{t("projectDataEntryTab:monthSuffix")}</th>
+                <th key={month} style={th}>
+                  {t("projectDataEntryTab:monthSuffix", { month })}
+                </th>
               ))}
             </tr>
           </thead>
