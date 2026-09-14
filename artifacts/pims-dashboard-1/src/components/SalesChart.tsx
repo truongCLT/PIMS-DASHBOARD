@@ -199,21 +199,23 @@ export function SalesChart() {
   const drillSiteRows = useMemo(() => {
     if (drillMonthIdx == null) return [];
     const mapped = scopedProjects
-      .map((p) => ({
-        name: p.name,
-        category: p.companyLabel ?? "-",
-        bizType: resolveProjectBusinessType(p.name, p.businessType),
-        amount: Math.round(convert(p.revenueActual[drillMonthIdx] ?? 0)),
-      }))
-      // 0인 현장은 제외, 마이너스(조정 역분개 등)는 유지
-      .filter((r) => r.amount !== 0)
-      .sort((a, b) => b.amount - a.amount);
+      .map((p) => {
+        const plan = Math.round(convert(p.revenuePlan[drillMonthIdx] ?? 0));
+        const actual = Math.round(convert(p.revenueActual[drillMonthIdx] ?? 0));
+        return {
+          name: p.name,
+          category: p.companyLabel ?? "-",
+          bizType: resolveProjectBusinessType(p.name, p.businessType),
+          plan,
+          actual,
+          achievementRate: plan !== 0 ? `${((actual / plan) * 100).toFixed(1)}%` : "-",
+        };
+      })
+      // 계획 또는 실적이 있는 현장만 표시하며, 마이너스 조정값은 유지
+      .filter((r) => r.plan !== 0 || r.actual !== 0)
+      .sort((a, b) => b.actual - a.actual);
 
-    const total = mapped.reduce((acc, r) => acc + r.amount, 0);
-    return mapped.map((r) => ({
-      ...r,
-      share: total !== 0 ? `${((r.amount / total) * 100).toFixed(1)}%` : "-",
-    }));
+    return mapped;
   }, [drillMonthIdx, scopedProjects, convert]);
 
   /* ── 드릴다운 로딩 상태 ──
@@ -586,14 +588,29 @@ export function SalesChart() {
               { key: "category", label: t("salesChart:colCategory"), align: "left" },
               { key: "bizType", label: t("salesChart:colBizType"), align: "left" },
               {
-                key: "amount",
-                label: t("salesChart:colAmount"),
+                key: "plan",
+                label: t("salesChart:colTargetPlan"),
                 align: "right",
                 format: (v) => typeof v === "number" ? v.toLocaleString("ko-KR") : "-",
               },
-              { key: "share", label: t("salesChart:colShare"), align: "right" },
+              {
+                key: "actual",
+                label: t("salesChart:colActual"),
+                align: "right",
+                format: (v) => typeof v === "number" ? v.toLocaleString("ko-KR") : "-",
+              },
+              { key: "achievementRate", label: t("salesChart:colAchievementRate"), align: "right" },
             ]}
             rows={drillSiteRows}
+            totalRow={(() => {
+              const plan = drillSiteRows.reduce((sum, row) => sum + row.plan, 0);
+              const actual = drillSiteRows.reduce((sum, row) => sum + row.actual, 0);
+              return {
+                plan,
+                actual,
+                achievementRate: plan !== 0 ? `${((actual / plan) * 100).toFixed(1)}%` : "-",
+              };
+            })()}
           />
         )}
       </DetailModal>
