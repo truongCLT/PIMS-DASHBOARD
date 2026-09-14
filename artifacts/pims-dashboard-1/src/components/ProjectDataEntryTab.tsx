@@ -8,7 +8,6 @@ import {
   useListMgmtreportProjects,
   useUpdateMgmtreportProjectStatus,
   useUpdateMgmtreportProjectDivision,
-  useGetOrgStructure,
   getListMgmtreportProjectsQueryKey,
   useGetCashflowMonthly,
   getGetCashflowMonthlyQueryKey,
@@ -348,7 +347,7 @@ const EST_KINDS: { kind: "bidding" | "execution" | "completion"; label: string }
 
 export function ProjectDataEntryTab({ projectName, service = false }: { projectName: string; service?: boolean }) {
   const { t } = useTranslation(["projectDataEntryTab", "common"]);
-  const { fmtMoney } = useMoney();
+  const { fmtMoney, unitLabel } = useMoney();
   const { detail, isLoading } = useProjectDetail(projectName);
   const queryClient = useQueryClient();
   const mutation = usePutProjectdetail();
@@ -361,31 +360,36 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
 
   const mrProjectsQuery = useListMgmtreportProjects({ year: REPORT_YEAR });
   const currentProject = mrProjectsQuery.data?.projects.find((p) => p.name === projectName);
+  const currentYear = new Date().getFullYear();
+  const actualCutoffMonth =
+    REPORT_YEAR < currentYear ? 12 : REPORT_YEAR > currentYear ? 0 : new Date().getMonth();
+  const mainSalesMonths = Array.from({ length: 12 }, (_, index) => ({
+    month: index + 1,
+    plan: currentProject?.revenuePlan[index] ?? null,
+    actual: index + 1 <= actualCutoffMonth
+      ? (currentProject?.revenueActual[index] ?? null)
+      : null,
+    forecast: index + 1 > actualCutoffMonth
+      ? (currentProject?.revenueActual[index] ?? null)
+      : null,
+  }));
   const currentStatus = currentProject?.status ?? "ongoing";
   const currentBusinessType = currentProject?.businessType ?? (service ? "용역" : "시공");
   const statusMutation = useUpdateMgmtreportProjectStatus();
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
-  const orgStructureQuery = useGetOrgStructure();
   const divisionMutation = useUpdateMgmtreportProjectDivision();
   const [divisionMsg, setDivisionMsg] = useState<string | null>(null);
   const changeBusinessType = (businessType: "시공" | "용역") => {
     if (businessType === currentBusinessType) return;
-    const companies = orgStructureQuery.data?.companies ?? [];
-    const currentCompany = companies.find((company) => company.label === currentProject?.companyLabel);
-    const targetDivision =
-      currentCompany?.divisions.find((division) => division.businessType === businessType) ??
-      companies.flatMap((company) => company.divisions).find((division) => division.businessType === businessType);
-    if (!targetDivision) {
-      setDivisionMsg(`${businessType} 부문을 찾을 수 없습니다.`);
-      return;
-    }
     setDivisionMsg(null);
+    setStatusMsg(null);
+    setSaveMsg(null);
     divisionMutation.mutate(
-      { name: projectName, data: { divisionId: targetDivision.id } },
+      { name: projectName, data: { divisionId: null, businessType } },
       {
-        onSuccess: () => {
+        onSuccess: async () => {
           setDivisionMsg(`${businessType} 메뉴로 변경되었습니다.`);
-          queryClient.invalidateQueries({ queryKey: getListMgmtreportProjectsQueryKey() });
+          await queryClient.invalidateQueries({ queryKey: getListMgmtreportProjectsQueryKey() });
         },
         onError: () => setDivisionMsg("프로젝트 메뉴 변경에 실패했습니다."),
       },
@@ -393,6 +397,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
   };
   const toggleStatus = () => {
     const next = currentStatus === "closed" ? "ongoing" : "closed";
+    setDivisionMsg(null);
     setStatusMsg(null);
     statusMutation.mutate(
       { data: { name: projectName, status: next } },
@@ -908,48 +913,45 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
     </div>
   );
 
-  // 공통: 월별 매출 (매출 탭) — 표시 순서가 시공/용역 탭 순서에 따라 달라 별도 정의
+  // 메인 경영현황판 Excel의 Site별 월 매출 확인표.
   const salesMonthlyCard = (
     <div style={cardStyle}>
-      {cardHead(service ? t("projectDataEntryTab:salesMonthlyTitleService") : t("projectDataEntryTab:salesMonthlyTitleConstruction"), "salesMonthly")}
-      <div data-tbl="salesMonthly" onKeyDown={makeArrowNav("salesMonthly")}>
-      <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px" }}>
-        <thead>
-          <tr>
-            <th style={th}>{t("common:year")}</th>
-            <th style={th}>{t("projectDataEntryTab:monthColumn")}</th>
-            <th style={th}>{t("projectDataEntryTab:salesPlanVnd")}</th>
-            <th style={th}>{t("projectDataEntryTab:salesActualVnd")}</th>
-            <th style={{ ...th, width: "36px" }}></th>
-          </tr>
-        </thead>
-        <tbody>
-          {salesMonthly.map((s, i) => (
-            <tr key={i}>
-              <td style={tdCell}><NumInput value={s.year} onChange={(v) => updateAt(setSalesMonthly, i, { year: v ?? 0 })} data-row={i} data-col={0} /></td>
-              <td style={tdCell}><NumInput value={s.month} onChange={(v) => updateAt(setSalesMonthly, i, { month: v ?? 0 })} data-row={i} data-col={1} /></td>
-              <td style={tdCell}><VndInput valueKUsd={s.plan} onChange={(v) => updateAt(setSalesMonthly, i, { plan: v })} data-row={i} data-col={2} /></td>
-              <td style={tdCell}><VndInput valueKUsd={s.actual} onChange={(v) => updateAt(setSalesMonthly, i, { actual: v })} data-row={i} data-col={3} /></td>
-              <td style={{ ...tdCell, textAlign: "center" }}><DelBtn onClick={() => removeAt(setSalesMonthly, i)} /></td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <div style={{ ...sectionTitle, display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
+        <span>{t("projectDataEntryTab:salesMonthlyTitleConstruction")}</span>
+        <span style={{ fontSize: "12px", fontWeight: 500, color: INK_MUTED }}>
+          {REPORT_YEAR} · {unitLabel}
+        </span>
       </div>
-      <button
-        style={addBtn}
-        onClick={() => {
-          const last = salesMonthly[salesMonthly.length - 1];
-          const next = last
-            ? last.month >= 12
-              ? { year: last.year + 1, month: 1 }
-              : { year: last.year, month: last.month + 1 }
-            : { year: new Date().getFullYear(), month: 1 };
-          setSalesMonthly((rows) => [...rows, { ...next, plan: null, actual: null }]);
-        }}
-      >
-        <Plus size={12} /> {t("projectDataEntryTab:addMonth")}
-      </button>
+      <div style={{ overflowX: "auto", marginTop: "8px" }}>
+        <table style={{ width: "100%", minWidth: "980px", borderCollapse: "collapse", tableLayout: "fixed" }}>
+          <thead>
+            <tr>
+              <th style={{ ...th, width: "110px" }}>{t("projectDataEntryTab:salesScenario")}</th>
+              {mainSalesMonths.map(({ month }) => (
+                <th key={month} style={th}>{month}{t("projectDataEntryTab:monthSuffix")}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {([
+              [t("common:plan"), "plan"],
+              [t("common:actual"), "actual"],
+              [t("projectDataEntryTab:forecast"), "forecast"],
+            ] as const).map(([label, key]) => (
+              <tr key={key}>
+                <td style={{ ...tdCell, padding: "6px", textAlign: "center", fontSize: "13px", fontWeight: 700, color: INK_NAVY, backgroundColor: TABLE_HEADER_BG }}>
+                  {label}
+                </td>
+                {mainSalesMonths.map((row) => (
+                  <td key={`${key}-${row.month}`} style={{ ...tdCell, padding: "6px", textAlign: "right", fontSize: "13px", color: INK_BODY }}>
+                    {fmtMoney(row[key])}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
       <div style={{ fontSize: "12px", color: INK_MUTED, marginTop: "6px" }}>
         {t("projectDataEntryTab:salesMonthlyNote")}
       </div>
@@ -1031,7 +1033,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                 role="radio"
                 aria-checked={currentBusinessType === businessType}
                 key={businessType}
-                disabled={divisionMutation.isPending || orgStructureQuery.isLoading || mrProjectsQuery.isLoading}
+                disabled={divisionMutation.isPending || mrProjectsQuery.isLoading}
                 onClick={() => changeBusinessType(businessType)}
                 style={{
                   display: "inline-flex",
@@ -1046,7 +1048,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                   fontWeight: 600,
                   color: currentBusinessType === businessType ? ADMIN_NAVY : INK_MUTED,
                   cursor: divisionMutation.isPending ? "wait" : "pointer",
-                  opacity: divisionMutation.isPending || orgStructureQuery.isLoading || mrProjectsQuery.isLoading ? 0.6 : 1,
+                  opacity: divisionMutation.isPending || mrProjectsQuery.isLoading ? 0.6 : 1,
                 }}
               >
                 {businessType}
@@ -1267,9 +1269,6 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
             </tr>
           </tbody>
         </table>
-        <div style={{ fontSize: "12px", color: INK_MUTED, marginTop: "6px" }}>
-          {t("projectDataEntryTab:overviewCostRateNote")}
-        </div>
         </div>
       </div>
 
@@ -1344,6 +1343,8 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
           <Plus size={12} /> {t("projectDataEntryTab:addMonth")}
         </button>
       </div>
+
+      {!service && salesMonthlyCard}
 
       {/* 2. 마일스톤 */}
       <div style={cardStyle}>
@@ -1472,8 +1473,6 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
           </div>
         </div>
       </div>
-      {/* 시공: 매출 탭 순서(공정 다음) */}
-      {salesMonthlyCard}
       </>
       )}
 

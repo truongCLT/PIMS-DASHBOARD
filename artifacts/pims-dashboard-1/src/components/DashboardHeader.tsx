@@ -369,9 +369,9 @@ export function DashboardHeader({
 
         {/* 기준 월: 선택 즉시 화면 반영, 관리자는 전사 공통 설정으로 저장 */}
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span style={{ fontSize: "12px", color: "#333", fontWeight: "600" }}>{t("dashboardHeader:asOfMonthLabel", "기준 월")}</span>
+          <span style={{ fontSize: "12px", color: "#333", fontWeight: "600" }}>기준 월</span>
           <select
-            aria-label={t("dashboardHeader:asOfMonthLabel", "기준 월")}
+            aria-label="기준 월"
             value={settingsQuery.data?.month ?? ""}
             disabled={settingsQuery.isLoading || settingsMutation.isPending}
             onChange={(e) => {

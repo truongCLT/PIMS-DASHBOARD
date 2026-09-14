@@ -33,7 +33,7 @@ export function FundsSection({ cashIn, cashOut, contractAmount, cumRev }: Props)
   const hasFundData = cashIn !== 0 || cashOut !== 0;
 
   const items: Array<{ label: string; value: number | null; color: string }> = [
-    { label: "도급액 (매출)", value: contractAmount, color: chartTheme.neutralGray },
+    { label: "누계 매출", value: contractAmount, color: chartTheme.neutralGray },
     { label: "누계 기성 (확정)", value: cumRev, color: chartTheme.neutralGray },
     { label: "수금 (실적)", value: cashIn, color: chartTheme.balanceNavy },
     { label: "미수금 (채권)", value: outstanding, color: chartTheme.outflowRed },

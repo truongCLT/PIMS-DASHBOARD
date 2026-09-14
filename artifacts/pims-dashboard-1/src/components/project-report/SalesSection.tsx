@@ -22,6 +22,7 @@ interface Props {
   actualMonths: (number | null)[];
   resolvedMonth: number | null;
   allSalesMonths: ProjectDetailSalesPoint[];
+  contractAmount: number | null;
 }
 
 interface SalesChartRow {
@@ -110,6 +111,7 @@ export function SalesSection({
   actualMonths,
   resolvedMonth,
   allSalesMonths,
+  contractAmount,
 }: Props) {
   const { fmtMoney, unitLabel } = useMoney();
   const latestActualIdx = actualMonths.reduce<number>(
@@ -123,7 +125,7 @@ export function SalesSection({
   const chartData: SalesChartRow[] = Array.from({ length: 12 }, (_, index) => {
     const plan = planMonths[index] ?? null;
     const isForecast = index > actualThroughIdx;
-    const actual = isForecast ? plan : (actualMonths[index] ?? null);
+    const actual = actualMonths[index] ?? null;
     const rawRate = isForecast ? null : ratioPct(actual, plan);
     return {
       month: `${index + 1}월`,
@@ -140,23 +142,31 @@ export function SalesSection({
   const hasAllPeriodData = allSalesMonths.some(
     (row) => row.plan != null || row.actual != null,
   );
-  const annualRows = hasAllPeriodData
+  const annualPlanRows = hasAllPeriodData
+    ? allSalesMonths.filter((row) => row.year === REPORT_YEAR)
+    : chartData;
+  const annualActualRows = hasAllPeriodData
     ? allSalesMonths.filter(
         (row) => row.year === REPORT_YEAR && row.month <= refMonth,
       )
     : chartData.slice(0, refMonth);
-  const overallRows = hasAllPeriodData
+  const overallActualRows = hasAllPeriodData
     ? allSalesMonths.filter(
         (row) =>
           row.year < REPORT_YEAR ||
           (row.year === REPORT_YEAR && row.month <= refMonth),
       )
-    : annualRows;
-  const summarize = (
+    : annualActualRows;
+  const sumValues = (
     rows: Array<{ plan?: number | null; actual?: number | null }>,
-  ) => {
-    const plan = rows.reduce((sum, row) => sum + (row.plan ?? 0), 0);
-    const actual = rows.reduce((sum, row) => sum + (row.actual ?? 0), 0);
+    key: "plan" | "actual",
+  ): number | null => {
+    const values = rows
+      .map((row) => row[key])
+      .filter((value): value is number => value != null);
+    return values.length > 0 ? values.reduce((sum, value) => sum + value, 0) : null;
+  };
+  const makeSummary = (plan: number | null, actual: number | null) => {
     const rate = ratioPct(actual, plan);
     return {
       plan,
@@ -164,8 +174,14 @@ export function SalesSection({
       rate: rate == null ? null : Math.round(rate * 10) / 10,
     };
   };
-  const annualSummary = summarize(annualRows);
-  const overallSummary = summarize(overallRows);
+  const annualSummary = makeSummary(
+    sumValues(annualPlanRows, "plan"),
+    sumValues(annualActualRows, "actual"),
+  );
+  const overallSummary = makeSummary(
+    contractAmount,
+    sumValues(overallActualRows, "actual"),
+  );
 
   const MonthRateTick = ({
     x,
@@ -354,7 +370,7 @@ function SalesSummaryRow({
   fmtMoney,
 }: {
   label: string;
-  summary: { plan: number; actual: number; rate: number | null };
+  summary: { plan: number | null; actual: number | null; rate: number | null };
   fmtMoney: (value: number | null | undefined) => string;
 }) {
   return (
