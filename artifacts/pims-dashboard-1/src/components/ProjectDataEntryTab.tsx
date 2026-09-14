@@ -169,7 +169,7 @@ function NumInput({
   );
 }
 
-function calculateProgressPlanCumulative(rows: ProjectDetailProgressPoint[]): ProjectDetailProgressPoint[] {
+export function calculateProgressPlanCumulative(rows: ProjectDetailProgressPoint[]): ProjectDetailProgressPoint[] {
   let cumulative = 0;
   let hasPlan = false;
   const cumulativeByIndex = new Map<number, number | null>();
@@ -184,7 +184,7 @@ function calculateProgressPlanCumulative(rows: ProjectDetailProgressPoint[]): Pr
     )
     .forEach(({ row, index }) => {
       if (row.planPct != null) {
-        cumulative += row.planPct;
+        cumulative = Math.round((cumulative + row.planPct + Number.EPSILON) * 10) / 10;
         hasPlan = true;
       }
       cumulativeByIndex.set(index, hasPlan ? Math.min(100, Math.max(0, cumulative)) : null);
@@ -1303,8 +1303,8 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                     data-col={1}
                   />
                 </td>
-                <td style={tdCell}><NumInput value={p.planPct} onChange={(v) => updateProgressAt(i, { planPct: v })} data-row={i} data-col={2} /></td>
-                <td style={tdCell}><NumInput value={p.actualPct} onChange={(v) => updateProgressAt(i, { actualPct: v })} data-row={i} data-col={3} /></td>
+                <td style={tdCell}><NumInput value={p.planPct} step={0.1} onChange={(v) => updateProgressAt(i, { planPct: v })} data-row={i} data-col={2} /></td>
+                <td style={tdCell}><NumInput value={p.actualPct} step={0.1} onChange={(v) => updateProgressAt(i, { actualPct: v })} data-row={i} data-col={3} /></td>
                 <td style={tdCell}>
                   <input
                     type="number"
