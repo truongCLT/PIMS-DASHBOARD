@@ -149,6 +149,7 @@
   "cashInVnd": "Cash In",
   "cashOutVnd": "Cash Out",
   "equivalentVnd": "Cash Equivalent",
+  "confirmedProgressVnd": "Confirmed Progress",
   "cashflowNote": "Enter cash out as a positive number (the chart automatically displays it downward). VND amounts are automatically converted to thousand USD on save.",
   "cashflowPrefilledNote": "Data saved in the Cash Flow Excel (DB) has been loaded. If you edit the table, it will be saved as this project's cash flow data, and the saved values will take priority afterward.",
   "photoSection": "Site Photos",

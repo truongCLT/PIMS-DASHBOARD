@@ -491,6 +491,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
             cashIn: p.cashIn,
             cashOut: p.cashOut,
             equivalent: p.equivalent,
+            confirmedProgress: null,
           }));
         setCashflow(cfRows);
         setCfPrefilled(cfRows.length > 0);
@@ -1849,6 +1850,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
               <th style={th}>{t("projectDataEntryTab:cashInVnd")}</th>
               <th style={th}>{t("projectDataEntryTab:cashOutVnd")}</th>
               <th style={th}>{t("projectDataEntryTab:equivalentVnd")}</th>
+              <th style={th}>{t("projectDataEntryTab:confirmedProgressVnd")}</th>
               <th style={{ ...th, width: "36px" }}></th>
             </tr>
           </thead>
@@ -1860,6 +1862,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                 <td style={tdCell}><VndInput valueKUsd={c.cashIn} onChange={(v) => updateAt(editCashflow, i, { cashIn: v })} data-row={i} data-col={2} /></td>
                 <td style={tdCell}><VndInput valueKUsd={c.cashOut} onChange={(v) => updateAt(editCashflow, i, { cashOut: v })} data-row={i} data-col={3} /></td>
                 <td style={tdCell}><VndInput valueKUsd={c.equivalent} onChange={(v) => updateAt(editCashflow, i, { equivalent: v })} data-row={i} data-col={4} /></td>
+                <td style={tdCell}><VndInput valueKUsd={c.confirmedProgress} onChange={(v) => updateAt(editCashflow, i, { confirmedProgress: v })} data-row={i} data-col={5} /></td>
                 <td style={{ ...tdCell, textAlign: "center" }}><DelBtn onClick={() => removeAt(editCashflow, i)} /></td>
               </tr>
             ))}
@@ -1875,7 +1878,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                 ? { year: last.year + 1, month: 1 }
                 : { year: last.year, month: last.month + 1 }
               : { year: nowYear, month: 1 };
-            editCashflow((rows) => [...rows, { ...next, cashIn: null, cashOut: null, equivalent: null }]);
+            editCashflow((rows) => [...rows, { ...next, cashIn: null, cashOut: null, equivalent: null, confirmedProgress: null }]);
           }}
         >
           <Plus size={12} /> {t("projectDataEntryTab:addMonth")}

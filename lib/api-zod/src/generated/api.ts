@@ -446,7 +446,8 @@ export const GetProjectdetailResponse = zod.object({
   "month": zod.number().min(1).max(getProjectdetailResponseCashflowItemMonthMax),
   "cashIn": zod.number().nullish().describe('수입 (천 USD)'),
   "cashOut": zod.number().nullish().describe('지출 (천 USD)'),
-  "equivalent": zod.number().nullish().describe('보유 현금 (천 USD)')
+  "equivalent": zod.number().nullish().describe('보유 현금 (천 USD)'),
+  "confirmedProgress": zod.number().nullish().describe('기성 확정 금액 (천 USD)')
 })),
   "cogsMonthly": zod.array(zod.object({
   "year": zod.number(),
@@ -603,7 +604,8 @@ export const PutProjectdetailBody = zod.object({
   "month": zod.number().min(1).max(putProjectdetailBodyCashflowItemMonthMax),
   "cashIn": zod.number().nullish().describe('수입 (천 USD)'),
   "cashOut": zod.number().nullish().describe('지출 (천 USD)'),
-  "equivalent": zod.number().nullish().describe('보유 현금 (천 USD)')
+  "equivalent": zod.number().nullish().describe('보유 현금 (천 USD)'),
+  "confirmedProgress": zod.number().nullish().describe('기성 확정 금액 (천 USD)')
 })),
   "cogsMonthly": zod.array(zod.object({
   "year": zod.number(),
@@ -756,7 +758,8 @@ export const PutProjectdetailResponse = zod.object({
   "month": zod.number().min(1).max(putProjectdetailResponseCashflowItemMonthMax),
   "cashIn": zod.number().nullish().describe('수입 (천 USD)'),
   "cashOut": zod.number().nullish().describe('지출 (천 USD)'),
-  "equivalent": zod.number().nullish().describe('보유 현금 (천 USD)')
+  "equivalent": zod.number().nullish().describe('보유 현금 (천 USD)'),
+  "confirmedProgress": zod.number().nullish().describe('기성 확정 금액 (천 USD)')
 })),
   "cogsMonthly": zod.array(zod.object({
   "year": zod.number(),

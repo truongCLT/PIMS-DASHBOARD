@@ -773,6 +773,8 @@ export interface ProjectDetailCashflowPoint {
   cashOut?: number | null;
   /** 보유 현금 (천 USD) */
   equivalent?: number | null;
+  /** 기성 확정 금액 (천 USD) */
+  confirmedProgress?: number | null;
 }
 
 export interface ProjectDetailCogsPoint {

@@ -149,6 +149,7 @@
   "cashInVnd": "Thu Cash in",
   "cashOutVnd": "Chi Cash out",
   "equivalentVnd": "Tiền mặt tương đương Equivalent",
+  "confirmedProgressVnd": "Khối lượng xác nhận",
   "cashflowNote": "Nhập số chi bằng số dương (biểu đồ sẽ tự động hiển thị theo hướng xuống). Nếu nhập theo VND, khi lưu sẽ tự động chuyển đổi sang nghìn USD.",
   "cashflowPrefilledNote": "Đã tải dữ liệu được lưu trong Excel(DB) thu chi. Nếu bạn sửa bảng, dữ liệu sẽ được lưu thành dữ liệu thu chi của dự án này, và từ đó các giá trị đã lưu sẽ được ưu tiên hiển thị.",
   "photoSection": "Ảnh công trường",

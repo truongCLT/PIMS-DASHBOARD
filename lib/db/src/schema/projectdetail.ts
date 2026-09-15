@@ -171,7 +171,7 @@ export const pdCostBudgetMonthlyTable = pgTable(
   ],
 );
 
-// 자금 — 월별 현금흐름 (Cash in / Cash out / 보유 현금)
+// 자금 — 월별 현금흐름 (Cash in / Cash out / 보유 현금 / 기성 확정)
 export const pdCashflowMonthlyTable = pgTable(
   "pd_cashflow_monthly",
   {
@@ -184,6 +184,7 @@ export const pdCashflowMonthlyTable = pgTable(
     cashIn: numeric("cash_in", { precision: 24, scale: 8 }), // 수입 (천 USD)
     cashOut: numeric("cash_out", { precision: 24, scale: 8 }), // 지출 (천 USD)
     equivalent: numeric("equivalent", { precision: 24, scale: 8 }), // 보유 현금 (천 USD)
+    confirmedProgress: numeric("confirmed_progress", { precision: 24, scale: 8 }), // 기성 확정 금액 (천 USD)
   },
   (t) => [
     uniqueIndex("pd_cashflow_monthly_uq").on(t.projectName, t.year, t.month),

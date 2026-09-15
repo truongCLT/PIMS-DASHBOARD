@@ -2409,6 +2409,10 @@ components:
           type: number
           nullable: true
           description: 보유 현금 (천 USD)
+        confirmedProgress:
+          type: number
+          nullable: true
+          description: 기성 확정 금액 (천 USD)
       required: [year, month]
     ProjectDetailCogsPoint:
       type: object
