@@ -442,6 +442,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
   const [costBudget, setCostBudget] = useState<ProjectDetailCostBudget[]>([]);
   const [costBudgetMonthly, setCostBudgetMonthly] = useState<ProjectDetailCostBudgetMonthly[]>([]);
   const [selectedMonthlyBudgetItem, setSelectedMonthlyBudgetItem] = useState<MonthlyBudgetItem>("Common");
+  const [selectedMonthlyBudgetYear, setSelectedMonthlyBudgetYear] = useState(REPORT_YEAR);
   const [outsourcing, setOutsourcing] = useState<ProjectDetailOutsourcing[]>([]);
   const [cashflow, setCashflow] = useState<ProjectDetailCashflowPoint[]>([]);
   const [cogsMonthly, setCogsMonthly] = useState<ProjectDetailCogsPoint[]>([]);
@@ -1907,48 +1908,76 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
         {/* 월별 계획/실적 */}
         <div style={{ marginTop: "10px" }}>
           <div style={{ fontSize: "12px", fontWeight: 600, color: POINT_BLUE, marginBottom: "4px" }}>
-            {t("projectDataEntryTab:monthlyPlanActualYear", { year: REPORT_YEAR })}
+            {t("projectDataEntryTab:monthlyPlanActualYear", { year: selectedMonthlyBudgetYear })}
           </div>
           <div style={{ fontSize: "11px", color: INK_MUTED, marginBottom: "6px" }}>
             {t("projectDataEntryTab:monthlyPlanActualNote")}
           </div>
           {(() => {
             const item = selectedMonthlyBudgetItem;
+            const availableYears = Array.from(
+              new Set([
+                ...Array.from({ length: 11 }, (_, index) => REPORT_YEAR - 5 + index),
+                ...costBudgetMonthly.map((row) => row.year),
+              ]),
+            ).sort((a, b) => b - a);
             const getCbm = (month: number, field: "plan" | "actual") =>
-              costBudgetMonthly.find((r) => r.item === item && r.year === REPORT_YEAR && r.month === month)?.[field] ?? null;
+              costBudgetMonthly.find((r) => r.item === item && r.year === selectedMonthlyBudgetYear && r.month === month)?.[field] ?? null;
             const setCbm = (month: number, field: "plan" | "actual", value: number | null) =>
               setCostBudgetMonthly((rows) => {
-                const idx = rows.findIndex((r) => r.item === item && r.year === REPORT_YEAR && r.month === month);
+                const idx = rows.findIndex((r) => r.item === item && r.year === selectedMonthlyBudgetYear && r.month === month);
                 if (idx >= 0) return rows.map((r, i) => (i === idx ? { ...r, [field]: value } : r));
-                return [...rows, { item, year: REPORT_YEAR, month, plan: null, actual: null, [field]: value }];
+                return [...rows, { item, year: selectedMonthlyBudgetYear, month, plan: null, actual: null, [field]: value }];
               });
-            const tblKey = `cbm-${item}`;
+            const tblKey = `cbm-${item}-${selectedMonthlyBudgetYear}`;
             return (
               <div key={item} style={{ marginBottom: "10px" }}>
-                <select
-                  value={item}
-                  onChange={(event) => setSelectedMonthlyBudgetItem(event.target.value as MonthlyBudgetItem)}
-                  aria-label={t("projectDataEntryTab:itemColumn")}
-                  style={{
-                    minWidth: "180px",
-                    padding: "5px 28px 5px 8px",
-                    border: `1px solid ${BORDER_LIGHT}`,
-                    borderRadius: "3px",
-                    backgroundColor: "#fff",
-                    color: INK_NAVY,
-                    fontFamily: "inherit",
-                    fontSize: "13px",
-                    fontWeight: 700,
-                    lineHeight: 1.4,
-                    marginBottom: "6px",
-                  }}
-                >
-                  {MONTHLY_BUDGET_ITEMS.map((option) => (
-                    <option key={option} value={option}>
-                      {option === "외주성" ? t("projectDataEntryTab:outsourcingItem") : option}
-                    </option>
-                  ))}
-                </select>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
+                  <select
+                    value={item}
+                    onChange={(event) => setSelectedMonthlyBudgetItem(event.target.value as MonthlyBudgetItem)}
+                    aria-label={t("projectDataEntryTab:itemColumn")}
+                    style={{
+                      minWidth: "180px",
+                      padding: "5px 28px 5px 8px",
+                      border: `1px solid ${BORDER_LIGHT}`,
+                      borderRadius: "3px",
+                      backgroundColor: "#fff",
+                      color: INK_NAVY,
+                      fontFamily: "inherit",
+                      fontSize: "13px",
+                      fontWeight: 700,
+                      lineHeight: 1.4,
+                    }}
+                  >
+                    {MONTHLY_BUDGET_ITEMS.map((option) => (
+                      <option key={option} value={option}>
+                        {option === "외주성" ? t("projectDataEntryTab:outsourcingItem") : option}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={selectedMonthlyBudgetYear}
+                    onChange={(event) => setSelectedMonthlyBudgetYear(Number(event.target.value))}
+                    aria-label={t("projectDataEntryTab:monthlyPlanActualYear", { year: selectedMonthlyBudgetYear })}
+                    style={{
+                      minWidth: "100px",
+                      padding: "5px 28px 5px 8px",
+                      border: `1px solid ${BORDER_LIGHT}`,
+                      borderRadius: "3px",
+                      backgroundColor: "#fff",
+                      color: INK_NAVY,
+                      fontFamily: "inherit",
+                      fontSize: "13px",
+                      fontWeight: 700,
+                      lineHeight: 1.4,
+                    }}
+                  >
+                    {availableYears.map((year) => (
+                      <option key={year} value={year}>{year}</option>
+                    ))}
+                  </select>
+                </div>
                 <div data-tbl={tblKey} onKeyDown={makeArrowNav(tblKey)}>
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
                   <thead>
