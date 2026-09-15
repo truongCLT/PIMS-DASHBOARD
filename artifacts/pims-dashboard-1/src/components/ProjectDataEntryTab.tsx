@@ -317,6 +317,8 @@ const EMPTY_OVERVIEW: ProjectDetailOverview = {
 };
 
 const FIXED_BUDGET_ITEMS = ["Common", "Expense 1", "Expense 2", "Contingency"];
+const MONTHLY_BUDGET_ITEMS = ["Common", "Expense 1", "Expense 2", "외주성"] as const;
+type MonthlyBudgetItem = (typeof MONTHLY_BUDGET_ITEMS)[number];
 const BUDGET_ITEM_CATEGORY: Record<string, string> = {
   Common: "Direct Cost",
   "Expense 1": "Direct Cost",
@@ -439,6 +441,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
   const [costEstimation, setCostEstimation] = useState<ProjectDetailCostEstimation[]>([]);
   const [costBudget, setCostBudget] = useState<ProjectDetailCostBudget[]>([]);
   const [costBudgetMonthly, setCostBudgetMonthly] = useState<ProjectDetailCostBudgetMonthly[]>([]);
+  const [selectedMonthlyBudgetItem, setSelectedMonthlyBudgetItem] = useState<MonthlyBudgetItem>("Common");
   const [outsourcing, setOutsourcing] = useState<ProjectDetailOutsourcing[]>([]);
   const [cashflow, setCashflow] = useState<ProjectDetailCashflowPoint[]>([]);
   const [cogsMonthly, setCogsMonthly] = useState<ProjectDetailCogsPoint[]>([]);
@@ -1909,7 +1912,8 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
           <div style={{ fontSize: "11px", color: INK_MUTED, marginBottom: "6px" }}>
             {t("projectDataEntryTab:monthlyPlanActualNote")}
           </div>
-          {(["Common", "Expense 1", "Expense 2", "외주성"] as const).map((item) => {
+          {(() => {
+            const item = selectedMonthlyBudgetItem;
             const getCbm = (month: number, field: "plan" | "actual") =>
               costBudgetMonthly.find((r) => r.item === item && r.year === REPORT_YEAR && r.month === month)?.[field] ?? null;
             const setCbm = (month: number, field: "plan" | "actual", value: number | null) =>
@@ -1921,9 +1925,30 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
             const tblKey = `cbm-${item}`;
             return (
               <div key={item} style={{ marginBottom: "10px" }}>
-                <div style={{ fontSize: "13px", fontWeight: 700, color: INK_NAVY, marginBottom: "4px" }}>
-                  {item === "외주성" ? t("projectDataEntryTab:outsourcingItem") : item}
-                </div>
+                <select
+                  value={item}
+                  onChange={(event) => setSelectedMonthlyBudgetItem(event.target.value as MonthlyBudgetItem)}
+                  aria-label={t("projectDataEntryTab:itemColumn")}
+                  style={{
+                    minWidth: "180px",
+                    padding: "5px 28px 5px 8px",
+                    border: `1px solid ${BORDER_LIGHT}`,
+                    borderRadius: "3px",
+                    backgroundColor: "#fff",
+                    color: INK_NAVY,
+                    fontFamily: "inherit",
+                    fontSize: "13px",
+                    fontWeight: 700,
+                    lineHeight: 1.4,
+                    marginBottom: "6px",
+                  }}
+                >
+                  {MONTHLY_BUDGET_ITEMS.map((option) => (
+                    <option key={option} value={option}>
+                      {option === "외주성" ? t("projectDataEntryTab:outsourcingItem") : option}
+                    </option>
+                  ))}
+                </select>
                 <div data-tbl={tblKey} onKeyDown={makeArrowNav(tblKey)}>
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
                   <thead>
@@ -1946,7 +1971,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                 </div>
               </div>
             );
-          })}
+          })()}
         </div>
       </div>
 
