@@ -1146,6 +1146,125 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
     </div>
   );
 
+  const budgetAmount = (item: string) =>
+    costBudget.find((row) => row.item === item)?.budget ?? null;
+  const setBudgetAmount = (item: string, value: number | null) =>
+    setCostBudget((rows) =>
+      rows.map((row) => (row.item === item ? { ...row, budget: value } : row)),
+    );
+  const outsourcingBudgetValues = outsourcing
+    .map((row) => row.budget)
+    .filter((value): value is number => value != null);
+  const outsourcingBudget =
+    outsourcingBudgetValues.length > 0
+      ? outsourcingBudgetValues.reduce((sum, value) => sum + value, 0)
+      : null;
+  const directBudget =
+    outsourcingBudgetValues.length > 0 ||
+    budgetAmount("Common") != null ||
+    budgetAmount("Expense 1") != null
+      ? (outsourcingBudget ?? 0) +
+        (budgetAmount("Common") ?? 0) +
+        (budgetAmount("Expense 1") ?? 0)
+      : null;
+  const indirectBudget = budgetAmount("Expense 2");
+  const contingencyBudget = budgetAmount("Contingency");
+  const totalBudget =
+    directBudget != null || indirectBudget != null || contingencyBudget != null
+      ? (directBudget ?? 0) + (indirectBudget ?? 0) + (contingencyBudget ?? 0)
+      : null;
+  const budgetHierarchyBlock = (
+    sectionLabel: string,
+    blockIndex: number,
+  ) => (
+    <table
+      key={sectionLabel}
+      style={{
+        width: "100%",
+        borderCollapse: "collapse",
+        marginTop: blockIndex === 0 ? "4px" : "10px",
+        tableLayout: "fixed",
+      }}
+    >
+      <thead>
+        <tr>
+          <th style={{ ...th, width: "11%" }} rowSpan={2}></th>
+          <th style={th} colSpan={2}>Level 1</th>
+          <th style={th} colSpan={2}>Level 2</th>
+          <th style={{ ...th, width: "13%" }} rowSpan={2}>{t("projectDataEntryTab:budgetRemark")}</th>
+          <th style={{ ...th, width: "15%" }} rowSpan={2}>{t("projectDataEntryTab:budgetVnd")}</th>
+        </tr>
+        <tr>
+          <th style={th}>{t("projectDataEntryTab:englishLabel")}</th>
+          <th style={th}>{t("projectDataEntryTab:koreanLabel")}</th>
+          <th style={th}>{t("projectDataEntryTab:englishLabel")}</th>
+          <th style={th}>{t("projectDataEntryTab:koreanLabel")}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style={{ ...readOnlyCell, textAlign: "center", fontWeight: 700 }} rowSpan={9}>{sectionLabel}</td>
+          <td style={readOnlyCell} rowSpan={3}>Direct cost</td>
+          <td style={readOnlyCell} rowSpan={3}>{t("projectDataEntryTab:directCostKo")}</td>
+          <td style={readOnlyCell}></td>
+          <td style={readOnlyCell}></td>
+          <td style={{ ...readOnlyCell, textAlign: "center" }}>{t("projectDataEntryTab:outsourcingItem")}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtMoney(outsourcingBudget)}</td>
+        </tr>
+        <tr>
+          <td style={readOnlyCell}>Common</td>
+          <td style={readOnlyCell}>{t("projectDataEntryTab:commonExpenseKo")}</td>
+          <td style={readOnlyCell}></td>
+          <td style={tdCell}><VndInput valueKUsd={budgetAmount("Common")} onChange={(value) => setBudgetAmount("Common", value)} data-row={blockIndex * 4} data-col={0} /></td>
+        </tr>
+        <tr>
+          <td style={readOnlyCell}>Expense 1</td>
+          <td style={readOnlyCell}>{t("projectDataEntryTab:expense1Ko")}</td>
+          <td style={readOnlyCell}></td>
+          <td style={tdCell}><VndInput valueKUsd={budgetAmount("Expense 1")} onChange={(value) => setBudgetAmount("Expense 1", value)} data-row={blockIndex * 4 + 1} data-col={0} /></td>
+        </tr>
+        <tr>
+          <td style={{ ...readOnlyCell, textAlign: "center" }} colSpan={2}>{t("projectDataEntryTab:subtotal")}</td>
+          <td style={readOnlyCell} colSpan={2}></td>
+          <td style={readOnlyCell}></td>
+          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtMoney(directBudget)}</td>
+        </tr>
+        <tr>
+          <td style={readOnlyCell}>Indirect cost</td>
+          <td style={readOnlyCell}>{t("projectDataEntryTab:indirectCostKo")}</td>
+          <td style={readOnlyCell}>Expense 2</td>
+          <td style={readOnlyCell}>{t("projectDataEntryTab:expense2Ko")}</td>
+          <td style={readOnlyCell}></td>
+          <td style={tdCell}><VndInput valueKUsd={budgetAmount("Expense 2")} onChange={(value) => setBudgetAmount("Expense 2", value)} data-row={blockIndex * 4 + 2} data-col={0} /></td>
+        </tr>
+        <tr>
+          <td style={{ ...readOnlyCell, textAlign: "center" }} colSpan={2}>{t("projectDataEntryTab:subtotal")}</td>
+          <td style={readOnlyCell} colSpan={2}></td>
+          <td style={readOnlyCell}></td>
+          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtMoney(indirectBudget)}</td>
+        </tr>
+        <tr>
+          <td style={readOnlyCell} colSpan={2}>Contingency</td>
+          <td style={readOnlyCell} colSpan={2}></td>
+          <td style={readOnlyCell}></td>
+          <td style={tdCell}><VndInput valueKUsd={budgetAmount("Contingency")} onChange={(value) => setBudgetAmount("Contingency", value)} data-row={blockIndex * 4 + 3} data-col={0} /></td>
+        </tr>
+        <tr>
+          <td style={{ ...readOnlyCell, textAlign: "center" }} colSpan={2}>{t("projectDataEntryTab:subtotal")}</td>
+          <td style={readOnlyCell} colSpan={2}></td>
+          <td style={readOnlyCell}></td>
+          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtMoney(contingencyBudget)}</td>
+        </tr>
+        <tr>
+          <td style={{ ...readOnlyCell, textAlign: "center", fontWeight: 700 }} colSpan={2}>{t("common:total")}</td>
+          <td style={readOnlyCell} colSpan={2}></td>
+          <td style={readOnlyCell}></td>
+          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtMoney(totalBudget)}</td>
+        </tr>
+      </tbody>
+    </table>
+  );
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
       <div style={{ ...cardStyle, display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
@@ -1778,26 +1897,8 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
           {t("projectDataEntryTab:costBudgetNote")}
         </div>
         <div data-tbl="costBudget" onKeyDown={makeArrowNav("costBudget")}>
-        <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "4px" }}>
-          <thead>
-            <tr>
-              <th style={th}>{t("projectDataEntryTab:itemColumn")}</th>
-              <th style={th}>{t("projectDataEntryTab:budgetVnd")}</th>
-              <th style={th}>{t("projectDataEntryTab:progressPaymentPlanVnd")}</th>
-              <th style={th}>{t("projectDataEntryTab:progressPaymentActualVnd")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {costBudget.map((c, i) => (
-              <tr key={c.item}>
-                <td style={{ ...tdCell, fontSize: "13px", padding: "5px 6px", color: INK_BODY, fontWeight: 600 }}>{c.item}</td>
-                <td style={tdCell}><VndInput valueKUsd={c.budget} onChange={(v) => updateAt(setCostBudget, i, { budget: v })} data-row={i} data-col={0} /></td>
-                <td style={tdCell}><VndInput valueKUsd={c.plan} onChange={(v) => updateAt(setCostBudget, i, { plan: v })} data-row={i} data-col={1} /></td>
-                <td style={tdCell}><VndInput valueKUsd={c.actual} onChange={(v) => updateAt(setCostBudget, i, { actual: v })} data-row={i} data-col={2} /></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+          {budgetHierarchyBlock(t("projectDataEntryTab:executionPlan"), 0)}
+          {budgetHierarchyBlock(t("projectDataEntryTab:executionActual"), 1)}
         </div>
 
         {/* 월별 계획/실적 */}
