@@ -832,6 +832,46 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       if (index >= 0) return rows.map((row, i) => (i === index ? { ...row, plan: value } : row));
       return [...rows, { year, month, plan: value, actual: null }];
     });
+  const getSalesEntryValue = (
+    year: number,
+    month: number,
+    field: "plan" | "actual",
+  ) => {
+    const saved = salesMonthly.find(
+      (row) => row.year === year && row.month === month,
+    )?.[field];
+    if (saved != null) return saved;
+    if (year !== REPORT_YEAR) return null;
+    return mainSalesMonths[month - 1]?.[field] ?? null;
+  };
+  const setSalesEntryValue = (
+    year: number,
+    month: number,
+    field: "plan" | "actual",
+    value: number | null,
+  ) =>
+    setSalesMonthly((rows) => {
+      const index = rows.findIndex(
+        (row) => row.year === year && row.month === month,
+      );
+      if (index >= 0) {
+        return rows.map((row, rowIndex) =>
+          rowIndex === index ? { ...row, [field]: value } : row,
+        );
+      }
+      return [
+        ...rows,
+        {
+          year,
+          month,
+          plan: field === "plan" ? value : getSalesEntryValue(year, month, "plan"),
+          actual:
+            field === "actual"
+              ? value
+              : getSalesEntryValue(year, month, "actual"),
+        },
+      ];
+    });
   const getProgressPlan = (year: number, month: number) =>
     progress.find((row) => row.year === year && row.month === month)?.planPct ?? null;
   const setProgressPlan = (year: number, month: number, value: number | null) =>
@@ -913,42 +953,63 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
     </div>
   );
 
-  // 메인 경영현황판 Excel의 Site별 월 매출 확인표.
+  // 메인 경영현황판 Excel의 Site별 월 매출을 기본값으로 사용하는 월별 입력표.
   const salesMonthlyCard = (
     <div style={cardStyle}>
-      <div style={{ ...sectionTitle, display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
-        <span>{t("projectDataEntryTab:salesMonthlyTitleConstruction")}</span>
-        <span style={{ fontSize: "12px", fontWeight: 500, color: INK_MUTED }}>
-          {REPORT_YEAR} · {unitLabel}
-        </span>
-      </div>
-      <div style={{ overflowX: "auto", marginTop: "8px" }}>
-        <table style={{ width: "100%", minWidth: "980px", borderCollapse: "collapse", tableLayout: "fixed" }}>
+      {cardHead(
+        `${t("projectDataEntryTab:salesMonthlyTitleConstruction")} · ${unitLabel}`,
+        "salesMonthly",
+      )}
+      <div
+        data-tbl="salesMonthly"
+        onKeyDown={makeArrowNav("salesMonthly")}
+        style={{ overflowX: "auto", marginTop: "8px" }}
+      >
+        <table
+          style={{
+            width: "100%",
+            minWidth: "620px",
+            borderCollapse: "collapse",
+            tableLayout: "fixed",
+          }}
+        >
           <thead>
             <tr>
-              <th style={{ ...th, width: "110px" }}>{t("projectDataEntryTab:salesScenario")}</th>
-              {mainSalesMonths.map(({ month }) => (
-                <th key={month} style={th}>
-                  {t("projectDataEntryTab:monthSuffix", { month })}
-                </th>
-              ))}
+              <th style={{ ...th, width: "18%" }}>{t("common:year")}</th>
+              <th style={{ ...th, width: "14%" }}>{t("projectDataEntryTab:monthColumn")}</th>
+              <th style={th}>{t("projectDataEntryTab:salesPlan")}</th>
+              <th style={th}>{t("projectDataEntryTab:salesActual")}</th>
             </tr>
           </thead>
           <tbody>
-            {([
-              [t("common:plan"), "plan"],
-              [t("common:actual"), "actual"],
-              [t("projectDataEntryTab:forecast"), "forecast"],
-            ] as const).map(([label, key]) => (
-              <tr key={key}>
-                <td style={{ ...tdCell, padding: "6px", textAlign: "center", fontSize: "13px", fontWeight: 700, color: INK_NAVY, backgroundColor: TABLE_HEADER_BG }}>
-                  {label}
+            {mainSalesMonths.map(({ month }, rowIndex) => (
+              <tr key={month}>
+                <td style={{ ...tdCell, textAlign: "center", color: INK_BODY }}>
+                  {REPORT_YEAR}
                 </td>
-                {mainSalesMonths.map((row) => (
-                  <td key={`${key}-${row.month}`} style={{ ...tdCell, padding: "6px", textAlign: "right", fontSize: "13px", color: INK_BODY }}>
-                    {fmtMoney(row[key])}
-                  </td>
-                ))}
+                <td style={{ ...tdCell, textAlign: "center", color: INK_BODY }}>
+                  {month}
+                </td>
+                <td style={tdCell}>
+                  <VndInput
+                    valueKUsd={getSalesEntryValue(REPORT_YEAR, month, "plan")}
+                    onChange={(value) =>
+                      setSalesEntryValue(REPORT_YEAR, month, "plan", value)
+                    }
+                    data-row={rowIndex}
+                    data-col={0}
+                  />
+                </td>
+                <td style={tdCell}>
+                  <VndInput
+                    valueKUsd={getSalesEntryValue(REPORT_YEAR, month, "actual")}
+                    onChange={(value) =>
+                      setSalesEntryValue(REPORT_YEAR, month, "actual", value)
+                    }
+                    data-row={rowIndex}
+                    data-col={1}
+                  />
+                </td>
               </tr>
             ))}
           </tbody>

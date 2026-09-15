@@ -121,6 +121,8 @@
   "planVndLabel": "계획 Plan",
   "actualVndLabel": "실적 Actual",
   "monthSuffix": "{{month}}월",
+  "salesPlan": "매출 계획",
+  "salesActual": "매출 실적",
   "outsourcingTitleService": "5. 외주/자재 (외주 탭)",
   "outsourcingTitleConstruction": "6. 외주/자재 (외주 탭)",
   "tradeGroupColumn": "대공종",

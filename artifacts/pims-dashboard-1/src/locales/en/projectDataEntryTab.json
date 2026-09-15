@@ -121,6 +121,8 @@
   "planVndLabel": "Plan",
   "actualVndLabel": "Actual",
   "monthSuffix": "Month {{month}}",
+  "salesPlan": "Sales Plan",
+  "salesActual": "Sales Actual",
   "outsourcingTitleService": "5. Outsourcing/Materials (Outsourcing tab)",
   "outsourcingTitleConstruction": "6. Outsourcing/Materials (Outsourcing tab)",
   "tradeGroupColumn": "Trade Group",

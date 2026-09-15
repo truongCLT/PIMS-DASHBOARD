@@ -121,6 +121,8 @@
   "planVndLabel": "Kế hoạch Plan",
   "actualVndLabel": "Thực hiện Actual",
   "monthSuffix": "Tháng {{month}}",
+  "salesPlan": "Kế hoạch doanh thu",
+  "salesActual": "Doanh thu thực hiện",
   "outsourcingTitleService": "5. Thầu phụ/Vật tư (tab Thầu phụ)",
   "outsourcingTitleConstruction": "6. Thầu phụ/Vật tư (tab Thầu phụ)",
   "tradeGroupColumn": "Nhóm hạng mục",
