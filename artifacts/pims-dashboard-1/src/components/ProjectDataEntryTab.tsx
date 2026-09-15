@@ -314,16 +314,28 @@ const BUDGET_ITEM_CATEGORY: Record<string, string> = {
   Contingency: "Indirect Cost",
 };
 
-const TRADE_GROUPS = ["공통", "토목", "건축", "기계", "전기", "조경"];
+const TRADE_GROUPS = ["대공종", "건축", "기계", "전기", "토목", "조경", "경비"] as const;
 /** raw Korean trade group (fixed identifier stored as data) → translation key, for display only */
 const TRADE_GROUP_LABEL_KEY: Record<string, string> = {
-  "공통": "tradeGroupCommon",
-  "토목": "tradeGroupCivil",
+  "대공종": "processCostMajorWork",
   "건축": "tradeGroupArchitecture",
   "기계": "tradeGroupMechanical",
   "전기": "tradeGroupElectrical",
+  "토목": "tradeGroupCivil",
   "조경": "tradeGroupLandscape",
+  "경비": "processCostExpense",
 };
+const TRADE_GROUP_PROCESS_ITEM: Record<(typeof TRADE_GROUPS)[number], string> = {
+  "대공종": "Common",
+  "건축": "외주 건축",
+  "기계": "외주 기계",
+  "전기": "외주 전기",
+  "토목": "외주 토목",
+  "조경": "외주 조경",
+  "경비": "외주 경비",
+};
+const normalizeTradeGroup = (value: string | null | undefined) =>
+  value === "공통" ? "대공종" : value;
 
 const PROCESS_COST_ITEMS = [
   { key: "Common", keys: ["Common"], label: "processCostMajorWork" },
@@ -516,6 +528,52 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
     setCfPrefilled(false);
     setCashflow(action);
   };
+  const getOutsourcingActualTarget = () => {
+    const matched = /^(\d{4})-(\d{2})$/.exec(overview.asOfMonth ?? "");
+    if (matched) return { year: Number(matched[1]), month: Number(matched[2]) };
+    return { year: REPORT_YEAR, month: Math.max(1, actualCutoffMonth) };
+  };
+  const getOutsourcingActualByItem = () => {
+    const totals = new Map<string, number>();
+    const hasAmount = new Set<string>();
+    outsourcing.forEach((row) => {
+      const tradeGroup = normalizeTradeGroup(row.tradeGroup);
+      if (!TRADE_GROUPS.includes(tradeGroup as (typeof TRADE_GROUPS)[number])) return;
+      const item = TRADE_GROUP_PROCESS_ITEM[tradeGroup as (typeof TRADE_GROUPS)[number]];
+      totals.set(item, (totals.get(item) ?? 0) + (row.accum ?? 0));
+      if (row.accum != null) hasAmount.add(item);
+    });
+    return new Map(
+      [...totals].map(([item, total]) => [item, hasAmount.has(item) ? total : null] as const),
+    );
+  };
+  const mergeOutsourcingActuals = (rows: ProjectDetailCostBudgetMonthly[]) => {
+    const { year, month } = getOutsourcingActualTarget();
+    const totals = getOutsourcingActualByItem();
+    let merged = [...rows];
+    totals.forEach((actual, item) => {
+      if (item === "외주 경비") {
+        merged = merged.map((row) =>
+          row.year === year &&
+          row.month === month &&
+          (row.item === "Expense 1" || row.item === "Expense 2")
+            ? { ...row, actual: null }
+            : row,
+        );
+      }
+      const index = merged.findIndex(
+        (row) => row.item === item && row.year === year && row.month === month,
+      );
+      if (index >= 0) {
+        merged = merged.map((row, rowIndex) =>
+          rowIndex === index ? { ...row, actual } : row,
+        );
+      } else {
+        merged.push({ item, year, month, plan: null, actual });
+      }
+    });
+    return merged;
+  };
   const removeAt = <T,>(setter: React.Dispatch<React.SetStateAction<T[]>>, i: number) =>
     setter((rows) => rows.filter((_, j) => j !== i));
 
@@ -695,7 +753,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       milestones: milestones.filter((m) => m.label.trim() !== ""),
       costEstimation: estRows,
       costBudget: costBudget.filter((c) => c.item.trim() !== ""),
-      costBudgetMonthly: costBudgetMonthly.filter((r) => r.plan != null || r.actual != null),
+      costBudgetMonthly: mergeOutsourcingActuals(costBudgetMonthly).filter((r) => r.plan != null || r.actual != null),
       outsourcing: outsourcing.filter((o) => o.trade.trim() !== ""),
       // 자금수지 Excel prefill을 아직 수정하지 않았다면 저장하지 않음(향후 Excel 갱신 반영 유지)
       cashflow: cfPrefilled ? [] : cashflow.filter((c) => c.year > 0 && c.month >= 1 && c.month <= 12),
@@ -788,6 +846,14 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
     month: number,
     field: "plan" | "actual",
   ) => {
+    const outsourcingTarget = getOutsourcingActualTarget();
+    const outsourcingActual =
+      field === "actual" &&
+      year === outsourcingTarget.year &&
+      month === outsourcingTarget.month
+        ? getOutsourcingActualByItem().get(items[0])
+        : undefined;
+    if (outsourcingActual !== undefined) return outsourcingActual;
     const values = items.map(
       (item) =>
         costBudgetMonthly.find(
@@ -1791,7 +1857,6 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
               <th style={th}>{t("projectDataEntryTab:resolvedBVnd")}</th>
               <th style={th}>{t("projectDataEntryTab:thisMonthVnd")}</th>
               <th style={th}>{t("projectDataEntryTab:accumCVnd")}</th>
-              <th style={{ ...th, width: "36px" }}></th>
             </tr>
           </thead>
           <tbody>
@@ -1799,7 +1864,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
               <tr key={i}>
                 <td style={tdCell}>
                   <select
-                    value={o.tradeGroup ?? ""}
+                    value={normalizeTradeGroup(o.tradeGroup) ?? ""}
                     onChange={(ev) => updateAt(setOutsourcing, i, { tradeGroup: ev.target.value || null })}
                     style={{ width: "100%", fontSize: "13px", padding: "3px 2px", border: `1px solid ${BORDER_LIGHT}`, borderRadius: "3px", backgroundColor: "#fff" }}
                   >
@@ -1809,33 +1874,21 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                     ))}
                   </select>
                 </td>
-                <td style={tdCell}><TextInput value={o.trade} onChange={(v) => updateAt(setOutsourcing, i, { trade: v ?? "" })} placeholder={t("projectDataEntryTab:tradePlaceholder")} data-row={i} data-col={0} /></td>
-                <td style={tdCell}><TextInput value={o.vendor} onChange={(v) => updateAt(setOutsourcing, i, { vendor: v })} data-row={i} data-col={1} /></td>
-                <td style={tdCell}><TextInput value={o.category} onChange={(v) => updateAt(setOutsourcing, i, { category: v })} placeholder={t("projectDataEntryTab:categoryPlaceholder")} data-row={i} data-col={2} /></td>
-                <td style={tdCell}><TextInput value={o.contractDate} onChange={(v) => updateAt(setOutsourcing, i, { contractDate: v })} placeholder="'24.12.31" data-row={i} data-col={3} /></td>
-                <td style={tdCell}><TextInput value={o.changeNo} onChange={(v) => updateAt(setOutsourcing, i, { changeNo: v })} data-row={i} data-col={4} /></td>
-                <td style={tdCell}><VndInput valueKUsd={o.budget} onChange={(v) => updateAt(setOutsourcing, i, { budget: v })} data-row={i} data-col={5} /></td>
-                <td style={tdCell}><VndInput valueKUsd={o.executedBudget} onChange={(v) => updateAt(setOutsourcing, i, { executedBudget: v })} data-row={i} data-col={6} /></td>
-                <td style={tdCell}><VndInput valueKUsd={o.resolved} onChange={(v) => updateAt(setOutsourcing, i, { resolved: v })} data-row={i} data-col={7} /></td>
-                <td style={tdCell}><VndInput valueKUsd={o.thisMonth} onChange={(v) => updateAt(setOutsourcing, i, { thisMonth: v })} data-row={i} data-col={8} /></td>
-                <td style={tdCell}><VndInput valueKUsd={o.accum} onChange={(v) => updateAt(setOutsourcing, i, { accum: v })} data-row={i} data-col={9} /></td>
-                <td style={{ ...tdCell, textAlign: "center" }}><DelBtn onClick={() => removeAt(setOutsourcing, i)} /></td>
+                <td style={tdCell}>{o.trade || "-"}</td>
+                <td style={tdCell}>{o.vendor || "-"}</td>
+                <td style={tdCell}>{o.category || "-"}</td>
+                <td style={{ ...tdCell, textAlign: "center" }}>{o.contractDate || "-"}</td>
+                <td style={{ ...tdCell, textAlign: "center" }}>{o.changeNo || "-"}</td>
+                <td style={{ ...tdCell, textAlign: "right" }}>{fmtMoney(o.budget)}</td>
+                <td style={{ ...tdCell, textAlign: "right" }}>{fmtMoney(o.executedBudget)}</td>
+                <td style={{ ...tdCell, textAlign: "right" }}>{fmtMoney(o.resolved)}</td>
+                <td style={{ ...tdCell, textAlign: "right" }}>{fmtMoney(o.thisMonth)}</td>
+                <td style={{ ...tdCell, textAlign: "right" }}>{fmtMoney(o.accum)}</td>
               </tr>
             ))}
           </tbody>
         </table>
         </div>
-        <button
-          style={addBtn}
-          onClick={() =>
-            setOutsourcing((rows) => [
-              ...rows,
-              { tradeGroup: null, trade: "", vendor: null, category: null, contractDate: null, changeNo: null, budget: null, executedBudget: null, resolved: null, thisMonth: null, accum: null },
-            ])
-          }
-        >
-          <Plus size={12} /> {t("projectDataEntryTab:addTrade")}
-        </button>
       </div>
 
       {/* 6. 월별 자금 */}
