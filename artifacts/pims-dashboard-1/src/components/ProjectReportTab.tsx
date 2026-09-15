@@ -29,7 +29,10 @@ import {
   CARD_BORDER,
 } from "../lib/uiTokens";
 
-import { ProgressSection } from "./project-report/ProgressSection";
+import {
+  ProgressSection,
+  selectProgressReportRow,
+} from "./project-report/ProgressSection";
 import { SalesSection } from "./project-report/SalesSection";
 import { StatusTableSection } from "./project-report/StatusTableSection";
 import { CostSection } from "./project-report/CostSection";
@@ -72,6 +75,49 @@ function reportGrid(minColW: string): React.CSSProperties {
     gap: "8px",
     alignItems: "stretch",
   };
+}
+
+export function resolveLatestProjectReportMonth({
+  asOfMonth,
+  progress,
+  revenueActuals,
+}: {
+  asOfMonth?: string | null;
+  progress: Array<{
+    year: number;
+    month: number;
+    actualPct?: number | null;
+    actualCumPct?: number | null;
+  }>;
+  revenueActuals: Array<number | null>;
+}): number | null {
+  const asOfMatch = /^(\d{4})-(\d{2})$/.exec(asOfMonth ?? "");
+  if (
+    asOfMatch &&
+    Number(asOfMatch[1]) === REPORT_YEAR &&
+    Number(asOfMatch[2]) >= 1 &&
+    Number(asOfMatch[2]) <= 12
+  ) {
+    return Number(asOfMatch[2]);
+  }
+
+  const latestProgressActual = [...progress]
+    .reverse()
+    .find(
+      (row) =>
+        row.year === REPORT_YEAR &&
+        (row.actualPct != null || row.actualCumPct != null),
+    );
+  if (latestProgressActual) return latestProgressActual.month;
+
+  for (let index = revenueActuals.length - 1; index >= 0; index -= 1) {
+    if ((revenueActuals[index] ?? 0) !== 0) return index + 1;
+  }
+
+  const latestProgressRow = [...progress]
+    .reverse()
+    .find((row) => row.year === REPORT_YEAR);
+  return latestProgressRow?.month ?? null;
 }
 
 // ─── Main component ────────────────────────────────────────────────────────
@@ -118,18 +164,13 @@ export function ProjectReportTab({
       reportSales.find((row) => row.month === index + 1)?.plan ?? null,
   );
 
-  // Last month with actual revenue
-  let lastActualIdx = -1;
-  for (let i = 0; i < revMonths.length; i++) {
-    if ((revMonths[i] ?? 0) !== 0) lastActualIdx = i;
-  }
-  const latestActualMonth =
-    lastActualIdx >= 0
-      ? lastActualIdx + 1
-      : progRows.length > 0
-        ? progRows[progRows.length - 1].month
-        : null;
-  const resolvedMonth = selectedMonth ?? latestActualMonth ?? null;
+  const latestActualMonth = resolveLatestProjectReportMonth({
+    asOfMonth: detail?.overview?.asOfMonth,
+    progress: progRows,
+    revenueActuals: revMonths,
+  });
+  const lastActualIdx = latestActualMonth == null ? -1 : latestActualMonth - 1;
+  const resolvedMonth = selectedMonth ?? latestActualMonth;
   useEffect(() => {
     onResolvedMonthChange(resolvedMonth);
   }, [onResolvedMonthChange, resolvedMonth]);
@@ -233,13 +274,7 @@ export function ProjectReportTab({
   ].filter((r) => r.budget != null || r.actual != null || r.plan != null);
 
   // ── Status table data ─────────────────────────────────────────────────────
-  const latestProg =
-    resolvedMonth != null
-      ? (progRows.find((p) => p.year === REPORT_YEAR && p.month === resolvedMonth) ??
-          (progRows.length > 0 ? progRows[progRows.length - 1] : null))
-      : progRows.length > 0
-        ? progRows[progRows.length - 1]
-        : null;
+  const latestProg = selectProgressReportRow(progRows, resolvedMonth);
 
   const refMonthIdx = resolvedMonth != null ? resolvedMonth - 1 : lastActualIdx;
   const salesMonthActual = refMonthIdx >= 0 ? (revMonths[refMonthIdx] ?? null) : null;

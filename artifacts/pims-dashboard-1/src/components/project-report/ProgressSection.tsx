@@ -42,6 +42,23 @@ interface Props {
   endDate: string | null | undefined;
 }
 
+export function selectProgressReportRow(
+  progRows: ProgRowData[],
+  resolvedMonth: number | null,
+): ProgRowData | null {
+  if (progRows.length === 0) return null;
+  if (resolvedMonth == null) return progRows[progRows.length - 1] ?? null;
+  return (
+    [...progRows]
+      .reverse()
+      .find(
+        (row) =>
+          row.year === REPORT_YEAR &&
+          row.month <= resolvedMonth,
+      ) ?? null
+  );
+}
+
 export function calculateDurationRate(
   startDate: string | null | undefined,
   endDate: string | null | undefined,
@@ -67,13 +84,7 @@ export function ProgressSection({
   endDate,
 }: Props) {
   const { fmtMoney } = useMoney();
-  const latest =
-    resolvedMonth != null
-      ? (progRows.find((p) => p.year === REPORT_YEAR && p.month === resolvedMonth) ??
-          (progRows.length > 0 ? progRows[progRows.length - 1] : null))
-      : progRows.length > 0
-        ? progRows[progRows.length - 1]
-        : null;
+  const latest = selectProgressReportRow(progRows, resolvedMonth);
 
   const planM = latest?.planPct ?? null;
   const actualM = latest?.actualPct ?? null;
