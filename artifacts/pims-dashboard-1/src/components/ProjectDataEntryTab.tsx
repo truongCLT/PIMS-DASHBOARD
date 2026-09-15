@@ -46,6 +46,16 @@ const tdCell: React.CSSProperties = {
   padding: "2px",
 };
 
+const readOnlyCell: React.CSSProperties = {
+  ...tdCell,
+  padding: "5px 6px",
+  color: INK_BODY,
+  fontFamily: "inherit",
+  fontSize: "13px",
+  fontWeight: 400,
+  lineHeight: 1.4,
+};
+
 const inputStyle: React.CSSProperties = {
   width: "100%",
   border: "none",
@@ -1866,7 +1876,18 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                   <select
                     value={normalizeTradeGroup(o.tradeGroup) ?? ""}
                     onChange={(ev) => updateAt(setOutsourcing, i, { tradeGroup: ev.target.value || null })}
-                    style={{ width: "100%", fontSize: "13px", padding: "3px 2px", border: `1px solid ${BORDER_LIGHT}`, borderRadius: "3px", backgroundColor: "#fff" }}
+                    style={{
+                      width: "100%",
+                      padding: "5px 6px",
+                      border: `1px solid ${BORDER_LIGHT}`,
+                      borderRadius: "3px",
+                      backgroundColor: "#fff",
+                      color: INK_BODY,
+                      fontFamily: "inherit",
+                      fontSize: "13px",
+                      fontWeight: 400,
+                      lineHeight: 1.4,
+                    }}
                   >
                     <option value="">-</option>
                     {TRADE_GROUPS.map((g) => (
@@ -1874,16 +1895,16 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                     ))}
                   </select>
                 </td>
-                <td style={tdCell}>{o.trade || "-"}</td>
-                <td style={tdCell}>{o.vendor || "-"}</td>
-                <td style={tdCell}>{o.category || "-"}</td>
-                <td style={{ ...tdCell, textAlign: "center" }}>{o.contractDate || "-"}</td>
-                <td style={{ ...tdCell, textAlign: "center" }}>{o.changeNo || "-"}</td>
-                <td style={{ ...tdCell, textAlign: "right" }}>{fmtMoney(o.budget)}</td>
-                <td style={{ ...tdCell, textAlign: "right" }}>{fmtMoney(o.executedBudget)}</td>
-                <td style={{ ...tdCell, textAlign: "right" }}>{fmtMoney(o.resolved)}</td>
-                <td style={{ ...tdCell, textAlign: "right" }}>{fmtMoney(o.thisMonth)}</td>
-                <td style={{ ...tdCell, textAlign: "right" }}>{fmtMoney(o.accum)}</td>
+                <td style={readOnlyCell}>{o.trade || "-"}</td>
+                <td style={readOnlyCell}>{o.vendor || "-"}</td>
+                <td style={readOnlyCell}>{o.category || "-"}</td>
+                <td style={{ ...readOnlyCell, textAlign: "center" }}>{o.contractDate || "-"}</td>
+                <td style={{ ...readOnlyCell, textAlign: "center" }}>{o.changeNo || "-"}</td>
+                <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtMoney(o.budget)}</td>
+                <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtMoney(o.executedBudget)}</td>
+                <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtMoney(o.resolved)}</td>
+                <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtMoney(o.thisMonth)}</td>
+                <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtMoney(o.accum)}</td>
               </tr>
             ))}
           </tbody>
