@@ -32,7 +32,7 @@ const HEADERS: Record<string, string[]> = {
   [SHEETS.progress]: ["연도", "월", "월간 계획(%)", "월간 실적(%)", "누계 계획(%)", "누계 실적(%)"],
   [SHEETS.milestones]: ["구분", "계획 시작(YYYY-MM-DD)", "계획 종료(YYYY-MM-DD)", "실제 시작(YYYY-MM-DD)", "실제 종료(YYYY-MM-DD)"],
   [SHEETS.costEstimation]: ["구분(bidding/execution/completion)", "기준연도", "기준월", "도급액(Bil.VND)", "원가(Bil.VND)"],
-  [SHEETS.costBudget]: ["구분", "항목", "예산(Bil.VND)", "계획(Bil.VND)", "실적(Bil.VND)"],
+  [SHEETS.costBudget]: ["Level 1", "Level 2", "비고", "예산(Bil.VND)"],
   [SHEETS.costBudgetMonthly]: ["항목", "연도", "월", "계획(Bil.VND)", "실적(Bil.VND)"],
   [SHEETS.outsourcing]: [
     "대공종",
@@ -47,7 +47,7 @@ const HEADERS: Record<string, string[]> = {
     "당월(Bil.VND)",
     "누계(Bil.VND)",
   ],
-  [SHEETS.cashflow]: ["연도", "월", "수입(Bil.VND)", "지출(Bil.VND)", "보유현금(Bil.VND)"],
+  [SHEETS.cashflow]: ["연도", "월", "수입(Bil.VND)", "지출(Bil.VND)", "보유현금(Bil.VND)", "기성 확정(Bil.VND)"],
   [SHEETS.cogsMonthly]: ["연도", "월", "회계 매출원가(Bil.VND)", "집행 매출원가 WIP(Bil.VND)"],
   [SHEETS.salesMonthly]: ["연도", "월", "매출 계획(Bil.VND)", "매출 실적(Bil.VND)"],
 };
@@ -106,11 +106,14 @@ export async function downloadProjectDetailTemplate(
     title.alignment = { horizontal: "center", vertical: "middle" };
     ws.getRow(1).height = 26;
     const guideRows: [string, string][] = [
+      ["양식 버전", "2026-09"],
       ["프로젝트", projectName],
       ["사업 유형", businessType],
       ["금액 단위", "Bil. VND (입력값은 저장 시 천 USD로 환산됩니다)"],
       ["권장 입력 순서", flow.join("  →  ")],
       ["작성 기준", "빈 셀은 미입력으로 처리됩니다. 월별 표는 연도·월 중복 없이 입력해 주세요."],
+      ["예산 집행", "Level 1·Level 2 구조로 입력하며, 월별 계획·실적은 4-1 시트에서 항목·연도·월별로 관리합니다."],
+      ["선택 항목", "월별 예산 항목: Common, Expense 1, Expense 2, 외주성 / 외주 대공종: 대공종, 건축, 기계, 전기, 토목, 조경, 경비"],
       ["사진", "현장 사진은 웹 화면의 데이터 입력 탭에서 별도로 업로드합니다."],
     ];
     guideRows.forEach(([label, value]) => {
@@ -128,11 +131,25 @@ export async function downloadProjectDetailTemplate(
     const ov = detail.overview;
     const ws = wb.addWorksheet(SHEETS.overview);
     const rows: [string, Cell][] = [
+      ["현장코드", ov.siteCode ?? null],
       ["발주처", ov.client ?? null],
       ["착공일(YYYY-MM-DD)", ov.startDate ?? null],
       ["준공일(YYYY-MM-DD)", ov.endDate ?? null],
       ["도급액(Bil.VND)", tv(ov.contractAmount)],
       ["공사규모", ov.scale ?? null],
+      ["위치", ov.location ?? null],
+      ["대지면적", ov.siteArea ?? null],
+      ["연면적", ov.grossFloorArea ?? null],
+      ["용도", ov.purpose ?? null],
+      ["지분", ov.ownershipStake ?? null],
+      ["파트너사", ov.partnerCompany ?? null],
+      ["계약방식", ov.contractMethod ?? null],
+      ["수금조건", ov.paymentTerms ?? null],
+      ["하자보증기간", ov.defectWarrantyPeriod ?? null],
+      ["하자보증증권", ov.defectWarrantyBond ?? null],
+      ["선급금", ov.advancePayment ?? null],
+      ["유보금", ov.retention ?? null],
+      ["VE 조건", ov.veTerms ?? null],
       ["작성 기준월(YYYY-MM)", ov.asOfMonth ?? null],
       ["수행내용", ov.scope ?? null],
       ["연간 매출 목표(Bil.VND)", tv(ov.revenueAnnualTarget)],
@@ -162,15 +179,25 @@ export async function downloadProjectDetailTemplate(
     SHEETS.costEstimation,
     detail.costEstimation.map((e) => [e.kind, e.year ?? null, e.month ?? null, tv(e.contractAmount), tv(e.costAmount)]),
   );
-  addSheet(
+  const costBudgetSheet = addSheet(
     SHEETS.costBudget,
-    detail.costBudget.map((b) => [b.category ?? null, b.item, tv(b.budget), tv(b.plan), tv(b.actual)]),
+    detail.costBudget.map((b) => [b.category ?? null, b.item, null, tv(b.budget)]),
   );
-  addSheet(
+  costBudgetSheet.dataValidations.add("A2:A1000", {
+    type: "list",
+    allowBlank: true,
+    formulae: ['"Direct Cost,Indirect Cost"'],
+  });
+  const costBudgetMonthlySheet = addSheet(
     SHEETS.costBudgetMonthly,
     (detail.costBudgetMonthly ?? []).map((b) => [b.item, b.year, b.month, tv(b.plan), tv(b.actual)]),
   );
-  addSheet(
+  costBudgetMonthlySheet.dataValidations.add("A2:A1000", {
+    type: "list",
+    allowBlank: false,
+    formulae: ['"Common,Expense 1,Expense 2,외주성"'],
+  });
+  const outsourcingSheet = addSheet(
     SHEETS.outsourcing,
     detail.outsourcing.map((o) => [
       o.tradeGroup ?? null,
@@ -186,9 +213,14 @@ export async function downloadProjectDetailTemplate(
       tv(o.accum),
     ]),
   );
+  outsourcingSheet.dataValidations.add("A2:A1000", {
+    type: "list",
+    allowBlank: true,
+    formulae: ['"대공종,건축,기계,전기,토목,조경,경비"'],
+  });
   addSheet(
     SHEETS.cashflow,
-    detail.cashflow.map((c) => [c.year, c.month, tv(c.cashIn), tv(c.cashOut), tv(c.equivalent)]),
+    detail.cashflow.map((c) => [c.year, c.month, tv(c.cashIn), tv(c.cashOut), tv(c.equivalent), tv(c.confirmedProgress)]),
   );
   if (businessType === "용역") {
     addSheet(
@@ -334,12 +366,31 @@ export async function parseProjectDetailWorkbook(file: File, existing: ProjectDe
       }
       result.overview = {
         ...existing.overview,
+        siteCode: cellStr(map.get("현장코드")) ?? existing.overview.siteCode ?? null,
         client: cellStr(map.get("발주처")) ?? null,
-        startDate: cellStr(map.get("착공일")) ?? null,
-        endDate: cellStr(map.get("준공일")) ?? null,
+        startDate: cellYmd(map.get("착공일")) ?? null,
+        endDate: cellYmd(map.get("준공일")) ?? null,
         contractAmount: fv(map.get("도급액")) ?? null,
         scale: cellStr(map.get("공사규모")) ?? null,
       };
+      const overviewTextFields = [
+        ["위치", "location"],
+        ["대지면적", "siteArea"],
+        ["연면적", "grossFloorArea"],
+        ["용도", "purpose"],
+        ["지분", "ownershipStake"],
+        ["파트너사", "partnerCompany"],
+        ["계약방식", "contractMethod"],
+        ["수금조건", "paymentTerms"],
+        ["하자보증기간", "defectWarrantyPeriod"],
+        ["하자보증증권", "defectWarrantyBond"],
+        ["선급금", "advancePayment"],
+        ["유보금", "retention"],
+        ["VE 조건", "veTerms"],
+      ] as const;
+      for (const [label, field] of overviewTextFields) {
+        if (map.has(label)) result.overview[field] = cellStr(map.get(label));
+      }
       // 신규 항목: 해당 행이 양식에 존재할 때만 반영(구버전 양식은 기존 값 유지)
       if (map.has("작성 기준월")) {
         const ym = cellYm(map.get("작성 기준월"));
@@ -442,15 +493,20 @@ export async function parseProjectDetailWorkbook(file: File, existing: ProjectDe
     const rows = rowsOf(SHEETS.costBudget, true);
     if (rows) {
       const out: ProjectDetailCostBudget[] = [];
+      const ws = findSheet(SHEETS.costBudget);
+      const hierarchyLayout = cellStr(ws?.getRow(1).getCell(1).value) === "Level 1";
       rows.forEach((r, i) => {
         const item = cellStr(r[1]);
         if (!item) throw new ExcelParseError(`[${SHEETS.costBudget}] ${i + 2}행: 항목이 비어 있습니다.`);
+        const previous = existing.costBudget.find(
+          (entry) => entry.item.trim().toLowerCase() === item.trim().toLowerCase(),
+        );
         out.push({
           category: cellStr(r[0]),
           item,
-          budget: fv(r[2]),
-          plan: fv(r[3]),
-          actual: fv(r[4]),
+          budget: fv(r[hierarchyLayout ? 3 : 2]),
+          plan: hierarchyLayout ? previous?.plan ?? null : fv(r[3]),
+          actual: hierarchyLayout ? previous?.actual ?? null : fv(r[4]),
         });
       });
       result.costBudget = out;
@@ -534,7 +590,14 @@ export async function parseProjectDetailWorkbook(file: File, existing: ProjectDe
         const month = cellInt(r[1]);
         if (year == null || month == null) throw new ExcelParseError(`[${SHEETS.cashflow}] ${i + 2}행: 연도/월이 비어 있습니다.`);
         if (month < 1 || month > 12) throw new ExcelParseError(`[${SHEETS.cashflow}] ${i + 2}행: 월(${month})이 올바르지 않습니다.`);
-        out.push({ year, month, cashIn: fv(r[2]), cashOut: fv(r[3]), equivalent: fv(r[4]) });
+        out.push({
+          year,
+          month,
+          cashIn: fv(r[2]),
+          cashOut: fv(r[3]),
+          equivalent: fv(r[4]),
+          confirmedProgress: fv(r[5]),
+        });
       });
       result.cashflow = out;
     }

@@ -113,6 +113,8 @@
   "costBudgetNote": "Enter Common·Expense 1 (Direct Cost) and Expense 2·Contingency (Indirect Cost) here. Outsourcing-type budget/execution actuals are automatically aggregated from the \"Outsourcing/Materials\" table below.",
   "executionPlan": "Execution Plan",
   "executionActual": "Execution Actual",
+  "executionPlanCumulative": "Execution Plan (Cumulative)",
+  "executionActualCumulative": "Execution Actual (Cumulative)",
   "englishLabel": "English",
   "koreanLabel": "Korean",
   "budgetRemark": "Remark",

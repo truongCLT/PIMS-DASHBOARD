@@ -423,9 +423,9 @@ export function ConstructionProgressTab({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
       {/* Row 1: Construction site progress + Progress */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", height: progressCardHeight }}>
+      <div className="construction-progress-top-grid">
         {/* Construction site progress */}
-        <div style={{ ...cardStyle, display: "flex", flexDirection: "column" }}>
+        <div style={{ ...cardStyle, display: "flex", flexDirection: "column", minWidth: 0 }}>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
             <span style={sectionTitle}>{t("constructionProgressTab:siteProgressStatus")}</span>
           </div>
@@ -452,7 +452,7 @@ export function ConstructionProgressTab({
         </div>
 
         {/* Progress */}
-        <div style={{ ...cardStyle, display: "flex", flexDirection: "column" }}>
+        <div style={{ ...cardStyle, display: "flex", flexDirection: "column", minWidth: 0 }}>
           <div style={{ display: "flex", justifyContent: "space-between" }}>
             <span style={sectionTitle}>{t("common:process")}</span>
             <span
@@ -470,10 +470,10 @@ export function ConstructionProgressTab({
             </span>
           </div>
           {/* 3-column: 월(막대) / 연(도넛) / 누계(도넛) */}
-          <div style={{ display: "flex", flex: 1, gap: "0", marginTop: "8px", alignItems: "stretch" }}>
+          <div className="construction-progress-metrics">
 
             {/* 월 막대 */}
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ flex: 1, minWidth: "120px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
               <div style={{ width: "120px", height: "140px" }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart
@@ -518,10 +518,10 @@ export function ConstructionProgressTab({
               </div>
             </div>
 
-            <div style={{ width: "1px", backgroundColor: DIVIDER, alignSelf: "stretch", margin: "0 6px" }} />
+            <div style={{ width: "1px", flexShrink: 0, backgroundColor: DIVIDER, alignSelf: "stretch", margin: "0 6px" }} />
 
             {/* 연 도넛 */}
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ flex: 1, minWidth: "120px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
               <Donut
                 percent={actualAnnual ?? 0}
                 color={chartTheme.outflowRed}
@@ -538,10 +538,10 @@ export function ConstructionProgressTab({
               <span style={{ fontSize: "13px", color: INK_SECONDARY, fontWeight: 700, marginTop: "4px" }}>연</span>
             </div>
 
-            <div style={{ width: "1px", backgroundColor: DIVIDER, alignSelf: "stretch", margin: "0 6px" }} />
+            <div style={{ width: "1px", flexShrink: 0, backgroundColor: DIVIDER, alignSelf: "stretch", margin: "0 6px" }} />
 
             {/* 누계 도넛 */}
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ flex: 1, minWidth: "120px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
               <Donut
                 percent={actualCum ?? 0}
                 color={chartTheme.outflowRed}

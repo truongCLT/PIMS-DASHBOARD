@@ -113,6 +113,8 @@
   "costBudgetNote": "Common·Expense 1(Direct Cost)과 Expense 2·Contingency(Indirect Cost)를 여기서 입력합니다. 외주 예산·집행 실적은 아래 \"외주/자재\" 표에서 자동 집계됩니다.",
   "executionPlan": "집행계획",
   "executionActual": "집행실적",
+  "executionPlanCumulative": "집행계획(누계)",
+  "executionActualCumulative": "집행실적(누계)",
   "englishLabel": "영어",
   "koreanLabel": "한글",
   "budgetRemark": "비고",

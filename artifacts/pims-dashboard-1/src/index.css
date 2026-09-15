@@ -10,6 +10,35 @@
   grid-template-columns: minmax(0, 4fr) minmax(0, 6fr);
 }
 
+.construction-progress-top-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  height: 390px;
+}
+
+.construction-progress-metrics {
+  display: flex;
+  flex: 1;
+  gap: 0;
+  min-width: 0;
+  margin-top: 8px;
+  align-items: stretch;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+@media (max-width: 1200px) {
+  .construction-progress-top-grid {
+    grid-template-columns: minmax(0, 1fr);
+    height: auto;
+  }
+
+  .construction-progress-top-grid > * {
+    height: 390px;
+  }
+}
+
 @media (max-width: 900px) {
   .project-summary-grid {
     grid-template-columns: 1fr;

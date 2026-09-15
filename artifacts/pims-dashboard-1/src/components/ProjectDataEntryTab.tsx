@@ -1177,6 +1177,46 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
     directBudget != null || indirectBudget != null || contingencyBudget != null
       ? (directBudget ?? 0) + (indirectBudget ?? 0) + (contingencyBudget ?? 0)
       : null;
+  const selectedBudgetCumulativeMonth = (() => {
+    const matched = /^(\d{4})-(\d{2})$/.exec(overview.asOfMonth ?? "");
+    if (matched && Number(matched[1]) === selectedMonthlyBudgetYear) {
+      return Number(matched[2]);
+    }
+    return 12;
+  })();
+  const cumulativeBudgetAmount = (
+    item: MonthlyBudgetItem | "Contingency",
+    field: "plan" | "actual",
+  ) => {
+    const values = mergeOutsourcingActuals(costBudgetMonthly)
+      .filter(
+        (row) =>
+          row.item === item &&
+          row.year === selectedMonthlyBudgetYear &&
+          row.month <= selectedBudgetCumulativeMonth,
+      )
+      .map((row) => row[field])
+      .filter((value): value is number => value != null);
+    return values.length > 0 ? values.reduce((sum, value) => sum + value, 0) : null;
+  };
+  const outsourcingPlan = cumulativeBudgetAmount("외주성", "plan");
+  const outsourcingActual = cumulativeBudgetAmount("외주성", "actual");
+  const commonPlan = cumulativeBudgetAmount("Common", "plan");
+  const commonActual = cumulativeBudgetAmount("Common", "actual");
+  const expense1Plan = cumulativeBudgetAmount("Expense 1", "plan");
+  const expense1Actual = cumulativeBudgetAmount("Expense 1", "actual");
+  const expense2Plan = cumulativeBudgetAmount("Expense 2", "plan");
+  const expense2Actual = cumulativeBudgetAmount("Expense 2", "actual");
+  const contingencyPlan = cumulativeBudgetAmount("Contingency", "plan");
+  const contingencyActual = cumulativeBudgetAmount("Contingency", "actual");
+  const sumNullable = (...values: Array<number | null>) =>
+    values.some((value) => value != null)
+      ? values.reduce<number>((sum, value) => sum + (value ?? 0), 0)
+      : null;
+  const directPlan = sumNullable(outsourcingPlan, commonPlan, expense1Plan);
+  const directActual = sumNullable(outsourcingActual, commonActual, expense1Actual);
+  const totalPlan = sumNullable(directPlan, expense2Plan, contingencyPlan);
+  const totalActual = sumNullable(directActual, expense2Actual, contingencyActual);
   const budgetHierarchyBlock = (
     sectionLabel: string,
     blockIndex: number,
@@ -1192,78 +1232,72 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
     >
       <thead>
         <tr>
-          <th style={{ ...th, width: "11%" }} rowSpan={2}></th>
-          <th style={th} colSpan={2}>Level 1</th>
-          <th style={th} colSpan={2}>Level 2</th>
-          <th style={{ ...th, width: "13%" }} rowSpan={2}>{t("projectDataEntryTab:budgetRemark")}</th>
-          <th style={{ ...th, width: "15%" }} rowSpan={2}>{t("projectDataEntryTab:budgetVnd")}</th>
-        </tr>
-        <tr>
-          <th style={th}>{t("projectDataEntryTab:englishLabel")}</th>
-          <th style={th}>{t("projectDataEntryTab:koreanLabel")}</th>
-          <th style={th}>{t("projectDataEntryTab:englishLabel")}</th>
-          <th style={th}>{t("projectDataEntryTab:koreanLabel")}</th>
+          <th style={{ ...th, width: "11%" }}>{t("projectDataEntryTab:categoryColumn")}</th>
+          <th style={{ ...th, width: "18%" }}>Level 1</th>
+          <th style={{ ...th, width: "18%" }}>Level 2</th>
+          <th style={{ ...th, width: "17%" }}>{t("projectDataEntryTab:budgetVnd")}</th>
+          <th style={{ ...th, width: "18%" }}>{t("projectDataEntryTab:executionPlanCumulative")}</th>
+          <th style={{ ...th, width: "18%" }}>{t("projectDataEntryTab:executionActualCumulative")}</th>
         </tr>
       </thead>
       <tbody>
         <tr>
           <td style={{ ...readOnlyCell, textAlign: "center", fontWeight: 700 }} rowSpan={9}>{sectionLabel}</td>
           <td style={readOnlyCell} rowSpan={3}>Direct cost</td>
-          <td style={readOnlyCell} rowSpan={3}>{t("projectDataEntryTab:directCostKo")}</td>
-          <td style={readOnlyCell}></td>
-          <td style={readOnlyCell}></td>
-          <td style={{ ...readOnlyCell, textAlign: "center" }}>{t("projectDataEntryTab:outsourcingItem")}</td>
+          <td style={readOnlyCell}>{t("projectDataEntryTab:outsourcingItem")}</td>
           <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtMoney(outsourcingBudget)}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtMoney(outsourcingPlan)}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtMoney(outsourcingActual)}</td>
         </tr>
         <tr>
           <td style={readOnlyCell}>Common</td>
-          <td style={readOnlyCell}>{t("projectDataEntryTab:commonExpenseKo")}</td>
-          <td style={readOnlyCell}></td>
           <td style={tdCell}><VndInput valueKUsd={budgetAmount("Common")} onChange={(value) => setBudgetAmount("Common", value)} data-row={blockIndex * 4} data-col={0} /></td>
+          <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtMoney(commonPlan)}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtMoney(commonActual)}</td>
         </tr>
         <tr>
           <td style={readOnlyCell}>Expense 1</td>
-          <td style={readOnlyCell}>{t("projectDataEntryTab:expense1Ko")}</td>
-          <td style={readOnlyCell}></td>
           <td style={tdCell}><VndInput valueKUsd={budgetAmount("Expense 1")} onChange={(value) => setBudgetAmount("Expense 1", value)} data-row={blockIndex * 4 + 1} data-col={0} /></td>
+          <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtMoney(expense1Plan)}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtMoney(expense1Actual)}</td>
         </tr>
         <tr>
           <td style={{ ...readOnlyCell, textAlign: "center" }} colSpan={2}>{t("projectDataEntryTab:subtotal")}</td>
-          <td style={readOnlyCell} colSpan={2}></td>
-          <td style={readOnlyCell}></td>
           <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtMoney(directBudget)}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtMoney(directPlan)}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtMoney(directActual)}</td>
         </tr>
         <tr>
           <td style={readOnlyCell}>Indirect cost</td>
-          <td style={readOnlyCell}>{t("projectDataEntryTab:indirectCostKo")}</td>
           <td style={readOnlyCell}>Expense 2</td>
-          <td style={readOnlyCell}>{t("projectDataEntryTab:expense2Ko")}</td>
-          <td style={readOnlyCell}></td>
           <td style={tdCell}><VndInput valueKUsd={budgetAmount("Expense 2")} onChange={(value) => setBudgetAmount("Expense 2", value)} data-row={blockIndex * 4 + 2} data-col={0} /></td>
+          <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtMoney(expense2Plan)}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtMoney(expense2Actual)}</td>
         </tr>
         <tr>
           <td style={{ ...readOnlyCell, textAlign: "center" }} colSpan={2}>{t("projectDataEntryTab:subtotal")}</td>
-          <td style={readOnlyCell} colSpan={2}></td>
-          <td style={readOnlyCell}></td>
           <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtMoney(indirectBudget)}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtMoney(expense2Plan)}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtMoney(expense2Actual)}</td>
         </tr>
         <tr>
-          <td style={readOnlyCell} colSpan={2}>Contingency</td>
-          <td style={readOnlyCell} colSpan={2}></td>
-          <td style={readOnlyCell}></td>
+          <td style={readOnlyCell}>Contingency</td>
+          <td style={readOnlyCell}>Contingency</td>
           <td style={tdCell}><VndInput valueKUsd={budgetAmount("Contingency")} onChange={(value) => setBudgetAmount("Contingency", value)} data-row={blockIndex * 4 + 3} data-col={0} /></td>
+          <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtMoney(contingencyPlan)}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtMoney(contingencyActual)}</td>
         </tr>
         <tr>
           <td style={{ ...readOnlyCell, textAlign: "center" }} colSpan={2}>{t("projectDataEntryTab:subtotal")}</td>
-          <td style={readOnlyCell} colSpan={2}></td>
-          <td style={readOnlyCell}></td>
           <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtMoney(contingencyBudget)}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtMoney(contingencyPlan)}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtMoney(contingencyActual)}</td>
         </tr>
         <tr>
           <td style={{ ...readOnlyCell, textAlign: "center", fontWeight: 700 }} colSpan={2}>{t("common:total")}</td>
-          <td style={readOnlyCell} colSpan={2}></td>
-          <td style={readOnlyCell}></td>
           <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtMoney(totalBudget)}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtMoney(totalPlan)}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtMoney(totalActual)}</td>
         </tr>
       </tbody>
     </table>

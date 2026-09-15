@@ -113,6 +113,8 @@
   "costBudgetNote": "Nhập Common·Expense 1 (Direct Cost) và Expense 2·Contingency (Indirect Cost) tại đây. Dự toán/thực hiện thực tế loại thầu phụ sẽ được tự động tổng hợp từ bảng \"Thầu phụ/Vật tư\" dưới đây.",
   "executionPlan": "Kế hoạch thực hiện",
   "executionActual": "Thực tế thực hiện",
+  "executionPlanCumulative": "Kế hoạch thực hiện (lũy kế)",
+  "executionActualCumulative": "Thực tế thực hiện (lũy kế)",
   "englishLabel": "Tiếng Anh",
   "koreanLabel": "Tiếng Hàn",
   "budgetRemark": "Ghi chú",

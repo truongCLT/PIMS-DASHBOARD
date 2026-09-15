@@ -334,11 +334,10 @@ export function SalesSection({
                 {chartData.map((row, index) => (
                   <Cell
                     key={`${row.month}-${index}`}
-                    fill={row.isForecast ? "#ffffff" : ACTUAL_COLOR}
-                    fillOpacity={row.isForecast ? 0.65 : 1}
+                    fill={row.isForecast ? "transparent" : ACTUAL_COLOR}
                     stroke={row.isForecast ? ACTUAL_COLOR : undefined}
-                    strokeWidth={row.isForecast ? 1.3 : 0}
-                    strokeDasharray={row.isForecast ? "4 2" : undefined}
+                    strokeWidth={row.isForecast ? 2 : 0}
+                    strokeDasharray={row.isForecast ? "2 2" : undefined}
                   />
                 ))}
                 <LabelList dataKey="actual" content={<ActualValueLabel />} />
