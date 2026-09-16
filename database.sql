@@ -226,6 +226,7 @@ CREATE TABLE IF NOT EXISTS pd_cost_budget_monthly (
     month INT NOT NULL CHECK (month BETWEEN 1 AND 12),
     plan NUMERIC(24, 8),
     actual NUMERIC(24, 8),
+    actual_source TEXT,
     CONSTRAINT pd_cost_budget_monthly_uq UNIQUE (project_name, item, year, month)
 );
 
