@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import pimsBranding from "../assets/pims-branding.png";
 import { FolderClosed, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { useListMgmtreportProjects } from "@workspace/api-client-react";
-import { PROJECT_GROUPS, classifyMrProject, isTestMrProject } from "../data/projects";
+import { PROJECT_GROUPS, isTestMrProject, resolveProjectBusinessType } from "../data/projects";
 import { REPORT_YEAR } from "../lib/mgmtreportData";
 import { useTheme } from "../lib/theme";
 import { LANGUAGE_LABELS, SUPPORTED_LANGUAGES } from "../lib/i18n";
@@ -68,7 +68,7 @@ function buildTreeData(
   };
   for (const p of mrProjects) {
     const bucket = p.status === "closed" ? "closed" : "ongoing";
-    byDivision[p.businessType ?? classifyMrProject(p.name)][bucket].push({ name: p.name, siteCode: p.siteCode, fldCode: p.fldCode });
+    byDivision[resolveProjectBusinessType(p.name, p.businessType)][bucket].push({ name: p.name, siteCode: p.siteCode, fldCode: p.fldCode });
   }
   // 테스트 프로젝트는 각 버킷 최상단에 (안정 정렬로 나머지 순서 유지)
   for (const division of ["시공", "용역"] as const) {

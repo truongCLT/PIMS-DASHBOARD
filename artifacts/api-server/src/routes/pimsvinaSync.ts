@@ -37,78 +37,6 @@ import {
   tradeCostScope,
   sumPimsvinaKusdValues,
 } from "../lib/pimsvinaTradeCost";
-import { getMrCashflowRef } from "../lib/mrCashflowLinks";
-
-/**
- * Project Detail > Cashflow tab: theo yêu cầu nghiệp vụ (đính kèm 260911 §13/§19), Cash In/Cash Out/
- * số dư PHẢI lấy từ hệ "Cash system" nội bộ (cf_projects/cf_monthly_amounts - nạp qua Excel import cho
- * main dashboard), KHÔNG dùng Oracle EBS CFTB_CFTRANSACTION thô. Hàm này thay thế hoàn toàn nguồn Oracle
- * (dashboard_pd_cashflow_1q.jsp) bằng dữ liệu Cash system, giữ đúng format item PIMSVINA-like (fldcode/
- * site_code/year/month/cash_in/cash_out/equivalent) để tái sử dụng nguyên vẹn logic upsert/clear phía sau.
- */
-async function computeCashSystemCashflow(projectNames: string[]) {
-  const items: Array<{
-    project_name: string;
-    year: number;
-    month: number;
-    cash_in: number;
-    cash_out: number;
-    equivalent: number;
-  }> = [];
-  for (const projectName of projectNames) {
-    const ref = getMrCashflowRef(projectName);
-    if (!ref) continue;
-    const [cfProject] = await db
-      .select({ id: cfProjectsTable.id })
-      .from(cfProjectsTable)
-      .where(and(eq(cfProjectsTable.name, ref.name), eq(cfProjectsTable.division, ref.division)));
-    if (!cfProject) continue;
-    const amounts = await db
-      .select({
-        flowType: cfMonthlyAmountsTable.flowType,
-        bucket: cfMonthlyAmountsTable.bucket,
-        month: cfMonthlyAmountsTable.month,
-        amount: cfMonthlyAmountsTable.amount,
-      })
-      .from(cfMonthlyAmountsTable)
-      .where(eq(cfMonthlyAmountsTable.projectId, cfProject.id));
-
-    // bucket 'pre2023' = lũy kế mọi phát sinh trước mốc theo dõi chi tiết -> gộp thành số dư đầu kỳ.
-    // bucket 'post2030' = phát sinh sau mốc theo dõi (tương lai xa) -> bỏ qua, chưa ảnh hưởng số dư hiện tại.
-    let openingBalance = 0;
-    const byMonth = new Map<string, { cashIn: number; cashOut: number }>();
-    for (const a of amounts) {
-      const n = Number(a.amount);
-      if (a.bucket === "pre2023") {
-        openingBalance += a.flowType === "수입" ? n : -n;
-        continue;
-      }
-      if (a.bucket === "post2030") continue;
-      const key = a.month.slice(0, 7);
-      const rec = byMonth.get(key) ?? { cashIn: 0, cashOut: 0 };
-      if (a.flowType === "수입") rec.cashIn += n;
-      else if (a.flowType === "지출") rec.cashOut += n;
-      byMonth.set(key, rec);
-    }
-
-    const sortedKeys = [...byMonth.keys()].sort();
-    let cumulative = openingBalance;
-    for (const key of sortedKeys) {
-      const rec = byMonth.get(key)!;
-      cumulative += rec.cashIn - rec.cashOut;
-      const [y, m] = key.split("-").map(Number);
-      items.push({
-        project_name: projectName,
-        year: y,
-        month: m,
-        cash_in: rec.cashIn,
-        cash_out: rec.cashOut,
-        equivalent: cumulative,
-      });
-    }
-  }
-  return items;
-}
 
 /** SRS와 동일한 서비스 부문 키워드 — CATB_BUSILINE.CLASSIFICATION이 없거나 인식 불가할 때 부문명으로 추정 (프론트 classifyMrProject와 동일 기준) */
 const SERVICE_DIVISION_KEYWORDS = ["용역", "프리콘", "인허가", "산출", "유지관리", "운영관리", "분양대행"];
@@ -132,6 +60,7 @@ async function fetchAllPimsvinaData() {
     pdOutsourcing,
     pdTradeCostMonthlyResult,
     pdTradeCostScopesResult,
+    pdCashflow,
     pdCogs,
     pdSales,
     pdCostBudget,
@@ -143,6 +72,7 @@ async function fetchAllPimsvinaData() {
     fetchPimsvinaApi("dashboard_pd_outsourcing_1q.jsp"),
     fetchPimsvinaOracleQueryResult("dashboard_pd_trade_cost_monthly_1q.jsp"),
     fetchPimsvinaOracleQueryResult("dashboard_pd_trade_cost_scopes_1q.jsp"),
+    fetchPimsvinaApi("dashboard_pd_cashflow_1q.jsp"),
     fetchPimsvinaApi("dashboard_pd_cogs_monthly_1q.jsp"),
     fetchPimsvinaApi("dashboard_pd_sales_1q.jsp"),
     fetchPimsvinaApi("dashboard_pd_costbudget_1q.jsp"),
@@ -160,10 +90,6 @@ async function fetchAllPimsvinaData() {
       fldCode: mrProjectsTable.fldCode,
     })
     .from(mrProjectsTable);
-  // Cash In/Cash Out/số dư của tab Project Detail > Cashflow lấy từ hệ Cash system nội bộ
-  // (cf_projects/cf_monthly_amounts), KHÔNG còn gọi Oracle dashboard_pd_cashflow_1q.jsp nữa —
-  // xem giải thích đầy đủ ở computeCashSystemCashflow().
-  const pdCashflow = await computeCashSystemCashflow(projects.map((p) => p.name));
   const existingTradeCosts = await db.select().from(pdCostBudgetMonthlyTable);
   const projectBySiteCode = new Map(
     projects
@@ -486,28 +412,19 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
       await db
         .update(pdOverviewTable)
         .set({
-          // Theo yêu cầu: sync PIMSVINA phải "clear" dữ liệu cũ khi thêm mới, kể cả khi PIMSVINA trả
-          // về null cho field này ở lần sync hiện tại (không còn giữ nguyên giá trị cũ như trước) -
-          // CHỦ Ý CHẤP NHẬN rủi ro nếu PIMSVINA tạm thời trả null do batch chưa kịp cập nhật (VD
-          // CBTB_CTRTSUMM chưa refresh cho site mới) thì field tương ứng sẽ bị xoá về null.
-          fldCode: item.fldcode || null,
-          siteCode: item.site_code || null,
-          contractAmount: toK(item.contract_amount),
-          startDate: item.start_date || null,
-          endDate: item.end_date || null,
-          client: item.client || null,
-          // scale/scope: JSP nguồn LUÔN trả NULL (CAST(NULL...) - PIMS không có field tương ứng), đây
-          // là field THUẦN NHẬP TAY - sync không bao giờ được đụng tới dù đang ở chế độ "clear".
-          scale: existing.scale,
-          asOfMonth: normalizeAsOfMonth(item.as_of_month),
-          scope: existing.scope,
-          revenueAnnualTarget: toK(item.revenue_annual_target),
-          revenueTotal: toK(item.revenue_total),
-          // cashConfirmed: có màn nhập tay riêng (Data Entry) và vẫn là vấn đề nghiệp vụ chưa chốt
-          // (xem PIMS_Dashboard_Mapping_260914.xlsx §16) - giữ nguyên hành vi cũ, KHÔNG áp dụng "luôn
-          // ghi đè kể cả null" ở đây để tránh xung đột với giá trị người dùng tự nhập.
+          fldCode: item.fldcode || existing.fldCode,
+          siteCode: item.site_code || existing.siteCode,
+          contractAmount: item.contract_amount != null ? toK(item.contract_amount) : existing.contractAmount,
+          startDate: item.start_date || existing.startDate,
+          endDate: item.end_date || existing.endDate,
+          client: item.client || existing.client,
+          scale: item.scale || existing.scale,
+          asOfMonth: item.as_of_month != null ? normalizeAsOfMonth(item.as_of_month) : existing.asOfMonth,
+          scope: item.scope || existing.scope,
+          revenueAnnualTarget: item.revenue_annual_target != null ? toK(item.revenue_annual_target) : existing.revenueAnnualTarget,
+          revenueTotal: item.revenue_total != null ? toK(item.revenue_total) : existing.revenueTotal,
           cashConfirmed: item.cash_confirmed != null ? toK(item.cash_confirmed) : existing.cashConfirmed,
-          cashCollection: toK(item.cash_collection),
+          cashCollection: item.cash_collection != null ? toK(item.cash_collection) : existing.cashCollection,
         })
         .where(eq(pdOverviewTable.projectName, projectName));
     } else {
@@ -532,8 +449,6 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
   }
 
   // 10. Sync Project Detail Progress (keyed directly by project_name)
-  const progressIncomingKeys = new Set<string>();
-  const progressTouchedProjects = new Set<string>();
   for (const item of fetched.pdProgress) {
     const projectName = await resolveProjectName(item);
     const m = Number(item.month);
@@ -541,8 +456,6 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
       if (!projectName) trackSkipped(item);
       continue;
     }
-    progressTouchedProjects.add(projectName);
-    progressIncomingKeys.add(`${projectName}|${Number(item.year)}|${m}`);
     const sanitizeNumStr = (v: any) => {
       if (v == null || v === "") return null;
       const n = Number(v);
@@ -579,22 +492,6 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
         set: { fldCode: item.fldcode || null, siteCode: item.site_code || null, actualPct, actualCumPct },
       });
     counts.pdProgress++;
-  }
-  // "Clear dữ liệu cũ": những kỳ (year, month) đã từng có actual từ PIMSVINA nhưng lần sync này
-  // PIMSVINA không còn trả về nữa (site đổi cấu trúc, dữ liệu bị rút lại...) thì null hoá actualPct/
-  // actualCumPct - planPct/planCumPct (nhập tay) vẫn giữ nguyên, không xoá cả dòng.
-  for (const projectName of progressTouchedProjects) {
-    const existingRows = await db
-      .select({ id: pdProgressMonthlyTable.id, year: pdProgressMonthlyTable.year, month: pdProgressMonthlyTable.month })
-      .from(pdProgressMonthlyTable)
-      .where(eq(pdProgressMonthlyTable.projectName, projectName));
-    for (const row of existingRows) {
-      if (progressIncomingKeys.has(`${projectName}|${row.year}|${row.month}`)) continue;
-      await db
-        .update(pdProgressMonthlyTable)
-        .set({ actualPct: null, actualCumPct: null })
-        .where(eq(pdProgressMonthlyTable.id, row.id));
-    }
   }
 
   // 11. Sync Project Detail Outsourcing (no natural unique key -> full replace per project)
@@ -730,8 +627,6 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
   }
 
   // 12. Sync Project Detail Cashflow Monthly (cash in/out per project per month)
-  const cashflowIncomingKeys = new Set<string>();
-  const cashflowTouchedProjects = new Set<string>();
   for (const item of fetched.pdCashflow) {
     const projectName = await resolveProjectName(item);
     const m = Number(item.month);
@@ -739,8 +634,6 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
       if (!projectName) trackSkipped(item);
       continue;
     }
-    cashflowTouchedProjects.add(projectName);
-    cashflowIncomingKeys.add(`${projectName}|${Number(item.year)}|${m}`);
     const cashIn = item.cash_in != null ? String(item.cash_in) : null;
     const cashOut = item.cash_out != null ? String(item.cash_out) : null;
     const equivalent = item.equivalent != null ? String(item.equivalent) : null;
@@ -749,10 +642,8 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
       .insert(pdCashflowMonthlyTable)
       .values({
         projectName,
-        // fldCode/siteCode: không còn ý nghĩa từ khi đổi nguồn sang Cash system nội bộ (cf_projects
-        // không có mã PIMSVINA FLDCODE) - để null thay vì giữ mã PIMSVINA cũ đã lỗi thời.
-        fldCode: null,
-        siteCode: null,
+        fldCode: item.fldcode || null,
+        siteCode: item.site_code || null,
         year: Number(item.year),
         month: m,
         cashIn,
@@ -761,26 +652,12 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
       })
       .onConflictDoUpdate({
         target: [pdCashflowMonthlyTable.projectName, pdCashflowMonthlyTable.year, pdCashflowMonthlyTable.month],
-        set: { fldCode: null, siteCode: null, cashIn, cashOut, equivalent },
+        set: { fldCode: item.fldcode || null, siteCode: item.site_code || null, cashIn, cashOut, equivalent },
       });
     counts.pdCashflow++;
   }
-  // "Clear dữ liệu cũ": bảng này không có field nhập tay nào -> kỳ nào PIMSVINA không còn trả về thì
-  // xoá thẳng dòng (khác với Progress Monthly, không cần giữ lại gì).
-  for (const projectName of cashflowTouchedProjects) {
-    const existingRows = await db
-      .select({ id: pdCashflowMonthlyTable.id, year: pdCashflowMonthlyTable.year, month: pdCashflowMonthlyTable.month })
-      .from(pdCashflowMonthlyTable)
-      .where(eq(pdCashflowMonthlyTable.projectName, projectName));
-    for (const row of existingRows) {
-      if (cashflowIncomingKeys.has(`${projectName}|${row.year}|${row.month}`)) continue;
-      await db.delete(pdCashflowMonthlyTable).where(eq(pdCashflowMonthlyTable.id, row.id));
-    }
-  }
 
   // 13. Sync Project Detail COGS Monthly (acct_cogs & wip_cogs per project per month)
-  const cogsIncomingKeys = new Set<string>();
-  const cogsTouchedProjects = new Set<string>();
   for (const item of fetched.pdCogs || []) {
     const projectName = await resolveProjectName(item);
     const m = Number(item.month);
@@ -788,8 +665,6 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
       if (!projectName) trackSkipped(item);
       continue;
     }
-    cogsTouchedProjects.add(projectName);
-    cogsIncomingKeys.add(`${projectName}|${Number(item.year)}|${m}`);
     const acctCogs = item.acct_cogs != null ? String(item.acct_cogs) : null;
     const wipCogs = item.wip_cogs != null ? String(item.wip_cogs) : null;
 
@@ -810,21 +685,8 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
       });
     counts.pdCogs++;
   }
-  // "Clear dữ liệu cũ": bảng này không có field nhập tay nào -> kỳ nào PIMSVINA không còn trả về thì xoá thẳng dòng.
-  for (const projectName of cogsTouchedProjects) {
-    const existingRows = await db
-      .select({ id: pdCogsMonthlyTable.id, year: pdCogsMonthlyTable.year, month: pdCogsMonthlyTable.month })
-      .from(pdCogsMonthlyTable)
-      .where(eq(pdCogsMonthlyTable.projectName, projectName));
-    for (const row of existingRows) {
-      if (cogsIncomingKeys.has(`${projectName}|${row.year}|${row.month}`)) continue;
-      await db.delete(pdCogsMonthlyTable).where(eq(pdCogsMonthlyTable.id, row.id));
-    }
-  }
 
   // 14. Sync Project Detail Sales Monthly (revenue plan/actual per project per month)
-  const salesIncomingKeys = new Set<string>();
-  const salesTouchedProjects = new Set<string>();
   for (const item of fetched.pdSales) {
     const projectName = await resolveProjectName(item);
     const m = Number(item.month);
@@ -832,8 +694,6 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
       if (!projectName) trackSkipped(item);
       continue;
     }
-    salesTouchedProjects.add(projectName);
-    salesIncomingKeys.add(`${projectName}|${Number(item.year)}|${m}`);
     const plan = item.plan != null ? String(item.plan) : null;
     const actual = item.actual != null ? String(item.actual) : null;
 
@@ -853,17 +713,6 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
         set: { fldCode: item.fldcode || null, siteCode: item.site_code || null, plan, actual },
       });
     counts.pdSales++;
-  }
-  // "Clear dữ liệu cũ": bảng này không có field nhập tay nào -> kỳ nào PIMSVINA không còn trả về thì xoá thẳng dòng.
-  for (const projectName of salesTouchedProjects) {
-    const existingRows = await db
-      .select({ id: pdSalesMonthlyTable.id, year: pdSalesMonthlyTable.year, month: pdSalesMonthlyTable.month })
-      .from(pdSalesMonthlyTable)
-      .where(eq(pdSalesMonthlyTable.projectName, projectName));
-    for (const row of existingRows) {
-      if (salesIncomingKeys.has(`${projectName}|${row.year}|${row.month}`)) continue;
-      await db.delete(pdSalesMonthlyTable).where(eq(pdSalesMonthlyTable.id, row.id));
-    }
   }
 
   // 14. Sync Project Detail Cost Budget (no natural unique key -> full replace per project)

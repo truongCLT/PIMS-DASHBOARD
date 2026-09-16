@@ -6,7 +6,7 @@ import {
 } from "@workspace/api-client-react";
 import { useDashboardData, type ProfitRow, REPORT_YEAR } from "../lib/mgmtreportData";
 import { useDashboardFilters, makeConverter } from "../lib/dashboardFilters";
-import { classifyMrProject } from "../data/projects";
+import { classifyMrProject, resolveProjectBusinessType } from "../data/projects";
 import { filterProfitProjects } from "../lib/mgmtreportReconciliation";
 import { chartTheme, chartTypography } from "../lib/chartTheme";
 import { INK_BODY, INK_MUTED, POINT_BLUE, CARD_BORDER, emptyNote, ACHIEVE_RED } from "../lib/uiTokens";
@@ -105,7 +105,7 @@ export function ProfitChart() {
         return {
           name: p.name,
           category: p.companyLabel ?? "-",
-          bizType: p.businessType ?? classifyMrProject(p.name),
+          bizType: resolveProjectBusinessType(p.name, p.businessType),
           revenue: Math.round(rev),
           cogs: Math.round(cogs),
           gross: Math.round(gross),
@@ -581,15 +581,47 @@ export function ProfitChart() {
               key: "isForecast",
               label: t("profitChart:actualForecastType"),
               align: "center",
-              format: (value) => value ? t("profitChart:forecast") : t("profitChart:actual"),
+              format: (value) => value == null ? "-" : value ? t("profitChart:forecast") : t("profitChart:actual"),
             },
             { key: "op", label: t("common:operatingProfit"), format: (_v, row) => `${row.op.toLocaleString()} (${row.opPct})` },
             { key: "non", label: t("profitChart:nonOperatingProfitLoss"), format: (_v, row) => `${row.non >= 0 ? "+" : ""}${row.non.toLocaleString()}` },
             { key: "ord", label: t("profitChart:ordinaryProfit"), format: (_v, row) => `${row.ord.toLocaleString()} (${row.ordPct})` },
             { key: "total", label: t("common:grossProfit"), format: (_v, row) => `${row.total.toLocaleString()} (${row.totalPct})` },
-            { key: "sga", label: t("common:sga"), format: (_v, row) => `${row.sga} (${row.sgaPct})` },
+            { key: "sgaValue", label: t("common:sga"), format: (_v, row) => `${row.sgaValue.toLocaleString()} (${row.sgaPct})` },
           ]}
           rows={data}
+          totalRow={(() => {
+            const total = data.reduce(
+              (sum, row) => ({
+                revenueValue: sum.revenueValue + row.revenueValue,
+                op: sum.op + row.op,
+                non: sum.non + row.non,
+                ord: sum.ord + row.ord,
+                gross: sum.gross + row.total,
+                sga: sum.sga + row.sgaValue,
+              }),
+              { revenueValue: 0, op: 0, non: 0, ord: 0, gross: 0, sga: 0 },
+            );
+            const ratio = (value: number) =>
+              total.revenueValue !== 0
+                ? `${((value / total.revenueValue) * 100).toLocaleString("en-US", {
+                    minimumFractionDigits: 1,
+                    maximumFractionDigits: 1,
+                  })}%`
+                : "-";
+            return {
+              revenueValue: total.revenueValue,
+              op: total.op,
+              opPct: ratio(total.op),
+              non: total.non,
+              ord: total.ord,
+              ordPct: ratio(total.ord),
+              total: total.gross,
+              totalPct: ratio(total.gross),
+              sgaValue: total.sga,
+              sgaPct: ratio(total.sga),
+            };
+          })()}
           onRowClick={(row) => {
             if (extractMonthIdx(row.m) != null) setDrillRow(row);
           }}

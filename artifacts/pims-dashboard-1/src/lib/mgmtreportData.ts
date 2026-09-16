@@ -5,7 +5,7 @@ import {
   getListMgmtreportProjectsQueryKey,
 } from "@workspace/api-client-react";
 import { useGetMgmtreportSettings } from "@workspace/api-client-react/generated/api";
-import { classifyMrProject } from "../data/projects";
+import { classifyMrProject, resolveProjectBusinessType } from "../data/projects";
 import {
   filterProfitProjects,
   sumProjectMonths,
@@ -34,7 +34,7 @@ export function useProjectBusinessType(projectName: string | null): "시공" | "
   if (!projectName) return null;
   const project = projectsQuery.data?.projects.find((p) => p.name === projectName);
   if (!project) return null;
-  return project.businessType ?? classifyMrProject(projectName);
+  return resolveProjectBusinessType(projectName, project.businessType);
 }
 
 interface Line {
@@ -83,6 +83,8 @@ export interface ProfitRow {
   m: string;
   /** 오늘 날짜의 전월 이후(당월 포함) 전망값이면 true */
   isForecast: boolean;
+  /** 손익률 합계 재계산용 매출 실적 */
+  revenueValue: number;
   op: number;
   opPct: string;
   non: number;
@@ -373,19 +375,32 @@ export function deriveDashboardData(
       const saM = rangeSum(subLine.actual, F, M);
       const spY = subLine.planTotal;
       const saY = subLine.actualTotal;
-      row.sub = `${label} 달성률 / 이익률`;
-      row.subActual = ratioStr(saM, aM);
-      row.subForecast = ratioStr(saY, aY);
-      row.subAch = ratioStr(saY, pY ? (saM / spM) * pY : 0);
+      row.sub = "이익률";
+      row.subActual = ratioStr(aM, saM);
+      row.subForecast = ratioStr(pY, spY);
+      row.subAch = ratioStr(aY, saY);
     }
     return row;
   };
+
+  const nonOperatingProfit: Line | null =
+    ordinary && op1
+      ? {
+          code: "calculated_non_operating_profit",
+          label: "영업외 이익",
+          plan: ordinary.plan.map((value, index) => value - (op1.plan[index] ?? 0)),
+          actual: ordinary.actual.map((value, index) => value - (op1.actual[index] ?? 0)),
+          planTotal: ordinary.planTotal - op1.planTotal,
+          actualTotal: ordinary.actualTotal - op1.actualTotal,
+        }
+      : null;
 
   const performanceRows: PerformanceRow[] = [
     pRow("매출액", revenue),
     pRow("매출이익", gross, revenue),
     pRow("판관비", sga),
     pRow("영업이익", op1, revenue),
+    pRow("영업외 이익", nonOperatingProfit),
     pRow("경상이익", ordinary, revenue),
   ];
 
@@ -425,6 +440,7 @@ export function deriveDashboardData(
     return {
       m: b.label,
       isForecast: b.months.every((month) => month > actualThroughMonth),
+      revenueValue: roundSmart(revA),
       op: roundSmart(opA),
       opPct: ratioStr(opA, revA),
       non: roundSmart(op2A),

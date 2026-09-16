@@ -5,7 +5,7 @@ import { ProjectDashboard } from "./components/ProjectDashboard";
 import { ServiceProjectDashboard } from "./components/ServiceProjectDashboard";
 import { AdminLoginScreen } from "./components/AdminLoginScreen";
 import { AdminAuthProvider } from "./lib/adminAuth";
-import { classifyMrProject } from "./data/projects";
+import { resolveProjectBusinessType } from "./data/projects";
 import { ThemeProvider } from "./lib/theme";
 import { useListMgmtreportProjects } from "@workspace/api-client-react";
 import { REPORT_YEAR } from "./lib/mgmtreportData";
@@ -17,8 +17,9 @@ function AppInner() {
   const [adminLoginOpen, setAdminLoginOpen] = useState(false);
   const projectsQuery = useListMgmtreportProjects({ year: REPORT_YEAR });
   const selectedProjectData = projectsQuery.data?.projects.find((project) => project.name === selectedProject);
-  const division = selectedProjectData?.businessType ??
-    (selectedProject ? classifyMrProject(selectedProject) : null);
+  const division = selectedProject
+    ? resolveProjectBusinessType(selectedProject, selectedProjectData?.businessType)
+    : null;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh", overflow: "hidden", fontFamily: "'Noto Sans KR', 'Inter', sans-serif" }}>

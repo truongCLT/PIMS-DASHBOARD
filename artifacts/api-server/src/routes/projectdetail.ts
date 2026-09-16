@@ -301,6 +301,7 @@ async function loadDetail(projectName: string) {
       cashIn: num(c.cashIn),
       cashOut: num(c.cashOut),
       equivalent: num(c.equivalent),
+      confirmedProgress: num(c.confirmedProgress),
     })),
     ...monthlyReadModel,
     photos: photos.map((p) => ({ objectPath: p.objectPath })),
@@ -874,6 +875,7 @@ router.put("/projectdetail", requireAdmin, async (req, res) => {
             cashIn: str(c.cashIn),
             cashOut: str(c.cashOut),
             equivalent: str(c.equivalent),
+            confirmedProgress: str(c.confirmedProgress),
           })),
         );
       }

@@ -22,14 +22,6 @@ async function fetchSavedComments(
   }
 }
 
-// Same params as the on-screen 자금수지 chart (DECV 전체 scope)
-const CASHFLOW_EXPORT_PARAMS = {
-  divisions: "도급 사업,용역 사업",
-  fromYear: 2026,
-  fromMonth: 1,
-  months: 6,
-};
-
 interface CashflowExportRow {
   month: string;
   inflow: number;
@@ -38,11 +30,16 @@ interface CashflowExportRow {
   balance: number;
 }
 
-async function fetchCashflowExportRows(): Promise<CashflowExportRow[]> {
+async function fetchCashflowExportRows(year: number, throughMonth: number): Promise<CashflowExportRow[]> {
   try {
-    const series = await getCashflowAggregate(CASHFLOW_EXPORT_PARAMS);
+    const series = await getCashflowAggregate({
+      divisions: "도급 사업,용역 사업",
+      fromYear: year,
+      fromMonth: 1,
+      months: Math.max(1, Math.min(12, throughMonth)),
+    });
     return (series.points ?? []).map((p) => ({
-      month: `${Number(p.month.slice(5, 7))}월`,
+      month: p.month,
       inflow: p.cashIn,
       outflow: p.cashOut,
       net: p.cashIn - p.cashOut,
@@ -283,7 +280,7 @@ export async function exportDashboardExcel(): Promise<void> {
   } = getDashboardExportData();
   const ORDER_STATUS = orderStatus ?? { planTotal: 0, ordered: 0, remaining: 0 };
   const [cashflowRows, savedComments] = await Promise.all([
-    fetchCashflowExportRows(),
+    fetchCashflowExportRows(reportYear, reportMonth),
     fetchSavedComments(reportYear, reportMonth),
   ]);
   const { default: ExcelJS } = await import("exceljs");
@@ -300,8 +297,7 @@ export async function exportDashboardExcel(): Promise<void> {
     { width: 11 }, { width: 9 },
   ];
 
-  const now = new Date();
-  const title = `${now.getFullYear()}년 ${now.getMonth() + 1}월 DECV 경영실적보고`;
+  const title = `${reportYear}년 ${reportMonth}월 DECV 경영실적보고`;
 
   ws.mergeCells(1, 1, 1, 13);
   const titleCell = ws.getCell(1, 1);
@@ -461,26 +457,14 @@ export async function exportDashboardExcel(): Promise<void> {
   );
 
   const hSeries: BarSeries[] = [
-    { name: "연간 사업계획", color: "#ffc000" },
-    { name: "연간 실적/전망", color: "#2e5fa8" },
-    { name: "금월 누적 사업계획", color: "#c0504d" },
-    { name: "금월 누적 실적/전망", color: "#a6a6a6" },
-  ];
-  const ratios: { label: string; r: number }[] = [
-    { label: "시공", r: 0.81 },
-    { label: "용역", r: 0.16 },
-    { label: "자산관리", r: 0.03 },
+    { name: "매출 계획", color: "#ffc000" },
+    { name: "매출 실적/전망", color: "#2e5fa8" },
   ];
   const chart2 = drawHBarChart(
-    "공종별 매출현황",
-    ratios.map((c) => ({
-      label: c.label,
-      values: [
-        num(sales?.planY) * c.r,
-        num(sales?.forecastY) * c.r,
-        num(sales?.planM) * c.r,
-        num(sales?.actualM) * c.r,
-      ],
+    "월별 매출현황",
+    SALES_DATA.map((month) => ({
+      label: month.month,
+      values: [month.plan ?? 0, month.actual ?? 0],
     })),
     hSeries,
   );
@@ -568,7 +552,7 @@ export async function exportDashboardExcel(): Promise<void> {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `PIMS_대시보드_${todayStamp()}.xlsx`;
+  a.download = `PIMS_대시보드_${reportYear}_${String(reportMonth).padStart(2, "0")}_${todayStamp()}.xlsx`;
   a.click();
   URL.revokeObjectURL(url);
 }

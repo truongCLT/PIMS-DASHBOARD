@@ -16,8 +16,9 @@
   "colSiteName": "Site",
   "colCategory": "Category",
   "colBizType": "Business Type",
-  "colAmount": "Amount",
-  "colShare": "Share",
+  "colTargetPlan": "Target (Plan)",
+  "colActual": "Actual",
+  "colAchievementRate": "Achievement",
   "noSiteData": "No site-level data for this month.",
   "loadingSiteData": "Loading site data…"
 }

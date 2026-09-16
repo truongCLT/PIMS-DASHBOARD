@@ -46,6 +46,16 @@ const tdCell: React.CSSProperties = {
   padding: "2px",
 };
 
+const readOnlyCell: React.CSSProperties = {
+  ...tdCell,
+  padding: "5px 6px",
+  color: INK_BODY,
+  fontFamily: "inherit",
+  fontSize: "13px",
+  fontWeight: 400,
+  lineHeight: 1.4,
+};
+
 const inputStyle: React.CSSProperties = {
   width: "100%",
   border: "none",
@@ -169,7 +179,7 @@ function NumInput({
   );
 }
 
-function calculateProgressPlanCumulative(rows: ProjectDetailProgressPoint[]): ProjectDetailProgressPoint[] {
+export function calculateProgressPlanCumulative(rows: ProjectDetailProgressPoint[]): ProjectDetailProgressPoint[] {
   let cumulative = 0;
   let hasPlan = false;
   const cumulativeByIndex = new Map<number, number | null>();
@@ -184,7 +194,7 @@ function calculateProgressPlanCumulative(rows: ProjectDetailProgressPoint[]): Pr
     )
     .forEach(({ row, index }) => {
       if (row.planPct != null) {
-        cumulative += row.planPct;
+        cumulative = Math.round((cumulative + row.planPct + Number.EPSILON) * 10) / 10;
         hasPlan = true;
       }
       cumulativeByIndex.set(index, hasPlan ? Math.min(100, Math.max(0, cumulative)) : null);
@@ -307,6 +317,8 @@ const EMPTY_OVERVIEW: ProjectDetailOverview = {
 };
 
 const FIXED_BUDGET_ITEMS = ["Common", "Expense 1", "Expense 2", "Contingency"];
+const MONTHLY_BUDGET_ITEMS = ["Common", "Expense 1", "Expense 2", "외주성"] as const;
+type MonthlyBudgetItem = (typeof MONTHLY_BUDGET_ITEMS)[number];
 const BUDGET_ITEM_CATEGORY: Record<string, string> = {
   Common: "Direct Cost",
   "Expense 1": "Direct Cost",
@@ -314,16 +326,28 @@ const BUDGET_ITEM_CATEGORY: Record<string, string> = {
   Contingency: "Indirect Cost",
 };
 
-const TRADE_GROUPS = ["공통", "토목", "건축", "기계", "전기", "조경"];
+const TRADE_GROUPS = ["대공종", "건축", "기계", "전기", "토목", "조경", "경비"] as const;
 /** raw Korean trade group (fixed identifier stored as data) → translation key, for display only */
 const TRADE_GROUP_LABEL_KEY: Record<string, string> = {
-  "공통": "tradeGroupCommon",
-  "토목": "tradeGroupCivil",
+  "대공종": "processCostMajorWork",
   "건축": "tradeGroupArchitecture",
   "기계": "tradeGroupMechanical",
   "전기": "tradeGroupElectrical",
+  "토목": "tradeGroupCivil",
   "조경": "tradeGroupLandscape",
+  "경비": "processCostExpense",
 };
+const TRADE_GROUP_PROCESS_ITEM: Record<(typeof TRADE_GROUPS)[number], string> = {
+  "대공종": "Common",
+  "건축": "외주 건축",
+  "기계": "외주 기계",
+  "전기": "외주 전기",
+  "토목": "외주 토목",
+  "조경": "외주 조경",
+  "경비": "외주 경비",
+};
+const normalizeTradeGroup = (value: string | null | undefined) =>
+  value === "공통" ? "대공종" : value;
 
 const PROCESS_COST_ITEMS = [
   { key: "Common", keys: ["Common"], label: "processCostMajorWork" },
@@ -417,6 +441,8 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
   const [costEstimation, setCostEstimation] = useState<ProjectDetailCostEstimation[]>([]);
   const [costBudget, setCostBudget] = useState<ProjectDetailCostBudget[]>([]);
   const [costBudgetMonthly, setCostBudgetMonthly] = useState<ProjectDetailCostBudgetMonthly[]>([]);
+  const [selectedMonthlyBudgetItem, setSelectedMonthlyBudgetItem] = useState<MonthlyBudgetItem>("Common");
+  const [selectedMonthlyBudgetYear, setSelectedMonthlyBudgetYear] = useState(REPORT_YEAR);
   const [outsourcing, setOutsourcing] = useState<ProjectDetailOutsourcing[]>([]);
   const [cashflow, setCashflow] = useState<ProjectDetailCashflowPoint[]>([]);
   const [cogsMonthly, setCogsMonthly] = useState<ProjectDetailCogsPoint[]>([]);
@@ -491,6 +517,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
             cashIn: p.cashIn,
             cashOut: p.cashOut,
             equivalent: p.equivalent,
+            confirmedProgress: null,
           }));
         setCashflow(cfRows);
         setCfPrefilled(cfRows.length > 0);
@@ -514,6 +541,52 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
   const editCashflow: React.Dispatch<React.SetStateAction<ProjectDetailCashflowPoint[]>> = (action) => {
     setCfPrefilled(false);
     setCashflow(action);
+  };
+  const getOutsourcingActualTarget = () => {
+    const matched = /^(\d{4})-(\d{2})$/.exec(overview.asOfMonth ?? "");
+    if (matched) return { year: Number(matched[1]), month: Number(matched[2]) };
+    return { year: REPORT_YEAR, month: Math.max(1, actualCutoffMonth) };
+  };
+  const getOutsourcingActualByItem = () => {
+    const totals = new Map<string, number>();
+    const hasAmount = new Set<string>();
+    outsourcing.forEach((row) => {
+      const tradeGroup = normalizeTradeGroup(row.tradeGroup);
+      if (!TRADE_GROUPS.includes(tradeGroup as (typeof TRADE_GROUPS)[number])) return;
+      const item = TRADE_GROUP_PROCESS_ITEM[tradeGroup as (typeof TRADE_GROUPS)[number]];
+      totals.set(item, (totals.get(item) ?? 0) + (row.accum ?? 0));
+      if (row.accum != null) hasAmount.add(item);
+    });
+    return new Map(
+      [...totals].map(([item, total]) => [item, hasAmount.has(item) ? total : null] as const),
+    );
+  };
+  const mergeOutsourcingActuals = (rows: ProjectDetailCostBudgetMonthly[]) => {
+    const { year, month } = getOutsourcingActualTarget();
+    const totals = getOutsourcingActualByItem();
+    let merged = [...rows];
+    totals.forEach((actual, item) => {
+      if (item === "외주 경비") {
+        merged = merged.map((row) =>
+          row.year === year &&
+          row.month === month &&
+          (row.item === "Expense 1" || row.item === "Expense 2")
+            ? { ...row, actual: null }
+            : row,
+        );
+      }
+      const index = merged.findIndex(
+        (row) => row.item === item && row.year === year && row.month === month,
+      );
+      if (index >= 0) {
+        merged = merged.map((row, rowIndex) =>
+          rowIndex === index ? { ...row, actual } : row,
+        );
+      } else {
+        merged.push({ item, year, month, plan: null, actual });
+      }
+    });
+    return merged;
   };
   const removeAt = <T,>(setter: React.Dispatch<React.SetStateAction<T[]>>, i: number) =>
     setter((rows) => rows.filter((_, j) => j !== i));
@@ -694,7 +767,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       milestones: milestones.filter((m) => m.label.trim() !== ""),
       costEstimation: estRows,
       costBudget: costBudget.filter((c) => c.item.trim() !== ""),
-      costBudgetMonthly: costBudgetMonthly.filter((r) => r.plan != null || r.actual != null),
+      costBudgetMonthly: mergeOutsourcingActuals(costBudgetMonthly).filter((r) => r.plan != null || r.actual != null),
       outsourcing: outsourcing.filter((o) => o.trade.trim() !== ""),
       // 자금수지 Excel prefill을 아직 수정하지 않았다면 저장하지 않음(향후 Excel 갱신 반영 유지)
       cashflow: cfPrefilled ? [] : cashflow.filter((c) => c.year > 0 && c.month >= 1 && c.month <= 12),
@@ -787,6 +860,14 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
     month: number,
     field: "plan" | "actual",
   ) => {
+    const outsourcingTarget = getOutsourcingActualTarget();
+    const outsourcingActual =
+      field === "actual" &&
+      year === outsourcingTarget.year &&
+      month === outsourcingTarget.month
+        ? getOutsourcingActualByItem().get(items[0])
+        : undefined;
+    if (outsourcingActual !== undefined) return outsourcingActual;
     const values = items.map(
       (item) =>
         costBudgetMonthly.find(
@@ -831,6 +912,46 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       const index = rows.findIndex((row) => row.year === year && row.month === month);
       if (index >= 0) return rows.map((row, i) => (i === index ? { ...row, plan: value } : row));
       return [...rows, { year, month, plan: value, actual: null }];
+    });
+  const getSalesEntryValue = (
+    year: number,
+    month: number,
+    field: "plan" | "actual",
+  ) => {
+    const saved = salesMonthly.find(
+      (row) => row.year === year && row.month === month,
+    )?.[field];
+    if (saved != null) return saved;
+    if (year !== REPORT_YEAR) return null;
+    return mainSalesMonths[month - 1]?.[field] ?? null;
+  };
+  const setSalesEntryValue = (
+    year: number,
+    month: number,
+    field: "plan" | "actual",
+    value: number | null,
+  ) =>
+    setSalesMonthly((rows) => {
+      const index = rows.findIndex(
+        (row) => row.year === year && row.month === month,
+      );
+      if (index >= 0) {
+        return rows.map((row, rowIndex) =>
+          rowIndex === index ? { ...row, [field]: value } : row,
+        );
+      }
+      return [
+        ...rows,
+        {
+          year,
+          month,
+          plan: field === "plan" ? value : getSalesEntryValue(year, month, "plan"),
+          actual:
+            field === "actual"
+              ? value
+              : getSalesEntryValue(year, month, "actual"),
+        },
+      ];
     });
   const getProgressPlan = (year: number, month: number) =>
     progress.find((row) => row.year === year && row.month === month)?.planPct ?? null;
@@ -913,40 +1034,63 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
     </div>
   );
 
-  // 메인 경영현황판 Excel의 Site별 월 매출 확인표.
+  // 메인 경영현황판 Excel의 Site별 월 매출을 기본값으로 사용하는 월별 입력표.
   const salesMonthlyCard = (
     <div style={cardStyle}>
-      <div style={{ ...sectionTitle, display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
-        <span>{t("projectDataEntryTab:salesMonthlyTitleConstruction")}</span>
-        <span style={{ fontSize: "12px", fontWeight: 500, color: INK_MUTED }}>
-          {REPORT_YEAR} · {unitLabel}
-        </span>
-      </div>
-      <div style={{ overflowX: "auto", marginTop: "8px" }}>
-        <table style={{ width: "100%", minWidth: "980px", borderCollapse: "collapse", tableLayout: "fixed" }}>
+      {cardHead(
+        `${t("projectDataEntryTab:salesMonthlyTitleConstruction")} · ${unitLabel}`,
+        "salesMonthly",
+      )}
+      <div
+        data-tbl="salesMonthly"
+        onKeyDown={makeArrowNav("salesMonthly")}
+        style={{ overflowX: "auto", marginTop: "8px" }}
+      >
+        <table
+          style={{
+            width: "100%",
+            minWidth: "620px",
+            borderCollapse: "collapse",
+            tableLayout: "fixed",
+          }}
+        >
           <thead>
             <tr>
-              <th style={{ ...th, width: "110px" }}>{t("projectDataEntryTab:salesScenario")}</th>
-              {mainSalesMonths.map(({ month }) => (
-                <th key={month} style={th}>{month}{t("projectDataEntryTab:monthSuffix")}</th>
-              ))}
+              <th style={{ ...th, width: "18%" }}>{t("common:year")}</th>
+              <th style={{ ...th, width: "14%" }}>{t("projectDataEntryTab:monthColumn")}</th>
+              <th style={th}>{t("projectDataEntryTab:salesPlan")}</th>
+              <th style={th}>{t("projectDataEntryTab:salesActual")}</th>
             </tr>
           </thead>
           <tbody>
-            {([
-              [t("common:plan"), "plan"],
-              [t("common:actual"), "actual"],
-              [t("projectDataEntryTab:forecast"), "forecast"],
-            ] as const).map(([label, key]) => (
-              <tr key={key}>
-                <td style={{ ...tdCell, padding: "6px", textAlign: "center", fontSize: "13px", fontWeight: 700, color: INK_NAVY, backgroundColor: TABLE_HEADER_BG }}>
-                  {label}
+            {mainSalesMonths.map(({ month }, rowIndex) => (
+              <tr key={month}>
+                <td style={{ ...tdCell, textAlign: "center", color: INK_BODY }}>
+                  {REPORT_YEAR}
                 </td>
-                {mainSalesMonths.map((row) => (
-                  <td key={`${key}-${row.month}`} style={{ ...tdCell, padding: "6px", textAlign: "right", fontSize: "13px", color: INK_BODY }}>
-                    {fmtMoney(row[key])}
-                  </td>
-                ))}
+                <td style={{ ...tdCell, textAlign: "center", color: INK_BODY }}>
+                  {month}
+                </td>
+                <td style={tdCell}>
+                  <VndInput
+                    valueKUsd={getSalesEntryValue(REPORT_YEAR, month, "plan")}
+                    onChange={(value) =>
+                      setSalesEntryValue(REPORT_YEAR, month, "plan", value)
+                    }
+                    data-row={rowIndex}
+                    data-col={0}
+                  />
+                </td>
+                <td style={tdCell}>
+                  <VndInput
+                    valueKUsd={getSalesEntryValue(REPORT_YEAR, month, "actual")}
+                    onChange={(value) =>
+                      setSalesEntryValue(REPORT_YEAR, month, "actual", value)
+                    }
+                    data-row={rowIndex}
+                    data-col={1}
+                  />
+                </td>
               </tr>
             ))}
           </tbody>
@@ -1004,6 +1148,159 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
         {t("projectDataEntryTab:cogsMonthlyNote")}
       </div>
     </div>
+  );
+
+  const budgetAmount = (item: string) =>
+    costBudget.find((row) => row.item === item)?.budget ?? null;
+  const setBudgetAmount = (item: string, value: number | null) =>
+    setCostBudget((rows) =>
+      rows.map((row) => (row.item === item ? { ...row, budget: value } : row)),
+    );
+  const outsourcingBudgetValues = outsourcing
+    .map((row) => row.budget)
+    .filter((value): value is number => value != null);
+  const outsourcingBudget =
+    outsourcingBudgetValues.length > 0
+      ? outsourcingBudgetValues.reduce((sum, value) => sum + value, 0)
+      : null;
+  const directBudget =
+    outsourcingBudgetValues.length > 0 ||
+    budgetAmount("Common") != null ||
+    budgetAmount("Expense 1") != null
+      ? (outsourcingBudget ?? 0) +
+        (budgetAmount("Common") ?? 0) +
+        (budgetAmount("Expense 1") ?? 0)
+      : null;
+  const indirectBudget = budgetAmount("Expense 2");
+  const contingencyBudget = budgetAmount("Contingency");
+  const totalBudget =
+    directBudget != null || indirectBudget != null || contingencyBudget != null
+      ? (directBudget ?? 0) + (indirectBudget ?? 0) + (contingencyBudget ?? 0)
+      : null;
+  const selectedBudgetCumulativeMonth = (() => {
+    const matched = /^(\d{4})-(\d{2})$/.exec(overview.asOfMonth ?? "");
+    if (matched && Number(matched[1]) === selectedMonthlyBudgetYear) {
+      return Number(matched[2]);
+    }
+    return 12;
+  })();
+  const cumulativeBudgetAmount = (
+    item: MonthlyBudgetItem | "Contingency",
+    field: "plan" | "actual",
+  ) => {
+    const values = mergeOutsourcingActuals(costBudgetMonthly)
+      .filter(
+        (row) =>
+          row.item === item &&
+          row.year === selectedMonthlyBudgetYear &&
+          row.month <= selectedBudgetCumulativeMonth,
+      )
+      .map((row) => row[field])
+      .filter((value): value is number => value != null);
+    return values.length > 0 ? values.reduce((sum, value) => sum + value, 0) : null;
+  };
+  const outsourcingPlan = cumulativeBudgetAmount("외주성", "plan");
+  const outsourcingActual = cumulativeBudgetAmount("외주성", "actual");
+  const commonPlan = cumulativeBudgetAmount("Common", "plan");
+  const commonActual = cumulativeBudgetAmount("Common", "actual");
+  const expense1Plan = cumulativeBudgetAmount("Expense 1", "plan");
+  const expense1Actual = cumulativeBudgetAmount("Expense 1", "actual");
+  const expense2Plan = cumulativeBudgetAmount("Expense 2", "plan");
+  const expense2Actual = cumulativeBudgetAmount("Expense 2", "actual");
+  const contingencyPlan = cumulativeBudgetAmount("Contingency", "plan");
+  const contingencyActual = cumulativeBudgetAmount("Contingency", "actual");
+  const sumNullable = (...values: Array<number | null>) =>
+    values.some((value) => value != null)
+      ? values.reduce<number>((sum, value) => sum + (value ?? 0), 0)
+      : null;
+  const directPlan = sumNullable(outsourcingPlan, commonPlan, expense1Plan);
+  const directActual = sumNullable(outsourcingActual, commonActual, expense1Actual);
+  const totalPlan = sumNullable(directPlan, expense2Plan, contingencyPlan);
+  const totalActual = sumNullable(directActual, expense2Actual, contingencyActual);
+  const budgetHierarchyBlock = (
+    sectionLabel: string,
+    blockIndex: number,
+  ) => (
+    <table
+      key={sectionLabel}
+      style={{
+        width: "100%",
+        borderCollapse: "collapse",
+        marginTop: blockIndex === 0 ? "4px" : "10px",
+        tableLayout: "fixed",
+      }}
+    >
+      <thead>
+        <tr>
+          <th style={{ ...th, width: "11%" }}>{t("projectDataEntryTab:categoryColumn")}</th>
+          <th style={{ ...th, width: "18%" }}>Level 1</th>
+          <th style={{ ...th, width: "18%" }}>Level 2</th>
+          <th style={{ ...th, width: "17%" }}>{t("projectDataEntryTab:budgetVnd")}</th>
+          <th style={{ ...th, width: "18%" }}>{t("projectDataEntryTab:executionPlanCumulative")}</th>
+          <th style={{ ...th, width: "18%" }}>{t("projectDataEntryTab:executionActualCumulative")}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style={{ ...readOnlyCell, textAlign: "center", fontWeight: 700 }} rowSpan={9}>{sectionLabel}</td>
+          <td style={readOnlyCell} rowSpan={3}>Direct cost</td>
+          <td style={readOnlyCell}>{t("projectDataEntryTab:outsourcingItem")}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtMoney(outsourcingBudget)}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtMoney(outsourcingPlan)}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtMoney(outsourcingActual)}</td>
+        </tr>
+        <tr>
+          <td style={readOnlyCell}>Common</td>
+          <td style={tdCell}><VndInput valueKUsd={budgetAmount("Common")} onChange={(value) => setBudgetAmount("Common", value)} data-row={blockIndex * 4} data-col={0} /></td>
+          <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtMoney(commonPlan)}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtMoney(commonActual)}</td>
+        </tr>
+        <tr>
+          <td style={readOnlyCell}>Expense 1</td>
+          <td style={tdCell}><VndInput valueKUsd={budgetAmount("Expense 1")} onChange={(value) => setBudgetAmount("Expense 1", value)} data-row={blockIndex * 4 + 1} data-col={0} /></td>
+          <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtMoney(expense1Plan)}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtMoney(expense1Actual)}</td>
+        </tr>
+        <tr>
+          <td style={{ ...readOnlyCell, textAlign: "center" }} colSpan={2}>{t("projectDataEntryTab:subtotal")}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtMoney(directBudget)}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtMoney(directPlan)}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtMoney(directActual)}</td>
+        </tr>
+        <tr>
+          <td style={readOnlyCell}>Indirect cost</td>
+          <td style={readOnlyCell}>Expense 2</td>
+          <td style={tdCell}><VndInput valueKUsd={budgetAmount("Expense 2")} onChange={(value) => setBudgetAmount("Expense 2", value)} data-row={blockIndex * 4 + 2} data-col={0} /></td>
+          <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtMoney(expense2Plan)}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtMoney(expense2Actual)}</td>
+        </tr>
+        <tr>
+          <td style={{ ...readOnlyCell, textAlign: "center" }} colSpan={2}>{t("projectDataEntryTab:subtotal")}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtMoney(indirectBudget)}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtMoney(expense2Plan)}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtMoney(expense2Actual)}</td>
+        </tr>
+        <tr>
+          <td style={readOnlyCell}>Contingency</td>
+          <td style={readOnlyCell}>Contingency</td>
+          <td style={tdCell}><VndInput valueKUsd={budgetAmount("Contingency")} onChange={(value) => setBudgetAmount("Contingency", value)} data-row={blockIndex * 4 + 3} data-col={0} /></td>
+          <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtMoney(contingencyPlan)}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtMoney(contingencyActual)}</td>
+        </tr>
+        <tr>
+          <td style={{ ...readOnlyCell, textAlign: "center" }} colSpan={2}>{t("projectDataEntryTab:subtotal")}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtMoney(contingencyBudget)}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtMoney(contingencyPlan)}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtMoney(contingencyActual)}</td>
+        </tr>
+        <tr>
+          <td style={{ ...readOnlyCell, textAlign: "center", fontWeight: 700 }} colSpan={2}>{t("common:total")}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtMoney(totalBudget)}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtMoney(totalPlan)}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtMoney(totalActual)}</td>
+        </tr>
+      </tbody>
+    </table>
   );
 
   return (
@@ -1303,8 +1600,8 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                     data-col={1}
                   />
                 </td>
-                <td style={tdCell}><NumInput value={p.planPct} onChange={(v) => updateProgressAt(i, { planPct: v })} data-row={i} data-col={2} /></td>
-                <td style={tdCell}><NumInput value={p.actualPct} onChange={(v) => updateProgressAt(i, { actualPct: v })} data-row={i} data-col={3} /></td>
+                <td style={tdCell}><NumInput value={p.planPct} step={0.1} onChange={(v) => updateProgressAt(i, { planPct: v })} data-row={i} data-col={2} /></td>
+                <td style={tdCell}><NumInput value={p.actualPct} step={0.1} onChange={(v) => updateProgressAt(i, { actualPct: v })} data-row={i} data-col={3} /></td>
                 <td style={tdCell}>
                   <input
                     type="number"
@@ -1638,50 +1935,82 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
           {t("projectDataEntryTab:costBudgetNote")}
         </div>
         <div data-tbl="costBudget" onKeyDown={makeArrowNav("costBudget")}>
-        <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "4px" }}>
-          <thead>
-            <tr>
-              <th style={th}>{t("projectDataEntryTab:itemColumn")}</th>
-              <th style={th}>{t("projectDataEntryTab:budgetVnd")}</th>
-              <th style={th}>{t("projectDataEntryTab:progressPaymentPlanVnd")}</th>
-              <th style={th}>{t("projectDataEntryTab:progressPaymentActualVnd")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {costBudget.map((c, i) => (
-              <tr key={c.item}>
-                <td style={{ ...tdCell, fontSize: "13px", padding: "5px 6px", color: INK_BODY, fontWeight: 600 }}>{c.item}</td>
-                <td style={tdCell}><VndInput valueKUsd={c.budget} onChange={(v) => updateAt(setCostBudget, i, { budget: v })} data-row={i} data-col={0} /></td>
-                <td style={tdCell}><VndInput valueKUsd={c.plan} onChange={(v) => updateAt(setCostBudget, i, { plan: v })} data-row={i} data-col={1} /></td>
-                <td style={tdCell}><VndInput valueKUsd={c.actual} onChange={(v) => updateAt(setCostBudget, i, { actual: v })} data-row={i} data-col={2} /></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+          {budgetHierarchyBlock(t("projectDataEntryTab:executionPlan"), 0)}
+          {budgetHierarchyBlock(t("projectDataEntryTab:executionActual"), 1)}
         </div>
 
         {/* 월별 계획/실적 */}
         <div style={{ marginTop: "10px" }}>
           <div style={{ fontSize: "12px", fontWeight: 600, color: POINT_BLUE, marginBottom: "4px" }}>
-            {t("projectDataEntryTab:monthlyPlanActualYear", { year: REPORT_YEAR })}
+            {t("projectDataEntryTab:monthlyPlanActualYear", { year: selectedMonthlyBudgetYear })}
           </div>
           <div style={{ fontSize: "11px", color: INK_MUTED, marginBottom: "6px" }}>
             {t("projectDataEntryTab:monthlyPlanActualNote")}
           </div>
-          {(["Common", "Expense 1", "Expense 2", "외주성"] as const).map((item) => {
+          {(() => {
+            const item = selectedMonthlyBudgetItem;
+            const availableYears = Array.from(
+              new Set([
+                ...Array.from({ length: 11 }, (_, index) => REPORT_YEAR - 5 + index),
+                ...costBudgetMonthly.map((row) => row.year),
+              ]),
+            ).sort((a, b) => b - a);
             const getCbm = (month: number, field: "plan" | "actual") =>
-              costBudgetMonthly.find((r) => r.item === item && r.year === REPORT_YEAR && r.month === month)?.[field] ?? null;
+              costBudgetMonthly.find((r) => r.item === item && r.year === selectedMonthlyBudgetYear && r.month === month)?.[field] ?? null;
             const setCbm = (month: number, field: "plan" | "actual", value: number | null) =>
               setCostBudgetMonthly((rows) => {
-                const idx = rows.findIndex((r) => r.item === item && r.year === REPORT_YEAR && r.month === month);
+                const idx = rows.findIndex((r) => r.item === item && r.year === selectedMonthlyBudgetYear && r.month === month);
                 if (idx >= 0) return rows.map((r, i) => (i === idx ? { ...r, [field]: value } : r));
-                return [...rows, { item, year: REPORT_YEAR, month, plan: null, actual: null, [field]: value }];
+                return [...rows, { item, year: selectedMonthlyBudgetYear, month, plan: null, actual: null, [field]: value }];
               });
-            const tblKey = `cbm-${item}`;
+            const tblKey = `cbm-${item}-${selectedMonthlyBudgetYear}`;
             return (
               <div key={item} style={{ marginBottom: "10px" }}>
-                <div style={{ fontSize: "13px", fontWeight: 700, color: INK_NAVY, marginBottom: "4px" }}>
-                  {item === "외주성" ? t("projectDataEntryTab:outsourcingItem") : item}
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
+                  <select
+                    value={item}
+                    onChange={(event) => setSelectedMonthlyBudgetItem(event.target.value as MonthlyBudgetItem)}
+                    aria-label={t("projectDataEntryTab:itemColumn")}
+                    style={{
+                      minWidth: "180px",
+                      padding: "5px 28px 5px 8px",
+                      border: `1px solid ${BORDER_LIGHT}`,
+                      borderRadius: "3px",
+                      backgroundColor: "#fff",
+                      color: INK_NAVY,
+                      fontFamily: "inherit",
+                      fontSize: "13px",
+                      fontWeight: 700,
+                      lineHeight: 1.4,
+                    }}
+                  >
+                    {MONTHLY_BUDGET_ITEMS.map((option) => (
+                      <option key={option} value={option}>
+                        {option === "외주성" ? t("projectDataEntryTab:outsourcingItem") : option}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={selectedMonthlyBudgetYear}
+                    onChange={(event) => setSelectedMonthlyBudgetYear(Number(event.target.value))}
+                    aria-label={t("projectDataEntryTab:monthlyPlanActualYear", { year: selectedMonthlyBudgetYear })}
+                    style={{
+                      minWidth: "100px",
+                      padding: "5px 28px 5px 8px",
+                      border: `1px solid ${BORDER_LIGHT}`,
+                      borderRadius: "3px",
+                      backgroundColor: "#fff",
+                      color: INK_NAVY,
+                      fontFamily: "inherit",
+                      fontSize: "13px",
+                      fontWeight: 700,
+                      lineHeight: 1.4,
+                    }}
+                  >
+                    {availableYears.map((year) => (
+                      <option key={year} value={year}>{year}</option>
+                    ))}
+                  </select>
                 </div>
                 <div data-tbl={tblKey} onKeyDown={makeArrowNav(tblKey)}>
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -1705,7 +2034,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                 </div>
               </div>
             );
-          })}
+          })()}
         </div>
       </div>
 
@@ -1727,7 +2056,6 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
               <th style={th}>{t("projectDataEntryTab:resolvedBVnd")}</th>
               <th style={th}>{t("projectDataEntryTab:thisMonthVnd")}</th>
               <th style={th}>{t("projectDataEntryTab:accumCVnd")}</th>
-              <th style={{ ...th, width: "36px" }}></th>
             </tr>
           </thead>
           <tbody>
@@ -1735,9 +2063,20 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
               <tr key={i}>
                 <td style={tdCell}>
                   <select
-                    value={o.tradeGroup ?? ""}
+                    value={normalizeTradeGroup(o.tradeGroup) ?? ""}
                     onChange={(ev) => updateAt(setOutsourcing, i, { tradeGroup: ev.target.value || null })}
-                    style={{ width: "100%", fontSize: "13px", padding: "3px 2px", border: `1px solid ${BORDER_LIGHT}`, borderRadius: "3px", backgroundColor: "#fff" }}
+                    style={{
+                      width: "100%",
+                      padding: "5px 6px",
+                      border: `1px solid ${BORDER_LIGHT}`,
+                      borderRadius: "3px",
+                      backgroundColor: "#fff",
+                      color: INK_BODY,
+                      fontFamily: "inherit",
+                      fontSize: "13px",
+                      fontWeight: 400,
+                      lineHeight: 1.4,
+                    }}
                   >
                     <option value="">-</option>
                     {TRADE_GROUPS.map((g) => (
@@ -1745,33 +2084,21 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                     ))}
                   </select>
                 </td>
-                <td style={tdCell}><TextInput value={o.trade} onChange={(v) => updateAt(setOutsourcing, i, { trade: v ?? "" })} placeholder={t("projectDataEntryTab:tradePlaceholder")} data-row={i} data-col={0} /></td>
-                <td style={tdCell}><TextInput value={o.vendor} onChange={(v) => updateAt(setOutsourcing, i, { vendor: v })} data-row={i} data-col={1} /></td>
-                <td style={tdCell}><TextInput value={o.category} onChange={(v) => updateAt(setOutsourcing, i, { category: v })} placeholder={t("projectDataEntryTab:categoryPlaceholder")} data-row={i} data-col={2} /></td>
-                <td style={tdCell}><TextInput value={o.contractDate} onChange={(v) => updateAt(setOutsourcing, i, { contractDate: v })} placeholder="'24.12.31" data-row={i} data-col={3} /></td>
-                <td style={tdCell}><TextInput value={o.changeNo} onChange={(v) => updateAt(setOutsourcing, i, { changeNo: v })} data-row={i} data-col={4} /></td>
-                <td style={tdCell}><VndInput valueKUsd={o.budget} onChange={(v) => updateAt(setOutsourcing, i, { budget: v })} data-row={i} data-col={5} /></td>
-                <td style={tdCell}><VndInput valueKUsd={o.executedBudget} onChange={(v) => updateAt(setOutsourcing, i, { executedBudget: v })} data-row={i} data-col={6} /></td>
-                <td style={tdCell}><VndInput valueKUsd={o.resolved} onChange={(v) => updateAt(setOutsourcing, i, { resolved: v })} data-row={i} data-col={7} /></td>
-                <td style={tdCell}><VndInput valueKUsd={o.thisMonth} onChange={(v) => updateAt(setOutsourcing, i, { thisMonth: v })} data-row={i} data-col={8} /></td>
-                <td style={tdCell}><VndInput valueKUsd={o.accum} onChange={(v) => updateAt(setOutsourcing, i, { accum: v })} data-row={i} data-col={9} /></td>
-                <td style={{ ...tdCell, textAlign: "center" }}><DelBtn onClick={() => removeAt(setOutsourcing, i)} /></td>
+                <td style={readOnlyCell}>{o.trade || "-"}</td>
+                <td style={readOnlyCell}>{o.vendor || "-"}</td>
+                <td style={readOnlyCell}>{o.category || "-"}</td>
+                <td style={{ ...readOnlyCell, textAlign: "center" }}>{o.contractDate || "-"}</td>
+                <td style={{ ...readOnlyCell, textAlign: "center" }}>{o.changeNo || "-"}</td>
+                <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtMoney(o.budget)}</td>
+                <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtMoney(o.executedBudget)}</td>
+                <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtMoney(o.resolved)}</td>
+                <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtMoney(o.thisMonth)}</td>
+                <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtMoney(o.accum)}</td>
               </tr>
             ))}
           </tbody>
         </table>
         </div>
-        <button
-          style={addBtn}
-          onClick={() =>
-            setOutsourcing((rows) => [
-              ...rows,
-              { tradeGroup: null, trade: "", vendor: null, category: null, contractDate: null, changeNo: null, budget: null, executedBudget: null, resolved: null, thisMonth: null, accum: null },
-            ])
-          }
-        >
-          <Plus size={12} /> {t("projectDataEntryTab:addTrade")}
-        </button>
       </div>
 
       {/* 6. 월별 자금 */}
@@ -1786,6 +2113,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
               <th style={th}>{t("projectDataEntryTab:cashInVnd")}</th>
               <th style={th}>{t("projectDataEntryTab:cashOutVnd")}</th>
               <th style={th}>{t("projectDataEntryTab:equivalentVnd")}</th>
+              <th style={th}>{t("projectDataEntryTab:confirmedProgressVnd")}</th>
               <th style={{ ...th, width: "36px" }}></th>
             </tr>
           </thead>
@@ -1797,6 +2125,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                 <td style={tdCell}><VndInput valueKUsd={c.cashIn} onChange={(v) => updateAt(editCashflow, i, { cashIn: v })} data-row={i} data-col={2} /></td>
                 <td style={tdCell}><VndInput valueKUsd={c.cashOut} onChange={(v) => updateAt(editCashflow, i, { cashOut: v })} data-row={i} data-col={3} /></td>
                 <td style={tdCell}><VndInput valueKUsd={c.equivalent} onChange={(v) => updateAt(editCashflow, i, { equivalent: v })} data-row={i} data-col={4} /></td>
+                <td style={tdCell}><VndInput valueKUsd={c.confirmedProgress} onChange={(v) => updateAt(editCashflow, i, { confirmedProgress: v })} data-row={i} data-col={5} /></td>
                 <td style={{ ...tdCell, textAlign: "center" }}><DelBtn onClick={() => removeAt(editCashflow, i)} /></td>
               </tr>
             ))}
@@ -1812,7 +2141,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                 ? { year: last.year + 1, month: 1 }
                 : { year: last.year, month: last.month + 1 }
               : { year: nowYear, month: 1 };
-            editCashflow((rows) => [...rows, { ...next, cashIn: null, cashOut: null, equivalent: null }]);
+            editCashflow((rows) => [...rows, { ...next, cashIn: null, cashOut: null, equivalent: null, confirmedProgress: null }]);
           }}
         >
           <Plus size={12} /> {t("projectDataEntryTab:addMonth")}

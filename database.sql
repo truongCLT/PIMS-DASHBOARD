@@ -239,6 +239,7 @@ CREATE TABLE IF NOT EXISTS pd_cashflow_monthly (
     cash_in NUMERIC(24, 8),
     cash_out NUMERIC(24, 8),
     equivalent NUMERIC(24, 8),
+    confirmed_progress NUMERIC(24, 8),
     CONSTRAINT pd_cashflow_monthly_uq UNIQUE (project_name, year, month)
 );
 

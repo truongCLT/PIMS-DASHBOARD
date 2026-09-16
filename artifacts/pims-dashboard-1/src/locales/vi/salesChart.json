@@ -16,8 +16,9 @@
   "colSiteName": "Tên công trình",
   "colCategory": "Danh mục",
   "colBizType": "Loại hình",
-  "colAmount": "Số tiền",
-  "colShare": "Tỷ trọng",
+  "colTargetPlan": "Mục tiêu (Kế hoạch)",
+  "colActual": "Thực hiện",
+  "colAchievementRate": "Tỷ lệ đạt",
   "noSiteData": "Không có dữ liệu công trình cho tháng này.",
   "loadingSiteData": "Đang tải dữ liệu công trình…"
 }

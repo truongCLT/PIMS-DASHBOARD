@@ -184,6 +184,7 @@ export const pdCashflowMonthlyTable = pgTable(
     cashIn: numeric("cash_in", { precision: 24, scale: 8 }), // 수입 (천 USD)
     cashOut: numeric("cash_out", { precision: 24, scale: 8 }), // 지출 (천 USD)
     equivalent: numeric("equivalent", { precision: 24, scale: 8 }), // 보유 현금 (천 USD)
+    confirmedProgress: numeric("confirmed_progress", { precision: 24, scale: 8 }), // 확인된 기성 (천 USD)
   },
   (t) => [
     uniqueIndex("pd_cashflow_monthly_uq").on(t.projectName, t.year, t.month),
