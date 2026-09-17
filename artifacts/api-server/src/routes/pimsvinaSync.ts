@@ -414,9 +414,11 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
         .set({
           fldCode: item.fldcode || existing.fldCode,
           siteCode: item.site_code || existing.siteCode,
-          contractAmount: item.contract_amount != null ? toK(item.contract_amount) : existing.contractAmount,
-          startDate: item.start_date || existing.startDate,
-          endDate: item.end_date || existing.endDate,
+          // Contract Amount/Start/End Date: ghi đè trực tiếp giá trị PIMSVINA trả về (kể cả null),
+          // không giữ lại giá trị cũ trong DB — theo yêu cầu bỏ hẳn phép tính dự phòng cho 3 trường này.
+          contractAmount: toK(item.contract_amount),
+          startDate: item.start_date ?? null,
+          endDate: item.end_date ?? null,
           client: item.client || existing.client,
           scale: item.scale || existing.scale,
           asOfMonth: item.as_of_month != null ? normalizeAsOfMonth(item.as_of_month) : existing.asOfMonth,
@@ -465,10 +467,7 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
       return String(clamped);
     };
 
-    const planPct = sanitizeNumStr(item.plan_pct);
     const actualPct = sanitizeNumStr(item.actual_pct);
-    const planCumPct = sanitizeNumStr(item.plan_cum_pct);
-    const actualCumPct = sanitizeNumStr(item.actual_cum_pct);
 
     await db
       .insert(pdProgressMonthlyTable)
@@ -478,18 +477,14 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
         siteCode: item.site_code || null,
         year: Number(item.year),
         month: m,
-        planPct,
         actualPct,
-        planCumPct,
-        actualCumPct,
       })
       .onConflictDoUpdate({
         target: [pdProgressMonthlyTable.projectName, pdProgressMonthlyTable.year, pdProgressMonthlyTable.month],
-        // planPct/planCumPct KHÔNG có trong PIMS (GIỮ NHẬP TAY theo MaTran_NguonDuLieu_Dashboard_PIMS_DECV_v4.xlsx,
-        // dòng #6) - JSP luôn trả null cho 2 trường này. Nếu đưa vào set ở đây, mỗi lần sync sẽ GHI ĐÈ/XÓA giá trị
-        // Plan % người dùng đã nhập tay ở Data Entry (PUT /projectdetail) bằng null. Chỉ cập nhật actualPct/
-        // actualCumPct (có nguồn PIMS thật) - planPct/planCumPct giữ nguyên giá trị đã có trong DB.
-        set: { fldCode: item.fldcode || null, siteCode: item.site_code || null, actualPct, actualCumPct },
+        // Câu Oracle mới (pimsvinaOracleQueries.ts) chỉ trả FLDCODE/SITE_CODE/PROJECT_NAME/YEAR/MONTH/ACTUAL_PCT
+        // — planPct/planCumPct/actualCumPct KHÔNG còn được PIMS đồng bộ nữa (giữ nguyên giá trị đã có trong DB,
+        // dù là nhập tay hay do bản sync cũ trước đây ghi vào), sync chỉ cập nhật đúng actualPct.
+        set: { fldCode: item.fldcode || null, siteCode: item.site_code || null, actualPct },
       });
     counts.pdProgress++;
   }
@@ -568,9 +563,53 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
     if (existing) existing.rawActual += actualKusd;
     else tradeCostUpdates.set(key, { projectName, item: mappedItem, year, month, rawActual: actualKusd });
   }
+
+  // Xoá sạch dữ liệu 외주 cũ (actualSource='pimsvina') của ĐÚNG (project, year, month) sắp đồng bộ
+  // trước khi ghi lại, thay vì chỉ upsert theo (project, item, year, month) — vì nếu ERP đổi cách phân
+  // loại trade giữa 2 lần sync (VD: 1 trade trước đó khớp "외주 건축" nay khớp "외주 기계"), upsert theo
+  // item mới sẽ để sót dòng cũ dưới item cũ cho cùng tháng đó, gây trùng/lệch số liệu luỹ kế. Giá trị
+  // "plan" (luôn nhập tay, sync không đụng tới) được snapshot lại trước khi xoá để không bị mất.
+  const monthKeysToReplace = new Map<string, { projectName: string; year: number; month: number }>();
+  for (const update of tradeCostUpdates.values()) {
+    monthKeysToReplace.set(`${update.projectName}|${update.year}|${update.month}`, {
+      projectName: update.projectName,
+      year: update.year,
+      month: update.month,
+    });
+  }
+  const preservedPlanByKey = new Map<string, string | null>();
+  for (const { projectName, year, month } of monthKeysToReplace.values()) {
+    const existingRows = await db
+      .select({ item: pdCostBudgetMonthlyTable.item, plan: pdCostBudgetMonthlyTable.plan })
+      .from(pdCostBudgetMonthlyTable)
+      .where(
+        and(
+          eq(pdCostBudgetMonthlyTable.projectName, projectName),
+          eq(pdCostBudgetMonthlyTable.year, year),
+          eq(pdCostBudgetMonthlyTable.month, month),
+          eq(pdCostBudgetMonthlyTable.actualSource, "pimsvina"),
+        ),
+      );
+    for (const row of existingRows) {
+      preservedPlanByKey.set(`${projectName}|${row.item}|${year}|${month}`, row.plan);
+    }
+    await db
+      .delete(pdCostBudgetMonthlyTable)
+      .where(
+        and(
+          eq(pdCostBudgetMonthlyTable.projectName, projectName),
+          eq(pdCostBudgetMonthlyTable.year, year),
+          eq(pdCostBudgetMonthlyTable.month, month),
+          eq(pdCostBudgetMonthlyTable.actualSource, "pimsvina"),
+        ),
+      );
+  }
+
   for (const update of tradeCostUpdates.values()) {
     const actual = parsePimsvinaKusd(update.rawActual);
     if (actual == null) continue;
+    const preservedPlan =
+      preservedPlanByKey.get(`${update.projectName}|${update.item}|${update.year}|${update.month}`) ?? null;
     await db
       .insert(pdCostBudgetMonthlyTable)
       .values({
@@ -578,6 +617,7 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
         item: update.item,
         year: update.year,
         month: update.month,
+        plan: preservedPlan,
         actual: String(actual),
         actualSource: "pimsvina",
       })
@@ -742,7 +782,9 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
 
     await db.delete(pdCostBudgetTable).where(eq(pdCostBudgetTable.projectName, projectName));
     for (const item of items) {
-      const incomingPlan = toK(item.plan);
+      // Lưu ĐÚNG giá trị đồng bộ về, KHÔNG quy đổi qua toK() (không có "kiểm tra thêm" gì cả) - budget/actual
+      // của dashboard_pd_costbudget_1q.jsp (BDGTAMT/COSTAMT theo công thức mới) được lưu nguyên văn.
+      const rawNum = (v: any) => (v == null || v === "" ? null : String(v));
       const preservedPlan = existingPlanByItem.get(String(item.item).trim().toLowerCase()) ?? null;
       await db.insert(pdCostBudgetTable).values({
         projectName,
@@ -750,9 +792,9 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
         siteCode: item.site_code || null,
         category: item.category || null,
         item: item.item,
-        budget: toK(item.budget),
-        plan: incomingPlan != null ? incomingPlan : preservedPlan,
-        actual: toK(item.actual),
+        budget: rawNum(item.budget),
+        plan: rawNum(item.plan) ?? preservedPlan,
+        actual: rawNum(item.actual),
         sortOrder: Number(item.sort_order) || 0,
       });
       counts.pdCostBudget++;

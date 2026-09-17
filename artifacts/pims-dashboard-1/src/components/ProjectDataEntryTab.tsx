@@ -135,6 +135,62 @@ function VndInput({
   );
 }
 
+// Dùng cho các trường lưu ĐÚNG số VND gốc (không quy đổi kUSD) - VD budget/actual của
+// pd_cost_budget đồng bộ từ dashboard_pd_costbudget_1q.jsp. Khi xem (không focus), hiển thị theo
+// đơn vị tiền tệ đang chọn (chia theo tỷ giá cho USD/KRW, giữ nguyên nếu chọn VND hoặc không có
+// tỷ giá) qua fmtVnd(); khi sửa, luôn nhập/hiển thị đúng số VND thô để tránh nhầm lẫn quy đổi 2 lần.
+function VndRawInput({
+  valueVnd,
+  onChange,
+  "data-row": dataRow,
+  "data-col": dataCol,
+}: {
+  valueVnd: number | null | undefined;
+  onChange: (vnd: number | null) => void;
+  "data-row"?: string | number;
+  "data-col"?: string | number;
+}) {
+  const { fmtVnd } = useMoney();
+  const [editing, setEditing] = React.useState(false);
+  const [rawStr, setRawStr] = React.useState("");
+
+  const displayValue = editing
+    ? rawStr
+    : valueVnd != null
+      ? fmtVnd(valueVnd)
+      : "";
+
+  return (
+    <input
+      type="text"
+      inputMode="numeric"
+      value={displayValue}
+      data-row={dataRow}
+      data-col={dataCol}
+      style={{ ...inputStyle, textAlign: "right" }}
+      onFocus={() => {
+        setRawStr(valueVnd == null || valueVnd === 0 ? "" : String(Math.round(valueVnd)));
+        setEditing(true);
+      }}
+      onChange={(e) => {
+        const digits = e.target.value.replace(/[^\d]/g, "");
+        setRawStr(digits === "" ? "" : Number(digits).toLocaleString("en-US"));
+      }}
+      onBlur={() => {
+        setEditing(false);
+        const cleaned = rawStr.replace(/,/g, "");
+        if (cleaned === "" || cleaned === "0") {
+          onChange(null);
+        } else {
+          const val = parseFloat(cleaned);
+          onChange(isNaN(val) ? null : val);
+        }
+        setRawStr("");
+      }}
+    />
+  );
+}
+
 function NumInput({
   value,
   onChange,
@@ -316,10 +372,11 @@ const EMPTY_OVERVIEW: ProjectDetailOverview = {
   cashCollection: null,
 };
 
-const FIXED_BUDGET_ITEMS = ["Common", "Expense 1", "Expense 2", "Contingency"];
+const FIXED_BUDGET_ITEMS = ["Outsourcing", "Common", "Expense 1", "Expense 2", "Contingency"];
 const MONTHLY_BUDGET_ITEMS = ["Common", "Expense 1", "Expense 2", "외주성"] as const;
 type MonthlyBudgetItem = (typeof MONTHLY_BUDGET_ITEMS)[number];
 const BUDGET_ITEM_CATEGORY: Record<string, string> = {
+  Outsourcing: "Direct Cost",
   Common: "Direct Cost",
   "Expense 1": "Direct Cost",
   "Expense 2": "Indirect Cost",
@@ -371,7 +428,7 @@ const EST_KINDS: { kind: "bidding" | "execution" | "completion"; label: string }
 
 export function ProjectDataEntryTab({ projectName, service = false }: { projectName: string; service?: boolean }) {
   const { t } = useTranslation(["projectDataEntryTab", "common"]);
-  const { fmtMoney, unitLabel } = useMoney();
+  const { fmtMoney, fmtVnd, unitLabel } = useMoney();
   const { detail, isLoading } = useProjectDetail(projectName);
   const queryClient = useQueryClient();
   const mutation = usePutProjectdetail();
@@ -1156,15 +1213,13 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
     setCostBudget((rows) =>
       rows.map((row) => (row.item === item ? { ...row, budget: value } : row)),
     );
-  const outsourcingBudgetValues = outsourcing
-    .map((row) => row.budget)
-    .filter((value): value is number => value != null);
-  const outsourcingBudget =
-    outsourcingBudgetValues.length > 0
-      ? outsourcingBudgetValues.reduce((sum, value) => sum + value, 0)
-      : null;
+  // Budget/Actual của cả 5 dòng (kể cả Outsourcing) đọc thẳng từ pd_cost_budget (đồng bộ qua
+  // dashboard_pd_costbudget_1q.jsp) - không còn tự cộng từ bảng Ngoài giao (pd_outsourcing) nữa.
+  const actualAmount = (item: string) =>
+    costBudget.find((row) => row.item === item)?.actual ?? null;
+  const outsourcingBudget = budgetAmount("Outsourcing");
   const directBudget =
-    outsourcingBudgetValues.length > 0 ||
+    outsourcingBudget != null ||
     budgetAmount("Common") != null ||
     budgetAmount("Expense 1") != null
       ? (outsourcingBudget ?? 0) +
@@ -1200,15 +1255,15 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
     return values.length > 0 ? values.reduce((sum, value) => sum + value, 0) : null;
   };
   const outsourcingPlan = cumulativeBudgetAmount("외주성", "plan");
-  const outsourcingActual = cumulativeBudgetAmount("외주성", "actual");
+  const outsourcingActual = actualAmount("Outsourcing");
   const commonPlan = cumulativeBudgetAmount("Common", "plan");
-  const commonActual = cumulativeBudgetAmount("Common", "actual");
+  const commonActual = actualAmount("Common");
   const expense1Plan = cumulativeBudgetAmount("Expense 1", "plan");
-  const expense1Actual = cumulativeBudgetAmount("Expense 1", "actual");
+  const expense1Actual = actualAmount("Expense 1");
   const expense2Plan = cumulativeBudgetAmount("Expense 2", "plan");
-  const expense2Actual = cumulativeBudgetAmount("Expense 2", "actual");
+  const expense2Actual = actualAmount("Expense 2");
   const contingencyPlan = cumulativeBudgetAmount("Contingency", "plan");
-  const contingencyActual = cumulativeBudgetAmount("Contingency", "actual");
+  const contingencyActual = actualAmount("Contingency");
   const sumNullable = (...values: Array<number | null>) =>
     values.some((value) => value != null)
       ? values.reduce<number>((sum, value) => sum + (value ?? 0), 0)
@@ -1245,59 +1300,59 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
           <td style={{ ...readOnlyCell, textAlign: "center", fontWeight: 700 }} rowSpan={9}>{sectionLabel}</td>
           <td style={readOnlyCell} rowSpan={3}>Direct cost</td>
           <td style={readOnlyCell}>{t("projectDataEntryTab:outsourcingItem")}</td>
-          <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtMoney(outsourcingBudget)}</td>
+          <td style={tdCell}><VndRawInput valueVnd={budgetAmount("Outsourcing")} onChange={(value) => setBudgetAmount("Outsourcing", value)} data-row={blockIndex * 5} data-col={0} /></td>
           <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtMoney(outsourcingPlan)}</td>
-          <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtMoney(outsourcingActual)}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtVnd(outsourcingActual)}</td>
         </tr>
         <tr>
           <td style={readOnlyCell}>Common</td>
-          <td style={tdCell}><VndInput valueKUsd={budgetAmount("Common")} onChange={(value) => setBudgetAmount("Common", value)} data-row={blockIndex * 4} data-col={0} /></td>
+          <td style={tdCell}><VndRawInput valueVnd={budgetAmount("Common")} onChange={(value) => setBudgetAmount("Common", value)} data-row={blockIndex * 5 + 1} data-col={0} /></td>
           <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtMoney(commonPlan)}</td>
-          <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtMoney(commonActual)}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtVnd(commonActual)}</td>
         </tr>
         <tr>
           <td style={readOnlyCell}>Expense 1</td>
-          <td style={tdCell}><VndInput valueKUsd={budgetAmount("Expense 1")} onChange={(value) => setBudgetAmount("Expense 1", value)} data-row={blockIndex * 4 + 1} data-col={0} /></td>
+          <td style={tdCell}><VndRawInput valueVnd={budgetAmount("Expense 1")} onChange={(value) => setBudgetAmount("Expense 1", value)} data-row={blockIndex * 5 + 2} data-col={0} /></td>
           <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtMoney(expense1Plan)}</td>
-          <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtMoney(expense1Actual)}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtVnd(expense1Actual)}</td>
         </tr>
         <tr>
           <td style={{ ...readOnlyCell, textAlign: "center" }} colSpan={2}>{t("projectDataEntryTab:subtotal")}</td>
-          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtMoney(directBudget)}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtVnd(directBudget)}</td>
           <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtMoney(directPlan)}</td>
-          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtMoney(directActual)}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtVnd(directActual)}</td>
         </tr>
         <tr>
           <td style={readOnlyCell}>Indirect cost</td>
           <td style={readOnlyCell}>Expense 2</td>
-          <td style={tdCell}><VndInput valueKUsd={budgetAmount("Expense 2")} onChange={(value) => setBudgetAmount("Expense 2", value)} data-row={blockIndex * 4 + 2} data-col={0} /></td>
+          <td style={tdCell}><VndRawInput valueVnd={budgetAmount("Expense 2")} onChange={(value) => setBudgetAmount("Expense 2", value)} data-row={blockIndex * 5 + 3} data-col={0} /></td>
           <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtMoney(expense2Plan)}</td>
-          <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtMoney(expense2Actual)}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtVnd(expense2Actual)}</td>
         </tr>
         <tr>
           <td style={{ ...readOnlyCell, textAlign: "center" }} colSpan={2}>{t("projectDataEntryTab:subtotal")}</td>
-          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtMoney(indirectBudget)}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtVnd(indirectBudget)}</td>
           <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtMoney(expense2Plan)}</td>
-          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtMoney(expense2Actual)}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtVnd(expense2Actual)}</td>
         </tr>
         <tr>
           <td style={readOnlyCell}>Contingency</td>
           <td style={readOnlyCell}>Contingency</td>
-          <td style={tdCell}><VndInput valueKUsd={budgetAmount("Contingency")} onChange={(value) => setBudgetAmount("Contingency", value)} data-row={blockIndex * 4 + 3} data-col={0} /></td>
+          <td style={tdCell}><VndRawInput valueVnd={budgetAmount("Contingency")} onChange={(value) => setBudgetAmount("Contingency", value)} data-row={blockIndex * 5 + 4} data-col={0} /></td>
           <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtMoney(contingencyPlan)}</td>
-          <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtMoney(contingencyActual)}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtVnd(contingencyActual)}</td>
         </tr>
         <tr>
           <td style={{ ...readOnlyCell, textAlign: "center" }} colSpan={2}>{t("projectDataEntryTab:subtotal")}</td>
-          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtMoney(contingencyBudget)}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtVnd(contingencyBudget)}</td>
           <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtMoney(contingencyPlan)}</td>
-          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtMoney(contingencyActual)}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtVnd(contingencyActual)}</td>
         </tr>
         <tr>
           <td style={{ ...readOnlyCell, textAlign: "center", fontWeight: 700 }} colSpan={2}>{t("common:total")}</td>
-          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtMoney(totalBudget)}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtVnd(totalBudget)}</td>
           <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtMoney(totalPlan)}</td>
-          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtMoney(totalActual)}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtVnd(totalActual)}</td>
         </tr>
       </tbody>
     </table>

@@ -21,6 +21,15 @@ export const PIMSVINA_TABLE_KEYS = [
 
 const MAX_ROWS = 300;
 
+/** Some raw PIMSVINA payloads carry far more fields than are useful to review in this
+ * preview table. Tables listed here show ONLY the given raw keys (in this order);
+ * tables not listed fall back to showing every key present on the first row. */
+const VISIBLE_COLUMNS: Partial<Record<string, string[]>> = {
+  pdOverview: ["fldcode", "site_code", "project_name", "contract_amount", "start_date", "end_date"],
+  pdProgress: ["fldcode", "site_code", "project_name", "year", "month", "actual_pct"],
+  pdCostBudget: ["fldcode", "site_code", "project_name", "category", "item", "budget", "actual"],
+};
+
 export function PimsvinaSyncPreviewModal({
   data,
   confirming,
@@ -38,7 +47,8 @@ export function PimsvinaSyncPreviewModal({
   const columns: DetailColumn<Record<string, unknown>>[] = useMemo(() => {
     const first = rows[0];
     if (!first) return [];
-    return Object.keys(first).map((k) => {
+    const keys = VISIBLE_COLUMNS[activeKey] ?? Object.keys(first);
+    return keys.map((k) => {
       // Table-specific label first (same raw field name can mean different things
       // across PIMSVINA tables, e.g. "plan"/"budget"/"category"), then a shared
       // generic label, then a formatted fallback for unmapped raw database keys.
