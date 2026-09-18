@@ -174,7 +174,7 @@ export function DetailDataTable<T extends object>({
                     const content = c.format
                       ? c.format(raw, row)
                       : typeof raw === "number"
-                        ? raw.toLocaleString()
+                        ? raw.toLocaleString(undefined, { maximumFractionDigits: 8 })
                         : (raw as React.ReactNode) ?? "-";
                     return (
                       <td
@@ -224,7 +224,7 @@ export function DetailDataTable<T extends object>({
                     : c.format
                       ? c.format(raw, totalRow as T)
                       : typeof raw === "number"
-                        ? raw.toLocaleString()
+                        ? raw.toLocaleString(undefined, { maximumFractionDigits: 8 })
                         : (raw as React.ReactNode) ?? "-";
                   return (
                     <td

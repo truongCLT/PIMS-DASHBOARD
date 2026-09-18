@@ -20,6 +20,10 @@ export type DisplayUnit = {
   fmtMoney: (v: number | null | undefined, digits?: number) => string;
   /** 단위 라벨 (예: "1K USD", "KRW") */
   unitLabel: string;
+  /** VND 원본 그대로 저장된 값 → 선택된 통화로 변환 (환율 없으면 VND 그대로 반환) */
+  convertFromVnd: (v: number) => number;
+  /** VND 원본 값 → 포맷된 문자열 ("-" 처리 포함, 단위 배율 없음) */
+  fmtVnd: (v: number | null | undefined) => string;
 };
 
 const defaultUnit: DisplayUnit = {
@@ -31,7 +35,22 @@ const defaultUnit: DisplayUnit = {
       ? "-"
       : v.toLocaleString("en-US", { maximumFractionDigits: digits, minimumFractionDigits: 0 }),
   unitLabel: "천 USD",
+  convertFromVnd: (v) => v,
+  fmtVnd: (v) =>
+    v == null || Number.isNaN(v) ? "-" : v.toLocaleString("en-US", { maximumFractionDigits: 0 }),
 };
+
+/** VND 원본 값(그대로 저장된 값) → 선택된 통화로 변환 (순수 함수)
+ * 환율(VND)이 없으면 변환하지 않고 VND 그대로 반환 - "check 없이 그대로 저장" 데이터용. */
+export function convertFromVndAmount(
+  v: number,
+  currency: string,
+  rates: Record<string, number> = DEFAULT_EXCHANGE_RATES,
+): number {
+  const vndRate = rates.VND;
+  if (!vndRate || currency === "VND") return v;
+  return (v / vndRate) * (rates[currency] ?? 1);
+}
 
 const DisplayUnitContext = createContext<DisplayUnit>(defaultUnit);
 
@@ -98,6 +117,11 @@ export function DisplayUnitProvider({
       convert: (v) => convertMoney(v, currency, unitOn, rates),
       fmtMoney: (v, digits = 0) => formatMoney(v, currency, unitOn, digits, rates),
       unitLabel: moneyUnitLabel(currency, unitOn),
+      convertFromVnd: (v) => convertFromVndAmount(v, currency, rates),
+      fmtVnd: (v) =>
+        v == null || Number.isNaN(v)
+          ? "-"
+          : convertFromVndAmount(v, currency, rates).toLocaleString("en-US", { maximumFractionDigits: 0 }),
     }),
     [currency, unitOn, rates],
   );
