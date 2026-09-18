@@ -18,4 +18,6 @@ export interface ProjectDetailCostEstimation {
      * @maximum 12
      */
   month?: number | null;
+  /** completion 전용 — PIMSVINA settle-ratio 리포트의 Gross Profit ratio(%) 동기화 값 */
+  ratioPct?: number | null;
 }

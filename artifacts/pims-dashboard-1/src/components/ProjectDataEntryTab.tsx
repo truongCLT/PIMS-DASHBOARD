@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { Plus, Trash2, Save, Upload, X, Lock, LockOpen, ChevronRight } from "lucide-react";
+import { Plus, Trash2, Save, Upload, X, Lock, LockOpen, ChevronRight, FileSpreadsheet } from "lucide-react";
 import { readAdminToken } from "../lib/adminAuth";
 import {
   usePutProjectdetail,
@@ -26,6 +26,8 @@ import type {
   ProjectDetailSalesPoint,
 } from "@workspace/api-client-react";
 import { useProjectDetail, getGetProjectdetailQueryKey } from "../lib/projectDetailData";
+import { downloadMilestonesTemplate, parseMilestonesWorkbook, ExcelParseError } from "../lib/projectDetailExcel";
+import { ANY_PROJECT_LOCKED_QUERY_KEY } from "../lib/useAnyProjectLocked";
 import { REPORT_YEAR } from "../lib/mgmtreportData";
 import { getMrCashflowRef } from "../data/mrProjectLinks";
 import { cardStyle, sectionTitle, emptyNote, INK_NAVY, INK_BODY, INK_MUTED, POINT_BLUE, TABLE_HEADER_BG, CARD_BORDER, ACHIEVE_RED, SUCCESS_GREEN, ADMIN_NAVY, BORDER_STRONG, BORDER_MID, BORDER_LIGHT, STATUS_CLOSED_BG, STATUS_OPEN_BG, STATUS_CLOSED_TEXT, STATUS_OPEN_TEXT } from "../lib/uiTokens";
@@ -85,22 +87,29 @@ import { useMoney } from "../lib/displayUnit";
 function VndInput({
   valueKUsd,
   onChange,
+  forceFullAmount,
   "data-row": dataRow,
   "data-col": dataCol,
 }: {
   valueKUsd: number | null | undefined;
   onChange: (kUsd: number | null) => void;
+  // true = luôn hiển thị số ĐẦY ĐỦ, bỏ qua toggle Unit (천 USD/Bil.VND) — dùng khi cần so sánh
+  // trực quan với các dòng khác trong cùng bảng luôn hiển thị số đầy đủ (VD: bảng "4. Cost Rate",
+  // dòng Execution/Completion dùng fmtVnd() vốn không áp dụng toggle Unit).
+  forceFullAmount?: boolean;
   "data-row"?: string | number;
   "data-col"?: string | number;
 }) {
-  const { convert, fmtMoney } = useMoney();
+  const { convert, convertToKUsd, fmtMoney, fmtMoneyFull } = useMoney();
   const [editing, setEditing] = React.useState(false);
   const [rawStr, setRawStr] = React.useState("");
 
   const displayValue = editing
     ? rawStr
     : valueKUsd != null
-      ? fmtMoney(valueKUsd)
+      ? forceFullAmount
+        ? fmtMoneyFull(valueKUsd)
+        : fmtMoney(valueKUsd)
       : "";
 
   return (
@@ -127,7 +136,10 @@ function VndInput({
           onChange(null);
         } else {
           const val = parseFloat(cleaned);
-          onChange(isNaN(val) ? null : val);
+          // 사용자가 입력한 값은 현재 선택된 표시 통화/단위 기준이므로, 저장 단위(천 USD)로
+          // 되돌려야 한다 - onFocus의 convert()와 정확히 반대 방향 변환 (버그: 예전에는 이 역변환이
+          // 빠져 있어 VND/KRW 선택 시 입력값이 그대로 천 USD로 저장되어 수천만 배 부풀려졌었다).
+          onChange(isNaN(val) ? null : convertToKUsd(val));
         }
         setRawStr("");
       }}
@@ -373,7 +385,7 @@ const EMPTY_OVERVIEW: ProjectDetailOverview = {
 };
 
 const FIXED_BUDGET_ITEMS = ["Outsourcing", "Common", "Expense 1", "Expense 2", "Contingency"];
-const MONTHLY_BUDGET_ITEMS = ["Common", "Expense 1", "Expense 2", "외주성"] as const;
+const MONTHLY_BUDGET_ITEMS = ["Common", "Expense 1", "Expense 2", "Contingency", "Outsourcing"] as const;
 type MonthlyBudgetItem = (typeof MONTHLY_BUDGET_ITEMS)[number];
 const BUDGET_ITEM_CATEGORY: Record<string, string> = {
   Outsourcing: "Direct Cost",
@@ -495,11 +507,22 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
   const [overview, setOverview] = useState<ProjectDetailOverview>(EMPTY_OVERVIEW);
   const [progress, setProgress] = useState<ProjectDetailProgressPoint[]>([]);
   const [milestones, setMilestones] = useState<ProjectDetailMilestone[]>([]);
+  const [milestonesExcelBusy, setMilestonesExcelBusy] = useState(false);
+  const [milestonesExcelMsg, setMilestonesExcelMsg] = useState<string | null>(null);
+  const milestonesExcelFileRef = useRef<HTMLInputElement>(null);
   const [costEstimation, setCostEstimation] = useState<ProjectDetailCostEstimation[]>([]);
+  // Base Month đang được chọn để xem lại lịch sử của dòng Execution/Completion (key: "execution"/
+  // "completion" -> "YYYY-M"). Không có entry = mặc định hiển thị tháng gần nhất đã đồng bộ.
+  const [selectedEstMonth, setSelectedEstMonth] = useState<Record<string, string>>({});
   const [costBudget, setCostBudget] = useState<ProjectDetailCostBudget[]>([]);
   const [costBudgetMonthly, setCostBudgetMonthly] = useState<ProjectDetailCostBudgetMonthly[]>([]);
   const [selectedMonthlyBudgetItem, setSelectedMonthlyBudgetItem] = useState<MonthlyBudgetItem>("Common");
   const [selectedMonthlyBudgetYear, setSelectedMonthlyBudgetYear] = useState(REPORT_YEAR);
+  // "5. Budget Execution Status" bảng Monthly — tháng/năm đang xem, mặc định = tháng hiện tại.
+  const [selectedExecutionMonth, setSelectedExecutionMonth] = useState(() => {
+    const now = new Date();
+    return { year: now.getFullYear(), month: now.getMonth() + 1 };
+  });
   const [outsourcing, setOutsourcing] = useState<ProjectDetailOutsourcing[]>([]);
   const [cashflow, setCashflow] = useState<ProjectDetailCashflowPoint[]>([]);
   const [cogsMonthly, setCogsMonthly] = useState<ProjectDetailCogsPoint[]>([]);
@@ -540,16 +563,20 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       setProgress(calculateProgressPlanCumulative(detail.progress));
       setMilestones(detail.milestones);
       {
-        const fixed = (["bidding", "execution"] as const).map(
-          (kind) => detail.costEstimation.find((e) => e.kind === kind) ?? { kind, contractAmount: null, costAmount: null },
-        );
-        const completions = detail.costEstimation
-          .filter((e) => e.kind === "completion")
-          .sort((a, b) => (a.year ?? 0) * 100 + (a.month ?? 0) - ((b.year ?? 0) * 100 + (b.month ?? 0)));
+        // Bidding chỉ có 1 dòng (nhập tay). Execution/Completion đến từ PIMSVINA sync và được lưu
+        // theo lịch sử nhiều tháng (unique key projectName+kind+year+month) — giữ TẤT CẢ các dòng ở
+        // đây để bảng "4. Cost Rate" cho chọn Base Month và xem lại dữ liệu từng tháng đã đồng bộ.
+        const bidding = detail.costEstimation.find((e) => e.kind === "bidding") ?? { kind: "bidding" as const, contractAmount: null, costAmount: null };
+        const sortByMonth = (a: ProjectDetailCostEstimation, b: ProjectDetailCostEstimation) =>
+          (a.year ?? 0) * 100 + (a.month ?? 0) - ((b.year ?? 0) * 100 + (b.month ?? 0));
+        const executions = detail.costEstimation.filter((e) => e.kind === "execution").sort(sortByMonth);
+        const completions = detail.costEstimation.filter((e) => e.kind === "completion").sort(sortByMonth);
         setCostEstimation([
-          ...fixed,
+          bidding,
+          ...(executions.length > 0 ? executions : [{ kind: "execution" as const, contractAmount: null, costAmount: null, year: null, month: null }]),
           ...(completions.length > 0 ? completions : [{ kind: "completion" as const, contractAmount: null, costAmount: null, year: null, month: null }]),
         ]);
+        setSelectedEstMonth({});
       }
       setCostBudget(
         FIXED_BUDGET_ITEMS.map((item) => {
@@ -618,8 +645,11 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       [...totals].map(([item, total]) => [item, hasAmount.has(item) ? total : null] as const),
     );
   };
-  const mergeOutsourcingActuals = (rows: ProjectDetailCostBudgetMonthly[]) => {
-    const { year, month } = getOutsourcingActualTarget();
+  const mergeOutsourcingActuals = (
+    rows: ProjectDetailCostBudgetMonthly[],
+    target: { year: number; month: number } = getOutsourcingActualTarget(),
+  ) => {
+    const { year, month } = target;
     const totals = getOutsourcingActualByItem();
     let merged = [...rows];
     totals.forEach((actual, item) => {
@@ -720,6 +750,39 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
     if (photoInputRef.current) photoInputRef.current.value = "";
   };
 
+  // 마일스톤 전용 Excel 다운로드/업로드 - PIMSVINA 동기화(근사치)를 대체해, 사용자가 직접 계획/실적
+  // 마일스톤을 일괄 입력할 수 있게 한다.
+  const handleMilestonesTemplateDownload = async () => {
+    if (milestonesExcelBusy) return;
+    setMilestonesExcelBusy(true);
+    setMilestonesExcelMsg(null);
+    try {
+      await downloadMilestonesTemplate(projectName, milestones);
+    } catch (err) {
+      console.error("Milestones template download failed", err);
+      setMilestonesExcelMsg(t("projectDataEntryTab:milestonesTemplateDownloadFailed"));
+    } finally {
+      setMilestonesExcelBusy(false);
+    }
+  };
+
+  const handleMilestonesExcelUpload = async (file: File) => {
+    if (milestonesExcelBusy) return;
+    setMilestonesExcelBusy(true);
+    setMilestonesExcelMsg(null);
+    try {
+      const parsed = await parseMilestonesWorkbook(file);
+      setMilestones(parsed);
+      setMilestonesExcelMsg(t("common:saveSucceeded"));
+    } catch (err) {
+      console.error("Milestones excel upload failed", err);
+      setMilestonesExcelMsg(err instanceof ExcelParseError ? err.message : t("projectDataEntryTab:milestonesUploadFailed"));
+    } finally {
+      setMilestonesExcelBusy(false);
+      if (milestonesExcelFileRef.current) milestonesExcelFileRef.current.value = "";
+    }
+  };
+
   useEffect(() => {
     let cancelled = false;
     setClosedSections(new Set());
@@ -763,6 +826,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
         return updated;
       });
       queryClient.invalidateQueries({ queryKey: getGetProjectdetailQueryKey({ projectName }) });
+      queryClient.invalidateQueries({ queryKey: ANY_PROJECT_LOCKED_QUERY_KEY });
     } catch {
       setCloseMsg(t("projectDataEntryTab:closeToggleFailed"));
     } finally {
@@ -816,13 +880,19 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
         seen.add(key);
       }
     }
+    // Bidding không có Base Month riêng trên UI — mỗi lần Save, ghi lại year/month theo đúng
+    // tháng hiện tại (ngày lưu), để biết Bidding này được ghi nhận/lưu vào lúc nào.
+    const now = new Date();
+    const estRowsWithBiddingMonth = estRows.map((e) =>
+      e.kind === "bidding" ? { ...e, year: now.getFullYear(), month: now.getMonth() + 1 } : e,
+    );
     const body: ProjectDetail = {
       projectName,
       unit: "천 USD",
       overview: { ...overview, slideshowIntervalSeconds },
       progress: progressRows,
       milestones: milestones.filter((m) => m.label.trim() !== ""),
-      costEstimation: estRows,
+      costEstimation: estRowsWithBiddingMonth,
       costBudget: costBudget.filter((c) => c.item.trim() !== ""),
       costBudgetMonthly: mergeOutsourcingActuals(costBudgetMonthly).filter((r) => r.plan != null || r.actual != null),
       outsourcing: outsourcing.filter((o) => o.trade.trim() !== ""),
@@ -1023,7 +1093,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
     });
 
   // 카드별 저장 버튼 + 마감 버튼 + 결과 메시지가 있는 섹션 헤더
-  const cardHead = (label: string, key: string) => (
+  const cardHead = (label: string, key: string, extra?: React.ReactNode) => (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
       <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
         <span style={sectionTitle}>{label}</span>
@@ -1049,6 +1119,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
         {closeMsg && (
           <span style={{ fontSize: "13px", color: ACHIEVE_RED }}>{closeMsg}</span>
         )}
+        {extra}
         {/* 마감 설정/해지 버튼 */}
         <button
           onClick={() => handleToggleClose(key)}
@@ -1232,50 +1303,90 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
     directBudget != null || indirectBudget != null || contingencyBudget != null
       ? (directBudget ?? 0) + (indirectBudget ?? 0) + (contingencyBudget ?? 0)
       : null;
-  const selectedBudgetCumulativeMonth = (() => {
-    const matched = /^(\d{4})-(\d{2})$/.exec(overview.asOfMonth ?? "");
-    if (matched && Number(matched[1]) === selectedMonthlyBudgetYear) {
-      return Number(matched[2]);
-    }
-    return 12;
-  })();
-  const cumulativeBudgetAmount = (
-    item: MonthlyBudgetItem | "Contingency",
-    field: "plan" | "actual",
-  ) => {
-    const values = mergeOutsourcingActuals(costBudgetMonthly)
-      .filter(
-        (row) =>
-          row.item === item &&
-          row.year === selectedMonthlyBudgetYear &&
-          row.month <= selectedBudgetCumulativeMonth,
-      )
-      .map((row) => row[field])
-      .filter((value): value is number => value != null);
-    return values.length > 0 ? values.reduce((sum, value) => sum + value, 0) : null;
+  // "Execution Actual" 표의 Monthly 컬럼 = dashboard_pd_costbudget_monthly_1q로 동기화된, 사용자가
+  // 선택한(selectedExecutionMonth, 기본값 = 오늘) 딱 그 1개월치 실적(VND 원본) — 외주(Outsourcing)/
+  // Contingency 포함. "Execution Plan" 표는 PIMS 소스가 없는 순수 수동 입력 — Monthly는 같은
+  // costBudgetMonthly.plan 필드를 그 달만 골라 쓰고(월별 계획/실적 상세 표와 같은 값, 천 USD 단위),
+  // Cumulative는 별도의 단일 스냅샷 값(pd_cost_budget.plan, VND 원본)을 그대로 입력받는다 — 월별
+  // 합산이 아니다.
+  const monthlyBudgetAmount = (item: string, field: "plan" | "actual") => {
+    const row = mergeOutsourcingActuals(costBudgetMonthly, selectedExecutionMonth).find(
+      (r) => r.item === item && r.year === selectedExecutionMonth.year && r.month === selectedExecutionMonth.month,
+    );
+    return row?.[field] ?? null;
   };
-  const outsourcingPlan = cumulativeBudgetAmount("외주성", "plan");
+  const setMonthlyBudgetPlan = (item: string, value: number | null) => {
+    const { year, month } = selectedExecutionMonth;
+    setCostBudgetMonthly((rows) => {
+      const idx = rows.findIndex((r) => r.item === item && r.year === year && r.month === month);
+      if (idx >= 0) {
+        const next = rows.slice();
+        next[idx] = { ...next[idx], plan: value };
+        return next;
+      }
+      return [...rows, { item, year, month, plan: value, actual: null }];
+    });
+  };
+  const planAmount = (item: string) => costBudget.find((row) => row.item === item)?.plan ?? null;
+  const setPlanAmount = (item: string, value: number | null) =>
+    setCostBudget((rows) => rows.map((row) => (row.item === item ? { ...row, plan: value } : row)));
+  const outsourcingMonthlyPlan = monthlyBudgetAmount("Outsourcing", "plan");
+  const outsourcingMonthlyActual = monthlyBudgetAmount("Outsourcing", "actual");
+  const outsourcingCumPlan = planAmount("Outsourcing");
   const outsourcingActual = actualAmount("Outsourcing");
-  const commonPlan = cumulativeBudgetAmount("Common", "plan");
+  const commonMonthlyPlan = monthlyBudgetAmount("Common", "plan");
+  const commonMonthlyActual = monthlyBudgetAmount("Common", "actual");
+  const commonCumPlan = planAmount("Common");
   const commonActual = actualAmount("Common");
-  const expense1Plan = cumulativeBudgetAmount("Expense 1", "plan");
+  const expense1MonthlyPlan = monthlyBudgetAmount("Expense 1", "plan");
+  const expense1MonthlyActual = monthlyBudgetAmount("Expense 1", "actual");
+  const expense1CumPlan = planAmount("Expense 1");
   const expense1Actual = actualAmount("Expense 1");
-  const expense2Plan = cumulativeBudgetAmount("Expense 2", "plan");
+  const expense2MonthlyPlan = monthlyBudgetAmount("Expense 2", "plan");
+  const expense2MonthlyActual = monthlyBudgetAmount("Expense 2", "actual");
+  const expense2CumPlan = planAmount("Expense 2");
   const expense2Actual = actualAmount("Expense 2");
-  const contingencyPlan = cumulativeBudgetAmount("Contingency", "plan");
+  const contingencyMonthlyPlan = monthlyBudgetAmount("Contingency", "plan");
+  const contingencyMonthlyActual = monthlyBudgetAmount("Contingency", "actual");
+  const contingencyCumPlan = planAmount("Contingency");
   const contingencyActual = actualAmount("Contingency");
   const sumNullable = (...values: Array<number | null>) =>
     values.some((value) => value != null)
       ? values.reduce<number>((sum, value) => sum + (value ?? 0), 0)
       : null;
-  const directPlan = sumNullable(outsourcingPlan, commonPlan, expense1Plan);
+  const directMonthlyPlan = sumNullable(outsourcingMonthlyPlan, commonMonthlyPlan, expense1MonthlyPlan);
+  const directMonthlyActual = sumNullable(outsourcingMonthlyActual, commonMonthlyActual, expense1MonthlyActual);
+  const directCumPlan = sumNullable(outsourcingCumPlan, commonCumPlan, expense1CumPlan);
   const directActual = sumNullable(outsourcingActual, commonActual, expense1Actual);
-  const totalPlan = sumNullable(directPlan, expense2Plan, contingencyPlan);
+  const totalMonthlyPlan = sumNullable(directMonthlyPlan, expense2MonthlyPlan, contingencyMonthlyPlan);
+  const totalMonthlyActual = sumNullable(directMonthlyActual, expense2MonthlyActual, contingencyMonthlyActual);
+  const totalCumPlan = sumNullable(directCumPlan, expense2CumPlan, contingencyCumPlan);
   const totalActual = sumNullable(directActual, expense2Actual, contingencyActual);
   const budgetHierarchyBlock = (
     sectionLabel: string,
     blockIndex: number,
-  ) => (
+    mode: "plan" | "actual",
+  ) => {
+    // "plan": PIMS 소스 없음 — Monthly/Cumulative 모두 수동 입력(각각 costBudgetMonthly.plan 그 달
+    // 값 / pd_cost_budget.plan 단일 스냅샷). "actual": dashboard_pd_costbudget_monthly_1q(Monthly)와
+    // dashboard_pd_costbudget_1q(Cumulative)로 동기화된 값, 읽기 전용, 둘 다 VND 원본.
+    const monthlyCell = (item: string, monthlyPlanValue: number | null, monthlyActualValue: number | null, dataCol: number, bold = false) =>
+      mode === "plan" ? (
+        <td style={tdCell}>
+          <VndInput valueKUsd={monthlyPlanValue} onChange={(v) => setMonthlyBudgetPlan(item, v)} data-row={blockIndex * 5 + dataCol} data-col={1} />
+        </td>
+      ) : (
+        <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: bold ? 700 : undefined }}>{fmtVnd(monthlyActualValue)}</td>
+      );
+    const cumulativeCell = (item: string, cumPlanValue: number | null, cumActualValue: number | null, dataCol: number, bold = false) =>
+      mode === "plan" ? (
+        <td style={tdCell}>
+          <VndRawInput valueVnd={cumPlanValue} onChange={(v) => setPlanAmount(item, v)} data-row={blockIndex * 5 + dataCol} data-col={2} />
+        </td>
+      ) : (
+        <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: bold ? 700 : undefined }}>{fmtVnd(cumActualValue)}</td>
+      );
+    return (
     <table
       key={sectionLabel}
       style={{
@@ -1301,62 +1412,63 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
           <td style={readOnlyCell} rowSpan={3}>Direct cost</td>
           <td style={readOnlyCell}>{t("projectDataEntryTab:outsourcingItem")}</td>
           <td style={tdCell}><VndRawInput valueVnd={budgetAmount("Outsourcing")} onChange={(value) => setBudgetAmount("Outsourcing", value)} data-row={blockIndex * 5} data-col={0} /></td>
-          <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtMoney(outsourcingPlan)}</td>
-          <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtVnd(outsourcingActual)}</td>
+          {monthlyCell("Outsourcing", outsourcingMonthlyPlan, outsourcingMonthlyActual, 0)}
+          {cumulativeCell("Outsourcing", outsourcingCumPlan, outsourcingActual, 0)}
         </tr>
         <tr>
           <td style={readOnlyCell}>Common</td>
           <td style={tdCell}><VndRawInput valueVnd={budgetAmount("Common")} onChange={(value) => setBudgetAmount("Common", value)} data-row={blockIndex * 5 + 1} data-col={0} /></td>
-          <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtMoney(commonPlan)}</td>
-          <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtVnd(commonActual)}</td>
+          {monthlyCell("Common", commonMonthlyPlan, commonMonthlyActual, 1)}
+          {cumulativeCell("Common", commonCumPlan, commonActual, 1)}
         </tr>
         <tr>
           <td style={readOnlyCell}>Expense 1</td>
           <td style={tdCell}><VndRawInput valueVnd={budgetAmount("Expense 1")} onChange={(value) => setBudgetAmount("Expense 1", value)} data-row={blockIndex * 5 + 2} data-col={0} /></td>
-          <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtMoney(expense1Plan)}</td>
-          <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtVnd(expense1Actual)}</td>
+          {monthlyCell("Expense 1", expense1MonthlyPlan, expense1MonthlyActual, 2)}
+          {cumulativeCell("Expense 1", expense1CumPlan, expense1Actual, 2)}
         </tr>
         <tr>
           <td style={{ ...readOnlyCell, textAlign: "center" }} colSpan={2}>{t("projectDataEntryTab:subtotal")}</td>
           <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtVnd(directBudget)}</td>
-          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtMoney(directPlan)}</td>
-          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtVnd(directActual)}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{mode === "plan" ? fmtMoney(directMonthlyPlan) : fmtVnd(directMonthlyActual)}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtVnd(mode === "plan" ? directCumPlan : directActual)}</td>
         </tr>
         <tr>
           <td style={readOnlyCell}>Indirect cost</td>
           <td style={readOnlyCell}>Expense 2</td>
           <td style={tdCell}><VndRawInput valueVnd={budgetAmount("Expense 2")} onChange={(value) => setBudgetAmount("Expense 2", value)} data-row={blockIndex * 5 + 3} data-col={0} /></td>
-          <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtMoney(expense2Plan)}</td>
-          <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtVnd(expense2Actual)}</td>
+          {monthlyCell("Expense 2", expense2MonthlyPlan, expense2MonthlyActual, 3)}
+          {cumulativeCell("Expense 2", expense2CumPlan, expense2Actual, 3)}
         </tr>
         <tr>
           <td style={{ ...readOnlyCell, textAlign: "center" }} colSpan={2}>{t("projectDataEntryTab:subtotal")}</td>
           <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtVnd(indirectBudget)}</td>
-          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtMoney(expense2Plan)}</td>
-          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtVnd(expense2Actual)}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{mode === "plan" ? fmtMoney(expense2MonthlyPlan) : fmtVnd(expense2MonthlyActual)}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtVnd(mode === "plan" ? expense2CumPlan : expense2Actual)}</td>
         </tr>
         <tr>
           <td style={readOnlyCell}>Contingency</td>
           <td style={readOnlyCell}>Contingency</td>
           <td style={tdCell}><VndRawInput valueVnd={budgetAmount("Contingency")} onChange={(value) => setBudgetAmount("Contingency", value)} data-row={blockIndex * 5 + 4} data-col={0} /></td>
-          <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtMoney(contingencyPlan)}</td>
-          <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtVnd(contingencyActual)}</td>
+          {monthlyCell("Contingency", contingencyMonthlyPlan, contingencyMonthlyActual, 4)}
+          {cumulativeCell("Contingency", contingencyCumPlan, contingencyActual, 4)}
         </tr>
         <tr>
           <td style={{ ...readOnlyCell, textAlign: "center" }} colSpan={2}>{t("projectDataEntryTab:subtotal")}</td>
           <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtVnd(contingencyBudget)}</td>
-          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtMoney(contingencyPlan)}</td>
-          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtVnd(contingencyActual)}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{mode === "plan" ? fmtMoney(contingencyMonthlyPlan) : fmtVnd(contingencyMonthlyActual)}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtVnd(mode === "plan" ? contingencyCumPlan : contingencyActual)}</td>
         </tr>
         <tr>
           <td style={{ ...readOnlyCell, textAlign: "center", fontWeight: 700 }} colSpan={2}>{t("common:total")}</td>
           <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtVnd(totalBudget)}</td>
-          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtMoney(totalPlan)}</td>
-          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtVnd(totalActual)}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{mode === "plan" ? fmtMoney(totalMonthlyPlan) : fmtVnd(totalMonthlyActual)}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtVnd(mode === "plan" ? totalCumPlan : totalActual)}</td>
         </tr>
       </tbody>
     </table>
-  );
+    );
+  };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -1514,7 +1626,9 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
           <tbody>
             <tr>
               <td style={tdCell}>
-                <VndInput valueKUsd={overview.contractAmount} onChange={(v) => setOverview((o) => ({ ...o, contractAmount: v }))} data-row={0} data-col={0} />
+                {/* overview.contractAmount는 이제 VND 원본 그대로 저장/동기화되므로(PIMSVINA sync
+                    참고) 천 USD 가정하는 VndInput이 아니라 VndRawInput을 써야 한다. */}
+                <VndRawInput valueVnd={overview.contractAmount} onChange={(v) => setOverview((o) => ({ ...o, contractAmount: v }))} data-row={0} data-col={0} />
               </td>
               <td style={tdCell}>
                 <input
@@ -1701,6 +1815,47 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       {/* 2. 마일스톤 */}
       <div style={cardStyle}>
         {cardHead(t("projectDataEntryTab:milestonesTitle"), "milestones")}
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", margin: "6px 0" }}>
+          {milestonesExcelMsg && (
+            <span style={{ fontSize: "12px", color: milestonesExcelMsg === t("common:saveSucceeded") ? SUCCESS_GREEN : ACHIEVE_RED }}>
+              {milestonesExcelMsg}
+            </span>
+          )}
+          <button
+            onClick={handleMilestonesTemplateDownload}
+            disabled={milestonesExcelBusy}
+            style={{
+              display: "inline-flex", alignItems: "center", gap: "5px",
+              padding: "4px 10px", fontSize: "11px", fontWeight: 600,
+              color: INK_NAVY, backgroundColor: "#fff", border: `1px solid ${BORDER_LIGHT}`, borderRadius: "4px",
+              cursor: milestonesExcelBusy ? "wait" : "pointer", opacity: milestonesExcelBusy ? 0.6 : 1,
+            }}
+          >
+            <FileSpreadsheet size={12} /> Excel {t("common:download")}
+          </button>
+          <button
+            onClick={() => milestonesExcelFileRef.current?.click()}
+            disabled={milestonesExcelBusy}
+            style={{
+              display: "inline-flex", alignItems: "center", gap: "5px",
+              padding: "4px 10px", fontSize: "11px", fontWeight: 600,
+              color: "#fff", backgroundColor: POINT_BLUE, border: "none", borderRadius: "4px",
+              cursor: milestonesExcelBusy ? "wait" : "pointer", opacity: milestonesExcelBusy ? 0.6 : 1,
+            }}
+          >
+            <Upload size={12} /> Excel {t("common:upload")}
+          </button>
+          <input
+            ref={milestonesExcelFileRef}
+            type="file"
+            accept=".xlsx"
+            style={{ display: "none" }}
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) void handleMilestonesExcelUpload(f);
+            }}
+          />
+        </div>
         <div data-tbl="milestones" onKeyDown={makeArrowNav("milestones")}>
         <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px" }}>
           <thead>
@@ -1847,7 +2002,9 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
           <tbody>
             <tr>
               <td style={tdCell}>
-                <VndInput valueKUsd={overview.contractAmount} onChange={(v) => setOverview((o) => ({ ...o, contractAmount: v }))} data-row={0} data-col={0} />
+                {/* overview.contractAmount는 이제 VND 원본 그대로 저장/동기화되므로(PIMSVINA sync
+                    참고) 천 USD 가정하는 VndInput이 아니라 VndRawInput을 써야 한다. */}
+                <VndRawInput valueVnd={overview.contractAmount} onChange={(v) => setOverview((o) => ({ ...o, contractAmount: v }))} data-row={0} data-col={0} />
               </td>
               <td style={tdCell}>
                 <DateInput value={overview.startDate} onChange={(v) => setOverview((o) => ({ ...o, startDate: v }))} />
@@ -1911,65 +2068,111 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
               <th style={th}>{t("common:baseMonth")}</th>
               <th style={th}>{t("projectDataEntryTab:contractAmountVnd")}</th>
               <th style={th}>{t("projectDataEntryTab:costVnd")}</th>
-              <th style={{ ...th, width: "30px" }}></th>
+              <th style={th}>{t("projectDataEntryTab:costRatioPercent")}</th>
             </tr>
           </thead>
           <tbody>
-            {costEstimation.map((e, i) => {
-              const isCompletion = e.kind === "completion";
-              const completionCount = costEstimation.filter((r) => r.kind === "completion").length;
-              return (
-                <tr key={`${e.kind}-${i}`}>
-                  <td style={{ ...tdCell, fontSize: "13px", padding: "5px 6px", color: INK_BODY }}>
-                    {t(`projectDataEntryTab:${EST_KINDS.find((k) => k.kind === e.kind)?.label ?? e.kind}`)}
-                  </td>
-                  <td style={{ ...tdCell, textAlign: "center" }}>
-                    {isCompletion ? (
-                      <input
-                        type="month"
-                        value={e.year != null && e.month != null ? `${e.year}-${String(e.month).padStart(2, "0")}` : ""}
-                        onChange={(ev) => {
-                          const v = ev.target.value;
-                          if (!v) {
-                            updateAt(setCostEstimation, i, { year: null, month: null });
-                          } else {
-                            const [y, m] = v.split("-");
-                            updateAt(setCostEstimation, i, { year: Number(y), month: Number(m) });
+            {(() => {
+              const monthKeyOf = (r: { year?: number | null; month?: number | null }) =>
+                r.year != null && r.month != null ? `${r.year}-${String(r.month).padStart(2, "0")}` : "";
+              const now = new Date();
+              const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+              return EST_KINDS.map((k) => {
+                const isCompletion = k.kind === "completion";
+                const isExecution = k.kind === "execution";
+                const i = costEstimation.findIndex((r) => r.kind === k.kind);
+                // Execution/Completion đến từ PIMSVINA sync và có thể có NHIỀU dòng lịch sử (1 dòng/
+                // tháng) — Base Month là ô nhập tháng năm tự do (mặc định = tháng năm hiện tại), chọn
+                // tháng nào thì hiển thị đúng dữ liệu lịch sử đã đồng bộ của tháng đó; nếu tháng đó
+                // chưa có dữ liệu thì hiển thị "-". Bidding chỉ có 1 dòng duy nhất (nhập tay), dùng
+                // `i`/costEstimation[i] như cũ.
+                let row: ProjectDetailCostEstimation;
+                let selectedKey = currentMonthKey;
+                if (isExecution || isCompletion) {
+                  const history = costEstimation.filter((r) => r.kind === k.kind);
+                  selectedKey = selectedEstMonth[k.kind] ?? currentMonthKey;
+                  row =
+                    history.find((r) => monthKeyOf(r) === selectedKey) ??
+                    { kind: k.kind, contractAmount: null, costAmount: null, year: null, month: null };
+                } else {
+                  row = i >= 0 ? costEstimation[i] : { kind: k.kind, contractAmount: null, costAmount: null, year: null, month: null };
+                }
+                const hasMonthData = row.year != null && row.month != null;
+                // Execution Budget Setup는 PIMSVINA 동기화 전용(읽기 전용) — 수동 편집이 저장 단위(천 USD)를
+                // 무시하고 화면 표시 통화 값을 그대로 저장해버리는 버그의 근원이었다(VndInput onBlur 수정으로
+                // 버그 자체는 고쳤지만, 애초에 동기화 대상 값은 수동 편집 불가로 막는다).
+                // Completion 행은 PIMSVINA settle-ratio 리포트에서 동기화된 값을 그대로 쓴다:
+                // Contract Amount는 항상 100 고정, Cost는 REC9(Gross Profit ratio, 예: 18.7)를 그대로
+                // 저장한 값 — VND 금액이 아니라 %(무차원) 값이므로 그냥 숫자 그대로 표시한다(fmtVnd 안 씀).
+                // Ratio(%) = Contract Amount - Cost (100 - REC9) = 실제 원가율(Cost Rate) — 예: REC9가
+                // 매출총이익률 18.7%라면 원가율은 그 나머지인 81.3%가 된다.
+                //
+                // Bidding/Execution의 Ratio(%)는 원가율(Cost/Contract*100) — Cost <= Contract인 정상
+                // 상황에서 항상 100% 이하로 나온다(Contract/Cost*100은 반대로 흑자일 때 100%를 넘어가
+                // 버려 "원가율"이라는 이름과 맞지 않았음).
+                const contractAmount = isCompletion ? (hasMonthData ? 100 : null) : row.contractAmount;
+                const costAmount = row.costAmount;
+                const ratioPct =
+                  isCompletion
+                    ? contractAmount != null && costAmount != null
+                      ? contractAmount - costAmount
+                      : null
+                    : contractAmount != null && costAmount != null && contractAmount !== 0
+                      ? (costAmount / contractAmount) * 100
+                      : null;
+                return (
+                  <tr key={k.kind}>
+                    <td style={{ ...tdCell, fontSize: "13px", padding: "5px 6px", color: INK_BODY }}>
+                      {t(`projectDataEntryTab:${k.label}`)}
+                    </td>
+                    <td style={{ ...tdCell, textAlign: "center" }}>
+                      {isCompletion || isExecution ? (
+                        <input
+                          type="month"
+                          value={selectedKey}
+                          onChange={(ev) =>
+                            setSelectedEstMonth((prev) => ({ ...prev, [k.kind]: ev.target.value || currentMonthKey }))
                           }
-                        }}
-                        style={{ fontSize: "13px", padding: "3px 4px", border: `1px solid ${BORDER_LIGHT}`, borderRadius: "3px" }}
-                      />
-                    ) : (
-                      <span style={{ fontSize: "12px", color: INK_MUTED }}>-</span>
-                    )}
-                  </td>
-                  <td style={tdCell}><VndInput valueKUsd={e.contractAmount} onChange={(v) => updateAt(setCostEstimation, i, { contractAmount: v })} data-row={i} data-col={0} /></td>
-                  <td style={tdCell}><VndInput valueKUsd={e.costAmount} onChange={(v) => updateAt(setCostEstimation, i, { costAmount: v })} data-row={i} data-col={1} /></td>
-                  <td style={{ ...tdCell, textAlign: "center" }}>
-                    {isCompletion && completionCount > 1 && (
-                      <button
-                        onClick={() => setCostEstimation((rows) => rows.filter((_, j) => j !== i))}
-                        style={{ border: "none", background: "none", cursor: "pointer", color: ACHIEVE_RED, padding: "2px" }}
-                        title={t("common:delete")}
-                      >
-                        <Trash2 size={12} />
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
+                          style={{ fontSize: "13px", padding: "3px 4px", border: `1px solid ${BORDER_LIGHT}`, borderRadius: "3px" }}
+                        />
+                      ) : (
+                        <span style={{ fontSize: "12px", color: INK_MUTED }}>-</span>
+                      )}
+                    </td>
+                    <td style={{ ...tdCell, textAlign: "right" }}>
+                      {isCompletion ? (
+                        <span style={{ fontSize: "13px", color: INK_BODY }}>{contractAmount ?? "-"}</span>
+                      ) : isExecution ? (
+                        // Execution Budget Setup được đồng bộ từ PIMSVINA, lưu ĐÚNG số VND gốc (không
+                        // quy đổi kUSD) — dùng fmtVnd() thay vì fmtMoney() để hiển thị đúng.
+                        <span style={{ fontSize: "13px", color: INK_MUTED }}>{fmtVnd(contractAmount)}</span>
+                      ) : (
+                        <VndInput forceFullAmount valueKUsd={row.contractAmount} onChange={(v) => (i >= 0 ? updateAt(setCostEstimation, i, { contractAmount: v }) : setCostEstimation((rows) => [...rows, { kind: k.kind, contractAmount: v, costAmount: null, year: null, month: null }]))} data-row={0} data-col={0} />
+                      )}
+                    </td>
+                    <td style={{ ...tdCell, textAlign: "right" }}>
+                      {isCompletion ? (
+                        // costAmount는 PIMSVINA REC9(매출총이익률, 예: 18.7) 원본 값 — VND 금액이
+                        // 아니라 %(무차원) 값이므로 fmtVnd() 없이 숫자 그대로 표시.
+                        <span style={{ fontSize: "13px", color: INK_MUTED }}>{costAmount != null ? costAmount.toLocaleString(undefined, { maximumFractionDigits: 2 }) : "-"}</span>
+                      ) : isExecution ? (
+                        <span style={{ fontSize: "13px", color: INK_MUTED }}>{fmtVnd(costAmount)}</span>
+                      ) : (
+                        <VndInput forceFullAmount valueKUsd={row.costAmount} onChange={(v) => (i >= 0 ? updateAt(setCostEstimation, i, { costAmount: v }) : setCostEstimation((rows) => [...rows, { kind: k.kind, contractAmount: null, costAmount: v, year: null, month: null }]))} data-row={0} data-col={1} />
+                      )}
+                    </td>
+                    <td style={{ ...tdCell, textAlign: "right" }}>
+                      <span style={{ fontSize: "13px", color: INK_MUTED }}>
+                        {ratioPct != null ? `${ratioPct.toLocaleString("en-US", { maximumFractionDigits: 1 })}%` : "-"}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              });
+            })()}
           </tbody>
         </table>
         </div>
-        <button
-          onClick={() =>
-            setCostEstimation((rows) => [...rows, { kind: "completion", contractAmount: null, costAmount: null, year: null, month: null }])
-          }
-          style={{ marginTop: "6px", display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "12px", color: POINT_BLUE, border: "1px dashed #9db6d8", borderRadius: "4px", padding: "3px 8px", background: "none", cursor: "pointer" }}
-        >
-          <Plus size={12} /> {t("projectDataEntryTab:addCompletionForecast")}
-        </button>
         <div style={{ fontSize: "12px", color: INK_MUTED, marginTop: "4px" }}>
           {t("projectDataEntryTab:costEstimationNote")}
         </div>
@@ -1985,13 +2188,36 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
 
       {/* 예산 집행 현황 */}
       <div style={cardStyle}>
-        {cardHead(service ? t("projectDataEntryTab:costBudgetTitleService") : t("projectDataEntryTab:costBudgetTitleConstruction"), "costBudget")}
+        {cardHead(
+          service ? t("projectDataEntryTab:costBudgetTitleService") : t("projectDataEntryTab:costBudgetTitleConstruction"),
+          "costBudget",
+          <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+            <select
+              value={selectedExecutionMonth.month}
+              onChange={(e) => setSelectedExecutionMonth((prev) => ({ ...prev, month: Number(e.target.value) }))}
+              style={{ fontSize: "13px", padding: "3px 4px", border: `1px solid ${BORDER_LIGHT}`, borderRadius: "3px" }}
+            >
+              {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+                <option key={m} value={m}>{t("projectDataEntryTab:monthSuffix", { month: m })}</option>
+              ))}
+            </select>
+            <select
+              value={selectedExecutionMonth.year}
+              onChange={(e) => setSelectedExecutionMonth((prev) => ({ ...prev, year: Number(e.target.value) }))}
+              style={{ fontSize: "13px", padding: "3px 4px", border: `1px solid ${BORDER_LIGHT}`, borderRadius: "3px" }}
+            >
+              {Array.from({ length: 5 }, (_, i) => REPORT_YEAR - 2 + i).map((y) => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+          </span>,
+        )}
         <div style={{ fontSize: "12px", color: INK_MUTED, marginTop: "4px" }}>
           {t("projectDataEntryTab:costBudgetNote")}
         </div>
         <div data-tbl="costBudget" onKeyDown={makeArrowNav("costBudget")}>
-          {budgetHierarchyBlock(t("projectDataEntryTab:executionPlan"), 0)}
-          {budgetHierarchyBlock(t("projectDataEntryTab:executionActual"), 1)}
+          {budgetHierarchyBlock(t("projectDataEntryTab:executionPlan"), 0, "plan")}
+          {budgetHierarchyBlock(t("projectDataEntryTab:executionActual"), 1, "actual")}
         </div>
 
         {/* 월별 계획/실적 */}
@@ -2041,7 +2267,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                   >
                     {MONTHLY_BUDGET_ITEMS.map((option) => (
                       <option key={option} value={option}>
-                        {option === "외주성" ? t("projectDataEntryTab:outsourcingItem") : option}
+                        {option === "Outsourcing" ? t("projectDataEntryTab:outsourcingItem") : option}
                       </option>
                     ))}
                   </select>
@@ -2081,7 +2307,9 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                       <tr key={month}>
                         <td style={{ ...tdCell, textAlign: "center", fontSize: "13px", color: INK_MUTED, padding: "3px 4px" }}>{t("projectDataEntryTab:monthSuffix", { month })}</td>
                         <td style={tdCell}><VndInput valueKUsd={getCbm(month, "plan")} onChange={(v) => setCbm(month, "plan", v)} data-row={month - 1} data-col={0} /></td>
-                        <td style={tdCell}><VndInput valueKUsd={getCbm(month, "actual")} onChange={(v) => setCbm(month, "actual", v)} data-row={month - 1} data-col={1} /></td>
+                        {/* actual: dashboard_pd_costbudget_monthly_1q가 VND 원본으로 동기화 — VndInput(천 USD 가정)이
+                            아니라 VndRawInput을 써야 한다. */}
+                        <td style={tdCell}><VndRawInput valueVnd={getCbm(month, "actual")} onChange={(v) => setCbm(month, "actual", v)} data-row={month - 1} data-col={1} /></td>
                       </tr>
                     ))}
                   </tbody>

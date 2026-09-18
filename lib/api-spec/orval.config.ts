@@ -29,6 +29,9 @@ export default defineConfig({
       baseUrl: "/api",
       clean: true,
       prettier: true,
+      // Path params (project names, item names, ...) can contain '/', spaces, or other
+      // characters that are unsafe in a URL path segment if interpolated raw — encode them.
+      urlEncodeParameters: true,
       override: {
         fetch: {
           includeHttpResponseReturnType: false,

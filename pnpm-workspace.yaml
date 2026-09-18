@@ -69,12 +69,6 @@ catalog:
 
 autoInstallPeers: false
 
-onlyBuiltDependencies:
-  - '@swc/core'
-  - esbuild
-  - msw
-  - unrs-resolver
-
 overrides:
   # replit uses linux-x64 only, we can exclude all other platforms
   "esbuild>@esbuild/darwin-arm64": "-"
@@ -157,6 +151,6 @@ overrides:
   esbuild: "0.27.3"
 
 allowBuilds:
-  core-js: set this to true or false
-  esbuild: set this to true or false
-  oracledb: set this to true or false
+  core-js: true
+  esbuild: true
+  oracledb: true

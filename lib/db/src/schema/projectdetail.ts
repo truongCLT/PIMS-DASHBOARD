@@ -24,7 +24,7 @@ export const pdOverviewTable = pgTable(
     projectName: text("project_name").notNull(),
     fldCode: text("fld_code"), // PIMSVINA site code (FLDCODE, e.g. 'VH10TC1')
     siteCode: text("site_code"), // PIMSVINA financial site code (ACNT_FLDCODE, via CBTB_FLD_MAPPING)
-    contractAmount: numeric("contract_amount", { precision: 24, scale: 8 }), // 도급액 (천 USD)
+    contractAmount: numeric("contract_amount", { precision: 24, scale: 8 }), // 도급액 (VND 원본 그대로 저장, 천 USD 아님 — 표시 시 UI에서 통화 변환)
     startDate: text("start_date"), // 공사 시작일 'YYYY-MM-DD'
     endDate: text("end_date"), // 공사 종료일 'YYYY-MM-DD'
     client: text("client"), // 발주처
@@ -131,10 +131,20 @@ export const pdCostEstimationTable = pgTable(
     id: serial("id").primaryKey(),
     projectName: text("project_name").notNull(),
     kind: text("kind").notNull(), // 'bidding' | 'execution' | 'completion'
-    contractAmount: numeric("contract_amount", { precision: 24, scale: 8 }), // 도급액 기준 (천 USD)
-    costAmount: numeric("cost_amount", { precision: 24, scale: 8 }), // 원가 (천 USD)
+    fldCode: text("fld_code"), // PIMSVINA site code (FLDCODE) — 'execution'/'completion'만 동기화 시 채워짐, 'bidding'(수동 입력)은 null
+    siteCode: text("site_code"), // PIMSVINA financial site code (ACNT_FLDCODE, via CBTB_FLD_MAPPING) — 위와 동일
+    // contractAmount/costAmount 단위는 kind에 따라 다르다: 'bidding'은 수동 입력(천 USD), 'execution'은
+    // PIMSVINA settle-ratio 리포트에서 동기화한 VND 원본 그대로(천 USD 아님), 'completion'은 Contract
+    // Amount=100 고정 + Cost는 Execution 값 기반 계산 결과(그래서 Execution과 같은 단위) — 표시는 UI에서
+    // kind별로 fmtMoney(천 USD)/fmtVnd(VND 원본)를 구분해서 사용한다.
+    contractAmount: numeric("contract_amount", { precision: 24, scale: 8 }),
+    costAmount: numeric("cost_amount", { precision: 24, scale: 8 }),
     year: integer("year"), // completion 월별 이력용 (bidding/execution 은 null)
     month: integer("month"), // 1..12
+    // completion 전용: PIMSVINA settle-ratio 리포트의 Gross Profit ratio(%)를 그대로 동기화한 값.
+    // Contract Amount가 100으로 고정되어 있으므로 화면의 Ratio(%) 계산식(Contract/Cost*100)을 그대로
+    // 적용하면 이 값과 일치하지 않아, Completion 행에서는 계산 대신 이 값을 직접 표시한다.
+    ratioPct: numeric("ratio_pct", { precision: 10, scale: 4 }),
   },
   (t) => [
     unique("pd_cost_estimation_uq")

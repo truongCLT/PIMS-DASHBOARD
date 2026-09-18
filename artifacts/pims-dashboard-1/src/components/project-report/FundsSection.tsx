@@ -26,14 +26,17 @@ interface Props {
 }
 
 export function FundsSection({ cashIn, cashOut, contractAmount, cumRev }: Props) {
-  const { fmtMoney, unitLabel } = useMoney();
+  const { fmtMoney, unitLabel, convertVndToKUsd } = useMoney();
+  // contractAmount đến từ pd_overview, lưu VND gốc — cashIn/cashOut/cumRev đều ở đơn vị 천 USD, nên
+  // phải quy đổi trước khi hiển thị chung bằng fmtMoney() (nếu không sẽ lệch đơn vị hoàn toàn).
+  const contractAmountKUsd = contractAmount != null ? convertVndToKUsd(contractAmount) : null;
 
   const outstanding = Math.max(0, cumRev - cashIn);
   const collectionRate = cumRev > 0 ? (cashIn / cumRev) * 100 : null;
   const hasFundData = cashIn !== 0 || cashOut !== 0;
 
   const items: Array<{ label: string; value: number | null; color: string }> = [
-    { label: "누계 매출", value: contractAmount, color: chartTheme.neutralGray },
+    { label: "누계 매출", value: contractAmountKUsd, color: chartTheme.neutralGray },
     { label: "누계 기성 (확정)", value: cumRev, color: chartTheme.neutralGray },
     { label: "수금 (실적)", value: cashIn, color: chartTheme.balanceNavy },
     { label: "미수금 (채권)", value: outstanding, color: chartTheme.outflowRed },

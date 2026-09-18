@@ -18,11 +18,9 @@ import {
   pdOutsourcingTable,
   pdCashflowMonthlyTable,
   pdCogsMonthlyTable,
-  pdSalesMonthlyTable,
   pdCostBudgetTable,
   pdCostBudgetMonthlyTable,
   pdCostEstimationTable,
-  pdMilestonesTable,
   fxRatesTable,
   companiesTable,
   divisionsTable,
@@ -53,7 +51,7 @@ const router: IRouter = Router();
 const MONTH_KEYS = Array.from({ length: 12 }, (_, i) => "m" + String(i + 1).padStart(2, "0"));
 
 /** 1단계: PIMSVINA의 모든 dashboard API를 조회만 하고 DB에는 아무것도 쓰지 않는다 (미리보기 팝업용). */
-async function fetchAllPimsvinaData() {
+export async function fetchAllPimsvinaData() {
   const [
     pdOverview,
     pdProgress,
@@ -62,10 +60,9 @@ async function fetchAllPimsvinaData() {
     pdTradeCostScopesResult,
     pdCashflow,
     pdCogs,
-    pdSales,
     pdCostBudget,
-    pdCostEstimation,
-    pdMilestones,
+    pdCostBudgetMonthlyResult,
+    costRateSettleRows,
   ] = await Promise.all([
     fetchPimsvinaApi("dashboard_pd_overview_1q.jsp"),
     fetchPimsvinaApi("dashboard_pd_progress_1q.jsp"),
@@ -74,15 +71,47 @@ async function fetchAllPimsvinaData() {
     fetchPimsvinaOracleQueryResult("dashboard_pd_trade_cost_scopes_1q.jsp"),
     fetchPimsvinaApi("dashboard_pd_cashflow_1q.jsp"),
     fetchPimsvinaApi("dashboard_pd_cogs_monthly_1q.jsp"),
-    fetchPimsvinaApi("dashboard_pd_sales_1q.jsp"),
     fetchPimsvinaApi("dashboard_pd_costbudget_1q.jsp"),
-    fetchPimsvinaApi("dashboard_pd_costestimation_1q.jsp"),
-    fetchPimsvinaApi("dashboard_pd_milestones_1q.jsp"),
+    fetchPimsvinaOracleQueryResult("dashboard_pd_costbudget_monthly_1q.jsp"),
+    fetchPimsvinaApi("dashboard_pd_costrate_settle_1q.jsp"),
   ]);
+  // "4. Cost Rate (Cost tab)" — Execution Budget Setup.Cost/Contract Amount và Estimated Completion
+  // Cost Rate.Ratio(%) không còn dùng giá trị Bold tĩnh (ZYA/ZZL, dashboard_pd_costestimation_1q.jsp —
+  // đã xoá hẳn) nữa, mà tính lại theo tháng hiện tại từ ch_cost_settle_ratio_q_1q.jsp (REC7 Business
+  // budget, REC9 Gross Profit ratio, REC13 Contract Amount) — phản ánh đúng tiến độ Cost Input thực tế
+  // thay vì chỉ là số ngân sách tĩnh tại lần duyệt gần nhất. Query này TỰ lấy danh sách FLDCODE từ
+  // CBTB_FLDSUMM (tất cả site, không giới hạn theo site đã có Execution Budget được duyệt như trước)
+  // và tính cho tất cả trong 1 lần gọi.
+  const pdCostEstimation = costRateSettleRows
+    .map((row: any) => {
+      const fldcode = String(row?.fldcode ?? "").trim();
+      if (!fldcode) return null;
+      // BUSINESS_BUDGET/CONTRACT_AMOUNT lưu ĐÚNG số VND gốc do query trả về, KHÔNG quy đổi qua RATE
+      // nữa (đã verify khớp 100% màn hình "Settlement ratio cost" thật) — UI tự quy đổi khi hiển thị
+      // (fmtVnd) và khi cần so sánh nội bộ với dữ liệu thiên USD khác (convertVndToKUsd). Gross Profit
+      // ratio là % không thứ nguyên nên không quy đổi.
+      return {
+        fldcode,
+        site_code: row.site_code ?? null,
+        project_name: row.project_name ?? null,
+        yymm: row.yymm ?? null,
+        cost_amount: row.business_budget != null ? Number(row.business_budget) : null,
+        contract_amount: row.contract_amount != null ? Number(row.contract_amount) : null,
+        ratio_pct: row.gross_profit_ratio != null ? Number(row.gross_profit_ratio) : null,
+      };
+    })
+    .filter((row): row is NonNullable<typeof row> => row != null);
   const pdTradeCostMonthlyRaw = pdTradeCostMonthlyResult.data;
   const pdTradeCostScopesRaw = pdTradeCostScopesResult.data;
   const tradeCostSnapshotComplete =
     pdTradeCostMonthlyResult.ok && pdTradeCostScopesResult.ok;
+  // "5. 예산 집행 현황" 월별 실적(Common/Expense 1/Expense 2/Contingency/Outsourcing) — trade cost
+  // (외주 세부 공종, 예: "외주 건축"/"외주 기계")와 다른 item 네임스페이스를 쓰므로 서로 겹치지 않지만,
+  // 같은 CHTB_PFMCOSTRMRK/BASEYYMM 스코프이므로 stale-row 판정에는 dashboard_pd_trade_cost_scopes_1q.jsp
+  // 결과를 그대로 재사용한다.
+  const pdCostBudgetMonthlyRaw = pdCostBudgetMonthlyResult.data;
+  const costBudgetMonthlySnapshotComplete =
+    pdCostBudgetMonthlyResult.ok && pdTradeCostScopesResult.ok;
   const projects = await db
     .select({
       name: mrProjectsTable.name,
@@ -244,17 +273,17 @@ async function fetchAllPimsvinaData() {
     ],
     pdCashflow,
     pdCogs,
-    pdSales,
     pdCostBudget,
+    pdCostBudgetMonthly: pdCostBudgetMonthlyRaw,
+    pdCostBudgetMonthlySyncStatus: [{ complete: costBudgetMonthlySnapshotComplete }],
     pdCostEstimation,
-    pdMilestones,
   };
 }
 
-type PimsvinaData = Awaited<ReturnType<typeof fetchAllPimsvinaData>>;
+export type PimsvinaData = Awaited<ReturnType<typeof fetchAllPimsvinaData>>;
 
 /** 2단계: 미리보기 팝업에서 "확인"을 누른 뒤, 조회해둔(또는 사용자가 그대로 넘긴) 데이터를 실제 DB에 반영한다. */
-async function applyPimsvinaData(fetched: PimsvinaData) {
+export async function applyPimsvinaData(fetched: PimsvinaData) {
   const pdOverview = fetched.pdOverview ?? [];
   const pdProgress = fetched.pdProgress ?? [];
   const pdOutsourcing = fetched.pdOutsourcing ?? [];
@@ -266,10 +295,9 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
     fetched.pdTradeCostSyncStatus?.[0]?.scopeQueryOk === true;
   const pdCashflow = fetched.pdCashflow ?? [];
   const pdCogs = fetched.pdCogs ?? [];
-  const pdSales = fetched.pdSales ?? [];
   const pdCostBudget = fetched.pdCostBudget ?? [];
+  const costBudgetMonthlySnapshotComplete = fetched.pdCostBudgetMonthlySyncStatus?.[0]?.complete === true;
   const pdCostEstimation = fetched.pdCostEstimation ?? [];
-  const pdMilestones = fetched.pdMilestones ?? [];
 
   const counts = {
     pdOverview: 0,
@@ -278,10 +306,9 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
     pdTradeCostMonthly: 0,
     pdCashflow: 0,
     pdCogs: 0,
-    pdSales: 0,
     pdCostBudget: 0,
+    pdCostBudgetMonthly: 0,
     pdCostEstimation: 0,
-    pdMilestones: 0,
     skipped: 0,
   };
   const skippedProjects = new Set<string>();
@@ -416,7 +443,9 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
           siteCode: item.site_code || existing.siteCode,
           // Contract Amount/Start/End Date: ghi đè trực tiếp giá trị PIMSVINA trả về (kể cả null),
           // không giữ lại giá trị cũ trong DB — theo yêu cầu bỏ hẳn phép tính dự phòng cho 3 trường này.
-          contractAmount: toK(item.contract_amount),
+          // contractAmount lưu ĐÚNG số VND gốc (không quy đổi kUSD qua toK()) — UI tự quy đổi khi hiển
+          // thị (fmtVnd) và khi cần so sánh nội bộ với các giá trị thiên USD khác (convertVndToKUsd).
+          contractAmount: item.contract_amount != null ? String(item.contract_amount) : null,
           startDate: item.start_date ?? null,
           endDate: item.end_date ?? null,
           client: item.client || existing.client,
@@ -434,7 +463,7 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
         projectName,
         fldCode: item.fldcode || null,
         siteCode: item.site_code || null,
-        contractAmount: item.contract_amount != null ? toK(item.contract_amount) : null,
+        contractAmount: item.contract_amount != null ? String(item.contract_amount) : null,
         startDate: item.start_date || null,
         endDate: item.end_date || null,
         client: item.client || null,
@@ -726,34 +755,9 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
     counts.pdCogs++;
   }
 
-  // 14. Sync Project Detail Sales Monthly (revenue plan/actual per project per month)
-  for (const item of fetched.pdSales) {
-    const projectName = await resolveProjectName(item);
-    const m = Number(item.month);
-    if (!projectName || !item.year || !item.month || isNaN(m) || m < 1 || m > 12) {
-      if (!projectName) trackSkipped(item);
-      continue;
-    }
-    const plan = item.plan != null ? String(item.plan) : null;
-    const actual = item.actual != null ? String(item.actual) : null;
-
-    await db
-      .insert(pdSalesMonthlyTable)
-      .values({
-        projectName,
-        fldCode: item.fldcode || null,
-        siteCode: item.site_code || null,
-        year: Number(item.year),
-        month: m,
-        plan,
-        actual,
-      })
-      .onConflictDoUpdate({
-        target: [pdSalesMonthlyTable.projectName, pdSalesMonthlyTable.year, pdSalesMonthlyTable.month],
-        set: { fldCode: item.fldcode || null, siteCode: item.site_code || null, plan, actual },
-      });
-    counts.pdSales++;
-  }
+  // Monthly Revenue(pd_sales_monthly)는 더 이상 PIMSVINA에서 동기화하지 않는다 - dashboard_pd_sales_1q.jsp가
+  // 항상 0건을 반환했고(CJTB_BUSPLAN_DETL/CJTB_SALESAMTRST 매칭 불가), 실제 값은 메인 경영현황판 Excel
+  // 업로드가 진짜 소스다. ProjectDataEntryTab의 salesMonthlyCard는 그 값을 그대로 쓴다.
 
   // 14. Sync Project Detail Cost Budget (no natural unique key -> full replace per project)
   const pdCostBudgetByProject = new Map<string, any[]>();
@@ -801,29 +805,127 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
     }
   }
 
+  // 14a. Sync Project Detail Cost Budget Monthly Actual (Common/Expense 1/Expense 2/Contingency/
+  // Outsourcing) — dashboard_pd_costbudget_monthly_1q.jsp가 VND 원본 그대로 준 실적을
+  // pdCostBudgetMonthlyTable.actual에 upsert한다(예전엔 kUSD로 환산했으나, "동기화 데이터는 VND 원본
+  // 저장, 화면에서만 통화 변환" 원칙에 맞춰 통일 — dashboard_pd_costbudget_1q.jsp의 ACTUAL과 동일 단위).
+  // Item 분류는 매 sync마다 고정이라 trade cost처럼 월 전체를 지웠다가 다시 넣을 필요가 없다 —
+  // (project, item, year, month) upsert만으로 충분하고, Plan은 건드리지 않는다(여전히 수동 입력 전용,
+  // 위 pdCostBudget 블록 주석 참고).
+  const COST_BUDGET_MONTHLY_ITEMS = ["Common", "Expense 1", "Expense 2", "Contingency", "Outsourcing"];
+  const costBudgetMonthlyUpdates = new Map<
+    string,
+    { projectName: string; item: string; year: number; month: number; actual: number }
+  >();
+  for (const item of fetched.pdCostBudgetMonthly) {
+    const projectName = await resolveProjectName(item);
+    const year = Number(item.year);
+    const month = Number(item.month);
+    const actualVnd = parsePimsvinaKusd(item.actual);
+    if (
+      !projectName ||
+      !COST_BUDGET_MONTHLY_ITEMS.includes(item.item) ||
+      !Number.isInteger(year) ||
+      !Number.isInteger(month) ||
+      month < 1 ||
+      month > 12 ||
+      actualVnd == null
+    ) {
+      if (!projectName) trackSkipped(item);
+      continue;
+    }
+    costBudgetMonthlyUpdates.set(
+      tradeCostKey({ projectName, item: item.item, year, month }),
+      { projectName, item: item.item, year, month, actual: actualVnd },
+    );
+  }
+  for (const update of costBudgetMonthlyUpdates.values()) {
+    await db
+      .insert(pdCostBudgetMonthlyTable)
+      .values({
+        projectName: update.projectName,
+        item: update.item,
+        year: update.year,
+        month: update.month,
+        actual: String(update.actual),
+        actualSource: "pimsvina",
+      })
+      .onConflictDoUpdate({
+        target: [
+          pdCostBudgetMonthlyTable.projectName,
+          pdCostBudgetMonthlyTable.item,
+          pdCostBudgetMonthlyTable.year,
+          pdCostBudgetMonthlyTable.month,
+        ],
+        set: { actual: String(update.actual), actualSource: "pimsvina" },
+      });
+    counts.pdCostBudgetMonthly++;
+  }
+  // dashboard_pd_trade_cost_scopes_1q.jsp를 그대로 재사용 (같은 CHTB_PFMCOSTRMRK/FLDCODE/YEAR 스코프) —
+  // item 목록만 COST_BUDGET_MONTHLY_ITEMS로 필터링해서, trade cost(외주 세부 공종)가 쓰는 같은 테이블의
+  // actualSource='pimsvina' 행을 잘못 지우지 않도록 한다.
+  const incomingCostBudgetMonthlyScopes = new Set(
+    pdTradeCostScopes
+      .map((row: any) => ({
+        projectName: resolveTradeProjectName(row),
+        year: Number(row.year),
+      }))
+      .filter(
+        (row): row is { projectName: string; year: number } =>
+          row.projectName != null && Number.isInteger(row.year),
+      )
+      .map((row) => tradeCostScope(row)),
+  );
+  const existingCostBudgetMonthlyRows = (
+    await db.select().from(pdCostBudgetMonthlyTable).where(eq(pdCostBudgetMonthlyTable.actualSource, "pimsvina"))
+  ).filter((row) => COST_BUDGET_MONTHLY_ITEMS.includes(row.item));
+  const staleCostBudgetMonthlyRows = findStalePimsvinaTradeCosts(
+    existingCostBudgetMonthlyRows,
+    new Set(costBudgetMonthlyUpdates.keys()),
+    incomingCostBudgetMonthlyScopes,
+    costBudgetMonthlySnapshotComplete,
+  );
+  for (const row of staleCostBudgetMonthlyRows) {
+    await db
+      .update(pdCostBudgetMonthlyTable)
+      .set({ actual: null, actualSource: null })
+      .where(eq(pdCostBudgetMonthlyTable.id, row.id));
+  }
+
   // 14b. Sync Project Detail Cost Estimation — CHỈ kind='execution' (Execution Budget Cost Rate).
-  // 'bidding' và 'completion' chưa có nguồn PIMS đã xác minh (xem MaTran_NguonDuLieu...v4.xlsx #12/#14),
-  // vẫn phải nhập tay qua Data Entry (PUT /projectdetail) — TUYỆT ĐỐI không đụng tới 2 kind đó ở đây,
-  // chỉ upsert đúng 1 dòng kind='execution' theo unique key (projectName, kind, year, month).
-  // BDGTAMT ở nguồn đã là USD gốc (không phải VND) nên quy đổi kUSD bằng cách chia 1000 trực tiếp,
-  // KHÔNG dùng toK() chung (toK() sẽ hiểu nhầm số USD lớn > 100 triệu thành VND và chia nhầm cho tỷ giá).
+  // 'bidding' chưa có nguồn PIMS đã xác minh (xem MaTran_NguonDuLieu...v4.xlsx #12/#14), vẫn phải
+  // nhập tay qua Data Entry (PUT /projectdetail) — TUYỆT ĐỐI không đụng tới kind đó ở đây.
+  // 'execution' và 'completion' đều được upsert theo unique key (projectName, kind, year, month) —
+  // mỗi tháng site có dữ liệu (target_mm_calc) tạo/ghi đè đúng 1 dòng lịch sử của tháng đó, KHÔNG xoá
+  // các dòng tháng khác đã có — nhờ vậy UI (mục "4. Cost Rate") có thể cho chọn Base Month để xem lại
+  // dữ liệu của từng tháng đã đồng bộ trước đó thay vì chỉ thấy tháng mới nhất.
+  // Lưu ĐÚNG số VND gốc từ pdCostEstimation (không quy đổi kUSD/chia 1000) — UI tự quy đổi khi hiển thị.
   for (const item of pdCostEstimation) {
     const projectName = await resolveProjectName(item);
     if (!projectName || item.cost_amount == null || item.contract_amount == null) {
       if (!projectName) trackSkipped(item);
       continue;
     }
-    const costAmountK = String(Number(item.cost_amount) / 1000);
-    const contractAmountK = String(Number(item.contract_amount) / 1000);
+    const costAmountVnd = String(Number(item.cost_amount));
+    const contractAmountVnd = String(Number(item.contract_amount));
+    const fldCode = item.fldcode || null;
+    const siteCode = item.site_code || null;
+    // Base Month = tháng mà dashboard_pd_costrate_settle_1q.jsp thực sự tính ra cho site này
+    // (target_mm_calc — tháng hiện tại, hoặc lùi về tháng gần nhất có dữ liệu Cost Input).
+    const yymm = typeof item.yymm === "string" ? item.yymm.trim() : null;
+    const execYear = yymm && /^\d{6}$/.test(yymm) ? Number(yymm.slice(0, 4)) : null;
+    const execMonth = yymm && /^\d{6}$/.test(yymm) ? Number(yymm.slice(4, 6)) : null;
     await db
       .insert(pdCostEstimationTable)
       .values({
         projectName,
         kind: "execution",
-        contractAmount: contractAmountK,
-        costAmount: costAmountK,
-        year: null,
-        month: null,
+        fldCode,
+        siteCode,
+        contractAmount: contractAmountVnd,
+        costAmount: costAmountVnd,
+        year: execYear,
+        month: execMonth,
       })
       .onConflictDoUpdate({
         target: [
@@ -832,72 +934,43 @@ async function applyPimsvinaData(fetched: PimsvinaData) {
           pdCostEstimationTable.year,
           pdCostEstimationTable.month,
         ],
-        set: { contractAmount: contractAmountK, costAmount: costAmountK },
+        set: { fldCode, siteCode, contractAmount: contractAmountVnd, costAmount: costAmountVnd },
       });
     counts.pdCostEstimation++;
+
+    // Estimated Completion Cost Rate: Contract Amount cố định = 100, Cost = REC9 (Gross Profit ratio,
+    // vd 18.7) đồng bộ thẳng — UI tự tính Ratio(%) = Contract Amount - Cost (100 - REC9). Dùng chung
+    // year/month với execution (cùng site, cùng target_mm_calc) để 2 dòng luôn khớp cùng 1 Base Month.
+    if (item.ratio_pct != null) {
+      const ratioPctStr = String(Number(item.ratio_pct));
+      await db
+        .insert(pdCostEstimationTable)
+        .values({
+          projectName,
+          kind: "completion",
+          fldCode,
+          siteCode,
+          contractAmount: "100",
+          costAmount: ratioPctStr,
+          year: execYear,
+          month: execMonth,
+          ratioPct: ratioPctStr,
+        })
+        .onConflictDoUpdate({
+          target: [
+            pdCostEstimationTable.projectName,
+            pdCostEstimationTable.kind,
+            pdCostEstimationTable.year,
+            pdCostEstimationTable.month,
+          ],
+          set: { fldCode, siteCode, contractAmount: "100", costAmount: ratioPctStr, ratioPct: ratioPctStr },
+        });
+    }
   }
 
-  // 15. Sync Project Milestones — CBTB_CONSTHISTORY(공사이력) 기반 근사치. APQP_WBS로 시도했으나 실제 DB에
-  // 없는 테이블로 확인되어 대체. 이 소스는 계획/실적 기간이 아니라 단일 이벤트 날짜라 planStart/planEnd는
-  // 항상 null, actualStart=actualEnd=해당 이벤트월로 채워짐 - 완전한 마일스톤 트래커는 아님(근사치).
-  // no natural unique key across syncs -> full replace per project (pd_outsourcing/pd_cost_budget와 동일 패턴)
-  const pdMilestonesByProject = new Map<string, any[]>();
-  for (const item of fetched.pdMilestones) {
-    const projectName = await resolveProjectName(item);
-    if (!projectName || !item.label) {
-      if (!projectName) trackSkipped(item);
-      continue;
-    }
-    if (!pdMilestonesByProject.has(projectName)) pdMilestonesByProject.set(projectName, []);
-    pdMilestonesByProject.get(projectName)!.push(item);
-  }
-  for (const [projectName, items] of pdMilestonesByProject) {
-    // planStart/planEnd KHÔNG có trong PIMS (JSP luôn trả null - xem comment dashboard_pd_milestones_1q.jsp)
-    // nhưng CÓ thể được nhập tay qua Data Entry (ProjectDataEntryTab -> PUT /projectdetail), kể cả milestone
-    // tự thêm hoàn toàn không khớp mốc nào trong Construction History PIMS. Vì bảng này bị xóa hết rồi insert
-    // lại mỗi lần sync, phải: (1) snapshot planStart/planEnd hiện có theo `label` để ghép lại vào dòng mới
-    // cùng label, và (2) giữ lại nguyên vẹn những dòng milestone nhập tay không có label nào khớp với dữ liệu
-    // PIMSVINA lần này - tránh sync xóa mất milestone tự thêm.
-    const existingRows = await db.select().from(pdMilestonesTable).where(eq(pdMilestonesTable.projectName, projectName));
-    const existingByLabel = new Map<string, (typeof existingRows)[number]>();
-    for (const r of existingRows) {
-      existingByLabel.set(r.label.trim().toLowerCase(), r);
-    }
-    const incomingLabels = new Set(items.map((item) => String(item.label).trim().toLowerCase()));
-
-    await db.delete(pdMilestonesTable).where(eq(pdMilestonesTable.projectName, projectName));
-    let sortOrder = 0;
-    for (const item of items) {
-      const existing = existingByLabel.get(String(item.label).trim().toLowerCase());
-      await db.insert(pdMilestonesTable).values({
-        projectName,
-        fldCode: item.fldcode || null,
-        siteCode: item.site_code || null,
-        label: item.label,
-        planStart: item.plan_start || existing?.planStart || null,
-        planEnd: item.plan_end || existing?.planEnd || null,
-        actualStart: item.actual_start || null,
-        actualEnd: item.actual_end || null,
-        sortOrder: sortOrder++,
-      });
-      counts.pdMilestones++;
-    }
-    for (const r of existingRows) {
-      if (incomingLabels.has(r.label.trim().toLowerCase())) continue;
-      await db.insert(pdMilestonesTable).values({
-        projectName,
-        fldCode: r.fldCode,
-        siteCode: r.siteCode,
-        label: r.label,
-        planStart: r.planStart,
-        planEnd: r.planEnd,
-        actualStart: r.actualStart,
-        actualEnd: r.actualEnd,
-        sortOrder: sortOrder++,
-      });
-      counts.pdMilestones++;
-    }
-  }
+  // Milestones는 더 이상 PIMSVINA에서 동기화하지 않는다 - CBTB_CONSTHISTORY 기반 근사치였고
+  // (Plan 없이 단일 이벤트 날짜만 제공) 신뢰할 수 있는 소스가 아니었다. 이제 ProjectDataEntryTab의
+  // 마일스톤 전용 Excel 업로드/다운로드(downloadMilestonesTemplate/parseMilestonesWorkbook)로 대체.
 
   return {
     ...counts,
@@ -920,34 +993,17 @@ router.post("/sync-pimsvina/preview", requireAdmin, async (_req, res) => {
   }
 });
 
-// 2단계: 확인 — 미리보기 화면에서 사용자가 검토한 데이터를 그대로 받아 DB에 반영한다.
-const PIMSVINA_DATA_KEYS = [
-  "pdOverview",
-  "pdProgress",
-  "pdOutsourcing",
-  "pdTradeCostMonthly",
-  "pdTradeCostScopes",
-  "pdTradeCostSyncStatus",
-  "pdCashflow",
-  "pdCogs",
-  "pdSales",
-  "pdCostBudget",
-  "pdMilestones",
-] as const;
-
-function isPimsvinaData(value: unknown): value is PimsvinaData {
-  if (value == null || typeof value !== "object") return false;
-  return PIMSVINA_DATA_KEYS.every((k) => Array.isArray((value as Record<string, unknown>)[k]));
-}
-
-router.post("/sync-pimsvina/confirm", requireAdmin, async (req, res) => {
-  const body = req.body as { data?: unknown } | null;
-  if (!isPimsvinaData(body?.data)) {
-    res.status(400).json({ success: false, error: "잘못된 요청 본문입니다." });
-    return;
-  }
+// 2단계: 확인 — 프리뷰에서 사용자가 검토한 화면과 같은 조회 로직을 서버에서 다시 실행해 DB에
+// 반영한다. 예전엔 프리뷰에서 받은 전체 데이터(수천 행)를 프론트가 그대로 다시 요청 본문에 담아
+// 보내야 했는데, 배포 환경(리버스 프록시 등)의 요청 본문 크기 제한에 걸려 실패하는 문제가 있었다 —
+// 서버가 알아서 재조회하면 confirm 요청 자체는 본문이 필요 없어지므로 이 문제가 사라진다. PIMSVINA
+// 데이터가 프리뷰 확인 시점과 confirm 클릭 시점 사이에 살짝 바뀔 수 있지만(수 분 내 변경은 드묾),
+// 프리뷰는 애초에 "대략 맞는지 눈으로 확인"하는 용도이지 그 스냅샷을 그대로 고정 저장하는 게
+// 목적이 아니므로 문제 없다.
+router.post("/sync-pimsvina/confirm", requireAdmin, async (_req, res) => {
   try {
-    const counts = await applyPimsvinaData(body.data);
+    const data = await fetchAllPimsvinaData();
+    const counts = await applyPimsvinaData(data);
     res.json({
       success: true,
       message: "Đồng bộ dữ liệu PIMSVINA thành công!",

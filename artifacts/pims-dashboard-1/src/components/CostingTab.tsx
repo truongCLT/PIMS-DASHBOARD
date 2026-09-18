@@ -233,20 +233,23 @@ export function CostingTab({
   toMonth: number;
 }) {
   const { t } = useTranslation(["costingTab", "common"]);
-  const { fmtMoney } = useMoney();
+  const { fmtMoney, fmtMoneyFull, fmtVnd } = useMoney();
   const { detail, isLoading } = useProjectDetail(projectName);
 
   const estimation = detail?.costEstimation ?? [];
-  // 준공추정(completion)은 월별 이력 중 조회 기간 마지막 월 이하의 가장 최근 값 사용
-  const completionRows = estimation.filter((e) => e.kind === "completion");
-  const datedCompletions = completionRows
-    .filter((e) => e.year != null && e.month != null)
-    .filter((e) => e.year! * 100 + e.month! <= toYear * 100 + toMonth)
-    .sort((a, b) => a.year! * 100 + a.month! - (b.year! * 100 + b.month!));
-  const pickedCompletion =
-    datedCompletions[datedCompletions.length - 1] ??
-    completionRows.find((e) => e.year == null || e.month == null) ??
-    null;
+  // Execution/Completion đến từ PIMSVINA sync và có thể có nhiều dòng lịch sử (1 dòng/tháng) — luôn
+  // lấy dòng của tháng MỚI NHẤT đã đồng bộ (giống mặc định của mục "4. Cost Rate" ở Data Entry), bỏ
+  // hẳn cutoff theo toYear/toMonth (cutoff đó chỉ hợp lý khi completion từng là dự báo nhập tay nhiều
+  // tháng tương lai; giờ đây completion chỉ phản ánh tình trạng hiện tại do PIMSVINA đồng bộ về).
+  const pickLatestByKind = (kind: "execution" | "completion") => {
+    const rows = estimation.filter((e) => e.kind === kind);
+    const dated = rows
+      .filter((e) => e.year != null && e.month != null)
+      .sort((a, b) => a.year! * 100 + a.month! - (b.year! * 100 + b.month!));
+    return dated[dated.length - 1] ?? rows.find((e) => e.year == null || e.month == null) ?? null;
+  };
+  const pickedExecution = pickLatestByKind("execution");
+  const pickedCompletion = pickLatestByKind("completion");
   const outsourcingRows = detail?.outsourcing ?? [];
   const outsourcingBudget = outsourcingRows.reduce((a, o) => a + (o.budget ?? 0), 0);
   const outsourcingPlan   = outsourcingRows.reduce((a, o) => a + (o.executedBudget ?? 0), 0);
@@ -318,10 +321,30 @@ export function CostingTab({
           >
             {EST_META.map((meta) => {
               const row =
-                meta.kind === "completion" ? pickedCompletion : estimation.find((e) => e.kind === meta.kind);
+                meta.kind === "completion"
+                  ? pickedCompletion
+                  : meta.kind === "execution"
+                    ? pickedExecution
+                    : estimation.find((e) => e.kind === meta.kind);
               const contract = row?.contractAmount ?? null;
               const cost = row?.costAmount ?? null;
-              const pct = ratioPct(cost, contract);
+              // Cùng công thức với mục "4. Cost Rate" (ProjectDataEntryTab): Completion Contract Amount
+              // luôn = 100, Cost = REC9 (Gross Profit ratio) đồng bộ về, Ratio(%) = Contract - Cost.
+              // Bidding/Execution dùng Cost/Contract*100 (nguyên tắc "원가율" — luôn <= 100% khi có lãi).
+              const pct =
+                meta.kind === "completion"
+                  ? contract != null && cost != null
+                    ? contract - cost
+                    : null
+                  : contract != null && cost != null && contract !== 0
+                    ? (cost / contract) * 100
+                    : null;
+              // execution은 VND 원본 그대로 저장되므로 fmtVnd(), bidding(수동 입력)은 천 USD 기준이므로
+              // fmtMoneyFull()을 쓴다(fmtVnd()처럼 Unit 토글에 상관없이 항상 전체 금액 — Unit 토글이
+              // "천 USD/Bil.VND"로 켜져 있으면 fmtMoney()는 소수점 있는 작은 숫자로 축약돼 옆의 execution
+              // 전체 자릿수 표시와 안 맞아 보임). completion의 cost는 금액이 아니라 REC9 원본(%) 숫자라서
+              // 통화 변환/포맷 없이 그대로 표시(fmtVnd로 나누면 통화 토글 시 완전히 엉뚱한 값이 나옴).
+              const fmtAmount = meta.kind === "bidding" ? fmtMoneyFull : fmtVnd;
               const baseMonth =
                 meta.kind === "completion" && row?.year != null && row?.month != null
                   ? t("costingTab:asOfBasis", {
@@ -331,7 +354,13 @@ export function CostingTab({
               return (
                 <div key={meta.kind} style={{ textAlign: "center" }}>
                   <div style={{ fontSize: "12px", color: INK_SECONDARY, marginBottom: "2px" }}>
-                    {cost != null || contract != null ? `${fmtMoney(cost)} / ${fmtMoney(contract)}` : "-"}
+                    {meta.kind === "completion"
+                      ? cost != null || contract != null
+                        ? `${cost ?? "-"} / ${contract ?? "-"}`
+                        : "-"
+                      : cost != null || contract != null
+                        ? `${fmtAmount(cost)} / ${fmtAmount(contract)}`
+                        : "-"}
                   </div>
                   <Donut percent={pct ?? 0} color={meta.color} size={150} stroke={16} centerLabel={fmtPct(pct)} />
                   <div style={{ fontSize: "13px", color: INK_NAVY, fontWeight: 600, marginTop: "4px" }}>

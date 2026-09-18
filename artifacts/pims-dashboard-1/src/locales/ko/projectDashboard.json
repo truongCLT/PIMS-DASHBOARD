@@ -1,5 +1,5 @@
 {
-  "syncDisabledLockedTooltip": "이 프로젝트는 잠겨(마감) 있습니다 — Data Entry에서 잠금 해제 후 PIMSVINA 동기화를 이용하세요.",
+  "syncDisabledLockedTooltip": "잠겨(마감) 있는 프로젝트가 하나라도 있어 PIMSVINA 동기화가 비활성화되었습니다 — 해당 프로젝트의 Data Entry에서 잠금을 해제한 후 동기화하세요.",
   "costing": "원가",
   "cashflow": "자금",
   "dataEntry": "데이터 입력",

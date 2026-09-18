@@ -20,9 +20,9 @@
   "table_pdTradeCostMonthly": "Trade Cost Reconciliation (Cost tab)",
   "table_pdCashflow": "Monthly Cash Flow (Cash Flow tab)",
   "table_pdCogs": "Monthly Cost of Revenue (Revenue tab)",
-  "table_pdSales": "Monthly Revenue (Revenue tab)",
   "table_pdCostBudget": "Cost Plan/Actual by Work Type (Cost tab)",
-  "table_pdMilestones": "Milestones (Progress tab)",
+  "table_pdCostBudgetMonthly": "Monthly Budget Execution Actual (Cost tab)",
+  "table_pdCostEstimation": "Execution Budget Cost Rate (Cost tab)",
   "table_fxRates": "FX Rates",
   "table_orgStructure": "Org Structure",
   "table_orgProjectLinks": "Project-Division Links",
@@ -50,18 +50,6 @@
   "col_pdProgress_plan_cum_pct": "Cumulative Plan (%)",
   "col_pdProgress_actual_cum_pct": "Cumulative Actual (%)",
 
-  "col_pdMilestones_label": "Item Name",
-  "col_pdMilestones_plan_start": "Plan Start",
-  "col_pdMilestones_plan_end": "Plan End",
-  "col_pdMilestones_actual_start": "Actual Start",
-  "col_pdMilestones_actual_end": "Actual End",
-
-  "col_pdSales_plan": "Revenue Plan",
-  "col_pdSales_actual": "Revenue Actual",
-  "col_pdSales_monthly_achievement_pct": "Monthly Achievement Rate (%)",
-  "col_pdSales_actual_ytd": "Cumulative Actual",
-  "col_pdSales_annual_plan_target": "Annual Revenue Plan",
-
   "col_pdCogs_acct_cogs": "Accounting COGS",
   "col_pdCogs_wip_cogs": "Executed COGS (WIP)",
   "col_pdCogs_cumulative_acct_cogs": "Cumulative Accounting COGS",
@@ -73,6 +61,14 @@
   "col_pdCostBudget_plan": "Plan",
   "col_pdCostBudget_actual": "Actual Total",
   "col_pdCostBudget_execution_rate": "Execution Rate (%)",
+
+  "col_pdCostBudgetMonthly_item": "Item",
+  "col_pdCostBudgetMonthly_actual": "Actual",
+
+  "col_pdCostEstimation_yymm": "Base Month",
+  "col_pdCostEstimation_contract_amount": "Contract Amount",
+  "col_pdCostEstimation_cost_amount": "Cost Amount",
+  "col_pdCostEstimation_ratio_pct": "Gross Profit Ratio (%)",
 
   "col_pdOutsourcing_trade_group": "Trade Group",
   "col_pdOutsourcing_trade": "Trade",

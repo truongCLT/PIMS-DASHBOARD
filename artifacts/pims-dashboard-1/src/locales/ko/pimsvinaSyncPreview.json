@@ -21,9 +21,9 @@
   "table_pdTradeCostMonthly": "외주비 실적 대사 (원가 탭)",
   "table_pdCashflow": "월별 자금 (자금 탭)",
   "table_pdCogs": "월별 매출원가 (매출 탭)",
-  "table_pdSales": "월별 매출 (매출 탭)",
   "table_pdCostBudget": "공정별 원가 계획/실적 (원가 탭)",
-  "table_pdMilestones": "마일스톤 (공정 탭)",
+  "table_pdCostBudgetMonthly": "월별 예산 집행 실적 (원가 탭)",
+  "table_pdCostEstimation": "실행예산 원가율 (원가 탭)",
   "table_fxRates": "환율",
   "table_orgStructure": "조직 구조",
   "table_orgProjectLinks": "프로젝트-부문 매핑",
@@ -51,18 +51,6 @@
   "col_pdProgress_plan_cum_pct": "누계 계획(%)",
   "col_pdProgress_actual_cum_pct": "누계 실적(%)",
 
-  "col_pdMilestones_label": "항목명",
-  "col_pdMilestones_plan_start": "계획 시작",
-  "col_pdMilestones_plan_end": "계획 종료",
-  "col_pdMilestones_actual_start": "실적 시작",
-  "col_pdMilestones_actual_end": "실적 종료",
-
-  "col_pdSales_plan": "매출 계획",
-  "col_pdSales_actual": "매출 실적",
-  "col_pdSales_monthly_achievement_pct": "월간 달성률 (%)",
-  "col_pdSales_actual_ytd": "누계 실적",
-  "col_pdSales_annual_plan_target": "연간 매출 계획",
-
   "col_pdCogs_acct_cogs": "회계 매출원가",
   "col_pdCogs_wip_cogs": "집행 매출원가 (WIP)",
   "col_pdCogs_cumulative_acct_cogs": "회계 매출원가 누계",
@@ -74,6 +62,14 @@
   "col_pdCostBudget_plan": "계획 Plan",
   "col_pdCostBudget_actual": "실적 합계",
   "col_pdCostBudget_execution_rate": "실행률 (%)",
+
+  "col_pdCostBudgetMonthly_item": "항목",
+  "col_pdCostBudgetMonthly_actual": "실적",
+
+  "col_pdCostEstimation_yymm": "기준월",
+  "col_pdCostEstimation_contract_amount": "계약금액",
+  "col_pdCostEstimation_cost_amount": "원가금액",
+  "col_pdCostEstimation_ratio_pct": "매출총이익률(%)",
 
   "col_pdOutsourcing_trade_group": "대공종",
   "col_pdOutsourcing_trade": "세부공종",

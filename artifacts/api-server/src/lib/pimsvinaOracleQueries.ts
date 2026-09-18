@@ -298,44 +298,6 @@ export const ORACLE_DASHBOARD_QUERIES: Record<string, OracleEndpointQuery> = {
     ORDER BY PROJECT_NAME, YEAR, MONTH`,
   },
 
-  "dashboard_pd_sales_1q.jsp": {
-    sql: `SELECT
-        NVL(P.FLDCODE, A.FLDCODE) AS FLDCODE,
-        (SELECT MAX(FM.ACNT_FLDCODE) FROM CBTB_FLD_MAPPING FM WHERE FM.FLDCODE = NVL(P.FLDCODE, A.FLDCODE)) AS SITE_CODE,
-        FUN_GET_FLDNAME(NVL(P.FLDCODE, A.FLDCODE)) AS PROJECT_NAME,
-        NVL(P.YEAR, A.YEAR) AS YEAR,
-        NVL(P.MONTH, A.MONTH) AS MONTH,
-        P.PLANAMT AS PLAN,
-        A.PROGSALESAMT AS ACTUAL,
-        ROUND(DECODE(P.PLANAMT, 0, 0, NVL(A.PROGSALESAMT, 0) / P.PLANAMT * 100), 2) AS MONTHLY_ACHIEVEMENT_PCT,
-        SUM(NVL(A.PROGSALESAMT, 0)) OVER (PARTITION BY NVL(P.FLDCODE, A.FLDCODE), NVL(P.YEAR, A.YEAR) ORDER BY NVL(P.MONTH, A.MONTH)) AS ACTUAL_YTD,
-        SUM(P.PLANAMT) OVER (PARTITION BY NVL(P.FLDCODE, A.FLDCODE), NVL(P.YEAR, A.YEAR)) AS ANNUAL_PLAN_TARGET,
-        ROUND(DECODE(SUM(P.PLANAMT) OVER (PARTITION BY NVL(P.FLDCODE, A.FLDCODE), NVL(P.YEAR, A.YEAR)), 0, 0,
-              SUM(NVL(A.PROGSALESAMT, 0)) OVER (PARTITION BY NVL(P.FLDCODE, A.FLDCODE), NVL(P.YEAR, A.YEAR) ORDER BY NVL(P.MONTH, A.MONTH))
-              / SUM(P.PLANAMT) OVER (PARTITION BY NVL(P.FLDCODE, A.FLDCODE), NVL(P.YEAR, A.YEAR)) * 100), 2) AS ANNUAL_TARGET_ACHIEVEMENT_PCT
-    FROM (
-        SELECT FLDCODE, BASEYY AS YEAR, MONTH, SUM(PLANAMT) AS PLANAMT
-        FROM (
-            SELECT PP.FLDCODE, PP.BASEYY,
-                   PP.PLAN1 AS M1, PP.PLAN2 AS M2, PP.PLAN3 AS M3, PP.PLAN4 AS M4,
-                   PP.PLAN5 AS M5, PP.PLAN6 AS M6, PP.PLAN7 AS M7, PP.PLAN8 AS M8,
-                   PP.PLAN9 AS M9, PP.PLAN10 AS M10, PP.PLAN11 AS M11, PP.PLAN12 AS M12
-            FROM CJTB_BUSPLAN_DETL PP
-        )
-        UNPIVOT (PLANAMT FOR MONTH IN (M1 AS 1, M2 AS 2, M3 AS 3, M4 AS 4, M5 AS 5, M6 AS 6,
-                                        M7 AS 7, M8 AS 8, M9 AS 9, M10 AS 10, M11 AS 11, M12 AS 12))
-        GROUP BY FLDCODE, BASEYY, MONTH
-    ) P
-    FULL OUTER JOIN (
-        SELECT FLDCODE, TO_NUMBER(SUBSTR(BASEYYMM, 1, 4)) AS YEAR,
-               TO_NUMBER(SUBSTR(BASEYYMM, 5, 2)) AS MONTH, PROGSALESAMT
-        FROM CJTB_SALESAMTRST
-    ) A
-      ON A.FLDCODE = P.FLDCODE AND A.YEAR = P.YEAR AND A.MONTH = P.MONTH
-    WHERE FUN_GET_FLDNAME(NVL(P.FLDCODE, A.FLDCODE)) IS NOT NULL
-    ORDER BY PROJECT_NAME, YEAR, MONTH`,
-  },
-
   "dashboard_pd_costbudget_1q.jsp": {
     // Công thức mới: BUDGET lấy từ CHTB_PFMCOSTRMRK.BDGTAMT (RMRKLVL=2, đã verify khớp màn hình "Cost Input
     // Status by Execution Details") của snapshot THÁNG GẦN NHẤT mỗi dự án; ACTUAL = luỹ kế COSTAMT từ tháng
@@ -408,39 +370,373 @@ export const ORACLE_DASHBOARD_QUERIES: Record<string, OracleEndpointQuery> = {
     ORDER BY PROJECT_NAME, SORT_ORDER`,
   },
 
-  "dashboard_pd_costestimation_1q.jsp": {
-    sql: `WITH EXEC_BUDGET_SEQ AS (
-        SELECT FLDCODE, MAX(PFMCHGSEQ) AS PFMCHGSEQ
-        FROM CDTB_PFMCHGSEQ
-        WHERE BDGTTYPECODE = '1' AND APPRSTSCODE = '40'
-        GROUP BY FLDCODE
+  "dashboard_pd_costbudget_monthly_1q.jsp": {
+    // Item 분류는 dashboard_pd_costbudget_1q.jsp와 완전히 동일하게 맞춘다(Contingency 포함, catch-all은
+    // 'Outsourcing') — 예전엔 Contingency를 NULL로 버리고 catch-all을 '외주성'으로 달리 써서 두 쿼리가
+    // 같은 원본 데이터를 놓고도 서로 다른 항목 집합을 내놓는 불일치가 있었다.
+    // 금액은 VND 원본 그대로 반환한다(예전엔 CHTB_EXCHANGE_RATIO로 나눠 천 USD로 환산했으나, 이 프로젝트는
+    // "동기화 데이터는 항상 VND 원본 저장, 화면에서만 통화 변환" 원칙으로 통일 — dashboard_pd_costbudget_1q.jsp
+    // 의 ACTUAL과 동일하게 무변환).
+    sql: `WITH CTE_RMRK AS (
+        SELECT A.FLDCODE, A.BASEYYMM, A.RMRKMGTNO, A.DETLNAME
+        FROM CHTB_PFMCOSTRMRK A
+        WHERE A.RMRKLVL = 2
+    ),
+    CTE_COST AS (
+        SELECT FLDCODE, BASEYYMM, RMRKMGTNO, SUM(NVL(COSTAMT, 0)) AS COSTAMT_MONTH
+        FROM CHTB_PFMCOSTRMRK
+        GROUP BY FLDCODE, BASEYYMM, RMRKMGTNO
+    ),
+    CTE_ITEM AS (
+        SELECT
+            A.FLDCODE,
+            A.BASEYYMM,
+            CASE
+                WHEN UPPER(A.DETLNAME) LIKE 'COMMON WORK%'  THEN 'Common'
+                WHEN UPPER(A.DETLNAME) LIKE 'EXPENSE I%' AND UPPER(A.DETLNAME) NOT LIKE 'EXPENSE II%' THEN 'Expense 1'
+                WHEN UPPER(A.DETLNAME) LIKE 'EXPENSE II%'   THEN 'Expense 2'
+                WHEN UPPER(A.DETLNAME) LIKE 'CONTINGENCY%'  THEN 'Contingency'
+                ELSE 'Outsourcing'
+            END AS ITEM,
+            C.COSTAMT_MONTH
+        FROM CTE_RMRK A
+        JOIN CTE_COST C ON C.FLDCODE = A.FLDCODE AND C.BASEYYMM = A.BASEYYMM AND C.RMRKMGTNO = A.RMRKMGTNO
+    ),
+    CTE_GROUPED AS (
+        SELECT FLDCODE, BASEYYMM, ITEM, SUM(COSTAMT_MONTH) AS COSTAMT_MONTH_SUM
+        FROM CTE_ITEM
+        GROUP BY FLDCODE, BASEYYMM, ITEM
     )
     SELECT
-        P.FLDCODE AS FLDCODE,
-        (SELECT MAX(FM.ACNT_FLDCODE) FROM CBTB_FLD_MAPPING FM WHERE FM.FLDCODE = P.FLDCODE) AS SITE_CODE,
-        FUN_GET_FLDNAME(P.FLDCODE) AS PROJECT_NAME,
-        MAX(CASE WHEN P.STNDCODE = 'ZYA' THEN P.BDGTAMT END) AS COST_AMOUNT,
-        MAX(CASE WHEN P.STNDCODE = 'ZZL' THEN P.BDGTAMT END) AS CONTRACT_AMOUNT
-    FROM CDTB_PFMSUM_VINA P
-    JOIN EXEC_BUDGET_SEQ S ON S.FLDCODE = P.FLDCODE AND S.PFMCHGSEQ = P.PFMCHGSEQ
-    WHERE P.CURCODE = 'USD' AND P.STNDCODE IN ('ZYA', 'ZZL')
-    GROUP BY P.FLDCODE
-    ORDER BY PROJECT_NAME`,
+        G.FLDCODE AS FLDCODE,
+        (SELECT MAX(FM.ACNT_FLDCODE) FROM CBTB_FLD_MAPPING FM WHERE FM.FLDCODE = G.FLDCODE) AS SITE_CODE,
+        FUN_GET_FLDNAME(G.FLDCODE) AS PROJECT_NAME,
+        TO_NUMBER(SUBSTR(G.BASEYYMM, 1, 4)) AS YEAR,
+        TO_NUMBER(SUBSTR(G.BASEYYMM, 5, 2)) AS MONTH,
+        G.ITEM AS ITEM,
+        ROUND(G.COSTAMT_MONTH_SUM, 2) AS ACTUAL
+    FROM CTE_GROUPED G
+    WHERE LENGTH(G.BASEYYMM) = 6
+    ORDER BY PROJECT_NAME, G.BASEYYMM, G.ITEM`,
   },
 
-  "dashboard_pd_milestones_1q.jsp": {
-    sql: `SELECT
-        H.FLDCODE                                         AS FLDCODE,
-        (SELECT MAX(FM.ACNT_FLDCODE) FROM CBTB_FLD_MAPPING FM WHERE FM.FLDCODE = H.FLDCODE) AS SITE_CODE,
-        FUN_GET_FLDNAME(H.FLDCODE)                        AS PROJECT_NAME,
-        FUN_GET_CA_REFFPF('37', H.HISTTYPEDVSCODE, 'KR')  AS LABEL,
-        CAST(NULL AS VARCHAR2(7))                         AS PLAN_START,
-        CAST(NULL AS VARCHAR2(7))                         AS PLAN_END,
-        CASE WHEN REGEXP_LIKE(H.HISTDATE, '^[0-9]{8}$') THEN SUBSTR(H.HISTDATE, 1, 4) || '-' || SUBSTR(H.HISTDATE, 5, 2) END AS ACTUAL_START,
-        CASE WHEN REGEXP_LIKE(H.HISTDATE, '^[0-9]{8}$') THEN SUBSTR(H.HISTDATE, 1, 4) || '-' || SUBSTR(H.HISTDATE, 5, 2) END AS ACTUAL_END,
-        ROW_NUMBER() OVER (PARTITION BY H.FLDCODE ORDER BY H.HISTDATE)          AS SORT_ORDER
-    FROM CBTB_CONSTHISTORY H
-    ORDER BY PROJECT_NAME, H.HISTDATE`,
+  "dashboard_pd_costrate_settle_1q.jsp": {
+    sql: `WITH
+  all_flds AS ( SELECT FLDCODE FROM CBTB_FLDSUMM ),
+  current_mm_calc AS ( SELECT TO_CHAR(SYSDATE,'YYYYMM') AS MM FROM DUAL ),
+  target_mm_calc AS (
+    SELECT af.FLDCODE, NVL(MAX(A.BASEYYMM), cmc.MM) AS MM
+    FROM all_flds af
+    CROSS JOIN current_mm_calc cmc
+    LEFT JOIN CHTB_PFMCOSTRMRK A ON A.FLDCODE = af.FLDCODE AND A.BASEYYMM <= cmc.MM
+    GROUP BY af.FLDCODE, cmc.MM
+  ),
+  rate_calc AS (
+    SELECT af.FLDCODE, NVL(MAX(c.RATEUSD),1) AS RATE
+    FROM all_flds af LEFT JOIN CBTB_CTRTSUMM c ON c.FLDCODE = af.FLDCODE
+    GROUP BY af.FLDCODE
+  ),
+  pfmchgseq_calc AS (
+    SELECT af.FLDCODE, NVL(MAX(CASE WHEN p.APPRSTSCODE='40' THEN p.PFMCHGSEQ END),0) AS SEQ
+    FROM all_flds af LEFT JOIN CDTB_PFMCHGSEQ p ON p.FLDCODE = af.FLDCODE
+    GROUP BY af.FLDCODE
+  ),
+  chain AS (
+    SELECT c.FLDCODE, c.PFMCHGSEQ AS SEQ,
+           CASE WHEN c.APPRSTSCODE='40' THEN SUBSTR(c.APPRDATE,1,6) ELSE SUBSTR(c.PFMCOMPDATE,1,6) END AS EFF_MM
+    FROM CDTB_PFMCHGSEQ c
+    JOIN pfmchgseq_calc pc ON pc.FLDCODE = c.FLDCODE AND c.PFMCHGSEQ <= pc.SEQ
+  ),
+  earliest_budget_month AS (
+    SELECT ch.FLDCODE, ch.EFF_MM
+    FROM chain ch
+    WHERE ch.SEQ = (SELECT MIN(c2.SEQ) FROM chain c2 WHERE c2.FLDCODE = ch.FLDCODE)
+  ),
+  opt_eff AS (
+    SELECT o.FLDCODE, o.PFMCHGSEQ AS SEQ, o.OPTCHGSEQ AS OPTKEY, SUBSTR(o.APPRDATE,1,6) AS EFF_MM
+    FROM CDTB_OPTCHGSEQ o
+    JOIN pfmchgseq_calc pc ON pc.FLDCODE = o.FLDCODE AND o.PFMCHGSEQ <= pc.SEQ
+    WHERE o.APPRSTSCODE = '40'
+  ),
+  cbs_root AS (
+    SELECT STNDCBSCODE, CONNECT_BY_ROOT STNDCBSCODE AS ROOTCODE FROM CATB_STNDCBS
+    START WITH UPPERCBSCODE = '-' CONNECT BY PRIOR STNDCBSCODE = UPPERCBSCODE
+  ),
+  bold_raw AS (
+    SELECT b.FLDCODE, b.STNDCODE, b.PFMCHGSEQ AS SEQ, NVL(b.BDGTAMT,0) AS AMT
+    FROM CDTB_PFMSUM_VINA b
+    JOIN pfmchgseq_calc pc ON pc.FLDCODE = b.FLDCODE AND b.PFMCHGSEQ <= pc.SEQ
+    WHERE b.CURCODE = 'VND'
+  ),
+  init_seq AS (
+    SELECT af.FLDCODE,
+      CASE WHEN af.FLDCODE = 'VH10TC1' AND EXISTS (
+                   SELECT 1 FROM CDTB_PFMCHGSEQ WHERE FLDCODE = af.FLDCODE AND PFMCHGSEQ = 1 AND APPRSTSCODE = '40'
+                 ) THEN 1 ELSE 0 END AS SRC_SEQ
+    FROM all_flds af
+  ),
+  bold_init AS (
+    SELECT b.FLDCODE, b.STNDCODE, NVL(b.INITAMT,0) AS INITAMT
+    FROM CDTB_PFMSUM_VINA b
+    JOIN init_seq s ON s.FLDCODE = b.FLDCODE AND b.PFMCHGSEQ = s.SRC_SEQ
+    WHERE b.CURCODE = 'VND'
+  ),
+  cbs_override AS (
+    SELECT af.FLDCODE,
+           CASE M.ROOTCODE WHEN 'A000000000000' THEN 'ZAA' WHEN 'C000000000000' THEN 'ZCA' ELSE 'ZBA' END AS STNDCODE,
+           SUM(D.BDGTAMT) AS AMT
+    FROM all_flds af, TABLE(FUN_GET_PFMRMRK(af.FLDCODE, 0, 0, '%', '%')) D
+    JOIN cbs_root M ON D.STNDCBSCODE = M.STNDCBSCODE
+    WHERE D.RMRKYN = 'Y' AND M.ROOTCODE IN ('A000000000000','B000000000000','C000000000000','H000000000000')
+    GROUP BY af.FLDCODE, CASE M.ROOTCODE WHEN 'A000000000000' THEN 'ZAA' WHEN 'C000000000000' THEN 'ZCA' ELSE 'ZBA' END
+  ),
+  bold_val AS (
+    SELECT FLDCODE, STNDCODE, SEQ, AMT FROM bold_raw WHERE SEQ <> 0
+    UNION ALL
+    SELECT sc.FLDCODE, sc.STNDCODE, 0 AS SEQ, COALESCE(co.AMT, bi.INITAMT, br0.AMT, 0) AS AMT
+    FROM (
+      SELECT FLDCODE, STNDCODE FROM bold_raw
+      UNION SELECT FLDCODE, STNDCODE FROM bold_init
+      UNION SELECT FLDCODE, STNDCODE FROM cbs_override
+    ) sc
+    LEFT JOIN cbs_override co ON co.FLDCODE = sc.FLDCODE AND co.STNDCODE = sc.STNDCODE
+    LEFT JOIN bold_init bi ON bi.FLDCODE = sc.FLDCODE AND bi.STNDCODE = sc.STNDCODE
+    LEFT JOIN bold_raw br0 ON br0.FLDCODE = sc.FLDCODE AND br0.STNDCODE = sc.STNDCODE AND br0.SEQ = 0
+  ),
+  chain_month_pick AS (
+    SELECT af.FLDCODE, cm.MM AS YYMM, c.SEQ,
+           ROW_NUMBER() OVER (PARTITION BY af.FLDCODE ORDER BY c.EFF_MM DESC, c.SEQ DESC) AS RN
+    FROM all_flds af
+    JOIN target_mm_calc cm ON cm.FLDCODE = af.FLDCODE
+    JOIN chain c ON c.FLDCODE = af.FLDCODE AND c.EFF_MM IS NOT NULL AND LENGTH(c.EFF_MM) = 6 AND c.EFF_MM <= cm.MM
+  ),
+  picked AS ( SELECT FLDCODE, YYMM, SEQ FROM chain_month_pick WHERE RN = 1 ),
+  bold_month AS (
+    SELECT sc.FLDCODE, sc.STNDCODE, cm.MM AS YYMM,
+      NVL((SELECT bv.AMT FROM bold_val bv WHERE bv.FLDCODE = sc.FLDCODE AND bv.STNDCODE = sc.STNDCODE AND bv.SEQ = p.SEQ), 0) AS VAL
+    FROM (SELECT DISTINCT FLDCODE, STNDCODE FROM bold_val) sc
+    JOIN target_mm_calc cm ON cm.FLDCODE = sc.FLDCODE
+    LEFT JOIN picked p ON p.FLDCODE = sc.FLDCODE
+  ),
+  child_raw AS (
+    SELECT A.FLDCODE, A.ORDCONTTYPECODE AS ORD, A.PFMCHGSEQ AS SEQ, NVL(A.OPTCHGSEQ,0) AS OPTKEY, M.ROOTCODE, SUM(A.BDGTAMT) AS AMT
+    FROM CDTB_PFMRMRK A
+    JOIN pfmchgseq_calc pc ON pc.FLDCODE = A.FLDCODE AND A.PFMCHGSEQ <= pc.SEQ
+    LEFT JOIN cbs_root M ON A.STNDCBSCODE = M.STNDCBSCODE
+    WHERE M.ROOTCODE IN ('A000000000000','B000000000000') AND A.ORDCONTTYPECODE IS NOT NULL
+    GROUP BY A.FLDCODE, A.ORDCONTTYPECODE, A.PFMCHGSEQ, NVL(A.OPTCHGSEQ,0), M.ROOTCODE
+  ),
+  child_sub AS ( SELECT FLDCODE, ORD, SEQ, OPTKEY, ROOTCODE, AMT FROM child_raw ),
+  child_meta AS ( SELECT FLDCODE, ORD, MAX(ROOTCODE) AS ROOTCODE FROM child_raw GROUP BY FLDCODE, ORD ),
+  child_sub_hasval AS (
+    SELECT FLDCODE, ORD, OPTKEY, MAX(CASE WHEN ABS(AMT) > 0.01 THEN 1 ELSE 0 END) AS HAS_VAL, MIN(SEQ) AS MIN_SEQ
+    FROM child_sub GROUP BY FLDCODE, ORD, OPTKEY
+  ),
+  child_sub_floor AS (
+    SELECT h.FLDCODE, h.ORD, h.OPTKEY, h.HAS_VAL, h.MIN_SEQ,
+      CASE WHEN h.OPTKEY <> 0 THEN oe.EFF_MM ELSE NULL END AS FLOOR_MONTH,
+      CASE WHEN h.OPTKEY <> 0 THEN CASE WHEN oe.EFF_MM IS NOT NULL THEN 1 ELSE 0 END ELSE 1 END AS INCLUDED
+    FROM child_sub_hasval h
+    LEFT JOIN opt_eff oe ON oe.FLDCODE = h.FLDCODE AND oe.SEQ = h.MIN_SEQ AND oe.OPTKEY = h.OPTKEY
+  ),
+  child_sub_floor2 AS (
+    SELECT f.FLDCODE, f.ORD, f.OPTKEY, f.HAS_VAL, f.MIN_SEQ, f.FLOOR_MONTH, f.INCLUDED,
+      CASE WHEN f.OPTKEY <> 0 THEN f.FLOOR_MONTH
+           ELSE (SELECT c.EFF_MM FROM chain c WHERE c.FLDCODE = f.FLDCODE AND c.SEQ = f.MIN_SEQ)
+      END AS SUBGROUP_FLOOR
+    FROM child_sub_floor f
+  ),
+  child_floor AS (
+    SELECT FLDCODE, ORD, MIN(SUBGROUP_FLOOR) AS CHILD_FLOOR_MONTH FROM child_sub_floor2
+    WHERE HAS_VAL = 1 AND INCLUDED = 1 AND SUBGROUP_FLOOR IS NOT NULL GROUP BY FLDCODE, ORD
+  ),
+  subgroup_month AS (
+    SELECT cs.FLDCODE, cs.ORD, cs.OPTKEY, cm.MM AS YYMM,
+      CASE WHEN f.FLOOR_MONTH IS NOT NULL AND cm.MM < f.FLOOR_MONTH THEN 0
+           ELSE NVL((SELECT cs2.AMT FROM child_sub cs2 WHERE cs2.FLDCODE = cs.FLDCODE AND cs2.ORD = cs.ORD AND cs2.OPTKEY = cs.OPTKEY AND cs2.SEQ = p.SEQ), 0)
+      END AS VAL
+    FROM (SELECT DISTINCT FLDCODE, ORD, OPTKEY FROM child_sub) cs
+    JOIN child_sub_floor2 f ON f.FLDCODE = cs.FLDCODE AND f.ORD = cs.ORD AND f.OPTKEY = cs.OPTKEY
+    JOIN target_mm_calc cm ON cm.FLDCODE = cs.FLDCODE
+    LEFT JOIN picked p ON p.FLDCODE = cs.FLDCODE
+    WHERE f.INCLUDED = 1
+  ),
+  budget_chain_vals AS ( SELECT FLDCODE, ORD, YYMM, SUM(VAL) AS VAL FROM subgroup_month GROUP BY FLDCODE, ORD, YYMM ),
+  cost_rmrk AS (
+    SELECT A.FLDCODE, A.ORDCONTTYPECODE AS ORD, A.BASEYYMM AS YYMM,
+      SUM(A.PFMAMT + (A.BDGTQTY - A.PFMQTY) * A.PFMUNITCOST) AS VAL,
+      CASE WHEN (SUM(NVL(A.PFMQTY,0)) > 0 OR SUM(NVL(A.PFMUNITCOST,0)) > 0) AND SUM(NVL(A.PFMAMT,0)) <> 0 THEN 1 ELSE 0 END AS HAS_DATA
+    FROM CHTB_PFMCOSTRMRK A
+    JOIN target_mm_calc cm ON cm.FLDCODE = A.FLDCODE
+    WHERE A.ORDCONTTYPECODE IS NOT NULL AND A.BASEYYMM <= cm.MM
+    GROUP BY A.FLDCODE, A.ORDCONTTYPECODE, A.BASEYYMM
+  ),
+  cost_rmrk_filtered AS (
+    SELECT cr.FLDCODE, cr.ORD, cr.YYMM, cr.VAL AS VAL
+    FROM cost_rmrk cr
+    WHERE cr.HAS_DATA = 1
+      AND cr.YYMM >= (SELECT EFF_MM FROM earliest_budget_month eb WHERE eb.FLDCODE = cr.FLDCODE)
+      AND cr.YYMM >= NVL((SELECT CHILD_FLOOR_MONTH FROM child_floor cf WHERE cf.FLDCODE = cr.FLDCODE AND cf.ORD = cr.ORD), '000000')
+  ),
+  cost_input_joined AS (
+    SELECT ord_list.FLDCODE, ord_list.ORD, cm.MM AS TARGET_MM, cr.VAL,
+      ROW_NUMBER() OVER (PARTITION BY ord_list.FLDCODE, ord_list.ORD ORDER BY cr.YYMM DESC) AS RN
+    FROM (SELECT DISTINCT FLDCODE, ORD FROM child_raw) ord_list
+    JOIN target_mm_calc cm ON cm.FLDCODE = ord_list.FLDCODE
+    LEFT JOIN cost_rmrk_filtered cr ON cr.FLDCODE = ord_list.FLDCODE AND cr.ORD = ord_list.ORD AND cr.YYMM <= cm.MM
+  ),
+  cost_input_vals AS ( SELECT FLDCODE, ORD, TARGET_MM AS YYMM, VAL AS COST_VAL FROM cost_input_joined WHERE RN = 1 ),
+  ipc_raw AS (
+    SELECT FLDCODE, ORDCONTTYPECODE AS ORD, YYMM, NVL(SUM(PRGSAMT),0) AS AMT
+    FROM CETB_PFMSCHDHIST GROUP BY FLDCODE, ORDCONTTYPECODE, YYMM
+  ),
+  ipc_conv AS ( SELECT FLDCODE, ORD, YYMM, AMT FROM ipc_raw ),
+  ipc_cumulative AS (
+    SELECT ord_list.FLDCODE, ord_list.ORD, cm.MM AS TARGET_MM, NVL(SUM(ic.AMT),0) AS RUNNING, COUNT(ic.YYMM) AS CNT
+    FROM (SELECT DISTINCT FLDCODE, ORD FROM ipc_raw) ord_list
+    JOIN target_mm_calc cm ON cm.FLDCODE = ord_list.FLDCODE
+    LEFT JOIN ipc_conv ic ON ic.FLDCODE = ord_list.FLDCODE AND ic.ORD = ord_list.ORD AND ic.YYMM <= cm.MM
+    GROUP BY ord_list.FLDCODE, ord_list.ORD, cm.MM
+  ),
+  contract_status AS (
+    SELECT A.FLDCODE, A.ORDCONTTYPECODE AS ORD, A.RQSTSTSCODE,
+      CASE WHEN A.RQSTSTSCODE = '900' THEN TO_CHAR(A.UPTDATE,'YYYYMM') ELSE NULL END AS SETTLE_MM
+    FROM CETB_PFMCTRTHIST A WHERE A.LASTYN = '1'
+  ),
+  ipc_final AS (
+    SELECT ic.FLDCODE, ic.ORD, ic.TARGET_MM AS YYMM,
+      CASE WHEN (ic.TARGET_MM >= (SELECT EFF_MM FROM earliest_budget_month eb WHERE eb.FLDCODE = ic.FLDCODE)
+                 AND ic.TARGET_MM >= NVL((SELECT CHILD_FLOOR_MONTH FROM child_floor cf WHERE cf.FLDCODE = ic.FLDCODE AND cf.ORD = ic.ORD),'000000')
+                 AND ic.CNT > 0)
+           THEN ic.RUNNING ELSE NULL END AS IPC_VAL
+    FROM ipc_cumulative ic
+  ),
+  child_months AS (
+    SELECT cr.FLDCODE, cr.ORD, cm2.ROOTCODE, cm.MM AS YYMM,
+      CASE
+        WHEN cs.RQSTSTSCODE = '900' AND EXISTS (SELECT 1 FROM ipc_raw ir WHERE ir.FLDCODE = cr.FLDCODE AND ir.ORD = cr.ORD)
+             AND (cs.SETTLE_MM IS NULL OR cm.MM >= cs.SETTLE_MM)
+          THEN NVL(ifn.IPC_VAL, NVL(bcv.VAL,0))
+        ELSE NVL(civ.COST_VAL, NVL(bcv.VAL,0))
+      END AS VAL,
+      NVL(bcv.VAL,0) AS BUDGET_VAL
+    FROM (SELECT DISTINCT FLDCODE, ORD FROM child_raw) cr
+    JOIN child_meta cm2 ON cm2.FLDCODE = cr.FLDCODE AND cm2.ORD = cr.ORD
+    JOIN target_mm_calc cm ON cm.FLDCODE = cr.FLDCODE
+    LEFT JOIN budget_chain_vals bcv ON bcv.FLDCODE = cr.FLDCODE AND bcv.ORD = cr.ORD AND bcv.YYMM = cm.MM
+    LEFT JOIN cost_input_vals civ ON civ.FLDCODE = cr.FLDCODE AND civ.ORD = cr.ORD AND civ.YYMM = cm.MM
+    LEFT JOIN ipc_final ifn ON ifn.FLDCODE = cr.FLDCODE AND ifn.ORD = cr.ORD AND ifn.YYMM = cm.MM
+    LEFT JOIN contract_status cs ON cs.FLDCODE = cr.FLDCODE AND cs.ORD = cr.ORD
+  ),
+  child_agg AS (
+    SELECT FLDCODE, ROOTCODE, YYMM, SUM(VAL) AS SUM_MONTH,
+      SUM(CASE WHEN ABS(VAL) > 0.01 THEN BUDGET_VAL ELSE 0 END) AS SUM_BUDGET_MONTH
+    FROM child_months GROUP BY FLDCODE, ROOTCODE, YYMM
+  ),
+  direct_other AS (
+    SELECT af.FLDCODE, cm.MM AS YYMM, NVL(bm.VAL,0) - NVL(ca.SUM_BUDGET_MONTH,0) AS OTHER_VAL
+    FROM all_flds af JOIN target_mm_calc cm ON cm.FLDCODE = af.FLDCODE
+    LEFT JOIN bold_month bm ON bm.FLDCODE=af.FLDCODE AND bm.STNDCODE='ZAA' AND bm.YYMM=cm.MM
+    LEFT JOIN child_agg ca ON ca.FLDCODE=af.FLDCODE AND ca.ROOTCODE='A000000000000' AND ca.YYMM=cm.MM
+  ),
+  indirect_other AS (
+    SELECT af.FLDCODE, cm.MM AS YYMM, NVL(bm.VAL,0) - NVL(ca.SUM_BUDGET_MONTH,0) AS OTHER_VAL
+    FROM all_flds af JOIN target_mm_calc cm ON cm.FLDCODE = af.FLDCODE
+    LEFT JOIN bold_month bm ON bm.FLDCODE=af.FLDCODE AND bm.STNDCODE='ZBA' AND bm.YYMM=cm.MM
+    LEFT JOIN child_agg ca ON ca.FLDCODE=af.FLDCODE AND ca.ROOTCODE='B000000000000' AND ca.YYMM=cm.MM
+  ),
+  direct_months AS (
+    SELECT do_.FLDCODE, do_.YYMM, NVL(ca.SUM_MONTH,0) + do_.OTHER_VAL AS VAL
+    FROM direct_other do_
+    LEFT JOIN child_agg ca ON ca.FLDCODE=do_.FLDCODE AND ca.ROOTCODE='A000000000000' AND ca.YYMM=do_.YYMM
+  ),
+  indirect_months AS (
+    SELECT io_.FLDCODE, io_.YYMM, NVL(ca.SUM_MONTH,0) + io_.OTHER_VAL AS VAL
+    FROM indirect_other io_
+    LEFT JOIN child_agg ca ON ca.FLDCODE=io_.FLDCODE AND ca.ROOTCODE='B000000000000' AND ca.YYMM=io_.YYMM
+  ),
+  contingency_months AS (
+    SELECT af.FLDCODE, cm.MM AS YYMM, NVL(bm.VAL,0) AS VAL
+    FROM all_flds af JOIN target_mm_calc cm ON cm.FLDCODE = af.FLDCODE
+    LEFT JOIN bold_month bm ON bm.FLDCODE=af.FLDCODE AND bm.STNDCODE='ZCA' AND bm.YYMM=cm.MM
+  ),
+  site_months AS (
+    SELECT dm.FLDCODE, dm.YYMM, dm.VAL + im.VAL + con.VAL AS VAL
+    FROM direct_months dm
+    JOIN indirect_months im ON im.FLDCODE=dm.FLDCODE AND im.YYMM=dm.YYMM
+    JOIN contingency_months con ON con.FLDCODE=dm.FLDCODE AND con.YYMM=dm.YYMM
+  ),
+  bsns_months AS (
+    SELECT af.FLDCODE, cm.MM AS YYMM, NVL(bm.VAL,0) AS VAL
+    FROM all_flds af JOIN target_mm_calc cm ON cm.FLDCODE = af.FLDCODE
+    LEFT JOIN bold_month bm ON bm.FLDCODE=af.FLDCODE AND bm.STNDCODE='ZZB' AND bm.YYMM=cm.MM
+  ),
+  dfct_months AS (
+    SELECT af.FLDCODE, cm.MM AS YYMM, NVL(bm.VAL,0) AS VAL
+    FROM all_flds af JOIN target_mm_calc cm ON cm.FLDCODE = af.FLDCODE
+    LEFT JOIN bold_month bm ON bm.FLDCODE=af.FLDCODE AND bm.STNDCODE='ZZD' AND bm.YYMM=cm.MM
+  ),
+  ovhd_months AS (
+    SELECT af.FLDCODE, cm.MM AS YYMM, NVL(bm.VAL,0) AS VAL
+    FROM all_flds af JOIN target_mm_calc cm ON cm.FLDCODE = af.FLDCODE
+    LEFT JOIN bold_month bm ON bm.FLDCODE=af.FLDCODE AND bm.STNDCODE='ZZG' AND bm.YYMM=cm.MM
+  ),
+  ctrt_months_raw AS (
+    SELECT af.FLDCODE, cm.MM AS YYMM, NVL(bm.VAL,0) AS VAL
+    FROM all_flds af JOIN target_mm_calc cm ON cm.FLDCODE = af.FLDCODE
+    LEFT JOIN bold_month bm ON bm.FLDCODE=af.FLDCODE AND bm.STNDCODE='ZZL' AND bm.YYMM=cm.MM
+  ),
+  site_info AS (
+    SELECT af.FLDCODE, NVL(MAX(F.FLDNAME),'') AS FLDNAME, NVL(MAX(C.TOTALCTRTWONAMT),0) AS TOTALCTRTWONAMT
+    FROM all_flds af
+    LEFT JOIN CBTB_FLDSUMM F ON F.FLDCODE = af.FLDCODE
+    LEFT JOIN CBTB_CTRTSUMM C ON C.FLDCODE=af.FLDCODE
+    GROUP BY af.FLDCODE
+  ),
+  fallback_calc AS (
+    SELECT FLDCODE, CASE WHEN UPPER(FLDNAME) LIKE '%INFRA%' THEN 1 ELSE 0 END AS IS_INFRA, TOTALCTRTWONAMT AS FALLBACK_AMT
+    FROM site_info
+  ),
+  bsns_bdg_months AS (
+    SELECT sm.FLDCODE, sm.YYMM, sm.VAL + bs.VAL + df.VAL AS VAL
+    FROM site_months sm
+    JOIN bsns_months bs ON bs.FLDCODE=sm.FLDCODE AND bs.YYMM=sm.YYMM
+    JOIN dfct_months df ON df.FLDCODE=sm.FLDCODE AND df.YYMM=sm.YYMM
+  ),
+  ctrt_months AS (
+    SELECT cr.FLDCODE, cr.YYMM,
+      CASE WHEN ABS(cr.VAL) < 0.01 THEN ROUND(CASE WHEN fc.IS_INFRA=1 THEN sm.VAL*1.1 ELSE fc.FALLBACK_AMT END, 2) ELSE cr.VAL END AS VAL
+    FROM ctrt_months_raw cr
+    JOIN site_months sm ON sm.FLDCODE=cr.FLDCODE AND sm.YYMM=cr.YYMM
+    JOIN fallback_calc fc ON fc.FLDCODE=cr.FLDCODE
+  ),
+  sale_months AS (
+    SELECT bb.FLDCODE, bb.YYMM, ct.VAL - bb.VAL AS VAL
+    FROM bsns_bdg_months bb JOIN ctrt_months ct ON ct.FLDCODE=bb.FLDCODE AND ct.YYMM=bb.YYMM
+  ),
+  gp_months AS (
+    SELECT ct.FLDCODE, ct.YYMM, CASE WHEN ct.VAL = 0 THEN 0 ELSE ROUND(sl.VAL/ct.VAL*100,2) END AS VAL
+    FROM ctrt_months ct JOIN sale_months sl ON sl.FLDCODE=ct.FLDCODE AND sl.YYMM=ct.YYMM
+  ),
+  tot_months AS (
+    SELECT bb.FLDCODE, bb.YYMM, bb.VAL + oh.VAL AS VAL
+    FROM bsns_bdg_months bb JOIN ovhd_months oh ON oh.FLDCODE=bb.FLDCODE AND oh.YYMM=bb.YYMM
+  )
+  SELECT
+    af.FLDCODE,
+    (SELECT MAX(FM.ACNT_FLDCODE) FROM CBTB_FLD_MAPPING FM WHERE FM.FLDCODE = af.FLDCODE) AS SITE_CODE,
+    FUN_GET_FLDNAME(af.FLDCODE) AS PROJECT_NAME,
+    cm.MM AS YYMM,
+    ROUND(bb.VAL,2) AS BUSINESS_BUDGET,
+    ROUND(ct.VAL,2) AS CONTRACT_AMOUNT,
+    ROUND(gp.VAL,2) AS GROSS_PROFIT_RATIO,
+    rc.RATE AS RATE
+  FROM all_flds af
+  JOIN target_mm_calc cm ON cm.FLDCODE = af.FLDCODE
+  JOIN bsns_bdg_months bb ON bb.FLDCODE = af.FLDCODE AND bb.YYMM = cm.MM
+  JOIN ctrt_months ct ON ct.FLDCODE = af.FLDCODE AND ct.YYMM = cm.MM
+  JOIN gp_months gp ON gp.FLDCODE = af.FLDCODE AND gp.YYMM = cm.MM
+  JOIN rate_calc rc ON rc.FLDCODE = af.FLDCODE`,
   },
 
   "dashboard_common_siterate_1q.jsp": {

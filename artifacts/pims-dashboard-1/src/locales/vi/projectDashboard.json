@@ -1,5 +1,5 @@
 {
-  "syncDisabledLockedTooltip": "Dự án này đang bị khóa (đã đóng) — mở khóa ở tab Data Entry trước khi đồng bộ PIMSVINA.",
+  "syncDisabledLockedTooltip": "Đồng bộ PIMSVINA đang bị vô hiệu hóa vì có ít nhất một dự án đang bị khóa (đã đóng) — mở khóa ở tab Data Entry của dự án đó trước khi đồng bộ.",
   "costing": "Chi phí",
   "cashflow": "Thu chi",
   "dataEntry": "Nhập dữ liệu",

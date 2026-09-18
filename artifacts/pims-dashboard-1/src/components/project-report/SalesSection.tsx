@@ -113,7 +113,10 @@ export function SalesSection({
   allSalesMonths,
   contractAmount,
 }: Props) {
-  const { fmtMoney, unitLabel } = useMoney();
+  const { fmtMoney, unitLabel, convertVndToKUsd } = useMoney();
+  // contractAmount đến từ pd_overview, lưu VND gốc — actualMonths/allSalesMonths đều ở đơn vị 천 USD,
+  // phải quy đổi trước khi so sánh/hiển thị chung (nếu không sẽ lệch đơn vị và tỷ lệ % sai hoàn toàn).
+  const contractAmountKUsd = contractAmount != null ? convertVndToKUsd(contractAmount) : null;
   const latestActualIdx = actualMonths.reduce<number>(
     (latest, value, index) => ((value ?? 0) !== 0 ? index : latest),
     -1,
@@ -179,7 +182,7 @@ export function SalesSection({
     sumValues(annualActualRows, "actual"),
   );
   const overallSummary = makeSummary(
-    contractAmount,
+    contractAmountKUsd,
     sumValues(overallActualRows, "actual"),
   );
 

@@ -17,10 +17,10 @@
     "build:fe:3": "cross-env PORT=5500 BASE_PATH=./ VITE_API_URL= dotenv -e .env -- npx pnpm --filter @workspace/pims-dashboard-3 build",
     "typecheck": "npx pnpm -r --if-present run typecheck",
     "typecheck:libs": "tsc -b lib/api-zod lib/api-client-react",
-    "validate:canonical-monthly": "vitest run artifacts/api-server/src/lib/canonicalProjectMonthly.test.ts",
-    "validate:order-roundtrip": "vitest run artifacts/api-server/src/lib/orderImport.test.ts",
-    "validate:order-isolation": "vitest run artifacts/api-server/src/lib/orderImportIsolation.test.ts",
-    "validate:pimsvina-trade-cost": "vitest run artifacts/api-server/src/lib/pimsvinaTradeCost.test.ts"
+    "validate:canonical-monthly": "dotenv -e .env -- vitest run artifacts/api-server/src/lib/canonicalProjectMonthly.test.ts",
+    "validate:order-roundtrip": "dotenv -e .env -- vitest run artifacts/api-server/src/lib/orderImport.test.ts",
+    "validate:order-isolation": "dotenv -e .env -- vitest run artifacts/api-server/src/lib/orderImportIsolation.test.ts",
+    "validate:pimsvina-trade-cost": "dotenv -e .env -- vitest run artifacts/api-server/src/lib/pimsvinaTradeCost.test.ts"
   },
   "private": true,
   "dependencies": {
