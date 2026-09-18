@@ -358,15 +358,15 @@ export const ORACLE_DASHBOARD_QUERIES: Record<string, OracleEndpointQuery> = {
             A.FLDCODE,
             A.BASEYYMM,
             CASE
-                WHEN A.DETLNAME = 'Common Work'  THEN 'Common'
-                WHEN A.DETLNAME = 'Expense I'    THEN 'Expense 1'
-                WHEN A.DETLNAME = 'Expense II'   THEN 'Expense 2'
-                WHEN A.DETLNAME = 'Contingency'  THEN 'Contingency'
+                WHEN UPPER(A.DETLNAME) LIKE 'COMMON WORK%'  THEN 'Common'
+                WHEN UPPER(A.DETLNAME) LIKE 'EXPENSE I%' AND UPPER(A.DETLNAME) NOT LIKE 'EXPENSE II%' THEN 'Expense 1'
+                WHEN UPPER(A.DETLNAME) LIKE 'EXPENSE II%'   THEN 'Expense 2'
+                WHEN UPPER(A.DETLNAME) LIKE 'CONTINGENCY%'  THEN 'Contingency'
                 ELSE 'Outsourcing'
             END AS ITEM,
             CASE
-                WHEN A.DETLNAME = 'Expense II'   THEN 'Indirect Cost'
-                WHEN A.DETLNAME = 'Contingency'  THEN 'Contingency'
+                WHEN UPPER(A.DETLNAME) LIKE 'EXPENSE II%'   THEN 'Indirect Cost'
+                WHEN UPPER(A.DETLNAME) LIKE 'CONTINGENCY%'  THEN 'Contingency'
                 ELSE 'Direct Cost'
             END AS CATEGORY,
             A.BDGTAMT,
@@ -409,11 +409,6 @@ export const ORACLE_DASHBOARD_QUERIES: Record<string, OracleEndpointQuery> = {
   },
 
   "dashboard_pd_costestimation_1q.jsp": {
-    // Cost Rate — CHỈ mục "Execution Budget" (실행예산원가율). Bidding và Estimated Completion chưa có
-    // nguồn PIMS đáng tin cậy đã xác minh (xem MaTran_NguonDuLieu_Dashboard_PIMS_DECV_v4.xlsx #12/#14) —
-    // vẫn giữ nhập tay. Nguồn: CDTB_PFMSUM_VINA join CDTB_PFMCHGSEQ lọc BDGTTYPECODE='1' (Execution
-    // Budget - xác minh qua COMPRSN/TITLE1/TITLE2 thực tế, khác '0'=Initial/Bidding và '2'=Change/test)
-    // và APPRSTSCODE='40' (đã duyệt), lấy PFMCHGSEQ mới nhất còn thoả điều kiện.
     sql: `WITH EXEC_BUDGET_SEQ AS (
         SELECT FLDCODE, MAX(PFMCHGSEQ) AS PFMCHGSEQ
         FROM CDTB_PFMCHGSEQ
