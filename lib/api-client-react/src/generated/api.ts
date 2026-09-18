@@ -194,7 +194,7 @@ export const getGetPublicObjectUrl = (filePath: string,) => {
 
 
 
-  return `/api/storage/public-objects/${filePath}`
+  return `/api/storage/public-objects/${encodeURIComponent(String(filePath))}`
 }
 
 /**
@@ -271,7 +271,7 @@ export const getGetStorageObjectUrl = (objectPath: string,) => {
 
 
 
-  return `/api/storage/objects/${objectPath}`
+  return `/api/storage/objects/${encodeURIComponent(String(objectPath))}`
 }
 
 /**
@@ -1024,7 +1024,7 @@ export const getUpdateMgmtreportProjectDivisionUrl = (name: string,) => {
 
 
 
-  return `/api/mgmtreport/projects/${name}/division`
+  return `/api/mgmtreport/projects/${encodeURIComponent(String(name))}/division`
 }
 
 /**
@@ -1096,7 +1096,7 @@ export const getUpdateMgmtreportCommentUrl = (id: number,) => {
 
 
 
-  return `/api/mgmtreport/comments/${id}`
+  return `/api/mgmtreport/comments/${encodeURIComponent(String(id))}`
 }
 
 /**
@@ -1168,7 +1168,7 @@ export const getDeleteMgmtreportCommentUrl = (id: number,) => {
 
 
 
-  return `/api/mgmtreport/comments/${id}`
+  return `/api/mgmtreport/comments/${encodeURIComponent(String(id))}`
 }
 
 /**
@@ -1620,7 +1620,7 @@ export const getUpdateProjectdetailCommentUrl = (id: number,) => {
 
 
 
-  return `/api/projectdetail/comments/${id}`
+  return `/api/projectdetail/comments/${encodeURIComponent(String(id))}`
 }
 
 /**
@@ -1692,7 +1692,7 @@ export const getDeleteProjectdetailCommentUrl = (id: number,) => {
 
 
 
-  return `/api/projectdetail/comments/${id}`
+  return `/api/projectdetail/comments/${encodeURIComponent(String(id))}`
 }
 
 /**

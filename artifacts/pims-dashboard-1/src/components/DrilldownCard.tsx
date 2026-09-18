@@ -55,9 +55,8 @@ export function DrilldownCard() {
 
   const month = derived?.month ?? Math.max(lastClosedMonth(), 1);
 
-  // 1. 수주 실적: corporate new_orders for the current month (fallback: cumulative)
+  // 1. 수주 실적: cumulative orders received to date (matches OrderStatus card's "Orders received")
   // (derived 값은 이미 선택된 통화·단위로 변환되어 있음)
-  const orderMonthActual = derived?.orderMonthActual ?? null;
   const orderCumActual = derived?.orderStatus?.ordered ?? null;
 
   // 2. 금월 주요 매출: top-3 projects by current-month actual revenue (groups excluded server-side)
@@ -121,13 +120,10 @@ export function DrilldownCard() {
             t("drilldownCard:error")
           ) : loading ? (
             "-"
-          ) : orderMonthActual != null && orderMonthActual !== 0 ? (
-            t("drilldownCard:currentMonthOrder", { value: fmtK(orderMonthActual) })
+          ) : orderCumActual != null && orderCumActual !== 0 ? (
+            <div>{fmtK(orderCumActual)}</div>
           ) : (
-            <>
-              <div style={{ color: "#6b7c94", fontWeight: 500, marginBottom: "3px" }}>{t("drilldownCard:noCurrentMonthOrder")}</div>
-              <div>{t("drilldownCard:cumulativeOrder", { value: orderCumActual != null ? fmtK(orderCumActual) : "-" })}</div>
-            </>
+            <div style={{ color: "#6b7c94", fontWeight: 500 }}>{t("drilldownCard:noCurrentMonthOrder")}</div>
           )}
         </div>
 

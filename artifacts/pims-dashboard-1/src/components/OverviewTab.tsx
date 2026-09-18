@@ -122,7 +122,7 @@ function timeElapsedPct(startDate: string | null, endDate: string | null): numbe
 export function OverviewTab({ projectName }: { projectName: string }) {
   const { t } = useTranslation(["overviewTab", "common"]);
   const { detail } = useProjectDetail(projectName);
-  const { fmtMoney, unitLabel } = useMoney();
+  const { fmtMoney, fmtVnd, convertVndToKUsd, unitLabel } = useMoney();
 
   // ---- 매출·원가 (서버 통합 월별 읽기 모델) ----
   const canonicalSales = (detail?.canonicalSalesMonthly ?? []).filter(
@@ -543,7 +543,10 @@ export function OverviewTab({ projectName }: { projectName: string }) {
 
                 {/* 누계 — 도급액 대비 */}
                 {(() => {
-                  const totalPct = ratioPct(cumRev, overview.contractAmount);
+                  // overview.contractAmount는 VND 원본 그대로 저장된 값(다른 통화로 변환하지 않음) —
+                  // cumRev(천 USD 기준)와 비율 계산하려면 먼저 천 USD로 환산해야 한다.
+                  const contractAmountKUsd = overview.contractAmount != null ? convertVndToKUsd(overview.contractAmount) : null;
+                  const totalPct = ratioPct(cumRev, contractAmountKUsd);
                   return (
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
                       <div style={{ marginTop: "-46px" }}>
@@ -562,7 +565,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
                       </div>
                       <div style={{ fontSize: "11px", color: INK_SECONDARY, marginTop: "2px", whiteSpace: "nowrap" }}>
                         {t("common:actual")} <b style={{ color: INK_NAVY }}>{fmtMoney(cumRev)}</b>
-                        {" / "}{t("common:contractAmount")} {fmtMoney(overview.contractAmount)}
+                        {" / "}{t("common:contractAmount")} {fmtVnd(overview.contractAmount)}
                       </div>
                     </div>
                   );
@@ -589,7 +592,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
             <div style={cardStyle}>
               <CardHeader
                 title={t("overviewTab:costRate")}
-                unit={overview.contractAmount != null ? t("overviewTab:contractBase", { amount: fmtMoney(overview.contractAmount) }) : "%"}
+                unit={overview.contractAmount != null ? t("overviewTab:contractBase", { amount: fmtVnd(overview.contractAmount) }) : "%"}
                 badgeValue={improve != null ? `${improve >= 0 ? "-" : "+"}${Math.abs(improve).toFixed(1)}%p` : undefined}
                 badgeLabel={improve != null ? t("overviewTab:vsBidding") : undefined}
                 badgeColor={improveColor}
@@ -787,7 +790,9 @@ export function OverviewTab({ projectName }: { projectName: string }) {
 
         {/* 자금 — 매출·확정·수금·채권 */}
         {(() => {
-          const revenue    = overview.contractAmount ?? 0; // 도급액 (매출)
+          // overview.contractAmount는 VND 원본 값 — confirmed/collection(천 USD 기준)과 같은 축에서
+          // 비교하려면 천 USD로 환산해야 한다.
+          const revenue    = overview.contractAmount != null ? convertVndToKUsd(overview.contractAmount) : 0; // 도급액 (매출)
           const confirmed  = cumRevFiltered;                // 누계 기성 매출 (확정 A)
           const collection = cashIn;                        // 실제 수금 (수금 B)
           const outstanding = Math.max(0, confirmed - collection); // 채권 (A-B)

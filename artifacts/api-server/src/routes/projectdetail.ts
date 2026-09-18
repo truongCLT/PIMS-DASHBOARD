@@ -267,6 +267,7 @@ async function loadDetail(projectName: string) {
       costAmount: num(c.costAmount),
       year: c.year,
       month: c.month,
+      ratioPct: num(c.ratioPct),
     })),
     costBudget: costBudget.map((c) => ({
       category: c.category,
@@ -536,6 +537,38 @@ router.get("/projectdetail/section-locks", async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "failed to get section close statuses");
     res.status(500).json({ error: "섹션별 마감 상태 조회에 실패했습니다." });
+  }
+});
+
+/**
+ * 잠긴(closed) 섹션이 시스템 전체에 하나라도 있는지 확인한다.
+ * PIMSVINA 동기화(수동 버튼 및 새벽 1시 자동 job)가 잠긴 데이터를 덮어쓰지 않도록,
+ * 하나라도 잠겨 있으면 동기화 전체를 막기 위한 용도로 사용한다.
+ */
+export async function isAnySectionLocked(): Promise<boolean> {
+  const [lockedSection] = await db
+    .select({ projectName: pdSectionLocksTable.projectName })
+    .from(pdSectionLocksTable)
+    .where(eq(pdSectionLocksTable.isClosed, 1))
+    .limit(1);
+  if (lockedSection) return true;
+
+  // Legacy projects that predate the section-lock table only have the old
+  // whole-project flag on pdOverviewTable.
+  const [closedOverview] = await db
+    .select({ projectName: pdOverviewTable.projectName })
+    .from(pdOverviewTable)
+    .where(eq(pdOverviewTable.isClosed, 1))
+    .limit(1);
+  return !!closedOverview;
+}
+
+router.get("/projectdetail/any-locked", async (_req, res) => {
+  try {
+    res.json({ anyLocked: await isAnySectionLocked() });
+  } catch (err) {
+    _req.log.error({ err }, "failed to check for any locked section");
+    res.status(500).json({ error: "잠금 상태 확인에 실패했습니다." });
   }
 });
 

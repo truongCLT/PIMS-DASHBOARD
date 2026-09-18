@@ -60,6 +60,20 @@ function toVnd(v: number | null | undefined, fxRateVnd: number): number | null {
   return v * fxRateVnd / 1_000_000;
 }
 
+/** VND 원본 값 → Bil.VND 변환 (환율 곱하지 않음 — 이미 VND이므로 1e9로만 나눔).
+ * pd_overview.contractAmount, pd_cost_estimation의 execution/completion.contractAmount처럼
+ * "천 USD"가 아니라 VND 원본 그대로 저장되는 필드용. */
+function toVndRaw(v: number | null | undefined): number | null {
+  if (v == null) return null;
+  return v / 1_000_000_000;
+}
+
+/** Bil.VND → VND 원본 값 역변환 (toVndRaw()의 반대) */
+function fromVndRaw(v: number | null): number | null {
+  if (v == null) return null;
+  return v * 1_000_000_000;
+}
+
 /** 데이터 입력용 Excel 양식 다운로드 (Bil.VND 단위, 현재 환율 적용) */
 export async function downloadProjectDetailTemplate(
   projectName: string,
@@ -135,7 +149,10 @@ export async function downloadProjectDetailTemplate(
       ["발주처", ov.client ?? null],
       ["착공일(YYYY-MM-DD)", ov.startDate ?? null],
       ["준공일(YYYY-MM-DD)", ov.endDate ?? null],
-      ["도급액(Bil.VND)", tv(ov.contractAmount)],
+      // 도급액은 VND 원본 그대로 저장되는 필드라서 tv()(천USD→BilVND, 환율 곱함)가 아니라
+      // toVndRaw()(이미 VND이므로 1e9로만 나눔)를 써야 한다 — tv()를 쓰면 환율을 한 번 더 곱해
+      // 값이 수만 배 부풀려진다.
+      ["도급액(Bil.VND)", toVndRaw(ov.contractAmount)],
       ["공사규모", ov.scale ?? null],
       ["위치", ov.location ?? null],
       ["대지면적", ov.siteArea ?? null],
@@ -177,7 +194,16 @@ export async function downloadProjectDetailTemplate(
   }
   addSheet(
     SHEETS.costEstimation,
-    detail.costEstimation.map((e) => [e.kind, e.year ?? null, e.month ?? null, tv(e.contractAmount), tv(e.costAmount)]),
+    detail.costEstimation.map((e) => {
+      // bidding은 수동 입력(천 USD 저장)이라 tv() 그대로. execution/completion은 PIMSVINA 동기화
+      // 전용 값 — contractAmount/costAmount가 VND 원본(또는 completion의 경우 REC9 원본 숫자)이라
+      // tv()를 쓰면 환율을 잘못 곱하게 된다. 두 kind 모두 동기화로만 갱신되므로 이 시트에는 참고용
+      // 스냅샷으로만 내보내고(단위 변환 없이 원본 숫자 그대로), 업로드로 되돌아와도 무시한다.
+      if (e.kind === "bidding") {
+        return [e.kind, e.year ?? null, e.month ?? null, tv(e.contractAmount), tv(e.costAmount)];
+      }
+      return [e.kind, e.year ?? null, e.month ?? null, e.contractAmount ?? null, e.costAmount ?? null];
+    }),
   );
   const costBudgetSheet = addSheet(
     SHEETS.costBudget,
@@ -370,7 +396,9 @@ export async function parseProjectDetailWorkbook(file: File, existing: ProjectDe
         client: cellStr(map.get("발주처")) ?? null,
         startDate: cellYmd(map.get("착공일")) ?? null,
         endDate: cellYmd(map.get("준공일")) ?? null,
-        contractAmount: fv(map.get("도급액")) ?? null,
+        // 도급액은 VND 원본 그대로 저장되므로 fv()(BilVND→천USD, 환율로 나눔)가 아니라
+        // fromVndRaw()(BilVND→VND, 1e9만 곱함)를 써야 한다.
+        contractAmount: fromVndRaw(cellNum(map.get("도급액"))) ?? null,
         scale: cellStr(map.get("공사규모")) ?? null,
       };
       const overviewTextFields = [
@@ -459,12 +487,15 @@ export async function parseProjectDetailWorkbook(file: File, existing: ProjectDe
         const kindRaw = (cellStr(r[0]) ?? "").toLowerCase();
         const kind = kindRaw.includes("bid") ? "bidding" : kindRaw.includes("exec") ? "execution" : kindRaw.includes("comp") ? "completion" : null;
         if (!kind) throw new ExcelParseError(`[${SHEETS.costEstimation}] ${i + 2}행: 구분은 bidding/execution/completion 중 하나여야 합니다.`);
+        // bidding만 수동 입력(천 USD 저장) — fv()로 BilVND→천USD 변환. execution/completion은
+        // PIMSVINA 동기화 전용 값(VND 원본/REC9 원본)이라 원본 숫자 그대로 읽는다(fv()를 쓰면 환율을
+        // 잘못 곱하게 됨). 이 시트에서 입력해도 다음 동기화 때 다시 덮어써진다.
         out.push({
           kind,
           year: cellInt(r[1]),
           month: cellInt(r[2]),
-          contractAmount: fv(r[3]),
-          costAmount: fv(r[4]),
+          contractAmount: kind === "bidding" ? fv(r[3]) : cellNum(r[3]),
+          costAmount: kind === "bidding" ? fv(r[4]) : cellNum(r[4]),
         });
       });
       // 준공 전망(completion) 검증: 기준월 중복 / 기준월 없는 행 다중 입력 방지 (데이터 입력 화면과 동일 규칙)
@@ -653,4 +684,75 @@ export async function parseProjectDetailWorkbook(file: File, existing: ProjectDe
   }
 
   return result;
+}
+
+// ---------- 마일스톤 전용 (섹션 단위 다운로드/업로드) ----------
+// PIMSVINA 동기화가 제공하던 근사치(CBTB_CONSTHISTORY 기반, Plan 없이 단일 이벤트 날짜만 존재)를
+// 대체한다 - 사용자가 직접 계획/실적 마일스톤을 Excel로 일괄 입력할 수 있도록, 전체 프로젝트
+// 데이터 입력 양식(downloadProjectDetailTemplate)과 별도로 마일스톤 시트 하나만 다루는 경량 버전.
+
+/** 마일스톤 전용 Excel 양식 다운로드 (날짜만 다루므로 환율 변환 불필요) */
+export async function downloadMilestonesTemplate(
+  projectName: string,
+  milestones: ProjectDetailMilestone[],
+): Promise<void> {
+  const ExcelJS = (await import("exceljs")).default;
+  const wb = new ExcelJS.Workbook();
+  wb.created = new Date();
+
+  const ws = wb.addWorksheet(SHEETS.milestones);
+  const header = HEADERS[SHEETS.milestones];
+  const hr = ws.addRow(header);
+  hr.eachCell((cell) => {
+    cell.font = { bold: true, color: { argb: "FFFFFFFF" }, size: 10 };
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF2E3C50" } };
+    cell.alignment = { horizontal: "center", vertical: "middle" };
+  });
+  for (const m of milestones) {
+    ws.addRow([m.label, m.planStart ?? null, m.planEnd ?? null, m.actualStart ?? null, m.actualEnd ?? null]);
+  }
+  ws.columns.forEach((col) => {
+    col.width = 20;
+  });
+
+  const buf = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${projectName}_마일스톤_양식_${new Date().toISOString().slice(0, 10)}.xlsx`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+/** 마일스톤 전용 Excel 업로드 파싱 - 시트 하나만 읽으므로 첫 번째 워크시트를 그대로 사용한다. */
+export async function parseMilestonesWorkbook(file: File): Promise<ProjectDetailMilestone[]> {
+  const ExcelJS = (await import("exceljs")).default;
+  const wb = new ExcelJS.Workbook();
+  await wb.xlsx.load(await file.arrayBuffer());
+
+  const ws = wb.worksheets[0];
+  if (!ws) throw new ExcelParseError(`[${SHEETS.milestones}] 워크시트를 찾을 수 없습니다.`);
+
+  const out: ProjectDetailMilestone[] = [];
+  let rowIdx = 0;
+  ws.eachRow({ includeEmpty: false }, (row, idx) => {
+    if (idx === 1) return; // header
+    rowIdx++;
+    const vals: unknown[] = [];
+    for (let c = 1; c <= 5; c++) vals.push(row.getCell(c).value);
+    if (!vals.some((v) => cellStr(v) != null || cellNum(v) != null)) return;
+    const label = cellStr(vals[0]);
+    if (!label) throw new ExcelParseError(`[${SHEETS.milestones}] ${idx}행: 구분(이름)이 비어 있습니다.`);
+    out.push({
+      label,
+      planStart: cellYmd(vals[1]),
+      planEnd: cellYmd(vals[2]),
+      actualStart: cellYmd(vals[3]),
+      actualEnd: cellYmd(vals[4]),
+    });
+  });
+  if (rowIdx === 0) throw new ExcelParseError(`[${SHEETS.milestones}] 입력된 행이 없습니다.`);
+
+  return out;
 }

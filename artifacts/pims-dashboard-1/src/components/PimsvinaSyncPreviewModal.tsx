@@ -10,16 +10,26 @@ export type PimsvinaPreviewData = Record<string, Array<Record<string, unknown>>>
 export const PIMSVINA_TABLE_KEYS = [
   "pdOverview",
   "pdProgress",
-  "pdMilestones",
-  "pdSales",
   "pdCogs",
   "pdCostBudget",
+  "pdCostBudgetMonthly",
+  "pdCostEstimation",
   "pdOutsourcing",
   "pdTradeCostMonthly",
   "pdCashflow",
 ] as const;
 
 const MAX_ROWS = 300;
+
+/** DetailDataTable mặc định hiển thị số với tối đa 8 chữ số thập phân — quá dài để review nhanh
+ * (VD "0,8383"). Bảng preview này chỉ dùng để đối chiếu trước khi confirm nên làm tròn 1 chữ số
+ * thập phân cho gọn; không đổi mặc định của DetailDataTable vì component đó dùng chung ở nhiều
+ * màn khác cần độ chính xác cao hơn. */
+function formatPreviewValue(value: unknown): React.ReactNode {
+  return typeof value === "number"
+    ? value.toLocaleString(undefined, { maximumFractionDigits: 1 })
+    : ((value as React.ReactNode) ?? "-");
+}
 
 /** Some raw PIMSVINA payloads carry far more fields than are useful to review in this
  * preview table. Tables listed here show ONLY the given raw keys (in this order);
@@ -28,6 +38,8 @@ const VISIBLE_COLUMNS: Partial<Record<string, string[]>> = {
   pdOverview: ["fldcode", "site_code", "project_name", "contract_amount", "start_date", "end_date"],
   pdProgress: ["fldcode", "site_code", "project_name", "year", "month", "actual_pct"],
   pdCostBudget: ["fldcode", "site_code", "project_name", "category", "item", "budget", "actual"],
+  pdCostBudgetMonthly: ["fldcode", "site_code", "project_name", "year", "month", "item", "actual"],
+  pdCostEstimation: ["fldcode", "site_code", "project_name", "yymm", "contract_amount", "cost_amount", "ratio_pct"],
 };
 
 export function PimsvinaSyncPreviewModal({
@@ -55,12 +67,12 @@ export function PimsvinaSyncPreviewModal({
       const specific = t(`pimsvinaSyncPreview:col_${activeKey}_${k}`, { defaultValue: "" });
       const translated = specific || t(`pimsvinaSyncPreview:col_${k}`, { defaultValue: "" });
       if (translated) {
-        return { key: k, label: translated, align: "left" as const };
+        return { key: k, label: translated, align: "left" as const, format: formatPreviewValue };
       }
       const formattedLabel = k
         .replace(/_/g, " ")
         .replace(/\b\w/g, (char) => char.toUpperCase());
-      return { key: k, label: formattedLabel, align: "left" as const };
+      return { key: k, label: formattedLabel, align: "left" as const, format: formatPreviewValue };
     });
   }, [rows, t, activeKey]);
   const visibleRows = rows.slice(0, MAX_ROWS);

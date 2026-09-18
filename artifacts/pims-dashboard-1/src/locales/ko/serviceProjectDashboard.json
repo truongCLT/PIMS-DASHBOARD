@@ -33,8 +33,8 @@
   "templateUploadTitle": "다운로드한 양식에 데이터를 입력해 업로드하면 전체 데이터가 교체됩니다.",
   "annualShortLabel": "연간",
   "annualTargetLabel": "목표",
-  "directCostLabel": "Direct Cost",
-  "indirectCostLabel": "Indirect Cost",
+  "directCostLabel": "직접비",
+  "indirectCostLabel": "간접비",
   "totalRowLabel": "합계",
   "revenueProgressLabel": "매출 진도",
   "collectionRateLabel": "수금률"

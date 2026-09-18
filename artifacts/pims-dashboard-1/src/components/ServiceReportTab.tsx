@@ -93,7 +93,7 @@ export function ServiceReportTab({
   krwPerUsd: number;
 }) {
   const { detail, isLoading } = useProjectDetail(projectName);
-  const { fmtMoney, unitLabel } = useMoney();
+  const { fmtMoney, fmtVnd, unitLabel } = useMoney();
   const [isExporting, setIsExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
 
@@ -298,7 +298,7 @@ export function ServiceReportTab({
           <MetricRow label="PJ" value={projectName} strong />
           <MetricRow label="수행기간 (개월)" value={durationMonths != null ? `${durationMonths}` : DASH} />
           <MetricRow label="발주처" value={overview?.client ?? DASH} />
-          <MetricRow label="도급금액" value={fmtMoney(overview?.contractAmount)} />
+          <MetricRow label="도급금액" value={fmtVnd(overview?.contractAmount)} />
           <MetricRow label="수금조건" value={contractConditions ?? DASH} />
         </div>
 

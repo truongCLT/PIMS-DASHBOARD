@@ -21,9 +21,9 @@
   "table_pdTradeCostMonthly": "Chi phí ngành - đối chiếu thực hiện (tab Chi phí)",
   "table_pdCashflow": "Thu chi hàng tháng (tab Thu chi)",
   "table_pdCogs": "Giá vốn hàng bán hàng tháng (tab Doanh thu)",
-  "table_pdSales": "Doanh thu hàng tháng (tab Doanh thu)",
   "table_pdCostBudget": "Kế hoạch/Thực hiện chi phí theo hạng mục (tab Chi phí)",
-  "table_pdMilestones": "Mốc tiến độ (tab Tiến độ)",
+  "table_pdCostBudgetMonthly": "Thực hiện ngân sách hàng tháng (tab Chi phí)",
+  "table_pdCostEstimation": "Tỷ lệ chi phí ngân sách thực hiện (tab Chi phí)",
   "table_fxRates": "Tỷ giá",
   "table_orgStructure": "Cơ cấu tổ chức",
   "table_orgProjectLinks": "Liên kết dự án - bộ phận",
@@ -51,18 +51,6 @@
   "col_pdProgress_plan_cum_pct": "Kế hoạch lũy kế (%)",
   "col_pdProgress_actual_cum_pct": "Thực hiện lũy kế (%)",
 
-  "col_pdMilestones_label": "Tên mục",
-  "col_pdMilestones_plan_start": "Bắt đầu kế hoạch",
-  "col_pdMilestones_plan_end": "Kết thúc kế hoạch",
-  "col_pdMilestones_actual_start": "Bắt đầu thực tế",
-  "col_pdMilestones_actual_end": "Kết thúc thực tế",
-
-  "col_pdSales_plan": "Kế hoạch doanh thu",
-  "col_pdSales_actual": "Thực hiện doanh thu",
-  "col_pdSales_monthly_achievement_pct": "Tỷ lệ đạt kế hoạch tháng (%)",
-  "col_pdSales_actual_ytd": "Thực hiện lũy kế",
-  "col_pdSales_annual_plan_target": "Kế hoạch doanh thu cả năm",
-
   "col_pdCogs_acct_cogs": "Giá vốn hàng bán kế toán",
   "col_pdCogs_wip_cogs": "Giá vốn hàng bán thực hiện (WIP)",
   "col_pdCogs_cumulative_acct_cogs": "Giá vốn kế toán lũy kế",
@@ -74,6 +62,14 @@
   "col_pdCostBudget_plan": "Kế hoạch Plan",
   "col_pdCostBudget_actual": "Tổng thực hiện",
   "col_pdCostBudget_execution_rate": "Tỷ lệ thực hiện (%)",
+
+  "col_pdCostBudgetMonthly_item": "Hạng mục",
+  "col_pdCostBudgetMonthly_actual": "Thực hiện",
+
+  "col_pdCostEstimation_yymm": "Tháng cơ sở",
+  "col_pdCostEstimation_contract_amount": "Giá trị hợp đồng",
+  "col_pdCostEstimation_cost_amount": "Giá trị chi phí",
+  "col_pdCostEstimation_ratio_pct": "Tỷ lệ lợi nhuận gộp (%)",
 
   "col_pdOutsourcing_trade_group": "Nhóm hạng mục",
   "col_pdOutsourcing_trade": "Hạng mục chi tiết",

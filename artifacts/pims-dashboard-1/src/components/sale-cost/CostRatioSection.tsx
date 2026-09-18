@@ -6,7 +6,7 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { chartTheme } from "../../lib/chartTheme";
 import { useMoney } from "../../lib/displayUnit";
-import { fmtPct, ratioPct } from "../../lib/projectDetailData";
+import { fmtPct } from "../../lib/projectDetailData";
 import { cardStyle, sectionTitle, emptyNote, INK_NAVY, INK_SECONDARY } from "../../lib/uiTokens";
 
 // ---------------------------------------------------------------------------
@@ -85,6 +85,7 @@ export type CostEstimationRow = {
   costAmount?: number | null;
   year?: number | null;
   month?: number | null;
+  ratioPct?: number | null;
 };
 
 // ---------------------------------------------------------------------------
@@ -103,18 +104,20 @@ export function CostRatioCard({
   isLoading: boolean;
 }) {
   const { t } = useTranslation(["saleCostTab", "costingTab"]);
-  const { fmtMoney } = useMoney();
+  const { fmtMoneyFull, fmtVnd } = useMoney();
 
-  // 준공추정: 조회 기간 마지막 월 이하의 가장 최근 값
-  const completionRows = estimation.filter((e) => e.kind === "completion");
-  const datedCompletions = completionRows
-    .filter((e) => e.year != null && e.month != null)
-    .filter((e) => e.year! * 100 + e.month! <= toYear * 100 + toMonth)
-    .sort((a, b) => a.year! * 100 + a.month! - (b.year! * 100 + b.month!));
-  const pickedCompletion =
-    datedCompletions[datedCompletions.length - 1] ??
-    completionRows.find((e) => e.year == null || e.month == null) ??
-    null;
+  // Execution/Completion đến từ PIMSVINA sync và có thể có nhiều dòng lịch sử (1 dòng/tháng) — luôn
+  // lấy dòng của tháng MỚI NHẤT đã đồng bộ (giống mục "4. Cost Rate" ở Data Entry), bỏ cutoff theo
+  // toYear/toMonth (cutoff đó chỉ hợp lý khi completion từng là dự báo nhập tay nhiều tháng tương lai).
+  const pickLatestByKind = (kind: "execution" | "completion") => {
+    const rows = estimation.filter((e) => e.kind === kind);
+    const dated = rows
+      .filter((e) => e.year != null && e.month != null)
+      .sort((a, b) => a.year! * 100 + a.month! - (b.year! * 100 + b.month!));
+    return dated[dated.length - 1] ?? rows.find((e) => e.year == null || e.month == null) ?? null;
+  };
+  const pickedExecution = pickLatestByKind("execution");
+  const pickedCompletion = pickLatestByKind("completion");
 
   const noData = !isLoading && estimation.length === 0;
 
@@ -139,26 +142,31 @@ export function CostRatioCard({
             const row =
               meta.kind === "completion"
                 ? pickedCompletion
-                : estimation.find((e) => e.kind === meta.kind);
+                : meta.kind === "execution"
+                  ? pickedExecution
+                  : estimation.find((e) => e.kind === meta.kind);
             const contract = row?.contractAmount ?? null;
             const cost     = row?.costAmount ?? null;
-            const directCostRate = ratioPct(cost, contract);
-            const completionProfitRate =
-              meta.kind === "completion" &&
-              contract != null &&
-              contract > 0 &&
-              cost != null
-                ? ratioPct(contract - cost, contract)
-                : null;
+            // Cùng công thức với mục "4. Cost Rate" (ProjectDataEntryTab): Completion Contract Amount
+            // luôn = 100, Cost = REC9 (Gross Profit ratio) đồng bộ về, Ratio(%) = Contract - Cost.
+            // Bidding/Execution dùng Cost/Contract*100 (nguyên tắc "원가율" — luôn <= 100% khi có lãi).
             const pct =
-              meta.kind === "completion" && completionProfitRate != null
-                ? 100 - completionProfitRate
-                : directCostRate;
+              meta.kind === "completion"
+                ? contract != null && cost != null
+                  ? contract - cost
+                  : null
+                : contract != null && cost != null && contract !== 0
+                  ? (cost / contract) * 100
+                  : null;
+            // execution은 PIMSVINA 동기화 값(VND 원본)이라 fmtVnd(), bidding(수동 입력)은 천 USD
+            // 기준이므로 fmtMoneyFull()을 쓴다(Unit 토글에 상관없이 항상 전체 금액 — fmtVnd()와 동일한
+            // 성격이라야 옆의 execution 금액과 자릿수가 맞게 보인다).
+            const fmtAmount = meta.kind === "bidding" ? fmtMoneyFull : fmtVnd;
             const hoverTitle =
               contract != null || cost != null
                 ? meta.kind === "completion"
-                  ? `도급액: ${fmtMoney(contract)} / 사업예산: ${fmtMoney(cost)} / 이익률: ${fmtPct(completionProfitRate)}`
-                  : `도급액: ${fmtMoney(contract)} / 원가: ${fmtMoney(cost)}`
+                  ? `계약금액: ${contract ?? "-"} / 원가율(REC9): ${cost ?? "-"} / 원가율: ${fmtPct(pct)}`
+                  : `도급액: ${fmtAmount(contract)} / 원가: ${fmtAmount(cost)}`
                 : undefined;
             const baseMonth =
               meta.kind === "completion" && row?.year != null && row?.month != null
@@ -172,9 +180,13 @@ export function CostRatioCard({
                   style={{ fontSize: "12px", color: INK_SECONDARY, marginBottom: "2px" }}
                   title={hoverTitle}
                 >
-                  {cost != null || contract != null
-                    ? `${fmtMoney(cost)} / ${fmtMoney(contract)}`
-                    : "-"}
+                  {meta.kind === "completion"
+                    ? cost != null || contract != null
+                      ? `${cost ?? "-"} / ${contract ?? "-"}`
+                      : "-"
+                    : cost != null || contract != null
+                      ? `${fmtAmount(cost)} / ${fmtAmount(contract)}`
+                      : "-"}
                 </div>
                 <div title={hoverTitle} style={{ cursor: "default" }}>
                   <Donut

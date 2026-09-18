@@ -110,7 +110,9 @@ export function DashboardHeader({
     if (confirming || !syncPreview) return;
     setConfirming(true);
     try {
-      const res = await adminFetch("/api/sync-pimsvina/confirm", { data: syncPreview });
+      // Server tự truy vấn lại PIMSVINA khi confirm (không cần gửi lại toàn bộ dữ liệu preview —
+      // vốn có thể lên tới hàng nghìn dòng và từng vượt giới hạn kích thước request body khi deploy).
+      const res = await adminFetch("/api/sync-pimsvina/confirm");
       const data = await res.json();
       if (data.success) {
         let message = t("dashboardHeader:syncSuccessMessage", {
@@ -126,7 +128,6 @@ export function DashboardHeader({
           pdProgress: data.counts?.pdProgress ?? 0,
           pdOutsourcing: data.counts?.pdOutsourcing ?? 0,
           pdCashflow: data.counts?.pdCashflow ?? 0,
-          pdSales: data.counts?.pdSales ?? 0,
           pdCostBudget: data.counts?.pdCostBudget ?? 0,
           fxRates: data.counts?.fxRates ?? 0,
         });

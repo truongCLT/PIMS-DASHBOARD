@@ -15,8 +15,9 @@ import { ProjectDataEntryTab } from "./ProjectDataEntryTab";
 import { PimsvinaSyncPreviewModal, type PimsvinaPreviewData } from "./PimsvinaSyncPreviewModal";
 import { useProjectDetail, getGetProjectdetailQueryKey, fmtPct, ratioPct } from "../lib/projectDetailData";
 import { useAdminAuth, readAdminToken } from "../lib/adminAuth";
-import { DisplayUnitProvider, DEFAULT_EXCHANGE_RATES, formatMoney, moneyUnitLabel } from "../lib/displayUnit";
+import { DisplayUnitProvider, DEFAULT_EXCHANGE_RATES, formatMoney, moneyUnitLabel, convertVndToKUsdAmount } from "../lib/displayUnit";
 import { useDashboardFilters } from "../lib/dashboardFilters";
+import { useAnyProjectLocked } from "../lib/useAnyProjectLocked";
 import { CardHeader, rateColor } from "./OverviewTab";
 import { chartTheme } from "../lib/chartTheme";
 import { cardStyle, sectionTitle, emptyNote, INK_NAVY, INK_BODY, INK_SECONDARY, INK_MUTED, CARD_BORDER, POINT_BLUE, DIVIDER, TABLE_HEADER_BG, MUTED_HINT, SUCCESS_GREEN, DISABLED_GRAY } from "../lib/uiTokens";
@@ -229,14 +230,22 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
   const totalActualSum = allBudgetRows.reduce((a, r) => a + (r.actual ?? 0), 0);
   const totalCostPct = ratioPct(totalActualSum, totalBudgetSum);
 
-  // 도급액 — 개요 입력값 우선, 없으면 원가율 데이터(execution 우선, 없으면 bidding)의 도급액 사용
+  // 도급액 — 개요 입력값 우선, 없으면 원가율 데이터(execution 우선, 없으면 bidding)의 도급액 사용.
+  // overview/execution은 VND 원본 그대로 저장되고 bidding은 천 USD로 저장되어 단위가 서로 다르므로,
+  // 이 화면(차트/비율 계산 등 천 USD 기준 다른 값들과 함께 쓰임) 전체에서 일관되게 쓸 수 있도록 여기서
+  // 미리 천 USD 기준으로 정규화한다.
   const ov = detail?.overview;
-  const isProjectLocked = ov?.isClosed ?? false;
+  // Sync 버튼은 이 프로젝트만이 아니라 시스템 전체에 잠긴(closed) 섹션이 하나라도 있으면 비활성화된다
+  // (잠긴 데이터를 자동/수동 PIMSVINA 동기화가 덮어쓰지 않도록).
+  const syncLocked = useAnyProjectLocked();
+  const executionContractAmountVnd = detail?.costEstimation.find((e) => e.kind === "execution")?.contractAmount;
+  const biddingContractAmountKUsd = detail?.costEstimation.find((e) => e.kind === "bidding")?.contractAmount;
   const contractAmount =
-    ov?.contractAmount ??
-    detail?.costEstimation.find((e) => e.kind === "execution")?.contractAmount ??
-    detail?.costEstimation.find((e) => e.kind === "bidding")?.contractAmount ??
-    null;
+    ov?.contractAmount != null
+      ? convertVndToKUsdAmount(ov.contractAmount, siteRates)
+      : executionContractAmountVnd != null
+        ? convertVndToKUsdAmount(executionContractAmountVnd, siteRates)
+        : (biddingContractAmountKUsd ?? null);
 
   // 수행기간 표시 (YY.MM.DD ~ YY.MM.DD (n개월))
   const periodLabel = (() => {
@@ -337,9 +346,9 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
         {/* Sync PIMSVINA Button for Service Project View */}
         {isAdmin && (
           <button
-            title={isProjectLocked ? t("projectDashboard:syncDisabledLockedTooltip") : undefined}
+            title={syncLocked ? t("projectDashboard:syncDisabledLockedTooltip") : undefined}
             onClick={async () => {
-              if (syncing || isProjectLocked) return;
+              if (syncing || syncLocked) return;
               setSyncing(true);
               try {
                 const token = readAdminToken();
@@ -364,22 +373,22 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                 setSyncing(false);
               }
             }}
-            disabled={syncing || isProjectLocked}
+            disabled={syncing || syncLocked}
             style={{
               display: "flex",
               alignItems: "center",
               gap: "6px",
-              backgroundColor: syncing || isProjectLocked ? "#64748b" : "#2563eb",
+              backgroundColor: syncing || syncLocked ? "#64748b" : "#2563eb",
               color: "#fff",
               border: "none",
               borderRadius: "6px",
               padding: "5px 12px",
               fontSize: "12px",
-              cursor: syncing ? "wait" : isProjectLocked ? "not-allowed" : "pointer",
+              cursor: syncing ? "wait" : syncLocked ? "not-allowed" : "pointer",
               fontWeight: "600",
               boxShadow: "0 1px 3px rgba(0,0,0,0.12)",
               marginLeft: "12px",
-              opacity: isProjectLocked ? 0.6 : 1,
+              opacity: syncLocked ? 0.6 : 1,
             }}
           >
             <RefreshCw size={13} style={{ animation: syncing ? "spin 1s linear infinite" : "none" }} />
@@ -418,13 +427,13 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
             try {
               const token = readAdminToken();
               const baseUrl = getBaseUrl() || "";
+              // Server tự truy vấn lại PIMSVINA khi confirm — không gửi lại toàn bộ dữ liệu preview
+              // (có thể tới hàng nghìn dòng, từng vượt giới hạn kích thước request body khi deploy).
               const res = await fetch(baseUrl + "/api/sync-pimsvina/confirm", {
                 method: "POST",
                 headers: {
-                  "Content-Type": "application/json",
                   ...(token ? { Authorization: `Bearer ${token}` } : {}),
                 },
-                body: JSON.stringify({ data: syncPreview }),
               });
               const data = await res.json();
               if (data.success) {
