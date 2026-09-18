@@ -38,8 +38,21 @@ export function PimsvinaSyncPreviewModal({
   const columns: DetailColumn<Record<string, unknown>>[] = useMemo(() => {
     const first = rows[0];
     if (!first) return [];
-    return Object.keys(first).map((k) => ({ key: k, label: k, align: "left" as const }));
-  }, [rows]);
+    return Object.keys(first).map((k) => {
+      // Table-specific label first (same raw field name can mean different things
+      // across PIMSVINA tables, e.g. "plan"/"budget"/"category"), then a shared
+      // generic label, then a formatted fallback for unmapped raw database keys.
+      const specific = t(`pimsvinaSyncPreview:col_${activeKey}_${k}`, { defaultValue: "" });
+      const translated = specific || t(`pimsvinaSyncPreview:col_${k}`, { defaultValue: "" });
+      if (translated) {
+        return { key: k, label: translated, align: "left" as const };
+      }
+      const formattedLabel = k
+        .replace(/_/g, " ")
+        .replace(/\b\w/g, (char) => char.toUpperCase());
+      return { key: k, label: formattedLabel, align: "left" as const };
+    });
+  }, [rows, t, activeKey]);
   const visibleRows = rows.slice(0, MAX_ROWS);
   const totalRows = PIMSVINA_TABLE_KEYS.reduce((sum, k) => sum + (data[k]?.length ?? 0), 0);
   const tradeCostStatus = data.pdTradeCostSyncStatus?.[0];

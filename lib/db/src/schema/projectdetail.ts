@@ -44,12 +44,19 @@ export const pdOverviewTable = pgTable(
     veTerms: text("ve_terms"), // VE 조건
     asOfMonth: text("as_of_month"), // 작성 기준월 'YYYY-MM'
     scope: text("scope"), // 수행내용 (용역)
-    revenueAnnualTarget: numeric("revenue_annual_target", { precision: 24, scale: 8 }), // 연간 매출 목표 (천 USD)
+    revenueAnnualTarget: numeric("revenue_annual_target", {
+      precision: 24,
+      scale: 8,
+    }), // 연간 매출 목표 (천 USD)
     revenueTotal: numeric("revenue_total", { precision: 24, scale: 8 }), // 누계 매출 실적 (천 USD)
     cashConfirmed: numeric("cash_confirmed", { precision: 24, scale: 8 }), // Cash Confirmed (A) (천 USD)
     cashCollection: numeric("cash_collection", { precision: 24, scale: 8 }), // Cash Collection (B) (천 USD)
-    slideshowIntervalSeconds: integer("slideshow_interval_seconds").notNull().default(0), // 슬라이드쇼 자동 전환 간격(초), 0=꺼짐
-    isClosed: integer("is_closed").notNull().default(sql`0`), // 마감 여부 (true면 데이터 편집 잠금)
+    slideshowIntervalSeconds: integer("slideshow_interval_seconds")
+      .notNull()
+      .default(0), // 슬라이드쇼 자동 전환 간격(초), 0=꺼짐
+    isClosed: integer("is_closed")
+      .notNull()
+      .default(sql`0`), // 마감 여부 (true면 데이터 편집 잠금)
   },
   (t) => [uniqueIndex("pd_overview_uq").on(t.projectName)],
 );
@@ -61,21 +68,22 @@ export const pdSectionLocksTable = pgTable(
     id: serial("id").primaryKey(),
     projectName: text("project_name").notNull(),
     sectionKey: text("section_key").notNull(),
-    isClosed: integer("is_closed").notNull().default(sql`0`),
+    isClosed: integer("is_closed")
+      .notNull()
+      .default(sql`0`),
   },
   (t) => [uniqueIndex("pd_section_locks_uq").on(t.projectName, t.sectionKey)],
 );
 
 // 데이터 입력 계획 변경 버전 — 프로젝트별 계획값 묶음의 변경 차수를 기록
-export const pdPlanVersionsTable = pgTable(
-  "pd_plan_versions",
-  {
-    projectName: text("project_name").primaryKey(),
-    version: integer("version").notNull().default(1),
-    fingerprint: text("fingerprint").notNull(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-  },
-);
+export const pdPlanVersionsTable = pgTable("pd_plan_versions", {
+  projectName: text("project_name").primaryKey(),
+  version: integer("version").notNull().default(1),
+  fingerprint: text("fingerprint").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
 
 // 공정 — 월별 공정률 (계획/실적 월간, 누계)
 export const pdProgressMonthlyTable = pgTable(
@@ -129,8 +137,13 @@ export const pdCostEstimationTable = pgTable(
     month: integer("month"), // 1..12
   },
   (t) => [
-    unique("pd_cost_estimation_uq").on(t.projectName, t.kind, t.year, t.month).nullsNotDistinct(),
-    check("pd_cost_estimation_kind_ck", sql`${t.kind} IN ('bidding','execution','completion')`),
+    unique("pd_cost_estimation_uq")
+      .on(t.projectName, t.kind, t.year, t.month)
+      .nullsNotDistinct(),
+    check(
+      "pd_cost_estimation_kind_ck",
+      sql`${t.kind} IN ('bidding','execution','completion')`,
+    ),
   ],
 );
 
@@ -166,7 +179,12 @@ export const pdCostBudgetMonthlyTable = pgTable(
     actualSource: text("actual_source"), // null=manual/import, 'pimsvina'=ERP-owned actual
   },
   (t) => [
-    uniqueIndex("pd_cost_budget_monthly_uq").on(t.projectName, t.item, t.year, t.month),
+    uniqueIndex("pd_cost_budget_monthly_uq").on(
+      t.projectName,
+      t.item,
+      t.year,
+      t.month,
+    ),
     check("pd_cost_budget_monthly_month_ck", sql`${t.month} BETWEEN 1 AND 12`),
   ],
 );
@@ -184,7 +202,10 @@ export const pdCashflowMonthlyTable = pgTable(
     cashIn: numeric("cash_in", { precision: 24, scale: 8 }), // 수입 (천 USD)
     cashOut: numeric("cash_out", { precision: 24, scale: 8 }), // 지출 (천 USD)
     equivalent: numeric("equivalent", { precision: 24, scale: 8 }), // 보유 현금 (천 USD)
-    confirmedProgress: numeric("confirmed_progress", { precision: 24, scale: 8 }), // 기성 확정 금액 (천 USD)
+    confirmedProgress: numeric("confirmed_progress", {
+      precision: 24,
+      scale: 8,
+    }), // 기성 확정 금액 (천 USD)
   },
   (t) => [
     uniqueIndex("pd_cashflow_monthly_uq").on(t.projectName, t.year, t.month),
@@ -274,7 +295,9 @@ export const pdCommentsTable = pgTable(
     projectName: text("project_name").notNull(),
     tab: text("tab").notNull(), // 'overview' | 'progress' | 'costing' | 'outsourcing' | 'cashflow' | 'saleprofit' | 'budget' | 'service'
     body: text("body").notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [
     index("pd_comments_project_tab_idx").on(t.projectName, t.tab),
@@ -285,46 +308,75 @@ export const pdCommentsTable = pgTable(
   ],
 );
 
-export const insertPdCommentSchema = createInsertSchema(pdCommentsTable).omit({ id: true, createdAt: true });
+export const insertPdCommentSchema = createInsertSchema(pdCommentsTable).omit({
+  id: true,
+  createdAt: true,
+});
 export type InsertPdComment = z.infer<typeof insertPdCommentSchema>;
 export type PdComment = typeof pdCommentsTable.$inferSelect;
 
-export const insertPdOverviewSchema = createInsertSchema(pdOverviewTable).omit({ id: true });
+export const insertPdOverviewSchema = createInsertSchema(pdOverviewTable).omit({
+  id: true,
+});
 export type InsertPdOverview = z.infer<typeof insertPdOverviewSchema>;
 export type PdOverview = typeof pdOverviewTable.$inferSelect;
 
-export const insertPdProgressMonthlySchema = createInsertSchema(pdProgressMonthlyTable).omit({ id: true });
-export type InsertPdProgressMonthly = z.infer<typeof insertPdProgressMonthlySchema>;
+export const insertPdProgressMonthlySchema = createInsertSchema(
+  pdProgressMonthlyTable,
+).omit({ id: true });
+export type InsertPdProgressMonthly = z.infer<
+  typeof insertPdProgressMonthlySchema
+>;
 export type PdProgressMonthly = typeof pdProgressMonthlyTable.$inferSelect;
 
-export const insertPdMilestoneSchema = createInsertSchema(pdMilestonesTable).omit({ id: true });
+export const insertPdMilestoneSchema = createInsertSchema(
+  pdMilestonesTable,
+).omit({ id: true });
 export type InsertPdMilestone = z.infer<typeof insertPdMilestoneSchema>;
 export type PdMilestone = typeof pdMilestonesTable.$inferSelect;
 
-export const insertPdCostEstimationSchema = createInsertSchema(pdCostEstimationTable).omit({ id: true });
-export type InsertPdCostEstimation = z.infer<typeof insertPdCostEstimationSchema>;
+export const insertPdCostEstimationSchema = createInsertSchema(
+  pdCostEstimationTable,
+).omit({ id: true });
+export type InsertPdCostEstimation = z.infer<
+  typeof insertPdCostEstimationSchema
+>;
 export type PdCostEstimation = typeof pdCostEstimationTable.$inferSelect;
 
-export const insertPdCostBudgetSchema = createInsertSchema(pdCostBudgetTable).omit({ id: true });
+export const insertPdCostBudgetSchema = createInsertSchema(
+  pdCostBudgetTable,
+).omit({ id: true });
 export type InsertPdCostBudget = z.infer<typeof insertPdCostBudgetSchema>;
 export type PdCostBudget = typeof pdCostBudgetTable.$inferSelect;
 
-export const insertPdCashflowMonthlySchema = createInsertSchema(pdCashflowMonthlyTable).omit({ id: true });
-export type InsertPdCashflowMonthly = z.infer<typeof insertPdCashflowMonthlySchema>;
+export const insertPdCashflowMonthlySchema = createInsertSchema(
+  pdCashflowMonthlyTable,
+).omit({ id: true });
+export type InsertPdCashflowMonthly = z.infer<
+  typeof insertPdCashflowMonthlySchema
+>;
 export type PdCashflowMonthly = typeof pdCashflowMonthlyTable.$inferSelect;
 
-export const insertPdCogsMonthlySchema = createInsertSchema(pdCogsMonthlyTable).omit({ id: true });
+export const insertPdCogsMonthlySchema = createInsertSchema(
+  pdCogsMonthlyTable,
+).omit({ id: true });
 export type InsertPdCogsMonthly = z.infer<typeof insertPdCogsMonthlySchema>;
 export type PdCogsMonthly = typeof pdCogsMonthlyTable.$inferSelect;
 
-export const insertPdSalesMonthlySchema = createInsertSchema(pdSalesMonthlyTable).omit({ id: true });
+export const insertPdSalesMonthlySchema = createInsertSchema(
+  pdSalesMonthlyTable,
+).omit({ id: true });
 export type InsertPdSalesMonthly = z.infer<typeof insertPdSalesMonthlySchema>;
 export type PdSalesMonthly = typeof pdSalesMonthlyTable.$inferSelect;
 
-export const insertPdPhotoSchema = createInsertSchema(pdPhotosTable).omit({ id: true });
+export const insertPdPhotoSchema = createInsertSchema(pdPhotosTable).omit({
+  id: true,
+});
 export type InsertPdPhoto = z.infer<typeof insertPdPhotoSchema>;
 export type PdPhoto = typeof pdPhotosTable.$inferSelect;
 
-export const insertPdOutsourcingSchema = createInsertSchema(pdOutsourcingTable).omit({ id: true });
+export const insertPdOutsourcingSchema = createInsertSchema(
+  pdOutsourcingTable,
+).omit({ id: true });
 export type InsertPdOutsourcing = z.infer<typeof insertPdOutsourcingSchema>;
 export type PdOutsourcing = typeof pdOutsourcingTable.$inferSelect;
