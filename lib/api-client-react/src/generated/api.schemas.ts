@@ -837,6 +837,20 @@ export interface ProjectDetailPhoto {
   objectPath: string;
 }
 
+export interface ProjectDetailSitePhotoMonthly {
+  year: number;
+  month: number;
+  seq: number;
+  location: string | null;
+  contType: string | null;
+  note: string | null;
+  imageUrl: string | null;
+}
+
+export interface ProjectDetailSiteOverviewPhoto {
+  imageUrl: string | null;
+}
+
 export interface ProjectDetail {
   projectName: string;
   /** 계획 데이터 변경 차수. 계획이 없으면 0. */
@@ -858,6 +872,10 @@ export interface ProjectDetail {
   /** 표시용 월별 매출. 경영보고 값 우선, 없는 월은 ERP/데이터입력 값으로 보완. */
   canonicalSalesMonthly?: ProjectDetailSalesPoint[];
   photos: ProjectDetailPhoto[];
+  /** PIMSVINA에서 동기화된 월별 현장 사진(공정 탭 슬라이더용) — 읽기 전용, PIMSVINA Sync로만 채워진다. */
+  sitePhotosMonthly?: ProjectDetailSitePhotoMonthly[];
+  /** PIMSVINA에서 동기화된 조감도(개요 탭용) — 읽기 전용, 없으면 null. */
+  siteOverviewPhoto?: ProjectDetailSiteOverviewPhoto | null;
 }
 
 export interface UploadUrlRequest {

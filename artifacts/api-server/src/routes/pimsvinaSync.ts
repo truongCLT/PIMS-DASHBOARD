@@ -21,6 +21,8 @@ import {
   pdCostBudgetTable,
   pdCostBudgetMonthlyTable,
   pdCostEstimationTable,
+  pdSiteOverviewPhotoTable,
+  pdSitePhotosMonthlyTable,
   fxRatesTable,
   companiesTable,
   divisionsTable,
@@ -63,6 +65,8 @@ export async function fetchAllPimsvinaData() {
     pdCostBudget,
     pdCostBudgetMonthlyResult,
     costRateSettleRows,
+    pdSiteOverviewPhotoResult,
+    pdSitePhotosMonthlyResult,
   ] = await Promise.all([
     fetchPimsvinaApi("dashboard_pd_overview_1q.jsp"),
     fetchPimsvinaApi("dashboard_pd_progress_1q.jsp"),
@@ -74,6 +78,8 @@ export async function fetchAllPimsvinaData() {
     fetchPimsvinaApi("dashboard_pd_costbudget_1q.jsp"),
     fetchPimsvinaOracleQueryResult("dashboard_pd_costbudget_monthly_1q.jsp"),
     fetchPimsvinaApi("dashboard_pd_costrate_settle_1q.jsp"),
+    fetchPimsvinaOracleQueryResult("cb_prjt_air_view_e_1q.jsp"),
+    fetchPimsvinaOracleQueryResult("cb_prjt_picture_e_1q.jsp"),
   ]);
   // "4. Cost Rate (Cost tab)" — Execution Budget Setup.Cost/Contract Amount và Estimated Completion
   // Cost Rate.Ratio(%) không còn dùng giá trị Bold tĩnh (ZYA/ZZL, dashboard_pd_costestimation_1q.jsp —
@@ -234,7 +240,7 @@ export async function fetchAllPimsvinaData() {
   ].map((row: any) => {
     const projectName = row.mapped_project_name as string | null;
     const mappedItem = row.mapped_item as string | null;
-    const incomingActual = parsePimsvinaKusd(row.actual_kusd);
+    const incomingActual = parsePimsvinaKusd(row.actual_vnd);
     const existingActual =
       projectName && mappedItem
         ? (existingByKey.get(
@@ -277,6 +283,8 @@ export async function fetchAllPimsvinaData() {
     pdCostBudgetMonthly: pdCostBudgetMonthlyRaw,
     pdCostBudgetMonthlySyncStatus: [{ complete: costBudgetMonthlySnapshotComplete }],
     pdCostEstimation,
+    pdSiteOverviewPhoto: pdSiteOverviewPhotoResult.data,
+    pdSitePhotosMonthly: pdSitePhotosMonthlyResult.data,
   };
 }
 
@@ -298,6 +306,8 @@ export async function applyPimsvinaData(fetched: PimsvinaData) {
   const pdCostBudget = fetched.pdCostBudget ?? [];
   const costBudgetMonthlySnapshotComplete = fetched.pdCostBudgetMonthlySyncStatus?.[0]?.complete === true;
   const pdCostEstimation = fetched.pdCostEstimation ?? [];
+  const pdSiteOverviewPhoto = fetched.pdSiteOverviewPhoto ?? [];
+  const pdSitePhotosMonthly = fetched.pdSitePhotosMonthly ?? [];
 
   const counts = {
     pdOverview: 0,
@@ -309,6 +319,8 @@ export async function applyPimsvinaData(fetched: PimsvinaData) {
     pdCostBudget: 0,
     pdCostBudgetMonthly: 0,
     pdCostEstimation: 0,
+    pdSiteOverviewPhoto: 0,
+    pdSitePhotosMonthly: 0,
     skipped: 0,
   };
   const skippedProjects = new Set<string>();
@@ -563,6 +575,9 @@ export async function applyPimsvinaData(fetched: PimsvinaData) {
   // 11b. Sync monthly actual cost by explicit ERP trade. Plans stay manual.
   // Multiple ERP contract codes may map to the same standard trade/month, so
   // aggregate before upsert instead of allowing the last contract to win.
+  // pdCostBudgetMonthlyTable.actual는 (11a와 마찬가지로) VND 원본으로 통일 저장한다 — ERP가 이미
+  // actual_vnd 필드로 환산 없는 원본 VND를 내려주므로 그대로 쓴다(예전엔 actual_kusd를 썼으나, 화면
+  // 표시가 항상 kUSD로 가정하던 시절의 잔재였고 "3. Cost Plan/Actual by Work Type" 표시 단위와 맞지 않았다).
   if (tradeCostSnapshotComplete) {
   const tradeCostUpdates = new Map<
     string,
@@ -574,7 +589,7 @@ export async function applyPimsvinaData(fetched: PimsvinaData) {
     const mappedItem = mapPimsvinaTradeItem(item.mapped_item ?? item.trade);
     const year = Number(item.year);
     const month = Number(item.month);
-    const actualKusd = parsePimsvinaKusd(item.actual_kusd);
+    const actualVnd = parsePimsvinaKusd(item.actual_vnd);
     const hasValidIdentity =
       projectName != null &&
       mappedItem != null &&
@@ -582,22 +597,22 @@ export async function applyPimsvinaData(fetched: PimsvinaData) {
       Number.isInteger(month) &&
       month >= 1 &&
       month <= 12;
-    if (hasValidIdentity && actualKusd == null) {
+    if (hasValidIdentity && actualVnd == null) {
       invalidIncomingTradeCostKeys.add(
         tradeCostKey({ projectName, item: mappedItem, year, month }),
       );
     }
     if (
       !hasValidIdentity ||
-      actualKusd == null
+      actualVnd == null
     ) {
       if (!projectName) trackSkipped(item);
       continue;
     }
     const key = `${projectName}|${mappedItem}|${year}|${month}`;
     const existing = tradeCostUpdates.get(key);
-    if (existing) existing.rawActual += actualKusd;
-    else tradeCostUpdates.set(key, { projectName, item: mappedItem, year, month, rawActual: actualKusd });
+    if (existing) existing.rawActual += actualVnd;
+    else tradeCostUpdates.set(key, { projectName, item: mappedItem, year, month, rawActual: actualVnd });
   }
 
   // Xoá sạch dữ liệu 외주 cũ (actualSource='pimsvina') của ĐÚNG (project, year, month) sắp đồng bộ
@@ -978,6 +993,59 @@ export async function applyPimsvinaData(fetched: PimsvinaData) {
   // Milestones는 더 이상 PIMSVINA에서 동기화하지 않는다 - CBTB_CONSTHISTORY 기반 근사치였고
   // (Plan 없이 단일 이벤트 날짜만 제공) 신뢰할 수 있는 소스가 아니었다. 이제 ProjectDataEntryTab의
   // 마일스톤 전용 Excel 업로드/다운로드(downloadMilestonesTemplate/parseMilestonesWorkbook)로 대체.
+
+  // 15. Sync Site Overview Photo (조감도, 개요 탭 사진) — 프로젝트당 1행, upsert.
+  for (const item of pdSiteOverviewPhoto) {
+    const projectName = resolveTradeProjectName(item);
+    if (!projectName || !item.file_path || !item.file_name) {
+      if (!projectName) trackSkipped(item);
+      continue;
+    }
+    const filePath = String(item.file_path);
+    const fileName = String(item.file_name);
+    await db
+      .insert(pdSiteOverviewPhotoTable)
+      .values({ projectName, filePath, fileName })
+      .onConflictDoUpdate({
+        target: pdSiteOverviewPhotoTable.projectName,
+        set: { filePath, fileName },
+      });
+    counts.pdSiteOverviewPhoto++;
+  }
+
+  // 16. Sync Site Photos Monthly (현장 사진, 공정 탭 슬라이더) — YYMM/SEQ가 매 동기화마다 바뀔 수 있어
+  // upsert 대신 프로젝트 단위로 기존 행을 지우고 PIMSVINA가 준 전체 이력으로 다시 채운다.
+  const sitePhotosByProject = new Map<string, { year: number; month: number; item: any }[]>();
+  for (const item of pdSitePhotosMonthly) {
+    const projectName = resolveTradeProjectName(item);
+    if (!projectName) {
+      trackSkipped(item);
+      continue;
+    }
+    const yymm = typeof item.yymm === "string" ? item.yymm.trim() : "";
+    if (!/^\d{6}$/.test(yymm)) continue;
+    const list = sitePhotosByProject.get(projectName) ?? [];
+    list.push({ year: Number(yymm.slice(0, 4)), month: Number(yymm.slice(4, 6)), item });
+    sitePhotosByProject.set(projectName, list);
+  }
+  for (const [projectName, rows] of sitePhotosByProject) {
+    await db.delete(pdSitePhotosMonthlyTable).where(eq(pdSitePhotosMonthlyTable.projectName, projectName));
+    if (rows.length === 0) continue;
+    await db.insert(pdSitePhotosMonthlyTable).values(
+      rows.map(({ year, month, item }) => ({
+        projectName,
+        year,
+        month,
+        seq: Number(item.seq) || 0,
+        location: item.location != null ? String(item.location) : null,
+        contType: item.cont_type != null ? String(item.cont_type) : null,
+        note: item.note != null ? String(item.note) : null,
+        filePath: item.file_path != null ? String(item.file_path) : null,
+        fileName: item.file_name != null ? String(item.file_name) : null,
+      })),
+    );
+    counts.pdSitePhotosMonthly += rows.length;
+  }
 
   return {
     ...counts,

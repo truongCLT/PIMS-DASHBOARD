@@ -273,6 +273,35 @@ export const pdPhotosTable = pgTable(
   (t) => [index("pd_photos_project_idx").on(t.projectName)],
 );
 
+// 조감도 — PIMSVINA에서 동기화된 개요 탭 사진 (CBTB_CONSTPIC.AIRVIEWPICPATH) — 프로젝트당 1장, 읽기 전용
+export const pdSiteOverviewPhotoTable = pgTable("pd_site_overview_photo", {
+  projectName: text("project_name").primaryKey(),
+  filePath: text("file_path"), // PZTB_FILEUPLOAD.FILE_PATH (예: '/cb/prjt')
+  fileName: text("file_name"), // PZTB_FILEUPLOAD.FILE_NAME
+});
+
+// 현장 사진(월별) — PIMSVINA에서 동기화된 공정 탭 슬라이더용 (CBTB_CONSTMONTHPIC) — 읽기 전용
+export const pdSitePhotosMonthlyTable = pgTable(
+  "pd_site_photos_monthly",
+  {
+    id: serial("id").primaryKey(),
+    projectName: text("project_name").notNull(),
+    year: integer("year").notNull(),
+    month: integer("month").notNull(), // 1..12
+    seq: integer("seq").notNull(),
+    location: text("location"),
+    contType: text("cont_type"), // 공종/내용 구분 (예: 'Overview', 'Finishing works')
+    note: text("note"),
+    filePath: text("file_path"), // PZTB_FILEUPLOAD.FILE_PATH
+    fileName: text("file_name"), // PZTB_FILEUPLOAD.FILE_NAME
+  },
+  (t) => [
+    uniqueIndex("pd_site_photos_monthly_uq").on(t.projectName, t.year, t.month, t.seq),
+    index("pd_site_photos_monthly_project_idx").on(t.projectName),
+    check("pd_site_photos_monthly_month_ck", sql`${t.month} BETWEEN 1 AND 12`),
+  ],
+);
+
 // 외주 — 외주/자재 계약 및 기성 현황
 export const pdOutsourcingTable = pgTable(
   "pd_outsourcing",

@@ -1,0 +1,48 @@
+{
+  "title": "Monthly Report",
+  "exportButton": "Export Report",
+  "exporting": "Exporting...",
+  "exportAriaGenerating": "Generating report PDF",
+  "exportAriaExport": "Export report PDF",
+  "issuesTitle": "Key Issues & Action Plan",
+
+  "monthlyProgressLabel": "Monthly progress rate (plan vs. actual)",
+  "cumulativeProgressLabel": "Cumulative progress rate (plan vs. actual)",
+  "durationRate": "Duration rate",
+  "durationVsProgressGap": "Duration rate − cumulative progress rate",
+  "monthlyCostExecutionTitle": "Monthly cost execution",
+  "cumulativeCostExecutionTitle": "Cumulative cost execution",
+  "tradeGroupMajor": "Major Trade",
+  "tradeGroupBuilding": "Building",
+  "tradeGroupMechanical": "Mechanical",
+  "tradeGroupElectrical": "Electrical",
+  "tradeGroupCivil": "Civil",
+  "tradeGroupLandscape": "Landscape",
+  "tradeGroupExpense": "Overhead",
+
+  "salesTitle": "Revenue Actual & Forecast",
+  "salesLegendPlan": "Revenue (Plan)",
+  "salesLegendActual": "Revenue (Actual)",
+  "salesLegendForecast": "Revenue (Forecast)",
+  "salesTooltipLine": "Revenue ({{label}}): {{value}}",
+  "annualCumulativeShort": "Annual Cumulative",
+  "overallCumulativeLabel": "Overall Cumulative",
+
+  "statusCategoryHeader": "Category",
+  "statusColumnHeader": "Status",
+  "statusAriaSuffix": "status",
+  "categoryCost": "Cost",
+  "typeMonthly": "Month",
+
+  "costTitle": "Cost (Cumulative Execution)",
+  "executionRateLabel": "Execution Rate",
+
+  "fundsSyncNote": "* Same as the Management Dashboard's cash flow (including the detail view)",
+  "cumulativeSalesLabel": "Cumulative Revenue",
+  "cumulativeConfirmedLabel": "Cumulative Confirmed Progress",
+  "collectionActualLabel": "Collection (Actual)",
+  "receivableLabel": "Receivable (A/R)",
+  "collectionRateLabel": "Collection Rate (Collection / Cumulative Confirmed)",
+  "fundsForecastNote": "* Displayed with plan/forecast, like revenue",
+  "fundsDetailNote": "* The detail view table adds revenue, confirmed amount, and collection receivable"
+}

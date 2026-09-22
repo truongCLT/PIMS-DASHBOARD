@@ -70,13 +70,14 @@ export function PhotoPager({ src, alt, total, current, onChange, imgStyle, autoP
       onMouseLeave={() => setPaused(false)}
     >
       {/* 이미지 */}
-      <div style={{ flex: 1, minHeight: 0, position: "relative" }}>
+      <div style={{ flex: 1, minHeight: 0, minWidth: 0, position: "relative", overflow: "hidden", borderRadius: "4px" }}>
         <img
           src={src}
           alt={alt ?? t("photoPager:defaultAlt")}
           style={{
             width: "100%",
             height: "100%",
+            maxWidth: "100%",
             objectFit: "cover",
             borderRadius: "4px",
             display: "block",

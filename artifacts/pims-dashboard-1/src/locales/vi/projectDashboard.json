@@ -1,6 +1,8 @@
 {
   "syncDisabledLockedTooltip": "Đồng bộ PIMSVINA đang bị vô hiệu hóa vì có ít nhất một dự án đang bị khóa (đã đóng) — mở khóa ở tab Data Entry của dự án đó trước khi đồng bộ.",
   "costing": "Chi phí",
+  "report": "Báo cáo",
+  "saleCost": "Doanh thu/Chi phí",
   "cashflow": "Thu chi",
   "dataEntry": "Nhập dữ liệu",
   "templateDownloadFailed": "Tải mẫu xuống không thành công.",

@@ -46,11 +46,11 @@ const selectStyle: React.CSSProperties = {
 export function ProjectDashboard({ projectName }: { projectName: string }) {
   const { t } = useTranslation(["projectDashboard", "common"]);
   const SIDE_TAB_LABELS: Record<string, string> = {
-    Summary: "개요",
-    Report: "보고서",
+    Summary: t("common:overview"),
+    Report: t("projectDashboard:report"),
     Overview: "개요(2)",
     "Construction progress": t("common:process"),
-    "Sale & Cost": "매출/원가",
+    "Sale & Cost": t("projectDashboard:saleCost"),
     Outsourcing: t("common:outsourcing"),
     Cashflow: t("projectDashboard:cashflow"),
     "Data entry": t("projectDashboard:dataEntry"),

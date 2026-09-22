@@ -10,6 +10,7 @@
  *   Row 2 (auto-fit ≥240px): 원가 | 자금 | 코멘트
  */
 import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { FileDown, Loader2 } from "lucide-react";
 import { Button } from "@workspace/aqua-glass/components/ui/button";
 import {
@@ -133,6 +134,7 @@ export function ProjectReportTab({
   onSelectedMonthChange: (month: number | null) => void;
   onResolvedMonthChange: (month: number | null) => void;
 }) {
+  const { t } = useTranslation(["projectReportTab", "common", "overviewTab"]);
   const { detail, isLoading } = useProjectDetail(projectName);
   const [isExporting, setIsExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
@@ -411,7 +413,7 @@ export function ProjectReportTab({
           color: INK_MUTED,
         }}
       >
-        불러오는 중...
+        {t("common:loading")}
       </div>
     );
   }
@@ -438,26 +440,26 @@ export function ProjectReportTab({
               letterSpacing: "0.02em",
             }}
           >
-            당월 보고서
+            {t("projectReportTab:title")}
           </span>
           <Button
             type="button"
             size="sm"
             onClick={handleReportExport}
             disabled={isExporting}
-            aria-label={isExporting ? "보고서 PDF 생성 중" : "보고서 PDF 출력"}
+            aria-label={isExporting ? t("projectReportTab:exportAriaGenerating") : t("projectReportTab:exportAriaExport")}
           >
             {isExporting ? (
               <Loader2 aria-hidden="true" className="animate-spin" />
             ) : (
               <FileDown aria-hidden="true" />
             )}
-            {isExporting ? "출력 중..." : "보고서 출력"}
+            {isExporting ? t("projectReportTab:exporting") : t("projectReportTab:exportButton")}
           </Button>
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span style={{ fontSize: "12px", color: INK_BODY, fontWeight: 600 }}>기준월:</span>
+          <span style={{ fontSize: "12px", color: INK_BODY, fontWeight: 600 }}>{t("common:baseMonth")}:</span>
           <select
             value={selectedMonth ?? ""}
             onChange={(e) =>
@@ -466,7 +468,7 @@ export function ProjectReportTab({
             style={monthSelectStyle}
           >
             <option value="">
-              최신월{latestMonthLabel ? ` (${latestMonthLabel})` : ""}
+              {t("overviewTab:latestMonth")}{latestMonthLabel ? ` (${latestMonthLabel})` : ""}
             </option>
             {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
               <option key={m} value={m}>
@@ -517,7 +519,7 @@ export function ProjectReportTab({
             cumRev={cumRev}
           />
           <div style={cardStyle}>
-            <div style={{ ...sectionTitle, marginBottom: "8px" }}>주요 이슈 및 대응방안</div>
+            <div style={{ ...sectionTitle, marginBottom: "8px" }}>{t("projectReportTab:issuesTitle")}</div>
             <ProjectCommentPanel projectName={projectName} tab="budget" showHeader={false} />
           </div>
         </div>

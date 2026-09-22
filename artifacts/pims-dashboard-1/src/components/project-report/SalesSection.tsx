@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import {
   Bar,
   CartesianGrid,
@@ -76,6 +77,7 @@ function SalesTooltip({
   label?: string;
   fmtMoney: (value: number | null | undefined) => string;
 }) {
+  const { t } = useTranslation(["projectReportTab", "common"]);
   if (!active || !payload?.length) return null;
   const plan = payload.find((item) => item.dataKey === "plan");
   const actual = payload.find((item) => item.dataKey === "actual");
@@ -91,15 +93,22 @@ function SalesTooltip({
       }}
     >
       <div style={{ fontWeight: 700, color: "#16294a", marginBottom: "3px" }}>{label}</div>
-      {plan && <div style={{ color: PLAN_COLOR }}>매출(계획): {fmtMoney(plan.value)}</div>}
+      {plan && (
+        <div style={{ color: PLAN_COLOR }}>
+          {t("projectReportTab:salesTooltipLine", { label: t("common:plan"), value: fmtMoney(plan.value) })}
+        </div>
+      )}
       {actual && (
         <div style={{ color: ACTUAL_COLOR }}>
-          매출({row?.isForecast ? "전망" : "실적"}): {fmtMoney(actual.value)}
+          {t("projectReportTab:salesTooltipLine", {
+            label: row?.isForecast ? t("common:forecast") : t("common:actual"),
+            value: fmtMoney(actual.value),
+          })}
         </div>
       )}
       {!row?.isForecast && row?.rate != null && (
         <div style={{ color: chartTheme.rateOrange, fontWeight: 700 }}>
-          달성률: {row.rate}%
+          {t("common:achievementRate")}: {row.rate}%
         </div>
       )}
     </div>
@@ -113,6 +122,7 @@ export function SalesSection({
   allSalesMonths,
   contractAmount,
 }: Props) {
+  const { t } = useTranslation(["projectReportTab", "common"]);
   const { fmtMoney, unitLabel, convertVndToKUsd } = useMoney();
   // contractAmount đến từ pd_overview, lưu VND gốc — actualMonths/allSalesMonths đều ở đơn vị 천 USD,
   // phải quy đổi trước khi so sánh/hiển thị chung (nếu không sẽ lệch đơn vị và tỷ lệ % sai hoàn toàn).
@@ -265,15 +275,15 @@ export function SalesSection({
   return (
     <div style={{ ...cardStyle, display: "flex", flexDirection: "column" }}>
       <div style={{ ...sectionTitle, marginBottom: "5px" }}>
-        매출 실적 및 전망
+        {t("projectReportTab:salesTitle")}
         <span style={{ fontSize: "10px", fontWeight: 400, color: INK_MUTED, marginLeft: "5px" }}>
-          단위: {unitLabel}
+          {t("common:unit")}: {unitLabel}
         </span>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: "9px", marginBottom: "3px" }}>
-        <LegendItem label="매출(계획)" color={PLAN_COLOR} />
-        <LegendItem label="매출(실적)" color={ACTUAL_COLOR} />
-        <LegendItem label="매출(전망)" color={ACTUAL_COLOR} forecast />
+        <LegendItem label={t("projectReportTab:salesLegendPlan")} color={PLAN_COLOR} />
+        <LegendItem label={t("projectReportTab:salesLegendActual")} color={ACTUAL_COLOR} />
+        <LegendItem label={t("projectReportTab:salesLegendForecast")} color={ACTUAL_COLOR} forecast />
       </div>
 
       {!hasData ? (
@@ -317,7 +327,7 @@ export function SalesSection({
               <Tooltip content={<SalesTooltip fmtMoney={fmtMoney} />} />
               <Bar
                 dataKey="plan"
-                name="매출(계획)"
+                name={t("projectReportTab:salesLegendPlan")}
                 fill={PLAN_COLOR}
                 barSize={18}
                 maxBarSize={18}
@@ -327,7 +337,7 @@ export function SalesSection({
               <Bar
                 dataKey="actual"
                 xAxisId="overlay"
-                name="매출(실적/전망)"
+                name={`${t("common:revenue")}(${t("common:actual")}/${t("common:forecast")})`}
                 fill={ACTUAL_COLOR}
                 barSize={9}
                 maxBarSize={9}
@@ -359,8 +369,8 @@ export function SalesSection({
           gap: "3px",
         }}
       >
-        <SalesSummaryRow label="연 누계" summary={annualSummary} fmtMoney={fmtMoney} />
-        <SalesSummaryRow label="전체 누계" summary={overallSummary} fmtMoney={fmtMoney} />
+        <SalesSummaryRow label={t("projectReportTab:annualCumulativeShort")} summary={annualSummary} fmtMoney={fmtMoney} />
+        <SalesSummaryRow label={t("projectReportTab:overallCumulativeLabel")} summary={overallSummary} fmtMoney={fmtMoney} />
       </div>
     </div>
   );
@@ -375,6 +385,7 @@ function SalesSummaryRow({
   summary: { plan: number | null; actual: number | null; rate: number | null };
   fmtMoney: (value: number | null | undefined) => string;
 }) {
+  const { t } = useTranslation(["common"]);
   return (
     <div
       style={{
@@ -392,15 +403,15 @@ function SalesSummaryRow({
         {label}
       </span>
       <span style={{ textAlign: "center" }}>
-        계획 <strong style={{ color: "#1a2d4d" }}>{fmtMoney(summary.plan)}</strong>
+        {t("common:plan")} <strong style={{ color: "#1a2d4d" }}>{fmtMoney(summary.plan)}</strong>
       </span>
       <span style={{ color: "#aab5c4" }}>|</span>
       <span style={{ textAlign: "center" }}>
-        실적 <strong style={{ color: "#1a2d4d" }}>{fmtMoney(summary.actual)}</strong>
+        {t("common:actual")} <strong style={{ color: "#1a2d4d" }}>{fmtMoney(summary.actual)}</strong>
       </span>
       <span style={{ color: "#aab5c4" }}>|</span>
       <span style={{ textAlign: "right" }}>
-        달성률{" "}
+        {t("common:achievementRate")}{" "}
         <strong style={{ color: chartTheme.rateOrange }}>
           {summary.rate == null ? "-" : `${summary.rate}%`}
         </strong>

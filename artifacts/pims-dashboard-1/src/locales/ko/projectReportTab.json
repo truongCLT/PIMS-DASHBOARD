@@ -1,0 +1,48 @@
+{
+  "title": "당월 보고서",
+  "exportButton": "보고서 출력",
+  "exporting": "출력 중...",
+  "exportAriaGenerating": "보고서 PDF 생성 중",
+  "exportAriaExport": "보고서 PDF 출력",
+  "issuesTitle": "주요 이슈 및 대응방안",
+
+  "monthlyProgressLabel": "월별 공정율 (계획 대비 실적)",
+  "cumulativeProgressLabel": "누계 공정율 (계획 대비 실적)",
+  "durationRate": "공기율",
+  "durationVsProgressGap": "공기율 - 누계 공정률",
+  "monthlyCostExecutionTitle": "월 원가집행",
+  "cumulativeCostExecutionTitle": "누계 원가집행",
+  "tradeGroupMajor": "대공종",
+  "tradeGroupBuilding": "건축",
+  "tradeGroupMechanical": "기계",
+  "tradeGroupElectrical": "전기",
+  "tradeGroupCivil": "토목",
+  "tradeGroupLandscape": "조경",
+  "tradeGroupExpense": "경비",
+
+  "salesTitle": "매출 실적 및 전망",
+  "salesLegendPlan": "매출(계획)",
+  "salesLegendActual": "매출(실적)",
+  "salesLegendForecast": "매출(전망)",
+  "salesTooltipLine": "매출({{label}}): {{value}}",
+  "annualCumulativeShort": "연 누계",
+  "overallCumulativeLabel": "전체 누계",
+
+  "statusCategoryHeader": "구분",
+  "statusColumnHeader": "상태",
+  "statusAriaSuffix": "상태",
+  "categoryCost": "원가",
+  "typeMonthly": "월",
+
+  "costTitle": "원가 (집행누계)",
+  "executionRateLabel": "집행률",
+
+  "fundsSyncNote": "※ 경영현황판 자금수지 (상세보기 포함)와 동일하게",
+  "cumulativeSalesLabel": "누계 매출",
+  "cumulativeConfirmedLabel": "누계 기성 (확정)",
+  "collectionActualLabel": "수금 (실적)",
+  "receivableLabel": "미수금 (채권)",
+  "collectionRateLabel": "수금률 (수금 / 누계 기성)",
+  "fundsForecastNote": "※ 매출처럼 계획, 전망 표시",
+  "fundsDetailNote": "※ 상세보기 표는 매출, 인정, 수금 채권 추가"
+}

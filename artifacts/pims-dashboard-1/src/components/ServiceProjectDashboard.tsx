@@ -2,32 +2,27 @@ import React, { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePutProjectdetail, useGetPimsvinaSiterate, getBaseUrl } from "@workspace/api-client-react";
-import { ProjectCommentPanel } from "./ProjectCommentPanel";
 import { Download, FileSpreadsheet, Upload, RefreshCw } from "lucide-react";
 import { downloadProjectDetailTemplate, parseProjectDetailWorkbook, ExcelParseError } from "../lib/projectDetailExcel";
-import { MiniBar } from "./ProjectDashboard";
-import { Donut } from "./charts";
 import { SaleCostTab } from "./SaleCostTab";
 import { OutsourcingTab } from "./OutsourcingTab";
 import { ServiceCashflowTab } from "./ServiceCashflowTab";
 import { ServiceReportTab } from "./ServiceReportTab";
 import { ProjectDataEntryTab } from "./ProjectDataEntryTab";
 import { PimsvinaSyncPreviewModal, type PimsvinaPreviewData } from "./PimsvinaSyncPreviewModal";
-import { useProjectDetail, getGetProjectdetailQueryKey, fmtPct, ratioPct } from "../lib/projectDetailData";
+import { useProjectDetail, getGetProjectdetailQueryKey } from "../lib/projectDetailData";
 import { useAdminAuth, readAdminToken } from "../lib/adminAuth";
-import { DisplayUnitProvider, DEFAULT_EXCHANGE_RATES, formatMoney, formatVnd, moneyUnitLabel, convertVndToKUsdAmount } from "../lib/displayUnit";
+import { DisplayUnitProvider, DEFAULT_EXCHANGE_RATES, formatMoney, moneyUnitLabel, convertVndToKUsdAmount } from "../lib/displayUnit";
 import { useDashboardFilters } from "../lib/dashboardFilters";
 import { useAnyProjectLocked } from "../lib/useAnyProjectLocked";
-import { CardHeader, rateColor } from "./OverviewTab";
 import { chartTheme } from "../lib/chartTheme";
-import { cardStyle, sectionTitle, emptyNote, INK_NAVY, INK_BODY, INK_SECONDARY, INK_MUTED, CARD_BORDER, POINT_BLUE, DIVIDER, TABLE_HEADER_BG, MUTED_HINT, SUCCESS_GREEN, DISABLED_GRAY } from "../lib/uiTokens";
+import { cardStyle, sectionTitle, emptyNote, INK_NAVY, INK_BODY, INK_MUTED, CARD_BORDER, POINT_BLUE, TABLE_HEADER_BG, MUTED_HINT, SUCCESS_GREEN, DISABLED_GRAY } from "../lib/uiTokens";
 import { ProjectContextBar } from "./ProjectContextBar";
 
-const TABS = ["Overview", "Report", "Sale & Cost", "Outsourcing", "Cashflow", "Data entry"];
+const TABS = ["Report", "Sale & Cost", "Outsourcing", "Cashflow", "Data entry"];
 
 /** tab id → fully-qualified i18next key (may reference the shared "common" namespace) */
 const TAB_LABEL_KEYS: Record<string, string> = {
-  Overview: "common:overview",
   Report: "serviceProjectDashboard:reportTab",
   "Sale & Cost": "serviceProjectDashboard:saleCostTab",
   Outsourcing: "common:outsourcing",
@@ -106,7 +101,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
   const { fxRates } = useDashboardFilters();
   const [currency, setCurrency] = useState("USD");
   const [unitOn, setUnitOn] = useState(true);
-  const [activeTab, setActiveTab] = useState("Overview");
+  const [activeTab, setActiveTab] = useState("Report");
   const { isAdmin } = useAdminAuth();
   const [syncing, setSyncing] = useState(false);
   const [syncPreview, setSyncPreview] = useState<PimsvinaPreviewData | null>(null);
@@ -192,44 +187,6 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
     }
   };
 
-  const costBudget = detail?.costBudget ?? [];
-  const outsourcing = detail?.outsourcing ?? [];
-
-  // 예산 집행 현황 — 시공(OverviewTab)과 동일한 구조
-  const findCb = (name: string) =>
-    costBudget.find((r) => r.item.trim().toLowerCase() === name.toLowerCase()) ?? null;
-  const _common = findCb("Common");
-  const _expense1 = findCb("Expense 1");
-  const _expense2 = findCb("Expense 2");
-  const _contingency = findCb("Contingency");
-  const outRows = outsourcing;
-  const outBudget = outRows.some((r) => r.budget != null)
-    ? outRows.reduce((a, r) => a + (r.budget ?? 0), 0)
-    : null;
-  const outActual = outRows.some((r) => r.accum != null || r.resolved != null)
-    ? outRows.reduce((a, r) => a + (r.accum ?? r.resolved ?? 0), 0)
-    : null;
-  const outPlan = outRows.some((r) => r.executedBudget != null)
-    ? outRows.reduce((a, r) => a + (r.executedBudget ?? 0), 0)
-    : null;
-  const budgetRows = [
-    { item: "Outsourcing", budget: outBudget, plan: outPlan, actual: outActual },
-    { item: "Common", budget: _common?.budget ?? null, plan: _common?.plan ?? null, actual: _common?.actual ?? null },
-    { item: "Expense 1", budget: _expense1?.budget ?? null, plan: _expense1?.plan ?? null, actual: _expense1?.actual ?? null },
-  ].filter((r) => r.budget != null || r.actual != null || r.plan != null);
-  const extraBudgetRows = [
-    { item: "Expense 2", budget: _expense2?.budget ?? null, plan: _expense2?.plan ?? null, actual: _expense2?.actual ?? null },
-    { item: "Contingency", budget: _contingency?.budget ?? null, plan: _contingency?.plan ?? null, actual: _contingency?.actual ?? null },
-  ].filter((r) => r.budget != null || r.actual != null || r.plan != null);
-  const allBudgetRows = [...budgetRows, ...extraBudgetRows];
-  const directCostPct = ratioPct(
-    budgetRows.reduce((a, r) => a + (r.actual ?? 0), 0),
-    budgetRows.reduce((a, r) => a + (r.budget ?? 0), 0),
-  );
-  const totalBudgetSum = allBudgetRows.reduce((a, r) => a + (r.budget ?? 0), 0);
-  const totalActualSum = allBudgetRows.reduce((a, r) => a + (r.actual ?? 0), 0);
-  const totalCostPct = ratioPct(totalActualSum, totalBudgetSum);
-
   // 도급액 — 개요 입력값 우선, 없으면 원가율 데이터(execution 우선, 없으면 bidding)의 도급액 사용.
   // overview/execution은 VND 원본 그대로 저장되고 bidding은 천 USD로 저장되어 단위가 서로 다르므로,
   // 이 화면(차트/비율 계산 등 천 USD 기준 다른 값들과 함께 쓰임) 전체에서 일관되게 쓸 수 있도록 여기서
@@ -260,15 +217,6 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
     }
     return `${fmt(ov?.startDate)} ~ ${fmt(ov?.endDate)}${months != null ? ` (${t("serviceProjectDashboard:monthsSuffix", { months })})` : ""}`;
   })();
-
-  // Revenue / Cash 카드 값
-  const revenueTarget = ov?.revenueAnnualTarget ?? null;
-  const revenueTotal = ov?.revenueTotal ?? null;
-  const achievementPct = ratioPct(revenueTotal, revenueTarget);
-  const cashConfirmed = ov?.cashConfirmed ?? null;
-  const cashCollection = ov?.cashCollection ?? null;
-  const cashOutstanding =
-    cashConfirmed != null && cashCollection != null ? cashConfirmed - cashCollection : null;
 
   return (
     <DisplayUnitProvider currency={currency} unitOn={unitOn} rates={siteRates}>
@@ -501,7 +449,6 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
             projectName={projectName}
             referenceYear={toYear}
             referenceMonth={Number(toMonth)}
-            krwPerUsd={siteRates.KRW}
           />
         ) : activeTab === "Sale & Cost" ? (
           <SaleCostTab
@@ -612,261 +559,6 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
             </div>
             <ProjectDataEntryTab projectName={projectName} service />
           </>
-        ) : activeTab === "Overview" ? (
-          (() => {
-            const unitStr = moneyUnitLabel(currency, unitOn);
-            // 매출 진도 (누계 매출 / 도급액) — 예산집행 기준선으로 사용
-            const revProgress = ratioPct(revenueTotal, contractAmount);
-            const totalDonutPct = ratioPct(revenueTotal, contractAmount);
-            const collectionRatePct =
-              cashConfirmed != null && cashConfirmed > 0 && cashCollection != null
-                ? (cashCollection / cashConfirmed) * 100
-                : null;
-            return (
-          <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: "8px" }}>
-            {/* Row: Revenue (도넛 2개) / Budget Execution Status / Cash (막대 4개) */}
-            <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1.2fr 1fr", gap: "8px", alignItems: "stretch" }}>
-              {/* Revenue — 연간/전체 도넛 (달성 초록 · 미달 빨강) */}
-              <div style={cardStyle}>
-                <CardHeader
-                  title={t("common:revenue")}
-                  unit={unitStr}
-                  badgeLabel={t("serviceProjectDashboard:annualShortLabel")}
-                  badgeValue={achievementPct != null ? fmtPct(achievementPct) : undefined}
-                  badgeColor={rateColor(achievementPct)}
-                />
-                {isLoading ? (
-                  <div style={{ ...emptyNote, padding: "40px 10px" }}>{t("common:loading")}</div>
-                ) : revenueTarget == null && revenueTotal == null ? (
-                  <EmptyHint label={t("serviceProjectDashboard:revenueTargetActualLabel")} />
-                ) : (
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-evenly", padding: "26px 0 10px" }}>
-                    <div style={{ textAlign: "center" }}>
-                      <Donut
-                        percent={achievementPct ?? 0}
-                        color={rateColor(achievementPct)}
-                        size={150}
-                        stroke={16}
-                        label={fmtPct(achievementPct)}
-                        labelSize={24}
-                        labelColor={rateColor(achievementPct)}
-                      />
-                      <div style={{ fontSize: "13px", color: INK_NAVY, fontWeight: 700, marginTop: "8px" }}>
-                        {t("serviceProjectDashboard:annualTargetAchievementRate")}
-                      </div>
-                      <div style={{ fontSize: "12px", color: INK_SECONDARY, marginTop: "3px" }}>
-                        {t("common:actual")} <b style={{ color: INK_NAVY }}>{formatMoney(revenueTotal, currency, unitOn)}</b>
-                        {" / "}{t("serviceProjectDashboard:annualTargetLabel")} {formatMoney(revenueTarget, currency, unitOn)}
-                      </div>
-                    </div>
-                    <div style={{ textAlign: "center" }}>
-                      <Donut
-                        percent={totalDonutPct ?? 0}
-                        color={rateColor(totalDonutPct)}
-                        size={150}
-                        stroke={16}
-                        label={fmtPct(totalDonutPct)}
-                        labelSize={24}
-                        labelColor={rateColor(totalDonutPct)}
-                      />
-                      <div style={{ fontSize: "13px", color: INK_NAVY, fontWeight: 700, marginTop: "8px" }}>
-                        {t("serviceProjectDashboard:cumulativeRevenueAchievementRate")}
-                      </div>
-                      <div style={{ fontSize: "12px", color: INK_SECONDARY, marginTop: "3px" }}>
-                        {t("common:actual")} <b style={{ color: INK_NAVY }}>{formatMoney(revenueTotal, currency, unitOn)}</b>
-                        {" / "}{t("common:contractAmount")} {formatMoney(contractAmount, currency, unitOn)}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Budget Execution Status — 시공(OverviewTab)과 동일한 3-막대 스타일 */}
-              <div style={cardStyle}>
-                <CardHeader
-                  title={t("overviewTab:budgetExecutionStatus")}
-                  unit={unitStr}
-                  badgeLabel={t("overviewTab:totalCost")}
-                  badgeValue={fmtPct(totalCostPct)}
-                  badgeColor={chartTheme.planBlue}
-                />
-                {isLoading ? (
-                  <div style={{ ...emptyNote, padding: "40px 10px" }}>{t("common:loading")}</div>
-                ) : allBudgetRows.length === 0 ? (
-                  <EmptyHint label={t("serviceProjectDashboard:budgetExecutionEmptyLabel")} />
-                ) : (
-                  <>
-                    <div style={{ display: "flex", gap: "10px", alignItems: "stretch" }}>
-                      {(() => {
-                        const BAR_H = 130;
-                        const LABEL_H = 18;
-                        const maxVal = Math.max(
-                          ...allBudgetRows.flatMap((r) => [r.budget ?? 0, r.plan ?? 0, r.actual ?? 0]),
-                          1,
-                        );
-                        const barH = (v: number | null) =>
-                          v != null && v > 0 ? Math.max((v / maxVal) * BAR_H, 8) : 0;
-                        const GRAY_W = 68;
-                        const renderGroup = (g: (typeof allBudgetRows)[number]) => {
-                          const bud = g.budget ?? 0;
-                          const pln = g.plan ?? 0;
-                          const act = g.actual ?? 0;
-                          const pct = bud > 0 && act > 0 ? (act / bud) * 100 : null;
-                          const bh = barH(bud);
-                          const ph = barH(pln);
-                          const ah = barH(act);
-                          const subTop = Math.max(ph, ah);
-                          const itemLabel = g.item === "Outsourcing" ? t("overviewTab:outsourcingItem") : g.item;
-                          // bud/pln/act đến từ pd_cost_budget/pd_outsourcing — lưu VND gốc (không quy
-                          // đổi kUSD) — dùng formatVnd() thay vì formatMoney().
-                          return (
-                            <div key={g.item} style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center" }}>
-                              <div title={formatVnd(bud || null, currency)} style={{ fontSize: "12px", fontWeight: 600, color: INK_BODY, marginBottom: "2px", whiteSpace: "nowrap", maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis" }}>
-                                {formatVnd(bud || null, currency)}
-                              </div>
-                              <div style={{ position: "relative", height: `${BAR_H + LABEL_H}px`, width: `${GRAY_W}px` }}>
-                                <div style={{ position: "absolute", bottom: 0, left: 0, width: `${GRAY_W}px`, height: `${Math.max(bh, 2)}px`, backgroundColor: chartTheme.lightGray, borderRadius: "2px 2px 0 0" }} />
-                                {g.actual != null && ah > 0 && (
-                                  <div style={{ position: "absolute", bottom: 0, left: 0, width: `${GRAY_W}px`, height: `${ah}px`, backgroundColor: chartTheme.inflowBlue, borderRadius: "0 0 2px 2px" }}>
-                                    <span title={formatVnd(act || null, currency)} style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", fontSize: "10px", color: "#fff", fontWeight: 700, whiteSpace: "nowrap" }}>
-                                      {formatVnd(act || null, currency)}
-                                    </span>
-                                  </div>
-                                )}
-                                {g.plan != null && ph > 0 && (
-                                  <div title={formatVnd(pln || null, currency)} style={{ position: "absolute", bottom: `${ph}px`, left: 0, width: `${GRAY_W}px`, height: "3px", backgroundColor: chartTheme.outflowRed, borderRadius: "2px", zIndex: 2 }} />
-                                )}
-                                {pct != null && (
-                                  <div style={{ position: "absolute", bottom: `${subTop + 4}px`, left: "50%", transform: "translateX(-50%)", fontSize: "12px", fontWeight: 700, color: chartTheme.inflowBlue, whiteSpace: "nowrap" }}>
-                                    {fmtPct(pct)}
-                                  </div>
-                                )}
-                              </div>
-                              <div style={{ fontSize: "13px", color: INK_NAVY, fontWeight: 700, marginTop: "4px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" }}>
-                                {itemLabel}
-                              </div>
-                            </div>
-                          );
-                        };
-                        return (
-                          <>
-                            {budgetRows.length > 0 && (
-                              <div style={{ flex: budgetRows.length, minWidth: 0, backgroundColor: "rgba(214,226,240,0.28)", border: `1px solid ${CARD_BORDER}`, borderRadius: "8px", padding: "6px 8px 8px" }}>
-                                <div style={{ textAlign: "center", fontSize: "13px", color: INK_NAVY, fontWeight: 700, marginBottom: "4px" }}>
-                                  {t("overviewTab:directCost")} : {fmtPct(directCostPct)}
-                                </div>
-                                <div style={{ display: "flex", justifyContent: "space-around", gap: "8px", alignItems: "flex-end" }}>
-                                  {budgetRows.map(renderGroup)}
-                                </div>
-                              </div>
-                            )}
-                            {extraBudgetRows.length > 0 && (
-                              <div style={{ flex: extraBudgetRows.length, minWidth: 0, display: "flex", justifyContent: "space-around", gap: "8px", alignItems: "flex-end", padding: "6px 0 8px" }}>
-                                {extraBudgetRows.map(renderGroup)}
-                              </div>
-                            )}
-                          </>
-                        );
-                      })()}
-                    </div>
-                    {/* 합계 (좌) + 범례 (우) — 같은 행 */}
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        marginTop: "10px",
-                        paddingTop: "7px",
-                        borderTop: `1px solid ${DIVIDER}`,
-                        flexWrap: "wrap",
-                        gap: "6px",
-                      }}
-                    >
-                      <span style={{ fontSize: "13px", color: INK_NAVY, fontWeight: 700 }}>
-                        {t("common:total")} : {formatMoney(totalActualSum || null, currency, unitOn)} / {formatMoney(totalBudgetSum || null, currency, unitOn)}
-                        {totalCostPct != null && ` (${fmtPct(totalCostPct)})`}
-                      </span>
-                      <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
-                        {[
-                          { label: t("overviewTab:totalBudget"), color: chartTheme.lightGray },
-                          { label: t("overviewTab:executionPlanCumulative"), color: chartTheme.outflowRed },
-                          { label: t("overviewTab:executionActualCumulative"), color: chartTheme.inflowBlue },
-                        ].map(({ label, color }) => (
-                          <div key={label} style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                            <div style={{ width: "11px", height: "11px", backgroundColor: color, borderRadius: "2px" }} />
-                            <span style={{ fontSize: "12px", color: INK_SECONDARY }}>{label}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
-
-              {/* Cash — 매출·확정·수금·채권 */}
-              <div style={cardStyle}>
-                <CardHeader
-                  title={t("serviceProjectDashboard:cashLabel")}
-                  unit={unitStr}
-                  badgeLabel={t("serviceProjectDashboard:collectionRateLabel")}
-                  badgeValue={collectionRatePct != null ? fmtPct(collectionRatePct) : undefined}
-                  badgeColor={rateColor(collectionRatePct)}
-                />
-                {isLoading ? (
-                  <div style={{ ...emptyNote, padding: "40px 10px" }}>{t("common:loading")}</div>
-                ) : revenueTotal == null && cashConfirmed == null && cashCollection == null ? (
-                  <EmptyHint label={t("serviceProjectDashboard:cashEmptyLabel")} />
-                ) : (
-                  (() => {
-                    const rev = revenueTotal ?? 0;
-                    const conf = cashConfirmed ?? 0;
-                    const coll = cashCollection ?? 0;
-                    const outs = Math.max(cashOutstanding ?? 0, 0);
-                    const cashMax = Math.max(rev, conf, coll, outs, 1);
-                    return (
-                      <>
-                        {/* 막대 그래프 */}
-                        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-around", marginTop: "10px", height: "130px" }}>
-                          <MiniBar value={rev}  max={cashMax} color={chartTheme.neutralGray} label={t("common:revenue")}                          height={100} width={34} />
-                          <MiniBar value={conf} max={cashMax} color={chartTheme.neutralGray} label={t("serviceProjectDashboard:confirmedA")}      height={100} width={34} />
-                          <MiniBar value={coll} max={cashMax} color={chartTheme.balanceNavy} label={t("serviceProjectDashboard:collectionB")}     height={100} width={34} />
-                          <MiniBar value={outs} max={cashMax} color={chartTheme.outflowRed}  label={t("serviceProjectDashboard:receivableAB")}    height={100} width={34} />
-                        </div>
-                        {/* 하단 수치 테이블 */}
-                        <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px", fontSize: "12px" }}>
-                          <tbody>
-                            {([
-                              { label: t("common:revenue"),                          value: rev,  color: chartTheme.neutralGray },
-                              { label: t("serviceProjectDashboard:confirmedA"),      value: conf, color: chartTheme.neutralGray },
-                              { label: t("serviceProjectDashboard:collectionB"),     value: coll, color: chartTheme.balanceNavy },
-                              { label: t("serviceProjectDashboard:receivableAB"),    value: outs, color: chartTheme.outflowRed  },
-                            ] as const).map(({ label, value, color }) => (
-                              <tr key={label} style={{ borderTop: `1px solid ${DIVIDER}` }}>
-                                <td style={{ padding: "4px 4px 4px 0", display: "flex", alignItems: "center", gap: "5px", whiteSpace: "nowrap" }}>
-                                  <div style={{ width: "8px", height: "8px", borderRadius: "2px", backgroundColor: color, flexShrink: 0 }} />
-                                  <span style={{ color: INK_MUTED }}>{label}</span>
-                                </td>
-                                <td style={{ padding: "4px 0", textAlign: "right", fontWeight: 600, color: INK_NAVY, whiteSpace: "nowrap" }}>
-                                  {formatMoney(value || null, currency, unitOn)}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </>
-                    );
-                  })()
-                )}
-              </div>
-            </div>
-
-            {/* Comment */}
-            <div style={cardStyle}>
-              <ProjectCommentPanel projectName={projectName} tab="service" />
-            </div>
-          </div>
-            );
-          })()
         ) : (
           <div
             style={{

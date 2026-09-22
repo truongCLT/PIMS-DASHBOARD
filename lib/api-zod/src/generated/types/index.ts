@@ -108,6 +108,8 @@ export * from './projectDetailOverview';
 export * from './projectDetailPhoto';
 export * from './projectDetailProgressPoint';
 export * from './projectDetailSalesPoint';
+export * from './projectDetailSiteOverviewPhoto';
+export * from './projectDetailSitePhotoMonthly';
 export * from './revertMgmtreportImport';
 export * from './salescostImportPreview';
 export * from './salescostImportPreviewTotals';

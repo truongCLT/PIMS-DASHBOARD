@@ -80,7 +80,18 @@ const ITEM_LABEL_KEY: Record<string, string> = {
   "Outsourcing": "outsourcingItem",
 };
 
-function PhotoCard({ projectName, photos, slideshowIntervalSeconds = 0 }: { projectName: string; photos: ProjectDetailPhoto[]; slideshowIntervalSeconds?: number }) {
+function PhotoCard({
+  projectName,
+  photos,
+  overviewPhotoUrl,
+  slideshowIntervalSeconds = 0,
+}: {
+  projectName: string;
+  photos: ProjectDetailPhoto[];
+  /** PIMSVINA에서 동기화된 조감도(cb_prjt_air_view_e_1q.jsp) — 있으면 이 사진을 우선 표시한다. */
+  overviewPhotoUrl?: string | null;
+  slideshowIntervalSeconds?: number;
+}) {
   const { t } = useTranslation(["overviewTab", "common"]);
   const [active, setActive] = useState(0);
 
@@ -88,6 +99,22 @@ function PhotoCard({ projectName, photos, slideshowIntervalSeconds = 0 }: { proj
   useEffect(() => {
     if (active >= photos.length && photos.length > 0) setActive(0);
   }, [photos.length, active]);
+
+  // 조감도가 동기화되어 있으면 그 사진 1장만, 아니면 기존 수동 업로드 사진 슬라이드쇼로 대체.
+  if (overviewPhotoUrl) {
+    return (
+      <div style={{ ...cardStyle, padding: "8px", display: "flex", flexDirection: "column", minHeight: "220px" }}>
+        <PhotoPager
+          src={overviewPhotoUrl}
+          alt={t("overviewTab:sitePhotoAlt", { projectName })}
+          total={1}
+          current={0}
+          onChange={() => {}}
+          imgStyle={{ minHeight: "170px" }}
+        />
+      </div>
+    );
+  }
 
   const hasPhotos = photos.length > 0;
   const safeIdx = Math.min(active, Math.max(photos.length - 1, 0));
@@ -633,7 +660,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
       {/* Row 2: Photo / Budget Execution Status / Cash */}
       <div style={{ display: "grid", gridTemplateColumns: ROW_COLUMNS, gap: "8px" }}>
         {/* Photo */}
-        <PhotoCard projectName={projectName} photos={detail?.photos ?? []} slideshowIntervalSeconds={detail?.overview?.slideshowIntervalSeconds ?? 0} />
+        <PhotoCard projectName={projectName} photos={detail?.photos ?? []} overviewPhotoUrl={detail?.siteOverviewPhoto?.imageUrl} slideshowIntervalSeconds={detail?.overview?.slideshowIntervalSeconds ?? 0} />
 
         {/* Budget Execution Status */}
         <div style={cardStyle}>

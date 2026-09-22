@@ -476,7 +476,19 @@ export const GetProjectdetailResponse = zod.object({
 })).optional().describe('표시용 월별 매출. 경영보고 값 우선, 없는 월은 ERP\/데이터입력 값으로 보완.'),
   "photos": zod.array(zod.object({
   "objectPath": zod.string().describe('Object storage path (\'\/objects\/uploads\/<uuid>\')')
-}))
+})),
+  "sitePhotosMonthly": zod.array(zod.object({
+  "year": zod.number(),
+  "month": zod.number(),
+  "seq": zod.number(),
+  "location": zod.string().nullable(),
+  "contType": zod.string().nullable(),
+  "note": zod.string().nullable(),
+  "imageUrl": zod.string().nullable()
+})).optional().describe('PIMSVINA에서 동기화된 월별 현장 사진(공정 탭 슬라이더용) — 읽기 전용, PIMSVINA Sync로만 채워진다.'),
+  "siteOverviewPhoto": zod.object({
+  "imageUrl": zod.string().nullable()
+}).nullish().describe('PIMSVINA에서 동기화된 조감도(개요 탭용) — 읽기 전용, 없으면 null.')
 })
 
 
@@ -635,7 +647,19 @@ export const PutProjectdetailBody = zod.object({
 })).optional().describe('표시용 월별 매출. 경영보고 값 우선, 없는 월은 ERP\/데이터입력 값으로 보완.'),
   "photos": zod.array(zod.object({
   "objectPath": zod.string().describe('Object storage path (\'\/objects\/uploads\/<uuid>\')')
-}))
+})),
+  "sitePhotosMonthly": zod.array(zod.object({
+  "year": zod.number(),
+  "month": zod.number(),
+  "seq": zod.number(),
+  "location": zod.string().nullable(),
+  "contType": zod.string().nullable(),
+  "note": zod.string().nullable(),
+  "imageUrl": zod.string().nullable()
+})).optional().describe('PIMSVINA에서 동기화된 월별 현장 사진(공정 탭 슬라이더용) — 읽기 전용, PIMSVINA Sync로만 채워진다.'),
+  "siteOverviewPhoto": zod.object({
+  "imageUrl": zod.string().nullable()
+}).nullish().describe('PIMSVINA에서 동기화된 조감도(개요 탭용) — 읽기 전용, 없으면 null.')
 })
 
 export const putProjectdetailResponseOverviewSlideshowIntervalSecondsMin = 0;
@@ -790,7 +814,19 @@ export const PutProjectdetailResponse = zod.object({
 })).optional().describe('표시용 월별 매출. 경영보고 값 우선, 없는 월은 ERP\/데이터입력 값으로 보완.'),
   "photos": zod.array(zod.object({
   "objectPath": zod.string().describe('Object storage path (\'\/objects\/uploads\/<uuid>\')')
-}))
+})),
+  "sitePhotosMonthly": zod.array(zod.object({
+  "year": zod.number(),
+  "month": zod.number(),
+  "seq": zod.number(),
+  "location": zod.string().nullable(),
+  "contType": zod.string().nullable(),
+  "note": zod.string().nullable(),
+  "imageUrl": zod.string().nullable()
+})).optional().describe('PIMSVINA에서 동기화된 월별 현장 사진(공정 탭 슬라이더용) — 읽기 전용, PIMSVINA Sync로만 채워진다.'),
+  "siteOverviewPhoto": zod.object({
+  "imageUrl": zod.string().nullable()
+}).nullish().describe('PIMSVINA에서 동기화된 조감도(개요 탭용) — 읽기 전용, 없으면 null.')
 })
 
 

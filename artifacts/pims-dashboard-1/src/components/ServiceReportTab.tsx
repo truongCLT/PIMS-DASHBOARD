@@ -2,12 +2,14 @@ import React, { useState } from "react";
 import { FileDown, Loader2 } from "lucide-react";
 import { Button } from "@workspace/aqua-glass/components/ui/button";
 import { ProjectCommentPanel } from "./ProjectCommentPanel";
-import { useProjectDetail, fmtPct, ratioPct } from "../lib/projectDetailData";
+import { useProjectDetail, fmtPct } from "../lib/projectDetailData";
 import { useMoney } from "../lib/displayUnit";
 import { chartTheme } from "../lib/chartTheme";
 import { SalesSection } from "./project-report/SalesSection";
 import { CostSection } from "./project-report/CostSection";
 import { FundsSection } from "./project-report/FundsSection";
+import { StatusTableSection } from "./project-report/StatusTableSection";
+import type { StatusRowData, CostBreakdownRow } from "./project-report/reportTypes";
 import {
   exportProjectReportPdf,
   runProjectReportExport,
@@ -20,9 +22,6 @@ import {
   INK_MUTED,
   DIVIDER,
   TABLE_HEADER_BG,
-  SUCCESS_GREEN,
-  WARNING_BORDER,
-  ACHIEVE_RED,
 } from "../lib/uiTokens";
 
 const DASH = "-";
@@ -60,40 +59,17 @@ function PlanActualBar({ plan, actual }: { plan: number | null; actual: number |
   );
 }
 
-type Signal = "green" | "yellow" | "red" | "none";
-
-function TrafficLight({ signal }: { signal: Signal }) {
-  const color =
-    signal === "green"
-      ? SUCCESS_GREEN
-      : signal === "yellow"
-        ? WARNING_BORDER
-        : signal === "red"
-          ? ACHIEVE_RED
-          : INK_MUTED;
-  const label =
-    signal === "green" ? "초록불" : signal === "yellow" ? "노란불" : signal === "red" ? "빨간불" : DASH;
-  return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", color, fontWeight: 700, whiteSpace: "nowrap" }}>
-      <span style={{ width: "9px", height: "9px", borderRadius: "50%", backgroundColor: color, boxShadow: `0 0 0 2px ${color}20` }} />
-      {label}
-    </span>
-  );
-}
-
 export function ServiceReportTab({
   projectName,
   referenceYear,
   referenceMonth,
-  krwPerUsd,
 }: {
   projectName: string;
   referenceYear: number;
   referenceMonth: number;
-  krwPerUsd: number;
 }) {
   const { detail, isLoading } = useProjectDetail(projectName);
-  const { fmtMoney, fmtVnd, unitLabel } = useMoney();
+  const { fmtVnd, unitLabel } = useMoney();
   const [isExporting, setIsExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
 
@@ -181,68 +157,25 @@ export function ServiceReportTab({
     return start && end ? (Number(end[1]) - Number(start[1])) * 12 + Number(end[2]) - Number(start[2]) + 1 : null;
   })();
   const contractConditions = detail?.costEstimation?.find((row) => row.kind === "execution")?.note ?? null;
-  const recognized = cashCumIn;
-  const receivable = salesCumActual != null && recognized != null ? salesCumActual - recognized : null;
-
-  const planActualSignal = (
-    monthPlan: number | null,
-    monthActual: number | null,
-    cumPlan: number | null,
-    cumActual: number | null,
-  ): { signal: Signal; condition: string } => {
-    if (monthPlan == null || monthActual == null || cumPlan == null || cumActual == null) {
-      return { signal: "none", condition: "판정 데이터 없음" };
-    }
-    if (cumActual < cumPlan) return { signal: "red", condition: "누계 실적 < 누계 계획" };
-    if (monthActual < monthPlan) return { signal: "yellow", condition: "누계 달성, 월 실적 < 월 계획" };
-    return { signal: "green", condition: "누계 실적 ≥ 누계 계획" };
-  };
-  const progressSignal = planActualSignal(
-    monthProgress?.planPct ?? null,
-    monthProgress?.actualPct ?? null,
-    monthProgress?.planCumPct ?? null,
-    monthProgress?.actualCumPct ?? null,
-  );
-  const salesSignal = planActualSignal(salesMonthPlan, salesMonthActual, salesCumPlan, salesCumActual);
-  const costDeviations = budgetItems
-    .filter((row) => row.plan != null && row.plan > 0 && row.actual != null)
-    .map((row) => Math.abs(((row.actual! - row.plan!) / row.plan!) * 100));
-  const totalCostDeviation =
-    budgetPlan != null && budgetPlan > 0 && budgetActual != null
-      ? Math.abs(((budgetActual - budgetPlan) / budgetPlan) * 100)
-      : null;
-  const overFiveCount = costDeviations.filter((value) => value > 5).length;
-  const overTwoCount = costDeviations.filter((value) => value > 2 && value <= 5).length;
-  const costSignal: { signal: Signal; condition: string; priority: string } =
-    totalCostDeviation == null
-      ? { signal: "none", condition: "판정 데이터 없음", priority: DASH }
-      : overFiveCount > 0
-        ? { signal: "red", condition: `${overFiveCount}개 항목 계획 대비 5% 초과`, priority: "우선" }
-        : overTwoCount >= 3 || totalCostDeviation > 2
-          ? {
-              signal: "yellow",
-              condition:
-                overTwoCount >= 3
-                  ? `${overTwoCount}개 항목 계획 대비 2~5% 이격`
-                  : `총 원가 계획 대비 ${totalCostDeviation.toFixed(1)}% 이격`,
-              priority: "2선",
-            }
-          : { signal: "green", condition: `총 원가 계획 대비 ${totalCostDeviation.toFixed(1)}% 이격`, priority: "3선" };
-  const tenEokKrwInKUsd = 1_000_000_000 / Math.max(krwPerUsd, 1) / 1_000;
-  const fundsSignal: { signal: Signal; condition: string } =
-    receivable == null
-      ? { signal: "none", condition: "판정 데이터 없음" }
-      : receivable <= 0
-        ? { signal: "green", condition: "채권이 0" }
-        : receivable < tenEokKrwInKUsd
-          ? { signal: "yellow", condition: "채권이 0~10억" }
-          : { signal: "red", condition: "채권이 10억 이상" };
-  const statusRows = [
-    { label: "공정", ...progressSignal, priority: DASH },
-    { label: "매출", ...salesSignal, priority: DASH },
-    { label: "원가", ...costSignal },
-    { label: "자금", ...fundsSignal, priority: DASH },
+  // 시공(Construction) 보고서와 동일한 StatusTableSection을 그대로 재사용 — 구분(공정/매출/원가/자금)별
+  // 월/누계 계획·실적과 규칙 기반 상태등을 표시한다. 용역은 월별 원가 계획 데이터 소스가 따로 없어
+  // 원가의 "월" 행은 비워두고(누계만 채용), 나머지는 시공과 동일한 필드 매핑을 쓴다.
+  const positiveOrNull = (value: number | null) => (value != null && value > 0 ? value : null);
+  const statusRows: StatusRowData[] = [
+    { category: "공정", type: "월", plan: monthProgress?.planPct ?? null, actual: monthProgress?.actualPct ?? null },
+    { category: "공정", type: "누계", plan: monthProgress?.planCumPct ?? null, actual: monthProgress?.actualCumPct ?? null },
+    { category: "매출", type: "월", plan: salesMonthPlan, actual: salesMonthActual },
+    { category: "매출", type: "누계", plan: positiveOrNull(salesCumPlan), actual: positiveOrNull(salesCumActual) },
+    { category: "원가", type: "월", plan: null, actual: null },
+    { category: "원가", type: "누계", plan: budgetPlan, actual: budgetActual },
+    { category: "자금", type: "월", plan: salesMonthActual, actual: cashMonthIn },
+    { category: "자금", type: "누계", plan: positiveOrNull(salesCumActual), actual: positiveOrNull(cashCumIn) },
   ];
+  const costBreakdownRows: CostBreakdownRow[] = budgetItems.map((row) => ({
+    label: row.label,
+    plan: row.plan,
+    actual: row.actual,
+  }));
   const reportCaptureId = "service-report-capture";
   const handleReportExport = async () => {
     if (isExporting) return;
@@ -310,29 +243,7 @@ export function ServiceReportTab({
           contractAmount={overview?.contractAmount ?? null}
         />
 
-        <div style={{ ...cardStyle, overflowX: "auto" }}>
-          <div style={sectionTitle}>현황</div>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "10px" }}>
-            <thead>
-              <tr>
-                <th style={{ padding: "4px", background: TABLE_HEADER_BG }}>구분</th>
-                <th style={{ padding: "4px", background: TABLE_HEADER_BG }}>판정 기준</th>
-                <th style={{ padding: "4px", background: TABLE_HEADER_BG }}>신호등</th>
-                <th style={{ padding: "4px", background: TABLE_HEADER_BG }}>우선순위</th>
-              </tr>
-            </thead>
-            <tbody>
-              {statusRows.map((row) => (
-                <tr key={row.label}>
-                  <td style={{ padding: "6px 4px", borderBottom: `1px solid ${DIVIDER}`, fontWeight: 700, color: INK_NAVY }}>{row.label}</td>
-                  <td style={{ padding: "6px 4px", borderBottom: `1px solid ${DIVIDER}`, color: INK_BODY }}>{row.condition}</td>
-                  <td style={{ padding: "6px 4px", borderBottom: `1px solid ${DIVIDER}` }}><TrafficLight signal={row.signal} /></td>
-                  <td style={{ padding: "6px 4px", textAlign: "center", borderBottom: `1px solid ${DIVIDER}`, fontWeight: row.priority !== DASH ? 700 : 400 }}>{row.priority}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <StatusTableSection rows={statusRows} costBreakdown={costBreakdownRows} />
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "8px" }}>

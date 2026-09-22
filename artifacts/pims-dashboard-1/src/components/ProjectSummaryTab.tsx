@@ -142,10 +142,13 @@ function GroupHeader({ title }: { title: string }) {
 function SitePhotoPanel({
   projectName,
   photos,
+  overviewPhotoUrl,
   slideshowIntervalSeconds = 0,
 }: {
   projectName: string;
   photos: ProjectDetailPhoto[];
+  /** PIMSVINA에서 동기화된 조감도(cb_prjt_air_view_e_1q.jsp) — 있으면 이 사진을 우선 표시한다. */
+  overviewPhotoUrl?: string | null;
   slideshowIntervalSeconds?: number;
 }) {
   const { t } = useTranslation(["overviewTab"]);
@@ -161,8 +164,8 @@ function SitePhotoPanel({
 
   const hasPhotos = photos.length > 0;
   const safeIdx = Math.min(active, Math.max(photos.length - 1, 0));
-  const src = hasPhotos ? `/api/storage${photos[safeIdx].objectPath}` : projectPhoto;
-  const total = hasPhotos ? photos.length : 1;
+  const src = overviewPhotoUrl || (hasPhotos ? `/api/storage${photos[safeIdx].objectPath}` : projectPhoto);
+  const total = overviewPhotoUrl ? 1 : hasPhotos ? photos.length : 1;
 
   return (
     <div
@@ -183,10 +186,10 @@ function SitePhotoPanel({
           src={src}
           alt={t("overviewTab:sitePhotoAlt", { projectName })}
           total={total}
-          current={hasPhotos ? safeIdx : 0}
-          onChange={setActive}
+          current={overviewPhotoUrl ? 0 : hasPhotos ? safeIdx : 0}
+          onChange={overviewPhotoUrl ? () => {} : setActive}
           imgStyle={{ minHeight: "190px", height: "100%", maxHeight: "none" }}
-          autoPlayIntervalSeconds={slideshowIntervalSeconds}
+          autoPlayIntervalSeconds={overviewPhotoUrl ? 0 : slideshowIntervalSeconds}
         />
       </div>
     </div>
@@ -261,6 +264,7 @@ export function ProjectSummaryTab({ projectName }: { projectName: string }) {
       <SitePhotoPanel
         projectName={projectName}
         photos={detail?.photos ?? []}
+        overviewPhotoUrl={detail?.siteOverviewPhoto?.imageUrl}
         slideshowIntervalSeconds={ov?.slideshowIntervalSeconds ?? 0}
       />
 

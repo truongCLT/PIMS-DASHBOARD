@@ -24,6 +24,8 @@
   "table_pdCostBudget": "공정별 원가 계획/실적 (원가 탭)",
   "table_pdCostBudgetMonthly": "월별 예산 집행 실적 (원가 탭)",
   "table_pdCostEstimation": "실행예산 원가율 (원가 탭)",
+  "table_pdSiteOverviewPhoto": "조감도 (개요 탭)",
+  "table_pdSitePhotosMonthly": "월별 현장 사진 (공정 탭)",
   "table_fxRates": "환율",
   "table_orgStructure": "조직 구조",
   "table_orgProjectLinks": "프로젝트-부문 매핑",
@@ -98,5 +100,16 @@
   "col_pdCashflow_cash_in": "수입 Cash in",
   "col_pdCashflow_cash_out": "지출 Cash out",
   "col_pdCashflow_equivalent": "보유 현금 Equivalent",
-  "col_pdCashflow_confirmed_progress": "기성 (확정)"
+  "col_pdCashflow_confirmed_progress": "기성 (확정)",
+
+  "col_pdSiteOverviewPhoto_file_path": "파일 경로",
+  "col_pdSiteOverviewPhoto_file_name": "파일명",
+
+  "col_pdSitePhotosMonthly_yymm": "월",
+  "col_pdSitePhotosMonthly_seq": "순번",
+  "col_pdSitePhotosMonthly_location": "위치",
+  "col_pdSitePhotosMonthly_cont_type": "공종",
+  "col_pdSitePhotosMonthly_note": "내용",
+  "col_pdSitePhotosMonthly_file_path": "파일 경로",
+  "col_pdSitePhotosMonthly_file_name": "파일명"
 }

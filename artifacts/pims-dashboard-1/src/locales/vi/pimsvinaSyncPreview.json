@@ -24,6 +24,8 @@
   "table_pdCostBudget": "Kế hoạch/Thực hiện chi phí theo hạng mục (tab Chi phí)",
   "table_pdCostBudgetMonthly": "Thực hiện ngân sách hàng tháng (tab Chi phí)",
   "table_pdCostEstimation": "Tỷ lệ chi phí ngân sách thực hiện (tab Chi phí)",
+  "table_pdSiteOverviewPhoto": "Ảnh phối cảnh (tab Tổng quan)",
+  "table_pdSitePhotosMonthly": "Ảnh công trường hàng tháng (tab Tiến độ)",
   "table_fxRates": "Tỷ giá",
   "table_orgStructure": "Cơ cấu tổ chức",
   "table_orgProjectLinks": "Liên kết dự án - bộ phận",
@@ -98,5 +100,16 @@
   "col_pdCashflow_cash_in": "Thu Cash in",
   "col_pdCashflow_cash_out": "Chi Cash out",
   "col_pdCashflow_equivalent": "Tiền mặt tương đương Equivalent",
-  "col_pdCashflow_confirmed_progress": "Khối lượng xác nhận"
+  "col_pdCashflow_confirmed_progress": "Khối lượng xác nhận",
+
+  "col_pdSiteOverviewPhoto_file_path": "Đường dẫn tệp",
+  "col_pdSiteOverviewPhoto_file_name": "Tên tệp",
+
+  "col_pdSitePhotosMonthly_yymm": "Tháng",
+  "col_pdSitePhotosMonthly_seq": "Số TT",
+  "col_pdSitePhotosMonthly_location": "Vị trí",
+  "col_pdSitePhotosMonthly_cont_type": "Hạng mục",
+  "col_pdSitePhotosMonthly_note": "Nội dung",
+  "col_pdSitePhotosMonthly_file_path": "Đường dẫn tệp",
+  "col_pdSitePhotosMonthly_file_name": "Tên tệp"
 }

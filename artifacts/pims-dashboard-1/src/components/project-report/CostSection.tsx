@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { chartTheme } from "../../lib/chartTheme";
 import { useMoney } from "../../lib/displayUnit";
 import { ratioPct } from "../../lib/projectDetailData";
@@ -37,12 +38,13 @@ function sumNullable<T>(
 export function CostSection({ budgetRows }: Props) {
   // plan/actual đến từ pd_cost_budget + tổng hợp pd_outsourcing — cả hai đều lưu VND gốc (không quy
   // đổi kUSD) — dùng fmtVnd() thay vì fmtMoney().
+  const { t } = useTranslation(["projectReportTab", "common", "projectDataEntryTab"]);
   const { fmtVnd, unitLabel } = useMoney();
   const getPlan = (row: BudgetRowData) => row.plan ?? row.budget;
   const groups: CostGroup[] = [
     {
       label: "Direct Cost",
-      koreanLabel: "직접비",
+      koreanLabel: t("projectDataEntryTab:directCostKo"),
       plan: sumNullable(
         budgetRows.filter((row) => ["외주", "Common", "경비1"].includes(row.item)),
         getPlan,
@@ -54,7 +56,7 @@ export function CostSection({ budgetRows }: Props) {
     },
     {
       label: "Indirect Cost",
-      koreanLabel: "간접비",
+      koreanLabel: t("projectDataEntryTab:indirectCostKo"),
       plan: sumNullable(
         budgetRows.filter((row) => row.item === "경비2"),
         getPlan,
@@ -66,7 +68,7 @@ export function CostSection({ budgetRows }: Props) {
     },
     {
       label: "Contingency",
-      koreanLabel: "예비비",
+      koreanLabel: t("projectDataEntryTab:contingencyKo"),
       plan: sumNullable(
         budgetRows.filter((row) => row.item === "예비비"),
         getPlan,
@@ -85,7 +87,7 @@ export function CostSection({ budgetRows }: Props) {
   return (
     <div style={{ ...cardStyle, display: "flex", flexDirection: "column" }}>
       <div style={{ ...sectionTitle, marginBottom: "14px" }}>
-        원가 (집행누계)
+        {t("projectReportTab:costTitle")}
         <span
           style={{
             marginLeft: "6px",
@@ -94,7 +96,7 @@ export function CostSection({ budgetRows }: Props) {
             color: INK_MUTED,
           }}
         >
-          단위: {unitLabel}
+          {t("common:unit")}: {unitLabel}
         </span>
       </div>
 
@@ -158,9 +160,9 @@ export function CostSection({ budgetRows }: Props) {
                   )}
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: "5px", marginTop: "2px", fontSize: "9px", color: INK_MUTED, whiteSpace: "nowrap" }}>
-                  <span>계획 <strong style={{ color: INK_BODY }}>{fmtVnd(group.plan)}</strong></span>
-                  <span>집행 <strong style={{ color: INK_BODY }}>{fmtVnd(group.actual)}</strong></span>
-                  <span>집행률 <strong style={{ color: rateColor(groupRate) }}>{groupRate == null ? "-" : `${Math.round(groupRate * 10) / 10}%`}</strong></span>
+                  <span>{t("common:plan")} <strong style={{ color: INK_BODY }}>{fmtVnd(group.plan)}</strong></span>
+                  <span>{t("common:execution")} <strong style={{ color: INK_BODY }}>{fmtVnd(group.actual)}</strong></span>
+                  <span>{t("projectReportTab:executionRateLabel")} <strong style={{ color: rateColor(groupRate) }}>{groupRate == null ? "-" : `${Math.round(groupRate * 10) / 10}%`}</strong></span>
                 </div>
               </div>
             </div>
@@ -183,17 +185,17 @@ export function CostSection({ budgetRows }: Props) {
           color: INK_MUTED,
         }}
       >
-        <span style={{ fontSize: "12px", fontWeight: 700, color: INK_NAVY }}>합계</span>
+        <span style={{ fontSize: "12px", fontWeight: 700, color: INK_NAVY }}>{t("common:total")}</span>
         <span style={{ textAlign: "center" }}>
-          계획 <strong style={{ color: INK_BODY }}>{fmtVnd(totalPlan)}</strong>
+          {t("common:plan")} <strong style={{ color: INK_BODY }}>{fmtVnd(totalPlan)}</strong>
         </span>
         <span style={{ color: "#aab5c4" }}>|</span>
         <span style={{ textAlign: "center" }}>
-          집행 <strong style={{ color: INK_BODY }}>{fmtVnd(totalActual)}</strong>
+          {t("common:execution")} <strong style={{ color: INK_BODY }}>{fmtVnd(totalActual)}</strong>
         </span>
         <span style={{ color: "#aab5c4" }}>|</span>
         <span style={{ textAlign: "right" }}>
-          집행률{" "}
+          {t("projectReportTab:executionRateLabel")}{" "}
           <strong style={{ color: rateColor(totalRate) }}>
             {totalRate == null ? "-" : `${Math.round(totalRate * 10) / 10}%`}
           </strong>

@@ -17,6 +17,8 @@ export const PIMSVINA_TABLE_KEYS = [
   "pdOutsourcing",
   "pdTradeCostMonthly",
   "pdCashflow",
+  "pdSiteOverviewPhoto",
+  "pdSitePhotosMonthly",
 ] as const;
 
 const MAX_ROWS = 300;
@@ -40,6 +42,8 @@ const VISIBLE_COLUMNS: Partial<Record<string, string[]>> = {
   pdCostBudget: ["fldcode", "site_code", "project_name", "category", "item", "budget", "actual"],
   pdCostBudgetMonthly: ["fldcode", "site_code", "project_name", "year", "month", "item", "actual"],
   pdCostEstimation: ["fldcode", "site_code", "project_name", "yymm", "contract_amount", "cost_amount", "ratio_pct"],
+  pdSiteOverviewPhoto: ["fldcode", "site_code", "file_path", "file_name"],
+  pdSitePhotosMonthly: ["fldcode", "site_code", "yymm", "seq", "location", "cont_type", "note", "file_path", "file_name"],
 };
 
 export function PimsvinaSyncPreviewModal({

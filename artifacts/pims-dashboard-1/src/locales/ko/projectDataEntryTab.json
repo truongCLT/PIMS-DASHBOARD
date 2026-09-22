@@ -122,6 +122,7 @@
   "budgetRemark": "비고",
   "directCostKo": "직접비",
   "indirectCostKo": "간접비",
+  "contingencyKo": "예비비",
   "commonExpenseKo": "일반경비",
   "expense1Ko": "경비1",
   "expense2Ko": "경비2",

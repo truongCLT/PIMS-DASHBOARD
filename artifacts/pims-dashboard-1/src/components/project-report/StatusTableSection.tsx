@@ -1,6 +1,8 @@
 /** StatusTableSection — 구분별 월/누계 계획·실적과 규칙 기반 상태등 카드. */
-import React from "react";
+import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { fmtPct } from "../../lib/projectDetailData";
+import { useMoney } from "../../lib/displayUnit";
 import {
   cardStyle,
   sectionTitle,
@@ -11,13 +13,14 @@ import {
   ACHIEVE_GREEN,
   ACHIEVE_RED,
   WARNING_BORDER,
+  POINT_BLUE,
 } from "../../lib/uiTokens";
-import type { StatusRowData } from "./reportTypes";
-import type { BudgetRowData } from "./reportTypes";
+import { StatusBadge } from "./ReportPrimitives";
+import type { StatusRowData, CostBreakdownRow } from "./reportTypes";
 
 interface Props {
   rows: StatusRowData[];
-  costBreakdown?: BudgetRowData[];
+  costBreakdown?: CostBreakdownRow[];
 }
 
 const thStyle: React.CSSProperties = {
@@ -36,6 +39,38 @@ const tdStyle: React.CSSProperties = {
 };
 
 type StatusLevel = "green" | "yellow" | "red" | "empty";
+
+/** StatusRowData.category(공정/매출/원가/자금) → i18n key */
+const CATEGORY_LABEL_KEYS: Record<string, string> = {
+  "공정": "common:process",
+  "매출": "common:revenue",
+  "원가": "projectReportTab:categoryCost",
+  "자금": "overviewTab:funds",
+};
+
+/** StatusRowData.type(월/누계) → i18n key */
+const TYPE_LABEL_KEYS: Record<string, string> = {
+  "월": "projectReportTab:typeMonthly",
+  "누계": "common:cumulative",
+};
+
+/**
+ * 원가 항목명 → i18n key. 시공 원가집행(대공종/건축/기계/전기/토목/조경/경비 — ProgressSection과 동일한
+ * 매핑)과 용역 원가 breakdown(외주/예비비 — ServiceReportTab)이 이 컴포넌트를 공용으로 쓰므로 두 쪽
+ * 어휘를 모두 담는다. "Common"/"Expense 1"/"Expense 2"는 이미 언어 무관 영문 그대로 쓰므로 매핑이
+ * 없으면 원문 그대로 표시된다(의도된 동작).
+ */
+const TRADE_GROUP_LABEL_KEYS: Record<string, string> = {
+  "대공종": "projectReportTab:tradeGroupMajor",
+  "건축": "projectReportTab:tradeGroupBuilding",
+  "기계": "projectReportTab:tradeGroupMechanical",
+  "전기": "projectReportTab:tradeGroupElectrical",
+  "토목": "projectReportTab:tradeGroupCivil",
+  "조경": "projectReportTab:tradeGroupLandscape",
+  "경비": "projectReportTab:tradeGroupExpense",
+  "외주": "common:outsourcing",
+  "예비비": "projectDataEntryTab:contingencyKo",
+};
 
 interface DisplayRow {
   category: string;
@@ -64,7 +99,7 @@ function achievementLevel(plan: number | null, actual: number | null): StatusLev
   return "red";
 }
 
-function costCategoryLevel(rows: BudgetRowData[]): StatusLevel {
+function costCategoryLevel(rows: CostBreakdownRow[]): StatusLevel {
   const comparableRows = rows.filter(
     (row) => row.plan != null && row.actual != null && row.plan > 0,
   );
@@ -123,14 +158,111 @@ function achievementCategoryLevel(rows: DisplayRow[]): StatusLevel {
   return "green";
 }
 
+/** Status 점(dot) hover 시 표시할 상세 내역 — 어떤 근거로 색이 정해졌는지 보여준다. */
+function StatusDetailTooltip({
+  category,
+  rawRows,
+  costBreakdown,
+}: {
+  category: string;
+  rawRows: StatusRowData[];
+  costBreakdown: CostBreakdownRow[];
+}) {
+  const { t } = useTranslation(["projectReportTab", "common", "projectDataEntryTab"]);
+  const { fmtMoney, fmtVnd } = useMoney();
+  const isProgress = category === "공정";
+  const isCost = category === "원가";
+  const isFunds = category === "자금";
+  const fmtValue = isProgress ? fmtPct : isCost ? fmtVnd : fmtMoney;
+  const monthlyRow = rawRows.find((row) => row.type === "월");
+  const cumulativeRow = rawRows.find((row) => row.type === "누계");
+
+  const renderRow = (row: StatusRowData | undefined) => {
+    if (!row) return null;
+    const rate = achievementPct(row.plan, row.actual);
+    return (
+      <div key={row.type} style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
+        <div style={{ fontSize: "10px", fontWeight: 700, color: INK_MUTED }}>
+          {t(TYPE_LABEL_KEYS[row.type] ?? row.type)}
+        </div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px", flexWrap: "wrap" }}>
+          <span style={{ fontSize: "11px", color: INK_BODY }}>
+            {t("common:plan")} <strong style={{ color: INK_NAVY }}>{fmtValue(row.plan)}</strong>
+            {"  /  "}
+            {t("common:actual")} <strong style={{ color: INK_NAVY }}>{fmtValue(row.actual)}</strong>
+          </span>
+          {!isProgress && rate != null && <StatusBadge value={rate} />}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+      <div style={{ fontSize: "11px", fontWeight: 700, color: POINT_BLUE }}>
+        {t(CATEGORY_LABEL_KEYS[category] ?? category)}
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: "7px" }}>
+        {renderRow(monthlyRow)}
+        {renderRow(cumulativeRow)}
+      </div>
+      {isCost && costBreakdown.some((row) => row.plan != null || row.actual != null) && (
+        <div
+          style={{
+            borderTop: `1px solid ${DIVIDER}`,
+            paddingTop: "6px",
+            display: "grid",
+            gridTemplateColumns: "1fr auto auto",
+            columnGap: "10px",
+            rowGap: "4px",
+            fontSize: "10px",
+          }}
+        >
+          <span />
+          <span style={{ textAlign: "right", color: INK_MUTED, fontWeight: 700 }}>{t("common:plan")}</span>
+          <span style={{ textAlign: "right", color: INK_MUTED, fontWeight: 700 }}>{t("common:actual")}</span>
+          {costBreakdown
+            .filter((row) => row.plan != null || row.actual != null)
+            .map((row) => (
+              <React.Fragment key={row.label}>
+                <span style={{ color: INK_MUTED }}>{t(TRADE_GROUP_LABEL_KEYS[row.label] ?? row.label)}</span>
+                <span style={{ textAlign: "right", color: INK_BODY, whiteSpace: "nowrap" }}>{fmtVnd(row.plan)}</span>
+                <span style={{ textAlign: "right", color: INK_BODY, whiteSpace: "nowrap" }}>{fmtVnd(row.actual)}</span>
+              </React.Fragment>
+            ))}
+        </div>
+      )}
+      {isFunds && cumulativeRow && (
+        <div
+          style={{
+            borderTop: `1px solid ${DIVIDER}`,
+            paddingTop: "6px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "8px",
+            fontSize: "11px",
+          }}
+        >
+          <span style={{ color: INK_MUTED }}>{t("projectReportTab:receivableLabel")}</span>
+          <strong style={{ color: ACHIEVE_RED }}>
+            {fmtMoney(Math.max((cumulativeRow.plan ?? 0) - (cumulativeRow.actual ?? 0), 0))}
+          </strong>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function StatusLight({ level }: { level: StatusLevel }) {
+  const { t } = useTranslation(["projectReportTab"]);
   if (level === "empty") {
     return <span style={{ color: INK_MUTED }}>-</span>;
   }
   return (
     <span
       role="img"
-      aria-label={`${level} 상태`}
+      aria-label={`${level} ${t("projectReportTab:statusAriaSuffix")}`}
       style={{
         display: "inline-block",
         width: "13px",
@@ -144,18 +276,20 @@ function StatusLight({ level }: { level: StatusLevel }) {
 }
 
 export function StatusTableSection({ rows, costBreakdown = [] }: Props) {
+  const { t } = useTranslation(["projectReportTab", "common", "overviewTab"]);
   const displayRows = buildDisplayRows(rows);
+  const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
 
   return (
     <div style={cardStyle}>
-      <div style={{ ...sectionTitle, marginBottom: "5px" }}>현황</div>
+      <div style={{ ...sectionTitle, marginBottom: "5px" }}>{t("common:status")}</div>
       <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
         <thead>
           <tr style={{ borderBottom: `1px solid ${DIVIDER}` }}>
-            <th style={{ ...thStyle, width: "25%" }} colSpan={2}>구분</th>
-            <th style={{ ...thStyle, width: "25%", textAlign: "right" }}>계획</th>
-            <th style={{ ...thStyle, textAlign: "right" }}>실적</th>
-            <th style={{ ...thStyle, width: "15%", textAlign: "center" }}>상태</th>
+            <th style={{ ...thStyle, width: "25%" }} colSpan={2}>{t("projectReportTab:statusCategoryHeader")}</th>
+            <th style={{ ...thStyle, width: "25%", textAlign: "right" }}>{t("common:plan")}</th>
+            <th style={{ ...thStyle, textAlign: "right" }}>{t("common:actual")}</th>
+            <th style={{ ...thStyle, width: "15%", textAlign: "center" }}>{t("projectReportTab:statusColumnHeader")}</th>
           </tr>
         </thead>
         <tbody>
@@ -168,6 +302,7 @@ export function StatusTableSection({ rows, costBreakdown = [] }: Props) {
             const categoryRows = displayRows.filter(
               (candidate) => candidate.category === row.category,
             );
+            const isLastCategoryGroup = index + categoryRows.length >= displayRows.length;
             const cumulativeLevel =
               row.category === "원가"
                 ? costCategoryLevel(costBreakdown)
@@ -192,11 +327,11 @@ export function StatusTableSection({ rows, costBreakdown = [] }: Props) {
                     verticalAlign: "middle",
                   }}
                 >
-                  {row.category}
+                  {t(CATEGORY_LABEL_KEYS[row.category] ?? row.category)}
                 </td>
               )}
               <td style={{ ...tdStyle, width: "10%", color: INK_MUTED }}>
-                {row.type}
+                {t(TYPE_LABEL_KEYS[row.type] ?? row.type)}
               </td>
               <td style={{ ...tdStyle, textAlign: "right", color: INK_BODY }}>
                 {fmtPct(row.plan)}
@@ -209,11 +344,56 @@ export function StatusTableSection({ rows, costBreakdown = [] }: Props) {
                   rowSpan={2}
                   style={{
                     ...tdStyle,
+                    position: "relative",
                     textAlign: "center",
                     verticalAlign: "middle",
                   }}
+                  onMouseEnter={() => setHoveredCategory(row.category)}
+                  onMouseLeave={() => setHoveredCategory(null)}
                 >
                   <StatusLight level={cumulativeLevel} />
+                  {hoveredCategory === row.category && cumulativeLevel !== "empty" && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        zIndex: 20,
+                        right: 0,
+                        ...(isLastCategoryGroup
+                          ? { bottom: "calc(100% + 10px)" }
+                          : { top: "calc(100% + 10px)" }),
+                        width: "270px",
+                        maxWidth: "calc(100vw - 48px)",
+                        padding: "10px 12px",
+                        borderRadius: "8px",
+                        backgroundColor: "#fff",
+                        border: `1px solid ${DIVIDER}`,
+                        boxShadow: "0 8px 24px rgba(15, 35, 58, 0.18)",
+                        textAlign: "left",
+                        whiteSpace: "normal",
+                      }}
+                    >
+                      <span
+                        aria-hidden="true"
+                        style={{
+                          position: "absolute",
+                          right: "18px",
+                          ...(isLastCategoryGroup ? { bottom: "-5px" } : { top: "-5px" }),
+                          width: "10px",
+                          height: "10px",
+                          backgroundColor: "#fff",
+                          transform: "rotate(45deg)",
+                          ...(isLastCategoryGroup
+                            ? { borderRight: `1px solid ${DIVIDER}`, borderBottom: `1px solid ${DIVIDER}` }
+                            : { borderLeft: `1px solid ${DIVIDER}`, borderTop: `1px solid ${DIVIDER}` }),
+                        }}
+                      />
+                      <StatusDetailTooltip
+                        category={row.category}
+                        rawRows={rows.filter((candidate) => candidate.category === row.category)}
+                        costBreakdown={costBreakdown}
+                      />
+                    </div>
+                  )}
                 </td>
               )}
             </tr>

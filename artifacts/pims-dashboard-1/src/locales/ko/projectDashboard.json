@@ -1,6 +1,8 @@
 {
   "syncDisabledLockedTooltip": "잠겨(마감) 있는 프로젝트가 하나라도 있어 PIMSVINA 동기화가 비활성화되었습니다 — 해당 프로젝트의 Data Entry에서 잠금을 해제한 후 동기화하세요.",
   "costing": "원가",
+  "report": "보고서",
+  "saleCost": "매출/원가",
   "cashflow": "자금",
   "dataEntry": "데이터 입력",
   "templateDownloadFailed": "양식 다운로드에 실패했습니다.",

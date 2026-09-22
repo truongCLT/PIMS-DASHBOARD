@@ -7,6 +7,31 @@ import { ORACLE_DASHBOARD_QUERIES } from "./pimsvinaOracleQueries";
 const PIMSVINA_BASE_URL =
   process.env.PIMSVINA_BASE_URL || "http://boatcon.infoerp.com.vn:8081/site/jsp/Common/dashboard";
 const PRIVATE_KEY_PATH = process.env.PIMS_JWT_PRIVATE_KEY_PATH || "D:/pims_keys/pims_jwt_private.pem";
+
+// PIMSVINA phục vụ file đã upload (조감도/현장 사진 ...) qua đường tĩnh {host}/files/{FILE_PATH}/{FILE_NAME}
+// (không qua JSP/JWT — xem gf_file_download() trong site/source/lib/NXUtil.xjs của repo pimsvina) — lấy
+// host gốc từ PIMSVINA_BASE_URL bằng cách bỏ phần đường dẫn JSP phía sau.
+function getPimsvinaFilesBaseUrl(): string {
+  const override = process.env.PIMSVINA_FILES_BASE_URL;
+  if (override) return override.replace(/\/$/, "");
+  try {
+    const url = new URL(PIMSVINA_BASE_URL);
+    return `${url.protocol}//${url.host}/files`;
+  } catch {
+    return "http://boatcon.infoerp.com.vn:8081/files";
+  }
+}
+
+/** filePath/fileName (PZTB_FILEUPLOAD) → URL ảnh có thể dùng trực tiếp trong <img src>. */
+export function buildPimsvinaFileUrl(
+  filePath: string | null | undefined,
+  fileName: string | null | undefined,
+): string | null {
+  if (!filePath || !fileName) return null;
+  const base = getPimsvinaFilesBaseUrl();
+  const cleanPath = filePath.startsWith("/") ? filePath : `/${filePath}`;
+  return `${base}${cleanPath}/${encodeURIComponent(fileName)}`;
+}
 const PIMS_JWT_ISS = process.env.PIMS_JWT_ISS || "pims";
 const PIMS_JWT_AUD = process.env.PIMS_JWT_AUD || "daewoo-gw-api";
 const PIMS_JWT_KID = process.env.PIMS_JWT_KID || "pims-rsa-2026-01";

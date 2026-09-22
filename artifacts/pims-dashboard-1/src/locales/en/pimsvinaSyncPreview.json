@@ -23,6 +23,8 @@
   "table_pdCostBudget": "Cost Plan/Actual by Work Type (Cost tab)",
   "table_pdCostBudgetMonthly": "Monthly Budget Execution Actual (Cost tab)",
   "table_pdCostEstimation": "Execution Budget Cost Rate (Cost tab)",
+  "table_pdSiteOverviewPhoto": "Overview Photo (Overview tab)",
+  "table_pdSitePhotosMonthly": "Monthly Site Photos (Progress tab)",
   "table_fxRates": "FX Rates",
   "table_orgStructure": "Org Structure",
   "table_orgProjectLinks": "Project-Division Links",
@@ -97,5 +99,16 @@
   "col_pdCashflow_cash_in": "Cash In",
   "col_pdCashflow_cash_out": "Cash Out",
   "col_pdCashflow_equivalent": "Cash Equivalent",
-  "col_pdCashflow_confirmed_progress": "Confirmed Progress"
+  "col_pdCashflow_confirmed_progress": "Confirmed Progress",
+
+  "col_pdSiteOverviewPhoto_file_path": "File Path",
+  "col_pdSiteOverviewPhoto_file_name": "File Name",
+
+  "col_pdSitePhotosMonthly_yymm": "Month",
+  "col_pdSitePhotosMonthly_seq": "No.",
+  "col_pdSitePhotosMonthly_location": "Location",
+  "col_pdSitePhotosMonthly_cont_type": "Work Type",
+  "col_pdSitePhotosMonthly_note": "Content",
+  "col_pdSitePhotosMonthly_file_path": "File Path",
+  "col_pdSitePhotosMonthly_file_name": "File Name"
 }

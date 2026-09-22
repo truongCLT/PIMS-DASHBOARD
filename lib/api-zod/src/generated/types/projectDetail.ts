@@ -16,6 +16,8 @@ import type { ProjectDetailOverview } from './projectDetailOverview';
 import type { ProjectDetailPhoto } from './projectDetailPhoto';
 import type { ProjectDetailProgressPoint } from './projectDetailProgressPoint';
 import type { ProjectDetailSalesPoint } from './projectDetailSalesPoint';
+import type { ProjectDetailSiteOverviewPhoto } from './projectDetailSiteOverviewPhoto';
+import type { ProjectDetailSitePhotoMonthly } from './projectDetailSitePhotoMonthly';
 
 export interface ProjectDetail {
   projectName: string;
@@ -38,4 +40,8 @@ export interface ProjectDetail {
   /** 표시용 월별 매출. 경영보고 값 우선, 없는 월은 ERP/데이터입력 값으로 보완. */
   canonicalSalesMonthly?: ProjectDetailSalesPoint[];
   photos: ProjectDetailPhoto[];
+  /** PIMSVINA에서 동기화된 월별 현장 사진(공정 탭 슬라이더용) — 읽기 전용, PIMSVINA Sync로만 채워진다. */
+  sitePhotosMonthly?: ProjectDetailSitePhotoMonthly[];
+  /** PIMSVINA에서 동기화된 조감도(개요 탭용) — 읽기 전용, 없으면 null. */
+  siteOverviewPhoto?: ProjectDetailSiteOverviewPhoto | null;
 }

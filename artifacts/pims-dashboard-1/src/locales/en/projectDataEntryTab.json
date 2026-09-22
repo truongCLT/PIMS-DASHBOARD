@@ -122,6 +122,7 @@
   "budgetRemark": "Remark",
   "directCostKo": "Direct Cost",
   "indirectCostKo": "Indirect Cost",
+  "contingencyKo": "Contingency",
   "commonExpenseKo": "General Expense",
   "expense1Ko": "Expense 1",
   "expense2Ko": "Expense 2",

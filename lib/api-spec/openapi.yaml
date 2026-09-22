@@ -2572,6 +2572,16 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ProjectDetailPhoto"
+        sitePhotosMonthly:
+          type: array
+          description: PIMSVINA에서 동기화된 월별 현장 사진(공정 탭 슬라이더용) — 읽기 전용, PIMSVINA Sync로만 채워진다.
+          items:
+            $ref: "#/components/schemas/ProjectDetailSitePhotoMonthly"
+        siteOverviewPhoto:
+          description: PIMSVINA에서 동기화된 조감도(개요 탭용) — 읽기 전용, 없으면 null.
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/ProjectDetailSiteOverviewPhoto"
       required: [projectName, unit, overview, progress, milestones, costEstimation, costBudget, outsourcing, cashflow, photos]
     ProjectDetailPhoto:
       type: object
@@ -2580,6 +2590,35 @@ components:
           type: string
           description: Object storage path ('/objects/uploads/<uuid>')
       required: [objectPath]
+    ProjectDetailSitePhotoMonthly:
+      type: object
+      properties:
+        year:
+          type: integer
+        month:
+          type: integer
+        seq:
+          type: integer
+        location:
+          type: string
+          nullable: true
+        contType:
+          type: string
+          nullable: true
+        note:
+          type: string
+          nullable: true
+        imageUrl:
+          type: string
+          nullable: true
+      required: [year, month, seq, location, contType, note, imageUrl]
+    ProjectDetailSiteOverviewPhoto:
+      type: object
+      properties:
+        imageUrl:
+          type: string
+          nullable: true
+      required: [imageUrl]
     UploadUrlRequest:
       type: object
       required: [name, size, contentType]

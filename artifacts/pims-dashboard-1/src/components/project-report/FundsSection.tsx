@@ -5,6 +5,7 @@
  * Data sourced from cashflow API — same as OverviewTab.
  */
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { ratioPct } from "../../lib/projectDetailData";
 import { chartTheme } from "../../lib/chartTheme";
 import {
@@ -26,6 +27,7 @@ interface Props {
 }
 
 export function FundsSection({ cashIn, cashOut, contractAmount, cumRev }: Props) {
+  const { t } = useTranslation(["projectReportTab", "overviewTab"]);
   const { fmtMoney, unitLabel, convertVndToKUsd } = useMoney();
   // contractAmount đến từ pd_overview, lưu VND gốc — cashIn/cashOut/cumRev đều ở đơn vị 천 USD, nên
   // phải quy đổi trước khi hiển thị chung bằng fmtMoney() (nếu không sẽ lệch đơn vị hoàn toàn).
@@ -36,16 +38,16 @@ export function FundsSection({ cashIn, cashOut, contractAmount, cumRev }: Props)
   const hasFundData = cashIn !== 0 || cashOut !== 0;
 
   const items: Array<{ label: string; value: number | null; color: string }> = [
-    { label: "누계 매출", value: contractAmountKUsd, color: chartTheme.neutralGray },
-    { label: "누계 기성 (확정)", value: cumRev, color: chartTheme.neutralGray },
-    { label: "수금 (실적)", value: cashIn, color: chartTheme.balanceNavy },
-    { label: "미수금 (채권)", value: outstanding, color: chartTheme.outflowRed },
+    { label: t("projectReportTab:cumulativeSalesLabel"), value: contractAmountKUsd, color: chartTheme.neutralGray },
+    { label: t("projectReportTab:cumulativeConfirmedLabel"), value: cumRev, color: chartTheme.neutralGray },
+    { label: t("projectReportTab:collectionActualLabel"), value: cashIn, color: chartTheme.balanceNavy },
+    { label: t("projectReportTab:receivableLabel"), value: outstanding, color: chartTheme.outflowRed },
   ];
 
   return (
     <div style={cardStyle}>
       <div style={{ ...sectionTitle, marginBottom: "4px" }}>
-        자금
+        {t("overviewTab:funds")}
         <span
           style={{ fontSize: "11px", fontWeight: 400, color: INK_MUTED, marginLeft: "6px" }}
         >
@@ -53,7 +55,7 @@ export function FundsSection({ cashIn, cashOut, contractAmount, cumRev }: Props)
         </span>
       </div>
       <div style={{ fontSize: "11px", color: INK_MUTED, marginBottom: "6px" }}>
-        ※ 경영현황판 자금수지 (상세보기 포함)와 동일하게
+        {t("projectReportTab:fundsSyncNote")}
       </div>
 
       {!hasFundData ? (
@@ -108,17 +110,17 @@ export function FundsSection({ cashIn, cashOut, contractAmount, cumRev }: Props)
               }}
             >
               <span style={{ fontSize: "11px", color: INK_MUTED }}>
-                수금률 (수금 / 누계 기성)
+                {t("projectReportTab:collectionRateLabel")}
               </span>
               <StatusBadge value={collectionRate} />
             </div>
           )}
 
           <div style={{ fontSize: "11px", color: INK_MUTED, marginTop: "8px" }}>
-            ※ 매출처럼 계획, 전망 표시
+            {t("projectReportTab:fundsForecastNote")}
           </div>
           <div style={{ fontSize: "11px", color: INK_MUTED }}>
-            ※ 상세보기 표는 매출, 인정, 수금 채권 추가
+            {t("projectReportTab:fundsDetailNote")}
           </div>
         </div>
       )}

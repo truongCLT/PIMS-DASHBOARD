@@ -19,6 +19,8 @@ import {
   pdPhotosTable,
   pdSectionLocksTable,
   pdPlanVersionsTable,
+  pdSiteOverviewPhotoTable,
+  pdSitePhotosMonthlyTable,
 } from "@workspace/db";
 import { buildProjectMonthlyReadModel } from "../lib/canonicalProjectMonthly";
 import {
@@ -35,6 +37,7 @@ import {
 } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/adminAuth";
 import { preservePimsvinaActualSource } from "../lib/pimsvinaTradeCost";
+import { buildPimsvinaFileUrl } from "../lib/pimsvinaClient";
 
 const router: IRouter = Router();
 const SECTION_KEYS = [
@@ -116,7 +119,7 @@ const preserveOptionalText = (
     : null;
 
 async function loadDetail(projectName: string) {
-  const [mrProjectRows, overviewRows, progress, milestones, costEstimation, costBudget, costBudgetMonthly, outsourcing, cashflow, cogsMonthly, salesMonthly, mrProjectMonthly, photos, planVersionRows] = await Promise.all([
+  const [mrProjectRows, overviewRows, progress, milestones, costEstimation, costBudget, costBudgetMonthly, outsourcing, cashflow, cogsMonthly, salesMonthly, mrProjectMonthly, photos, planVersionRows, siteOverviewPhotoRows, sitePhotosMonthly] = await Promise.all([
     db
       .select({ siteCode: mrProjectsTable.siteCode })
       .from(mrProjectsTable)
@@ -193,6 +196,16 @@ async function loadDetail(projectName: string) {
       .from(pdPlanVersionsTable)
       .where(eq(pdPlanVersionsTable.projectName, projectName))
       .limit(1),
+    db
+      .select()
+      .from(pdSiteOverviewPhotoTable)
+      .where(eq(pdSiteOverviewPhotoTable.projectName, projectName))
+      .limit(1),
+    db
+      .select()
+      .from(pdSitePhotosMonthlyTable)
+      .where(eq(pdSitePhotosMonthlyTable.projectName, projectName))
+      .orderBy(asc(pdSitePhotosMonthlyTable.year), asc(pdSitePhotosMonthlyTable.month), asc(pdSitePhotosMonthlyTable.seq)),
   ]);
 
   const ov = overviewRows[0];
@@ -306,6 +319,18 @@ async function loadDetail(projectName: string) {
     })),
     ...monthlyReadModel,
     photos: photos.map((p) => ({ objectPath: p.objectPath })),
+    siteOverviewPhoto: siteOverviewPhotoRows[0]
+      ? { imageUrl: buildPimsvinaFileUrl(siteOverviewPhotoRows[0].filePath, siteOverviewPhotoRows[0].fileName) }
+      : null,
+    sitePhotosMonthly: sitePhotosMonthly.map((p) => ({
+      year: p.year,
+      month: p.month,
+      seq: p.seq,
+      location: p.location,
+      contType: p.contType,
+      note: p.note,
+      imageUrl: buildPimsvinaFileUrl(p.filePath, p.fileName),
+    })),
   };
 }
 

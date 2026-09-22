@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { ProjectCommentPanel } from "./ProjectCommentPanel";
 import {
@@ -361,6 +361,28 @@ export function ConstructionProgressTab({
   const progressCardHeight = "390px";
   useEffect(() => { setPhotoIdx(0); }, [projectName]);
 
+  // PIMSVINA에서 동기화된 월별 현장 사진(cb_prjt_picture_e_1q.jsp) — 있으면 월 선택 슬라이더로 보여주고,
+  // 아직 동기화 전이면 기존 수동 업로드 사진(detail.photos)으로 대체한다.
+  const sitePhotosMonthly = detail?.sitePhotosMonthly ?? [];
+  const availablePhotoMonths = useMemo(() => {
+    const seen = new Map<string, { year: number; month: number }>();
+    for (const p of sitePhotosMonthly) seen.set(`${p.year}-${p.month}`, { year: p.year, month: p.month });
+    return Array.from(seen.values()).sort((a, b) => a.year * 12 + a.month - (b.year * 12 + b.month));
+  }, [sitePhotosMonthly]);
+  const [selectedPhotoMonthKey, setSelectedPhotoMonthKey] = useState<string | null>(null);
+  useEffect(() => { setSelectedPhotoMonthKey(null); }, [projectName]);
+  useEffect(() => {
+    if (selectedPhotoMonthKey || availablePhotoMonths.length === 0) return;
+    const refIdx = referenceYear * 12 + referenceMonth;
+    const atOrBeforeRef = [...availablePhotoMonths].reverse().find((m) => m.year * 12 + m.month <= refIdx);
+    const target = atOrBeforeRef ?? availablePhotoMonths[availablePhotoMonths.length - 1];
+    setSelectedPhotoMonthKey(`${target.year}-${target.month}`);
+  }, [availablePhotoMonths, referenceYear, referenceMonth, selectedPhotoMonthKey]);
+  useEffect(() => { setPhotoIdx(0); }, [selectedPhotoMonthKey]);
+  const selectedMonthSitePhotos = selectedPhotoMonthKey
+    ? sitePhotosMonthly.filter((p) => `${p.year}-${p.month}` === selectedPhotoMonthKey)
+    : [];
+
   const progress = detail?.progress ?? [];
   const milestones = detail?.milestones ?? [];
 
@@ -426,11 +448,56 @@ export function ConstructionProgressTab({
       <div className="construction-progress-top-grid">
         {/* Construction site progress */}
         <div style={{ ...cardStyle, display: "flex", flexDirection: "column", minWidth: 0 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px", gap: "8px" }}>
             <span style={sectionTitle}>{t("constructionProgressTab:siteProgressStatus")}</span>
+            {availablePhotoMonths.length > 0 && (
+              <select
+                value={selectedPhotoMonthKey ?? ""}
+                onChange={(e) => setSelectedPhotoMonthKey(e.target.value || null)}
+                style={{
+                  fontSize: "11px",
+                  padding: "3px 6px",
+                  border: `1px solid ${DIVIDER}`,
+                  borderRadius: "4px",
+                  color: INK_BODY,
+                  backgroundColor: "#fff",
+                }}
+              >
+                {[...availablePhotoMonths].reverse().map((m) => (
+                  <option key={`${m.year}-${m.month}`} value={`${m.year}-${m.month}`}>
+                    {m.year}-{String(m.month).padStart(2, "0")}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
-          <div style={{ flex: 1, minHeight: 0 }}>
+          <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
             {(() => {
+              if (selectedMonthSitePhotos.length > 0) {
+                const safeIdx = Math.min(photoIdx, selectedMonthSitePhotos.length - 1);
+                const current = selectedMonthSitePhotos[safeIdx];
+                const caption = [current?.location, current?.contType, current?.note].filter(Boolean).join(" · ");
+                return (
+                  <>
+                    <div style={{ flex: 1, minHeight: 0 }}>
+                      <PhotoPager
+                        src={current?.imageUrl || projectPhoto}
+                        alt={t("constructionProgressTab:sitePhotoAlt", { projectName })}
+                        total={selectedMonthSitePhotos.length}
+                        current={safeIdx}
+                        onChange={setPhotoIdx}
+                        imgStyle={{ minHeight: "200px" }}
+                        loop
+                      />
+                    </div>
+                    {caption && (
+                      <div style={{ fontSize: "11px", color: INK_MUTED, marginTop: "4px", textAlign: "center" }}>
+                        {caption}
+                      </div>
+                    )}
+                  </>
+                );
+              }
               const photos = detail?.photos ?? [];
               const hasPhotos = photos.length > 0;
               const safeIdx = Math.min(photoIdx, Math.max(photos.length - 1, 0));

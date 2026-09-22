@@ -1,0 +1,48 @@
+{
+  "title": "Báo cáo tháng",
+  "exportButton": "Xuất báo cáo",
+  "exporting": "Đang xuất...",
+  "exportAriaGenerating": "Đang tạo PDF báo cáo",
+  "exportAriaExport": "Xuất PDF báo cáo",
+  "issuesTitle": "Vấn đề chính & phương án xử lý",
+
+  "monthlyProgressLabel": "Tỷ lệ tiến độ theo tháng (kế hoạch so với thực hiện)",
+  "cumulativeProgressLabel": "Tỷ lệ tiến độ lũy kế (kế hoạch so với thực hiện)",
+  "durationRate": "Tỷ lệ thời gian thi công",
+  "durationVsProgressGap": "Tỷ lệ thời gian thi công − tỷ lệ tiến độ lũy kế",
+  "monthlyCostExecutionTitle": "Thực hiện chi phí theo tháng",
+  "cumulativeCostExecutionTitle": "Thực hiện chi phí lũy kế",
+  "tradeGroupMajor": "Hạng mục chính",
+  "tradeGroupBuilding": "Xây dựng",
+  "tradeGroupMechanical": "Cơ điện",
+  "tradeGroupElectrical": "Điện",
+  "tradeGroupCivil": "Hạ tầng",
+  "tradeGroupLandscape": "Cảnh quan",
+  "tradeGroupExpense": "Chi phí chung",
+
+  "salesTitle": "Doanh thu thực hiện & dự báo",
+  "salesLegendPlan": "Doanh thu (Kế hoạch)",
+  "salesLegendActual": "Doanh thu (Thực hiện)",
+  "salesLegendForecast": "Doanh thu (Dự báo)",
+  "salesTooltipLine": "Doanh thu ({{label}}): {{value}}",
+  "annualCumulativeShort": "Lũy kế năm",
+  "overallCumulativeLabel": "Lũy kế toàn dự án",
+
+  "statusCategoryHeader": "Phân loại",
+  "statusColumnHeader": "Trạng thái",
+  "statusAriaSuffix": "trạng thái",
+  "categoryCost": "Chi phí",
+  "typeMonthly": "Tháng",
+
+  "costTitle": "Chi phí (Lũy kế thực hiện)",
+  "executionRateLabel": "Tỷ lệ thực hiện",
+
+  "fundsSyncNote": "* Giống với dòng tiền trên Bảng điều hành quản trị (bao gồm cả xem chi tiết)",
+  "cumulativeSalesLabel": "Doanh thu lũy kế",
+  "cumulativeConfirmedLabel": "Tiến độ xác nhận lũy kế",
+  "collectionActualLabel": "Thu tiền (Thực hiện)",
+  "receivableLabel": "Phải thu (Công nợ)",
+  "collectionRateLabel": "Tỷ lệ thu tiền (Thu tiền / Tiến độ xác nhận lũy kế)",
+  "fundsForecastNote": "* Hiển thị kế hoạch, dự báo giống như doanh thu",
+  "fundsDetailNote": "* Bảng xem chi tiết bổ sung doanh thu, xác nhận, thu tiền và công nợ"
+}

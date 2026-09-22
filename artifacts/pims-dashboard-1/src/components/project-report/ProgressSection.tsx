@@ -4,19 +4,21 @@
  * with horizontal progress bars and achievement badges.
  */
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { fmtPct, ratioPct } from "../../lib/projectDetailData";
 import { chartTheme } from "../../lib/chartTheme";
 import {
   cardStyle,
   sectionTitle,
   INK_SECONDARY,
+  INK_BODY,
   INK_MUTED,
   DIVIDER,
   rateColor,
 } from "../../lib/uiTokens";
 import { REPORT_YEAR } from "../../lib/mgmtreportData";
 import { DASH, StatusBadge, ProgressBar, DataKV } from "./ReportPrimitives";
-import type { ProgRowData } from "./reportTypes";
+import type { ProgRowData, CostBreakdownRow } from "./reportTypes";
 import { useMoney } from "../../lib/displayUnit";
 
 interface CostExecutionData {
@@ -24,14 +26,8 @@ interface CostExecutionData {
   monthlyActual: number | null;
   cumulativePlan: number | null;
   cumulativeActual: number | null;
-  monthlyBreakdown: CostExecutionRow[];
-  cumulativeBreakdown: CostExecutionRow[];
-}
-
-interface CostExecutionRow {
-  label: string;
-  plan: number | null;
-  actual: number | null;
+  monthlyBreakdown: CostBreakdownRow[];
+  cumulativeBreakdown: CostBreakdownRow[];
 }
 
 interface Props {
@@ -41,6 +37,17 @@ interface Props {
   startDate: string | null | undefined;
   endDate: string | null | undefined;
 }
+
+/** 공정별 원가 그룹명(대공종/건축/기계/전기/토목/조경/경비) → i18n key */
+const TRADE_GROUP_LABEL_KEYS: Record<string, string> = {
+  "대공종": "projectReportTab:tradeGroupMajor",
+  "건축": "projectReportTab:tradeGroupBuilding",
+  "기계": "projectReportTab:tradeGroupMechanical",
+  "전기": "projectReportTab:tradeGroupElectrical",
+  "토목": "projectReportTab:tradeGroupCivil",
+  "조경": "projectReportTab:tradeGroupLandscape",
+  "경비": "projectReportTab:tradeGroupExpense",
+};
 
 export function selectProgressReportRow(
   progRows: ProgRowData[],
@@ -83,7 +90,8 @@ export function ProgressSection({
   startDate,
   endDate,
 }: Props) {
-  const { fmtMoney } = useMoney();
+  const { t } = useTranslation(["projectReportTab", "common"]);
+  const { fmtVnd } = useMoney();
   const latest = selectProgressReportRow(progRows, resolvedMonth);
 
   const planM = latest?.planPct ?? null;
@@ -106,7 +114,7 @@ export function ProgressSection({
   return (
     <div style={cardStyle}>
       <div style={{ ...sectionTitle, marginBottom: "8px" }}>
-        공정
+        {t("common:process")}
         {monthLabel && (
           <span style={{ fontSize: "11px", fontWeight: 400, color: INK_MUTED, marginLeft: "6px" }}>
             ({monthLabel})
@@ -119,18 +127,18 @@ export function ProgressSection({
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
           <PlanActualGroup
-            label="월별 공정율 (계획 대비 실적)"
+            label={t("projectReportTab:monthlyProgressLabel")}
             plan={planM}
             actual={actualM}
             max={barMax}
             rate={monthlyRate}
             hoverContent={
               <CostExecutionTooltip
-                title="월 원가집행"
+                title={t("projectReportTab:monthlyCostExecutionTitle")}
                 plan={costExecution.monthlyPlan}
                 actual={costExecution.monthlyActual}
                 rows={costExecution.monthlyBreakdown}
-                fmtMoney={fmtMoney}
+                fmtVnd={fmtVnd}
               />
             }
           />
@@ -138,18 +146,19 @@ export function ProgressSection({
           <div style={{ borderTop: `1px solid ${DIVIDER}` }} />
 
           <PlanActualGroup
-            label="누계 공정율 (계획 대비 실적)"
+            label={t("projectReportTab:cumulativeProgressLabel")}
             plan={planCum}
             actual={actualCum}
             max={cumMax}
             rate={cumRate}
+            openUpward
             hoverContent={
               <CostExecutionTooltip
-                title="누계 원가집행"
+                title={t("projectReportTab:cumulativeCostExecutionTitle")}
                 plan={costExecution.cumulativePlan}
                 actual={costExecution.cumulativeActual}
                 rows={costExecution.cumulativeBreakdown}
-                fmtMoney={fmtMoney}
+                fmtVnd={fmtVnd}
               />
             }
           />
@@ -157,11 +166,11 @@ export function ProgressSection({
           <div style={{ borderTop: `1px solid ${DIVIDER}`, paddingTop: "6px" }}>
             <div style={{ display: "flex", justifyContent: "space-between" }}>
               <DataKV
-                label="공기율"
+                label={t("projectReportTab:durationRate")}
                 value={fmtPct(durationRate)}
               />
               <DataKV
-                label="공기율 - 누계 공정률"
+                label={t("projectReportTab:durationVsProgressGap")}
                 value={fmtPct(progressGap)}
                 valueColor={
                   progressGap == null
@@ -188,6 +197,7 @@ function PlanActualGroup({
   max,
   rate,
   hoverContent,
+  openUpward = false,
 }: {
   label: string;
   plan: number | null;
@@ -195,7 +205,9 @@ function PlanActualGroup({
   max: number;
   rate: number | null;
   hoverContent?: React.ReactNode;
+  openUpward?: boolean;
 }) {
+  const { t } = useTranslation(["common"]);
   const [hovered, setHovered] = useState(false);
   return (
     <div
@@ -214,12 +226,12 @@ function PlanActualGroup({
         {label}
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
-        <BarRow label="계획" value={plan} barPlan={plan} barActual={null} max={max} color={chartTheme.outflowRed} />
-        <BarRow label="실적" value={actual} barPlan={plan} barActual={actual} max={max} color={chartTheme.planBlue} />
+        <BarRow label={t("common:plan")} value={plan} barPlan={null} barActual={plan} max={max} color={chartTheme.outflowRed} />
+        <BarRow label={t("common:actual")} value={actual} barPlan={plan} barActual={actual} max={max} color={chartTheme.planBlue} />
       </div>
       <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "3px" }}>
         <span style={{ fontSize: "11px", color: INK_SECONDARY }}>
-          달성률 <StatusBadge value={rate} />
+          {t("common:achievementRate")} <StatusBadge value={rate} />
         </span>
       </div>
       {hovered && hoverContent && (
@@ -228,16 +240,31 @@ function PlanActualGroup({
             position: "absolute",
             zIndex: 20,
             right: 0,
-            top: "100%",
-            width: "273px",
+            ...(openUpward ? { bottom: "calc(100% + 10px)" } : { top: "calc(100% + 10px)" }),
+            width: "280px",
             maxWidth: "calc(100vw - 48px)",
-            padding: "8px 10px",
-            borderRadius: "6px",
+            padding: "10px 12px",
+            borderRadius: "8px",
             backgroundColor: "#fff",
             border: `1px solid ${DIVIDER}`,
-            boxShadow: "0 6px 18px rgba(15, 35, 58, 0.16)",
+            boxShadow: "0 8px 24px rgba(15, 35, 58, 0.18)",
           }}
         >
+          <span
+            aria-hidden="true"
+            style={{
+              position: "absolute",
+              right: "18px",
+              ...(openUpward ? { bottom: "-5px" } : { top: "-5px" }),
+              width: "10px",
+              height: "10px",
+              backgroundColor: "#fff",
+              transform: "rotate(45deg)",
+              ...(openUpward
+                ? { borderRight: `1px solid ${DIVIDER}`, borderBottom: `1px solid ${DIVIDER}` }
+                : { borderLeft: `1px solid ${DIVIDER}`, borderTop: `1px solid ${DIVIDER}` }),
+            }}
+          />
           {hoverContent}
         </div>
       )}
@@ -249,29 +276,56 @@ function CostExecutionTooltip({
   title,
   plan,
   actual,
-  rows,
-  fmtMoney,
+  rows = [],
+  fmtVnd,
 }: {
   title: string;
   plan: number | null;
   actual: number | null;
-  rows: CostExecutionRow[];
-  fmtMoney: (value: number | null | undefined) => string;
+  rows?: CostBreakdownRow[];
+  // pd_cost_budget_monthly.plan/actual는 VND 원본으로 저장되므로 fmtVnd()로 포맷한다 (fmtMoney()는
+  // 천 USD 기준 값을 가정하므로 여기서 쓰면 안 됨).
+  fmtVnd: (value: number | null | undefined) => string;
 }) {
+  const { t } = useTranslation(["projectReportTab", "common"]);
   const achievement = ratioPct(actual, plan);
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
       <div style={{ fontSize: "11px", fontWeight: 700, color: INK_SECONDARY }}>{title}</div>
-      <div style={{ fontSize: "11px", fontWeight: 700, color: INK_SECONDARY, whiteSpace: "nowrap" }}>
-        계획 {fmtMoney(plan)} / 실적 {fmtMoney(actual)} (달성율 : {fmtPct(achievement)})
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px", flexWrap: "wrap" }}>
+        <span style={{ fontSize: "11px", color: INK_SECONDARY }}>
+          {t("common:plan")} <strong>{fmtVnd(plan)}</strong>
+          {"  /  "}
+          {t("common:actual")} <strong>{fmtVnd(actual)}</strong>
+        </span>
+        {achievement != null && <StatusBadge value={achievement} />}
       </div>
-      <div style={{ borderTop: `1px solid ${DIVIDER}`, paddingTop: "4px", display: "flex", flexDirection: "column", gap: "4px" }}>
-        {rows.map((row) => (
-          <div key={row.label} style={{ fontSize: "10px", color: INK_MUTED, whiteSpace: "nowrap" }}>
-            - {row.label} 계획 {fmtMoney(row.plan)} / 실적 {fmtMoney(row.actual)} (달성율 : {fmtPct(ratioPct(row.actual, row.plan))})
-          </div>
-        ))}
-      </div>
+      {rows.some((row) => row.plan != null || row.actual != null) && (
+        <div
+          style={{
+            borderTop: `1px solid ${DIVIDER}`,
+            paddingTop: "6px",
+            display: "grid",
+            gridTemplateColumns: "1fr auto auto",
+            columnGap: "10px",
+            rowGap: "4px",
+            fontSize: "10px",
+          }}
+        >
+          <span />
+          <span style={{ textAlign: "right", color: INK_MUTED, fontWeight: 700 }}>{t("common:plan")}</span>
+          <span style={{ textAlign: "right", color: INK_MUTED, fontWeight: 700 }}>{t("common:actual")}</span>
+          {rows
+            .filter((row) => row.plan != null || row.actual != null)
+            .map((row) => (
+              <React.Fragment key={row.label}>
+                <span style={{ color: INK_MUTED }}>{t(TRADE_GROUP_LABEL_KEYS[row.label] ?? row.label)}</span>
+                <span style={{ textAlign: "right", color: INK_BODY, whiteSpace: "nowrap" }}>{fmtVnd(row.plan)}</span>
+                <span style={{ textAlign: "right", color: INK_BODY, whiteSpace: "nowrap" }}>{fmtVnd(row.actual)}</span>
+              </React.Fragment>
+            ))}
+        </div>
+      )}
     </div>
   );
 }

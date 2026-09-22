@@ -1,6 +1,8 @@
 {
   "syncDisabledLockedTooltip": "PIMSVINA sync is disabled because at least one project has locked (closed) data — unlock it in Data Entry before syncing.",
   "costing": "Costing",
+  "report": "Report",
+  "saleCost": "Revenue/Cost",
   "cashflow": "Cashflow",
   "dataEntry": "Data Entry",
   "templateDownloadFailed": "Failed to download the template.",

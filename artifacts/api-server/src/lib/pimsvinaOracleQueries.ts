@@ -781,4 +781,37 @@ export const ORACLE_DASHBOARD_QUERIES: Record<string, OracleEndpointQuery> = {
     ORDER BY R.CHGMONEY`,
     binds: (params) => ({ as_of: params.as_of || currentYYYYMM() }),
   },
+
+  // 개요 탭 조감도 사진 — site/jsp/cb/prjt/cb_prjt_air_view_e_1q.jsp의 output2(조감도)와 동일한
+  // CBTB_CONSTPIC.AIRVIEWPICPATH → PZTB_FILEUPLOAD 조인. 원본 JSP는 사이트 1개씩(ARG_FLDCODE) 조회하지만
+  // 배치 동기화이므로 FLDCODE 필터 없이 전체를 한 번에 가져온다 (다른 항목들과 동일한 패턴).
+  "cb_prjt_air_view_e_1q.jsp": {
+    sql: `SELECT
+        A.FLDCODE AS FLDCODE,
+        (SELECT MAX(FM.ACNT_FLDCODE) FROM CBTB_FLD_MAPPING FM WHERE FM.FLDCODE = A.FLDCODE) AS SITE_CODE,
+        B.FILE_PATH AS FILE_PATH,
+        B.FILE_NAME AS FILE_NAME
+    FROM CBTB_CONSTPIC A
+    LEFT JOIN PZTB_FILEUPLOAD B ON A.AIRVIEWPICPATH = B.FILE_KEY
+    WHERE A.AIRVIEWPICPATH IS NOT NULL`,
+  },
+
+  // 공정 탭 월별 현장 사진(슬라이더) — site/jsp/cb/prjt/cb_prjt_picture_e_1q.jsp의 output2(현장사진)와
+  // 동일한 CBTB_CONSTMONTHPIC → PZTB_FILEUPLOAD 조인. YYMM 필터 없이 전체 이력을 가져온다.
+  "cb_prjt_picture_e_1q.jsp": {
+    sql: `SELECT
+        A.FLDCODE AS FLDCODE,
+        (SELECT MAX(FM.ACNT_FLDCODE) FROM CBTB_FLD_MAPPING FM WHERE FM.FLDCODE = A.FLDCODE) AS SITE_CODE,
+        A.YYMM AS YYMM,
+        A.SEQ AS SEQ,
+        A.LOCATION AS LOCATION,
+        A.CONTTYPE AS CONT_TYPE,
+        A.NOTE AS NOTE,
+        B.FILE_PATH AS FILE_PATH,
+        B.FILE_NAME AS FILE_NAME
+    FROM CBTB_CONSTMONTHPIC A
+    LEFT JOIN PZTB_FILEUPLOAD B ON A.PICPATH = B.FILE_KEY
+    WHERE A.PICPATH IS NOT NULL
+    ORDER BY A.FLDCODE, A.YYMM, A.SEQ`,
+  },
 };
