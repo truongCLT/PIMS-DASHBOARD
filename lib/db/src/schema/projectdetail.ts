@@ -287,6 +287,9 @@ export const pdOutsourcingTable = pgTable(
     category: text("category"), // 구분 (예: 용역/외주)
     contractDate: text("contract_date"), // 최초 계약일 (자유 형식)
     changeNo: text("change_no"), // 변경 계약 차수
+    // budget/executedBudget/resolved/thisMonth/accum: PIMSVINA 동기화 전용 — VND 원본 그대로 저장
+    // (천 USD 환산 안 함, dashboard_pd_outsourcing_1q.jsp의 BDGTAMT/EXECAMT/CTRTAMT/PRGSAMT 그대로) —
+    // 표시는 UI에서 fmtVnd()로 통화 변환.
     budget: numeric("budget", { precision: 24, scale: 8 }), // 예산 (A)
     executedBudget: numeric("executed_budget", { precision: 24, scale: 8 }), // 집행예산
     resolved: numeric("resolved", { precision: 24, scale: 8 }), // 결의금액 (B)

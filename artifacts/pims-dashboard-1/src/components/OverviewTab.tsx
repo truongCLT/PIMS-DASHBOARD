@@ -77,7 +77,7 @@ const monthSelectStyle: React.CSSProperties = {
 
 /** raw Korean item name (fixed identifier from cost-budget data) → translation key */
 const ITEM_LABEL_KEY: Record<string, string> = {
-  "외주성": "outsourcingItem",
+  "Outsourcing": "outsourcingItem",
 };
 
 function PhotoCard({ projectName, photos, slideshowIntervalSeconds = 0 }: { projectName: string; photos: ProjectDetailPhoto[]; slideshowIntervalSeconds?: number }) {
@@ -263,12 +263,12 @@ export function OverviewTab({ projectName }: { projectName: string }) {
   };
   const budgetRows = [
     {
-      item: "외주성",
+      item: "Outsourcing",
       budget: outBudget,
       plan: resolvedMonth == null
         ? (outRows.some((r) => r.executedBudget != null) ? outRows.reduce((a, r) => a + (r.executedBudget ?? 0), 0) : null)
-        : getCbm("외주성", "plan"),
-      actual: resolvedMonth == null ? outActual : getCbm("외주성", "actual"),
+        : getCbm("Outsourcing", "plan"),
+      actual: resolvedMonth == null ? outActual : getCbm("Outsourcing", "actual"),
     },
     {
       item: "Common",

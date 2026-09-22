@@ -81,7 +81,9 @@ type BudgetRow = {
 
 function BudgetExecutionStatus({ rows }: { rows: BudgetRow[] }) {
   const { t } = useTranslation(["costingTab", "common"]);
-  const { fmtMoney } = useMoney();
+  // budget/plan/actual đến từ pd_cost_budget + dòng Outsourcing tổng hợp từ pd_outsourcing — cả hai
+  // đều lưu VND gốc (không quy đổi kUSD) — dùng fmtVnd() thay vì fmtMoney().
+  const { fmtVnd } = useMoney();
   const maxBudget = Math.max(...rows.map((r) => r.budget ?? 0), 1);
   let lastCategory: string | null = null;
   return (
@@ -148,7 +150,7 @@ function BudgetExecutionStatus({ rows }: { rows: BudgetRow[] }) {
                           fontWeight: 700,
                         }}
                       >
-                        {fmtMoney(row.plan)}
+                        {fmtVnd(row.plan)}
                       </span>
                       {planPct != null && (
                         <span
@@ -189,7 +191,7 @@ function BudgetExecutionStatus({ rows }: { rows: BudgetRow[] }) {
                           fontWeight: 700,
                         }}
                       >
-                        {fmtMoney(row.actual)}
+                        {fmtVnd(row.actual)}
                       </span>
                       {actualPct != null && (
                         <span
@@ -211,7 +213,7 @@ function BudgetExecutionStatus({ rows }: { rows: BudgetRow[] }) {
                 </div>
                 {/* 예산 금액 — 카드 바깥으로 넘치지 않도록 고정 너비 컬럼으로 분리 */}
                 <div style={{ width: "58px", minWidth: "58px", textAlign: "right", fontSize: "11px", color: INK_SECONDARY, paddingLeft: "4px" }}>
-                  {fmtMoney(row.budget)}
+                  {fmtVnd(row.budget)}
                 </div>
               </div>
               </React.Fragment>

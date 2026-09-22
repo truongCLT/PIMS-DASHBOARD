@@ -332,6 +332,13 @@ export async function applyPimsvinaData(fetched: PimsvinaData) {
     }
     return String(n / 1000);
   };
+  // Outsourcing/Materials: lưu ĐÚNG số VND gốc, KHÔNG quy đổi qua toK() — cùng nguyên tắc với
+  // pd_cost_budget ("동기화 데이터는 VND 원본 저장, 화면에서만 통화 변환"). Trước đây quy đổi sang
+  // kUSD bằng hằng số tỷ giá cố định chung cho mọi site, trong khi UI lại quy đổi ngược về VND bằng
+  // tỷ giá hợp đồng RIÊNG của từng site (CBTB_CTRTSUMM.RATEUSD) — vòng đi-về 2 tỷ giá khác nhau nên
+  // luôn lệch (sai ~1-2% tuỳ site) so với màn hình gốc PIMSVINA (Request Execution Resolution).
+  // Lưu VND thẳng thì không còn tỷ giá nào để lệch nữa.
+  const rawNum = (v: any) => (v == null || v === "" ? null : String(v));
 
   // PIMSVINA trả as_of_month dạng "YYYYMM" (VD "202608") nhưng PUT /projectdetail (Data Entry form)
   // validate nghiêm ngặt theo "YYYY-MM" — nếu ghi thẳng giá trị thô, form Data Entry sẽ báo lỗi
@@ -542,11 +549,11 @@ export async function applyPimsvinaData(fetched: PimsvinaData) {
         category: item.category || null,
         contractDate: item.contract_date || null,
         changeNo: item.change_no != null ? String(item.change_no) : null,
-        budget: toK(item.budget),
-        executedBudget: toK(item.executed_budget),
-        resolved: toK(item.resolved),
-        thisMonth: toK(item.this_month),
-        accum: toK(item.accum),
+        budget: rawNum(item.budget),
+        executedBudget: rawNum(item.executed_budget),
+        resolved: rawNum(item.resolved),
+        thisMonth: rawNum(item.this_month),
+        accum: rawNum(item.accum),
         sortOrder: Number(item.sort_order) || 0,
       });
       counts.pdOutsourcing++;

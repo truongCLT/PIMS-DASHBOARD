@@ -2372,11 +2372,14 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                 <td style={readOnlyCell}>{o.category || "-"}</td>
                 <td style={{ ...readOnlyCell, textAlign: "center" }}>{o.contractDate || "-"}</td>
                 <td style={{ ...readOnlyCell, textAlign: "center" }}>{o.changeNo || "-"}</td>
-                <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtMoney(o.budget)}</td>
-                <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtMoney(o.executedBudget)}</td>
-                <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtMoney(o.resolved)}</td>
-                <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtMoney(o.thisMonth)}</td>
-                <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtMoney(o.accum)}</td>
+                {/* budget/executedBudget/resolved/thisMonth/accum lưu ĐÚNG số VND gốc (không quy đổi
+                    kUSD) — dùng fmtVnd() thay vì fmtMoney() để hiển thị đúng, mặc định VND, tự chia
+                    theo tỷ giá khi chọn USD/KRW. */}
+                <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtVnd(o.budget)}</td>
+                <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtVnd(o.executedBudget)}</td>
+                <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtVnd(o.resolved)}</td>
+                <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtVnd(o.thisMonth)}</td>
+                <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtVnd(o.accum)}</td>
               </tr>
             ))}
           </tbody>

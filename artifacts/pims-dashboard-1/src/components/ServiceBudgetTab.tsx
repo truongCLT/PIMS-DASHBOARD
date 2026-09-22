@@ -158,7 +158,9 @@ function DualBar({
 export function ServiceBudgetTab({ projectName }: { projectName: string }) {
   const { t } = useTranslation(["serviceBudgetTab", "common"]);
   const { detail, isLoading } = useProjectDetail(projectName);
-  const { fmtMoney, unitLabel } = useMoney();
+  // budget/plan/actual đến từ pd_cost_budget + tổng hợp pd_outsourcing — cả hai đều lưu VND gốc
+  // (không quy đổi kUSD) — dùng fmtVnd() thay vì fmtMoney() (DualBar vẫn nhận qua prop tên fmtMoney).
+  const { fmtVnd, unitLabel } = useMoney();
 
   const rows = (detail?.costBudget ?? []).filter(
     (c) => c.budget != null || c.plan != null || c.actual != null,
@@ -263,7 +265,7 @@ export function ServiceBudgetTab({ projectName }: { projectName: string }) {
                         plan={items[0].plan ?? null}
                         actual={items[0].actual ?? null}
                         maxBudget={maxBudget}
-                        fmtMoney={fmtMoney}
+                        fmtMoney={fmtVnd}
                       />
                     </div>
                   ) : (
@@ -275,7 +277,7 @@ export function ServiceBudgetTab({ projectName }: { projectName: string }) {
                         plan={c.plan ?? null}
                         actual={c.actual ?? null}
                         maxBudget={maxBudget}
-                        fmtMoney={fmtMoney}
+                        fmtMoney={fmtVnd}
                       />
                     ))
                   )}
@@ -292,7 +294,7 @@ export function ServiceBudgetTab({ projectName }: { projectName: string }) {
                 plan={totalPlan}
                 actual={totalActual}
                 maxBudget={maxBudget}
-                fmtMoney={fmtMoney}
+                fmtMoney={fmtVnd}
               />
             </div>
 

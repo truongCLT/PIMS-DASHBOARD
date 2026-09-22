@@ -127,7 +127,7 @@ export async function downloadProjectDetailTemplate(
       ["권장 입력 순서", flow.join("  →  ")],
       ["작성 기준", "빈 셀은 미입력으로 처리됩니다. 월별 표는 연도·월 중복 없이 입력해 주세요."],
       ["예산 집행", "Level 1·Level 2 구조로 입력하며, 월별 계획·실적은 4-1 시트에서 항목·연도·월별로 관리합니다."],
-      ["선택 항목", "월별 예산 항목: Common, Expense 1, Expense 2, 외주성 / 외주 대공종: 대공종, 건축, 기계, 전기, 토목, 조경, 경비"],
+      ["선택 항목", "월별 예산 항목: Common, Expense 1, Expense 2, Contingency, Outsourcing / 외주 대공종: 대공종, 건축, 기계, 전기, 토목, 조경, 경비"],
       ["사진", "현장 사진은 웹 화면의 데이터 입력 탭에서 별도로 업로드합니다."],
     ];
     guideRows.forEach(([label, value]) => {
@@ -214,15 +214,19 @@ export async function downloadProjectDetailTemplate(
     allowBlank: true,
     formulae: ['"Direct Cost,Indirect Cost"'],
   });
+  // plan là nhập tay (천 USD, dùng tv()) nhưng actual từ PIMSVINA sync là VND gốc (dùng toVndRaw()) —
+  // hai đơn vị khác nhau trong cùng 1 dòng, xem comment ở costEstimation sheet phía trên.
   const costBudgetMonthlySheet = addSheet(
     SHEETS.costBudgetMonthly,
-    (detail.costBudgetMonthly ?? []).map((b) => [b.item, b.year, b.month, tv(b.plan), tv(b.actual)]),
+    (detail.costBudgetMonthly ?? []).map((b) => [b.item, b.year, b.month, tv(b.plan), toVndRaw(b.actual)]),
   );
   costBudgetMonthlySheet.dataValidations.add("A2:A1000", {
     type: "list",
     allowBlank: false,
-    formulae: ['"Common,Expense 1,Expense 2,외주성"'],
+    formulae: ['"Common,Expense 1,Expense 2,Contingency,Outsourcing"'],
   });
+  // budget/executedBudget/resolved/thisMonth/accum của pd_outsourcing lưu VND gốc (PIMSVINA sync,
+  // không quy đổi kUSD) — dùng toVndRaw() thay vì tv().
   const outsourcingSheet = addSheet(
     SHEETS.outsourcing,
     detail.outsourcing.map((o) => [
@@ -232,11 +236,11 @@ export async function downloadProjectDetailTemplate(
       o.category ?? null,
       o.contractDate ?? null,
       o.changeNo ?? null,
-      tv(o.budget),
-      tv(o.executedBudget),
-      tv(o.resolved),
-      tv(o.thisMonth),
-      tv(o.accum),
+      toVndRaw(o.budget),
+      toVndRaw(o.executedBudget),
+      toVndRaw(o.resolved),
+      toVndRaw(o.thisMonth),
+      toVndRaw(o.accum),
     ]),
   );
   outsourcingSheet.dataValidations.add("A2:A1000", {
@@ -578,7 +582,7 @@ export async function parseProjectDetailWorkbook(file: File, existing: ProjectDe
           year: yearRaw,
           month: monthRaw,
           plan: fv(r[3]),
-          actual: fv(r[4]),
+          actual: fromVndRaw(cellNum(r[4])),
         });
       });
       result.costBudgetMonthly = out;
@@ -600,11 +604,11 @@ export async function parseProjectDetailWorkbook(file: File, existing: ProjectDe
           category: cellStr(r[3]),
           contractDate: cellStr(r[4]),
           changeNo: cellStr(r[5]),
-          budget: fv(r[6]),
-          executedBudget: fv(r[7]),
-          resolved: fv(r[8]),
-          thisMonth: fv(r[9]),
-          accum: fv(r[10]),
+          budget: fromVndRaw(cellNum(r[6])),
+          executedBudget: fromVndRaw(cellNum(r[7])),
+          resolved: fromVndRaw(cellNum(r[8])),
+          thisMonth: fromVndRaw(cellNum(r[9])),
+          accum: fromVndRaw(cellNum(r[10])),
         });
       });
       result.outsourcing = out;

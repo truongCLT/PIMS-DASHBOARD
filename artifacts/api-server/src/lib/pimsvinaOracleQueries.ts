@@ -102,7 +102,21 @@ export const ORACLE_DASHBOARD_QUERIES: Record<string, OracleEndpointQuery> = {
         B.FLDCODE AS FLDCODE,
         (SELECT MAX(FM.ACNT_FLDCODE) FROM CBTB_FLD_MAPPING FM WHERE FM.FLDCODE = B.FLDCODE) AS SITE_CODE,
         FUN_GET_FLDNAME(B.FLDCODE) AS PROJECT_NAME,
-        T.SVCDVSCODE               AS TRADE_GROUP,
+        -- CLSDVSCODE(0~4) là mã phân loại "Field" thật của PIMSVINA (khớp cột "Field" trên màn
+        -- Request Execution Resolution — ce_ctrt_site_pfmctrt_q.xfdl/ce_ctrt_site_pfmctrt_1q.jsp) —
+        -- xác nhận qua đối chiếu prefix ORDCONTTYPECODE thực tế: 0=Y/O(services,공통)→대공종,
+        -- 1=C(civil)→토목, 2=A(architecture)→건축, 3=M(mechanical)→기계, 4=E(electrical)→전기.
+        -- Trước đây dùng nhầm SVCDVSCODE (chỉ có giá trị 1/2, không phải mã Field) nên dropdown Trade
+        -- Group trên UI luôn không khớp option nào (hiện rỗng "-"). 조경(Landscape)/경비(Expense)
+        -- không có CLSDVSCODE riêng trong PIMSVINA nên để NULL (UI hiện "-", cần chọn tay).
+        CASE T.CLSDVSCODE
+          WHEN '0' THEN '대공종'
+          WHEN '1' THEN '토목'
+          WHEN '2' THEN '건축'
+          WHEN '3' THEN '기계'
+          WHEN '4' THEN '전기'
+          ELSE NULL
+        END                        AS TRADE_GROUP,
         T.ORDCONTTYPENAME          AS TRADE,
         FUN_GET_CTRT_CUST_INFO('2', B.FLDCODE, B.ORDCONTTYPECODE, B.CTRTCHGSEQ) AS VENDOR,
         T.SVCDVSCODE               AS CATEGORY,

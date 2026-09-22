@@ -15,7 +15,7 @@ import { ProjectDataEntryTab } from "./ProjectDataEntryTab";
 import { PimsvinaSyncPreviewModal, type PimsvinaPreviewData } from "./PimsvinaSyncPreviewModal";
 import { useProjectDetail, getGetProjectdetailQueryKey, fmtPct, ratioPct } from "../lib/projectDetailData";
 import { useAdminAuth, readAdminToken } from "../lib/adminAuth";
-import { DisplayUnitProvider, DEFAULT_EXCHANGE_RATES, formatMoney, moneyUnitLabel, convertVndToKUsdAmount } from "../lib/displayUnit";
+import { DisplayUnitProvider, DEFAULT_EXCHANGE_RATES, formatMoney, formatVnd, moneyUnitLabel, convertVndToKUsdAmount } from "../lib/displayUnit";
 import { useDashboardFilters } from "../lib/dashboardFilters";
 import { useAnyProjectLocked } from "../lib/useAnyProjectLocked";
 import { CardHeader, rateColor } from "./OverviewTab";
@@ -213,7 +213,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
     ? outRows.reduce((a, r) => a + (r.executedBudget ?? 0), 0)
     : null;
   const budgetRows = [
-    { item: "외주성", budget: outBudget, plan: outPlan, actual: outActual },
+    { item: "Outsourcing", budget: outBudget, plan: outPlan, actual: outActual },
     { item: "Common", budget: _common?.budget ?? null, plan: _common?.plan ?? null, actual: _common?.actual ?? null },
     { item: "Expense 1", budget: _expense1?.budget ?? null, plan: _expense1?.plan ?? null, actual: _expense1?.actual ?? null },
   ].filter((r) => r.budget != null || r.actual != null || r.plan != null);
@@ -716,23 +716,25 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                           const ph = barH(pln);
                           const ah = barH(act);
                           const subTop = Math.max(ph, ah);
-                          const itemLabel = g.item === "외주성" ? t("overviewTab:outsourcingItem") : g.item;
+                          const itemLabel = g.item === "Outsourcing" ? t("overviewTab:outsourcingItem") : g.item;
+                          // bud/pln/act đến từ pd_cost_budget/pd_outsourcing — lưu VND gốc (không quy
+                          // đổi kUSD) — dùng formatVnd() thay vì formatMoney().
                           return (
                             <div key={g.item} style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center" }}>
-                              <div title={formatMoney(bud || null, currency, unitOn)} style={{ fontSize: "12px", fontWeight: 600, color: INK_BODY, marginBottom: "2px", whiteSpace: "nowrap", maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis" }}>
-                                {formatMoney(bud || null, currency, unitOn)}
+                              <div title={formatVnd(bud || null, currency)} style={{ fontSize: "12px", fontWeight: 600, color: INK_BODY, marginBottom: "2px", whiteSpace: "nowrap", maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                {formatVnd(bud || null, currency)}
                               </div>
                               <div style={{ position: "relative", height: `${BAR_H + LABEL_H}px`, width: `${GRAY_W}px` }}>
                                 <div style={{ position: "absolute", bottom: 0, left: 0, width: `${GRAY_W}px`, height: `${Math.max(bh, 2)}px`, backgroundColor: chartTheme.lightGray, borderRadius: "2px 2px 0 0" }} />
                                 {g.actual != null && ah > 0 && (
                                   <div style={{ position: "absolute", bottom: 0, left: 0, width: `${GRAY_W}px`, height: `${ah}px`, backgroundColor: chartTheme.inflowBlue, borderRadius: "0 0 2px 2px" }}>
-                                    <span title={formatMoney(act || null, currency, unitOn)} style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", fontSize: "10px", color: "#fff", fontWeight: 700, whiteSpace: "nowrap" }}>
-                                      {formatMoney(act || null, currency, unitOn)}
+                                    <span title={formatVnd(act || null, currency)} style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", fontSize: "10px", color: "#fff", fontWeight: 700, whiteSpace: "nowrap" }}>
+                                      {formatVnd(act || null, currency)}
                                     </span>
                                   </div>
                                 )}
                                 {g.plan != null && ph > 0 && (
-                                  <div title={formatMoney(pln || null, currency, unitOn)} style={{ position: "absolute", bottom: `${ph}px`, left: 0, width: `${GRAY_W}px`, height: "3px", backgroundColor: chartTheme.outflowRed, borderRadius: "2px", zIndex: 2 }} />
+                                  <div title={formatVnd(pln || null, currency)} style={{ position: "absolute", bottom: `${ph}px`, left: 0, width: `${GRAY_W}px`, height: "3px", backgroundColor: chartTheme.outflowRed, borderRadius: "2px", zIndex: 2 }} />
                                 )}
                                 {pct != null && (
                                   <div style={{ position: "absolute", bottom: `${subTop + 4}px`, left: "50%", transform: "translateX(-50%)", fontSize: "12px", fontWeight: 700, color: chartTheme.inflowBlue, whiteSpace: "nowrap" }}>

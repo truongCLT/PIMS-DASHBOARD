@@ -13,7 +13,9 @@ import type { BudgetRow } from "./types";
 
 export function BudgetExecutionSection({ rows }: { rows: BudgetRow[] }) {
   const { t } = useTranslation(["saleCostTab", "costingTab"]);
-  const { fmtMoney } = useMoney();
+  // budget/plan/actual đến từ pd_cost_budget + dòng Outsourcing tổng hợp từ pd_outsourcing — cả hai
+  // đều lưu VND gốc (không quy đổi kUSD) — dùng fmtVnd() thay vì fmtMoney().
+  const { fmtVnd } = useMoney();
 
   const maxBudget = Math.max(...rows.map((r) => r.budget ?? 0), 1);
   let lastCategory: string | null = null;
@@ -99,7 +101,7 @@ export function BudgetExecutionSection({ rows }: { rows: BudgetRow[] }) {
                             fontWeight: 700,
                           }}
                         >
-                          {fmtMoney(row.plan)}
+                          {fmtVnd(row.plan)}
                         </span>
                         {planPct != null && (
                           <span
@@ -141,7 +143,7 @@ export function BudgetExecutionSection({ rows }: { rows: BudgetRow[] }) {
                             fontWeight: 700,
                           }}
                         >
-                          {fmtMoney(row.actual)}
+                          {fmtVnd(row.actual)}
                         </span>
                         {actualPct != null && (
                           <span
@@ -173,7 +175,7 @@ export function BudgetExecutionSection({ rows }: { rows: BudgetRow[] }) {
                       paddingLeft: "4px",
                     }}
                   >
-                    {fmtMoney(row.budget)}
+                    {fmtVnd(row.budget)}
                   </div>
                 </div>
               </React.Fragment>

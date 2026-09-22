@@ -35,7 +35,9 @@ function sumNullable<T>(
 }
 
 export function CostSection({ budgetRows }: Props) {
-  const { fmtMoney, unitLabel } = useMoney();
+  // plan/actual đến từ pd_cost_budget + tổng hợp pd_outsourcing — cả hai đều lưu VND gốc (không quy
+  // đổi kUSD) — dùng fmtVnd() thay vì fmtMoney().
+  const { fmtVnd, unitLabel } = useMoney();
   const getPlan = (row: BudgetRowData) => row.plan ?? row.budget;
   const groups: CostGroup[] = [
     {
@@ -156,8 +158,8 @@ export function CostSection({ budgetRows }: Props) {
                   )}
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: "5px", marginTop: "2px", fontSize: "9px", color: INK_MUTED, whiteSpace: "nowrap" }}>
-                  <span>계획 <strong style={{ color: INK_BODY }}>{fmtMoney(group.plan)}</strong></span>
-                  <span>집행 <strong style={{ color: INK_BODY }}>{fmtMoney(group.actual)}</strong></span>
+                  <span>계획 <strong style={{ color: INK_BODY }}>{fmtVnd(group.plan)}</strong></span>
+                  <span>집행 <strong style={{ color: INK_BODY }}>{fmtVnd(group.actual)}</strong></span>
                   <span>집행률 <strong style={{ color: rateColor(groupRate) }}>{groupRate == null ? "-" : `${Math.round(groupRate * 10) / 10}%`}</strong></span>
                 </div>
               </div>
@@ -183,11 +185,11 @@ export function CostSection({ budgetRows }: Props) {
       >
         <span style={{ fontSize: "12px", fontWeight: 700, color: INK_NAVY }}>합계</span>
         <span style={{ textAlign: "center" }}>
-          계획 <strong style={{ color: INK_BODY }}>{fmtMoney(totalPlan)}</strong>
+          계획 <strong style={{ color: INK_BODY }}>{fmtVnd(totalPlan)}</strong>
         </span>
         <span style={{ color: "#aab5c4" }}>|</span>
         <span style={{ textAlign: "center" }}>
-          집행 <strong style={{ color: INK_BODY }}>{fmtMoney(totalActual)}</strong>
+          집행 <strong style={{ color: INK_BODY }}>{fmtVnd(totalActual)}</strong>
         </span>
         <span style={{ color: "#aab5c4" }}>|</span>
         <span style={{ textAlign: "right" }}>

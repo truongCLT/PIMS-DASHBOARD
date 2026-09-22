@@ -92,7 +92,9 @@ export function OutsourcingTab({
   referenceMonth: number;
 }) {
   const { t } = useTranslation(["outsourcingTab", "common"]);
-  const { fmtMoney } = useMoney();
+  // budget/executedBudget/resolved/thisMonth/accum của pd_outsourcing lưu ĐÚNG số VND gốc (không quy
+  // đổi kUSD) — dùng fmtVnd() thay vì fmtMoney().
+  const { fmtVnd } = useMoney();
   const { detail, isLoading } = useProjectDetail(projectName);
   const [widths, setWidths] = useState<number[]>(DEFAULT_WIDTHS);
 
@@ -186,16 +188,16 @@ export function OutsourcingTab({
                       <td style={td} title={r.vendor ?? undefined}>{r.vendor ?? "-"}</td>
                       <td style={td}>{r.contractDate ?? "-"}</td>
                       <td style={td}>{r.changeNo ?? "-"}</td>
-                      <td style={td}>{fmtMoney(r.budget)}</td>
-                      <td style={td}>{fmtMoney(r.executedBudget)}</td>
-                      <td style={td}>{fmtMoney(r.resolved)}</td>
+                      <td style={td}>{fmtVnd(r.budget)}</td>
+                      <td style={td}>{fmtVnd(r.executedBudget)}</td>
+                      <td style={td}>{fmtVnd(r.resolved)}</td>
                       <td style={{
                         ...td,
                         fontWeight: 700,
                         color: ratioPct(r.resolved, r.budget) != null && ratioPct(r.resolved, r.budget)! >= 100 ? ACHIEVE_GREEN : ACHIEVE_RED,
                       }}>{fmtPct(ratioPct(r.resolved, r.budget))}</td>
-                      <td style={td}>{fmtMoney(r.thisMonth)}</td>
-                      <td style={{ ...td, fontWeight: 700, color: INK_NAVY, backgroundColor: TABLE_HEADER_BG }}>{fmtMoney(r.accum)}</td>
+                      <td style={td}>{fmtVnd(r.thisMonth)}</td>
+                      <td style={{ ...td, fontWeight: 700, color: INK_NAVY, backgroundColor: TABLE_HEADER_BG }}>{fmtVnd(r.accum)}</td>
                       <td style={{ ...td, fontWeight: 700, color: INK_NAVY }}>{fmtPct(ratioPct(r.accum, r.resolved))}</td>
                       <td style={{
                         ...td,
@@ -203,7 +205,7 @@ export function OutsourcingTab({
                         color: Math.max((r.resolved ?? 0) - (r.accum ?? 0), 0) > 0 ? ACHIEVE_RED : ACHIEVE_GREEN,
                         backgroundColor: Math.max((r.resolved ?? 0) - (r.accum ?? 0), 0) > 0 ? STATUS_NEG_BG : STATUS_POS_BG,
                       }}>
-                        {fmtMoney(
+                        {fmtVnd(
                           r.resolved == null && r.accum == null
                             ? null
                             : Math.max((r.resolved ?? 0) - (r.accum ?? 0), 0),
@@ -216,19 +218,19 @@ export function OutsourcingTab({
                     <td style={td} />
                     <td style={td} />
                     <td style={td} />
-                    <td style={{ ...td, fontWeight: 600 }}>{fmtMoney(sum.budget)}</td>
-                    <td style={{ ...td, fontWeight: 600 }}>{fmtMoney(sum.executedBudget)}</td>
-                    <td style={{ ...td, fontWeight: 600 }}>{fmtMoney(sum.resolved)}</td>
+                    <td style={{ ...td, fontWeight: 600 }}>{fmtVnd(sum.budget)}</td>
+                    <td style={{ ...td, fontWeight: 600 }}>{fmtVnd(sum.executedBudget)}</td>
+                    <td style={{ ...td, fontWeight: 600 }}>{fmtVnd(sum.resolved)}</td>
                     <td style={{ ...td, fontWeight: 600 }}>{fmtPct(ratioPct(sum.resolved, sum.budget))}</td>
-                    <td style={{ ...td, fontWeight: 600 }}>{fmtMoney(sum.thisMonth)}</td>
-                    <td style={{ ...td, fontWeight: 600 }}>{fmtMoney(sum.accum)}</td>
+                    <td style={{ ...td, fontWeight: 600 }}>{fmtVnd(sum.thisMonth)}</td>
+                    <td style={{ ...td, fontWeight: 600 }}>{fmtVnd(sum.accum)}</td>
                     <td style={{ ...td, fontWeight: 600 }}>{fmtPct(ratioPct(sum.accum, sum.resolved))}</td>
                     <td style={{
                       ...td,
                       fontWeight: 700,
                       color: (sum.remaining ?? 0) > 0 ? ACHIEVE_RED : ACHIEVE_GREEN,
                       backgroundColor: (sum.remaining ?? 0) > 0 ? STATUS_NEG_BG : STATUS_POS_BG,
-                    }}>{fmtMoney(sum.remaining)}</td>
+                    }}>{fmtVnd(sum.remaining)}</td>
                   </tr>
                 </>
               )}
