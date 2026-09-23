@@ -14,7 +14,6 @@ import {
   LabelList,
 } from "recharts";
 
-import projectPhoto from "../assets/project-photo.png";
 import { PhotoPager } from "./PhotoPager";
 import {
   useProjectDetail,
@@ -356,7 +355,7 @@ export function ConstructionProgressTab({
 }) {
   const { t } = useTranslation(["constructionProgressTab", "common"]);
   const { detail, isLoading } = useProjectDetail(projectName);
-  const { fmtMoney, unitLabel } = useMoney();
+  const { fmtVnd } = useMoney();
   const [photoIdx, setPhotoIdx] = useState(0);
   const progressCardHeight = "390px";
   useEffect(() => { setPhotoIdx(0); }, [projectName]);
@@ -447,7 +446,7 @@ export function ConstructionProgressTab({
       {/* Row 1: Construction site progress + Progress */}
       <div className="construction-progress-top-grid">
         {/* Construction site progress */}
-        <div style={{ ...cardStyle, display: "flex", flexDirection: "column", minWidth: 0 }}>
+        <div style={{ ...cardStyle, display: "flex", flexDirection: "column", minWidth: 0, height: "640px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px", gap: "8px" }}>
             <span style={sectionTitle}>{t("constructionProgressTab:siteProgressStatus")}</span>
             {availablePhotoMonths.length > 0 && (
@@ -479,47 +478,47 @@ export function ConstructionProgressTab({
                 const caption = [current?.location, current?.contType, current?.note].filter(Boolean).join(" · ");
                 return (
                   <>
-                    <div style={{ flex: 1, minHeight: 0 }}>
+                    <div style={{ flex: 1, minHeight: 0, backgroundColor: "#f4f6fa", borderRadius: "4px" }}>
                       <PhotoPager
-                        src={current?.imageUrl || projectPhoto}
+                        src={current?.imageUrl || null}
                         alt={t("constructionProgressTab:sitePhotoAlt", { projectName })}
                         total={selectedMonthSitePhotos.length}
                         current={safeIdx}
                         onChange={setPhotoIdx}
-                        imgStyle={{ minHeight: "200px" }}
+                        imgStyle={{ minHeight: 0, objectFit: "contain" }}
                         loop
                       />
                     </div>
-                    {caption && (
-                      <div style={{ fontSize: "11px", color: INK_MUTED, marginTop: "4px", textAlign: "center" }}>
-                        {caption}
-                      </div>
-                    )}
+                    <div style={{ fontSize: "11px", color: INK_MUTED, marginTop: "4px", textAlign: "center", minHeight: "14px" }}>
+                      {caption || " "}
+                    </div>
                   </>
                 );
               }
               const photos = detail?.photos ?? [];
               const hasPhotos = photos.length > 0;
               const safeIdx = Math.min(photoIdx, Math.max(photos.length - 1, 0));
-              const src = hasPhotos ? `/api/storage${photos[safeIdx].objectPath}` : projectPhoto;
+              const src = hasPhotos ? `/api/storage${photos[safeIdx].objectPath}` : null;
               return (
-                <PhotoPager
-                  src={src}
-                  alt={t("constructionProgressTab:sitePhotoAlt", { projectName })}
-                  total={hasPhotos ? photos.length : 1}
-                  current={hasPhotos ? safeIdx : 0}
-                  onChange={setPhotoIdx}
-                  imgStyle={{ minHeight: "230px" }}
-                  autoPlayIntervalSeconds={detail?.overview?.slideshowIntervalSeconds || 5}
-                  loop
-                />
+                <div style={{ flex: 1, minHeight: 0, backgroundColor: "#f4f6fa", borderRadius: "4px" }}>
+                  <PhotoPager
+                    src={src}
+                    alt={t("constructionProgressTab:sitePhotoAlt", { projectName })}
+                    total={hasPhotos ? photos.length : 1}
+                    current={hasPhotos ? safeIdx : 0}
+                    onChange={setPhotoIdx}
+                    imgStyle={{ minHeight: 0, objectFit: "contain" }}
+                    autoPlayIntervalSeconds={detail?.overview?.slideshowIntervalSeconds || 5}
+                    loop
+                  />
+                </div>
               );
             })()}
           </div>
         </div>
 
         {/* Progress */}
-        <div style={{ ...cardStyle, display: "flex", flexDirection: "column", minWidth: 0 }}>
+        <div style={{ ...cardStyle, display: "flex", flexDirection: "column", minWidth: 0, height: "640px" }}>
           <div style={{ display: "flex", justifyContent: "space-between" }}>
             <span style={sectionTitle}>{t("common:process")}</span>
             <span
@@ -553,7 +552,7 @@ export function ConstructionProgressTab({
                         dataKey="plan"
                         position="top"
                         style={{ fontSize: "11px", fill: chartTheme.planBlue, fontWeight: 600 }}
-                        formatter={(v: number) => planMonth != null ? `${v.toFixed(1)}%` : "-"}
+                        formatter={(v: number) => planMonth != null ? `${Number(v.toFixed(1))}%` : "-"}
                       />
                     </Bar>
                     <Bar dataKey="actual" name={t("common:actual")} fill={chartTheme.outflowRed} barSize={24} isAnimationActive={false}>
@@ -561,7 +560,7 @@ export function ConstructionProgressTab({
                         dataKey="actual"
                         position="top"
                         style={{ fontSize: "11px", fill: chartTheme.outflowRed, fontWeight: 600 }}
-                        formatter={(v: number) => actualMonth != null ? `${v.toFixed(1)}%` : "-"}
+                        formatter={(v: number) => actualMonth != null ? `${Number(v.toFixed(1))}%` : "-"}
                       />
                     </Bar>
                   </ComposedChart>
@@ -573,11 +572,11 @@ export function ConstructionProgressTab({
               <div style={{ fontSize: "11px", color: INK_SECONDARY, marginTop: "5px", textAlign: "center", lineHeight: 1.6 }}>
                 <div>
                   <span style={{ color: chartTheme.planBlue, fontWeight: 700 }}>계획</span>{" "}
-                  {fmtMoney(costPlanAmount)} {unitLabel}
+                  {fmtVnd(costPlanAmount)} VND
                 </div>
                 <div>
                   <span style={{ color: chartTheme.outflowRed, fontWeight: 700 }}>실적</span>{" "}
-                  {fmtMoney(costActualAmount)} {unitLabel}
+                  {fmtVnd(costActualAmount)} VND
                 </div>
                 <div style={{ fontWeight: 700, color: INK_NAVY }}>
                   달성률 {monthlyAchievement != null ? fmtPct(monthlyAchievement) : "-"}
@@ -672,7 +671,7 @@ export function ConstructionProgressTab({
                   axisLine={false}
                   tickFormatter={(v) => `${v}%`}
                 />
-                <Tooltip contentStyle={{ fontSize: "13px" }} formatter={(v) => (v == null ? "-" : `${Number(v).toLocaleString()}%`)} />
+                <Tooltip contentStyle={{ fontSize: "13px" }} formatter={(v) => (v == null ? "-" : `${Number(v).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 1 })}%`)} />
                 <Legend wrapperStyle={{ fontSize: "14px" }} iconSize={12} />
                 <Bar yAxisId="left" dataKey="plan" name={t("constructionProgressTab:monthlyPlan")} fill={chartTheme.planBlue} barSize={12} isAnimationActive={false} />
                 <Bar yAxisId="left" dataKey="actual" name={t("constructionProgressTab:monthlyActual")} fill={chartTheme.lightBlue} barSize={12} isAnimationActive={false} />

@@ -12,7 +12,6 @@ import {
   getGetPimsvinaSiterateQueryKey,
   useGetPimsvinaSiterate,
 } from "@workspace/api-client-react";
-import projectPhoto from "../assets/project-photo.png";
 import { PhotoPager } from "./PhotoPager";
 import { useProjectDetail } from "../lib/projectDetailData";
 import { useMoney } from "../lib/displayUnit";
@@ -164,7 +163,7 @@ function SitePhotoPanel({
 
   const hasPhotos = photos.length > 0;
   const safeIdx = Math.min(active, Math.max(photos.length - 1, 0));
-  const src = overviewPhotoUrl || (hasPhotos ? `/api/storage${photos[safeIdx].objectPath}` : projectPhoto);
+  const src = overviewPhotoUrl || (hasPhotos ? `/api/storage${photos[safeIdx].objectPath}` : null);
   const total = overviewPhotoUrl ? 1 : hasPhotos ? photos.length : 1;
 
   return (
@@ -240,7 +239,7 @@ export function ProjectSummaryTab({ projectName }: { projectName: string }) {
   // 현장 환율 라벨
   const siteRateLabel =
     rateUsd != null
-      ? `1 USD = ${rateUsd.toLocaleString("en-US", { maximumFractionDigits: 0 })} VND${rateKrw != null ? ` / 1 KRW = ${rateKrw.toLocaleString("en-US", { maximumFractionDigits: 2 })} VND` : ""}`
+      ? `1 USD = ${rateUsd.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 1 })} VND${rateKrw != null ? ` / 1 KRW = ${rateKrw.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 1 })} VND` : ""}`
       : null;
 
   if (isLoading) {

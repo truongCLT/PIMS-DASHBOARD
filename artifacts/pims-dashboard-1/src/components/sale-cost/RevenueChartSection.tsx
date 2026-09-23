@@ -58,7 +58,7 @@ function RevenueTooltip({
       <div style={{ fontWeight: 700, marginBottom: "4px", color: INK_NAVY }}>{label}</div>
       {payload.map((p, i) => (
         <div key={i} style={{ color: p.color }}>
-          {p.name}: {Math.round(p.value).toLocaleString()} {unitLabel}
+          {p.name}: {p.value.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 1 })} {unitLabel}
         </div>
       ))}
       {cum != null && (
@@ -70,12 +70,12 @@ function RevenueTooltip({
             paddingTop: "4px",
           }}
         >
-          {t("common:cumulative")} ({t("common:actual")}): {cum.toLocaleString()} {unitLabel}
+          {t("common:cumulative")} ({t("common:actual")}): {cum.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 1 })} {unitLabel}
         </div>
       )}
       {planCum != null && planCum > 0 && (
         <div style={{ color: chartTheme.planGray }}>
-          {t("common:cumulative")} ({t("common:plan")}): {planCum.toLocaleString()} {unitLabel}
+          {t("common:cumulative")} ({t("common:plan")}): {planCum.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 1 })} {unitLabel}
         </div>
       )}
     </div>
@@ -159,7 +159,7 @@ export function RevenueChartCard({
                   dataKey="plan"
                   position="top"
                   style={{ fontSize: "11px", fill: chartTheme.axisText }}
-                  formatter={(v: number) => (v !== 0 ? Math.round(v).toLocaleString() : "")}
+                  formatter={(v: number) => (v !== 0 ? v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 1 }) : "")}
                 />
               </Area>
             )}
@@ -174,7 +174,7 @@ export function RevenueChartCard({
                 dataKey="actualRevenue"
                 position="top"
                 style={{ fontSize: "11px", fill: chartTheme.axisText }}
-                formatter={(v: number) => (v !== 0 ? Math.round(v).toLocaleString() : "")}
+                formatter={(v: number) => (v !== 0 ? v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 1 }) : "")}
               />
             </Bar>
             {splitForecast && (
@@ -192,7 +192,7 @@ export function RevenueChartCard({
                   dataKey="forecastRevenue"
                   position="top"
                   style={{ fontSize: "11px", fill: chartTheme.axisText }}
-                  formatter={(v: number) => (v !== 0 ? Math.round(v).toLocaleString() : "")}
+                  formatter={(v: number) => (v !== 0 ? v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 1 }) : "")}
                 />
               </Bar>
             )}
@@ -211,7 +211,7 @@ export function RevenueChartCard({
                 position="top"
                 offset={8}
                 style={{ fontSize: "11px", fill: chartTheme.outflowRed }}
-                formatter={(v: number) => Math.round(v).toLocaleString()}
+                formatter={(v: number) => v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 1 })}
               />
             </Line>}
           </ComposedChart>
@@ -253,7 +253,7 @@ export function CostRatioLineCard({
               contentStyle={{ fontSize: "13px" }}
               formatter={(v) =>
                 `${Number(v).toLocaleString("en-US", {
-                  minimumFractionDigits: 1,
+                  minimumFractionDigits: 0,
                   maximumFractionDigits: 1,
                 })}%`
               }
@@ -304,7 +304,7 @@ export function CostRatioLineCard({
                       fill={isLast ? chartTheme.sgaOrange : chartTheme.profitGreen}
                     >
                       {Number(value).toLocaleString("en-US", {
-                        minimumFractionDigits: 1,
+                        minimumFractionDigits: 0,
                         maximumFractionDigits: 1,
                       })}%
                     </text>

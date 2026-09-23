@@ -178,7 +178,7 @@ export function SaleProfitTab({
               <YAxis yAxisId="cum" hide domain={[0, Math.max(maxCum * 1.1, 1)]} />
               <Tooltip
                 contentStyle={{ fontSize: "13px" }}
-                formatter={(v: number, name: string) => [`${Math.round(v).toLocaleString()} ${unitLabel}`, name]}
+                formatter={(v: number, name: string) => [`${v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 1 })} ${unitLabel}`, name]}
               />
               <Legend wrapperStyle={{ fontSize: "12px" }} />
               {pdSalesHasAny && (
@@ -196,7 +196,7 @@ export function SaleProfitTab({
                     dataKey="plan"
                     position="top"
                     style={{ fontSize: "11px", fill: chartTheme.axisText }}
-                    formatter={(v: number) => (v !== 0 ? Math.round(v).toLocaleString() : "")}
+                    formatter={(v: number) => (v !== 0 ? v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 1 }) : "")}
                   />
                 </Area>
               )}
@@ -211,7 +211,7 @@ export function SaleProfitTab({
                   dataKey="revenue"
                   position="top"
                   style={{ fontSize: "11px", fill: chartTheme.axisText }}
-                  formatter={(v: number) => (v !== 0 ? Math.round(v).toLocaleString() : "")}
+                  formatter={(v: number) => (v !== 0 ? v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 1 }) : "")}
                 />
               </Bar>
               <Line
@@ -229,7 +229,7 @@ export function SaleProfitTab({
                   position="top"
                   offset={8}
                   style={{ fontSize: "11px", fill: chartTheme.outflowRed }}
-                  formatter={(v: number) => Math.round(v).toLocaleString()}
+                  formatter={(v: number) => v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 1 })}
                 />
               </Line>
             </ComposedChart>
@@ -265,7 +265,7 @@ export function SaleProfitTab({
                 />
                 <Tooltip
                   contentStyle={{ fontSize: "13px" }}
-                  formatter={(v: number, name: string) => [`${Math.round(v).toLocaleString()} ${unitLabel}`, name]}
+                  formatter={(v: number, name: string) => [`${v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 1 })} ${unitLabel}`, name]}
                 />
                 <Legend wrapperStyle={{ fontSize: "12px" }} />
                 <Bar dataKey="acctCogs" name={t("saleProfitTab:acctCogs")} fill={chartTheme.planBlue} barSize={14} isAnimationActive={false}>
@@ -273,7 +273,7 @@ export function SaleProfitTab({
                     dataKey="acctCogs"
                     position="top"
                     style={{ fontSize: "11px", fill: chartTheme.axisText }}
-                    formatter={(v: number) => (v !== 0 ? Math.round(v).toLocaleString() : "")}
+                    formatter={(v: number) => (v !== 0 ? v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 1 }) : "")}
                   />
                 </Bar>
                 <Bar dataKey="wipCogs" name={t("saleProfitTab:wipCogs")} fill={chartTheme.actualGreen} barSize={14} isAnimationActive={false}>
@@ -281,7 +281,7 @@ export function SaleProfitTab({
                     dataKey="wipCogs"
                     position="top"
                     style={{ fontSize: "11px", fill: chartTheme.axisText }}
-                    formatter={(v: number) => (v !== 0 ? Math.round(v).toLocaleString() : "")}
+                    formatter={(v: number) => (v !== 0 ? v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 1 }) : "")}
                   />
                 </Bar>
                 <Line
@@ -328,7 +328,7 @@ export function SaleProfitTab({
                 <YAxis hide domain={[0, Math.max(ratioMax * 1.3, 10)]} />
                 <Tooltip
                   contentStyle={{ fontSize: "13px" }}
-                  formatter={(v) => `${Number(v).toLocaleString("en-US", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`}
+                  formatter={(v) => `${Number(v).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 1 })}%`}
                 />
                 <Line
                   dataKey="ratio"
@@ -370,7 +370,7 @@ export function SaleProfitTab({
                           fontWeight={isLast ? 700 : 400}
                           fill={isLast ? chartTheme.sgaOrange : chartTheme.profitGreen}
                         >
-                          {Number(value).toLocaleString("en-US", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%
+                          {Number(value).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 1 })}%
                         </text>
                       );
                     }}

@@ -5,7 +5,6 @@ import {
   useGetCashflowMonthly,
   getGetCashflowMonthlyQueryKey,
 } from "@workspace/api-client-react";
-import projectPhoto from "../assets/project-photo.png";
 import { PhotoPager } from "./PhotoPager";
 import { Donut, MiniBar } from "./charts";
 import { useProjectDetail, fmtPct, ratioPct } from "../lib/projectDetailData";
@@ -118,7 +117,7 @@ function PhotoCard({
 
   const hasPhotos = photos.length > 0;
   const safeIdx = Math.min(active, Math.max(photos.length - 1, 0));
-  const src = hasPhotos ? `/api/storage${photos[safeIdx].objectPath}` : projectPhoto;
+  const src = hasPhotos ? `/api/storage${photos[safeIdx].objectPath}` : null;
   const total = hasPhotos ? photos.length : 1;
 
   return (
@@ -620,7 +619,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
               <CardHeader
                 title={t("overviewTab:costRate")}
                 unit={overview.contractAmount != null ? t("overviewTab:contractBase", { amount: fmtVnd(overview.contractAmount) }) : "%"}
-                badgeValue={improve != null ? `${improve >= 0 ? "-" : "+"}${Math.abs(improve).toFixed(1)}%p` : undefined}
+                badgeValue={improve != null ? `${improve >= 0 ? "-" : "+"}${Number(Math.abs(improve).toFixed(1))}%p` : undefined}
                 badgeLabel={improve != null ? t("overviewTab:vsBidding") : undefined}
                 badgeColor={improveColor}
               />

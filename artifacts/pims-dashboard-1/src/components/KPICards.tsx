@@ -113,7 +113,7 @@ function KPICard({
     const planN = toNum(plan);
     const actualN = toNum(actual);
     const diff = planN != null && actualN != null ? actualN - planN : null;
-    const diffText = diff != null ? `${diff > 0 ? "+" : diff < 0 ? "-" : ""}${Math.abs(diff).toLocaleString()}` : "-";
+    const diffText = diff != null ? `${diff > 0 ? "+" : diff < 0 ? "-" : ""}${Math.abs(diff).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 1 })}` : "-";
     const diffColor = diff != null && diff >= 0 ? "#2e9e5b" : "#e05252";
     const isMonthly = title.startsWith("당월 ");
 

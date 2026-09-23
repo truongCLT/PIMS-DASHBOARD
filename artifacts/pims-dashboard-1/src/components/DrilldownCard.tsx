@@ -51,7 +51,8 @@ export function DrilldownCard() {
 
   const unitLabel = derived?.unitLabel ?? "천 USD";
   const convert = makeConverter(currency, unitIndex, fxRates);
-  const fmtK = (v: number): string => `${roundSmart(v).toLocaleString("ko-KR")} ${unitLabel}`;
+  const fmtK = (v: number): string =>
+    `${roundSmart(v).toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 1 })} ${unitLabel}`;
 
   const month = derived?.month ?? Math.max(lastClosedMonth(), 1);
 

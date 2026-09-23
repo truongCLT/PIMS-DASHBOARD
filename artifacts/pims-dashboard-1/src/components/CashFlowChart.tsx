@@ -120,7 +120,7 @@ const makeBalanceLabel = (compact: boolean) => (props: any) => {
   if (value === undefined || value === null) return null;
   return (
     <text x={x} y={y - 7} fill={chartTheme.balanceNavy} textAnchor="middle" fontSize={compact ? 9 : 11} fontWeight="600">
-      {Math.round(value).toLocaleString()}
+      {Number(value).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 1 })}
     </text>
   );
 };
@@ -227,8 +227,8 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
         const pt = qData?.points.find((p) => p.month === ym);
         return {
           name: ref.name,
-          inflow: Math.round(convert(pt?.cashIn ?? 0)),
-          outflow: Math.round(convert(pt?.cashOut ?? 0)),
+          inflow: Math.round(convert(pt?.cashIn ?? 0) * 10) / 10,
+          outflow: Math.round(convert(pt?.cashOut ?? 0) * 10) / 10,
         };
       })
       .filter((r) => r.inflow !== 0 || r.outflow !== 0)
@@ -272,7 +272,7 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
             width={compact ? 88 : 60}
             axisLine={false}
             tickLine={false}
-            tickFormatter={(v: number) => v.toLocaleString()}
+            tickFormatter={(v: number) => v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 1 })}
           />
           <YAxis
             yAxisId="balance"
@@ -287,7 +287,7 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
             formatter={(value: number | string, name: string) => {
               const n = typeof value === "number" ? value : Number(value);
               const shown = name === outflowName ? Math.abs(n) : n;
-              return [`${Math.round(shown).toLocaleString()} ${unitLabel}`, name];
+              return [`${shown.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 1 })} ${unitLabel}`, name];
             }}
           />
           <ReferenceLine y={0} yAxisId="flow" stroke={chartTheme.zeroLine} />
@@ -412,13 +412,13 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
                 key: "inflow",
                 label: t("cashFlowChart:colInflow"),
                 align: "right",
-                format: (v) => typeof v === "number" ? v.toLocaleString("ko-KR") : "-",
+                format: (v) => typeof v === "number" ? v.toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 1 }) : "-",
               },
               {
                 key: "outflow",
                 label: t("cashFlowChart:colOutflow"),
                 align: "right",
-                format: (v) => typeof v === "number" ? v.toLocaleString("ko-KR") : "-",
+                format: (v) => typeof v === "number" ? v.toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 1 }) : "-",
               },
             ]}
             rows={drillRows}

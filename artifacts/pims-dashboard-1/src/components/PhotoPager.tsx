@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 interface Props {
-  src: string;
+  src: string | null;
   alt?: string;
   total: number;           // 전체 사진 수
   current: number;         // 0-based 현재 인덱스
@@ -71,20 +71,33 @@ export function PhotoPager({ src, alt, total, current, onChange, imgStyle, autoP
     >
       {/* 이미지 */}
       <div style={{ flex: 1, minHeight: 0, minWidth: 0, position: "relative", overflow: "hidden", borderRadius: "4px" }}>
-        <img
-          src={src}
-          alt={alt ?? t("photoPager:defaultAlt")}
-          style={{
-            width: "100%",
-            height: "100%",
-            maxWidth: "100%",
-            objectFit: "cover",
-            borderRadius: "4px",
-            display: "block",
-            minHeight: "180px",
-            ...imgStyle,
-          }}
-        />
+        {src ? (
+          <img
+            src={src}
+            alt={alt ?? t("photoPager:defaultAlt")}
+            style={{
+              width: "100%",
+              height: "100%",
+              maxWidth: "100%",
+              objectFit: "cover",
+              borderRadius: "4px",
+              display: "block",
+              minHeight: "180px",
+              ...imgStyle,
+            }}
+          />
+        ) : (
+          <div
+            style={{
+              width: "100%",
+              height: "100%",
+              minHeight: "180px",
+              backgroundColor: "#e5e9ef",
+              borderRadius: "4px",
+              ...imgStyle,
+            }}
+          />
+        )}
         {/* 자동재생 일시정지 표시 */}
         {autoPlayIntervalSeconds > 0 && total > 1 && paused && (
           <div style={{

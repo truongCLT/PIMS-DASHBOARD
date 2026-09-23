@@ -38,16 +38,16 @@ const defaultUnit: DisplayUnit = {
   unitOn: true,
   convert: (v) => v,
   convertToKUsd: (v) => v,
-  fmtMoney: (v, digits = 0) =>
+  fmtMoney: (v, digits = 1) =>
     v == null || Number.isNaN(v)
       ? "-"
       : v.toLocaleString("en-US", { maximumFractionDigits: digits, minimumFractionDigits: 0 }),
   fmtMoneyFull: (v) =>
-    v == null || Number.isNaN(v) ? "-" : v.toLocaleString("en-US", { maximumFractionDigits: 0 }),
+    v == null || Number.isNaN(v) ? "-" : v.toLocaleString("en-US", { maximumFractionDigits: 1 }),
   unitLabel: "천 USD",
   convertFromVnd: (v) => v,
   fmtVnd: (v) =>
-    v == null || Number.isNaN(v) ? "-" : v.toLocaleString("en-US", { maximumFractionDigits: 0 }),
+    v == null || Number.isNaN(v) ? "-" : v.toLocaleString("en-US", { maximumFractionDigits: 1 }),
   convertVndToKUsd: (v) => v,
 };
 
@@ -71,7 +71,7 @@ export function formatVnd(
   rates: Record<string, number> = DEFAULT_EXCHANGE_RATES,
 ): string {
   if (v == null || Number.isNaN(v)) return "-";
-  return convertFromVndAmount(v, currency, rates).toLocaleString("en-US", { maximumFractionDigits: 0 });
+  return convertFromVndAmount(v, currency, rates).toLocaleString("en-US", { maximumFractionDigits: 1 });
 }
 
 /** VND 원본 값 → 천 USD 기준 값 (순수 함수). 표시 통화와 무관하게, 이미 천 USD 기준으로 저장된 다른
@@ -115,13 +115,13 @@ export function formatMoney(
   v: number | null | undefined,
   currency: string,
   unitOn: boolean,
-  digits = 0,
+  digits = 1,
   rates: Record<string, number> = DEFAULT_EXCHANGE_RATES,
 ): string {
   if (v == null || Number.isNaN(v)) return "-";
   const c = convertMoney(v, currency, unitOn, rates);
-  // Bil. VND는 값이 작아질 수 있으므로 최대 2자리 소수 허용
-  const maxD = currency === "VND" && unitOn ? 2 : currency === "USD" ? digits : 0;
+  // 표시는 항상 소수점 최대 1자리까지만 허용 (말단 0은 트림)
+  const maxD = currency === "VND" && unitOn ? 1 : currency === "USD" ? digits : 1;
   return c.toLocaleString("en-US", { maximumFractionDigits: maxD, minimumFractionDigits: 0 });
 }
 
@@ -166,14 +166,14 @@ export function DisplayUnitProvider({
       unitOn,
       convert: (v) => convertMoney(v, currency, unitOn, rates),
       convertToKUsd: (v) => convertToKUsdAmount(v, currency, unitOn, rates),
-      fmtMoney: (v, digits = 0) => formatMoney(v, currency, unitOn, digits, rates),
-      fmtMoneyFull: (v) => formatMoney(v, currency, false, 0, rates),
+      fmtMoney: (v, digits = 1) => formatMoney(v, currency, unitOn, digits, rates),
+      fmtMoneyFull: (v) => formatMoney(v, currency, false, 1, rates),
       unitLabel: moneyUnitLabel(currency, unitOn),
       convertFromVnd: (v) => convertFromVndAmount(v, currency, rates),
       fmtVnd: (v) =>
         v == null || Number.isNaN(v)
           ? "-"
-          : convertFromVndAmount(v, currency, rates).toLocaleString("en-US", { maximumFractionDigits: 0 }),
+          : convertFromVndAmount(v, currency, rates).toLocaleString("en-US", { maximumFractionDigits: 1 }),
       convertVndToKUsd: (v) => convertVndToKUsdAmount(v, rates),
     }),
     [currency, unitOn, rates],

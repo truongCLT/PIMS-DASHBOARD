@@ -88,6 +88,7 @@ function VndInput({
   valueKUsd,
   onChange,
   forceFullAmount,
+  hideZero = true,
   "data-row": dataRow,
   "data-col": dataCol,
 }: {
@@ -97,6 +98,8 @@ function VndInput({
   // trực quan với các dòng khác trong cùng bảng luôn hiển thị số đầy đủ (VD: bảng "4. Cost Rate",
   // dòng Execution/Completion dùng fmtVnd() vốn không áp dụng toggle Unit).
   forceFullAmount?: boolean;
+  /** 값이 0일 때 "0" 대신 빈칸으로 표시(저장값은 그대로 0 유지) — 기본 true */
+  hideZero?: boolean;
   "data-row"?: string | number;
   "data-col"?: string | number;
 }) {
@@ -106,7 +109,7 @@ function VndInput({
 
   const displayValue = editing
     ? rawStr
-    : valueKUsd != null
+    : valueKUsd != null && !(hideZero && valueKUsd === 0)
       ? forceFullAmount
         ? fmtMoneyFull(valueKUsd)
         : fmtMoney(valueKUsd)
@@ -154,11 +157,14 @@ function VndInput({
 function VndRawInput({
   valueVnd,
   onChange,
+  hideZero = true,
   "data-row": dataRow,
   "data-col": dataCol,
 }: {
   valueVnd: number | null | undefined;
   onChange: (vnd: number | null) => void;
+  /** 값이 0일 때 "0" 대신 빈칸으로 표시(저장값은 그대로 0 유지) — 기본 true */
+  hideZero?: boolean;
   "data-row"?: string | number;
   "data-col"?: string | number;
 }) {
@@ -168,7 +174,7 @@ function VndRawInput({
 
   const displayValue = editing
     ? rawStr
-    : valueVnd != null
+    : valueVnd != null && !(hideZero && valueVnd === 0)
       ? fmtVnd(valueVnd)
       : "";
 
@@ -209,6 +215,7 @@ function NumInput({
   min,
   max,
   step = "any",
+  roundDisplay,
   "data-row": dataRow,
   "data-col": dataCol,
 }: {
@@ -217,6 +224,8 @@ function NumInput({
   min?: number;
   max?: number;
   step?: number | "any";
+  /** 표시만 이 자릿수로 반올림(저장값은 그대로 유지, 입력을 직접 수정할 때만 값이 바뀜) */
+  roundDisplay?: number;
   "data-row"?: string | number;
   "data-col"?: string | number;
 }) {
@@ -231,13 +240,16 @@ function NumInput({
     onChange(Math.min(max ?? Infinity, Math.max(min ?? -Infinity, stepped)));
   };
 
+  const displayValue =
+    value != null && roundDisplay != null ? Number(value.toFixed(roundDisplay)) : (value ?? "");
+
   return (
     <input
       type="number"
       min={min}
       max={max}
       step={step}
-      value={value ?? ""}
+      value={displayValue}
       data-row={dataRow}
       data-col={dataCol}
       onChange={(e) => normalize(e.target.value)}
@@ -1777,7 +1789,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                   />
                 </td>
                 <td style={tdCell}><NumInput value={p.planPct} step={0.1} onChange={(v) => updateProgressAt(i, { planPct: v })} data-row={i} data-col={2} /></td>
-                <td style={tdCell}><NumInput value={p.actualPct} step={0.1} onChange={(v) => updateProgressAt(i, { actualPct: v })} data-row={i} data-col={3} /></td>
+                <td style={tdCell}><NumInput value={p.actualPct} step={0.1} roundDisplay={1} onChange={(v) => updateProgressAt(i, { actualPct: v })} data-row={i} data-col={3} /></td>
                 <td style={tdCell}>
                   <input
                     type="number"
@@ -1789,7 +1801,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                     style={{ ...inputStyle, textAlign: "right" }}
                   />
                 </td>
-                <td style={tdCell}><NumInput value={p.actualCumPct} onChange={(v) => updateProgressAt(i, { actualCumPct: v })} data-row={i} data-col={5} /></td>
+                <td style={tdCell}><NumInput value={p.actualCumPct} roundDisplay={1} onChange={(v) => updateProgressAt(i, { actualCumPct: v })} data-row={i} data-col={5} /></td>
                 <td style={{ ...tdCell, textAlign: "center" }}><DelBtn onClick={() => setProgress((rows) => calculateProgressPlanCumulative(rows.filter((_, j) => j !== i)))} /></td>
               </tr>
             ))}
@@ -2172,7 +2184,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                       {isCompletion ? (
                         // costAmount는 PIMSVINA REC9(매출총이익률, 예: 18.7) 원본 값 — VND 금액이
                         // 아니라 %(무차원) 값이므로 fmtVnd() 없이 숫자 그대로 표시.
-                        <span style={{ fontSize: "13px", color: INK_MUTED }}>{costAmount != null ? costAmount.toLocaleString(undefined, { maximumFractionDigits: 2 }) : "-"}</span>
+                        <span style={{ fontSize: "13px", color: INK_MUTED }}>{costAmount != null ? costAmount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 1 }) : "-"}</span>
                       ) : isExecution ? (
                         <span style={{ fontSize: "13px", color: INK_MUTED }}>{fmtVnd(costAmount)}</span>
                       ) : (

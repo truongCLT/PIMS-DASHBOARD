@@ -142,17 +142,17 @@ function rangeSum(arr: number[], from: number, to: number): number {
 }
 
 function fmtN(v: number): string {
-  return roundSmart(v).toLocaleString("ko-KR");
+  return roundSmart(v).toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 1 });
 }
 
 function pctStr(actual: number, plan: number): string {
   if (!plan) return "-";
-  return `${Math.round((actual / plan) * 100).toLocaleString("ko-KR")}%`;
+  return `${((actual / plan) * 100).toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 1 })}%`;
 }
 
 function ratioStr(part: number, whole: number): string {
   if (!whole) return "-";
-  return `${((part / whole) * 100).toLocaleString("en-US", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;
+  return `${((part / whole) * 100).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 1 })}%`;
 }
 
 interface Bucket {
@@ -420,7 +420,7 @@ export function deriveDashboardData(
       report: inside ? actual : null,
       plan: roundSmart(plan),
       actual: roundSmart(actual),
-      rate: inside && plan ? Math.round((actual / plan) * 100) : null,
+      rate: inside && plan ? Math.round((actual / plan) * 1000) / 10 : null,
       isForecast,
     };
   });

@@ -92,9 +92,7 @@ export function unitLabelOf(currency: CurrencyCode, unitIndex: 0 | 1): string {
 /** 값 크기에 맞춰 반올림 (작은 값은 소수점 유지) */
 export function roundSmart(v: number): number {
   if (!Number.isFinite(v)) return 0;
-  if (Math.abs(v) >= 100) return Math.round(v);
-  if (Math.abs(v) >= 1) return Math.round(v * 10) / 10;
-  return Math.round(v * 100) / 100;
+  return Math.round(v * 10) / 10;
 }
 
 export type DashboardDivision = "시공" | "용역";

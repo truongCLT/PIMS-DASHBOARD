@@ -31,8 +31,8 @@ export function OrderStatus() {
   const ordered = derived?.orderStatus?.ordered ?? 0;
   const remaining = derived?.orderStatus?.remaining ?? 0;
   const annualForecast = derived?.orderStatus?.annualForecast ?? 0;
-  const pct = planTotal ? Math.round((ordered / planTotal) * 100) : 0;
-  const forecastPct = planTotal ? Math.round((annualForecast / planTotal) * 100) : 0;
+  const pct = planTotal ? Math.round((ordered / planTotal) * 1000) / 10 : 0;
+  const forecastPct = planTotal ? Math.round((annualForecast / planTotal) * 1000) / 10 : 0;
   const detailParams = {
     year: derived?.year ?? new Date().getFullYear(),
     referenceMonth: derived?.month ?? new Date().getMonth() + 1,
@@ -56,7 +56,7 @@ export function OrderStatus() {
       derived?.year,
       derived?.month,
     );
-    return roundSmart(converted).toLocaleString();
+    return roundSmart(converted).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 1 });
   };
   const detailEntries = detailQuery.data?.entries ?? [];
   const detailTotals = detailEntries.reduce(
@@ -209,7 +209,7 @@ export function OrderStatus() {
             </Pie>
             <Tooltip
               contentStyle={{ fontSize: "12px" }}
-              formatter={(v: any) => Number(v).toLocaleString()}
+              formatter={(v: any) => Number(v).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 1 })}
             />
           </PieChart>
         </ResponsiveContainer>
@@ -243,7 +243,7 @@ export function OrderStatus() {
             <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", flexShrink: 0 }}>
               <span style={{ display: "flex", alignItems: "baseline", gap: "4px" }}>
                 <span style={{ fontSize: statFont === "12px" ? "12px" : "15px", fontWeight: 700, color: "#1a2d4d" }}>
-                  {r.value.toLocaleString()}
+                  {r.value.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 1 })}
                 </span>
                 {unit && <span style={{ fontSize: "10px", color: "#8a99b5" }}>{unit}</span>}
               </span>

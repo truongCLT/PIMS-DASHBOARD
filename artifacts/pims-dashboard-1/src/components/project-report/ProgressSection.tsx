@@ -306,7 +306,7 @@ function CostExecutionTooltip({
             borderTop: `1px solid ${DIVIDER}`,
             paddingTop: "6px",
             display: "grid",
-            gridTemplateColumns: "1fr auto auto",
+            gridTemplateColumns: "1fr auto auto auto",
             columnGap: "10px",
             rowGap: "4px",
             fontSize: "10px",
@@ -315,6 +315,7 @@ function CostExecutionTooltip({
           <span />
           <span style={{ textAlign: "right", color: INK_MUTED, fontWeight: 700 }}>{t("common:plan")}</span>
           <span style={{ textAlign: "right", color: INK_MUTED, fontWeight: 700 }}>{t("common:actual")}</span>
+          <span style={{ textAlign: "right", color: INK_MUTED, fontWeight: 700 }}>%</span>
           {rows
             .filter((row) => row.plan != null || row.actual != null)
             .map((row) => (
@@ -322,6 +323,7 @@ function CostExecutionTooltip({
                 <span style={{ color: INK_MUTED }}>{t(TRADE_GROUP_LABEL_KEYS[row.label] ?? row.label)}</span>
                 <span style={{ textAlign: "right", color: INK_BODY, whiteSpace: "nowrap" }}>{fmtVnd(row.plan)}</span>
                 <span style={{ textAlign: "right", color: INK_BODY, whiteSpace: "nowrap" }}>{fmtVnd(row.actual)}</span>
+                <span style={{ textAlign: "right", color: INK_BODY, whiteSpace: "nowrap" }}>{fmtPct(ratioPct(row.actual, row.plan))}</span>
               </React.Fragment>
             ))}
         </div>

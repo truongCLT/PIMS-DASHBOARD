@@ -257,7 +257,7 @@ export function SalesSection({
     value?: number;
   }) => {
     if (x == null || y == null || width == null || value == null) return null;
-    const text = Number(value).toLocaleString("ko-KR");
+    const text = Number(value).toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 1 });
     return (
       <text
         x={x + width / 2}
@@ -320,7 +320,7 @@ export function SalesSection({
                 domain={[0, "auto"]}
                 tick={{ fontSize: 7.5, fill: chartTheme.axisText }}
                 width={42}
-                tickFormatter={(value: number) => value.toLocaleString("ko-KR")}
+                tickFormatter={(value: number) => value.toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 1 })}
                 axisLine={false}
                 tickLine={false}
               />

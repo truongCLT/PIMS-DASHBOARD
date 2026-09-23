@@ -23,7 +23,7 @@ export function useProjectDetail(projectName: string) {
 }
 
 /** 숫자 → "1,234" / null·undefined → "-" */
-export function fmtNum(v: number | null | undefined, digits = 0): string {
+export function fmtNum(v: number | null | undefined, digits = 1): string {
   if (v == null || Number.isNaN(v)) return "-";
   return v.toLocaleString("en-US", { maximumFractionDigits: digits, minimumFractionDigits: 0 });
 }
@@ -31,7 +31,7 @@ export function fmtNum(v: number | null | undefined, digits = 0): string {
 /** 숫자(%) → "12.3%" / null → "-" (천 단위 구분자 포함) */
 export function fmtPct(v: number | null | undefined, digits = 1): string {
   if (v == null || Number.isNaN(v) || !Number.isFinite(v)) return "-";
-  return `${v.toLocaleString("en-US", { minimumFractionDigits: digits, maximumFractionDigits: digits })}%`;
+  return `${v.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: digits })}%`;
 }
 
 /** 비율 계산 (분모 0/null 방어) — % 값 반환, 불가 시 null */
