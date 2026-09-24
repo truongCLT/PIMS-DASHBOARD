@@ -199,7 +199,12 @@ export function ServiceBudgetTab({ projectName }: { projectName: string }) {
   const outsourcingBudget = outsourcingRows.reduce((a, o) => a + (o.budget ?? 0), 0);
   const outsourcingPlan   = outsourcingRows.reduce((a, o) => a + (o.executedBudget ?? 0), 0);
   const outsourcingActual = outsourcingRows.reduce((a, o) => a + (o.accum ?? 0), 0);
-  if (outsourcingRows.length > 0) {
+  // PIMSVINA đôi khi đã tự đồng bộ sẵn 1 dòng "Outsourcing" trực tiếp vào pd_cost_budget (item trùng
+  // tên, category null hoặc "Direct Cost") — nếu chèn thêm dòng tổng hợp từ pd_outsourcing bên dưới mà
+  // không kiểm tra, sẽ ra 2 dòng "Outsourcing" trùng nhau. So khớp theo chuỗi tiếng Anh cố định (dữ
+  // liệu PIMSVINA gốc luôn tiếng Anh, không theo ngôn ngữ UI) thay vì label đã dịch.
+  const hasNativeOutsourcingRow = rows.some((r) => r.item.trim().toLowerCase() === "outsourcing");
+  if (outsourcingRows.length > 0 && !hasNativeOutsourcingRow) {
     if (!grouped["Direct Cost"]) {
       grouped["Direct Cost"] = [];
       categories.unshift("Direct Cost");

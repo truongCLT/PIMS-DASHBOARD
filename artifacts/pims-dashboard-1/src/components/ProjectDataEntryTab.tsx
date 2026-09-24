@@ -537,6 +537,9 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
   const [costBudgetMonthly, setCostBudgetMonthly] = useState<ProjectDetailCostBudgetMonthly[]>([]);
   const [selectedMonthlyBudgetItem, setSelectedMonthlyBudgetItem] = useState<MonthlyBudgetItem>("Common");
   const [selectedMonthlyBudgetYear, setSelectedMonthlyBudgetYear] = useState(REPORT_YEAR);
+  // "2. Monthly Revenue" bảng — năm đang xem, mặc định = REPORT_YEAR (chỉ năm này mới có dữ liệu mẫu
+  // prefill từ mgmtreport qua mainSalesMonths; năm khác chỉ hiện dữ liệu đã lưu tay, xem getSalesEntryValue).
+  const [selectedSalesYear, setSelectedSalesYear] = useState(REPORT_YEAR);
   // "5. Budget Execution Status" bảng Monthly — tháng/năm đang xem, mặc định = tháng hiện tại.
   const [selectedExecutionMonth, setSelectedExecutionMonth] = useState(() => {
     const now = new Date();
@@ -1193,6 +1196,15 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       {cardHead(
         `${t("projectDataEntryTab:salesMonthlyTitleConstruction")} · ${unitLabel}`,
         "salesMonthly",
+        <select
+          value={selectedSalesYear}
+          onChange={(e) => setSelectedSalesYear(Number(e.target.value))}
+          style={{ fontSize: "13px", padding: "3px 4px", border: `1px solid ${BORDER_LIGHT}`, borderRadius: "3px" }}
+        >
+          {Array.from({ length: 5 }, (_, i) => REPORT_YEAR - 2 + i).map((y) => (
+            <option key={y} value={y}>{y}</option>
+          ))}
+        </select>,
       )}
       <div
         data-tbl="salesMonthly"
@@ -1216,19 +1228,19 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
             </tr>
           </thead>
           <tbody>
-            {mainSalesMonths.map(({ month }, rowIndex) => (
+            {Array.from({ length: 12 }, (_, index) => index + 1).map((month, rowIndex) => (
               <tr key={month}>
                 <td style={{ ...tdCell, textAlign: "center", color: INK_BODY }}>
-                  {REPORT_YEAR}
+                  {selectedSalesYear}
                 </td>
                 <td style={{ ...tdCell, textAlign: "center", color: INK_BODY }}>
                   {month}
                 </td>
                 <td style={tdCell}>
                   <VndInput
-                    valueKUsd={getSalesEntryValue(REPORT_YEAR, month, "plan")}
+                    valueKUsd={getSalesEntryValue(selectedSalesYear, month, "plan")}
                     onChange={(value) =>
-                      setSalesEntryValue(REPORT_YEAR, month, "plan", value)
+                      setSalesEntryValue(selectedSalesYear, month, "plan", value)
                     }
                     data-row={rowIndex}
                     data-col={0}
@@ -1236,9 +1248,9 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                 </td>
                 <td style={tdCell}>
                   <VndInput
-                    valueKUsd={getSalesEntryValue(REPORT_YEAR, month, "actual")}
+                    valueKUsd={getSalesEntryValue(selectedSalesYear, month, "actual")}
                     onChange={(value) =>
-                      setSalesEntryValue(REPORT_YEAR, month, "actual", value)
+                      setSalesEntryValue(selectedSalesYear, month, "actual", value)
                     }
                     data-row={rowIndex}
                     data-col={1}

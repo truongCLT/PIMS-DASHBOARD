@@ -267,8 +267,13 @@ export function CostingTab({
     bold: r.category == null || /contingency/i.test(r.item), // category 없는 단독 항목 또는 Contingency는 굵게
   }));
 
-  // 외주 행을 Direct Cost 카테고리 내 Common 앞에 삽입
-  if (hasOutsourcing) {
+  // PIMSVINA đôi khi đã tự đồng bộ sẵn 1 dòng "Outsourcing" trực tiếp vào pd_cost_budget (item trùng
+  // tên, category null hoặc "Direct Cost") — nếu chèn thêm dòng tổng hợp từ pd_outsourcing (외주 행을
+  // Direct Cost 카테고리 내 Common 앞에 삽입) mà không kiểm tra, sẽ ra 2 dòng "Outsourcing" trùng nhau.
+  // So khớp theo chuỗi tiếng Anh cố định (dữ liệu PIMSVINA gốc luôn tiếng Anh, không theo ngôn ngữ UI)
+  // thay vì t("costingTab:outsourcingItem") đã dịch — sẽ không khớp được với dữ liệu gốc ở KO/VI.
+  const hasNativeOutsourcingRow = budgetRows.some((r) => r.item.trim().toLowerCase() === "outsourcing");
+  if (hasOutsourcing && !hasNativeOutsourcingRow) {
     const commonIdx = budgetRows.findIndex(
       (r) => r.category === "Direct Cost" && r.item === "Common"
     );

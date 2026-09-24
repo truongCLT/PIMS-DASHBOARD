@@ -136,7 +136,17 @@ export const ORACLE_DASHBOARD_QUERIES: Record<string, OracleEndpointQuery> = {
     FROM CDTB_ORDCONTTYPE T
     JOIN CETB_PFMCTRTHIST B
       ON B.FLDCODE = T.FLDCODE AND B.ORDCONTTYPECODE = T.ORDCONTTYPECODE
-     AND B.LASTYN = '1'
+     -- Khớp đúng ce_payd_schdstus_3q.jsp/ce_payd_schdstus_q.jsp (Interim Payment Status màn thật):
+     -- chọn bản ghi hợp đồng đại diện theo lần sửa đổi (CTRTCHGSEQ) GẦN NHẤT ĐÃ ĐƯỢC DUYỆT
+     -- (RQSTSTSCODE >= '600'), KHÔNG dùng B.LASTYN='1' (chỉ là "dòng mới nhất", có thể là bản
+     -- draft/pending chưa duyệt) — tránh lấy nhầm số liệu của 1 bản sửa đổi chưa được chốt.
+     AND B.CTRTCHGSEQ = (
+           SELECT MAX(X.CTRTCHGSEQ)
+           FROM CETB_PFMCTRTHIST X
+           WHERE X.FLDCODE = B.FLDCODE
+             AND X.ORDCONTTYPECODE = B.ORDCONTTYPECODE
+             AND X.RQSTSTSCODE >= '600'
+         )
     LEFT JOIN (
         SELECT FLDCODE, ORDCONTTYPECODE,
                SUM(DECODE(YYMM, TO_CHAR(SYSDATE, 'YYYYMM'), PRGSAMT, 0)) AS PRGSAMT_TM,

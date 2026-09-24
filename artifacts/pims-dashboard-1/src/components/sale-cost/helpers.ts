@@ -109,7 +109,14 @@ export function buildBudgetRows(
 ): BudgetRow[] {
   const rows: BudgetRow[] = [...raw];
 
-  if (outsourcing && (outsourcing.budget > 0 || outsourcing.plan > 0 || outsourcing.actual > 0)) {
+  // PIMSVINA đôi khi đã tự đồng bộ sẵn 1 dòng "Outsourcing" trực tiếp vào pd_cost_budget (item trùng
+  // tên, category null hoặc "Direct Cost") — nếu chèn thêm dòng tổng hợp từ pd_outsourcing bên dưới mà
+  // không kiểm tra, sẽ ra 2 dòng "Outsourcing" trùng nhau. Bỏ qua chèn nếu đã có sẵn. So khớp theo
+  // chuỗi tiếng Anh cố định "outsourcing" (dữ liệu PIMSVINA gốc luôn tiếng Anh, không theo ngôn ngữ UI)
+  // thay vì outsourcing.label (đã dịch — "외주"/"Thuê ngoài" sẽ không khớp được với dữ liệu gốc).
+  const hasNativeOutsourcingRow = rows.some((r) => r.item.trim().toLowerCase() === "outsourcing");
+
+  if (!hasNativeOutsourcingRow && outsourcing && (outsourcing.budget > 0 || outsourcing.plan > 0 || outsourcing.actual > 0)) {
     const commonIdx      = rows.findIndex((r) => r.category === "Direct Cost" && r.item === "Common");
     const directFirstIdx = rows.findIndex((r) => r.category === "Direct Cost");
     const insertIdx =
