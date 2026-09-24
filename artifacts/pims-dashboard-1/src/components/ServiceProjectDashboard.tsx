@@ -459,7 +459,6 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
             showBudgetExecution={false}
             showRevenueCumulativeLine={false}
             splitRevenueForecast
-            serviceCostBreakdown
           />
         ) : activeTab === "Outsourcing" ? (
           <OutsourcingTab

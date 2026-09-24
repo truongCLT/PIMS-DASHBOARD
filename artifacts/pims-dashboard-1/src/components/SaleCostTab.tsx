@@ -10,9 +10,9 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { useMoney } from "../lib/displayUnit";
-import { useProjectDetail, fmtPct, ratioPct } from "../lib/projectDetailData";
+import { useProjectDetail } from "../lib/projectDetailData";
 import { ProjectCommentPanel } from "./ProjectCommentPanel";
-import { cardStyle, sectionTitle, emptyNote, INK_MUTED, INK_BODY, INK_NAVY, DIVIDER, TABLE_HEADER_BG } from "../lib/uiTokens";
+import { cardStyle, emptyNote, INK_MUTED } from "../lib/uiTokens";
 import { chartTheme } from "../lib/chartTheme";
 
 import {
@@ -52,7 +52,6 @@ export function SaleCostTab({
   showBudgetExecution = true,
   showRevenueCumulativeLine = true,
   splitRevenueForecast = false,
-  serviceCostBreakdown = false,
 }: {
   projectName: string;
   fromYear: number;
@@ -64,7 +63,6 @@ export function SaleCostTab({
   showBudgetExecution?: boolean;
   showRevenueCumulativeLine?: boolean;
   splitRevenueForecast?: boolean;
-  serviceCostBreakdown?: boolean;
 }) {
   const { t } = useTranslation(["saleCostTab", "costingTab"]);
   const { convert, fmtMoney } = useMoney();
@@ -114,29 +112,6 @@ export function SaleCostTab({
   const ratios       = chartData.filter((d) => d.ratio != null);
   let lastRatioIdx   = -1;
   chartData.forEach((d, i) => { if (d.ratio != null) lastRatioIdx = i; });
-  const referenceIndex = toYear * 12 + toMonth - 1;
-  const serviceCogs = pdDetail?.canonicalCogsMonthly ?? [];
-  const sumNullable = (values: Array<number | null | undefined>) =>
-    values.some((value) => value != null)
-      ? values.reduce<number>((sum, value) => sum + (value ?? 0), 0)
-      : null;
-  const cogsBeforeReference = serviceCogs.filter((row) => row.year * 12 + row.month - 1 <= referenceIndex);
-  const cogsAfterReference = serviceCogs.filter((row) => row.year * 12 + row.month - 1 > referenceIndex);
-  const serviceCostSummary = {
-    plan: null,
-    wipActual: sumNullable(cogsBeforeReference.map((row) => row.wipCogs)),
-    wipForecast: sumNullable(cogsAfterReference.map((row) => row.wipCogs)),
-    acctActual: sumNullable(cogsBeforeReference.map((row) => row.acctCogs)),
-    acctForecast: sumNullable(cogsAfterReference.map((row) => row.acctCogs)),
-  };
-  const forecastRevenue = sumNullable(
-    (pdDetail?.canonicalSalesMonthly ?? []).map((row) => row.actual),
-  );
-  const forecastCost =
-    serviceCostSummary.acctActual != null || serviceCostSummary.acctForecast != null
-      ? (serviceCostSummary.acctActual ?? 0) + (serviceCostSummary.acctForecast ?? 0)
-      : null;
-
   // ── 예산 집행 현황 ────────────────────────────────────────────────────────
   const estimation      = pdDetail?.costEstimation ?? [];
   const outsourcingRows = pdDetail?.outsourcing    ?? [];
@@ -184,41 +159,6 @@ export function SaleCostTab({
           referenceYear={toYear}
           referenceMonth={toMonth}
         />
-      )}
-
-      {serviceCostBreakdown && (
-        <div style={cardStyle}>
-          <span style={sectionTitle}>{t("saleCostTab:serviceCostTitle")}</span>
-          <div style={{ overflowX: "auto", marginTop: "8px" }}>
-            <table style={{ width: "100%", minWidth: "620px", borderCollapse: "collapse", fontSize: "12px" }}>
-              <thead>
-                <tr>
-                  <th style={{ padding: "7px", textAlign: "left", backgroundColor: TABLE_HEADER_BG, color: INK_NAVY }}>{t("saleCostTab:costBasis")}</th>
-                  <th style={{ padding: "7px", textAlign: "right", backgroundColor: TABLE_HEADER_BG, color: INK_NAVY }}>{t("common:plan")}</th>
-                  <th style={{ padding: "7px", textAlign: "right", backgroundColor: TABLE_HEADER_BG, color: INK_NAVY }}>{t("common:actual")}</th>
-                  <th style={{ padding: "7px", textAlign: "right", backgroundColor: TABLE_HEADER_BG, color: INK_NAVY }}>{t("saleCostTab:forecast")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {[
-                  { label: t("saleCostTab:wipCost"), actual: serviceCostSummary.wipActual, forecast: serviceCostSummary.wipForecast },
-                  { label: t("saleCostTab:accountingCost"), actual: serviceCostSummary.acctActual, forecast: serviceCostSummary.acctForecast },
-                ].map((row) => (
-                  <tr key={row.label}>
-                    <td style={{ padding: "8px 7px", borderBottom: `1px solid ${DIVIDER}`, color: INK_BODY, fontWeight: 700 }}>{row.label}</td>
-                    <td style={{ padding: "8px 7px", textAlign: "right", borderBottom: `1px solid ${DIVIDER}` }}>{fmtMoney(serviceCostSummary.plan)}</td>
-                    <td style={{ padding: "8px 7px", textAlign: "right", borderBottom: `1px solid ${DIVIDER}` }}>{fmtMoney(row.actual)}</td>
-                    <td style={{ padding: "8px 7px", textAlign: "right", borderBottom: `1px solid ${DIVIDER}` }}>{fmtMoney(row.forecast)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", marginTop: "8px", padding: "8px 10px", backgroundColor: TABLE_HEADER_BG, borderRadius: "6px" }}>
-            <span style={{ fontSize: "12px", color: INK_BODY }}>{t("saleCostTab:forecastCostRatio")}</span>
-            <strong style={{ color: INK_NAVY }}>{fmtPct(ratioPct(forecastCost, forecastRevenue))}</strong>
-          </div>
-        </div>
       )}
 
       {/* 2. 누계 원가율 라인 */}
