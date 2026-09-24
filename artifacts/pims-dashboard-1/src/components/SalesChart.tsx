@@ -30,7 +30,7 @@ import {
   EmptyDescription,
 } from "@workspace/aqua-glass/components/ui/empty";
 import { DetailModal, DetailDataTable } from "./DetailModal";
-import { emptyNote, ACHIEVE_RED, INK_MUTED } from "../lib/uiTokens";
+import { emptyNote, ACHIEVE_RED, INK_MUTED, INK_NAVY, INK_SECONDARY, CARD_BORDER, DIVIDER } from "../lib/uiTokens";
 
 const PLAN_COLOR = chartTheme.planBlue;
 const ACTUAL_COLOR = chartTheme.actualGreen;
@@ -202,13 +202,25 @@ export function SalesChart() {
       .map((p) => {
         const plan = Math.round(convert(p.revenuePlan[drillMonthIdx] ?? 0));
         const actual = Math.round(convert(p.revenueActual[drillMonthIdx] ?? 0));
+        // 연 누계(YTD) = 1월부터 클릭된 월까지 누적 — convert()를 매달 적용한 뒤 합산해야
+        // 통화/단위 변환이 월별 환율 차이까지 정확히 반영된다 (합산 후 한 번에 convert하면 안 됨).
+        let ytdPlan = 0;
+        let ytdActual = 0;
+        for (let i = 0; i <= drillMonthIdx; i++) {
+          ytdPlan += convert(p.revenuePlan[i] ?? 0);
+          ytdActual += convert(p.revenueActual[i] ?? 0);
+        }
+        ytdPlan = Math.round(ytdPlan);
+        ytdActual = Math.round(ytdActual);
         return {
           name: p.name,
-          category: p.companyLabel ?? "-",
           bizType: resolveProjectBusinessType(p.name, p.businessType),
           plan,
           actual,
           achievementRate: plan !== 0 ? `${Number(((actual / plan) * 100).toFixed(1))}%` : "-",
+          ytdPlan,
+          ytdActual,
+          ytdAchievementRate: ytdPlan !== 0 ? `${Number(((ytdActual / ytdPlan) * 100).toFixed(1))}%` : "-",
         };
       })
       // 계획 또는 실적이 있는 현장만 표시하며, 마이너스 조정값은 유지
@@ -581,37 +593,82 @@ export function SalesChart() {
             {t("salesChart:noSiteData")}
           </div>
         ) : (
-          <DetailDataTable
-            rowKey={(row) => row.name}
-            columns={[
-              { key: "name", label: t("salesChart:colSiteName"), align: "left" },
-              { key: "category", label: t("salesChart:colCategory"), align: "left" },
-              { key: "bizType", label: t("salesChart:colBizType"), align: "left" },
-              {
-                key: "plan",
-                label: t("salesChart:colTargetPlan"),
-                align: "right",
-                format: (v) => typeof v === "number" ? v.toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 1 }) : "-",
-              },
-              {
-                key: "actual",
-                label: t("salesChart:colActual"),
-                align: "right",
-                format: (v) => typeof v === "number" ? v.toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 1 }) : "-",
-              },
-              { key: "achievementRate", label: t("salesChart:colAchievementRate"), align: "right" },
-            ]}
-            rows={drillSiteRows}
-            totalRow={(() => {
-              const plan = drillSiteRows.reduce((sum, row) => sum + row.plan, 0);
-              const actual = drillSiteRows.reduce((sum, row) => sum + row.actual, 0);
-              return {
-                plan,
-                actual,
-                achievementRate: plan !== 0 ? `${Number(((actual / plan) * 100).toFixed(1))}%` : "-",
-              };
-            })()}
-          />
+          (() => {
+            const fmtAmt = (v: number) =>
+              v.toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 1 });
+            const totalPlan = drillSiteRows.reduce((sum, row) => sum + row.plan, 0);
+            const totalActual = drillSiteRows.reduce((sum, row) => sum + row.actual, 0);
+            const totalYtdPlan = drillSiteRows.reduce((sum, row) => sum + row.ytdPlan, 0);
+            const totalYtdActual = drillSiteRows.reduce((sum, row) => sum + row.ytdActual, 0);
+            const totalRate = totalPlan !== 0 ? `${Number(((totalActual / totalPlan) * 100).toFixed(1))}%` : "-";
+            const totalYtdRate =
+              totalYtdPlan !== 0 ? `${Number(((totalYtdActual / totalYtdPlan) * 100).toFixed(1))}%` : "-";
+            const currentLabel = drillRow?.isForecast
+              ? t("salesChart:colForecast")
+              : t("salesChart:colActual");
+            const thBase: React.CSSProperties = {
+              padding: "6px 10px",
+              color: INK_SECONDARY,
+              fontWeight: 600,
+              borderBottom: `1px solid ${CARD_BORDER}`,
+              whiteSpace: "nowrap",
+            };
+            const tdBase: React.CSSProperties = {
+              padding: "5px 10px",
+              textAlign: "right",
+              color: "#333",
+              borderBottom: `1px solid ${DIVIDER}`,
+              whiteSpace: "nowrap",
+            };
+            return (
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                  <thead>
+                    <tr style={{ backgroundColor: "#e7f1fd" }}>
+                      <th style={{ ...thBase, textAlign: "left" }} rowSpan={2}>{t("salesChart:colSiteName")}</th>
+                      <th style={{ ...thBase, textAlign: "left" }} rowSpan={2}>{t("salesChart:colBizType")}</th>
+                      <th style={{ ...thBase, textAlign: "center" }} colSpan={3}>{t("salesChart:groupCurrentMonth")}</th>
+                      <th style={{ ...thBase, textAlign: "center" }} colSpan={3}>
+                        {t("salesChart:groupYtd", { from: "1월", to: drillRow?.month ?? "" })}
+                      </th>
+                    </tr>
+                    <tr style={{ backgroundColor: "#e7f1fd" }}>
+                      <th style={thBase}>{t("salesChart:colTargetPlan")}</th>
+                      <th style={thBase}>{currentLabel}</th>
+                      <th style={thBase}>{t("salesChart:colAchievementRate")}</th>
+                      <th style={thBase}>{t("salesChart:colTargetPlan")}</th>
+                      <th style={thBase}>{t("salesChart:colActual")}</th>
+                      <th style={thBase}>{t("salesChart:colAchievementRate")}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {drillSiteRows.map((row, i) => (
+                      <tr key={row.name} style={{ backgroundColor: i % 2 === 0 ? "#fff" : "#f8fbff" }}>
+                        <td style={{ ...tdBase, textAlign: "left" }}>{row.name}</td>
+                        <td style={{ ...tdBase, textAlign: "left" }}>{row.bizType}</td>
+                        <td style={tdBase}>{fmtAmt(row.plan)}</td>
+                        <td style={tdBase}>{fmtAmt(row.actual)}</td>
+                        <td style={tdBase}>{row.achievementRate}</td>
+                        <td style={tdBase}>{fmtAmt(row.ytdPlan)}</td>
+                        <td style={tdBase}>{fmtAmt(row.ytdActual)}</td>
+                        <td style={tdBase}>{row.ytdAchievementRate}</td>
+                      </tr>
+                    ))}
+                    <tr style={{ backgroundColor: "#e7f1fd", borderTop: `2px solid ${CARD_BORDER}` }}>
+                      <td style={{ ...tdBase, textAlign: "left", color: INK_NAVY, fontWeight: 700 }}>합계</td>
+                      <td style={tdBase} />
+                      <td style={{ ...tdBase, color: INK_NAVY, fontWeight: 700 }}>{fmtAmt(totalPlan)}</td>
+                      <td style={{ ...tdBase, color: INK_NAVY, fontWeight: 700 }}>{fmtAmt(totalActual)}</td>
+                      <td style={{ ...tdBase, color: INK_NAVY, fontWeight: 700 }}>{totalRate}</td>
+                      <td style={{ ...tdBase, color: INK_NAVY, fontWeight: 700 }}>{fmtAmt(totalYtdPlan)}</td>
+                      <td style={{ ...tdBase, color: INK_NAVY, fontWeight: 700 }}>{fmtAmt(totalYtdActual)}</td>
+                      <td style={{ ...tdBase, color: INK_NAVY, fontWeight: 700 }}>{totalYtdRate}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            );
+          })()
         )}
       </DetailModal>
     </div>

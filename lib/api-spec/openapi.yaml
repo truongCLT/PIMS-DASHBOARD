@@ -2373,6 +2373,18 @@ components:
           type: number
           nullable: true
           description: completion 전용 — PIMSVINA settle-ratio 리포트의 Gross Profit ratio(%) 동기화 값
+        initialBusinessBudget:
+          type: number
+          nullable: true
+          description: execution 전용 — ch_cost_settle_ratio_q_1q.jsp "V_0"(PFMCHGSEQ=0) Business budget
+        initialContractAmount:
+          type: number
+          nullable: true
+          description: execution 전용 — ch_cost_settle_ratio_q_1q.jsp "V_0"(PFMCHGSEQ=0) Contract Amount
+        initialGrossProfitRatio:
+          type: number
+          nullable: true
+          description: execution 전용 — ch_cost_settle_ratio_q_1q.jsp "V_0"(PFMCHGSEQ=0) Gross Profit ratio(%)
       required: [kind]
     ProjectDetailCostBudget:
       type: object

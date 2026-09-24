@@ -108,7 +108,7 @@
   "estKindBidding": "Đấu thầu",
   "estKindExecution": "Lập dự toán thực hiện",
   "estKindCompletion": "Tỷ lệ chi phí ước tính hoàn thành (dự báo hoàn thành)",
-  "costEstimationNote": "Tỷ lệ chi phí ước tính hoàn thành được đồng bộ từ PIMSVINA: Giá trị hợp đồng cố định là 100, Chi phí là Tỷ lệ lợi nhuận gộp (Gross Profit Ratio) đồng bộ về, và Tỷ lệ(%) = Giá trị hợp đồng trừ Chi phí.",
+  "costEstimationNote": "Cột Cost của Execution Budget Setup hiển thị Ngân sách ban đầu (Initial Budget, được duyệt lần đầu). Estimated Completion Cost Rate lấy nguyên giá trị (Contract Amount, Cost) của dòng Execution cùng Base Month; Tỷ lệ(%) = Cost / Contract Amount x 100 cho tất cả các dòng.",
   "costRatioPercent": "Tỷ lệ (%)",
   "costBudgetTitleService": "4. Tình hình thực hiện dự toán (tab Thực hiện dự toán)",
   "costBudgetTitleConstruction": "5. Tình hình thực hiện dự toán (tab Chi phí)",

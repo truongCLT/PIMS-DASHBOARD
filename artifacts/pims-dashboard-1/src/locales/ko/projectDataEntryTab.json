@@ -108,7 +108,7 @@
   "estKindBidding": "입찰",
   "estKindExecution": "실행예산 편성",
   "estKindCompletion": "준공추정원가율 (준공 전망)",
-  "costEstimationNote": "준공추정원가율은 PIMSVINA에서 동기화됩니다: 계약금액은 100으로 고정되고, 원가는 동기화된 매출총이익률(Gross Profit Ratio)이며, 비율(%) = 계약금액 - 원가입니다.",
+  "costEstimationNote": "Execution Budget Setup의 원가는 최초 승인 예산(Initial Budget)을 표시합니다. 준공추정원가율(Estimated Completion Cost Rate)은 같은 Base Month의 Execution 행 값(계약금액/원가)을 그대로 사용하며, 모든 행의 비율(%) = 원가 / 계약금액 x 100 입니다.",
   "costRatioPercent": "비율 (%)",
   "costBudgetTitleService": "4. 예산 집행 현황 (예산집행 탭)",
   "costBudgetTitleConstruction": "5. 예산 집행 현황 (원가 탭)",

@@ -71,6 +71,9 @@
   "col_pdCostEstimation_contract_amount": "Contract Amount",
   "col_pdCostEstimation_cost_amount": "Cost Amount",
   "col_pdCostEstimation_ratio_pct": "Gross Profit Ratio (%)",
+  "col_pdCostEstimation_initial_business_budget": "Initial Business Budget",
+  "col_pdCostEstimation_initial_contract_amount": "Initial Contract Amount",
+  "col_pdCostEstimation_initial_gross_profit_ratio": "Initial Gross Profit Ratio (%)",
 
   "col_pdOutsourcing_trade_group": "Trade Group",
   "col_pdOutsourcing_trade": "Trade",

@@ -438,13 +438,6 @@ export const ORACLE_DASHBOARD_QUERIES: Record<string, OracleEndpointQuery> = {
     sql: `WITH
   all_flds AS ( SELECT FLDCODE FROM CBTB_FLDSUMM ),
   current_mm_calc AS ( SELECT TO_CHAR(SYSDATE,'YYYYMM') AS MM FROM DUAL ),
-  target_mm_calc AS (
-    SELECT af.FLDCODE, NVL(MAX(A.BASEYYMM), cmc.MM) AS MM
-    FROM all_flds af
-    CROSS JOIN current_mm_calc cmc
-    LEFT JOIN CHTB_PFMCOSTRMRK A ON A.FLDCODE = af.FLDCODE AND A.BASEYYMM <= cmc.MM
-    GROUP BY af.FLDCODE, cmc.MM
-  ),
   rate_calc AS (
     SELECT af.FLDCODE, NVL(MAX(c.RATEUSD),1) AS RATE
     FROM all_flds af LEFT JOIN CBTB_CTRTSUMM c ON c.FLDCODE = af.FLDCODE
@@ -465,6 +458,20 @@ export const ORACLE_DASHBOARD_QUERIES: Record<string, OracleEndpointQuery> = {
     SELECT ch.FLDCODE, ch.EFF_MM
     FROM chain ch
     WHERE ch.SEQ = (SELECT MIN(c2.SEQ) FROM chain c2 WHERE c2.FLDCODE = ch.FLDCODE)
+  ),
+  -- Trước đây chỉ tính 1 tháng/site (tháng hiện tại, hoặc lùi về tháng gần nhất có Cost Input) —
+  -- giờ sinh ra TOÀN BỘ dãy tháng từ earliest_budget_month (tháng có ngân sách đầu tiên, fallback về
+  -- tháng hiện tại nếu site chưa có chain nào) đến tháng hiện tại, mỗi tháng 1 dòng/site — để đồng bộ
+  -- lịch sử đầy đủ thay vì chỉ 1 điểm dữ liệu. CONNECT BY LEVEL sinh offset tháng (0..239 = tối đa 20
+  -- năm, dư sức cho site cũ nhất), lọc lại theo khoảng thực tế của từng site ở WHERE bên dưới.
+  target_months AS (
+    SELECT af.FLDCODE,
+      TO_CHAR(ADD_MONTHS(TO_DATE(NVL(CASE WHEN LENGTH(eb.EFF_MM) = 6 THEN eb.EFF_MM END, cmc.MM) || '01', 'YYYYMMDD'), ms.N), 'YYYYMM') AS MM
+    FROM all_flds af
+    CROSS JOIN current_mm_calc cmc
+    LEFT JOIN earliest_budget_month eb ON eb.FLDCODE = af.FLDCODE
+    CROSS JOIN ( SELECT LEVEL - 1 AS N FROM DUAL CONNECT BY LEVEL <= 240 ) ms
+    WHERE ADD_MONTHS(TO_DATE(NVL(CASE WHEN LENGTH(eb.EFF_MM) = 6 THEN eb.EFF_MM END, cmc.MM) || '01', 'YYYYMMDD'), ms.N) <= TO_DATE(cmc.MM || '01', 'YYYYMMDD')
   ),
   opt_eff AS (
     SELECT o.FLDCODE, o.PFMCHGSEQ AS SEQ, o.OPTCHGSEQ AS OPTKEY, SUBSTR(o.APPRDATE,1,6) AS EFF_MM
@@ -519,9 +526,12 @@ export const ORACLE_DASHBOARD_QUERIES: Record<string, OracleEndpointQuery> = {
   ),
   chain_month_pick AS (
     SELECT af.FLDCODE, cm.MM AS YYMM, c.SEQ,
-           ROW_NUMBER() OVER (PARTITION BY af.FLDCODE ORDER BY c.EFF_MM DESC, c.SEQ DESC) AS RN
+           -- PARTITION BY phải gồm cả cm.MM (không chỉ FLDCODE) — nếu không, với nhiều tháng/site
+           -- (target_months), RN=1 sẽ chọn nhầm 1 phiên bản ngân sách mới nhất duy nhất cho MỌI
+           -- tháng thay vì phiên bản đã có hiệu lực đúng tại từng tháng lịch sử.
+           ROW_NUMBER() OVER (PARTITION BY af.FLDCODE, cm.MM ORDER BY c.EFF_MM DESC, c.SEQ DESC) AS RN
     FROM all_flds af
-    JOIN target_mm_calc cm ON cm.FLDCODE = af.FLDCODE
+    JOIN target_months cm ON cm.FLDCODE = af.FLDCODE
     JOIN chain c ON c.FLDCODE = af.FLDCODE AND c.EFF_MM IS NOT NULL AND LENGTH(c.EFF_MM) = 6 AND c.EFF_MM <= cm.MM
   ),
   picked AS ( SELECT FLDCODE, YYMM, SEQ FROM chain_month_pick WHERE RN = 1 ),
@@ -529,8 +539,10 @@ export const ORACLE_DASHBOARD_QUERIES: Record<string, OracleEndpointQuery> = {
     SELECT sc.FLDCODE, sc.STNDCODE, cm.MM AS YYMM,
       NVL((SELECT bv.AMT FROM bold_val bv WHERE bv.FLDCODE = sc.FLDCODE AND bv.STNDCODE = sc.STNDCODE AND bv.SEQ = p.SEQ), 0) AS VAL
     FROM (SELECT DISTINCT FLDCODE, STNDCODE FROM bold_val) sc
-    JOIN target_mm_calc cm ON cm.FLDCODE = sc.FLDCODE
-    LEFT JOIN picked p ON p.FLDCODE = sc.FLDCODE
+    JOIN target_months cm ON cm.FLDCODE = sc.FLDCODE
+    -- LEFT JOIN phải khớp cả YYMM (không chỉ FLDCODE) — nếu không, mỗi dòng (site, tháng) sẽ nhân
+    -- chéo với TẤT CẢ picked.SEQ của mọi tháng khác thuộc cùng site, ra sai/trùng dòng.
+    LEFT JOIN picked p ON p.FLDCODE = sc.FLDCODE AND p.YYMM = cm.MM
   ),
   child_raw AS (
     SELECT A.FLDCODE, A.ORDCONTTYPECODE AS ORD, A.PFMCHGSEQ AS SEQ, NVL(A.OPTCHGSEQ,0) AS OPTKEY, M.ROOTCODE, SUM(A.BDGTAMT) AS AMT
@@ -566,23 +578,30 @@ export const ORACLE_DASHBOARD_QUERIES: Record<string, OracleEndpointQuery> = {
   ),
   subgroup_month AS (
     SELECT cs.FLDCODE, cs.ORD, cs.OPTKEY, cm.MM AS YYMM,
+      -- child_sub có thể có NHIỀU dòng cho cùng (FLDCODE, ORD, OPTKEY, SEQ) nếu cùng 1 ORDCONTTYPECODE
+      -- được ghi nhận dưới nhiều ROOTCODE khác nhau (Direct/Indirect/Contingency) — SUM() để gộp lại
+      -- thành 1 giá trị, tránh ORA-01427 (subquery vô hướng trả về nhiều dòng) thay vì kỳ vọng đúng 1.
       CASE WHEN f.FLOOR_MONTH IS NOT NULL AND cm.MM < f.FLOOR_MONTH THEN 0
-           ELSE NVL((SELECT cs2.AMT FROM child_sub cs2 WHERE cs2.FLDCODE = cs.FLDCODE AND cs2.ORD = cs.ORD AND cs2.OPTKEY = cs.OPTKEY AND cs2.SEQ = p.SEQ), 0)
+           ELSE (SELECT NVL(SUM(cs2.AMT),0) FROM child_sub cs2 WHERE cs2.FLDCODE = cs.FLDCODE AND cs2.ORD = cs.ORD AND cs2.OPTKEY = cs.OPTKEY AND cs2.SEQ = p.SEQ)
       END AS VAL
     FROM (SELECT DISTINCT FLDCODE, ORD, OPTKEY FROM child_sub) cs
     JOIN child_sub_floor2 f ON f.FLDCODE = cs.FLDCODE AND f.ORD = cs.ORD AND f.OPTKEY = cs.OPTKEY
-    JOIN target_mm_calc cm ON cm.FLDCODE = cs.FLDCODE
-    LEFT JOIN picked p ON p.FLDCODE = cs.FLDCODE
+    JOIN target_months cm ON cm.FLDCODE = cs.FLDCODE
+    LEFT JOIN picked p ON p.FLDCODE = cs.FLDCODE AND p.YYMM = cm.MM
     WHERE f.INCLUDED = 1
   ),
   budget_chain_vals AS ( SELECT FLDCODE, ORD, YYMM, SUM(VAL) AS VAL FROM subgroup_month GROUP BY FLDCODE, ORD, YYMM ),
   cost_rmrk AS (
+    -- Chỉ cần chặn dữ liệu tương lai so với NGÀY THẬT hôm nay (current_mm_calc, luôn 1 dòng) — việc
+    -- lọc theo từng tháng mục tiêu cụ thể đã do cost_input_joined đảm nhiệm (cr.YYMM <= cm.MM) bên
+    -- dưới. Join thẳng target_months (nhiều dòng/site) ở đây mà GROUP BY không có cm.MM sẽ khiến
+    -- SUM() bị nhân trùng theo số tháng thoả điều kiện <=.
     SELECT A.FLDCODE, A.ORDCONTTYPECODE AS ORD, A.BASEYYMM AS YYMM,
       SUM(A.PFMAMT + (A.BDGTQTY - A.PFMQTY) * A.PFMUNITCOST) AS VAL,
       CASE WHEN (SUM(NVL(A.PFMQTY,0)) > 0 OR SUM(NVL(A.PFMUNITCOST,0)) > 0) AND SUM(NVL(A.PFMAMT,0)) <> 0 THEN 1 ELSE 0 END AS HAS_DATA
     FROM CHTB_PFMCOSTRMRK A
-    JOIN target_mm_calc cm ON cm.FLDCODE = A.FLDCODE
-    WHERE A.ORDCONTTYPECODE IS NOT NULL AND A.BASEYYMM <= cm.MM
+    CROSS JOIN current_mm_calc cmc
+    WHERE A.ORDCONTTYPECODE IS NOT NULL AND A.BASEYYMM <= cmc.MM
     GROUP BY A.FLDCODE, A.ORDCONTTYPECODE, A.BASEYYMM
   ),
   cost_rmrk_filtered AS (
@@ -594,9 +613,12 @@ export const ORACLE_DASHBOARD_QUERIES: Record<string, OracleEndpointQuery> = {
   ),
   cost_input_joined AS (
     SELECT ord_list.FLDCODE, ord_list.ORD, cm.MM AS TARGET_MM, cr.VAL,
-      ROW_NUMBER() OVER (PARTITION BY ord_list.FLDCODE, ord_list.ORD ORDER BY cr.YYMM DESC) AS RN
+      -- PARTITION BY phải gồm cm.MM — cùng loại lỗi như chain_month_pick ở trên, nếu không sẽ chỉ
+      -- giữ lại 1 dòng cr.YYMM mới nhất DUY NHẤT cho mỗi (FLDCODE, ORD) bất kể target_months có
+      -- bao nhiêu tháng, làm mất gần hết dữ liệu lịch sử của cost_input_vals.
+      ROW_NUMBER() OVER (PARTITION BY ord_list.FLDCODE, ord_list.ORD, cm.MM ORDER BY cr.YYMM DESC) AS RN
     FROM (SELECT DISTINCT FLDCODE, ORD FROM child_raw) ord_list
-    JOIN target_mm_calc cm ON cm.FLDCODE = ord_list.FLDCODE
+    JOIN target_months cm ON cm.FLDCODE = ord_list.FLDCODE
     LEFT JOIN cost_rmrk_filtered cr ON cr.FLDCODE = ord_list.FLDCODE AND cr.ORD = ord_list.ORD AND cr.YYMM <= cm.MM
   ),
   cost_input_vals AS ( SELECT FLDCODE, ORD, TARGET_MM AS YYMM, VAL AS COST_VAL FROM cost_input_joined WHERE RN = 1 ),
@@ -608,7 +630,7 @@ export const ORACLE_DASHBOARD_QUERIES: Record<string, OracleEndpointQuery> = {
   ipc_cumulative AS (
     SELECT ord_list.FLDCODE, ord_list.ORD, cm.MM AS TARGET_MM, NVL(SUM(ic.AMT),0) AS RUNNING, COUNT(ic.YYMM) AS CNT
     FROM (SELECT DISTINCT FLDCODE, ORD FROM ipc_raw) ord_list
-    JOIN target_mm_calc cm ON cm.FLDCODE = ord_list.FLDCODE
+    JOIN target_months cm ON cm.FLDCODE = ord_list.FLDCODE
     LEFT JOIN ipc_conv ic ON ic.FLDCODE = ord_list.FLDCODE AND ic.ORD = ord_list.ORD AND ic.YYMM <= cm.MM
     GROUP BY ord_list.FLDCODE, ord_list.ORD, cm.MM
   ),
@@ -636,7 +658,7 @@ export const ORACLE_DASHBOARD_QUERIES: Record<string, OracleEndpointQuery> = {
       NVL(bcv.VAL,0) AS BUDGET_VAL
     FROM (SELECT DISTINCT FLDCODE, ORD FROM child_raw) cr
     JOIN child_meta cm2 ON cm2.FLDCODE = cr.FLDCODE AND cm2.ORD = cr.ORD
-    JOIN target_mm_calc cm ON cm.FLDCODE = cr.FLDCODE
+    JOIN target_months cm ON cm.FLDCODE = cr.FLDCODE
     LEFT JOIN budget_chain_vals bcv ON bcv.FLDCODE = cr.FLDCODE AND bcv.ORD = cr.ORD AND bcv.YYMM = cm.MM
     LEFT JOIN cost_input_vals civ ON civ.FLDCODE = cr.FLDCODE AND civ.ORD = cr.ORD AND civ.YYMM = cm.MM
     LEFT JOIN ipc_final ifn ON ifn.FLDCODE = cr.FLDCODE AND ifn.ORD = cr.ORD AND ifn.YYMM = cm.MM
@@ -649,13 +671,13 @@ export const ORACLE_DASHBOARD_QUERIES: Record<string, OracleEndpointQuery> = {
   ),
   direct_other AS (
     SELECT af.FLDCODE, cm.MM AS YYMM, NVL(bm.VAL,0) - NVL(ca.SUM_BUDGET_MONTH,0) AS OTHER_VAL
-    FROM all_flds af JOIN target_mm_calc cm ON cm.FLDCODE = af.FLDCODE
+    FROM all_flds af JOIN target_months cm ON cm.FLDCODE = af.FLDCODE
     LEFT JOIN bold_month bm ON bm.FLDCODE=af.FLDCODE AND bm.STNDCODE='ZAA' AND bm.YYMM=cm.MM
     LEFT JOIN child_agg ca ON ca.FLDCODE=af.FLDCODE AND ca.ROOTCODE='A000000000000' AND ca.YYMM=cm.MM
   ),
   indirect_other AS (
     SELECT af.FLDCODE, cm.MM AS YYMM, NVL(bm.VAL,0) - NVL(ca.SUM_BUDGET_MONTH,0) AS OTHER_VAL
-    FROM all_flds af JOIN target_mm_calc cm ON cm.FLDCODE = af.FLDCODE
+    FROM all_flds af JOIN target_months cm ON cm.FLDCODE = af.FLDCODE
     LEFT JOIN bold_month bm ON bm.FLDCODE=af.FLDCODE AND bm.STNDCODE='ZBA' AND bm.YYMM=cm.MM
     LEFT JOIN child_agg ca ON ca.FLDCODE=af.FLDCODE AND ca.ROOTCODE='B000000000000' AND ca.YYMM=cm.MM
   ),
@@ -671,7 +693,7 @@ export const ORACLE_DASHBOARD_QUERIES: Record<string, OracleEndpointQuery> = {
   ),
   contingency_months AS (
     SELECT af.FLDCODE, cm.MM AS YYMM, NVL(bm.VAL,0) AS VAL
-    FROM all_flds af JOIN target_mm_calc cm ON cm.FLDCODE = af.FLDCODE
+    FROM all_flds af JOIN target_months cm ON cm.FLDCODE = af.FLDCODE
     LEFT JOIN bold_month bm ON bm.FLDCODE=af.FLDCODE AND bm.STNDCODE='ZCA' AND bm.YYMM=cm.MM
   ),
   site_months AS (
@@ -682,22 +704,22 @@ export const ORACLE_DASHBOARD_QUERIES: Record<string, OracleEndpointQuery> = {
   ),
   bsns_months AS (
     SELECT af.FLDCODE, cm.MM AS YYMM, NVL(bm.VAL,0) AS VAL
-    FROM all_flds af JOIN target_mm_calc cm ON cm.FLDCODE = af.FLDCODE
+    FROM all_flds af JOIN target_months cm ON cm.FLDCODE = af.FLDCODE
     LEFT JOIN bold_month bm ON bm.FLDCODE=af.FLDCODE AND bm.STNDCODE='ZZB' AND bm.YYMM=cm.MM
   ),
   dfct_months AS (
     SELECT af.FLDCODE, cm.MM AS YYMM, NVL(bm.VAL,0) AS VAL
-    FROM all_flds af JOIN target_mm_calc cm ON cm.FLDCODE = af.FLDCODE
+    FROM all_flds af JOIN target_months cm ON cm.FLDCODE = af.FLDCODE
     LEFT JOIN bold_month bm ON bm.FLDCODE=af.FLDCODE AND bm.STNDCODE='ZZD' AND bm.YYMM=cm.MM
   ),
   ovhd_months AS (
     SELECT af.FLDCODE, cm.MM AS YYMM, NVL(bm.VAL,0) AS VAL
-    FROM all_flds af JOIN target_mm_calc cm ON cm.FLDCODE = af.FLDCODE
+    FROM all_flds af JOIN target_months cm ON cm.FLDCODE = af.FLDCODE
     LEFT JOIN bold_month bm ON bm.FLDCODE=af.FLDCODE AND bm.STNDCODE='ZZG' AND bm.YYMM=cm.MM
   ),
   ctrt_months_raw AS (
     SELECT af.FLDCODE, cm.MM AS YYMM, NVL(bm.VAL,0) AS VAL
-    FROM all_flds af JOIN target_mm_calc cm ON cm.FLDCODE = af.FLDCODE
+    FROM all_flds af JOIN target_months cm ON cm.FLDCODE = af.FLDCODE
     LEFT JOIN bold_month bm ON bm.FLDCODE=af.FLDCODE AND bm.STNDCODE='ZZL' AND bm.YYMM=cm.MM
   ),
   site_info AS (
@@ -710,6 +732,35 @@ export const ORACLE_DASHBOARD_QUERIES: Record<string, OracleEndpointQuery> = {
   fallback_calc AS (
     SELECT FLDCODE, CASE WHEN UPPER(FLDNAME) LIKE '%INFRA%' THEN 1 ELSE 0 END AS IS_INFRA, TOTALCTRTWONAMT AS FALLBACK_AMT
     FROM site_info
+  ),
+  -- "Initial Budget" column (ch_cost_settle_ratio_q_1q.jsp's "V_0" — PFMCHGSEQ=0) is NOT a month-resolved
+  -- figure like the columns above: it's the plain per-STNDCODE chain value at seq=0, already correctly
+  -- staged by bold_val (special-cased VH10TC1 INITAMT source + CBS-tree override included), rolled up with
+  -- the exact same row formulas as row 4/7/9/13 there (getChainVal-based PerSeq arrays, no child/actual-cost
+  -- involved — that machinery is month-only).
+  init_pivot AS (
+    SELECT FLDCODE,
+      SUM(CASE WHEN STNDCODE = 'ZAA' THEN AMT ELSE 0 END) AS DIRECT_AMT,
+      SUM(CASE WHEN STNDCODE = 'ZBA' THEN AMT ELSE 0 END) AS INDIRECT_AMT,
+      SUM(CASE WHEN STNDCODE = 'ZCA' THEN AMT ELSE 0 END) AS CONT_AMT,
+      SUM(CASE WHEN STNDCODE = 'ZZB' THEN AMT ELSE 0 END) AS BSNS_AMT,
+      SUM(CASE WHEN STNDCODE = 'ZZD' THEN AMT ELSE 0 END) AS DFCT_AMT,
+      SUM(CASE WHEN STNDCODE = 'ZZL' THEN AMT ELSE 0 END) AS CTRT_AMT_RAW
+    FROM bold_val
+    WHERE SEQ = 0
+    GROUP BY FLDCODE
+  ),
+  init_calc AS (
+    SELECT ip.FLDCODE,
+      ip.DIRECT_AMT + ip.INDIRECT_AMT + ip.CONT_AMT + ip.BSNS_AMT + ip.DFCT_AMT AS BSNS_BDG_AMT,
+      -- Same Contract Amount fallback as the month columns (Infra sites -> Site Budget * 1.1, everyone
+      -- else -> Total Contract Amount from Register Construction Overview) — see ch_cost_settle_ratio_q_1q.jsp.
+      CASE WHEN ABS(ip.CTRT_AMT_RAW) < 0.01
+           THEN ROUND(CASE WHEN fc.IS_INFRA = 1 THEN (ip.DIRECT_AMT + ip.INDIRECT_AMT + ip.CONT_AMT) * 1.1 ELSE fc.FALLBACK_AMT END, 2)
+           ELSE ip.CTRT_AMT_RAW
+      END AS CTRT_AMT
+    FROM init_pivot ip
+    JOIN fallback_calc fc ON fc.FLDCODE = ip.FLDCODE
   ),
   bsns_bdg_months AS (
     SELECT sm.FLDCODE, sm.YYMM, sm.VAL + bs.VAL + df.VAL AS VAL
@@ -744,13 +795,17 @@ export const ORACLE_DASHBOARD_QUERIES: Record<string, OracleEndpointQuery> = {
     ROUND(bb.VAL,2) AS BUSINESS_BUDGET,
     ROUND(ct.VAL,2) AS CONTRACT_AMOUNT,
     ROUND(gp.VAL,2) AS GROSS_PROFIT_RATIO,
-    rc.RATE AS RATE
+    rc.RATE AS RATE,
+    NVL(ROUND(ic.BSNS_BDG_AMT,2), 0) AS INITIAL_BUSINESS_BUDGET,
+    NVL(ROUND(ic.CTRT_AMT,2), 0) AS INITIAL_CONTRACT_AMOUNT,
+    NVL(CASE WHEN ic.CTRT_AMT = 0 THEN 0 ELSE ROUND((ic.CTRT_AMT - ic.BSNS_BDG_AMT) / ic.CTRT_AMT * 100, 2) END, 0) AS INITIAL_GROSS_PROFIT_RATIO
   FROM all_flds af
-  JOIN target_mm_calc cm ON cm.FLDCODE = af.FLDCODE
+  JOIN target_months cm ON cm.FLDCODE = af.FLDCODE
   JOIN bsns_bdg_months bb ON bb.FLDCODE = af.FLDCODE AND bb.YYMM = cm.MM
   JOIN ctrt_months ct ON ct.FLDCODE = af.FLDCODE AND ct.YYMM = cm.MM
   JOIN gp_months gp ON gp.FLDCODE = af.FLDCODE AND gp.YYMM = cm.MM
-  JOIN rate_calc rc ON rc.FLDCODE = af.FLDCODE`,
+  JOIN rate_calc rc ON rc.FLDCODE = af.FLDCODE
+  LEFT JOIN init_calc ic ON ic.FLDCODE = af.FLDCODE`,
   },
 
   "dashboard_common_siterate_1q.jsp": {

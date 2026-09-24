@@ -18,7 +18,10 @@
   "colBizType": "Business Type",
   "colTargetPlan": "Target (Plan)",
   "colActual": "Actual",
+  "colForecast": "Forecast",
   "colAchievementRate": "Achievement",
+  "groupCurrentMonth": "Current Month",
+  "groupYtd": "YTD Cumulative ({{from}}–{{to}})",
   "noSiteData": "No site-level data for this month.",
   "loadingSiteData": "Loading site data…"
 }

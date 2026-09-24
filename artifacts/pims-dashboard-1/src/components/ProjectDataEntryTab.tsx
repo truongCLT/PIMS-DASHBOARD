@@ -2123,29 +2123,33 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                 } else {
                   row = i >= 0 ? costEstimation[i] : { kind: k.kind, contractAmount: null, costAmount: null, year: null, month: null };
                 }
-                const hasMonthData = row.year != null && row.month != null;
+                // Completion 행 자체의 contractAmount("100" 고정)/costAmount(REC9 %)는 DB에 그대로 두되
+                // (다른 곳에서 쓰일 수 있음), 이 화면 표시는 같은 Base Month의 Execution 행 값을 그대로
+                // 가져와 쓴다 — Contract Amount = CONTRACT_AMOUNT, Cost = BUSINESS_BUDGET(현재 시점 사업
+                // 예산, PIMSVINA settle-ratio 리포트 REC7) — Execution과 동일한 YYMM에 항상 같이 동기화
+                // 되므로 selectedKey 하나로 양쪽 다 정확히 찾을 수 있다.
+                const executionRowForCompletion = isCompletion
+                  ? costEstimation.filter((r) => r.kind === "execution").find((r) => monthKeyOf(r) === selectedKey)
+                  : undefined;
                 // Execution Budget Setup는 PIMSVINA 동기화 전용(읽기 전용) — 수동 편집이 저장 단위(천 USD)를
                 // 무시하고 화면 표시 통화 값을 그대로 저장해버리는 버그의 근원이었다(VndInput onBlur 수정으로
                 // 버그 자체는 고쳤지만, 애초에 동기화 대상 값은 수동 편집 불가로 막는다).
-                // Completion 행은 PIMSVINA settle-ratio 리포트에서 동기화된 값을 그대로 쓴다:
-                // Contract Amount는 항상 100 고정, Cost는 REC9(Gross Profit ratio, 예: 18.7)를 그대로
-                // 저장한 값 — VND 금액이 아니라 %(무차원) 값이므로 그냥 숫자 그대로 표시한다(fmtVnd 안 씀).
-                // Ratio(%) = Contract Amount - Cost (100 - REC9) = 실제 원가율(Cost Rate) — 예: REC9가
-                // 매출총이익률 18.7%라면 원가율은 그 나머지인 81.3%가 된다.
+                // Cost는 현재 시점 사업예산(BUSINESS_BUDGET, Cost Input 진행 반영)이 아니라 최초 승인된
+                // 예산 기준선(INITIAL_BUSINESS_BUDGET, ch_cost_settle_ratio_q_1q.jsp의 "V_0")을 표시한다.
                 //
-                // Bidding/Execution의 Ratio(%)는 원가율(Cost/Contract*100) — Cost <= Contract인 정상
-                // 상황에서 항상 100% 이하로 나온다(Contract/Cost*100은 반대로 흑자일 때 100%를 넘어가
-                // 버려 "원가율"이라는 이름과 맞지 않았음).
-                const contractAmount = isCompletion ? (hasMonthData ? 100 : null) : row.contractAmount;
-                const costAmount = row.costAmount;
+                // Ratio(%)는 원가율(Cost/Contract*100) — Cost <= Contract인 정상 상황에서 항상 100% 이하로
+                // 나온다(Contract/Cost*100은 반대로 흑자일 때 100%를 넘어가 버려 "원가율"이라는 이름과 맞지
+                // 않았음). Completion도 이제 같은 공식을 쓴다(더 이상 100 - REC9 아님).
+                const contractAmount = isCompletion ? (executionRowForCompletion?.contractAmount ?? null) : row.contractAmount;
+                const costAmount = isCompletion
+                  ? (executionRowForCompletion?.costAmount ?? null)
+                  : isExecution
+                    ? row.initialBusinessBudget
+                    : row.costAmount;
                 const ratioPct =
-                  isCompletion
-                    ? contractAmount != null && costAmount != null
-                      ? contractAmount - costAmount
-                      : null
-                    : contractAmount != null && costAmount != null && contractAmount !== 0
-                      ? (costAmount / contractAmount) * 100
-                      : null;
+                  contractAmount != null && costAmount != null && contractAmount !== 0
+                    ? (costAmount / contractAmount) * 100
+                    : null;
                 return (
                   <tr key={k.kind}>
                     <td style={{ ...tdCell, fontSize: "13px", padding: "5px 6px", color: INK_BODY }}>
@@ -2177,22 +2181,16 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                       )}
                     </td>
                     <td style={{ ...tdCell, textAlign: "right" }}>
-                      {isCompletion ? (
-                        <span style={{ fontSize: "13px", color: INK_BODY }}>{contractAmount ?? "-"}</span>
-                      ) : isExecution ? (
-                        // Execution Budget Setup được đồng bộ từ PIMSVINA, lưu ĐÚNG số VND gốc (không
-                        // quy đổi kUSD) — dùng fmtVnd() thay vì fmtMoney() để hiển thị đúng.
+                      {isCompletion || isExecution ? (
+                        // Execution/Completion đều đồng bộ từ PIMSVINA, lưu ĐÚNG số VND gốc (không quy
+                        // đổi kUSD) — dùng fmtVnd() thay vì fmtMoney() để hiển thị đúng.
                         <span style={{ fontSize: "13px", color: INK_MUTED }}>{fmtVnd(contractAmount)}</span>
                       ) : (
                         <VndInput forceFullAmount valueKUsd={row.contractAmount} onChange={(v) => (i >= 0 ? updateAt(setCostEstimation, i, { contractAmount: v }) : setCostEstimation((rows) => [...rows, { kind: k.kind, contractAmount: v, costAmount: null, year: null, month: null }]))} data-row={0} data-col={0} />
                       )}
                     </td>
                     <td style={{ ...tdCell, textAlign: "right" }}>
-                      {isCompletion ? (
-                        // costAmount는 PIMSVINA REC9(매출총이익률, 예: 18.7) 원본 값 — VND 금액이
-                        // 아니라 %(무차원) 값이므로 fmtVnd() 없이 숫자 그대로 표시.
-                        <span style={{ fontSize: "13px", color: INK_MUTED }}>{costAmount != null ? costAmount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 1 }) : "-"}</span>
-                      ) : isExecution ? (
+                      {isCompletion || isExecution ? (
                         <span style={{ fontSize: "13px", color: INK_MUTED }}>{fmtVnd(costAmount)}</span>
                       ) : (
                         <VndInput forceFullAmount valueKUsd={row.costAmount} onChange={(v) => (i >= 0 ? updateAt(setCostEstimation, i, { costAmount: v }) : setCostEstimation((rows) => [...rows, { kind: k.kind, contractAmount: null, costAmount: v, year: null, month: null }]))} data-row={0} data-col={1} />

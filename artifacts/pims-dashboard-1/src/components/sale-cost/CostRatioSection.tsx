@@ -86,6 +86,9 @@ export type CostEstimationRow = {
   year?: number | null;
   month?: number | null;
   ratioPct?: number | null;
+  initialBusinessBudget?: number | null;
+  initialContractAmount?: number | null;
+  initialGrossProfitRatio?: number | null;
 };
 
 // ---------------------------------------------------------------------------
@@ -145,28 +148,27 @@ export function CostRatioCard({
                 : meta.kind === "execution"
                   ? pickedExecution
                   : estimation.find((e) => e.kind === meta.kind);
-            const contract = row?.contractAmount ?? null;
-            const cost     = row?.costAmount ?? null;
-            // Cùng công thức với mục "4. Cost Rate" (ProjectDataEntryTab): Completion Contract Amount
-            // luôn = 100, Cost = REC9 (Gross Profit ratio) đồng bộ về, Ratio(%) = Contract - Cost.
-            // Bidding/Execution dùng Cost/Contract*100 (nguyên tắc "원가율" — luôn <= 100% khi có lãi).
-            const pct =
+            // Cùng công thức với mục "4. Cost Rate" (ProjectDataEntryTab)/CostingTab: Execution hiển thị
+            // Initial Budget (ngân sách gốc được duyệt lần đầu), không phải Business Budget hiện tại.
+            // Completion lấy nguyên Contract Amount/Cost của dòng Execution CÙNG Base Month (Completion
+            // luôn đồng bộ chung year/month với Execution) thay vì Contract=100 cố định/REC9 riêng.
+            const contract =
+              meta.kind === "completion" ? (pickedExecution?.contractAmount ?? null) : (row?.contractAmount ?? null);
+            const cost =
               meta.kind === "completion"
-                ? contract != null && cost != null
-                  ? contract - cost
-                  : null
-                : contract != null && cost != null && contract !== 0
-                  ? (cost / contract) * 100
-                  : null;
-            // execution은 PIMSVINA 동기화 값(VND 원본)이라 fmtVnd(), bidding(수동 입력)은 천 USD
+                ? (pickedExecution?.costAmount ?? null)
+                : meta.kind === "execution"
+                  ? (row?.initialBusinessBudget ?? null)
+                  : (row?.costAmount ?? null);
+            // Ratio(%) = Cost/Contract*100 cho cả 3 dòng (nguyên tắc "원가율" — luôn <= 100% khi có lãi).
+            const pct = contract != null && cost != null && contract !== 0 ? (cost / contract) * 100 : null;
+            // execution/completion은 VND 원본 그대로 저장되므로 fmtVnd(), bidding(수동 입력)은 천 USD
             // 기준이므로 fmtMoneyFull()을 쓴다(Unit 토글에 상관없이 항상 전체 금액 — fmtVnd()와 동일한
             // 성격이라야 옆의 execution 금액과 자릿수가 맞게 보인다).
             const fmtAmount = meta.kind === "bidding" ? fmtMoneyFull : fmtVnd;
             const hoverTitle =
               contract != null || cost != null
-                ? meta.kind === "completion"
-                  ? `계약금액: ${contract ?? "-"} / 원가율(REC9): ${cost ?? "-"} / 원가율: ${fmtPct(pct)}`
-                  : `도급액: ${fmtAmount(contract)} / 원가: ${fmtAmount(cost)}`
+                ? `도급액: ${fmtAmount(contract)} / 원가: ${fmtAmount(cost)}`
                 : undefined;
             const baseMonth =
               meta.kind === "completion" && row?.year != null && row?.month != null
@@ -180,13 +182,7 @@ export function CostRatioCard({
                   style={{ fontSize: "12px", color: INK_SECONDARY, marginBottom: "2px" }}
                   title={hoverTitle}
                 >
-                  {meta.kind === "completion"
-                    ? cost != null || contract != null
-                      ? `${cost ?? "-"} / ${contract ?? "-"}`
-                      : "-"
-                    : cost != null || contract != null
-                      ? `${fmtAmount(cost)} / ${fmtAmount(contract)}`
-                      : "-"}
+                  {cost != null || contract != null ? `${fmtAmount(cost)} / ${fmtAmount(contract)}` : "-"}
                 </div>
                 <div title={hoverTitle} style={{ cursor: "default" }}>
                   <Donut

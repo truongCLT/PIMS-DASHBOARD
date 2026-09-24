@@ -20,4 +20,10 @@ export interface ProjectDetailCostEstimation {
   month?: number | null;
   /** completion 전용 — PIMSVINA settle-ratio 리포트의 Gross Profit ratio(%) 동기화 값 */
   ratioPct?: number | null;
+  /** execution 전용 — ch_cost_settle_ratio_q_1q.jsp "V_0"(PFMCHGSEQ=0) Business budget */
+  initialBusinessBudget?: number | null;
+  /** execution 전용 — ch_cost_settle_ratio_q_1q.jsp "V_0"(PFMCHGSEQ=0) Contract Amount */
+  initialContractAmount?: number | null;
+  /** execution 전용 — ch_cost_settle_ratio_q_1q.jsp "V_0"(PFMCHGSEQ=0) Gross Profit ratio(%) */
+  initialGrossProfitRatio?: number | null;
 }

@@ -18,7 +18,10 @@
   "colBizType": "사업유형",
   "colTargetPlan": "목표(계획)",
   "colActual": "실적",
+  "colForecast": "전망",
   "colAchievementRate": "달성률",
+  "groupCurrentMonth": "당월",
+  "groupYtd": "연 누계({{from}}~{{to}})",
   "noSiteData": "해당 월의 현장별 데이터가 없습니다.",
   "loadingSiteData": "현장 데이터 로딩 중…"
 }

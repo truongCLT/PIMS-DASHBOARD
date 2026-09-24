@@ -72,6 +72,9 @@
   "col_pdCostEstimation_contract_amount": "Giá trị hợp đồng",
   "col_pdCostEstimation_cost_amount": "Giá trị chi phí",
   "col_pdCostEstimation_ratio_pct": "Tỷ lệ lợi nhuận gộp (%)",
+  "col_pdCostEstimation_initial_business_budget": "Ngân sách kinh doanh ban đầu",
+  "col_pdCostEstimation_initial_contract_amount": "Giá trị hợp đồng ban đầu",
+  "col_pdCostEstimation_initial_gross_profit_ratio": "Tỷ lệ lợi nhuận gộp ban đầu (%)",
 
   "col_pdOutsourcing_trade_group": "Nhóm hạng mục",
   "col_pdOutsourcing_trade": "Hạng mục chi tiết",

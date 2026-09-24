@@ -413,7 +413,10 @@ export const GetProjectdetailResponse = zod.object({
   "costAmount": zod.number().nullish(),
   "year": zod.number().nullish().describe('completion 월별 이력용 기준 연도 (bidding\/execution 은 null)'),
   "month": zod.number().min(1).max(getProjectdetailResponseCostEstimationItemMonthMax).nullish(),
-  "ratioPct": zod.number().nullish().describe('completion 전용 — PIMSVINA settle-ratio 리포트의 Gross Profit ratio(%) 동기화 값')
+  "ratioPct": zod.number().nullish().describe('completion 전용 — PIMSVINA settle-ratio 리포트의 Gross Profit ratio(%) 동기화 값'),
+  "initialBusinessBudget": zod.number().nullish().describe('execution 전용 — ch_cost_settle_ratio_q_1q.jsp \"V_0\"(PFMCHGSEQ=0) Business budget'),
+  "initialContractAmount": zod.number().nullish().describe('execution 전용 — ch_cost_settle_ratio_q_1q.jsp \"V_0\"(PFMCHGSEQ=0) Contract Amount'),
+  "initialGrossProfitRatio": zod.number().nullish().describe('execution 전용 — ch_cost_settle_ratio_q_1q.jsp \"V_0\"(PFMCHGSEQ=0) Gross Profit ratio(%)')
 })),
   "costBudget": zod.array(zod.object({
   "category": zod.string().nullish(),
@@ -584,7 +587,10 @@ export const PutProjectdetailBody = zod.object({
   "costAmount": zod.number().nullish(),
   "year": zod.number().nullish().describe('completion 월별 이력용 기준 연도 (bidding\/execution 은 null)'),
   "month": zod.number().min(1).max(putProjectdetailBodyCostEstimationItemMonthMax).nullish(),
-  "ratioPct": zod.number().nullish().describe('completion 전용 — PIMSVINA settle-ratio 리포트의 Gross Profit ratio(%) 동기화 값')
+  "ratioPct": zod.number().nullish().describe('completion 전용 — PIMSVINA settle-ratio 리포트의 Gross Profit ratio(%) 동기화 값'),
+  "initialBusinessBudget": zod.number().nullish().describe('execution 전용 — ch_cost_settle_ratio_q_1q.jsp \"V_0\"(PFMCHGSEQ=0) Business budget'),
+  "initialContractAmount": zod.number().nullish().describe('execution 전용 — ch_cost_settle_ratio_q_1q.jsp \"V_0\"(PFMCHGSEQ=0) Contract Amount'),
+  "initialGrossProfitRatio": zod.number().nullish().describe('execution 전용 — ch_cost_settle_ratio_q_1q.jsp \"V_0\"(PFMCHGSEQ=0) Gross Profit ratio(%)')
 })),
   "costBudget": zod.array(zod.object({
   "category": zod.string().nullish(),
@@ -751,7 +757,10 @@ export const PutProjectdetailResponse = zod.object({
   "costAmount": zod.number().nullish(),
   "year": zod.number().nullish().describe('completion 월별 이력용 기준 연도 (bidding\/execution 은 null)'),
   "month": zod.number().min(1).max(putProjectdetailResponseCostEstimationItemMonthMax).nullish(),
-  "ratioPct": zod.number().nullish().describe('completion 전용 — PIMSVINA settle-ratio 리포트의 Gross Profit ratio(%) 동기화 값')
+  "ratioPct": zod.number().nullish().describe('completion 전용 — PIMSVINA settle-ratio 리포트의 Gross Profit ratio(%) 동기화 값'),
+  "initialBusinessBudget": zod.number().nullish().describe('execution 전용 — ch_cost_settle_ratio_q_1q.jsp \"V_0\"(PFMCHGSEQ=0) Business budget'),
+  "initialContractAmount": zod.number().nullish().describe('execution 전용 — ch_cost_settle_ratio_q_1q.jsp \"V_0\"(PFMCHGSEQ=0) Contract Amount'),
+  "initialGrossProfitRatio": zod.number().nullish().describe('execution 전용 — ch_cost_settle_ratio_q_1q.jsp \"V_0\"(PFMCHGSEQ=0) Gross Profit ratio(%)')
 })),
   "costBudget": zod.array(zod.object({
   "category": zod.string().nullish(),

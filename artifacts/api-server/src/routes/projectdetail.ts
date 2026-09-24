@@ -281,6 +281,9 @@ async function loadDetail(projectName: string) {
       year: c.year,
       month: c.month,
       ratioPct: num(c.ratioPct),
+      initialBusinessBudget: num(c.initialBusinessBudget),
+      initialContractAmount: num(c.initialContractAmount),
+      initialGrossProfitRatio: num(c.initialGrossProfitRatio),
     })),
     costBudget: costBudget.map((c) => ({
       category: c.category,

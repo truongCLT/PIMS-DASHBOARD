@@ -145,6 +145,12 @@ export const pdCostEstimationTable = pgTable(
     // Contract Amount가 100으로 고정되어 있으므로 화면의 Ratio(%) 계산식(Contract/Cost*100)을 그대로
     // 적용하면 이 값과 일치하지 않아, Completion 행에서는 계산 대신 이 값을 직접 표시한다.
     ratioPct: numeric("ratio_pct", { precision: 10, scale: 4 }),
+    // execution 전용: ch_cost_settle_ratio_q_1q.jsp의 "V_0"(PFMCHGSEQ=0, Initial Budget) 컬럼 —
+    // 현재 진행 중인 실행예산(Execution)과 별개로, 최초 승인된 예산 기준선. 단위는 contractAmount/
+    // costAmount와 동일(VND 원본).
+    initialBusinessBudget: numeric("initial_business_budget", { precision: 24, scale: 8 }),
+    initialContractAmount: numeric("initial_contract_amount", { precision: 24, scale: 8 }),
+    initialGrossProfitRatio: numeric("initial_gross_profit_ratio", { precision: 10, scale: 4 }),
   },
   (t) => [
     unique("pd_cost_estimation_uq")

@@ -72,6 +72,9 @@
   "col_pdCostEstimation_contract_amount": "계약금액",
   "col_pdCostEstimation_cost_amount": "원가금액",
   "col_pdCostEstimation_ratio_pct": "매출총이익률(%)",
+  "col_pdCostEstimation_initial_business_budget": "최초 사업예산",
+  "col_pdCostEstimation_initial_contract_amount": "최초 계약금액",
+  "col_pdCostEstimation_initial_gross_profit_ratio": "최초 매출총이익률(%)",
 
   "col_pdOutsourcing_trade_group": "대공종",
   "col_pdOutsourcing_trade": "세부공종",

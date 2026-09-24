@@ -27,7 +27,7 @@ import {
   companiesTable,
   divisionsTable,
 } from "@workspace/db";
-import { eq, and, isNull } from "drizzle-orm";
+import { eq, and, isNull, sql } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/adminAuth";
 import {
   mapPimsvinaTradeItem,
@@ -83,11 +83,13 @@ export async function fetchAllPimsvinaData() {
   ]);
   // "4. Cost Rate (Cost tab)" — Execution Budget Setup.Cost/Contract Amount và Estimated Completion
   // Cost Rate.Ratio(%) không còn dùng giá trị Bold tĩnh (ZYA/ZZL, dashboard_pd_costestimation_1q.jsp —
-  // đã xoá hẳn) nữa, mà tính lại theo tháng hiện tại từ ch_cost_settle_ratio_q_1q.jsp (REC7 Business
-  // budget, REC9 Gross Profit ratio, REC13 Contract Amount) — phản ánh đúng tiến độ Cost Input thực tế
-  // thay vì chỉ là số ngân sách tĩnh tại lần duyệt gần nhất. Query này TỰ lấy danh sách FLDCODE từ
-  // CBTB_FLDSUMM (tất cả site, không giới hạn theo site đã có Execution Budget được duyệt như trước)
-  // và tính cho tất cả trong 1 lần gọi.
+  // đã xoá hẳn) nữa, mà tính lại từ ch_cost_settle_ratio_q_1q.jsp (REC7 Business budget, REC9 Gross
+  // Profit ratio, REC13 Contract Amount) — phản ánh đúng tiến độ Cost Input thực tế thay vì chỉ là số
+  // ngân sách tĩnh tại lần duyệt gần nhất. Trả về NHIỀU dòng/site — 1 dòng cho MỖI tháng từ tháng có
+  // ngân sách đầu tiên (earliest_budget_month) đến tháng hiện tại (target_months trong query), không
+  // chỉ tháng hiện tại — để Base Month picker ở Data Entry có đủ lịch sử để chọn. Query này TỰ lấy
+  // danh sách FLDCODE từ CBTB_FLDSUMM (tất cả site, không giới hạn theo site đã có Execution Budget
+  // được duyệt như trước) và tính cho tất cả trong 1 lần gọi.
   const pdCostEstimation = costRateSettleRows
     .map((row: any) => {
       const fldcode = String(row?.fldcode ?? "").trim();
@@ -104,6 +106,11 @@ export async function fetchAllPimsvinaData() {
         cost_amount: row.business_budget != null ? Number(row.business_budget) : null,
         contract_amount: row.contract_amount != null ? Number(row.contract_amount) : null,
         ratio_pct: row.gross_profit_ratio != null ? Number(row.gross_profit_ratio) : null,
+        // "V_0" (PFMCHGSEQ=0, Initial Budget) — xem ch_cost_settle_ratio_q_1q.jsp, ngân sách gốc được
+        // duyệt lần đầu, độc lập với tiến độ Cost Input hiện tại.
+        initial_business_budget: row.initial_business_budget != null ? Number(row.initial_business_budget) : null,
+        initial_contract_amount: row.initial_contract_amount != null ? Number(row.initial_contract_amount) : null,
+        initial_gross_profit_ratio: row.initial_gross_profit_ratio != null ? Number(row.initial_gross_profit_ratio) : null,
       };
     })
     .filter((row): row is NonNullable<typeof row> => row != null);
@@ -922,6 +929,17 @@ export async function applyPimsvinaData(fetched: PimsvinaData) {
   // các dòng tháng khác đã có — nhờ vậy UI (mục "4. Cost Rate") có thể cho chọn Base Month để xem lại
   // dữ liệu của từng tháng đã đồng bộ trước đó thay vì chỉ thấy tháng mới nhất.
   // Lưu ĐÚNG số VND gốc từ pdCostEstimation (không quy đổi kUSD/chia 1000) — UI tự quy đổi khi hiển thị.
+  // target_months (Oracle) giờ trả về nhiều tháng/site (thay vì 1 tháng như trước) nên pdCostEstimation
+  // có thể có hàng trăm/nghìn dòng — await từng INSERT một (round-trip riêng cho mỗi dòng) sẽ rất chậm.
+  // Gom lại thành mảng trong vòng lặp (resolveProjectName vẫn phải chạy tuần tự — có thể tạo project
+  // mới + cập nhật cache dùng chung ở nơi khác), rồi ghi theo lô bằng 1 câu INSERT...ON CONFLICT DO
+  // UPDATE nhiều dòng/lần (dùng excluded.<col> để mỗi dòng cập nhật đúng giá trị của chính nó).
+  // Map (không phải mảng) keyed theo unique key (projectName, kind, year, month) — Postgres từ chối cả
+  // câu lệnh nếu 1 lô INSERT...ON CONFLICT có 2 dòng trùng key xung đột ("ON CONFLICT DO UPDATE command
+  // cannot affect row a second time"). Set (ghi đè) thay vì push giữ đúng hành vi cũ (vòng lặp tuần tự
+  // trước đây ghi đè dòng trùng key qua từng upsert riêng) — dòng đến sau thắng.
+  const executionRows = new Map<string, typeof pdCostEstimationTable.$inferInsert>();
+  const completionRows = new Map<string, typeof pdCostEstimationTable.$inferInsert>();
   for (const item of pdCostEstimation) {
     const projectName = await resolveProjectName(item);
     if (!projectName || item.cost_amount == null || item.contract_amount == null) {
@@ -933,22 +951,82 @@ export async function applyPimsvinaData(fetched: PimsvinaData) {
     const fldCode = item.fldcode || null;
     const siteCode = item.site_code || null;
     // Base Month = tháng mà dashboard_pd_costrate_settle_1q.jsp thực sự tính ra cho site này
-    // (target_mm_calc — tháng hiện tại, hoặc lùi về tháng gần nhất có dữ liệu Cost Input).
+    // (target_months — từ tháng có ngân sách đầu tiên đến tháng hiện tại).
     const yymm = typeof item.yymm === "string" ? item.yymm.trim() : null;
     const execYear = yymm && /^\d{6}$/.test(yymm) ? Number(yymm.slice(0, 4)) : null;
     const execMonth = yymm && /^\d{6}$/.test(yymm) ? Number(yymm.slice(4, 6)) : null;
-    await db
-      .insert(pdCostEstimationTable)
-      .values({
+    // "V_0" (Initial Budget, PFMCHGSEQ=0) — cùng guard tràn số như ratio_pct bên dưới cho tỷ lệ %.
+    const initialBusinessBudgetVnd =
+      item.initial_business_budget != null ? String(Number(item.initial_business_budget)) : null;
+    const initialContractAmountVnd =
+      item.initial_contract_amount != null ? String(Number(item.initial_contract_amount)) : null;
+    const initialGpRatioNum =
+      item.initial_gross_profit_ratio != null ? Number(item.initial_gross_profit_ratio) : null;
+    const initialGpRatioStr =
+      initialGpRatioNum != null && Number.isFinite(initialGpRatioNum) && Math.abs(initialGpRatioNum) < 100000
+        ? String(initialGpRatioNum)
+        : null;
+    if (item.initial_business_budget == null) {
+      console.warn(
+        `[PIMSVINA DEBUG initial] NULL initial_business_budget: project=${projectName} fldcode=${item.fldcode} yymm=${yymm} raw=${JSON.stringify(item.initial_business_budget)}`,
+      );
+    }
+    executionRows.set(`${projectName}|execution|${execYear}|${execMonth}`, {
+      projectName,
+      kind: "execution",
+      fldCode,
+      siteCode,
+      contractAmount: contractAmountVnd,
+      costAmount: costAmountVnd,
+      year: execYear,
+      month: execMonth,
+      initialBusinessBudget: initialBusinessBudgetVnd,
+      initialContractAmount: initialContractAmountVnd,
+      initialGrossProfitRatio: initialGpRatioStr,
+    });
+
+    // Estimated Completion Cost Rate: Contract Amount cố định = 100, Cost = REC9 (Gross Profit ratio,
+    // vd 18.7) đồng bộ thẳng — UI tự tính Ratio(%) = Contract Amount - Cost (100 - REC9). Dùng chung
+    // year/month với execution (cùng site, cùng target_months) để 2 dòng luôn khớp cùng 1 Base Month.
+    // PIMSVINA thỉnh thoảng trả ratio_pct bất thường (VD business_budget gần 0 làm phép chia phóng đại
+    // cực lớn), vượt quá numeric(10,4) của ratio_pct/cost_amount (tối đa ~999,999.9999) và làm cả lượt
+    // sync fail hoàn toàn (kể cả các project khác). Bỏ qua giá trị vô lý thay vì để insert throw.
+    const ratioPctNum = item.ratio_pct != null ? Number(item.ratio_pct) : null;
+    if (ratioPctNum != null && Number.isFinite(ratioPctNum) && Math.abs(ratioPctNum) < 100000) {
+      const ratioPctStr = String(ratioPctNum);
+      completionRows.set(`${projectName}|completion|${execYear}|${execMonth}`, {
         projectName,
-        kind: "execution",
+        kind: "completion",
         fldCode,
         siteCode,
-        contractAmount: contractAmountVnd,
-        costAmount: costAmountVnd,
+        contractAmount: "100",
+        costAmount: ratioPctStr,
         year: execYear,
         month: execMonth,
-      })
+        ratioPct: ratioPctStr,
+      });
+    } else if (item.ratio_pct != null) {
+      console.warn(
+        `[PIMSVINA Sync] Skipping out-of-range ratio_pct for "${projectName}" (${execYear}-${execMonth}): ${item.ratio_pct}`,
+      );
+    }
+  }
+  {
+    const totalExec = pdCostEstimation.length;
+    const nullInitial = pdCostEstimation.filter((it: any) => it.initial_business_budget == null).length;
+    console.log(
+      `[PIMSVINA DEBUG initial] SUMMARY: ${nullInitial}/${totalExec} pdCostEstimation rows have NULL initial_business_budget`,
+    );
+  }
+  // Postgres giới hạn 65535 tham số/câu lệnh — chia lô để vừa nhanh (ít round-trip) vừa an toàn.
+  const COST_ESTIMATION_CHUNK_SIZE = 1000;
+  const executionRowsArr = Array.from(executionRows.values());
+  const completionRowsArr = Array.from(completionRows.values());
+  for (let i = 0; i < executionRowsArr.length; i += COST_ESTIMATION_CHUNK_SIZE) {
+    const chunk = executionRowsArr.slice(i, i + COST_ESTIMATION_CHUNK_SIZE);
+    await db
+      .insert(pdCostEstimationTable)
+      .values(chunk)
       .onConflictDoUpdate({
         target: [
           pdCostEstimationTable.projectName,
@@ -956,46 +1034,38 @@ export async function applyPimsvinaData(fetched: PimsvinaData) {
           pdCostEstimationTable.year,
           pdCostEstimationTable.month,
         ],
-        set: { fldCode, siteCode, contractAmount: contractAmountVnd, costAmount: costAmountVnd },
+        set: {
+          fldCode: sql`excluded.fld_code`,
+          siteCode: sql`excluded.site_code`,
+          contractAmount: sql`excluded.contract_amount`,
+          costAmount: sql`excluded.cost_amount`,
+          initialBusinessBudget: sql`excluded.initial_business_budget`,
+          initialContractAmount: sql`excluded.initial_contract_amount`,
+          initialGrossProfitRatio: sql`excluded.initial_gross_profit_ratio`,
+        },
       });
-    counts.pdCostEstimation++;
-
-    // Estimated Completion Cost Rate: Contract Amount cố định = 100, Cost = REC9 (Gross Profit ratio,
-    // vd 18.7) đồng bộ thẳng — UI tự tính Ratio(%) = Contract Amount - Cost (100 - REC9). Dùng chung
-    // year/month với execution (cùng site, cùng target_mm_calc) để 2 dòng luôn khớp cùng 1 Base Month.
-    // PIMSVINA thỉnh thoảng trả ratio_pct bất thường (VD business_budget gần 0 làm phép chia phóng đại
-    // cực lớn), vượt quá numeric(10,4) của ratio_pct/cost_amount (tối đa ~999,999.9999) và làm cả lượt
-    // sync fail hoàn toàn (kể cả các project khác). Bỏ qua giá trị vô lý thay vì để insert throw.
-    const ratioPctNum = item.ratio_pct != null ? Number(item.ratio_pct) : null;
-    if (ratioPctNum != null && Number.isFinite(ratioPctNum) && Math.abs(ratioPctNum) < 100000) {
-      const ratioPctStr = String(ratioPctNum);
-      await db
-        .insert(pdCostEstimationTable)
-        .values({
-          projectName,
-          kind: "completion",
-          fldCode,
-          siteCode,
-          contractAmount: "100",
-          costAmount: ratioPctStr,
-          year: execYear,
-          month: execMonth,
-          ratioPct: ratioPctStr,
-        })
-        .onConflictDoUpdate({
-          target: [
-            pdCostEstimationTable.projectName,
-            pdCostEstimationTable.kind,
-            pdCostEstimationTable.year,
-            pdCostEstimationTable.month,
-          ],
-          set: { fldCode, siteCode, contractAmount: "100", costAmount: ratioPctStr, ratioPct: ratioPctStr },
-        });
-    } else if (item.ratio_pct != null) {
-      console.warn(
-        `[PIMSVINA Sync] Skipping out-of-range ratio_pct for "${projectName}" (${execYear}-${execMonth}): ${item.ratio_pct}`,
-      );
-    }
+    counts.pdCostEstimation += chunk.length;
+  }
+  for (let i = 0; i < completionRowsArr.length; i += COST_ESTIMATION_CHUNK_SIZE) {
+    const chunk = completionRowsArr.slice(i, i + COST_ESTIMATION_CHUNK_SIZE);
+    await db
+      .insert(pdCostEstimationTable)
+      .values(chunk)
+      .onConflictDoUpdate({
+        target: [
+          pdCostEstimationTable.projectName,
+          pdCostEstimationTable.kind,
+          pdCostEstimationTable.year,
+          pdCostEstimationTable.month,
+        ],
+        set: {
+          fldCode: sql`excluded.fld_code`,
+          siteCode: sql`excluded.site_code`,
+          contractAmount: sql`excluded.contract_amount`,
+          costAmount: sql`excluded.cost_amount`,
+          ratioPct: sql`excluded.ratio_pct`,
+        },
+      });
   }
 
   // Milestones는 더 이상 PIMSVINA에서 동기화하지 않는다 - CBTB_CONSTHISTORY 기반 근사치였고

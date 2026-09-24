@@ -603,13 +603,22 @@ export function OverviewTab({ projectName }: { projectName: string }) {
 
         {/* Cost estimation — 입찰→실행예산→준공추정 3단계 막대 + 개선폭 */}
         {(() => {
+          // Cùng công thức với mục "4. Cost Rate" (ProjectDataEntryTab)/CostingTab: Execution hiển thị
+          // Initial Budget (ngân sách gốc), Completion lấy nguyên Contract Amount/Cost của Execution
+          // (Completion luôn đồng bộ chung year/month với Execution) thay vì Contract=100 cố định/REC9.
+          const executionForPct = execution
+            ? { contractAmount: execution.contractAmount, costAmount: execution.initialBusinessBudget }
+            : null;
+          const completionForPct = execution
+            ? { contractAmount: execution.contractAmount, costAmount: execution.costAmount }
+            : null;
           const stages = [
             { key: "bidding", title: t("overviewTab:bidding"), data: bidding, color: chartTheme.paleBlue },
-            { key: "execution", title: t("overviewTab:executionBudgetPlan"), data: execution, color: chartTheme.planBlue },
-            { key: "completion", title: t("overviewTab:completionCostRate"), data: completion, color: ACHIEVE_GREEN },
+            { key: "execution", title: t("overviewTab:executionBudgetPlan"), data: executionForPct, color: chartTheme.planBlue },
+            { key: "completion", title: t("overviewTab:completionCostRate"), data: completionForPct, color: ACHIEVE_GREEN },
           ];
           const biddingPct = estPct(bidding);
-          const completionPct = estPct(completion);
+          const completionPct = estPct(completionForPct);
           const improve = biddingPct != null && completionPct != null ? biddingPct - completionPct : null;
           const improveColor = improve == null ? INK_MUTED : improve >= 0 ? ACHIEVE_GREEN : ACHIEVE_RED;
           const H = 150;
