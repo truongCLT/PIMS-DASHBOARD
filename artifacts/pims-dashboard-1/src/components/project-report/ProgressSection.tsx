@@ -288,6 +288,8 @@ function CostExecutionTooltip({
   fmtVnd: (value: number | null | undefined) => string;
 }) {
   const { t } = useTranslation(["projectReportTab", "common"]);
+  // 실제 % 값을 그대로 보여준다 (100%로 제한하지 않음) — 계획 대비 실적이 몇 배로 튀더라도 사용자가
+  // 원본 수치를 그대로 확인할 수 있어야 한다.
   const achievement = ratioPct(actual, plan);
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>

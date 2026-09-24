@@ -64,7 +64,7 @@ function InfoRow({ label, value, accent = false, note }: InfoRowProps) {
     <div
       style={{
         display: "grid",
-        gridTemplateColumns: "90px 1fr",
+        gridTemplateColumns: "140px 1fr",
         gap: "0 8px",
         alignItems: "baseline",
         padding: "5px 10px",
@@ -77,9 +77,8 @@ function InfoRow({ label, value, accent = false, note }: InfoRowProps) {
           fontSize: "11px",
           fontWeight: 600,
           color: LABEL_COLOR,
-          whiteSpace: "nowrap",
-          overflow: "hidden",
-          textOverflow: "ellipsis",
+          whiteSpace: "normal",
+          wordBreak: "keep-all",
         }}
       >
         {label}
@@ -178,7 +177,7 @@ function SitePhotoPanel({
       }}
     >
       <div style={{ ...sectionTitle, marginBottom: "6px", fontSize: "13px" }}>
-        현장 사진
+        {t("projectDashboard:sitePhotoTitle")}
       </div>
       <div style={{ flex: 1, minHeight: 0 }}>
         <PhotoPager
@@ -198,7 +197,7 @@ function SitePhotoPanel({
 // ─── 메인 컴포넌트 ────────────────────────────────────────────────────────
 
 export function ProjectSummaryTab({ projectName }: { projectName: string }) {
-  const { t } = useTranslation(["projectDashboard", "common"]);
+  const { t } = useTranslation(["projectDashboard", "common", "projectDataEntryTab"]);
   const { detail, isLoading } = useProjectDetail(projectName);
   const { fmtMoney, fmtVnd, currency, unitLabel } = useMoney();
 
@@ -225,7 +224,7 @@ export function ProjectSummaryTab({ projectName }: { projectName: string }) {
     startDate && endDate
       ? `${fmtDate(startDate)} ~ ${fmtDate(endDate)}`
       : DASH;
-  const monthsLabel = months != null ? `${months}개월` : null;
+  const monthsLabel = months != null ? t("projectDashboard:monthsSuffix", { count: months }) : null;
 
   // 도급액 — VND 원본 그대로 저장된 값이라 fmtVnd() 사용 (fmtMoney()는 천 USD 기준 값을 가정하므로 여기
   // 쓰면 안 됨). fmtVnd()는 unitOn 배율을 적용하지 않고 항상 전체 금액을 반환하므로 unitLabel(단위 배율
@@ -245,7 +244,7 @@ export function ProjectSummaryTab({ projectName }: { projectName: string }) {
   if (isLoading) {
     return (
       <div style={{ padding: "40px", textAlign: "center", fontSize: "13px", color: INK_MUTED }}>
-        불러오는 중...
+        {t("common:loading")}
       </div>
     );
   }
@@ -277,7 +276,7 @@ export function ProjectSummaryTab({ projectName }: { projectName: string }) {
             overflow: "hidden",
           }}
         >
-          <GroupHeader title="공사 정보" />
+          <GroupHeader title={t("projectDashboard:constructionInfoTitle")} />
 
           <InfoRow
             label="PJ"
@@ -288,7 +287,7 @@ export function ProjectSummaryTab({ projectName }: { projectName: string }) {
             }
           />
           <InfoRow
-            label="위치"
+            label={t("projectDataEntryTab:location")}
             value={ov?.location ?? null}
           />
           <InfoRow
@@ -313,15 +312,15 @@ export function ProjectSummaryTab({ projectName }: { projectName: string }) {
               ) : null
             }
           />
-          <InfoRow label="대지면적" value={ov?.siteArea ?? null} />
-          <InfoRow label="연면적" value={ov?.grossFloorArea ?? null} />
-          <InfoRow label="용도" value={ov?.purpose ?? null} />
+          <InfoRow label={t("projectDataEntryTab:siteArea")} value={ov?.siteArea ?? null} />
+          <InfoRow label={t("projectDataEntryTab:grossFloorArea")} value={ov?.grossFloorArea ?? null} />
+          <InfoRow label={t("projectDataEntryTab:purpose")} value={ov?.purpose ?? null} />
           <InfoRow
             label={t("projectDashboard:constructionScale")}
             value={ov?.scale ?? null}
           />
-          <InfoRow label="지분" value={ov?.ownershipStake ?? null} />
-          <InfoRow label="파트너사" value={ov?.partnerCompany ?? null} />
+          <InfoRow label={t("projectDataEntryTab:ownershipStake")} value={ov?.ownershipStake ?? null} />
+          <InfoRow label={t("projectDataEntryTab:partnerCompany")} value={ov?.partnerCompany ?? null} />
 
         </div>
 
@@ -333,25 +332,25 @@ export function ProjectSummaryTab({ projectName }: { projectName: string }) {
             overflow: "hidden",
           }}
         >
-          <GroupHeader title="계약 정보" />
+          <GroupHeader title={t("projectDashboard:contractInfoTitle")} />
 
           <InfoRow
             label={t("projectDashboard:client")}
             value={ov?.client ?? null}
           />
           <InfoRow
-            label={`${t("common:contractAmount")} (전체)`}
+            label={`${t("common:contractAmount")} (${t("common:total")})`}
             value={contractAmt != null ? contractAmtLabel : null}
             accent={contractAmt != null}
-            note={`계약환율 ${siteRateQuery.isLoading ? "조회 중..." : siteRateLabel ?? "-"}`}
+            note={`${t("projectDashboard:contractExchangeRateLabel")} ${siteRateQuery.isLoading ? t("projectDashboard:exchangeRateLoading") : siteRateLabel ?? "-"}`}
           />
-          <InfoRow label="계약방식" value={ov?.contractMethod ?? null} />
-          <InfoRow label="수금조건" value={ov?.paymentTerms ?? null} />
-          <InfoRow label="하자보증기간" value={ov?.defectWarrantyPeriod ?? null} />
-          <InfoRow label="하자보증증권" value={ov?.defectWarrantyBond ?? null} />
-          <InfoRow label="선급금" value={ov?.advancePayment ?? null} />
-          <InfoRow label="유보금" value={ov?.retention ?? null} />
-          <InfoRow label="VE 조건" value={ov?.veTerms ?? null} />
+          <InfoRow label={t("projectDataEntryTab:contractMethod")} value={ov?.contractMethod ?? null} />
+          <InfoRow label={t("projectDataEntryTab:paymentTerms")} value={ov?.paymentTerms ?? null} />
+          <InfoRow label={t("projectDataEntryTab:defectWarrantyPeriod")} value={ov?.defectWarrantyPeriod ?? null} />
+          <InfoRow label={t("projectDataEntryTab:defectWarrantyBond")} value={ov?.defectWarrantyBond ?? null} />
+          <InfoRow label={t("projectDataEntryTab:advancePayment")} value={ov?.advancePayment ?? null} />
+          <InfoRow label={t("projectDataEntryTab:retention")} value={ov?.retention ?? null} />
+          <InfoRow label={t("projectDataEntryTab:veTerms")} value={ov?.veTerms ?? null} />
         </div>
       </div>
     </div>

@@ -18,6 +18,7 @@ import {
   roundSmart,
   type PeriodMode,
 } from "./dashboardFilters";
+import { maxSelectableMonth } from "./monthRange";
 
 export const REPORT_YEAR = new Date().getFullYear();
 
@@ -459,7 +460,7 @@ export function deriveDashboardData(
   let orderStatus: OrderStatusData | null = null;
   if (!projectScope && orders) {
     const pY = orders.planTotal;
-    const aM = rangeSum(orders.actual, 1, M);
+    const aM = orders.actual[M - 1] ?? 0;
     orderStatus = {
       planTotal: roundSmart(pY),
       ordered: roundSmart(aM),
@@ -506,7 +507,9 @@ export function useDashboardData() {
   const filters = useDashboardFilters();
   const query = useGetMgmtreportSummary();
   const settingsQuery = useGetMgmtreportSettings();
-  const managementMonth = settingsQuery.data?.month ?? new Date().getMonth() + 1;
+  // 저장된 설정이 없을 때는 "이번 달"이 아니라 "실적이 마감된 가장 최근 달"로 폴백해야 함
+  // (당월 계획 데이터가 실적 계산에 섞이는 것을 방지 — resolveMonthWindow 기본값과 동일 규칙).
+  const managementMonth = settingsQuery.data?.month ?? maxSelectableMonth();
   const summaryForYear = query.data?.find((s) => s.year === REPORT_YEAR) ?? null;
 
   const projectSelected = filters.project !== "All";

@@ -448,6 +448,8 @@ function validateMonthlyRows(
   label: string,
   rows: { year: number; month: number }[] | undefined,
   rowKey: (row: { year: number; month: number }) => string = () => "",
+  // salesMonthly는 "전년 누계"를 month=0으로 저장하므로 0을 허용해야 한다 — 그 외 섹션은 기존대로 1~12.
+  minMonth: 0 | 1 = 1,
 ): string[] {
   const errors: string[] = [];
   const seen = new Map<string, number>();
@@ -456,8 +458,8 @@ function validateMonthlyRows(
     if (!Number.isInteger(row.year) || row.year < 2000 || row.year > 2100) {
       errors.push(`${label} ${rowNo}번째 행: 연도(${row.year})는 2000~2100 사이의 정수여야 합니다.`);
     }
-    if (!Number.isInteger(row.month) || row.month < 1 || row.month > 12) {
-      errors.push(`${label} ${rowNo}번째 행: 월(${row.month})은 1~12 사이의 정수여야 합니다.`);
+    if (!Number.isInteger(row.month) || row.month < minMonth || row.month > 12) {
+      errors.push(`${label} ${rowNo}번째 행: 월(${row.month})은 ${minMonth}~12 사이의 정수여야 합니다.`);
       return;
     }
     const key = `${rowKey(row)}-${row.year}-${row.month}`;
@@ -662,7 +664,7 @@ router.put("/projectdetail", requireAdmin, async (req, res) => {
       : []),
     ...(!lockedSections.has("cashflow") ? validateMonthlyRows("월별 자금", body.cashflow) : []),
     ...(!lockedSections.has("cogsMonthly") ? validateMonthlyRows("월별 매출원가", body.cogsMonthly) : []),
-    ...(!lockedSections.has("salesMonthly") ? validateMonthlyRows("월별 매출", body.salesMonthly) : []),
+    ...(!lockedSections.has("salesMonthly") ? validateMonthlyRows("월별 매출", body.salesMonthly, () => "", 0) : []),
   ];
   if (monthlyErrors.length > 0) {
     res.status(400).json({ error: monthlyErrors.join(" ") });

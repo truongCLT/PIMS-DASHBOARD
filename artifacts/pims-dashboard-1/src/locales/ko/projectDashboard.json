@@ -14,5 +14,10 @@
   "constructionPeriod": "공사기간",
   "constructionScale": "공사규모",
   "downloadTemplateTooltip": "현재 데이터가 담긴 Excel 양식을 내려받아 수정 후 업로드하세요.",
-  "uploadTemplateTooltip": "다운로드한 양식에 데이터를 입력해 업로드하면 전체 데이터가 교체됩니다."
+  "uploadTemplateTooltip": "다운로드한 양식에 데이터를 입력해 업로드하면 전체 데이터가 교체됩니다.",
+  "sitePhotoTitle": "현장 사진",
+  "constructionInfoTitle": "공사 정보",
+  "contractInfoTitle": "계약 정보",
+  "contractExchangeRateLabel": "계약환율",
+  "exchangeRateLoading": "조회 중..."
 }

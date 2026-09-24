@@ -27,6 +27,7 @@
   "salesTooltipLine": "Doanh thu ({{label}}): {{value}}",
   "annualCumulativeShort": "Lũy kế năm",
   "overallCumulativeLabel": "Lũy kế toàn dự án",
+  "overallCumulativeNote": "* Lũy kế toàn dự án = Lũy kế trong năm + thực tế các năm trước. Số này sẽ giống Lũy kế trong năm cho đến khi bạn nhập \"Lũy kế năm trước\" ở tab Data Entry.",
 
   "statusCategoryHeader": "Phân loại",
   "statusColumnHeader": "Trạng thái",
@@ -37,6 +38,19 @@
   "costTitle": "Chi phí (Lũy kế thực hiện)",
   "executionRateLabel": "Tỷ lệ thực hiện",
 
+  "statusRuleTitle": "Tiêu chí đánh giá",
+  "statusRuleProgressGreen": "Lũy kế thực tế toàn bộ >= lũy kế kế hoạch toàn bộ",
+  "statusRuleProgressYellow": "Lũy kế thực tế toàn bộ >= lũy kế kế hoạch toàn bộ, nhưng thực tế tháng này < kế hoạch tháng này",
+  "statusRuleProgressRed": "Lũy kế thực tế toàn bộ < lũy kế kế hoạch toàn bộ",
+  "statusRuleRevenueGreen": "Lũy kế thực tế trong năm >= lũy kế kế hoạch trong năm",
+  "statusRuleRevenueYellow": "Lũy kế thực tế trong năm >= lũy kế kế hoạch trong năm, nhưng thực tế tháng này < kế hoạch tháng này",
+  "statusRuleRevenueRed": "Lũy kế thực tế trong năm < lũy kế kế hoạch trong năm",
+  "statusRuleCostGreen": "Tổng chi phí lệch trong phạm vi 2% so với kế hoạch",
+  "statusRuleCostYellow": "Từ 3 hạng mục trở lên lệch 2%–5% so với kế hoạch",
+  "statusRuleCostRed": "Có ít nhất 1 hạng mục vượt quá 5% so với kế hoạch",
+  "statusRuleFundsGreen": "Không có công nợ phải thu",
+  "statusRuleFundsYellow": "Công nợ phải thu từ 0 đến 1 tỷ VND",
+  "statusRuleFundsRed": "Công nợ phải thu từ 1 tỷ VND trở lên",
   "fundsSyncNote": "* Giống với dòng tiền trên Bảng điều hành quản trị (bao gồm cả xem chi tiết)",
   "cumulativeSalesLabel": "Doanh thu lũy kế",
   "cumulativeConfirmedLabel": "Tiến độ xác nhận lũy kế",
@@ -44,5 +58,6 @@
   "receivableLabel": "Phải thu (Công nợ)",
   "collectionRateLabel": "Tỷ lệ thu tiền (Thu tiền / Tiến độ xác nhận lũy kế)",
   "fundsForecastNote": "* Hiển thị kế hoạch, dự báo giống như doanh thu",
-  "fundsDetailNote": "* Bảng xem chi tiết bổ sung doanh thu, xác nhận, thu tiền và công nợ"
+  "fundsDetailNote": "* Bảng xem chi tiết bổ sung doanh thu, xác nhận, thu tiền và công nợ",
+  "fundsConfirmedSameAsRevenueNote": "* Tiến độ xác nhận lũy kế hiện đang dùng chung số với Doanh thu lũy kế, vì chưa có dữ liệu xác nhận riêng."
 }

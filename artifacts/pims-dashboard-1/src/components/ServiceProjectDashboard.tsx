@@ -12,7 +12,7 @@ import { ProjectDataEntryTab } from "./ProjectDataEntryTab";
 import { PimsvinaSyncPreviewModal, type PimsvinaPreviewData } from "./PimsvinaSyncPreviewModal";
 import { useProjectDetail, getGetProjectdetailQueryKey } from "../lib/projectDetailData";
 import { useAdminAuth, readAdminToken } from "../lib/adminAuth";
-import { DisplayUnitProvider, DEFAULT_EXCHANGE_RATES, formatMoney, moneyUnitLabel, convertVndToKUsdAmount } from "../lib/displayUnit";
+import { DisplayUnitProvider, DEFAULT_EXCHANGE_RATES, formatMoney, formatVnd, moneyUnitLabel } from "../lib/displayUnit";
 import { useDashboardFilters } from "../lib/dashboardFilters";
 import { chartTheme } from "../lib/chartTheme";
 import { cardStyle, sectionTitle, emptyNote, INK_NAVY, INK_BODY, INK_MUTED, CARD_BORDER, POINT_BLUE, TABLE_HEADER_BG, MUTED_HINT, SUCCESS_GREEN, DISABLED_GRAY } from "../lib/uiTokens";
@@ -187,18 +187,15 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
   };
 
   // 도급액 — 개요 입력값 우선, 없으면 원가율 데이터(execution 우선, 없으면 bidding)의 도급액 사용.
-  // overview/execution은 VND 원본 그대로 저장되고 bidding은 천 USD로 저장되어 단위가 서로 다르므로,
-  // 이 화면(차트/비율 계산 등 천 USD 기준 다른 값들과 함께 쓰임) 전체에서 일관되게 쓸 수 있도록 여기서
-  // 미리 천 USD 기준으로 정규화한다.
+  // overview/execution은 VND 원본 그대로 저장되고 bidding만 천 USD로 저장되어 단위가 서로 다르다.
+  // (버그 수정: 예전에는 VND 원본을 convertVndToKUsdAmount(siteRates)로 천 USD로 바꾼 뒤 헤더에서
+  // formatMoney(...,DEFAULT_EXCHANGE_RATES)로 다시 VND로 되돌렸는데, 두 변환에 쓰는 환율표가 서로 달라
+  // (siteRates vs DEFAULT_EXCHANGE_RATES) 왕복 과정에서 금액이 어긋났다. VND 원본 값은 formatVnd()로
+  // 한 번만 변환하는 ProjectDashboard(시공)와 동일한 방식을 써서 원본 그대로 정확히 표시한다.)
   const ov = detail?.overview;
   const executionContractAmountVnd = detail?.costEstimation.find((e) => e.kind === "execution")?.contractAmount;
   const biddingContractAmountKUsd = detail?.costEstimation.find((e) => e.kind === "bidding")?.contractAmount;
-  const contractAmount =
-    ov?.contractAmount != null
-      ? convertVndToKUsdAmount(ov.contractAmount, siteRates)
-      : executionContractAmountVnd != null
-        ? convertVndToKUsdAmount(executionContractAmountVnd, siteRates)
-        : (biddingContractAmountKUsd ?? null);
+  const contractAmountVnd = ov?.contractAmount ?? executionContractAmountVnd ?? null;
 
   // 수행기간 표시 (YY.MM.DD ~ YY.MM.DD (n개월))
   const periodLabel = (() => {
@@ -396,7 +393,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
         />
       )}
 
-      <ProjectContextBar projectName={siteCode ? `${projectName} [${siteCode}]` : projectName} businessType="용역" client={ov?.client} period={periodLabel} primaryValue={ov?.scope} contractValue={contractAmount != null ? `${formatMoney(contractAmount, currency, unitOn)} ${moneyUnitLabel(currency, unitOn)}` : "-"} referenceMonth={ov?.asOfMonth} isClosed={ov?.isClosed} labels={{ client: t("serviceProjectDashboard:clientLabel"), period: t("serviceProjectDashboard:periodLabel"), primary: t("serviceProjectDashboard:scopeLabel"), contract: t("common:contractAmount"), referenceMonth: t("common:baseMonth"), closed: t("common:closed"), ongoing: t("common:inProgress") }} />
+      <ProjectContextBar projectName={siteCode ? `${projectName} [${siteCode}]` : projectName} businessType="용역" client={ov?.client} period={periodLabel} primaryValue={ov?.scope} contractValue={contractAmountVnd != null ? `${formatVnd(contractAmountVnd, currency, siteRates)} ${currency}` : biddingContractAmountKUsd != null ? `${formatMoney(biddingContractAmountKUsd, currency, unitOn)} ${moneyUnitLabel(currency, unitOn)}` : "-"} referenceMonth={ov?.asOfMonth} isClosed={ov?.isClosed} labels={{ client: t("serviceProjectDashboard:clientLabel"), period: t("serviceProjectDashboard:periodLabel"), primary: t("serviceProjectDashboard:scopeLabel"), contract: t("common:contractAmount"), referenceMonth: t("common:baseMonth"), closed: t("common:closed"), ongoing: t("common:inProgress") }} />
 
       {/* Horizontal tab bar */}
       <div

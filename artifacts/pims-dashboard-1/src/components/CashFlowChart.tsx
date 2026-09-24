@@ -32,6 +32,7 @@ import {
 } from "../lib/dashboardFilters";
 import { chartTheme } from "../lib/chartTheme";
 import { emptyNote, ACHIEVE_RED, INK_MUTED } from "../lib/uiTokens";
+import { maxSelectableMonth } from "../lib/monthRange";
 
 type TFunc = ReturnType<typeof useTranslation>["t"];
 
@@ -152,7 +153,7 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
   const config = getScopeConfig(scope, t);
   const filters = useDashboardFilters();
   const settingsQuery = useGetMgmtreportSettings();
-  const referenceMonth = settingsQuery.data?.month ?? new Date().getMonth() + 1;
+  const referenceMonth = settingsQuery.data?.month ?? maxSelectableMonth();
   const { from, to } = resolveMonthWindow(filters.startYm, filters.endYm, referenceMonth);
   const emptyRange = from > to;
   const projectSelected = filters.project !== "All";

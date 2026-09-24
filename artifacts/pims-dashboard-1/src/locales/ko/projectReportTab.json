@@ -27,6 +27,7 @@
   "salesTooltipLine": "매출({{label}}): {{value}}",
   "annualCumulativeShort": "연 누계",
   "overallCumulativeLabel": "전체 누계",
+  "overallCumulativeNote": "※ 전체 누계 = 연 누계 + 이전 연도 실적. Data Entry 탭 \"전년 누계\"를 입력하지 않았다면 연 누계와 같은 값으로 보이는 것이 정상입니다.",
 
   "statusCategoryHeader": "구분",
   "statusColumnHeader": "상태",
@@ -37,6 +38,19 @@
   "costTitle": "원가 (집행누계)",
   "executionRateLabel": "집행률",
 
+  "statusRuleTitle": "판정 기준",
+  "statusRuleProgressGreen": "전체 누계 실적 >= 전체 누계 계획",
+  "statusRuleProgressYellow": "전체 누계 실적 >= 전체 누계 계획, 월 실적 < 월 계획",
+  "statusRuleProgressRed": "전체 누계 실적 < 전체 누계 계획",
+  "statusRuleRevenueGreen": "연 누계 실적 >= 연 누계 계획",
+  "statusRuleRevenueYellow": "연 누계 실적 >= 연 누계 계획, 월 실적 < 월 계획",
+  "statusRuleRevenueRed": "연 누계 실적 < 연 누계 계획",
+  "statusRuleCostGreen": "총 원가 계획 대비 2% 이내 이격",
+  "statusRuleCostYellow": "3개 이상 계획 대비 2%~5% 이내",
+  "statusRuleCostRed": "1개라도 계획 대비 5% 초과",
+  "statusRuleFundsGreen": "채권 없음",
+  "statusRuleFundsYellow": "채권 0~10억원",
+  "statusRuleFundsRed": "채권 10억원 이상",
   "fundsSyncNote": "※ 경영현황판 자금수지 (상세보기 포함)와 동일하게",
   "cumulativeSalesLabel": "누계 매출",
   "cumulativeConfirmedLabel": "누계 기성 (확정)",
@@ -44,5 +58,6 @@
   "receivableLabel": "미수금 (채권)",
   "collectionRateLabel": "수금률 (수금 / 누계 기성)",
   "fundsForecastNote": "※ 매출처럼 계획, 전망 표시",
-  "fundsDetailNote": "※ 상세보기 표는 매출, 인정, 수금 채권 추가"
+  "fundsDetailNote": "※ 상세보기 표는 매출, 인정, 수금 채권 추가",
+  "fundsConfirmedSameAsRevenueNote": "※ 누계 기성(확정)은 현재 별도 데이터가 없어 누계 매출과 동일한 값을 사용합니다."
 }

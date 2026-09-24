@@ -223,6 +223,7 @@ function NumInput({
   max,
   step = "any",
   roundDisplay,
+  hideZero = true,
   "data-row": dataRow,
   "data-col": dataCol,
 }: {
@@ -233,9 +234,14 @@ function NumInput({
   step?: number | "any";
   /** 표시만 이 자릿수로 반올림(저장값은 그대로 유지, 입력을 직접 수정할 때만 값이 바뀜) */
   roundDisplay?: number;
+  /** 값이 0일 때 "0" 대신 빈칸으로 표시(저장값은 그대로 0 유지) — 기본 true */
+  hideZero?: boolean;
   "data-row"?: string | number;
   "data-col"?: string | number;
 }) {
+  const [editing, setEditing] = React.useState(false);
+  const [rawStr, setRawStr] = React.useState("");
+
   const normalize = (raw: string) => {
     if (raw === "") {
       onChange(null);
@@ -247,8 +253,14 @@ function NumInput({
     onChange(Math.min(max ?? Infinity, Math.max(min ?? -Infinity, stepped)));
   };
 
-  const displayValue =
-    value != null && roundDisplay != null ? Number(value.toFixed(roundDisplay)) : (value ?? "");
+  const roundedValue =
+    value != null && roundDisplay != null ? Number(value.toFixed(roundDisplay)) : (value ?? null);
+
+  const displayValue = editing
+    ? rawStr
+    : roundedValue != null && !(hideZero && roundedValue === 0)
+      ? roundedValue
+      : "";
 
   return (
     <input
@@ -259,17 +271,34 @@ function NumInput({
       value={displayValue}
       data-row={dataRow}
       data-col={dataCol}
-      onChange={(e) => normalize(e.target.value)}
+      onFocus={() => {
+        setRawStr(roundedValue == null ? "" : String(roundedValue));
+        setEditing(true);
+      }}
+      onChange={(e) => {
+        setRawStr(e.target.value);
+        normalize(e.target.value);
+      }}
+      onBlur={() => setEditing(false)}
       onWheel={(e) => (e.target as HTMLElement).blur()}
       style={{ ...inputStyle, textAlign: "right" }}
     />
   );
 }
 
+// 누계 계획(planCumPct)과 누계 실적(actualCumPct) 모두, 연월 순서로 월간 값(planPct/actualPct)을
+// 그대로 누적 합산한 것과 수학적으로 동일하다 — PIMSVINA 동기화 공식 자체가
+// "월간 실적 = 이번달 누계 실적 스냅샷 − 지난달 누계 실적 스냅샷" 이므로, 월간 값을 처음부터 다시
+// 더하면 텔레스코핑 합으로 원래 누계 스냅샷이 정확히 재구성된다. 그래서 예전엔 누계 실적을 행마다
+// 따로 입력해야 했는데(자동 계산 없음), 이관 프로젝트처럼 중간에 "이관 이전 누계"를 월간 실적란에
+// 넣어도 그 뒤 달들의 누계 실적에 반영되지 않는 문제가 있었다 — 이제 계획과 동일하게 자동 누적한다.
 export function calculateProgressPlanCumulative(rows: ProjectDetailProgressPoint[]): ProjectDetailProgressPoint[] {
-  let cumulative = 0;
+  let planCumulative = 0;
   let hasPlan = false;
-  const cumulativeByIndex = new Map<number, number | null>();
+  let actualCumulative = 0;
+  let hasActual = false;
+  const planByIndex = new Map<number, number | null>();
+  const actualByIndex = new Map<number, number | null>();
 
   rows
     .map((row, index) => ({ row, index }))
@@ -281,15 +310,22 @@ export function calculateProgressPlanCumulative(rows: ProjectDetailProgressPoint
     )
     .forEach(({ row, index }) => {
       if (row.planPct != null) {
-        cumulative = Math.round((cumulative + row.planPct + Number.EPSILON) * 10) / 10;
+        planCumulative = Math.round((planCumulative + row.planPct + Number.EPSILON) * 10) / 10;
         hasPlan = true;
       }
-      cumulativeByIndex.set(index, hasPlan ? Math.min(100, Math.max(0, cumulative)) : null);
+      planByIndex.set(index, hasPlan ? Math.min(100, Math.max(0, planCumulative)) : null);
+
+      if (row.actualPct != null) {
+        actualCumulative = Math.round((actualCumulative + row.actualPct + Number.EPSILON) * 10) / 10;
+        hasActual = true;
+      }
+      actualByIndex.set(index, hasActual ? Math.min(100, Math.max(0, actualCumulative)) : null);
     });
 
   return rows.map((row, index) => ({
     ...row,
-    planCumPct: cumulativeByIndex.get(index) ?? null,
+    planCumPct: planByIndex.get(index) ?? null,
+    actualCumPct: actualByIndex.get(index) ?? null,
   }));
 }
 
@@ -460,6 +496,8 @@ const EST_KINDS: { kind: "bidding" | "execution" | "completion"; label: string }
 export function ProjectDataEntryTab({ projectName, service = false }: { projectName: string; service?: boolean }) {
   const { t } = useTranslation(["projectDataEntryTab", "common"]);
   const { fmtMoney, fmtVnd, unitLabel } = useMoney();
+  // 읽기전용 요약 셀: 값이 0이면 "0" 대신 빈칸으로 표시 (저장값 자체는 그대로 0 유지)
+  const fmtVndOrBlank = (v: number | null | undefined) => (v === 0 ? "" : fmtVnd(v));
   const { detail, isLoading } = useProjectDetail(projectName);
   const queryClient = useQueryClient();
   const mutation = usePutProjectdetail();
@@ -1190,6 +1228,13 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
     </div>
   );
 
+  // 수기 입력 행 (전년 누계 등) — month=0인 행들. year/month를 자유롭게 입력할 수 있으므로 선택된
+  // 연도와 무관하게 전부 보여준다. salesMonthly 배열의 실제 인덱스를 보존해야 updateAt/removeAt이
+  // 올바른 행을 가리킨다.
+  const manualSalesRows = salesMonthly
+    .map((row, i) => ({ row, i }))
+    .filter(({ row }) => row.month === 0);
+
   // 메인 경영현황판 Excel의 Site별 월 매출을 기본값으로 사용하는 월별 입력표.
   const salesMonthlyCard = (
     <div style={cardStyle}>
@@ -1225,15 +1270,65 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
               <th style={{ ...th, width: "14%" }}>{t("projectDataEntryTab:monthColumn")}</th>
               <th style={th}>{t("projectDataEntryTab:salesPlan")}</th>
               <th style={th}>{t("projectDataEntryTab:salesActual")}</th>
+              <th style={{ ...th, width: "36px" }}></th>
             </tr>
           </thead>
           <tbody>
+            {/* 수기 입력 행 (전년 누계 등) — 자동 업로드 기능 완성 전까지, 연/월/계획/실적을 모두 직접
+                입력·수정하는 행. month=0이면 "해당 연도 이전 누계"라는 관례로 쓴다(강제는 아님). */}
+            {manualSalesRows.map(({ row, i }) => (
+              <tr key={`manual-${i}`}>
+                <td style={tdCell}>
+                  <NumInput
+                    value={row.year}
+                    onChange={(v) => updateAt(setSalesMonthly, i, { year: v ?? row.year })}
+                    min={2000}
+                    max={2100}
+                    step={1}
+                    hideZero={false}
+                    data-row={i}
+                    data-col={0}
+                  />
+                </td>
+                <td style={tdCell}>
+                  <NumInput
+                    value={row.month}
+                    onChange={(v) => updateAt(setSalesMonthly, i, { month: v ?? 0 })}
+                    min={0}
+                    max={12}
+                    step={1}
+                    hideZero={false}
+                    data-row={i}
+                    data-col={1}
+                  />
+                </td>
+                <td style={tdCell}>
+                  <VndInput
+                    valueKUsd={row.plan}
+                    onChange={(value) => updateAt(setSalesMonthly, i, { plan: value })}
+                    data-row={i}
+                    data-col={2}
+                  />
+                </td>
+                <td style={tdCell}>
+                  <VndInput
+                    valueKUsd={row.actual}
+                    onChange={(value) => updateAt(setSalesMonthly, i, { actual: value })}
+                    data-row={i}
+                    data-col={3}
+                  />
+                </td>
+                <td style={{ ...tdCell, textAlign: "center" }}>
+                  <DelBtn onClick={() => removeAt(setSalesMonthly, i)} />
+                </td>
+              </tr>
+            ))}
             {Array.from({ length: 12 }, (_, index) => index + 1).map((month, rowIndex) => (
               <tr key={month}>
-                <td style={{ ...tdCell, textAlign: "center", color: INK_BODY }}>
+                <td style={{ ...tdCell, textAlign: "center", color: INK_BODY, fontSize: "12px" }}>
                   {selectedSalesYear}
                 </td>
-                <td style={{ ...tdCell, textAlign: "center", color: INK_BODY }}>
+                <td style={{ ...tdCell, textAlign: "center", color: INK_BODY, fontSize: "12px" }}>
                   {month}
                 </td>
                 <td style={tdCell}>
@@ -1242,7 +1337,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                     onChange={(value) =>
                       setSalesEntryValue(selectedSalesYear, month, "plan", value)
                     }
-                    data-row={rowIndex}
+                    data-row={manualSalesRows.length + rowIndex}
                     data-col={0}
                   />
                 </td>
@@ -1252,14 +1347,26 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                     onChange={(value) =>
                       setSalesEntryValue(selectedSalesYear, month, "actual", value)
                     }
-                    data-row={rowIndex}
+                    data-row={manualSalesRows.length + rowIndex}
                     data-col={1}
                   />
                 </td>
+                <td style={tdCell}></td>
               </tr>
             ))}
           </tbody>
         </table>
+      </div>
+      <button
+        style={addBtn}
+        onClick={() =>
+          setSalesMonthly((rows) => [...rows, { year: selectedSalesYear, month: 0, plan: null, actual: null }])
+        }
+      >
+        <Plus size={12} /> {t("projectDataEntryTab:addPriorYearCumulative")}
+      </button>
+      <div style={{ fontSize: "12px", color: INK_MUTED, marginTop: "4px" }}>
+        {t("projectDataEntryTab:priorYearCumulativeNote")}
       </div>
       <div style={{ fontSize: "12px", color: INK_MUTED, marginTop: "6px" }}>
         {t("projectDataEntryTab:salesMonthlyNote")}
@@ -1414,7 +1521,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
           <VndRawInput valueVnd={monthlyPlanValue} onChange={(v) => setMonthlyBudgetPlan(item, v)} data-row={blockIndex * 5 + dataCol} data-col={1} />
         </td>
       ) : (
-        <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: bold ? 700 : undefined }}>{fmtVnd(monthlyActualValue)}</td>
+        <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: bold ? 700 : undefined }}>{fmtVndOrBlank(monthlyActualValue)}</td>
       );
     const cumulativeCell = (item: string, cumPlanValue: number | null, cumActualValue: number | null, dataCol: number, bold = false) =>
       mode === "plan" ? (
@@ -1422,7 +1529,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
           <VndRawInput valueVnd={cumPlanValue} onChange={(v) => setPlanAmount(item, v)} data-row={blockIndex * 5 + dataCol} data-col={2} />
         </td>
       ) : (
-        <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: bold ? 700 : undefined }}>{fmtVnd(cumActualValue)}</td>
+        <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: bold ? 700 : undefined }}>{fmtVndOrBlank(cumActualValue)}</td>
       );
     return (
     <table
@@ -1467,9 +1574,9 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
         </tr>
         <tr>
           <td style={{ ...readOnlyCell, textAlign: "center" }} colSpan={2}>{t("projectDataEntryTab:subtotal")}</td>
-          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtVnd(directBudget)}</td>
-          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtVnd(mode === "plan" ? directMonthlyPlan : directMonthlyActual)}</td>
-          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtVnd(mode === "plan" ? directCumPlan : directActual)}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtVndOrBlank(directBudget)}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtVndOrBlank(mode === "plan" ? directMonthlyPlan : directMonthlyActual)}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtVndOrBlank(mode === "plan" ? directCumPlan : directActual)}</td>
         </tr>
         <tr>
           <td style={readOnlyCell}>Indirect cost</td>
@@ -1480,9 +1587,9 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
         </tr>
         <tr>
           <td style={{ ...readOnlyCell, textAlign: "center" }} colSpan={2}>{t("projectDataEntryTab:subtotal")}</td>
-          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtVnd(indirectBudget)}</td>
-          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtVnd(mode === "plan" ? expense2MonthlyPlan : expense2MonthlyActual)}</td>
-          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtVnd(mode === "plan" ? expense2CumPlan : expense2Actual)}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtVndOrBlank(indirectBudget)}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtVndOrBlank(mode === "plan" ? expense2MonthlyPlan : expense2MonthlyActual)}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtVndOrBlank(mode === "plan" ? expense2CumPlan : expense2Actual)}</td>
         </tr>
         <tr>
           <td style={readOnlyCell}>Contingency</td>
@@ -1493,15 +1600,15 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
         </tr>
         <tr>
           <td style={{ ...readOnlyCell, textAlign: "center" }} colSpan={2}>{t("projectDataEntryTab:subtotal")}</td>
-          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtVnd(contingencyBudget)}</td>
-          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtVnd(mode === "plan" ? contingencyMonthlyPlan : contingencyMonthlyActual)}</td>
-          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtVnd(mode === "plan" ? contingencyCumPlan : contingencyActual)}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtVndOrBlank(contingencyBudget)}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtVndOrBlank(mode === "plan" ? contingencyMonthlyPlan : contingencyMonthlyActual)}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtVndOrBlank(mode === "plan" ? contingencyCumPlan : contingencyActual)}</td>
         </tr>
         <tr>
           <td style={{ ...readOnlyCell, textAlign: "center", fontWeight: 700 }} colSpan={2}>{t("common:total")}</td>
-          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtVnd(totalBudget)}</td>
-          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtVnd(mode === "plan" ? totalMonthlyPlan : totalMonthlyActual)}</td>
-          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtVnd(mode === "plan" ? totalCumPlan : totalActual)}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtVndOrBlank(totalBudget)}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtVndOrBlank(mode === "plan" ? totalMonthlyPlan : totalMonthlyActual)}</td>
+          <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: 700 }}>{fmtVndOrBlank(mode === "plan" ? totalCumPlan : totalActual)}</td>
         </tr>
       </tbody>
     </table>
@@ -1812,7 +1919,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                 <td style={tdCell}>
                   <input
                     type="number"
-                    value={p.planCumPct ?? ""}
+                    value={p.planCumPct ? p.planCumPct : ""}
                     readOnly
                     aria-label={t("projectDataEntryTab:cumulativePlanPercent")}
                     data-row={i}
@@ -1989,10 +2096,10 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                         </td>,
                       ])}
                       <td style={{ ...tdCell, textAlign: "right", padding: "5px 6px", fontSize: "13px", fontWeight: 700, color: INK_NAVY, backgroundColor: TABLE_HEADER_BG }}>
-                        {fmtVnd(totalPlan)}
+                        {fmtVndOrBlank(totalPlan)}
                       </td>
                       <td style={{ ...tdCell, textAlign: "right", padding: "5px 6px", fontSize: "13px", fontWeight: 700, color: INK_NAVY, backgroundColor: TABLE_HEADER_BG }}>
-                        {fmtVnd(totalActual)}
+                        {fmtVndOrBlank(totalActual)}
                       </td>
                       <td style={tdCell}>
                         <VndInput
@@ -2196,14 +2303,14 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                       {isCompletion || isExecution ? (
                         // Execution/Completion đều đồng bộ từ PIMSVINA, lưu ĐÚNG số VND gốc (không quy
                         // đổi kUSD) — dùng fmtVnd() thay vì fmtMoney() để hiển thị đúng.
-                        <span style={{ fontSize: "13px", color: INK_MUTED }}>{fmtVnd(contractAmount)}</span>
+                        <span style={{ fontSize: "13px", color: INK_MUTED }}>{fmtVndOrBlank(contractAmount)}</span>
                       ) : (
                         <VndInput forceFullAmount valueKUsd={row.contractAmount} onChange={(v) => (i >= 0 ? updateAt(setCostEstimation, i, { contractAmount: v }) : setCostEstimation((rows) => [...rows, { kind: k.kind, contractAmount: v, costAmount: null, year: null, month: null }]))} data-row={0} data-col={0} />
                       )}
                     </td>
                     <td style={{ ...tdCell, textAlign: "right" }}>
                       {isCompletion || isExecution ? (
-                        <span style={{ fontSize: "13px", color: INK_MUTED }}>{fmtVnd(costAmount)}</span>
+                        <span style={{ fontSize: "13px", color: INK_MUTED }}>{fmtVndOrBlank(costAmount)}</span>
                       ) : (
                         <VndInput forceFullAmount valueKUsd={row.costAmount} onChange={(v) => (i >= 0 ? updateAt(setCostEstimation, i, { costAmount: v }) : setCostEstimation((rows) => [...rows, { kind: k.kind, contractAmount: null, costAmount: v, year: null, month: null }]))} data-row={0} data-col={1} />
                       )}
@@ -2422,11 +2529,11 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                 {/* budget/executedBudget/resolved/thisMonth/accum lưu ĐÚNG số VND gốc (không quy đổi
                     kUSD) — dùng fmtVnd() thay vì fmtMoney() để hiển thị đúng, mặc định VND, tự chia
                     theo tỷ giá khi chọn USD/KRW. */}
-                <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtVnd(o.budget)}</td>
-                <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtVnd(o.executedBudget)}</td>
-                <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtVnd(o.resolved)}</td>
-                <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtVnd(o.thisMonth)}</td>
-                <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtVnd(o.accum)}</td>
+                <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtVndOrBlank(o.budget)}</td>
+                <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtVndOrBlank(o.executedBudget)}</td>
+                <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtVndOrBlank(o.resolved)}</td>
+                <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtVndOrBlank(o.thisMonth)}</td>
+                <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtVndOrBlank(o.accum)}</td>
               </tr>
             ))}
           </tbody>

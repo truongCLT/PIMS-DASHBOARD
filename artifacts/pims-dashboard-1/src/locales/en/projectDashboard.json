@@ -14,5 +14,10 @@
   "constructionPeriod": "Construction Period",
   "constructionScale": "Construction Scale",
   "downloadTemplateTooltip": "Download an Excel template containing the current data, edit it, and upload it.",
-  "uploadTemplateTooltip": "Enter data into the downloaded template and upload it to replace all data."
+  "uploadTemplateTooltip": "Enter data into the downloaded template and upload it to replace all data.",
+  "sitePhotoTitle": "Site Photo",
+  "constructionInfoTitle": "Construction Info",
+  "contractInfoTitle": "Contract Info",
+  "contractExchangeRateLabel": "Contract Exchange Rate",
+  "exchangeRateLoading": "Loading..."
 }

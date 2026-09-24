@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { FileDown, Loader2 } from "lucide-react";
 import { Button } from "@workspace/aqua-glass/components/ui/button";
 import { ProjectCommentPanel } from "./ProjectCommentPanel";
@@ -25,6 +26,12 @@ import {
 } from "../lib/uiTokens";
 
 const DASH = "-";
+
+/** 'YYYY-MM-DD...' → 'YYYY-MM-DD' / null·undefined → "-" */
+function fmtDate(d: string | null | undefined): string {
+  if (!d) return DASH;
+  return d.slice(0, 10);
+}
 
 function sumNullable<T>(rows: T[], pick: (row: T) => number | null | undefined) {
   return rows.some((row) => pick(row) != null)
@@ -68,12 +75,13 @@ export function ServiceReportTab({
   referenceYear: number;
   referenceMonth: number;
 }) {
+  const { t } = useTranslation(["serviceReportTab", "projectReportTab", "projectDataEntryTab", "common"]);
   const { detail, isLoading } = useProjectDetail(projectName);
-  const { fmtVnd, unitLabel } = useMoney();
+  const { fmtVnd, fmtMoney, unitLabel } = useMoney();
   const [isExporting, setIsExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
 
-  if (isLoading) return <div style={{ ...cardStyle, padding: "40px", textAlign: "center", color: INK_MUTED }}>불러오는 중...</div>;
+  if (isLoading) return <div style={{ ...cardStyle, padding: "40px", textAlign: "center", color: INK_MUTED }}>{t("common:loading")}</div>;
 
   const overview = detail?.overview;
   const monthIndex = referenceYear * 12 + referenceMonth - 1;
@@ -86,7 +94,9 @@ export function ServiceReportTab({
   const cashRows = detail?.cashflow ?? [];
   const progressRows = detail?.progress ?? [];
   const monthSales = atReference(salesRows);
-  const cumSales = throughReference(salesRows);
+  // Status 상태등 규칙(연 누계 실적 >= 연 누계 계획)은 "연 누계"이지, 이전 연도까지 합친 전체 누계가
+  // 아니다 — 시공 쪽 ProjectReportTab(reportSales)과 동일하게 referenceYear로 먼저 필터링한다.
+  const cumSales = throughReference(salesRows.filter((row) => row.year === referenceYear));
   const monthCash = atReference(cashRows);
   const cumCash = throughReference(cashRows);
   const monthProgress = atReference(progressRows)[0];
@@ -196,20 +206,20 @@ export function ServiceReportTab({
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px", flexWrap: "wrap", padding: "2px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span style={{ fontSize: "14px", fontWeight: 700, color: INK_NAVY }}>용역 당월 보고서</span>
+          <span style={{ fontSize: "14px", fontWeight: 700, color: INK_NAVY }}>{t("serviceReportTab:title")}</span>
           <Button
             type="button"
             size="sm"
             onClick={handleReportExport}
             disabled={isExporting}
-            aria-label={isExporting ? "보고서 PDF 생성 중" : "보고서 PDF 출력"}
+            aria-label={isExporting ? t("projectReportTab:exportAriaGenerating") : t("projectReportTab:exportAriaExport")}
           >
             {isExporting ? (
               <Loader2 aria-hidden="true" className="animate-spin" />
             ) : (
               <FileDown aria-hidden="true" />
             )}
-            {isExporting ? "출력 중..." : "보고서 출력"}
+            {isExporting ? t("projectReportTab:exporting") : t("projectReportTab:exportButton")}
           </Button>
         </div>
         <span style={{ fontSize: "11px", color: INK_MUTED }}>기준월 '{String(referenceYear).slice(2)}.{String(referenceMonth).padStart(2, "0")} · {unitLabel}</span>
@@ -227,12 +237,20 @@ export function ServiceReportTab({
       >
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "8px" }}>
         <div style={cardStyle}>
-          <div style={sectionTitle}>개요</div>
-          <MetricRow label="PJ" value={projectName} strong />
-          <MetricRow label="수행기간 (개월)" value={durationMonths != null ? `${durationMonths}` : DASH} />
-          <MetricRow label="발주처" value={overview?.client ?? DASH} />
-          <MetricRow label="도급금액" value={fmtVnd(overview?.contractAmount)} />
-          <MetricRow label="수금조건" value={contractConditions ?? DASH} />
+          <div style={sectionTitle}>{t("serviceReportTab:overviewTitle")}</div>
+          <MetricRow label={t("serviceReportTab:pjLabel")} value={projectName} strong />
+          <MetricRow label={t("projectDataEntryTab:performanceStartDate")} value={fmtDate(overview?.startDate)} />
+          <MetricRow label={t("projectDataEntryTab:performanceEndDate")} value={fmtDate(overview?.endDate)} />
+          <MetricRow label={t("serviceReportTab:performancePeriodLabel")} value={durationMonths != null ? `${durationMonths}` : DASH} />
+          <MetricRow label={t("serviceReportTab:clientLabel")} value={overview?.client ?? DASH} />
+          <MetricRow label={t("projectDataEntryTab:scopeOfWork")} value={overview?.scope ?? DASH} />
+          <MetricRow label={t("serviceReportTab:contractAmountLabel")} value={fmtVnd(overview?.contractAmount)} />
+          <MetricRow label={t("projectDataEntryTab:baseMonthOfRecord")} value={overview?.asOfMonth ?? DASH} />
+          <MetricRow label={t("serviceReportTab:collectionConditionLabel")} value={contractConditions ?? DASH} />
+          <MetricRow label={t("projectDataEntryTab:annualRevenueTargetVnd")} value={fmtMoney(overview?.revenueAnnualTarget)} />
+          <MetricRow label={t("projectDataEntryTab:cumulativeRevenueActualVnd")} value={fmtMoney(overview?.revenueTotal)} />
+          <MetricRow label={t("serviceReportTab:cashConfirmedLabel")} value={fmtMoney(overview?.cashConfirmed)} />
+          <MetricRow label={t("serviceReportTab:cashCollectionLabel")} value={fmtMoney(overview?.cashCollection)} />
         </div>
 
         <SalesSection
@@ -257,7 +275,7 @@ export function ServiceReportTab({
         />
 
         <div style={cardStyle}>
-          <div style={sectionTitle}>주요 이슈 및 대응방안</div>
+          <div style={sectionTitle}>{t("projectReportTab:issuesTitle")}</div>
           <ProjectCommentPanel projectName={projectName} tab="service" showHeader={false} />
         </div>
       </div>

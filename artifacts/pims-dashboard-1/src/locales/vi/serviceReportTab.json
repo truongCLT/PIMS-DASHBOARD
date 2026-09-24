@@ -1,0 +1,12 @@
+{
+  "title": "Báo cáo tháng dự án dịch vụ",
+  "overviewTitle": "Tổng quan",
+  "pjLabel": "PJ",
+  "performancePeriodLabel": "Thời gian thực hiện (tháng)",
+  "clientLabel": "Chủ đầu tư",
+  "contractAmountLabel": "Giá trị hợp đồng",
+  "collectionConditionLabel": "Điều kiện thu tiền",
+  "cashConfirmedLabel": "Xác nhận thu tiền (A)",
+  "cashCollectionLabel": "Đã thu tiền (B)",
+  "issuesTitle": "Vấn đề chính & phương án xử lý"
+}

@@ -21,6 +21,7 @@ import { ProjectCommentPanel } from "./ProjectCommentPanel";
 import { useProjectDetail } from "../lib/projectDetailData";
 import { getMrCashflowRef } from "../data/mrProjectLinks";
 import { REPORT_YEAR } from "../lib/mgmtreportData";
+import { maxSelectableMonth } from "../lib/monthRange";
 import {
   cardStyle,
   sectionTitle,
@@ -172,7 +173,12 @@ export function ProjectReportTab({
     revenueActuals: revMonths,
   });
   const lastActualIdx = latestActualMonth == null ? -1 : latestActualMonth - 1;
-  const resolvedMonth = selectedMonth ?? latestActualMonth;
+  // 사용자가 고를 수 있는 상한 — 실적이 있는 가장 최근 월(latestActualMonth)이 우선이고,
+  // 그마저 없으면 달력 기준 직전월(maxSelectableMonth)로 제한한다. 당월(마감 전) 실적이
+  // 없는데도 당월을 기준월로 선택하면 계획 데이터가 실적 계산에 섞이는 문제를 방지한다.
+  const maxSelectable = latestActualMonth ?? maxSelectableMonth();
+  const resolvedMonth =
+    selectedMonth != null ? Math.min(selectedMonth, maxSelectable) : latestActualMonth;
   useEffect(() => {
     onResolvedMonthChange(resolvedMonth);
   }, [onResolvedMonthChange, resolvedMonth]);
@@ -470,7 +476,9 @@ export function ProjectReportTab({
             <option value="">
               {t("overviewTab:latestMonth")}{latestMonthLabel ? ` (${latestMonthLabel})` : ""}
             </option>
-            {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+            {/* 실적이 마감되지 않은 월(latestActualMonth 이후)은 선택 목록에서 제외 —
+                계획 데이터가 실적 계산에 섞이는 것을 방지. */}
+            {Array.from({ length: maxSelectable }, (_, i) => i + 1).map((m) => (
               <option key={m} value={m}>
                 {`'${String(REPORT_YEAR).slice(2)}.${String(m).padStart(2, "0")}`}
               </option>

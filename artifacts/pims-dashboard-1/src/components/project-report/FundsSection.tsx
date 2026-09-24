@@ -26,19 +26,18 @@ interface Props {
   cumRev: number;
 }
 
-export function FundsSection({ cashIn, cashOut, contractAmount, cumRev }: Props) {
+export function FundsSection({ cashIn, cashOut, cumRev }: Props) {
   const { t } = useTranslation(["projectReportTab", "overviewTab"]);
-  const { fmtMoney, unitLabel, convertVndToKUsd } = useMoney();
-  // contractAmount đến từ pd_overview, lưu VND gốc — cashIn/cashOut/cumRev đều ở đơn vị 천 USD, nên
-  // phải quy đổi trước khi hiển thị chung bằng fmtMoney() (nếu không sẽ lệch đơn vị hoàn toàn).
-  const contractAmountKUsd = contractAmount != null ? convertVndToKUsd(contractAmount) : null;
+  const { fmtMoney, unitLabel } = useMoney();
 
   const outstanding = Math.max(0, cumRev - cashIn);
   const collectionRate = cumRev > 0 ? (cashIn / cumRev) * 100 : null;
   const hasFundData = cashIn !== 0 || cashOut !== 0;
 
   const items: Array<{ label: string; value: number | null; color: string }> = [
-    { label: t("projectReportTab:cumulativeSalesLabel"), value: contractAmountKUsd, color: chartTheme.neutralGray },
+    // 버그 수정: 이 항목이 "누계 매출"인데 도급액(contractAmountKUsd)을 보여주고 있었다 — 매출 실적 및
+    // 전망 카드의 "전체 누계" 실적과 같은 값(cumRev)을 써야 두 카드의 숫자가 서로 일치한다.
+    { label: t("projectReportTab:cumulativeSalesLabel"), value: cumRev, color: chartTheme.neutralGray },
     { label: t("projectReportTab:cumulativeConfirmedLabel"), value: cumRev, color: chartTheme.neutralGray },
     { label: t("projectReportTab:collectionActualLabel"), value: cashIn, color: chartTheme.balanceNavy },
     { label: t("projectReportTab:receivableLabel"), value: outstanding, color: chartTheme.outflowRed },
@@ -121,6 +120,9 @@ export function FundsSection({ cashIn, cashOut, contractAmount, cumRev }: Props)
           </div>
           <div style={{ fontSize: "11px", color: INK_MUTED }}>
             {t("projectReportTab:fundsDetailNote")}
+          </div>
+          <div style={{ fontSize: "11px", color: INK_MUTED }}>
+            {t("projectReportTab:fundsConfirmedSameAsRevenueNote")}
           </div>
         </div>
       )}

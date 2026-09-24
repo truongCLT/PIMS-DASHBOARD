@@ -149,13 +149,18 @@ function milestoneTooltip(m: ProjectDetail["milestones"][number]): string {
 
 function MilestoneChart({ milestones }: { milestones: ProjectDetail["milestones"] }) {
   const { t } = useTranslation(["constructionProgressTab", "common"]);
-  // 축 범위 계산 (계획/실적 시작~종료 월 전체)
+  const now = new Date();
+  const todayIdx = now.getFullYear() * 12 + now.getMonth();
+
+  // 축 범위 계산 (계획/실적 시작~종료 월 전체) — 종료일 없이 진행중인 실적(시작만 있음)이 있으면
+  // 해당 바가 오늘까지 이어지므로, 축 범위에도 오늘을 포함시켜야 바가 잘리지 않는다.
   const idxs: number[] = [];
   for (const m of milestones) {
     for (const ym of [m.planStart, m.planEnd, m.actualStart, m.actualEnd]) {
       const i = ymToIndex(ym ?? null);
       if (i != null) idxs.push(i);
     }
+    if (m.actualStart && !m.actualEnd) idxs.push(todayIdx);
   }
   const hasBars = idxs.length > 0;
   const minIdx = hasBars ? Math.min(...idxs) : 0;
@@ -164,19 +169,18 @@ function MilestoneChart({ milestones }: { milestones: ProjectDetail["milestones"
   const months = hasBars
     ? Array.from({ length: total }, (_, i) => indexToYmLabel(minIdx + i))
     : [];
-  const now = new Date();
-  const todayIdx = now.getFullYear() * 12 + now.getMonth();
   const todayPos = hasBars && todayIdx >= minIdx && todayIdx <= maxIdx + 1 ? (todayIdx - minIdx + 0.5) / total : null;
 
   const AXIS_LEFT = 150;
   const ROW_H = 36; // 높이 늘려서 날짜 라벨 공간 확보
 
-  const barPos = (start: string | null | undefined, end: string | null | undefined) => {
+  const barPos = (start: string | null | undefined, end: string | null | undefined, extendToTodayIfOpen = false) => {
     const s = ymToIndex(start ?? null);
     const e = ymToIndex(end ?? null);
     if (s == null && e == null) return null;
     const s2 = s ?? e!;
-    const e2 = e ?? s!;
+    // 시작만 있고 종료가 없으면 아직 진행중이라는 뜻 — 실적(Actual) 바는 오늘까지 이어서 그린다.
+    const e2 = e ?? (extendToTodayIfOpen && s != null ? Math.max(todayIdx, s) : s!);
     const left = ((s2 - minIdx) / total) * 100;
     const width = Math.max(((e2 - s2 + 1) / total) * 100, 100 / total / 2);
     return { left, width };
@@ -216,7 +220,7 @@ function MilestoneChart({ milestones }: { milestones: ProjectDetail["milestones"
           )}
           {milestones.map((m, mi) => {
             const plan = barPos(m.planStart, m.planEnd);
-            const actual = barPos(m.actualStart, m.actualEnd);
+            const actual = barPos(m.actualStart, m.actualEnd, true);
             const planLabel = dateRange(m.planStart, m.planEnd);
             const actualLabel = dateRange(m.actualStart, m.actualEnd);
             const tooltip = milestoneTooltip(m);

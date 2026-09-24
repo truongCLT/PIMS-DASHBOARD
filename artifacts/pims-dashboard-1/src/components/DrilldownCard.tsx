@@ -5,7 +5,7 @@ import {
   useListMgmtreportProjects,
 } from "@workspace/api-client-react";
 import { useDashboardData, REPORT_YEAR } from "../lib/mgmtreportData";
-import { lastClosedMonth } from "../lib/monthRange";
+import { maxSelectableMonth } from "../lib/monthRange";
 import { useDashboardFilters, makeConverter, roundSmart } from "../lib/dashboardFilters";
 
 const NAVY = "#1a3a6b";
@@ -54,7 +54,7 @@ export function DrilldownCard() {
   const fmtK = (v: number): string =>
     `${roundSmart(v).toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 1 })} ${unitLabel}`;
 
-  const month = derived?.month ?? Math.max(lastClosedMonth(), 1);
+  const month = derived?.month ?? maxSelectableMonth();
 
   // 1. 수주 실적: cumulative orders received to date (matches OrderStatus card's "Orders received")
   // (derived 값은 이미 선택된 통화·단위로 변환되어 있음)

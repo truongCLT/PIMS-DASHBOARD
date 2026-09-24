@@ -71,13 +71,19 @@ import { selectTargetDivision } from "../lib/projectDivision";
 
 const router: IRouter = Router();
 
+// 당월은 실적(실측)이 아직 마감되지 않은 것으로 간주 — 기준월 기본값/선택 가능 범위는
+// 항상 "직전월"까지로 제한한다 (당월 계획 데이터가 실적 계산에 섞여 들어가는 것을 방지).
+function maxSelectableReferenceMonth(now: Date): number {
+  return Math.max(now.getMonth(), 1); // now.getMonth()는 0-based → 직전월의 1-based 값과 같음
+}
+
 router.get("/mgmtreport/settings", async (req, res) => {
   try {
     const [saved] = await db.select().from(mrSettingsTable).where(eq(mrSettingsTable.id, 1)).limit(1);
     const now = new Date();
     const response = saved
       ? { year: saved.referenceYear, month: saved.referenceMonth }
-      : { year: now.getFullYear(), month: now.getMonth() + 1 };
+      : { year: now.getFullYear(), month: maxSelectableReferenceMonth(now) };
     res.json(response);
   } catch (err) {
     req.log.error({ err }, "failed to load mgmtreport settings");
@@ -93,6 +99,14 @@ router.put("/mgmtreport/settings", requireAdmin, async (req, res) => {
   }
   try {
     const { year, month } = parsed.data;
+    const now = new Date();
+    const isUnclosed =
+      year > now.getFullYear() ||
+      (year === now.getFullYear() && month > maxSelectableReferenceMonth(now));
+    if (isUnclosed) {
+      res.status(400).json({ error: "아직 실적이 마감되지 않은 월입니다. 직전월까지만 기준월로 선택할 수 있습니다." });
+      return;
+    }
     await db
       .insert(mrSettingsTable)
       .values({ id: 1, referenceYear: year, referenceMonth: month, updatedAt: new Date() })

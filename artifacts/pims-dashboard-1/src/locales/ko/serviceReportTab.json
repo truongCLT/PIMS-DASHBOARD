@@ -1,0 +1,12 @@
+{
+  "title": "용역 당월 보고서",
+  "overviewTitle": "개요",
+  "pjLabel": "PJ",
+  "performancePeriodLabel": "수행기간 (개월)",
+  "clientLabel": "발주처",
+  "contractAmountLabel": "도급금액",
+  "collectionConditionLabel": "수금조건",
+  "cashConfirmedLabel": "Cash Confirmed (A)",
+  "cashCollectionLabel": "Cash Collection (B)",
+  "issuesTitle": "주요 이슈 및 대응방안"
+}

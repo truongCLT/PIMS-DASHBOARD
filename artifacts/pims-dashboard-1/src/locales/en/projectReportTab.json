@@ -27,6 +27,7 @@
   "salesTooltipLine": "Revenue ({{label}}): {{value}}",
   "annualCumulativeShort": "Annual Cumulative",
   "overallCumulativeLabel": "Overall Cumulative",
+  "overallCumulativeNote": "* Overall Cumulative = Annual Cumulative + prior years' actuals. It looks the same as Annual Cumulative until you enter \"Prior-Year Cumulative\" in the Data Entry tab.",
 
   "statusCategoryHeader": "Category",
   "statusColumnHeader": "Status",
@@ -37,6 +38,19 @@
   "costTitle": "Cost (Cumulative Execution)",
   "executionRateLabel": "Execution Rate",
 
+  "statusRuleTitle": "Status Criteria",
+  "statusRuleProgressGreen": "Overall cumulative actual ≥ overall cumulative plan",
+  "statusRuleProgressYellow": "Overall cumulative actual ≥ overall cumulative plan, but this month's actual < this month's plan",
+  "statusRuleProgressRed": "Overall cumulative actual < overall cumulative plan",
+  "statusRuleRevenueGreen": "Annual cumulative actual ≥ annual cumulative plan",
+  "statusRuleRevenueYellow": "Annual cumulative actual ≥ annual cumulative plan, but this month's actual < this month's plan",
+  "statusRuleRevenueRed": "Annual cumulative actual < annual cumulative plan",
+  "statusRuleCostGreen": "Total cost within 2% of plan",
+  "statusRuleCostYellow": "3 or more items deviate 2%–5% from plan",
+  "statusRuleCostRed": "Any item exceeds 5% over plan",
+  "statusRuleFundsGreen": "No outstanding receivables",
+  "statusRuleFundsYellow": "Receivables between 0 and 1B VND",
+  "statusRuleFundsRed": "Receivables of 1B VND or more",
   "fundsSyncNote": "* Same as the Management Dashboard's cash flow (including the detail view)",
   "cumulativeSalesLabel": "Cumulative Revenue",
   "cumulativeConfirmedLabel": "Cumulative Confirmed Progress",
@@ -44,5 +58,6 @@
   "receivableLabel": "Receivable (A/R)",
   "collectionRateLabel": "Collection Rate (Collection / Cumulative Confirmed)",
   "fundsForecastNote": "* Displayed with plan/forecast, like revenue",
-  "fundsDetailNote": "* The detail view table adds revenue, confirmed amount, and collection receivable"
+  "fundsDetailNote": "* The detail view table adds revenue, confirmed amount, and collection receivable",
+  "fundsConfirmedSameAsRevenueNote": "* Cumulative Confirmed Progress currently reuses the Cumulative Revenue figure, as no separate confirmed-progress data is tracked yet."
 }

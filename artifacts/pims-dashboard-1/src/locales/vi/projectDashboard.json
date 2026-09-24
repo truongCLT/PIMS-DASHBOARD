@@ -14,5 +14,10 @@
   "constructionPeriod": "Thời gian thi công",
   "constructionScale": "Quy mô công trình",
   "downloadTemplateTooltip": "Tải xuống mẫu Excel chứa dữ liệu hiện tại, chỉnh sửa rồi tải lên.",
-  "uploadTemplateTooltip": "Nhập dữ liệu vào mẫu đã tải xuống và tải lên để thay thế toàn bộ dữ liệu."
+  "uploadTemplateTooltip": "Nhập dữ liệu vào mẫu đã tải xuống và tải lên để thay thế toàn bộ dữ liệu.",
+  "sitePhotoTitle": "Ảnh công trường",
+  "constructionInfoTitle": "Thông tin thi công",
+  "contractInfoTitle": "Thông tin hợp đồng",
+  "contractExchangeRateLabel": "Tỷ giá hợp đồng",
+  "exchangeRateLoading": "Đang tải..."
 }

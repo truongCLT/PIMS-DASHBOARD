@@ -31,11 +31,15 @@ const numberValue = (value: ExcelJS.CellValue): number | null => {
   return Number.isFinite(n) ? n : null;
 };
 
+// ExcelJS는 날짜 셀을 UTC 자정 기준 Date 객체로 돌려준다. getFullYear()/getMonth()/getDate() 같은
+// "로컬 시간" getter를 쓰면 서버 프로세스의 타임존에 따라 하루가 밀리는 버그가 생긴다 (예: UTC보다
+// 서쪽 타임존에서는 UTC 자정이 전날 오후로 해석되어, 12/31 ~ 1/1 경계의 날짜가 엉뚱한 연도로 바뀌고
+// 아래 "대상 연도와 다릅니다" 검증에서 업로드가 실패한다). 반드시 UTC getter로 읽어야 한다.
 const dateValue = (value: ExcelJS.CellValue): string | null => {
   if (value == null || value === "") return null;
   const d = value instanceof Date ? value : new Date(String(value));
   if (Number.isNaN(d.getTime())) return null;
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
 };
 
 export async function parseOrderWorkbook(buffer: Buffer, year: number): Promise<ParsedOrderWorkbook> {
@@ -69,10 +73,14 @@ export async function parseOrderWorkbook(buffer: Buffer, year: number): Promise<
     }
     const planDate = dateValue(ws.getCell(row, 3).value);
     const actualDate = dateValue(ws.getCell(row, 5).value);
-    if (planAmount != null && planDate == null) throw new OrderImportError(`${row}행 계획 금액의 시기가 없습니다.`);
-    if (actualAmount != null && actualDate == null) throw new OrderImportError(`${row}행 실적/전망 금액의 시기가 없습니다.`);
-    if (planDate && !planDate.startsWith(`${year}-`)) throw new OrderImportError(`${row}행 계획 시기가 대상 연도와 다릅니다.`);
-    if (actualDate && !actualDate.startsWith(`${year}-`)) throw new OrderImportError(`${row}행 실적/전망 시기가 대상 연도와 다릅니다.`);
+    if (planAmount != null && planDate == null) {
+      throw new OrderImportError(`${row}행 계획 금액의 시기가 없습니다 (셀 값: "${String(ws.getCell(row, 3).value ?? "")}" — 날짜로 인식되지 않았습니다. Excel 날짜 형식(yyyy-mm-dd)으로 입력해 주세요).`);
+    }
+    if (actualAmount != null && actualDate == null) {
+      throw new OrderImportError(`${row}행 실적/전망 금액의 시기가 없습니다 (셀 값: "${String(ws.getCell(row, 5).value ?? "")}" — 날짜로 인식되지 않았습니다. Excel 날짜 형식(yyyy-mm-dd)으로 입력해 주세요).`);
+    }
+    if (planDate && !planDate.startsWith(`${year}-`)) throw new OrderImportError(`${row}행 계획 시기(${planDate})가 대상 연도(${year})와 다릅니다.`);
+    if (actualDate && !actualDate.startsWith(`${year}-`)) throw new OrderImportError(`${row}행 실적/전망 시기(${actualDate})가 대상 연도(${year})와 다릅니다.`);
     entries.push({ projectName, planAmount, planDate, actualAmount, actualDate });
   }
   if (entries.length === 0) throw new OrderImportError("반영할 프로젝트가 없습니다.");
@@ -206,9 +214,11 @@ export async function buildOrderWorkbook(
     const n = i + 6;
     ws.getCell(n, 1).value = r.projectName;
     ws.getCell(n, 2).value = r.planAmount == null ? null : Number(r.planAmount);
-    ws.getCell(n, 3).value = r.planDate ? new Date(`${r.planDate}T00:00:00`) : null;
+    // "Z" 필수 — 없으면 로컬 타임존 자정으로 해석되어, 서버 타임존이 UTC가 아닐 때 dateValue()가
+    // 다시 읽어들이는 UTC 날짜와 하루 어긋날 수 있다(위 dateValue() 주석 참고).
+    ws.getCell(n, 3).value = r.planDate ? new Date(`${r.planDate}T00:00:00Z`) : null;
     ws.getCell(n, 4).value = r.actualAmount == null ? null : Number(r.actualAmount);
-    ws.getCell(n, 5).value = r.actualDate ? new Date(`${r.actualDate}T00:00:00`) : null;
+    ws.getCell(n, 5).value = r.actualDate ? new Date(`${r.actualDate}T00:00:00Z`) : null;
   });
   const totalRow = rows.length + 6;
   ws.getCell(totalRow, 1).value = "합계";

@@ -363,14 +363,20 @@ export function SalesSection({
         style={{
           borderTop: "1px solid #dfe6ef",
           marginTop: "4px",
-          paddingTop: "5px",
+          paddingTop: "6px",
           display: "flex",
           flexDirection: "column",
-          gap: "3px",
+          gap: "4px",
         }}
       >
         <SalesSummaryRow label={t("projectReportTab:annualCumulativeShort")} summary={annualSummary} fmtMoney={fmtMoney} />
         <SalesSummaryRow label={t("projectReportTab:overallCumulativeLabel")} summary={overallSummary} fmtMoney={fmtMoney} />
+        {/* Overall Cumulative Actual이 Annual Cumulative Actual과 같아 보이는 것은 버그가 아니라, 현장 시작부터
+            올해 이전 실적(전년 누계)을 아직 입력하지 않았을 때 나타나는 정상적인 결과다 — Data Entry 탭
+            "2. Monthly Revenue"의 "+ Add Prior-Year Cumulative"로 입력하면 이 값이 달라진다. */}
+        <div style={{ fontSize: "9px", color: INK_MUTED, marginTop: "1px" }}>
+          {t("projectReportTab:overallCumulativeNote")}
+        </div>
       </div>
     </div>
   );
@@ -390,27 +396,34 @@ function SalesSummaryRow({
     <div
       style={{
         display: "grid",
-        gridTemplateColumns: "44px minmax(0, 1fr) 1px minmax(0, 1fr) 1px minmax(0, 1fr)",
+        gridTemplateColumns: "92px minmax(0, 1fr) 1px minmax(0, 1fr) 1px minmax(0, 1fr)",
         alignItems: "center",
-        columnGap: "6px",
+        columnGap: "7px",
         width: "100%",
-        whiteSpace: "nowrap",
-        fontSize: "9px",
+        fontSize: "10px",
         color: "#52627a",
       }}
     >
-      <span style={{ fontWeight: 700, color: "#1a2d4d" }}>
+      <span
+        style={{
+          fontWeight: 700,
+          color: "#1a2d4d",
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+        }}
+      >
         {label}
       </span>
-      <span style={{ textAlign: "center" }}>
+      <span style={{ textAlign: "center", whiteSpace: "nowrap" }}>
         {t("common:plan")} <strong style={{ color: "#1a2d4d" }}>{fmtMoney(summary.plan)}</strong>
       </span>
       <span style={{ color: "#aab5c4" }}>|</span>
-      <span style={{ textAlign: "center" }}>
+      <span style={{ textAlign: "center", whiteSpace: "nowrap" }}>
         {t("common:actual")} <strong style={{ color: "#1a2d4d" }}>{fmtMoney(summary.actual)}</strong>
       </span>
       <span style={{ color: "#aab5c4" }}>|</span>
-      <span style={{ textAlign: "right" }}>
+      <span style={{ textAlign: "right", whiteSpace: "nowrap" }}>
         {t("common:achievementRate")}{" "}
         <strong style={{ color: chartTheme.rateOrange }}>
           {summary.rate == null ? "-" : `${summary.rate}%`}

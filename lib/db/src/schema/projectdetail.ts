@@ -257,13 +257,14 @@ export const pdSalesMonthlyTable = pgTable(
     fldCode: text("fld_code"), // PIMSVINA site code (FLDCODE)
     siteCode: text("site_code"), // PIMSVINA financial site code (ACNT_FLDCODE)
     year: integer("year").notNull(),
-    month: integer("month").notNull(), // 1..12
+    // 1..12, 0 = "전년 누계"(해당 year 이전 연도들의 누계, 자동 업로드 완성 전까지 수기 입력용 임시값)
+    month: integer("month").notNull(),
     plan: numeric("plan", { precision: 24, scale: 8 }), // 매출 계획 (천 USD)
     actual: numeric("actual", { precision: 24, scale: 8 }), // 매출 실적 (천 USD)
   },
   (t) => [
     uniqueIndex("pd_sales_monthly_uq").on(t.projectName, t.year, t.month),
-    check("pd_sales_month_ck", sql`${t.month} BETWEEN 1 AND 12`),
+    check("pd_sales_month_ck", sql`${t.month} BETWEEN 0 AND 12`),
   ],
 );
 

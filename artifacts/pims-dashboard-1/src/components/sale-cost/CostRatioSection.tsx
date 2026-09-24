@@ -177,7 +177,7 @@ export function CostRatioCard({
                   })
                 : "";
             return (
-              <div key={meta.kind} style={{ textAlign: "center" }}>
+              <div key={meta.kind} style={{ textAlign: "center", width: "170px" }}>
                 <div
                   style={{ fontSize: "12px", color: INK_SECONDARY, marginBottom: "2px" }}
                   title={hoverTitle}

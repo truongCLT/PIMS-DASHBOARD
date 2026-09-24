@@ -49,10 +49,6 @@ function treeLabel(label: string, t: TFn): string {
   return key ? t(key) : label;
 }
 
-function hasSiteNumber(siteCode: string | null | undefined): siteCode is string {
-  return typeof siteCode === "string" && /^SITE\d+$/i.test(siteCode.trim());
-}
-
 function buildTreeData(
   mrProjects: { name: string; siteCode?: string | null; fldCode?: string | null; status?: string; businessType?: "시공" | "용역" | null }[],
 ): TreeItem[] {
@@ -249,8 +245,11 @@ export function Sidebar({
   const { t, i18n } = useTranslation(["sidebar", "common"]);
   const projectsQuery = useListMgmtreportProjects({ year: REPORT_YEAR });
   const treeData = useMemo(() => {
+    // SITE 코드가 없는 프로젝트(메인 Excel 라벨에 "(SITEnn)"이 없는 경우)도 트리에서 보이게 한다 —
+    // 예전에는 hasSiteNumber(p.siteCode)로 걸러져 이런 프로젝트가 메뉴에서 완전히 사라지고
+    // 헤더 드롭다운으로만 찾을 수 있었다.
     const projects = (projectsQuery.data?.projects ?? [])
-      .filter((p) => !p.isGroup && hasSiteNumber(p.siteCode))
+      .filter((p) => !p.isGroup)
       .map((p) => ({ name: p.name, siteCode: p.siteCode, fldCode: (p as { fldCode?: string | null }).fldCode, status: p.status, businessType: p.businessType }));
     return buildTreeData(projects);
   }, [projectsQuery.data]);

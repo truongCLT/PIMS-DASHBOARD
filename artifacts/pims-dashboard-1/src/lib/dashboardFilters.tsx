@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useMemo, useState } from "react";
 import { useGetFxRates, useGetFxRatesHistory } from "@workspace/api-client-react";
-import { lastClosedMonth } from "./monthRange";
+import { maxSelectableMonth } from "./monthRange";
 
 export const REPORT_YEAR = new Date().getFullYear();
 
@@ -217,7 +217,7 @@ export function useDashboardFilters(): DashboardFilterContextValue {
 export function resolveMonthWindow(
   startYm: string,
   endYm: string,
-  referenceMonth = lastClosedMonth(),
+  referenceMonth = maxSelectableMonth(),
 ): { from: number; to: number } {
   const parse = (ym: string): { y: number; m: number } | null => {
     const match = /^(\d{4})-(\d{2})$/.exec(ym);

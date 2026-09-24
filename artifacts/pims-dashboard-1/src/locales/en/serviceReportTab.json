@@ -1,0 +1,12 @@
+{
+  "title": "Service Monthly Report",
+  "overviewTitle": "Overview",
+  "pjLabel": "PJ",
+  "performancePeriodLabel": "Performance Period (Months)",
+  "clientLabel": "Client",
+  "contractAmountLabel": "Contract Amount",
+  "collectionConditionLabel": "Collection Conditions",
+  "cashConfirmedLabel": "Cash Confirmed (A)",
+  "cashCollectionLabel": "Cash Collection (B)",
+  "issuesTitle": "Key Issues & Action Plan"
+}

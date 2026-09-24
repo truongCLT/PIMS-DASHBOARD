@@ -23,6 +23,7 @@ import {
   type PeriodMode,
   type CurrencyCode,
 } from "../lib/dashboardFilters";
+import { maxSelectableMonth } from "../lib/monthRange";
 
 export function DashboardHeader({
   onSelectProject,
@@ -392,7 +393,9 @@ export function DashboardHeader({
             }}
           >
             {settingsQuery.isLoading && <option value="">-</option>}
-            {Array.from({ length: 12 }, (_, index) => index + 1).map((month) => (
+            {/* 당월(및 그 이후)은 실적이 아직 마감되지 않아 선택할 수 없음 — 계획 데이터가
+                실적 계산에 섞이는 것을 방지하기 위해 직전월까지만 선택 가능. */}
+            {Array.from({ length: maxSelectableMonth() }, (_, index) => index + 1).map((month) => (
               <option key={month} value={month}>{month}월</option>
             ))}
           </select>

@@ -19,6 +19,7 @@ import {
   unitLabelOf,
   useDashboardFilters,
 } from "../lib/dashboardFilters";
+import { maxSelectableMonth } from "../lib/monthRange";
 
 export function OrderStatus() {
   const { t } = useTranslation(["orderStatus", "common"]);
@@ -35,7 +36,7 @@ export function OrderStatus() {
   const forecastPct = planTotal ? Math.round((annualForecast / planTotal) * 1000) / 10 : 0;
   const detailParams = {
     year: derived?.year ?? new Date().getFullYear(),
-    referenceMonth: derived?.month ?? new Date().getMonth() + 1,
+    referenceMonth: derived?.month ?? maxSelectableMonth(),
   };
   const detailQuery = useGetOrderDetails(detailParams, {
     query: {
