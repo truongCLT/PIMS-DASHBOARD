@@ -11,6 +11,7 @@ import {
   getListMgmtreportProjectsQueryKey,
   useGetCashflowMonthly,
   getGetCashflowMonthlyQueryKey,
+  getBaseUrl,
 } from "@workspace/api-client-react";
 import type {
   ProjectDetail,
@@ -32,6 +33,12 @@ import { REPORT_YEAR } from "../lib/mgmtreportData";
 import { getMrCashflowRef } from "../data/mrProjectLinks";
 import { cardStyle, sectionTitle, emptyNote, INK_NAVY, INK_BODY, INK_MUTED, POINT_BLUE, TABLE_HEADER_BG, CARD_BORDER, ACHIEVE_RED, SUCCESS_GREEN, ADMIN_NAVY, BORDER_STRONG, BORDER_MID, BORDER_LIGHT, STATUS_CLOSED_BG, STATUS_OPEN_BG, STATUS_CLOSED_TEXT, STATUS_OPEN_TEXT } from "../lib/uiTokens";
 import { chartTheme } from "../lib/chartTheme";
+
+// Raw fetch() calls below bypass the generated client's customFetch (which prepends the
+// configured API base URL to relative paths) — without this, a plain "/api/..." path resolves
+// against the current page origin, which is wrong whenever the dashboard is served from a
+// different origin than the API (e.g. embedded under the ERP's own domain/port).
+const apiUrl = (path: string) => `${getBaseUrl() ?? ""}${path}`;
 
 const th: React.CSSProperties = {
   backgroundColor: TABLE_HEADER_BG,
@@ -744,7 +751,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
         const token = readAdminToken();
         const headers: Record<string, string> = { "Content-Type": "application/json" };
         if (token) headers["Authorization"] = `Bearer ${token}`;
-        const urlRes = await fetch("/api/storage/uploads/request-url", {
+        const urlRes = await fetch(apiUrl("/api/storage/uploads/request-url"), {
           method: "POST",
           headers,
           body: JSON.stringify({ name: file.name, size: file.size, contentType: file.type || "image/jpeg" }),
@@ -805,7 +812,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
     let cancelled = false;
     setClosedSections(new Set());
     setLocksLoaded(false);
-    fetch(`/api/projectdetail/section-locks?projectName=${encodeURIComponent(projectName)}`)
+    fetch(apiUrl(`/api/projectdetail/section-locks?projectName=${encodeURIComponent(projectName)}`))
       .then(async (response) => {
         if (!response.ok) throw new Error();
         return response.json() as Promise<{ closedSections: string[] }>;
@@ -831,7 +838,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
     setClosingSection(section);
     try {
       const token = readAdminToken();
-      const response = await fetch("/api/projectdetail/close", {
+      const response = await fetch(apiUrl("/api/projectdetail/close"), {
         method: "PATCH",
         headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ projectName, section, closed: next }),

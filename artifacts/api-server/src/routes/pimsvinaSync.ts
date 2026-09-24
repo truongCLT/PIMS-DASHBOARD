@@ -963,8 +963,12 @@ export async function applyPimsvinaData(fetched: PimsvinaData) {
     // Estimated Completion Cost Rate: Contract Amount cố định = 100, Cost = REC9 (Gross Profit ratio,
     // vd 18.7) đồng bộ thẳng — UI tự tính Ratio(%) = Contract Amount - Cost (100 - REC9). Dùng chung
     // year/month với execution (cùng site, cùng target_mm_calc) để 2 dòng luôn khớp cùng 1 Base Month.
-    if (item.ratio_pct != null) {
-      const ratioPctStr = String(Number(item.ratio_pct));
+    // PIMSVINA thỉnh thoảng trả ratio_pct bất thường (VD business_budget gần 0 làm phép chia phóng đại
+    // cực lớn), vượt quá numeric(10,4) của ratio_pct/cost_amount (tối đa ~999,999.9999) và làm cả lượt
+    // sync fail hoàn toàn (kể cả các project khác). Bỏ qua giá trị vô lý thay vì để insert throw.
+    const ratioPctNum = item.ratio_pct != null ? Number(item.ratio_pct) : null;
+    if (ratioPctNum != null && Number.isFinite(ratioPctNum) && Math.abs(ratioPctNum) < 100000) {
+      const ratioPctStr = String(ratioPctNum);
       await db
         .insert(pdCostEstimationTable)
         .values({
@@ -987,6 +991,10 @@ export async function applyPimsvinaData(fetched: PimsvinaData) {
           ],
           set: { fldCode, siteCode, contractAmount: "100", costAmount: ratioPctStr, ratioPct: ratioPctStr },
         });
+    } else if (item.ratio_pct != null) {
+      console.warn(
+        `[PIMSVINA Sync] Skipping out-of-range ratio_pct for "${projectName}" (${execYear}-${execMonth}): ${item.ratio_pct}`,
+      );
     }
   }
 
@@ -1061,9 +1069,10 @@ router.post("/sync-pimsvina/preview", requireAdmin, async (_req, res) => {
     res.json({ success: true, data });
   } catch (err: any) {
     console.error("[PIMSVINA Sync Preview Error]:", err);
+    const reason = err.cause?.message ? `${err.message} (${err.cause.message})` : err.message;
     res.status(500).json({
       success: false,
-      error: "PIMSVINA 데이터 조회에 실패했습니다: " + err.message,
+      error: "PIMSVINA 데이터 조회에 실패했습니다: " + reason,
     });
   }
 });
@@ -1086,9 +1095,10 @@ router.post("/sync-pimsvina/confirm", requireAdmin, async (_req, res) => {
     });
   } catch (err: any) {
     console.error("[PIMSVINA Sync Confirm Error]:", err);
+    const reason = err.cause?.message ? `${err.message} (${err.cause.message})` : err.message;
     res.status(500).json({
       success: false,
-      error: "Lỗi đồng bộ dữ liệu PIMSVINA: " + err.message,
+      error: "Lỗi đồng bộ dữ liệu PIMSVINA: " + reason,
     });
   }
 });

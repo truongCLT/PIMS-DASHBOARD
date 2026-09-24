@@ -18,7 +18,6 @@ import { downloadProjectDetailTemplate, parseProjectDetailWorkbook, ExcelParseEr
 import { DisplayUnitProvider, DEFAULT_EXCHANGE_RATES, formatMoney, formatVnd, moneyUnitLabel } from "../lib/displayUnit";
 import { useAdminAuth, readAdminToken } from "../lib/adminAuth";
 import { useDashboardFilters } from "../lib/dashboardFilters";
-import { useAnyProjectLocked } from "../lib/useAnyProjectLocked";
 import { PimsvinaSyncPreviewModal, type PimsvinaPreviewData } from "./PimsvinaSyncPreviewModal";
 import { cardStyle } from "../lib/uiTokens";
 import { ProjectContextBar } from "./ProjectContextBar";
@@ -157,9 +156,6 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
   };
 
   const ov = detail?.overview ?? { contractAmount: null, startDate: null, endDate: null, client: null, scale: null };
-  // Sync 버튼은 이 프로젝트만이 아니라 시스템 전체에 잠긴(closed) 섹션이 하나라도 있으면 비활성화된다
-  // (잠긴 데이터를 자동/수동 PIMSVINA 동기화가 덮어쓰지 않도록).
-  const syncLocked = useAnyProjectLocked();
   const fmtDate = (d: string | null) => (d ? `'${d.slice(2, 4)}.${d.slice(5, 7)}.${d.slice(8, 10)}` : "-");
   const periodLabel =
     ov.startDate && ov.endDate
@@ -247,9 +243,8 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
         {/* Sync PIMSVINA Button for Project View */}
         {isAdmin && (
           <button
-            title={syncLocked ? t("projectDashboard:syncDisabledLockedTooltip") : undefined}
             onClick={async () => {
-              if (syncing || syncLocked) return;
+              if (syncing) return;
               setSyncing(true);
               try {
                 const token = readAdminToken();
@@ -274,22 +269,21 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
                 setSyncing(false);
               }
             }}
-            disabled={syncing || syncLocked}
+            disabled={syncing}
             style={{
               display: "flex",
               alignItems: "center",
               gap: "6px",
-              backgroundColor: syncing || syncLocked ? "#64748b" : "#2563eb",
+              backgroundColor: syncing ? "#64748b" : "#2563eb",
               color: "#fff",
               border: "none",
               borderRadius: "6px",
               padding: "5px 12px",
               fontSize: "12px",
-              cursor: syncing ? "wait" : syncLocked ? "not-allowed" : "pointer",
+              cursor: syncing ? "wait" : "pointer",
               fontWeight: "600",
               boxShadow: "0 1px 3px rgba(0,0,0,0.12)",
               marginLeft: "12px",
-              opacity: syncLocked ? 0.6 : 1,
             }}
           >
             <RefreshCw size={13} style={{ animation: syncing ? "spin 1s linear infinite" : "none" }} />
