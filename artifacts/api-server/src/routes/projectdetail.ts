@@ -704,6 +704,24 @@ router.put("/projectdetail", requireAdmin, async (req, res) => {
           row,
         ]),
       );
+      // pd_cost_estimation의 fldCode/siteCode/ratioPct와 "V_0"(Initial Budget) 계열 3개 필드는 전부
+      // PIMSVINA 동기화 전용이라 Data Entry 화면(및 그 자동 저장)이 애초에 알지도, 보내지도 않는다 —
+      // 아래에서 매번 delete 후 body.costEstimation(이 필드들이 없는 payload)만으로 다시 insert하면
+      // 그때마다 이 필드들이 조용히 NULL로 사라진다(실제로 재현된 버그: 동기화 직후엔 값이 있다가,
+      // Data Entry에서 뭔가 하나만 바꿔도 1초 뒤 자동 저장이 돌면서 다시 사라짐). delete 전에 미리
+      // 읽어 보존해두었다가 insert 시 그대로 복원한다.
+      const existingCostEstimationRows = !lockedSections.has("costEstimation")
+        ? await tx
+            .select()
+            .from(pdCostEstimationTable)
+            .where(eq(pdCostEstimationTable.projectName, projectName))
+        : [];
+      const existingCostEstimationByKey = new Map(
+        existingCostEstimationRows.map((row) => [
+          `${row.kind}|${row.year}|${row.month}`,
+          row,
+        ]),
+      );
       const existingPlanVersions = await tx
         .select()
         .from(pdPlanVersionsTable)
@@ -862,14 +880,25 @@ router.put("/projectdetail", requireAdmin, async (req, res) => {
       }
       if (!lockedSections.has("costEstimation") && body.costEstimation.length > 0) {
         await tx.insert(pdCostEstimationTable).values(
-          body.costEstimation.map((c) => ({
-            projectName,
-            kind: c.kind,
-            contractAmount: str(c.contractAmount),
-            costAmount: str(c.costAmount),
-            year: c.year ?? null,
-            month: c.month ?? null,
-          })),
+          body.costEstimation.map((c) => {
+            const existing = existingCostEstimationByKey.get(
+              `${c.kind}|${c.year ?? null}|${c.month ?? null}`,
+            );
+            return {
+              projectName,
+              kind: c.kind,
+              contractAmount: str(c.contractAmount),
+              costAmount: str(c.costAmount),
+              year: c.year ?? null,
+              month: c.month ?? null,
+              fldCode: existing?.fldCode ?? null,
+              siteCode: existing?.siteCode ?? null,
+              ratioPct: existing?.ratioPct ?? null,
+              initialBusinessBudget: existing?.initialBusinessBudget ?? null,
+              initialContractAmount: existing?.initialContractAmount ?? null,
+              initialGrossProfitRatio: existing?.initialGrossProfitRatio ?? null,
+            };
+          }),
         );
       }
       if (!lockedSections.has("costBudget") && body.costBudget.length > 0) {

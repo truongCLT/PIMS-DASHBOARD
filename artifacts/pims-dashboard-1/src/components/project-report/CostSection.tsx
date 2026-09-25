@@ -44,7 +44,10 @@ export function CostSection({ budgetRows }: Props) {
   const groups: CostGroup[] = [
     {
       label: "Direct Cost",
-      koreanLabel: t("projectDataEntryTab:directCostKo"),
+      // 화면 언어와 무관하게 한국 본사 담당자가 바로 알아볼 수 있도록 원어(한국어) 항목명을 항상
+      // 그대로 병기한다 — locale 파일로 "번역"하면 EN 로케일에서 "Direct Cost"가 그대로 중복 표시되고
+      // (실제 발견된 문제), VI 로케일에서는 정작 한국어 원문이 사라지는 문제가 있었다.
+      koreanLabel: "직접비",
       plan: sumNullable(
         budgetRows.filter((row) => ["외주", "Common", "경비1"].includes(row.item)),
         getPlan,
@@ -56,7 +59,7 @@ export function CostSection({ budgetRows }: Props) {
     },
     {
       label: "Indirect Cost",
-      koreanLabel: t("projectDataEntryTab:indirectCostKo"),
+      koreanLabel: "간접비",
       plan: sumNullable(
         budgetRows.filter((row) => row.item === "경비2"),
         getPlan,
@@ -68,7 +71,7 @@ export function CostSection({ budgetRows }: Props) {
     },
     {
       label: "Contingency",
-      koreanLabel: t("projectDataEntryTab:contingencyKo"),
+      koreanLabel: "예비비",
       plan: sumNullable(
         budgetRows.filter((row) => row.item === "예비비"),
         getPlan,

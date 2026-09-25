@@ -710,6 +710,15 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
     return { year: REPORT_YEAR, month: Math.max(1, actualCutoffMonth) };
   };
   const getOutsourcingActualByItem = () => {
+    // 용역(Service)은 공종(건축/기계/전기/토목/조경) 개념이 없어 외주 탭 행이 전부 "대공종"으로만
+    // 들어온다 — 시공용 트레이드 그룹 매핑(대공종→Common)을 그대로 적용하면 용역의 실제 외주 실적이
+    // 전부 "Common"으로 잘못 들어가고 정작 "외주" 항목은 비어버린다. 용역은 트레이드 구분 없이
+    // outsourcing 탭 전체 합계를 그대로 "Outsourcing" 한 항목에만 반영한다.
+    if (service) {
+      const hasAmount = outsourcing.some((row) => row.accum != null);
+      const total = hasAmount ? outsourcing.reduce((sum, row) => sum + (row.accum ?? 0), 0) : null;
+      return new Map([["Outsourcing", total]]);
+    }
     const totals = new Map<string, number>();
     const hasAmount = new Set<string>();
     outsourcing.forEach((row) => {
@@ -1064,13 +1073,27 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
     toMonthIndex(overview.endDate) ??
     (dataMonthIndexes.length > 0 ? Math.max(...dataMonthIndexes) : projectStartIndex + 11);
   // "3. 공정별 원가 계획/실적"은 계약 시작월(projectStartIndex)부터 보여주면, 실제 착공/원가 데이터가
-  // 한참 뒤에 시작하는 현장은 앞부분에 아무 데이터도 없는 달들이 길게 나온다 — 실제 데이터(공정/매출/원가)가
-  // 있는 가장 이른 달부터만 보여주고, 그보다 앞선 "현장 개설 전" 달은 생략한다(미래 달은 입력 대비 계속
-  // 보여줘야 하므로 projectEndIndex는 그대로 둔다). 데이터가 아직 하나도 없는 신규 현장은 기존대로
-  // 계약 시작월부터 보여준다.
+  // 한참 뒤에 시작하는 현장은 앞부분에 아무 데이터도 없는 달들이 길게 나온다. progress(공정률)는
+  // PIMSVINA 동기화 특성상 실제 활동이 없어도(actualPct=0) 계약 시작 전부터 placeholder 행이 먼저
+  // 생기는 경우가 있어(dataMonthIndexes에 섞이면 trim이 무력화됨), 이 표에 실제로 나오는 원가 항목
+  // (PROCESS_COST_ITEMS)의 costBudgetMonthly 데이터만 기준으로 "실제 원가 데이터가 있는 가장 이른
+  // 달"을 찾는다 — 그보다 앞선 "현장 개설 전" 달은 생략한다(미래 달은 입력 대비 계속 보여줘야 하므로
+  // projectEndIndex는 그대로 둔다). 원가 데이터가 아직 하나도 없는 신규 현장은 기존대로 계약
+  // 시작월부터 보여준다.
+  const processCostItemKeys = PROCESS_COST_ITEMS.flatMap((item) => item.keys);
+  // PIMSVINA 동기화가 실제 활동 없는 달에도 plan=null/actual=0인 "placeholder" 행을 미리 만들어두는
+  // 경우가 있어(공정률 actualPct와 동일한 패턴), 단순히 행이 "있다/없다"만으로는 실제 원가 데이터가
+  // 시작된 달을 구분할 수 없다 — plan이 있거나 actual이 0이 아닌 행만 "실제 데이터"로 인정한다.
+  const costDataMonthIndexes = costBudgetMonthly
+    .filter(
+      (row) =>
+        (processCostItemKeys as readonly string[]).includes(row.item) &&
+        (row.plan != null || (row.actual ?? 0) !== 0),
+    )
+    .map((row) => row.year * 12 + row.month - 1);
   const processCostStartIndex =
-    dataMonthIndexes.length > 0
-      ? Math.max(projectStartIndex, Math.min(...dataMonthIndexes))
+    costDataMonthIndexes.length > 0
+      ? Math.max(projectStartIndex, Math.min(...costDataMonthIndexes))
       : projectStartIndex;
   const processCostMonths = Array.from(
     { length: Math.min(120, Math.max(1, projectEndIndex - processCostStartIndex + 1)) },
@@ -1412,7 +1435,6 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
             <th style={th}>{t("common:year")}</th>
             <th style={th}>{t("projectDataEntryTab:monthColumn")}</th>
             <th style={th}>{t("projectDataEntryTab:acctCogsVnd")}</th>
-            <th style={th}>{t("projectDataEntryTab:wipCogsVnd")}</th>
             <th style={{ ...th, width: "36px" }}></th>
           </tr>
         </thead>
@@ -1422,7 +1444,6 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
               <td style={tdCell}><NumInput value={c.year} onChange={(v) => updateAt(setCogsMonthly, i, { year: v ?? 0 })} data-row={i} data-col={0} /></td>
               <td style={tdCell}><NumInput value={c.month} onChange={(v) => updateAt(setCogsMonthly, i, { month: v ?? 0 })} data-row={i} data-col={1} /></td>
               <td style={tdCell}><VndInput valueKUsd={c.acctCogs} onChange={(v) => updateAt(setCogsMonthly, i, { acctCogs: v })} data-row={i} data-col={2} /></td>
-              <td style={tdCell}><VndInput valueKUsd={c.wipCogs} onChange={(v) => updateAt(setCogsMonthly, i, { wipCogs: v })} data-row={i} data-col={3} /></td>
               <td style={{ ...tdCell, textAlign: "center" }}><DelBtn onClick={() => removeAt(setCogsMonthly, i)} /></td>
             </tr>
           ))}
@@ -1499,28 +1520,37 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       return [...rows, { item, year, month, plan: value, actual: null }];
     });
   };
-  const planAmount = (item: string) => costBudget.find((row) => row.item === item)?.plan ?? null;
-  const setPlanAmount = (item: string, value: number | null) =>
-    setCostBudget((rows) => rows.map((row) => (row.item === item ? { ...row, plan: value } : row)));
+  // "Execution Plan" 표의 Cumulative는 PIMS 소스가 없어 예전엔 별도로 수동 입력해야 했다 — Monthly에
+  // 이미 12개월치를 다 입력해놓고도 Cumulative가 안 채워진다는 혼란을 반복해서 겪었으므로, 선택된
+  // 기준월(selectedExecutionMonth)까지의 Monthly Plan 합계로 자동 계산한다(연초~기준월 누계).
+  const cumPlanFromMonthly = (item: string) => {
+    const { year, month } = selectedExecutionMonth;
+    const rows = costBudgetMonthly.filter(
+      (r) => r.item === item && r.year === year && r.month <= month,
+    );
+    return rows.some((r) => r.plan != null)
+      ? rows.reduce<number>((sum, r) => sum + (r.plan ?? 0), 0)
+      : null;
+  };
   const outsourcingMonthlyPlan = monthlyBudgetAmount("Outsourcing", "plan");
   const outsourcingMonthlyActual = monthlyBudgetAmount("Outsourcing", "actual");
-  const outsourcingCumPlan = planAmount("Outsourcing");
+  const outsourcingCumPlan = cumPlanFromMonthly("Outsourcing");
   const outsourcingActual = actualAmount("Outsourcing");
   const commonMonthlyPlan = monthlyBudgetAmount("Common", "plan");
   const commonMonthlyActual = monthlyBudgetAmount("Common", "actual");
-  const commonCumPlan = planAmount("Common");
+  const commonCumPlan = cumPlanFromMonthly("Common");
   const commonActual = actualAmount("Common");
   const expense1MonthlyPlan = monthlyBudgetAmount("Expense 1", "plan");
   const expense1MonthlyActual = monthlyBudgetAmount("Expense 1", "actual");
-  const expense1CumPlan = planAmount("Expense 1");
+  const expense1CumPlan = cumPlanFromMonthly("Expense 1");
   const expense1Actual = actualAmount("Expense 1");
   const expense2MonthlyPlan = monthlyBudgetAmount("Expense 2", "plan");
   const expense2MonthlyActual = monthlyBudgetAmount("Expense 2", "actual");
-  const expense2CumPlan = planAmount("Expense 2");
+  const expense2CumPlan = cumPlanFromMonthly("Expense 2");
   const expense2Actual = actualAmount("Expense 2");
   const contingencyMonthlyPlan = monthlyBudgetAmount("Contingency", "plan");
   const contingencyMonthlyActual = monthlyBudgetAmount("Contingency", "actual");
-  const contingencyCumPlan = planAmount("Contingency");
+  const contingencyCumPlan = cumPlanFromMonthly("Contingency");
   const contingencyActual = actualAmount("Contingency");
   const sumNullable = (...values: Array<number | null>) =>
     values.some((value) => value != null)
@@ -1534,6 +1564,27 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
   const totalMonthlyActual = sumNullable(directMonthlyActual, expense2MonthlyActual, contingencyMonthlyActual);
   const totalCumPlan = sumNullable(directCumPlan, expense2CumPlan, contingencyCumPlan);
   const totalActual = sumNullable(directActual, expense2Actual, contingencyActual);
+  // "Execution Plan" Cumulative가 화면 표시뿐 아니라 저장값(pd_cost_budget.plan)에도 반영되도록
+  // costBudget 상태에 계산값을 동기화한다 — 이 값을 대시보드 "예산 집행 현황" 위젯이 그대로 읽어간다.
+  useEffect(() => {
+    const computedByItem: Record<string, number | null> = {
+      Outsourcing: outsourcingCumPlan,
+      Common: commonCumPlan,
+      "Expense 1": expense1CumPlan,
+      "Expense 2": expense2CumPlan,
+      Contingency: contingencyCumPlan,
+    };
+    setCostBudget((rows) => {
+      let changed = false;
+      const next = rows.map((row) => {
+        const computed = computedByItem[row.item];
+        if (computed === undefined || computed === row.plan) return row;
+        changed = true;
+        return { ...row, plan: computed };
+      });
+      return changed ? next : rows;
+    });
+  }, [outsourcingCumPlan, commonCumPlan, expense1CumPlan, expense2CumPlan, contingencyCumPlan]);
   const budgetHierarchyBlock = (
     sectionLabel: string,
     blockIndex: number,
@@ -1550,14 +1601,13 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       ) : (
         <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: bold ? 700 : undefined }}>{fmtVndOrBlank(monthlyActualValue)}</td>
       );
-    const cumulativeCell = (item: string, cumPlanValue: number | null, cumActualValue: number | null, dataCol: number, bold = false) =>
-      mode === "plan" ? (
-        <td style={tdCell}>
-          <VndRawInput valueVnd={cumPlanValue} onChange={(v) => setPlanAmount(item, v)} data-row={blockIndex * 5 + dataCol} data-col={2} />
-        </td>
-      ) : (
-        <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: bold ? 700 : undefined }}>{fmtVndOrBlank(cumActualValue)}</td>
-      );
+    // Cumulative Plan은 이제 Monthly Plan(선택된 기준월까지)의 자동 합계라 더 이상 수동 입력이 아니다 —
+    // Cumulative Actual과 동일하게 읽기 전용으로 표시한다.
+    const cumulativeCell = (_item: string, cumPlanValue: number | null, cumActualValue: number | null, _dataCol: number, bold = false) => (
+      <td style={{ ...readOnlyCell, textAlign: "right", fontWeight: bold ? 700 : undefined }}>
+        {fmtVndOrBlank(mode === "plan" ? cumPlanValue : cumActualValue)}
+      </td>
+    );
     return (
     <table
       key={sectionLabel}
@@ -2179,7 +2229,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
               <th style={th}>{t("projectDataEntryTab:performanceEndDate")}</th>
               <th style={th}>{t("projectDataEntryTab:client")}</th>
               <th style={th}>{t("projectDataEntryTab:scopeOfWork")}</th>
-              <th style={th}>{t("projectDataEntryTab:baseMonthOfRecord")}</th>
+              <th style={th}>{t("projectDataEntryTab:paymentTerms")}</th>
             </tr>
           </thead>
           <tbody>
@@ -2202,40 +2252,11 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                 <TextInput value={overview.scope} placeholder={t("projectDataEntryTab:scopePlaceholder")} onChange={(v) => setOverview((o) => ({ ...o, scope: v }))} data-row={0} data-col={2} />
               </td>
               <td style={tdCell}>
-                <MonthInput value={overview.asOfMonth} onChange={(v) => setOverview((o) => ({ ...o, asOfMonth: v }))} />
+                <TextInput value={overview.paymentTerms} placeholder={t("projectDataEntryTab:paymentTerms")} onChange={(v) => setOverview((o) => ({ ...o, paymentTerms: v }))} data-row={0} data-col={3} />
               </td>
             </tr>
           </tbody>
         </table>
-        <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "10px" }}>
-          <thead>
-            <tr>
-              <th style={th}>{t("projectDataEntryTab:annualRevenueTargetVnd")}</th>
-              <th style={th}>{t("projectDataEntryTab:cumulativeRevenueActualVnd")}</th>
-              <th style={th}>Cash Confirmed (A)</th>
-              <th style={th}>Cash Collection (B)</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td style={tdCell}>
-                <VndInput valueKUsd={overview.revenueAnnualTarget} onChange={(v) => setOverview((o) => ({ ...o, revenueAnnualTarget: v }))} data-row={1} data-col={0} />
-              </td>
-              <td style={tdCell}>
-                <VndInput valueKUsd={overview.revenueTotal} onChange={(v) => setOverview((o) => ({ ...o, revenueTotal: v }))} data-row={1} data-col={1} />
-              </td>
-              <td style={tdCell}>
-                <VndInput valueKUsd={overview.cashConfirmed} onChange={(v) => setOverview((o) => ({ ...o, cashConfirmed: v }))} data-row={1} data-col={2} />
-              </td>
-              <td style={tdCell}>
-                <VndInput valueKUsd={overview.cashCollection} onChange={(v) => setOverview((o) => ({ ...o, cashCollection: v }))} data-row={1} data-col={3} />
-              </td>
-            </tr>
-          </tbody>
-        </table>
-        <div style={{ fontSize: "12px", color: INK_MUTED, marginTop: "6px" }}>
-          {t("projectDataEntryTab:overviewCashNote")}
-        </div>
         </div>
       </div>
       )}
@@ -2602,7 +2623,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
               <th style={th}>{t("projectDataEntryTab:cashInVnd")}</th>
               <th style={th}>{t("projectDataEntryTab:cashOutVnd")}</th>
               <th style={th}>{t("projectDataEntryTab:equivalentVnd")}</th>
-              <th style={th}>{t("projectDataEntryTab:confirmedProgressVnd")}</th>
+              {!service && <th style={th}>{t("projectDataEntryTab:confirmedProgressVnd")}</th>}
               <th style={{ ...th, width: "36px" }}></th>
             </tr>
           </thead>
@@ -2614,7 +2635,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                 <td style={tdCell}><VndInput valueKUsd={c.cashIn} onChange={(v) => updateAt(editCashflow, i, { cashIn: v })} data-row={i} data-col={2} /></td>
                 <td style={tdCell}><VndInput valueKUsd={c.cashOut} onChange={(v) => updateAt(editCashflow, i, { cashOut: v })} data-row={i} data-col={3} /></td>
                 <td style={tdCell}><VndInput valueKUsd={c.equivalent} onChange={(v) => updateAt(editCashflow, i, { equivalent: v })} data-row={i} data-col={4} /></td>
-                <td style={tdCell}><VndInput valueKUsd={c.confirmedProgress} onChange={(v) => updateAt(editCashflow, i, { confirmedProgress: v })} data-row={i} data-col={5} /></td>
+                {!service && <td style={tdCell}><VndInput valueKUsd={c.confirmedProgress} onChange={(v) => updateAt(editCashflow, i, { confirmedProgress: v })} data-row={i} data-col={5} /></td>}
                 <td style={{ ...tdCell, textAlign: "center" }}><DelBtn onClick={() => removeAt(editCashflow, i)} /></td>
               </tr>
             ))}

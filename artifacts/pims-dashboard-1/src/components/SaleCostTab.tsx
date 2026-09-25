@@ -78,8 +78,13 @@ export function SaleCostTab({
   // pd salesMonthly가 있으면 전체 기간 사용, 없으면 필터 기간 폴백
   const salesMonthly  = pdDetail?.canonicalSalesMonthly ?? [];
   const pdSalesHasAny = salesMonthly.some((s) => s.plan != null || s.actual != null);
+  // PIMSVINA 동기화가 실제 매출이 없는 달에도 plan=null/actual=0인 placeholder 행을 미리 만들어두는
+  // 경우가 있어(원가 계획/실적 표와 동일한 현상), 그 행들까지 포함해 기간을 잡으면 차트 맨 앞에
+  // 의미 없는 "0" 구간이 길게 나온다 — plan이 있거나 actual이 0이 아닌 행만 실제 데이터로 보고
+  // 기간(첫 달~끝 달)을 잡는다.
+  const salesMonthlyMeaningful = salesMonthly.filter((s) => s.plan != null || (s.actual ?? 0) !== 0);
   const effectivePeriod = buildEffectivePeriod(
-    pdSalesHasAny ? salesMonthly : [],
+    pdSalesHasAny ? (salesMonthlyMeaningful.length > 0 ? salesMonthlyMeaningful : salesMonthly) : [],
     filterPeriod,
   );
 

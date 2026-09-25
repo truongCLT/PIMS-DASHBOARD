@@ -77,7 +77,7 @@ export function ServiceReportTab({
 }) {
   const { t } = useTranslation(["serviceReportTab", "projectReportTab", "projectDataEntryTab", "common"]);
   const { detail, isLoading } = useProjectDetail(projectName);
-  const { fmtVnd, fmtMoney, unitLabel } = useMoney();
+  const { fmtVnd, unitLabel } = useMoney();
   const [isExporting, setIsExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
 
@@ -92,14 +92,12 @@ export function ServiceReportTab({
 
   const salesRows = detail?.canonicalSalesMonthly ?? [];
   const cashRows = detail?.cashflow ?? [];
-  const progressRows = detail?.progress ?? [];
   const monthSales = atReference(salesRows);
   // Status 상태등 규칙(연 누계 실적 >= 연 누계 계획)은 "연 누계"이지, 이전 연도까지 합친 전체 누계가
   // 아니다 — 시공 쪽 ProjectReportTab(reportSales)과 동일하게 referenceYear로 먼저 필터링한다.
   const cumSales = throughReference(salesRows.filter((row) => row.year === referenceYear));
   const monthCash = atReference(cashRows);
   const cumCash = throughReference(cashRows);
-  const monthProgress = atReference(progressRows)[0];
 
   const salesMonthPlan = sumNullable(monthSales, (row) => row.plan);
   const salesMonthActual = sumNullable(monthSales, (row) => row.actual);
@@ -173,14 +171,12 @@ export function ServiceReportTab({
     const end = /^(\d{4})-(\d{1,2})/.exec(overview?.endDate ?? "");
     return start && end ? (Number(end[1]) - Number(start[1])) * 12 + Number(end[2]) - Number(start[2]) + 1 : null;
   })();
-  const contractConditions = detail?.costEstimation?.find((row) => row.kind === "execution")?.note ?? null;
-  // 시공(Construction) 보고서와 동일한 StatusTableSection을 그대로 재사용 — 구분(공정/매출/원가/자금)별
-  // 월/누계 계획·실적과 규칙 기반 상태등을 표시한다. 용역은 월별 원가 계획 데이터 소스가 따로 없어
-  // 원가의 "월" 행은 비워두고(누계만 채용), 나머지는 시공과 동일한 필드 매핑을 쓴다.
+  const contractConditions = overview?.paymentTerms ?? null;
+  // 시공(Construction) 보고서와 동일한 StatusTableSection을 그대로 재사용 — 구분(매출/원가/자금)별
+  // 월/누계 계획·실적과 규칙 기반 상태등을 표시한다. 용역은 공정(진행률) 개념이 없어 "공정" 행은
+  // 아예 넣지 않고, 원가의 "월" 행은 월별 원가 계획 데이터 소스가 따로 없어 비워둔다(누계만 채용).
   const positiveOrNull = (value: number | null) => (value != null && value > 0 ? value : null);
   const statusRows: StatusRowData[] = [
-    { category: "공정", type: "월", plan: monthProgress?.planPct ?? null, actual: monthProgress?.actualPct ?? null },
-    { category: "공정", type: "누계", plan: monthProgress?.planCumPct ?? null, actual: monthProgress?.actualCumPct ?? null },
     { category: "매출", type: "월", plan: salesMonthPlan, actual: salesMonthActual },
     { category: "매출", type: "누계", plan: positiveOrNull(salesCumPlan), actual: positiveOrNull(salesCumActual) },
     { category: "원가", type: "월", plan: null, actual: null },
@@ -252,12 +248,7 @@ export function ServiceReportTab({
           <MetricRow label={t("serviceReportTab:clientLabel")} value={overview?.client ?? DASH} />
           <MetricRow label={t("projectDataEntryTab:scopeOfWork")} value={overview?.scope ?? DASH} />
           <MetricRow label={t("serviceReportTab:contractAmountLabel")} value={fmtVnd(overview?.contractAmount)} />
-          <MetricRow label={t("projectDataEntryTab:baseMonthOfRecord")} value={overview?.asOfMonth ?? DASH} />
           <MetricRow label={t("serviceReportTab:collectionConditionLabel")} value={contractConditions ?? DASH} />
-          <MetricRow label={t("projectDataEntryTab:annualRevenueTargetVnd")} value={fmtMoney(overview?.revenueAnnualTarget)} />
-          <MetricRow label={t("projectDataEntryTab:cumulativeRevenueActualVnd")} value={fmtMoney(overview?.revenueTotal)} />
-          <MetricRow label={t("serviceReportTab:cashConfirmedLabel")} value={fmtMoney(overview?.cashConfirmed)} />
-          <MetricRow label={t("serviceReportTab:cashCollectionLabel")} value={fmtMoney(overview?.cashCollection)} />
         </div>
 
         <SalesSection
