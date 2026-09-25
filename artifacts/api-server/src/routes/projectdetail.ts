@@ -217,10 +217,13 @@ async function loadDetail(projectName: string) {
   const formatDateStr = (d: string | null | undefined) => {
     if (!d) return null;
     const clean = d.trim();
-    if (/^\d{8}$/.test(clean)) {
-      return `${clean.slice(0, 4)}-${clean.slice(4, 6)}-${clean.slice(6, 8)}`;
-    }
-    return clean;
+    const normalized = /^\d{8}$/.test(clean)
+      ? `${clean.slice(0, 4)}-${clean.slice(4, 6)}-${clean.slice(6, 8)}`
+      : clean;
+    // 엑셀 업로드/수기 입력 과정에서 "-", "--" 같은 비어있는 플레이스홀더가 날짜 컬럼에 그대로
+    // 저장되는 경우가 실제로 있었다(예: Thai Binh Infra Site) — 형식이 YYYY-MM-DD가 아니면 프런트
+    // 여러 곳에서 Date.parse() 등으로 이 값을 그대로 쓰다가 예기치 않게 깨질 수 있으므로 null로 정리한다.
+    return /^\d{4}-\d{2}-\d{2}$/.test(normalized) ? normalized : null;
   };
 
   return {

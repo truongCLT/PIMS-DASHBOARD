@@ -583,6 +583,51 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
     const now = new Date();
     return { year: now.getFullYear(), month: now.getMonth() + 1 };
   });
+  const sumNullable = (...values: Array<number | null>) =>
+    values.some((value) => value != null)
+      ? values.reduce<number>((sum, value) => sum + (value ?? 0), 0)
+      : null;
+  // "Execution Plan" 표의 Cumulative는 PIMS 소스가 없어 예전엔 별도로 수동 입력해야 했다 — Monthly에
+  // 이미 12개월치를 다 입력해놓고도 Cumulative가 안 채워진다는 혼란을 반복해서 겪었으므로, 선택된
+  // 기준월(selectedExecutionMonth)까지의 Monthly Plan 합계로 자동 계산한다(연초~기준월 누계).
+  // 이 함수와 아래 useEffect는 (isLoading && !loaded)일 때의 이른 return보다 반드시 앞서 있어야 한다 —
+  // 뒤에 두면 로딩 중 렌더와 로딩 완료 후 렌더 사이에 호출되는 Hook 개수가 달라져 React 에러(#300,
+  // "Rendered fewer hooks than expected")가 난다(실제로 겪은 버그).
+  const cumPlanFromMonthly = (item: string) => {
+    const { year, month } = selectedExecutionMonth;
+    const rows = costBudgetMonthly.filter(
+      (r) => r.item === item && r.year === year && r.month <= month,
+    );
+    return rows.some((r) => r.plan != null)
+      ? rows.reduce<number>((sum, r) => sum + (r.plan ?? 0), 0)
+      : null;
+  };
+  const outsourcingCumPlan = cumPlanFromMonthly("Outsourcing");
+  const commonCumPlan = cumPlanFromMonthly("Common");
+  const expense1CumPlan = cumPlanFromMonthly("Expense 1");
+  const expense2CumPlan = cumPlanFromMonthly("Expense 2");
+  const contingencyCumPlan = cumPlanFromMonthly("Contingency");
+  // Cumulative가 화면 표시뿐 아니라 저장값(pd_cost_budget.plan)에도 반영되도록 costBudget 상태에
+  // 계산값을 동기화한다 — 이 값을 대시보드 "예산 집행 현황" 위젯이 그대로 읽어간다.
+  useEffect(() => {
+    const computedByItem: Record<string, number | null> = {
+      Outsourcing: outsourcingCumPlan,
+      Common: commonCumPlan,
+      "Expense 1": expense1CumPlan,
+      "Expense 2": expense2CumPlan,
+      Contingency: contingencyCumPlan,
+    };
+    setCostBudget((rows) => {
+      let changed = false;
+      const next = rows.map((row) => {
+        const computed = computedByItem[row.item];
+        if (computed === undefined || computed === row.plan) return row;
+        changed = true;
+        return { ...row, plan: computed };
+      });
+      return changed ? next : rows;
+    });
+  }, [outsourcingCumPlan, commonCumPlan, expense1CumPlan, expense2CumPlan, contingencyCumPlan]);
   const [outsourcing, setOutsourcing] = useState<ProjectDetailOutsourcing[]>([]);
   const [cashflow, setCashflow] = useState<ProjectDetailCashflowPoint[]>([]);
   const [cogsMonthly, setCogsMonthly] = useState<ProjectDetailCogsPoint[]>([]);
@@ -1520,42 +1565,21 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       return [...rows, { item, year, month, plan: value, actual: null }];
     });
   };
-  // "Execution Plan" 표의 Cumulative는 PIMS 소스가 없어 예전엔 별도로 수동 입력해야 했다 — Monthly에
-  // 이미 12개월치를 다 입력해놓고도 Cumulative가 안 채워진다는 혼란을 반복해서 겪었으므로, 선택된
-  // 기준월(selectedExecutionMonth)까지의 Monthly Plan 합계로 자동 계산한다(연초~기준월 누계).
-  const cumPlanFromMonthly = (item: string) => {
-    const { year, month } = selectedExecutionMonth;
-    const rows = costBudgetMonthly.filter(
-      (r) => r.item === item && r.year === year && r.month <= month,
-    );
-    return rows.some((r) => r.plan != null)
-      ? rows.reduce<number>((sum, r) => sum + (r.plan ?? 0), 0)
-      : null;
-  };
   const outsourcingMonthlyPlan = monthlyBudgetAmount("Outsourcing", "plan");
   const outsourcingMonthlyActual = monthlyBudgetAmount("Outsourcing", "actual");
-  const outsourcingCumPlan = cumPlanFromMonthly("Outsourcing");
   const outsourcingActual = actualAmount("Outsourcing");
   const commonMonthlyPlan = monthlyBudgetAmount("Common", "plan");
   const commonMonthlyActual = monthlyBudgetAmount("Common", "actual");
-  const commonCumPlan = cumPlanFromMonthly("Common");
   const commonActual = actualAmount("Common");
   const expense1MonthlyPlan = monthlyBudgetAmount("Expense 1", "plan");
   const expense1MonthlyActual = monthlyBudgetAmount("Expense 1", "actual");
-  const expense1CumPlan = cumPlanFromMonthly("Expense 1");
   const expense1Actual = actualAmount("Expense 1");
   const expense2MonthlyPlan = monthlyBudgetAmount("Expense 2", "plan");
   const expense2MonthlyActual = monthlyBudgetAmount("Expense 2", "actual");
-  const expense2CumPlan = cumPlanFromMonthly("Expense 2");
   const expense2Actual = actualAmount("Expense 2");
   const contingencyMonthlyPlan = monthlyBudgetAmount("Contingency", "plan");
   const contingencyMonthlyActual = monthlyBudgetAmount("Contingency", "actual");
-  const contingencyCumPlan = cumPlanFromMonthly("Contingency");
   const contingencyActual = actualAmount("Contingency");
-  const sumNullable = (...values: Array<number | null>) =>
-    values.some((value) => value != null)
-      ? values.reduce<number>((sum, value) => sum + (value ?? 0), 0)
-      : null;
   const directMonthlyPlan = sumNullable(outsourcingMonthlyPlan, commonMonthlyPlan, expense1MonthlyPlan);
   const directMonthlyActual = sumNullable(outsourcingMonthlyActual, commonMonthlyActual, expense1MonthlyActual);
   const directCumPlan = sumNullable(outsourcingCumPlan, commonCumPlan, expense1CumPlan);
@@ -1564,27 +1588,6 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
   const totalMonthlyActual = sumNullable(directMonthlyActual, expense2MonthlyActual, contingencyMonthlyActual);
   const totalCumPlan = sumNullable(directCumPlan, expense2CumPlan, contingencyCumPlan);
   const totalActual = sumNullable(directActual, expense2Actual, contingencyActual);
-  // "Execution Plan" Cumulative가 화면 표시뿐 아니라 저장값(pd_cost_budget.plan)에도 반영되도록
-  // costBudget 상태에 계산값을 동기화한다 — 이 값을 대시보드 "예산 집행 현황" 위젯이 그대로 읽어간다.
-  useEffect(() => {
-    const computedByItem: Record<string, number | null> = {
-      Outsourcing: outsourcingCumPlan,
-      Common: commonCumPlan,
-      "Expense 1": expense1CumPlan,
-      "Expense 2": expense2CumPlan,
-      Contingency: contingencyCumPlan,
-    };
-    setCostBudget((rows) => {
-      let changed = false;
-      const next = rows.map((row) => {
-        const computed = computedByItem[row.item];
-        if (computed === undefined || computed === row.plan) return row;
-        changed = true;
-        return { ...row, plan: computed };
-      });
-      return changed ? next : rows;
-    });
-  }, [outsourcingCumPlan, commonCumPlan, expense1CumPlan, expense2CumPlan, contingencyCumPlan]);
   const budgetHierarchyBlock = (
     sectionLabel: string,
     blockIndex: number,
