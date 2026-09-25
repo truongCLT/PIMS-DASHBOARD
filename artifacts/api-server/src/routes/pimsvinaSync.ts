@@ -17,7 +17,6 @@ import {
   pdProgressMonthlyTable,
   pdOutsourcingTable,
   pdCashflowMonthlyTable,
-  pdCogsMonthlyTable,
   pdCostBudgetTable,
   pdCostBudgetMonthlyTable,
   pdCostEstimationTable,
@@ -30,12 +29,10 @@ import {
 import { eq, and, isNull, sql } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/adminAuth";
 import {
-  mapPimsvinaTradeItem,
   parsePimsvinaKusd,
   findStalePimsvinaTradeCosts,
   tradeCostKey,
   tradeCostScope,
-  sumPimsvinaKusdValues,
 } from "../lib/pimsvinaTradeCost";
 
 /** SRS와 동일한 서비스 부문 키워드 — CATB_BUSILINE.CLASSIFICATION이 없거나 인식 불가할 때 부문명으로 추정 (프론트 classifyMrProject와 동일 기준) */
@@ -58,10 +55,8 @@ export async function fetchAllPimsvinaData() {
     pdOverview,
     pdProgress,
     pdOutsourcing,
-    pdTradeCostMonthlyResult,
     pdTradeCostScopesResult,
     pdCashflow,
-    pdCogs,
     pdCostBudget,
     pdCostBudgetMonthlyResult,
     costRateSettleRows,
@@ -71,10 +66,8 @@ export async function fetchAllPimsvinaData() {
     fetchPimsvinaApi("dashboard_pd_overview_1q.jsp"),
     fetchPimsvinaApi("dashboard_pd_progress_1q.jsp"),
     fetchPimsvinaApi("dashboard_pd_outsourcing_1q.jsp"),
-    fetchPimsvinaOracleQueryResult("dashboard_pd_trade_cost_monthly_1q.jsp"),
     fetchPimsvinaOracleQueryResult("dashboard_pd_trade_cost_scopes_1q.jsp"),
     fetchPimsvinaApi("dashboard_pd_cashflow_1q.jsp"),
-    fetchPimsvinaApi("dashboard_pd_cogs_monthly_1q.jsp"),
     fetchPimsvinaApi("dashboard_pd_costbudget_1q.jsp"),
     fetchPimsvinaOracleQueryResult("dashboard_pd_costbudget_monthly_1q.jsp"),
     fetchPimsvinaApi("dashboard_pd_costrate_settle_1q.jsp"),
@@ -114,13 +107,9 @@ export async function fetchAllPimsvinaData() {
       };
     })
     .filter((row): row is NonNullable<typeof row> => row != null);
-  const pdTradeCostMonthlyRaw = pdTradeCostMonthlyResult.data;
   const pdTradeCostScopesRaw = pdTradeCostScopesResult.data;
-  const tradeCostSnapshotComplete =
-    pdTradeCostMonthlyResult.ok && pdTradeCostScopesResult.ok;
-  // "5. 예산 집행 현황" 월별 실적(Common/Expense 1/Expense 2/Contingency/Outsourcing) — trade cost
-  // (외주 세부 공종, 예: "외주 건축"/"외주 기계")와 다른 item 네임스페이스를 쓰므로 서로 겹치지 않지만,
-  // 같은 CHTB_PFMCOSTRMRK/BASEYYMM 스코프이므로 stale-row 판정에는 dashboard_pd_trade_cost_scopes_1q.jsp
+  // "5. 예산 집행 현황" 월별 실적(Common/Expense 1/Expense 2/Contingency/Outsourcing) — 같은
+  // CHTB_PFMCOSTRMRK/BASEYYMM 스코프이므로 stale-row 판정에는 dashboard_pd_trade_cost_scopes_1q.jsp
   // 결과를 그대로 재사용한다.
   const pdCostBudgetMonthlyRaw = pdCostBudgetMonthlyResult.data;
   const costBudgetMonthlySnapshotComplete =
@@ -132,7 +121,6 @@ export async function fetchAllPimsvinaData() {
       fldCode: mrProjectsTable.fldCode,
     })
     .from(mrProjectsTable);
-  const existingTradeCosts = await db.select().from(pdCostBudgetMonthlyTable);
   const projectBySiteCode = new Map(
     projects
       .filter((project) => project.siteCode)
@@ -143,54 +131,6 @@ export async function fetchAllPimsvinaData() {
       .filter((project) => project.fldCode)
       .map((project) => [project.fldCode!.trim().toUpperCase(), project.name]),
   );
-  const existingByKey = new Map(
-    existingTradeCosts.map((row) => [
-      `${row.projectName}|${row.item}|${row.year}|${row.month}`,
-      row.actual == null ? null : Number(row.actual),
-    ]),
-  );
-  const normalizedTradeCosts = pdTradeCostMonthlyRaw.map((row: any) => {
-    const siteCode = String(row.site_code ?? "").trim().toUpperCase();
-    const fldCode = String(row.fldcode ?? "").trim().toUpperCase();
-    const projectName =
-      projectBySiteCode.get(siteCode) ??
-      projectByFldCode.get(fldCode) ??
-      projectBySiteCode.get(fldCode) ??
-      null;
-    const mappedItem = mapPimsvinaTradeItem(row.trade);
-    return {
-      ...row,
-      mapped_project_name: projectName,
-      mapped_item: mappedItem,
-    };
-  });
-  const aggregatedTradeCosts = new Map<string, any>();
-  const unmappedTradeCosts: any[] = [];
-  for (const row of normalizedTradeCosts) {
-    if (!row.mapped_project_name || !row.mapped_item) {
-      unmappedTradeCosts.push(row);
-      continue;
-    }
-    const key = `${row.mapped_project_name}|${row.mapped_item}|${Number(row.year)}|${Number(row.month)}`;
-    const existing = aggregatedTradeCosts.get(key);
-    if (existing) {
-      existing.actual_vnd = Number(existing.actual_vnd) + Number(row.actual_vnd);
-      existing.actual_kusd_values.push(row.actual_kusd);
-      existing.trade_code = [existing.trade_code, row.trade_code].filter(Boolean).join(", ");
-      existing.trade = [existing.trade, row.trade].filter(Boolean).join(" / ");
-    } else {
-      aggregatedTradeCosts.set(key, {
-        ...row,
-        actual_vnd: Number(row.actual_vnd),
-        actual_kusd_values: [row.actual_kusd],
-      });
-    }
-  }
-  for (const row of aggregatedTradeCosts.values()) {
-    row.actual_kusd = sumPimsvinaKusdValues(row.actual_kusd_values);
-    delete row.actual_kusd_values;
-  }
-  const incomingTradeCostKeys = new Set(aggregatedTradeCosts.keys());
   const pdTradeCostScopes = pdTradeCostScopesRaw.map((row: any) => {
     const siteCode = String(row.site_code ?? "").trim().toUpperCase();
     const fldCode = String(row.fldcode ?? "").trim().toUpperCase();
@@ -203,89 +143,13 @@ export async function fetchAllPimsvinaData() {
         null,
     };
   });
-  const incomingTradeCostScopes = new Set(
-    pdTradeCostScopes
-      .filter(
-        (row: any) =>
-          row.mapped_project_name && Number.isInteger(Number(row.year)),
-      )
-      .map((row: any) =>
-        tradeCostScope({
-          projectName: row.mapped_project_name,
-          year: Number(row.year),
-        }),
-      ),
-  );
-  const staleTradeCosts = findStalePimsvinaTradeCosts(
-    existingTradeCosts,
-    incomingTradeCostKeys,
-    incomingTradeCostScopes,
-    tradeCostSnapshotComplete,
-  );
-  for (const row of staleTradeCosts) {
-    const key = tradeCostKey(row);
-    aggregatedTradeCosts.set(key, {
-      fldcode: null,
-      site_code: null,
-      project_name: row.projectName,
-      trade_group: null,
-      trade_code: null,
-      trade: row.item,
-      year: row.year,
-      month: row.month,
-      source_currency: "VND",
-      actual_vnd: null,
-      actual_kusd: null,
-      mapped_project_name: row.projectName,
-      mapped_item: row.item,
-      clear_actual: true,
-    });
-  }
-  const pdTradeCostMonthly = [
-    ...Array.from(aggregatedTradeCosts.values()),
-    ...unmappedTradeCosts,
-  ].map((row: any) => {
-    const projectName = row.mapped_project_name as string | null;
-    const mappedItem = row.mapped_item as string | null;
-    const incomingActual = parsePimsvinaKusd(row.actual_vnd);
-    const existingActual =
-      projectName && mappedItem
-        ? (existingByKey.get(
-            `${projectName}|${mappedItem}|${Number(row.year)}|${Number(row.month)}`,
-          ) ?? null)
-        : null;
-    return {
-      ...row,
-      existing_actual: existingActual,
-      incoming_actual: incomingActual,
-      change:
-        !projectName || !mappedItem || incomingActual == null
-          ? row.clear_actual
-            ? "삭제"
-            : "건너뜀"
-          : existingActual == null
-            ? "신규"
-            : Math.abs(existingActual - incomingActual) > 0.00000001
-              ? "변경"
-              : "동일",
-    };
-  });
 
   return {
     pdOverview,
     pdProgress,
     pdOutsourcing,
-    pdTradeCostMonthly,
     pdTradeCostScopes,
-    pdTradeCostSyncStatus: [
-      {
-        complete: tradeCostSnapshotComplete,
-        monthlyQueryOk: pdTradeCostMonthlyResult.ok,
-        scopeQueryOk: pdTradeCostScopesResult.ok,
-      },
-    ],
     pdCashflow,
-    pdCogs,
     pdCostBudget,
     pdCostBudgetMonthly: pdCostBudgetMonthlyRaw,
     pdCostBudgetMonthlySyncStatus: [{ complete: costBudgetMonthlySnapshotComplete }],
@@ -302,14 +166,8 @@ export async function applyPimsvinaData(fetched: PimsvinaData) {
   const pdOverview = fetched.pdOverview ?? [];
   const pdProgress = fetched.pdProgress ?? [];
   const pdOutsourcing = fetched.pdOutsourcing ?? [];
-  const pdTradeCostMonthly = fetched.pdTradeCostMonthly ?? [];
   const pdTradeCostScopes = fetched.pdTradeCostScopes ?? [];
-  const tradeCostSnapshotComplete =
-    fetched.pdTradeCostSyncStatus?.[0]?.complete === true &&
-    fetched.pdTradeCostSyncStatus?.[0]?.monthlyQueryOk === true &&
-    fetched.pdTradeCostSyncStatus?.[0]?.scopeQueryOk === true;
   const pdCashflow = fetched.pdCashflow ?? [];
-  const pdCogs = fetched.pdCogs ?? [];
   const pdCostBudget = fetched.pdCostBudget ?? [];
   const costBudgetMonthlySnapshotComplete = fetched.pdCostBudgetMonthlySyncStatus?.[0]?.complete === true;
   const pdCostEstimation = fetched.pdCostEstimation ?? [];
@@ -320,9 +178,7 @@ export async function applyPimsvinaData(fetched: PimsvinaData) {
     pdOverview: 0,
     pdProgress: 0,
     pdOutsourcing: 0,
-    pdTradeCostMonthly: 0,
     pdCashflow: 0,
-    pdCogs: 0,
     pdCostBudget: 0,
     pdCostBudgetMonthly: 0,
     pdCostEstimation: 0,
@@ -579,151 +435,6 @@ export async function applyPimsvinaData(fetched: PimsvinaData) {
     }
   }
 
-  // 11b. Sync monthly actual cost by explicit ERP trade. Plans stay manual.
-  // Multiple ERP contract codes may map to the same standard trade/month, so
-  // aggregate before upsert instead of allowing the last contract to win.
-  // pdCostBudgetMonthlyTable.actual는 (11a와 마찬가지로) VND 원본으로 통일 저장한다 — ERP가 이미
-  // actual_vnd 필드로 환산 없는 원본 VND를 내려주므로 그대로 쓴다(예전엔 actual_kusd를 썼으나, 화면
-  // 표시가 항상 kUSD로 가정하던 시절의 잔재였고 "3. Cost Plan/Actual by Work Type" 표시 단위와 맞지 않았다).
-  if (tradeCostSnapshotComplete) {
-  const tradeCostUpdates = new Map<
-    string,
-    { projectName: string; item: NonNullable<ReturnType<typeof mapPimsvinaTradeItem>>; year: number; month: number; rawActual: number }
-  >();
-  const invalidIncomingTradeCostKeys = new Set<string>();
-  for (const item of pdTradeCostMonthly) {
-    const projectName = resolveTradeProjectName(item);
-    const mappedItem = mapPimsvinaTradeItem(item.mapped_item ?? item.trade);
-    const year = Number(item.year);
-    const month = Number(item.month);
-    const actualVnd = parsePimsvinaKusd(item.actual_vnd);
-    const hasValidIdentity =
-      projectName != null &&
-      mappedItem != null &&
-      Number.isInteger(year) &&
-      Number.isInteger(month) &&
-      month >= 1 &&
-      month <= 12;
-    if (hasValidIdentity && actualVnd == null) {
-      invalidIncomingTradeCostKeys.add(
-        tradeCostKey({ projectName, item: mappedItem, year, month }),
-      );
-    }
-    if (
-      !hasValidIdentity ||
-      actualVnd == null
-    ) {
-      if (!projectName) trackSkipped(item);
-      continue;
-    }
-    const key = `${projectName}|${mappedItem}|${year}|${month}`;
-    const existing = tradeCostUpdates.get(key);
-    if (existing) existing.rawActual += actualVnd;
-    else tradeCostUpdates.set(key, { projectName, item: mappedItem, year, month, rawActual: actualVnd });
-  }
-
-  // Xoá sạch dữ liệu 외주 cũ (actualSource='pimsvina') của ĐÚNG (project, year, month) sắp đồng bộ
-  // trước khi ghi lại, thay vì chỉ upsert theo (project, item, year, month) — vì nếu ERP đổi cách phân
-  // loại trade giữa 2 lần sync (VD: 1 trade trước đó khớp "외주 건축" nay khớp "외주 기계"), upsert theo
-  // item mới sẽ để sót dòng cũ dưới item cũ cho cùng tháng đó, gây trùng/lệch số liệu luỹ kế. Giá trị
-  // "plan" (luôn nhập tay, sync không đụng tới) được snapshot lại trước khi xoá để không bị mất.
-  const monthKeysToReplace = new Map<string, { projectName: string; year: number; month: number }>();
-  for (const update of tradeCostUpdates.values()) {
-    monthKeysToReplace.set(`${update.projectName}|${update.year}|${update.month}`, {
-      projectName: update.projectName,
-      year: update.year,
-      month: update.month,
-    });
-  }
-  const preservedPlanByKey = new Map<string, string | null>();
-  for (const { projectName, year, month } of monthKeysToReplace.values()) {
-    const existingRows = await db
-      .select({ item: pdCostBudgetMonthlyTable.item, plan: pdCostBudgetMonthlyTable.plan })
-      .from(pdCostBudgetMonthlyTable)
-      .where(
-        and(
-          eq(pdCostBudgetMonthlyTable.projectName, projectName),
-          eq(pdCostBudgetMonthlyTable.year, year),
-          eq(pdCostBudgetMonthlyTable.month, month),
-          eq(pdCostBudgetMonthlyTable.actualSource, "pimsvina"),
-        ),
-      );
-    for (const row of existingRows) {
-      preservedPlanByKey.set(`${projectName}|${row.item}|${year}|${month}`, row.plan);
-    }
-    await db
-      .delete(pdCostBudgetMonthlyTable)
-      .where(
-        and(
-          eq(pdCostBudgetMonthlyTable.projectName, projectName),
-          eq(pdCostBudgetMonthlyTable.year, year),
-          eq(pdCostBudgetMonthlyTable.month, month),
-          eq(pdCostBudgetMonthlyTable.actualSource, "pimsvina"),
-        ),
-      );
-  }
-
-  for (const update of tradeCostUpdates.values()) {
-    const actual = parsePimsvinaKusd(update.rawActual);
-    if (actual == null) continue;
-    const preservedPlan =
-      preservedPlanByKey.get(`${update.projectName}|${update.item}|${update.year}|${update.month}`) ?? null;
-    await db
-      .insert(pdCostBudgetMonthlyTable)
-      .values({
-        projectName: update.projectName,
-        item: update.item,
-        year: update.year,
-        month: update.month,
-        plan: preservedPlan,
-        actual: String(actual),
-        actualSource: "pimsvina",
-      })
-      .onConflictDoUpdate({
-        target: [
-          pdCostBudgetMonthlyTable.projectName,
-          pdCostBudgetMonthlyTable.item,
-          pdCostBudgetMonthlyTable.year,
-          pdCostBudgetMonthlyTable.month,
-        ],
-        set: { actual: String(actual), actualSource: "pimsvina" },
-      });
-    counts.pdTradeCostMonthly++;
-  }
-  const incomingKeys = new Set([
-    ...tradeCostUpdates.keys(),
-    ...invalidIncomingTradeCostKeys,
-  ]);
-  const incomingScopes = new Set(
-    pdTradeCostScopes
-      .map((row: any) => ({
-        projectName: resolveTradeProjectName(row),
-        year: Number(row.year),
-      }))
-      .filter(
-        (row): row is { projectName: string; year: number } =>
-          row.projectName != null && Number.isInteger(row.year),
-      )
-      .map((row) => tradeCostScope(row)),
-  );
-  const existingErpRows = await db
-    .select()
-    .from(pdCostBudgetMonthlyTable)
-    .where(eq(pdCostBudgetMonthlyTable.actualSource, "pimsvina"));
-  const staleErpRows = findStalePimsvinaTradeCosts(
-    existingErpRows,
-    incomingKeys,
-    incomingScopes,
-    tradeCostSnapshotComplete,
-  );
-  for (const row of staleErpRows) {
-    await db
-      .update(pdCostBudgetMonthlyTable)
-      .set({ actual: null, actualSource: null })
-      .where(eq(pdCostBudgetMonthlyTable.id, row.id));
-  }
-  }
-
   // 12. Sync Project Detail Cashflow Monthly (cash in/out per project per month)
   for (const item of fetched.pdCashflow) {
     const projectName = await resolveProjectName(item);
@@ -753,35 +464,6 @@ export async function applyPimsvinaData(fetched: PimsvinaData) {
         set: { fldCode: item.fldcode || null, siteCode: item.site_code || null, cashIn, cashOut, equivalent },
       });
     counts.pdCashflow++;
-  }
-
-  // 13. Sync Project Detail COGS Monthly (acct_cogs & wip_cogs per project per month)
-  for (const item of fetched.pdCogs || []) {
-    const projectName = await resolveProjectName(item);
-    const m = Number(item.month);
-    if (!projectName || !item.year || !item.month || isNaN(m) || m < 1 || m > 12) {
-      if (!projectName) trackSkipped(item);
-      continue;
-    }
-    const acctCogs = item.acct_cogs != null ? String(item.acct_cogs) : null;
-    const wipCogs = item.wip_cogs != null ? String(item.wip_cogs) : null;
-
-    await db
-      .insert(pdCogsMonthlyTable)
-      .values({
-        projectName,
-        fldCode: item.fldcode || null,
-        siteCode: item.site_code || null,
-        year: Number(item.year),
-        month: m,
-        acctCogs,
-        wipCogs,
-      })
-      .onConflictDoUpdate({
-        target: [pdCogsMonthlyTable.projectName, pdCogsMonthlyTable.year, pdCogsMonthlyTable.month],
-        set: { fldCode: item.fldcode || null, siteCode: item.site_code || null, acctCogs, wipCogs },
-      });
-    counts.pdCogs++;
   }
 
   // Monthly Revenue(pd_sales_monthly)는 더 이상 PIMSVINA에서 동기화하지 않는다 - dashboard_pd_sales_1q.jsp가

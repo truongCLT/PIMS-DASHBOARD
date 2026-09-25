@@ -27,7 +27,7 @@ interface Props {
 }
 
 export function FundsSection({ cashIn, cashOut, cumRev }: Props) {
-  const { t } = useTranslation(["projectReportTab", "overviewTab"]);
+  const { t } = useTranslation(["projectReportTab"]);
   const { fmtMoney, unitLabel } = useMoney();
 
   const outstanding = Math.max(0, cumRev - cashIn);
@@ -46,7 +46,7 @@ export function FundsSection({ cashIn, cashOut, cumRev }: Props) {
   return (
     <div style={cardStyle}>
       <div style={{ ...sectionTitle, marginBottom: "4px" }}>
-        {t("overviewTab:funds")}
+        {t("projectReportTab:fundsSectionTitle")}
         <span
           style={{ fontSize: "11px", fontWeight: 400, color: INK_MUTED, marginLeft: "6px" }}
         >

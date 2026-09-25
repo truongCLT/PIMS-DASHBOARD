@@ -52,6 +52,7 @@
   "statusRuleFundsYellow": "Công nợ phải thu từ 0 đến 1 tỷ VND",
   "statusRuleFundsRed": "Công nợ phải thu từ 1 tỷ VND trở lên",
   "fundsSyncNote": "* Giống với dòng tiền trên Bảng điều hành quản trị (bao gồm cả xem chi tiết)",
+  "fundsSectionTitle": "Dong tien (Cashflow)",
   "cumulativeSalesLabel": "Doanh thu lũy kế",
   "cumulativeConfirmedLabel": "Tiến độ xác nhận lũy kế",
   "collectionActualLabel": "Thu tiền (Thực hiện)",

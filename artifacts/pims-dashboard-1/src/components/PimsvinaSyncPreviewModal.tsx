@@ -10,12 +10,10 @@ export type PimsvinaPreviewData = Record<string, Array<Record<string, unknown>>>
 export const PIMSVINA_TABLE_KEYS = [
   "pdOverview",
   "pdProgress",
-  "pdCogs",
   "pdCostBudget",
   "pdCostBudgetMonthly",
   "pdCostEstimation",
   "pdOutsourcing",
-  "pdTradeCostMonthly",
   "pdCashflow",
   "pdSiteOverviewPhoto",
   "pdSitePhotosMonthly",
@@ -100,8 +98,6 @@ export function PimsvinaSyncPreviewModal({
       : rows;
   const visibleRows = filteredRows.slice(0, MAX_ROWS);
   const totalRows = PIMSVINA_TABLE_KEYS.reduce((sum, k) => sum + (data[k]?.length ?? 0), 0);
-  const tradeCostStatus = data.pdTradeCostSyncStatus?.[0];
-  const tradeCostUnavailable = tradeCostStatus?.complete === false;
 
   return (
     <div
@@ -196,21 +192,6 @@ export function PimsvinaSyncPreviewModal({
 
         {/* Body */}
         <div style={{ flex: 1, overflow: "auto", padding: "12px 14px" }}>
-          {tradeCostUnavailable && (
-            <div
-              style={{
-                marginBottom: "10px",
-                padding: "10px 12px",
-                border: `1px solid ${AG.destructive}`,
-                borderRadius: "6px",
-                color: AG.destructive,
-                fontSize: "12px",
-                fontWeight: 600,
-              }}
-            >
-              {t("pimsvinaSyncPreview:tradeCostUnavailable")}
-            </div>
-          )}
           {filteredRows.length === 0 ? (
             <div style={{ textAlign: "center", color: "#9aa5b3", fontSize: "13px", padding: "40px 0" }}>
               {t("pimsvinaSyncPreview:empty")}

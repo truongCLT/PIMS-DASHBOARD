@@ -52,6 +52,7 @@
   "statusRuleFundsYellow": "Receivables between 0 and 1B VND",
   "statusRuleFundsRed": "Receivables of 1B VND or more",
   "fundsSyncNote": "* Same as the Management Dashboard's cash flow (including the detail view)",
+  "fundsSectionTitle": "Cashflow",
   "cumulativeSalesLabel": "Cumulative Revenue",
   "cumulativeConfirmedLabel": "Cumulative Confirmed Progress",
   "collectionActualLabel": "Collection (Actual)",

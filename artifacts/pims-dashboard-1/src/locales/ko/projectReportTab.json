@@ -52,6 +52,7 @@
   "statusRuleFundsYellow": "채권 0~10억원",
   "statusRuleFundsRed": "채권 10억원 이상",
   "fundsSyncNote": "※ 경영현황판 자금수지 (상세보기 포함)와 동일하게",
+  "fundsSectionTitle": "자금(Cashflow)",
   "cumulativeSalesLabel": "누계 매출",
   "cumulativeConfirmedLabel": "누계 기성 (확정)",
   "collectionActualLabel": "수금 (실적)",

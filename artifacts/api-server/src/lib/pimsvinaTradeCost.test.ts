@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
 import {
   mapPimsvinaTradeItem,
   parsePimsvinaKusd,
@@ -103,38 +102,16 @@ describe("PIMSVINA monthly trade cost", () => {
     ).toEqual([]);
   });
 
-  it("queries monthly actuals with site, trade, and period identifiers", () => {
-    const query =
-      ORACLE_DASHBOARD_QUERIES["dashboard_pd_trade_cost_monthly_1q.jsp"].sql;
-    expect(query).toContain("S.FLDCODE AS FLDCODE");
-    expect(query).toContain("T.ORDCONTTYPECODE AS TRADE_CODE");
-    expect(query).toContain("T.ORDCONTTYPENAME AS TRADE");
-    expect(query).toContain("S.YYMM");
-    expect(query).toContain("CAST('VND' AS VARCHAR2(3)) AS SOURCE_CURRENCY");
-    expect(query).toContain("SUM(NVL(S.PRGSAMT, 0)) AS ACTUAL_VND");
-    expect(query).toContain("AS ACTUAL_KUSD");
-    expect(query).toContain("B.LASTYN = '1'");
-    expect(query).not.toMatch(/PERCENT|ALLOCAT/i);
+  // dashboard_pd_trade_cost_monthly_1q.jsp(공종별 외주비 월별 실적)와 그 값을 pd_cost_budget_monthly에
+  // 반영하던 "11b. Sync monthly actual cost by explicit ERP trade" 동기화 블록은 더 이상 사용하지 않아
+  // 삭제되었다(요청) — dashboard_pd_trade_cost_scopes_1q.jsp만 "5. Budget Execution Status" 동기화의
+  // stale-row 판정용으로 계속 쓰이므로, 그 쿼리 모양만 계속 검증한다.
+  it("queries trade cost scopes with site and period identifiers", () => {
     const scopeQuery =
       ORACLE_DASHBOARD_QUERIES["dashboard_pd_trade_cost_scopes_1q.jsp"].sql;
     expect(scopeQuery).toContain("SELECT DISTINCT");
     expect(scopeQuery).toContain("P.FLDCODE AS FLDCODE");
     expect(scopeQuery).toContain("AS SITE_CODE");
     expect(scopeQuery).toContain("P.BASEYYMM");
-  });
-
-  it("updates only actual so a manual monthly plan remains intact", () => {
-    const syncSource = readFileSync(
-      "artifacts/api-server/src/routes/pimsvinaSync.ts",
-      "utf8",
-    );
-    const tradeSync = syncSource.slice(
-      syncSource.indexOf("// 11b. Sync monthly actual cost"),
-      syncSource.indexOf("// 12. Sync Project Detail Cashflow"),
-    );
-    expect(tradeSync).toContain('actualSource: "pimsvina"');
-    expect(tradeSync).not.toMatch(/set:\s*\{[^}]*plan/s);
-    expect(tradeSync).toContain("resolveTradeProjectName(item)");
-    expect(tradeSync).not.toContain("await resolveProjectName(item)");
   });
 });
