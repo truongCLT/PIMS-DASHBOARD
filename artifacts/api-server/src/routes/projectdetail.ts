@@ -828,6 +828,11 @@ router.put("/projectdetail", requireAdmin, async (req, res) => {
       )) {
         await tx.insert(pdOverviewTable).values({
           projectName,
+          // fldCode/siteCode는 PIMSVINA 동기화 전용 필드라 Data Entry 폼이 모르고/보내지도 않는다 —
+          // delete 전에 읽어둔 prevOv에서 그대로 복원해야 Sync 직후 값이 Save 한 번에 도로 NULL로
+          // 사라지지 않는다(pd_cost_estimation과 동일한 이유로 겪은 버그, 위 existingCostEstimation... 참고).
+          fldCode: prevOv?.fldCode ?? null,
+          siteCode: prevOv?.siteCode ?? null,
           contractAmount: str(ov.contractAmount),
           startDate: ov.startDate ?? null,
           endDate: ov.endDate ?? null,

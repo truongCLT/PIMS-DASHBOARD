@@ -356,7 +356,7 @@ export function ConstructionProgressTab({
 }) {
   const { t } = useTranslation(["constructionProgressTab", "common"]);
   const { detail, isLoading } = useProjectDetail(projectName);
-  const { fmtVnd, currency } = useMoney();
+  const { fmtVnd, unitLabel } = useMoney();
   const [photoIdx, setPhotoIdx] = useState(0);
   const progressCardHeight = "390px";
   useEffect(() => { setPhotoIdx(0); }, [projectName]);
@@ -577,11 +577,11 @@ export function ConstructionProgressTab({
               <div style={{ fontSize: "11px", color: INK_SECONDARY, marginTop: "5px", textAlign: "center", lineHeight: 1.6 }}>
                 <div>
                   <span style={{ color: chartTheme.planBlue, fontWeight: 700 }}>계획</span>{" "}
-                  {fmtVnd(costPlanAmount)} {currency}
+                  {fmtVnd(costPlanAmount)} {unitLabel}
                 </div>
                 <div>
                   <span style={{ color: chartTheme.outflowRed, fontWeight: 700 }}>실적</span>{" "}
-                  {fmtVnd(costActualAmount)} {currency}
+                  {fmtVnd(costActualAmount)} {unitLabel}
                 </div>
                 <div style={{ fontWeight: 700, color: INK_NAVY }}>
                   달성률 {monthlyAchievement != null ? fmtPct(monthlyAchievement) : "-"}

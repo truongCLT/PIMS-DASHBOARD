@@ -51,16 +51,22 @@ const defaultUnit: DisplayUnit = {
   convertVndToKUsd: (v) => v,
 };
 
-/** VND 원본 값(그대로 저장된 값) → 선택된 통화로 변환 (순수 함수)
- * 환율(VND)이 없으면 변환하지 않고 VND 그대로 반환 - "check 없이 그대로 저장" 데이터용. */
+/** VND 원본 값(그대로 저장된 값) → 선택된 통화/단위로 변환 (순수 함수)
+ * 환율(VND)이 없으면 변환하지 않고 VND 그대로 반환 - "check 없이 그대로 저장" 데이터용.
+ * unitOn=false(기본값): 항상 전체 금액(기존과 동일). unitOn=true: VND는 Bil. 단위, USD/KRW는 천 단위. */
 export function convertFromVndAmount(
   v: number,
   currency: string,
+  unitOn: boolean = false,
   rates: Record<string, number> = DEFAULT_EXCHANGE_RATES,
 ): number {
+  if (currency === "VND") return unitOn ? v / 1_000_000_000 : v;
   const vndRate = rates.VND;
-  if (!vndRate || currency === "VND") return v;
-  return (v / vndRate) * (rates[currency] ?? 1);
+  if (!vndRate) return v;
+  const vndPerUnit = currency === "USD" ? vndRate : vndRate / (rates[currency] ?? 1);
+  if (!vndPerUnit) return v;
+  const base = v / vndPerUnit;
+  return unitOn ? base / 1000 : base;
 }
 
 /** VND 원본 값 → 포맷 문자열 (순수 함수, null → "-", 단위 배율 없음 — formatMoney()와 달리 항상 전체
@@ -71,7 +77,7 @@ export function formatVnd(
   rates: Record<string, number> = DEFAULT_EXCHANGE_RATES,
 ): string {
   if (v == null || Number.isNaN(v)) return "-";
-  return convertFromVndAmount(v, currency, rates).toLocaleString("en-US", { maximumFractionDigits: 0 });
+  return convertFromVndAmount(v, currency, false, rates).toLocaleString("en-US", { maximumFractionDigits: 0 });
 }
 
 /** VND 원본 값 → 천 USD 기준 값 (순수 함수). 표시 통화와 무관하게, 이미 천 USD 기준으로 저장된 다른
@@ -103,11 +109,8 @@ export function convertMoney(
   unitOn: boolean,
   rates: Record<string, number> = DEFAULT_EXCHANGE_RATES,
 ): number {
-  const rate = rates[currency] ?? 1;
-  if (currency === "VND" && unitOn) {
-    return v * rate * 1000 / 1_000_000_000;
-  }
-  return unitOn ? v * rate : v * rate * 1000;
+  const vndRate = rates.VND || DEFAULT_EXCHANGE_RATES.VND;
+  return convertFromVndAmount(v * 1000 * vndRate, currency, unitOn, rates);
 }
 
 /** 천 USD 기준 값 → 포맷 문자열 (순수 함수, null → "-") */
@@ -168,12 +171,12 @@ export function DisplayUnitProvider({
       fmtMoney: (v, digits = 0) => formatMoney(v, currency, unitOn, digits, rates),
       fmtMoneyFull: (v) => formatMoney(v, currency, false, 0, rates),
       unitLabel: moneyUnitLabel(currency, unitOn),
-      convertFromVnd: (v) => convertFromVndAmount(v, currency, rates),
+      convertFromVnd: (v) => convertFromVndAmount(v, currency, unitOn, rates),
       // 금액(돈)은 항상 정수로 반올림해서 표시한다(% 표시만 소수점 1자리 유지) — formatMoney()와 동일 원칙.
       fmtVnd: (v) =>
         v == null || Number.isNaN(v)
           ? "-"
-          : convertFromVndAmount(v, currency, rates).toLocaleString("en-US", { maximumFractionDigits: 0 }),
+          : convertFromVndAmount(v, currency, unitOn, rates).toLocaleString("en-US", { maximumFractionDigits: 0 }),
       convertVndToKUsd: (v) => convertVndToKUsdAmount(v, rates),
     }),
     [currency, unitOn, rates],

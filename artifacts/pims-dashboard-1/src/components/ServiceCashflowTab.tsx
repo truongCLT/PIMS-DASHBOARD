@@ -60,18 +60,22 @@ export function ServiceCashflowTab({
   // Cashflow 탭은 (사이트별 계약 환율이 아닌) PIMSVINA의 공식 월별 환율(최신월)을 사용한다.
   const { currency, unitOn } = useMoney();
   const officialRateQuery = useGetPimsvinaExchangerate({ query: { staleTime: 5 * 60_000 } });
+  // 공식 월별 환율(dashboard_common_exchangerate_1q.jsp) 실데이터가 없으면 DEFAULT_EXCHANGE_RATES 같은
+  // 가짜 환율로 대체하지 않는다 — VND: 0으로 두면 convertMoney()가 변환 없이 원본 그대로 반환하므로,
+  // 실제 환율이 없을 때는 항상 VND로 보여준다(잘못된 환율로 계산된 숫자를 보여주는 것보다 안전).
+  const usdRow = officialRateQuery.data?.find((r) => r.currency === "USD");
   const officialRates = useMemo(() => {
-    const usdRow = officialRateQuery.data?.find((r) => r.currency === "USD");
-    if (!usdRow) return DEFAULT_EXCHANGE_RATES;
+    if (!usdRow) return { USD: 1, VND: 0, KRW: 0 };
     const krwRow = officialRateQuery.data?.find((r) => r.currency === "KRW");
     return {
       USD: 1,
       VND: usdRow.rate,
       KRW: krwRow ? krwRow.rate : DEFAULT_EXCHANGE_RATES.KRW,
     };
-  }, [officialRateQuery.data]);
-  const convert = (v: number) => convertMoney(v, currency, unitOn, officialRates);
-  const unitLabel = moneyUnitLabel(currency, unitOn);
+  }, [officialRateQuery.data, usdRow]);
+  const effectiveCurrency = usdRow != null ? currency : "VND";
+  const convert = (v: number) => convertMoney(v, effectiveCurrency, unitOn, officialRates);
+  const unitLabel = moneyUnitLabel(effectiveCurrency, unitOn);
 
   // 보조: 데이터 입력 탭에서 저장한 프로젝트별 자금 데이터 (pd_cashflow_monthly)
   const { detail, isLoading: pdLoading } = useProjectDetail(projectName);

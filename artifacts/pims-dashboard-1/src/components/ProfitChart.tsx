@@ -67,8 +67,8 @@ export function ProfitChart() {
 
   const { derived, isError } = useDashboardData();
   const filters = useDashboardFilters();
-  const { unitIndex, currency, fxRates, project, division, statusFilter } = filters;
-  const convert = makeConverter(currency, unitIndex, fxRates);
+  const { unitIndex, currency, fxRateHistory, project, division, statusFilter } = filters;
+  const convert = makeConverter(currency, unitIndex, fxRateHistory);
 
   /* ── 경영보고 프로젝트별 월 매출/원가 ── */
   const projectSelected = project !== "All";

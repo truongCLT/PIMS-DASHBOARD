@@ -160,7 +160,7 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
   const emptyRange = from > to;
   const projectSelected = filters.project !== "All";
   const compact = filters.unitIndex === 1;
-  const convert = makeConverter(filters.currency, filters.unitIndex, filters.fxRates);
+  const convert = makeConverter(filters.currency, filters.unitIndex, filters.fxRateHistory);
   const unitLabel =
     filters.currency === "USD" && filters.unitIndex === 0
       ? t("cashFlowChart:thousandUsd")

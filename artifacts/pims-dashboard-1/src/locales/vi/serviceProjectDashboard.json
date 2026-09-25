@@ -12,6 +12,7 @@
   "cashEmptyLabel": "Thu chi (doanh thu/xác nhận/thu tiền)",
   "emptyDataHint": "Không có dữ liệu {{label}}. Vui lòng nhập tại tab \"Nhập dữ liệu\".",
   "templateDownloadFailed": "Tải mẫu không thành công.",
+  "siteRateUnavailable": "Không có tỷ giá hợp đồng của công trường nên chỉ hiển thị VND.",
   "uploadConfirm": "Dữ liệu của dự án này sẽ được thay thế bằng nội dung Excel đã tải lên. Tiếp tục?",
   "uploadCompleted": "Tải lên hoàn tất.",
   "uploadFailed": "Tải lên không thành công. Vui lòng kiểm tra mẫu tệp.",

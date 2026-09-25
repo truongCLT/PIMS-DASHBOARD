@@ -94,6 +94,8 @@
   "addMilestone": "Thêm mốc tiến độ",
   "performanceStartDate": "Ngày bắt đầu thực hiện",
   "performanceEndDate": "Ngày kết thúc thực hiện",
+  "performancePeriod": "Thời gian thực hiện",
+  "monthsSuffix": "{{months}} tháng",
   "scopeOfWork": "Nội dung thực hiện",
   "baseMonthOfRecord": "Tháng cơ sở lập báo cáo",
   "clientPlaceholderService": "VD: DAEWOO NHON TRACH",

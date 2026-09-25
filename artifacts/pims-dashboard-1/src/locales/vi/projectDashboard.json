@@ -6,6 +6,7 @@
   "cashflow": "Thu chi",
   "dataEntry": "Nhập dữ liệu",
   "templateDownloadFailed": "Tải mẫu xuống không thành công.",
+  "siteRateUnavailable": "Không có tỷ giá hợp đồng của công trường nên chỉ hiển thị VND.",
   "confirmReplaceData": "Thao tác này sẽ thay thế dữ liệu của dự án bằng nội dung Excel đã tải lên. Tiếp tục?",
   "uploadCompleted": "Tải lên hoàn tất.",
   "uploadFailedCheckFormat": "Tải lên không thành công. Vui lòng kiểm tra định dạng tệp.",

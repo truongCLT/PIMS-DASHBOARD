@@ -235,7 +235,7 @@ export function CostingTab({
   toMonth: number;
 }) {
   const { t } = useTranslation(["costingTab", "common"]);
-  const { fmtMoney, fmtMoneyFull, fmtVnd } = useMoney();
+  const { fmtMoney, fmtVnd } = useMoney();
   const { detail, isLoading } = useProjectDetail(projectName);
 
   const estimation = detail?.costEstimation ?? [];
@@ -349,10 +349,8 @@ export function CostingTab({
               const pct =
                 contract != null && cost != null && contract !== 0 ? (cost / contract) * 100 : null;
               // execution/completion은 VND 원본 그대로 저장되므로 fmtVnd(), bidding(수동 입력)은 천 USD
-              // 기준이므로 fmtMoneyFull()을 쓴다(fmtVnd()처럼 Unit 토글에 상관없이 항상 전체 금액 — Unit
-              // 토글이 "천 USD/Bil.VND"로 켜져 있으면 fmtMoney()는 소수점 있는 작은 숫자로 축약돼 옆의
-              // execution 전체 자릿수 표시와 안 맞아 보임).
-              const fmtAmount = meta.kind === "bidding" ? fmtMoneyFull : fmtVnd;
+              // 기준이므로 fmtMoney()를 쓴다(둘 다 Unit 토글을 반영하므로 옆의 execution 자릿수와 맞게 보임).
+              const fmtAmount = meta.kind === "bidding" ? fmtMoney : fmtVnd;
               const baseMonth =
                 meta.kind === "completion" && row?.year != null && row?.month != null
                   ? t("costingTab:asOfBasis", {

@@ -107,7 +107,7 @@ export function CostRatioCard({
   isLoading: boolean;
 }) {
   const { t } = useTranslation(["saleCostTab", "costingTab"]);
-  const { fmtMoneyFull, fmtVnd } = useMoney();
+  const { fmtMoney, fmtVnd } = useMoney();
 
   // Execution/Completion đến từ PIMSVINA sync và có thể có nhiều dòng lịch sử (1 dòng/tháng) — luôn
   // lấy dòng của tháng MỚI NHẤT đã đồng bộ (giống mục "4. Cost Rate" ở Data Entry), bỏ cutoff theo
@@ -174,9 +174,8 @@ export function CostRatioCard({
             // Ratio(%) = Cost/Contract*100 cho cả 3 dòng (nguyên tắc "원가율" — luôn <= 100% khi có lãi).
             const pct = contract != null && cost != null && contract !== 0 ? (cost / contract) * 100 : null;
             // execution/completion은 VND 원본 그대로 저장되므로 fmtVnd(), bidding(수동 입력)은 천 USD
-            // 기준이므로 fmtMoneyFull()을 쓴다(Unit 토글에 상관없이 항상 전체 금액 — fmtVnd()와 동일한
-            // 성격이라야 옆의 execution 금액과 자릿수가 맞게 보인다).
-            const fmtAmount = meta.kind === "bidding" ? fmtMoneyFull : fmtVnd;
+            // 기준이므로 fmtMoney()를 쓴다(둘 다 Unit 토글을 반영하므로 옆의 execution 자릿수와 맞게 보인다).
+            const fmtAmount = meta.kind === "bidding" ? fmtMoney : fmtVnd;
             const hoverTitle =
               contract != null || cost != null
                 ? `도급액: ${fmtAmount(contract)} / 원가: ${fmtAmount(cost)}`

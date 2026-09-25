@@ -94,6 +94,8 @@
   "addMilestone": "마일스톤 추가",
   "performanceStartDate": "수행 시작일",
   "performanceEndDate": "수행 종료일",
+  "performancePeriod": "수행기간",
+  "monthsSuffix": "{{months}}개월",
   "scopeOfWork": "수행내용",
   "baseMonthOfRecord": "작성 기준월",
   "clientPlaceholderService": "예: DAEWOO NHON TRACH",

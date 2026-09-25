@@ -149,8 +149,8 @@ export function SalesChart() {
 
   const { derived, isError } = useDashboardData();
   const filters = useDashboardFilters();
-  const { unitIndex, currency, fxRates, project, division, statusFilter } = filters;
-  const convert = makeConverter(currency, unitIndex, fxRates);
+  const { unitIndex, currency, fxRateHistory, project, division, statusFilter } = filters;
+  const convert = makeConverter(currency, unitIndex, fxRateHistory);
 
   const { theme } = useTheme();
   const variant = theme.charts?.salesVariant;

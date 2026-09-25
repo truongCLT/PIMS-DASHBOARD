@@ -126,7 +126,7 @@ export function SaleCostTab({
     budget:   r.budget ?? null,
     plan:     r.plan   ?? null,
     actual:   r.actual ?? null,
-    bold:     r.category == null,
+    bold:     r.category == null || /contingency/i.test(r.item), // category 없는 단독 항목 또는 Contingency는 굵게 (CostingTab.tsx와 동일 규칙)
   }));
   const budgetRowsWithSum = buildBudgetRows(
     rawBudgetRows,

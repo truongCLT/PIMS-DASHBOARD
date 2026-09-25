@@ -90,9 +90,14 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
     { siteCode: siteCode ?? "" },
     { query: { enabled: !!siteCode, staleTime: 5 * 60_000 } },
   );
+  // 현장 계약 환율(dashboard_common_siterate_1q.jsp) 실데이터가 없으면 DEFAULT_EXCHANGE_RATES 같은
+  // 가짜 환율로 대체하지 않는다 — VND: 0으로 두면 convertFromVndAmount()/convertMoney()가 변환 없이
+  // 원본 VND 그대로 반환하므로, 실제 환율이 없을 때는 항상 VND로 보여준다(잘못된 환율로 계산된 숫자를
+  // 보여주는 것보다 안전).
+  const hasSiteRate = siteRateQuery.data?.rateUsd != null;
   const siteRates = useMemo(() => {
     const vndPerUsd = siteRateQuery.data?.rateUsd;
-    if (!vndPerUsd) return DEFAULT_EXCHANGE_RATES;
+    if (!vndPerUsd) return { USD: 1, VND: 0, KRW: 0 };
     const vndPerKrw = siteRateQuery.data?.rateKrw;
     return {
       USD: 1,
@@ -100,6 +105,9 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
       KRW: vndPerKrw ? vndPerUsd / vndPerKrw : DEFAULT_EXCHANGE_RATES.KRW,
     };
   }, [siteRateQuery.data]);
+  // 실제 변환/표시(금액+단위 라벨)는 실환율이 있을 때만 선택한 통화를 따른다 — 없으면 항상 VND로 보여준다
+  // (버튼 자체는 currency 상태 그대로 눌리는 즉시 활성화 표시되도록 아래 버튼 스타일에서는 currency를 쓴다).
+  const effectiveCurrency = hasSiteRate ? currency : "VND";
   const queryClient = useQueryClient();
   const putMutation = usePutProjectdetail();
   const excelFileRef = useRef<HTMLInputElement>(null);
@@ -168,7 +176,7 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
       : "-";
 
   return (
-    <DisplayUnitProvider currency={currency} unitOn={unitOn} rates={siteRates}>
+    <DisplayUnitProvider currency={effectiveCurrency} unitOn={unitOn} rates={siteRates}>
     <div style={{ flex: 1, overflowY: "auto", backgroundColor: "#eef2f7" }}>
       {/* Filter row */}
       <div
@@ -189,6 +197,7 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
               <button
                 key={c}
                 onClick={() => setCurrency(c)}
+                title={!hasSiteRate && c !== "VND" ? t("projectDashboard:siteRateUnavailable") : undefined}
                 style={{
                   padding: "5px 12px",
                   fontSize: "12px",
@@ -329,7 +338,7 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
         />
       )}
 
-      <ProjectContextBar projectName={siteCode ? `${projectName} [${siteCode}]` : projectName} businessType="시공" client={ov.client} period={periodLabel} primaryValue={ov.scale} contractValue={`${formatVnd(ov.contractAmount, currency, siteRates)} ${currency}`} referenceMonth={ov.asOfMonth} isClosed={ov.isClosed} labels={{ client: t("projectDashboard:client"), period: t("projectDashboard:constructionPeriod"), primary: t("projectDashboard:constructionScale"), contract: t("common:contractAmount"), referenceMonth: t("common:baseMonth"), closed: t("common:closed"), ongoing: t("common:inProgress") }} />
+      <ProjectContextBar projectName={siteCode ? `${projectName} [${siteCode}]` : projectName} businessType="시공" client={ov.client} period={periodLabel} primaryValue={ov.scale} contractValue={`${formatVnd(ov.contractAmount, effectiveCurrency, siteRates)} ${effectiveCurrency}`} referenceMonth={ov.asOfMonth} isClosed={ov.isClosed} labels={{ client: t("projectDashboard:client"), period: t("projectDashboard:constructionPeriod"), primary: t("projectDashboard:constructionScale"), contract: t("common:contractAmount"), referenceMonth: t("common:baseMonth"), closed: t("common:closed"), ongoing: t("common:inProgress") }} />
 
       {/* Horizontal tab bar */}
       <div

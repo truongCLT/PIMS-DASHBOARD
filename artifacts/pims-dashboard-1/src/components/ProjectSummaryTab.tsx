@@ -199,7 +199,7 @@ function SitePhotoPanel({
 export function ProjectSummaryTab({ projectName }: { projectName: string }) {
   const { t } = useTranslation(["projectDashboard", "common", "projectDataEntryTab"]);
   const { detail, isLoading } = useProjectDetail(projectName);
-  const { fmtMoney, fmtVnd, currency, unitLabel } = useMoney();
+  const { fmtMoney, fmtVnd, unitLabel } = useMoney();
 
   const ov = detail?.overview ?? null;
   const siteCode = ov?.siteCode ?? null;
@@ -227,12 +227,11 @@ export function ProjectSummaryTab({ projectName }: { projectName: string }) {
   const monthsLabel = months != null ? t("projectDashboard:monthsSuffix", { count: months }) : null;
 
   // 도급액 — VND 원본 그대로 저장된 값이라 fmtVnd() 사용 (fmtMoney()는 천 USD 기준 값을 가정하므로 여기
-  // 쓰면 안 됨). fmtVnd()는 unitOn 배율을 적용하지 않고 항상 전체 금액을 반환하므로 unitLabel(단위 배율
-  // 라벨) 대신 선택된 통화 코드만 붙인다.
+  // 쓰면 안 됨).
   const contractAmt = ov?.contractAmount ?? null;
   const contractAmtLabel =
     contractAmt != null
-      ? `${fmtVnd(contractAmt)} ${currency}`
+      ? `${fmtVnd(contractAmt)} ${unitLabel}`
       : DASH;
 
   // 현장 환율 라벨

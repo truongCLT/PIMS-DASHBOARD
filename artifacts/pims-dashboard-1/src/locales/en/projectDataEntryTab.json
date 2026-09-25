@@ -94,6 +94,8 @@
   "addMilestone": "Add milestone",
   "performanceStartDate": "Performance Start Date",
   "performanceEndDate": "Performance End Date",
+  "performancePeriod": "Performance Period",
+  "monthsSuffix": "{{months}} months",
   "scopeOfWork": "Scope of Work",
   "baseMonthOfRecord": "Base Month of Record",
   "clientPlaceholderService": "e.g. DAEWOO NHON TRACH",

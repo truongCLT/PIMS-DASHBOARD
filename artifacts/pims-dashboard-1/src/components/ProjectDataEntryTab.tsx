@@ -2230,6 +2230,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
               <th style={th}>{t("projectDataEntryTab:contractAmountVnd")}</th>
               <th style={th}>{t("projectDataEntryTab:performanceStartDate")}</th>
               <th style={th}>{t("projectDataEntryTab:performanceEndDate")}</th>
+              <th style={th}>{t("projectDataEntryTab:performancePeriod")}</th>
               <th style={th}>{t("projectDataEntryTab:client")}</th>
               <th style={th}>{t("projectDataEntryTab:scopeOfWork")}</th>
               <th style={th}>{t("projectDataEntryTab:paymentTerms")}</th>
@@ -2247,6 +2248,15 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
               </td>
               <td style={tdCell}>
                 <DateInput value={overview.endDate} onChange={(v) => setOverview((o) => ({ ...o, endDate: v }))} />
+              </td>
+              <td style={tdCell}>
+                {(() => {
+                  if (!overview.startDate || !overview.endDate) return "-";
+                  const s = new Date(overview.startDate);
+                  const e = new Date(overview.endDate);
+                  const months = Math.max(1, Math.round((e.getTime() - s.getTime()) / (30.44 * 24 * 3600 * 1000)));
+                  return t("projectDataEntryTab:monthsSuffix", { months });
+                })()}
               </td>
               <td style={tdCell}>
                 <TextInput value={overview.client} placeholder={t("projectDataEntryTab:clientPlaceholderService")} onChange={(v) => setOverview((o) => ({ ...o, client: v }))} data-row={0} data-col={1} />
@@ -2378,14 +2388,14 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                         // đổi kUSD) — dùng fmtVnd() thay vì fmtMoney() để hiển thị đúng.
                         <span style={{ fontSize: "13px", color: INK_MUTED }}>{fmtVndOrBlank(contractAmount)}</span>
                       ) : (
-                        <VndInput forceFullAmount valueKUsd={row.contractAmount} onChange={(v) => (i >= 0 ? updateAt(setCostEstimation, i, { contractAmount: v }) : setCostEstimation((rows) => [...rows, { kind: k.kind, contractAmount: v, costAmount: null, year: null, month: null }]))} data-row={0} data-col={0} />
+                        <VndInput valueKUsd={row.contractAmount} onChange={(v) => (i >= 0 ? updateAt(setCostEstimation, i, { contractAmount: v }) : setCostEstimation((rows) => [...rows, { kind: k.kind, contractAmount: v, costAmount: null, year: null, month: null }]))} data-row={0} data-col={0} />
                       )}
                     </td>
                     <td style={{ ...tdCell, textAlign: "right" }}>
                       {isCompletion || isExecution ? (
                         <span style={{ fontSize: "13px", color: INK_MUTED }}>{fmtVndOrBlank(costAmount)}</span>
                       ) : (
-                        <VndInput forceFullAmount valueKUsd={row.costAmount} onChange={(v) => (i >= 0 ? updateAt(setCostEstimation, i, { costAmount: v }) : setCostEstimation((rows) => [...rows, { kind: k.kind, contractAmount: null, costAmount: v, year: null, month: null }]))} data-row={0} data-col={1} />
+                        <VndInput valueKUsd={row.costAmount} onChange={(v) => (i >= 0 ? updateAt(setCostEstimation, i, { costAmount: v }) : setCostEstimation((rows) => [...rows, { kind: k.kind, contractAmount: null, costAmount: v, year: null, month: null }]))} data-row={0} data-col={1} />
                       )}
                     </td>
                     <td style={{ ...tdCell, textAlign: "right" }}>

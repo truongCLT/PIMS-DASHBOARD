@@ -6,6 +6,7 @@
   "cashflow": "Cashflow",
   "dataEntry": "Data Entry",
   "templateDownloadFailed": "Failed to download the template.",
+  "siteRateUnavailable": "No site contract exchange rate available — showing VND only.",
   "confirmReplaceData": "This will replace this project's data with the uploaded Excel content. Continue?",
   "uploadCompleted": "Upload completed.",
   "uploadFailedCheckFormat": "Upload failed. Please check the file format.",

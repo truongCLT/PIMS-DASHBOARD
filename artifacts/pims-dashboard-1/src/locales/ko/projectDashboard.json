@@ -6,6 +6,7 @@
   "cashflow": "자금",
   "dataEntry": "데이터 입력",
   "templateDownloadFailed": "양식 다운로드에 실패했습니다.",
+  "siteRateUnavailable": "현장 계약 환율 정보가 없어 VND로만 표시됩니다.",
   "confirmReplaceData": "업로드한 Excel 내용으로 이 프로젝트의 데이터를 교체합니다. 계속할까요?",
   "uploadCompleted": "업로드가 완료되었습니다.",
   "uploadFailedCheckFormat": "업로드에 실패했습니다. 파일 양식을 확인해 주세요.",
