@@ -121,7 +121,7 @@ export function SaleCostTab({
     budget:   r.budget ?? null,
     plan:     r.plan   ?? null,
     actual:   r.actual ?? null,
-    bold:     r.category == null || /contingency/i.test(r.item),
+    bold:     r.category == null,
   }));
   const budgetRowsWithSum = buildBudgetRows(
     rawBudgetRows,

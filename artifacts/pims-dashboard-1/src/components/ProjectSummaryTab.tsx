@@ -238,7 +238,7 @@ export function ProjectSummaryTab({ projectName }: { projectName: string }) {
   // 현장 환율 라벨
   const siteRateLabel =
     rateUsd != null
-      ? `1 USD = ${rateUsd.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 1 })} VND${rateKrw != null ? ` / 1 KRW = ${rateKrw.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 1 })} VND` : ""}`
+      ? `1 USD = ${rateUsd.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })} VND${rateKrw != null ? ` / 1 KRW = ${rateKrw.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })} VND` : ""}`
       : null;
 
   if (isLoading) {

@@ -56,8 +56,7 @@
   "cumulativeConfirmedLabel": "Cumulative Confirmed Progress",
   "collectionActualLabel": "Collection (Actual)",
   "receivableLabel": "Receivable (A/R)",
-  "collectionRateLabel": "Collection Rate (Collection / Cumulative Confirmed)",
+  "collectionRateLabel": "Collection Rate (Collection / Cumulative Revenue)",
   "fundsForecastNote": "* Displayed with plan/forecast, like revenue",
-  "fundsDetailNote": "* The detail view table adds revenue, confirmed amount, and collection receivable",
-  "fundsConfirmedSameAsRevenueNote": "* Cumulative Confirmed Progress currently reuses the Cumulative Revenue figure, as no separate confirmed-progress data is tracked yet."
+  "fundsDetailNote": "* The detail view table adds revenue, confirmed amount, and collection receivable"
 }

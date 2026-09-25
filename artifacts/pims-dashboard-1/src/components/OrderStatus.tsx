@@ -57,7 +57,7 @@ export function OrderStatus() {
       derived?.year,
       derived?.month,
     );
-    return roundSmart(converted).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 1 });
+    return roundSmart(converted).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
   };
   const detailEntries = detailQuery.data?.entries ?? [];
   const detailTotals = detailEntries.reduce(
@@ -210,7 +210,7 @@ export function OrderStatus() {
             </Pie>
             <Tooltip
               contentStyle={{ fontSize: "12px" }}
-              formatter={(v: any) => Number(v).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 1 })}
+              formatter={(v: any) => Number(v).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
             />
           </PieChart>
         </ResponsiveContainer>
@@ -244,7 +244,7 @@ export function OrderStatus() {
             <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", flexShrink: 0 }}>
               <span style={{ display: "flex", alignItems: "baseline", gap: "4px" }}>
                 <span style={{ fontSize: statFont === "12px" ? "12px" : "15px", fontWeight: 700, color: "#1a2d4d" }}>
-                  {r.value.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 1 })}
+                  {r.value.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                 </span>
                 {unit && <span style={{ fontSize: "10px", color: "#8a99b5" }}>{unit}</span>}
               </span>

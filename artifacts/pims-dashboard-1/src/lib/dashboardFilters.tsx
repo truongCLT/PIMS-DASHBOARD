@@ -89,10 +89,10 @@ export function unitLabelOf(currency: CurrencyCode, unitIndex: 0 | 1): string {
   return UNIT_OPTIONS[currency][unitIndex];
 }
 
-/** 값 크기에 맞춰 반올림 (작은 값은 소수점 유지) */
+/** 금액/수량 값 반올림 — 정수로 표시한다 (% 표시는 fmtPct 등 별도 함수에서 소수점 1자리 유지). */
 export function roundSmart(v: number): number {
   if (!Number.isFinite(v)) return 0;
-  return Math.round(v * 10) / 10;
+  return Math.round(v);
 }
 
 export type DashboardDivision = "시공" | "용역";

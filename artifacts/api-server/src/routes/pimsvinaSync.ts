@@ -1039,9 +1039,13 @@ export async function applyPimsvinaData(fetched: PimsvinaData) {
           siteCode: sql`excluded.site_code`,
           contractAmount: sql`excluded.contract_amount`,
           costAmount: sql`excluded.cost_amount`,
-          initialBusinessBudget: sql`excluded.initial_business_budget`,
-          initialContractAmount: sql`excluded.initial_contract_amount`,
-          initialGrossProfitRatio: sql`excluded.initial_gross_profit_ratio`,
+          // "V_0"(Initial Budget) 계열 3개 필드는 한 번 승인되면 바뀌지 않는 값이라, PIMSVINA 소스가 이번
+          // 배치에서 일시적으로 null을 내려줘도(Oracle 쪽 간헐적 응답 누락으로 실제 확인된 현상) 기존에
+          // 이미 확보한 값을 null로 덮어써서는 안 된다 — COALESCE로 새 값이 있을 때만 갱신하고, 없으면
+          // 기존 값을 그대로 보존한다.
+          initialBusinessBudget: sql`COALESCE(excluded.initial_business_budget, pd_cost_estimation.initial_business_budget)`,
+          initialContractAmount: sql`COALESCE(excluded.initial_contract_amount, pd_cost_estimation.initial_contract_amount)`,
+          initialGrossProfitRatio: sql`COALESCE(excluded.initial_gross_profit_ratio, pd_cost_estimation.initial_gross_profit_ratio)`,
         },
       });
     counts.pdCostEstimation += chunk.length;

@@ -52,13 +52,14 @@ export function DrilldownCard() {
   const unitLabel = derived?.unitLabel ?? "천 USD";
   const convert = makeConverter(currency, unitIndex, fxRates);
   const fmtK = (v: number): string =>
-    `${roundSmart(v).toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 1 })} ${unitLabel}`;
+    `${roundSmart(v).toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 0 })} ${unitLabel}`;
 
   const month = derived?.month ?? maxSelectableMonth();
 
-  // 1. 수주 실적: cumulative orders received to date (matches OrderStatus card's "Orders received")
+  // 1. 수주 실적: 제목이 "Order Result (Month N)"이므로 그 달 단일 값을 보여준다 — OrderStatus 카드의
+  // "Orders received"(연초~기준월 누계)와는 다른 값이니 섞지 않는다.
   // (derived 값은 이미 선택된 통화·단위로 변환되어 있음)
-  const orderCumActual = derived?.orderStatus?.ordered ?? null;
+  const orderMonthActualValue = derived?.orderMonthActual ?? null;
 
   // 2. 금월 주요 매출: top-3 projects by current-month actual revenue (groups excluded server-side)
   const topRevenue = (projectsQuery.data?.projects ?? [])
@@ -121,8 +122,8 @@ export function DrilldownCard() {
             t("drilldownCard:error")
           ) : loading ? (
             "-"
-          ) : orderCumActual != null && orderCumActual !== 0 ? (
-            <div>{fmtK(orderCumActual)}</div>
+          ) : orderMonthActualValue != null && orderMonthActualValue !== 0 ? (
+            <div>{fmtK(orderMonthActualValue)}</div>
           ) : (
             <div style={{ color: "#6b7c94", fontWeight: 500 }}>{t("drilldownCard:noCurrentMonthOrder")}</div>
           )}

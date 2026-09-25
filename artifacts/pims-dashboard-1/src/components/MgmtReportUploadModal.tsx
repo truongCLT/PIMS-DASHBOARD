@@ -69,7 +69,7 @@ function errorMessage(err: unknown, t: (key: string) => string): string {
 }
 
 const fmt = (n: number) =>
-  n.toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 1 });
+  n.toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 
 const thLeft: React.CSSProperties = { textAlign: "left", padding: "6px 14px", fontWeight: 600 };
 const thRight: React.CSSProperties = { textAlign: "right", padding: "6px 10px", fontWeight: 600 };

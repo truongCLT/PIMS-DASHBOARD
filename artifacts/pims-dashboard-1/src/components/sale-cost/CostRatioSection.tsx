@@ -121,6 +121,17 @@ export function CostRatioCard({
   };
   const pickedExecution = pickLatestByKind("execution");
   const pickedCompletion = pickLatestByKind("completion");
+  // Initial Business Budget(최초 승인 예산)는 Base Month별로 바뀌는 값이 아니라 한 번 승인되면 고정되는
+  // 기준선이라, 최신 달 행에 우연히 null이 와도 다른 달 행에는 값이 있을 수 있다 — 이력 전체에서 값이
+  // 있는 가장 최근 달의 값을 찾아 쓴다(ProjectDataEntryTab "4. Cost Rate"와 동일한 원칙).
+  const latestInitialBudgetRow = estimation
+    .filter((e) => e.kind === "execution" && e.initialBusinessBudget != null)
+    .reduce<CostEstimationRow | null>((latest, e) => {
+      if (!latest) return e;
+      const eKey = (e.year ?? 0) * 100 + (e.month ?? 0);
+      const latestKey = (latest.year ?? 0) * 100 + (latest.month ?? 0);
+      return eKey > latestKey ? e : latest;
+    }, null);
 
   const noData = !isLoading && estimation.length === 0;
 
@@ -158,7 +169,7 @@ export function CostRatioCard({
               meta.kind === "completion"
                 ? (pickedExecution?.costAmount ?? null)
                 : meta.kind === "execution"
-                  ? (row?.initialBusinessBudget ?? null)
+                  ? (latestInitialBudgetRow?.initialBusinessBudget ?? null)
                   : (row?.costAmount ?? null);
             // Ratio(%) = Cost/Contract*100 cho cả 3 dòng (nguyên tắc "원가율" — luôn <= 100% khi có lãi).
             const pct = contract != null && cost != null && contract !== 0 ? (cost / contract) * 100 : null;

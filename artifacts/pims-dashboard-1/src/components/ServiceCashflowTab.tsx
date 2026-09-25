@@ -227,7 +227,7 @@ export function ServiceCashflowTab({
               axisLine={false}
               domain={[bottom, top]}
               ticks={ticks}
-              tickFormatter={(v: number) => v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 1 })}
+              tickFormatter={(v: number) => v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
             />
             <Legend wrapperStyle={{ fontSize: "14px", fontWeight: 600 }} iconSize={14} />
             <ReferenceLine y={0} stroke={chartTheme.sgaOrange} strokeDasharray="3 3" />
@@ -257,7 +257,7 @@ export function ServiceCashflowTab({
                 dataKey="cashInActual"
                 position="center"
                 style={{ fontSize: "13px", fill: "#fff", fontWeight: 700 }}
-                formatter={(v: number) => (v !== 0 ? v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 1 }) : "")}
+                formatter={(v: number) => (v !== 0 ? v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : "")}
               />
             </Bar>
             <Bar
@@ -273,7 +273,7 @@ export function ServiceCashflowTab({
                 dataKey="cashOutActual"
                 position="center"
                 style={{ fontSize: "13px", fill: "#fff", fontWeight: 700 }}
-                formatter={(v: number) => (v !== 0 ? v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 1 }) : "")}
+                formatter={(v: number) => (v !== 0 ? v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : "")}
               />
             </Bar>
             <Bar
@@ -291,7 +291,7 @@ export function ServiceCashflowTab({
                 dataKey="cashInForecast"
                 position="center"
                 style={{ fontSize: "13px", fill: chartTheme.inflowBlue, fontWeight: 700 }}
-                formatter={(v: number) => (v !== 0 ? v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 1 }) : "")}
+                formatter={(v: number) => (v !== 0 ? v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : "")}
               />
             </Bar>
             <Bar
@@ -309,7 +309,7 @@ export function ServiceCashflowTab({
                 dataKey="cashOutForecast"
                 position="center"
                 style={{ fontSize: "13px", fill: chartTheme.actualGreen, fontWeight: 700 }}
-                formatter={(v: number) => (v !== 0 ? v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 1 }) : "")}
+                formatter={(v: number) => (v !== 0 ? v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : "")}
               />
             </Bar>
             <Line
@@ -326,7 +326,7 @@ export function ServiceCashflowTab({
                 position="top"
                 style={{ fontSize: "12px", fill: chartTheme.actualGreen, fontWeight: 700 }}
                 formatter={(v: number) =>
-                  v !== 0 ? v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 1 }) : ""
+                  v !== 0 ? v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : ""
                 }
               />
             </Line>

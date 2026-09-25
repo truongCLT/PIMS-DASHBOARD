@@ -23,7 +23,7 @@ export function useProjectDetail(projectName: string) {
 }
 
 /** 숫자 → "1,234" / null·undefined → "-" */
-export function fmtNum(v: number | null | undefined, digits = 1): string {
+export function fmtNum(v: number | null | undefined, digits = 0): string {
   if (v == null || Number.isNaN(v)) return "-";
   return v.toLocaleString("en-US", { maximumFractionDigits: digits, minimumFractionDigits: 0 });
 }

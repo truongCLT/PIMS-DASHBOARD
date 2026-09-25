@@ -40,7 +40,7 @@ const RATE_COLOR = chartTheme.rateOrange;
 const BadgeLabel = (fill: string, compact = false, n = 12) => (props: any) => {
   const { x, y, value } = props;
   if (value == null || x == null || y == null) return null;
-  const text = Number(value).toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 1 });
+  const text = Number(value).toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
   const colPitch = Math.max(20, 320 / Math.max(1, n));
   const maxFs = chartTypography.value;
   const fontSize = Math.max(7.5, Math.min(maxFs, colPitch / (text.length * 0.62)));
@@ -110,14 +110,14 @@ const CustomTooltip = ({ active, payload, label, colors }: any) => {
     ...(plan
       ? [{
           label: t("salesChart:salesPlan"),
-          value: Number(plan.value).toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 1 }),
+          value: Number(plan.value).toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 0 }),
           color: c.plan,
         }]
       : []),
     ...(actual
       ? [{
           label: actualLabel,
-          value: Number(actual.value).toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 1 }),
+          value: Number(actual.value).toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 0 }),
           color: c.actual,
         }]
       : []),
@@ -261,7 +261,7 @@ export function SalesChart() {
     if (x == null || index == null) return null;
     const d = visibleData[index];
     if (!d || d.actual == null || !Number.isFinite(Number(d.actual))) return null;
-    const text = Number(d.actual).toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 1 });
+    const text = Number(d.actual).toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
     const fontSize = chartTypography.value;
     let topY = y;
     if (
@@ -383,7 +383,7 @@ export function SalesChart() {
                 domain={[0, "auto"]}
                 tick={{ fontSize: chartTypography.month, fontFamily: chartTypography.fontFamily, fill: chartTheme.axisText }}
                 width={compact ? 88 : 60}
-                tickFormatter={(v: number) => v.toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 1 })}
+                tickFormatter={(v: number) => v.toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                 axisLine={false}
                 tickLine={false}
               />
@@ -444,7 +444,7 @@ export function SalesChart() {
                 domain={[0, "auto"]}
                 tick={{ fontSize: chartTypography.axis, fontFamily: chartTypography.fontFamily, fill: chartTheme.axisText }}
                 width={compact ? 88 : 60}
-                tickFormatter={(v: number) => v.toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 1 })}
+                tickFormatter={(v: number) => v.toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                 axisLine={false}
                 tickLine={false}
               />
@@ -478,7 +478,7 @@ export function SalesChart() {
                   dataKey="actual"
                   position="top"
                   offset={10}
-                  formatter={(v: number) => (v == null ? "" : v.toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 1 }))}
+                  formatter={(v: number) => (v == null ? "" : v.toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 0 }))}
                   style={{ fontSize: chartTypography.value, fontFamily: chartTypography.fontFamily, fontWeight: 700, fill: actualColor }}
                 />
               </Area>
@@ -497,7 +497,7 @@ export function SalesChart() {
               domain={["auto", "auto"]}
               tick={{ fontSize: chartTypography.axis, fontFamily: chartTypography.fontFamily, fill: chartTheme.axisText }}
               width={compact ? 88 : 60}
-              tickFormatter={(v: number) => v.toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 1 })}
+              tickFormatter={(v: number) => v.toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
               axisLine={false}
               tickLine={false}
             />
@@ -595,7 +595,7 @@ export function SalesChart() {
         ) : (
           (() => {
             const fmtAmt = (v: number) =>
-              v.toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 1 });
+              v.toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
             const totalPlan = drillSiteRows.reduce((sum, row) => sum + row.plan, 0);
             const totalActual = drillSiteRows.reduce((sum, row) => sum + row.actual, 0);
             const totalYtdPlan = drillSiteRows.reduce((sum, row) => sum + row.ytdPlan, 0);

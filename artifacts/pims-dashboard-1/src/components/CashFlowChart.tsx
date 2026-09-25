@@ -18,10 +18,12 @@ import {
   useGetCashflowAggregate,
   getGetCashflowAggregateQueryKey,
   getCashflowAggregate,
+  useListMgmtreportProjects,
+  getListMgmtreportProjectsQueryKey,
 } from "@workspace/api-client-react";
 import { useGetMgmtreportSettings } from "@workspace/api-client-react/generated/api";
 import type { DashboardScope } from "./Sidebar";
-import { PROJECT_GROUPS } from "../data/projects";
+import { PROJECT_GROUPS, resolveProjectBusinessType } from "../data/projects";
 import { getCashflowProjectRef } from "../data/cashflowProjectMap";
 import {
   useDashboardFilters,
@@ -121,7 +123,7 @@ const makeBalanceLabel = (compact: boolean) => (props: any) => {
   if (value === undefined || value === null) return null;
   return (
     <text x={x} y={y - 7} fill={chartTheme.balanceNavy} textAnchor="middle" fontSize={compact ? 9 : 11} fontWeight="600">
-      {Number(value).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 1 })}
+      {Number(value).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
     </text>
   );
 };
@@ -191,12 +193,29 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
   }));
   const hasData = chartData.some((d) => d.inflow !== 0 || d.outflow !== 0 || d.balance !== 0);
 
-  /* ── 현장별 드릴다운: 진행중 스코프만 지원 ── */
+  /* ── 현장별 드릴다운 ──
+   * 진행중 스코프는 상단 합계와 동일한 고정 현장 목록(getOngoingRefs)을 그대로 쓰고,
+   * 전체/시공/용역은 Revenue 위젯(SalesChart)과 동일하게 경영보고 프로젝트 목록 전체를
+   * 부문으로 필터링한 뒤, 자금수지 매핑(CASHFLOW_PROJECT_MAP)이 있는 현장만 뽑아 쓴다. */
+  const projectsQuery = useListMgmtreportProjects(
+    { year: REPORT_YEAR },
+    { query: { queryKey: getListMgmtreportProjectsQueryKey({ year: REPORT_YEAR }) } },
+  );
   const drillRefs = useMemo(() => {
     if (scope === "시공-진행중") return getOngoingRefs("시공");
     if (scope === "용역-진행중") return getOngoingRefs("용역");
-    return [];
-  }, [scope]);
+    if (scope === "시공-종료" || scope === "용역-종료") return [];
+    const divisionLabel = scope === "시공" ? "시공" : scope === "용역" ? "용역" : null;
+    const projects = projectsQuery.data?.projects ?? [];
+    return projects
+      .filter(
+        (p) =>
+          !p.isGroup &&
+          (!divisionLabel || resolveProjectBusinessType(p.name, p.businessType) === divisionLabel),
+      )
+      .map((p) => getCashflowProjectRef(p.name))
+      .filter((r): r is NonNullable<typeof r> => r != null);
+  }, [scope, projectsQuery.data]);
   const hasDrilldown = drillRefs.length > 0 && enabled;
 
   /** 드릴다운 쿼리: 현장별 개별 쿼리 (조건부 활성) */
@@ -273,7 +292,7 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
             width={compact ? 88 : 60}
             axisLine={false}
             tickLine={false}
-            tickFormatter={(v: number) => v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 1 })}
+            tickFormatter={(v: number) => v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
           />
           <YAxis
             yAxisId="balance"
@@ -288,7 +307,7 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
             formatter={(value: number | string, name: string) => {
               const n = typeof value === "number" ? value : Number(value);
               const shown = name === outflowName ? Math.abs(n) : n;
-              return [`${shown.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 1 })} ${unitLabel}`, name];
+              return [`${shown.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })} ${unitLabel}`, name];
             }}
           />
           <ReferenceLine y={0} yAxisId="flow" stroke={chartTheme.zeroLine} />
@@ -413,13 +432,13 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
                 key: "inflow",
                 label: t("cashFlowChart:colInflow"),
                 align: "right",
-                format: (v) => typeof v === "number" ? v.toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 1 }) : "-",
+                format: (v) => typeof v === "number" ? v.toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : "-",
               },
               {
                 key: "outflow",
                 label: t("cashFlowChart:colOutflow"),
                 align: "right",
-                format: (v) => typeof v === "number" ? v.toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 1 }) : "-",
+                format: (v) => typeof v === "number" ? v.toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : "-",
               },
             ]}
             rows={drillRows}

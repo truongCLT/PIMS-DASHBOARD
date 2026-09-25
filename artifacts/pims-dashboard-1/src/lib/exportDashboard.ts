@@ -63,7 +63,7 @@ function num(s: string | undefined): number {
 }
 
 function fmt(v: number): string {
-  return v === 0 ? "-" : v.toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 1 });
+  return v === 0 ? "-" : v.toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 }
 
 /* ---------- offscreen chart rendering (PNG for Excel embedding) ---------- */

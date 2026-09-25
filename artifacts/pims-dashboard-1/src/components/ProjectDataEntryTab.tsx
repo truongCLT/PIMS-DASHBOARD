@@ -675,6 +675,24 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
     }
   }, [detail, loaded, cfRef, cfQuery.isLoading, cfQuery.data]);
 
+  // Execution/Completion 행은 PIMSVINA 동기화 전용 읽기 전용 데이터라 사용자가 직접 수정할 일이 없다 —
+  // 위 초기 로드 effect는 `loaded` 가드로 한 번만 실행되어 사용자가 입력 중인 값(Bidding 등)이 백그라운드
+  // refetch로 덮어써지지 않게 보호하지만, 그 탓에 Confirm Sync 이후 detail이 새로 refetch돼도 이미 로드된
+  // 탭은 새로고침 전까지 예전 값을 계속 보여주는 문제가 있었다. 읽기 전용인 execution/completion만은
+  // `loaded`와 무관하게 항상 최신 detail을 반영한다(Bidding 행은 그대로 보존).
+  useEffect(() => {
+    if (!detail) return;
+    const sortByMonth = (a: ProjectDetailCostEstimation, b: ProjectDetailCostEstimation) =>
+      (a.year ?? 0) * 100 + (a.month ?? 0) - ((b.year ?? 0) * 100 + (b.month ?? 0));
+    const executions = detail.costEstimation.filter((e) => e.kind === "execution").sort(sortByMonth);
+    const completions = detail.costEstimation.filter((e) => e.kind === "completion").sort(sortByMonth);
+    setCostEstimation((prev) => [
+      ...prev.filter((e) => e.kind === "bidding"),
+      ...(executions.length > 0 ? executions : [{ kind: "execution" as const, contractAmount: null, costAmount: null, year: null, month: null }]),
+      ...(completions.length > 0 ? completions : [{ kind: "completion" as const, contractAmount: null, costAmount: null, year: null, month: null }]),
+    ]);
+  }, [detail?.costEstimation]);
+
   const updateAt = <T,>(setter: React.Dispatch<React.SetStateAction<T[]>>, i: number, patch: Partial<T>) =>
     setter((rows) => rows.map((r, j) => (j === i ? { ...r, ...patch } : r)));
   const updateProgressAt = (i: number, patch: Partial<ProjectDetailProgressPoint>) =>
@@ -1045,10 +1063,19 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
   const projectEndIndex =
     toMonthIndex(overview.endDate) ??
     (dataMonthIndexes.length > 0 ? Math.max(...dataMonthIndexes) : projectStartIndex + 11);
+  // "3. 공정별 원가 계획/실적"은 계약 시작월(projectStartIndex)부터 보여주면, 실제 착공/원가 데이터가
+  // 한참 뒤에 시작하는 현장은 앞부분에 아무 데이터도 없는 달들이 길게 나온다 — 실제 데이터(공정/매출/원가)가
+  // 있는 가장 이른 달부터만 보여주고, 그보다 앞선 "현장 개설 전" 달은 생략한다(미래 달은 입력 대비 계속
+  // 보여줘야 하므로 projectEndIndex는 그대로 둔다). 데이터가 아직 하나도 없는 신규 현장은 기존대로
+  // 계약 시작월부터 보여준다.
+  const processCostStartIndex =
+    dataMonthIndexes.length > 0
+      ? Math.max(projectStartIndex, Math.min(...dataMonthIndexes))
+      : projectStartIndex;
   const processCostMonths = Array.from(
-    { length: Math.min(120, Math.max(1, projectEndIndex - projectStartIndex + 1)) },
+    { length: Math.min(120, Math.max(1, projectEndIndex - processCostStartIndex + 1)) },
     (_, offset) => {
-      const index = projectStartIndex + offset;
+      const index = processCostStartIndex + offset;
       return { year: Math.floor(index / 12), month: (index % 12) + 1 };
     },
   );
@@ -1914,12 +1941,12 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                     data-col={1}
                   />
                 </td>
-                <td style={tdCell}><NumInput value={p.planPct} step={0.1} onChange={(v) => updateProgressAt(i, { planPct: v })} data-row={i} data-col={2} /></td>
+                <td style={tdCell}><NumInput value={p.planPct} step={0.1} roundDisplay={1} onChange={(v) => updateProgressAt(i, { planPct: v })} data-row={i} data-col={2} /></td>
                 <td style={tdCell}><NumInput value={p.actualPct} step={0.1} roundDisplay={1} onChange={(v) => updateProgressAt(i, { actualPct: v })} data-row={i} data-col={3} /></td>
                 <td style={tdCell}>
                   <input
                     type="number"
-                    value={p.planCumPct ? p.planCumPct : ""}
+                    value={p.planCumPct ? Number(p.planCumPct.toFixed(1)) : ""}
                     readOnly
                     aria-label={t("projectDataEntryTab:cumulativePlanPercent")}
                     data-row={i}
@@ -1927,7 +1954,17 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                     style={{ ...inputStyle, textAlign: "right" }}
                   />
                 </td>
-                <td style={tdCell}><NumInput value={p.actualCumPct} roundDisplay={1} onChange={(v) => updateProgressAt(i, { actualCumPct: v })} data-row={i} data-col={5} /></td>
+                <td style={tdCell}>
+                  <input
+                    type="number"
+                    value={p.actualCumPct ? Number(p.actualCumPct.toFixed(1)) : ""}
+                    readOnly
+                    aria-label={t("projectDataEntryTab:cumulativeActualPercent")}
+                    data-row={i}
+                    data-col={5}
+                    style={{ ...inputStyle, textAlign: "right" }}
+                  />
+                </td>
                 <td style={{ ...tdCell, textAlign: "center" }}><DelBtn onClick={() => setProgress((rows) => calculateProgressPlanCumulative(rows.filter((_, j) => j !== i)))} /></td>
               </tr>
             ))}
@@ -2112,6 +2149,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                       <td style={tdCell}>
                         <NumInput
                           value={getProgressPlan(year, month)}
+                          roundDisplay={1}
                           onChange={(value) => setProgressPlan(year, month, value)}
                           data-row={rowIndex}
                           data-col={PROCESS_COST_ITEMS.length * 2 + 1}
@@ -2222,6 +2260,17 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                 r.year != null && r.month != null ? `${r.year}-${String(r.month).padStart(2, "0")}` : "";
               const now = new Date();
               const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+              // Initial Business Budget(최초 승인 예산)는 Base Month별로 바뀌는 값이 아니라 한 번 승인되면
+              // 고정되는 기준선이라, 선택된 Base Month의 행에 우연히 null이 와도 다른 달 행에는 값이 있을 수
+              // 있다 — Base Month 선택과 무관하게 이력 전체에서 값이 있는 가장 최근 달의 값을 찾아 쓴다.
+              const latestInitialBudgetRow = costEstimation
+                .filter((r) => r.kind === "execution" && r.initialBusinessBudget != null)
+                .reduce<ProjectDetailCostEstimation | null>((latest, r) => {
+                  if (!latest) return r;
+                  const rKey = (r.year ?? 0) * 100 + (r.month ?? 0);
+                  const latestKey = (latest.year ?? 0) * 100 + (latest.month ?? 0);
+                  return rKey > latestKey ? r : latest;
+                }, null);
               return EST_KINDS.map((k) => {
                 const isCompletion = k.kind === "completion";
                 const isExecution = k.kind === "execution";
@@ -2263,7 +2312,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                 const costAmount = isCompletion
                   ? (executionRowForCompletion?.costAmount ?? null)
                   : isExecution
-                    ? row.initialBusinessBudget
+                    ? (latestInitialBudgetRow?.initialBusinessBudget ?? null)
                     : row.costAmount;
                 const ratioPct =
                   contractAmount != null && costAmount != null && contractAmount !== 0

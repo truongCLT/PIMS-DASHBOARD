@@ -35,10 +35,10 @@ export function FundsSection({ cashIn, cashOut, cumRev }: Props) {
   const hasFundData = cashIn !== 0 || cashOut !== 0;
 
   const items: Array<{ label: string; value: number | null; color: string }> = [
-    // 버그 수정: 이 항목이 "누계 매출"인데 도급액(contractAmountKUsd)을 보여주고 있었다 — 매출 실적 및
-    // 전망 카드의 "전체 누계" 실적과 같은 값(cumRev)을 써야 두 카드의 숫자가 서로 일치한다.
+    // "누계 매출"은 매출 실적 및 전망 카드의 "전체 누계" 실적과 같은 값(cumRev)을 써야 두 카드의
+    // 숫자가 서로 일치한다. "누계 기성(확정)"은 별도 데이터가 없어 항상 누계 매출과 중복이었으므로
+    // 삭제했다(요청).
     { label: t("projectReportTab:cumulativeSalesLabel"), value: cumRev, color: chartTheme.neutralGray },
-    { label: t("projectReportTab:cumulativeConfirmedLabel"), value: cumRev, color: chartTheme.neutralGray },
     { label: t("projectReportTab:collectionActualLabel"), value: cashIn, color: chartTheme.balanceNavy },
     { label: t("projectReportTab:receivableLabel"), value: outstanding, color: chartTheme.outflowRed },
   ];
@@ -120,9 +120,6 @@ export function FundsSection({ cashIn, cashOut, cumRev }: Props) {
           </div>
           <div style={{ fontSize: "11px", color: INK_MUTED }}>
             {t("projectReportTab:fundsDetailNote")}
-          </div>
-          <div style={{ fontSize: "11px", color: INK_MUTED }}>
-            {t("projectReportTab:fundsConfirmedSameAsRevenueNote")}
           </div>
         </div>
       )}

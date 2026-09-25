@@ -38,16 +38,16 @@ const defaultUnit: DisplayUnit = {
   unitOn: true,
   convert: (v) => v,
   convertToKUsd: (v) => v,
-  fmtMoney: (v, digits = 1) =>
+  fmtMoney: (v, digits = 0) =>
     v == null || Number.isNaN(v)
       ? "-"
       : v.toLocaleString("en-US", { maximumFractionDigits: digits, minimumFractionDigits: 0 }),
   fmtMoneyFull: (v) =>
-    v == null || Number.isNaN(v) ? "-" : v.toLocaleString("en-US", { maximumFractionDigits: 1 }),
+    v == null || Number.isNaN(v) ? "-" : v.toLocaleString("en-US", { maximumFractionDigits: 0 }),
   unitLabel: "천 USD",
   convertFromVnd: (v) => v,
   fmtVnd: (v) =>
-    v == null || Number.isNaN(v) ? "-" : v.toLocaleString("en-US", { maximumFractionDigits: 1 }),
+    v == null || Number.isNaN(v) ? "-" : v.toLocaleString("en-US", { maximumFractionDigits: 0 }),
   convertVndToKUsd: (v) => v,
 };
 
@@ -71,7 +71,7 @@ export function formatVnd(
   rates: Record<string, number> = DEFAULT_EXCHANGE_RATES,
 ): string {
   if (v == null || Number.isNaN(v)) return "-";
-  return convertFromVndAmount(v, currency, rates).toLocaleString("en-US", { maximumFractionDigits: 1 });
+  return convertFromVndAmount(v, currency, rates).toLocaleString("en-US", { maximumFractionDigits: 0 });
 }
 
 /** VND 원본 값 → 천 USD 기준 값 (순수 함수). 표시 통화와 무관하게, 이미 천 USD 기준으로 저장된 다른
@@ -115,14 +115,13 @@ export function formatMoney(
   v: number | null | undefined,
   currency: string,
   unitOn: boolean,
-  digits = 1,
+  digits = 0,
   rates: Record<string, number> = DEFAULT_EXCHANGE_RATES,
 ): string {
   if (v == null || Number.isNaN(v)) return "-";
   const c = convertMoney(v, currency, unitOn, rates);
-  // 표시는 항상 소수점 최대 1자리까지만 허용 (말단 0은 트림)
-  const maxD = currency === "VND" && unitOn ? 1 : currency === "USD" ? digits : 1;
-  return c.toLocaleString("en-US", { maximumFractionDigits: maxD, minimumFractionDigits: 0 });
+  // 금액은 항상 정수로 반올림해서 표시한다 (% 표시만 소수점 1자리 유지)
+  return c.toLocaleString("en-US", { maximumFractionDigits: digits, minimumFractionDigits: 0 });
 }
 
 /** 표시 통화/단위 값 → 천 USD 기준 값 (순수 함수, convertMoney()의 정확한 역변환)
@@ -166,14 +165,15 @@ export function DisplayUnitProvider({
       unitOn,
       convert: (v) => convertMoney(v, currency, unitOn, rates),
       convertToKUsd: (v) => convertToKUsdAmount(v, currency, unitOn, rates),
-      fmtMoney: (v, digits = 1) => formatMoney(v, currency, unitOn, digits, rates),
-      fmtMoneyFull: (v) => formatMoney(v, currency, false, 1, rates),
+      fmtMoney: (v, digits = 0) => formatMoney(v, currency, unitOn, digits, rates),
+      fmtMoneyFull: (v) => formatMoney(v, currency, false, 0, rates),
       unitLabel: moneyUnitLabel(currency, unitOn),
       convertFromVnd: (v) => convertFromVndAmount(v, currency, rates),
+      // 금액(돈)은 항상 정수로 반올림해서 표시한다(% 표시만 소수점 1자리 유지) — formatMoney()와 동일 원칙.
       fmtVnd: (v) =>
         v == null || Number.isNaN(v)
           ? "-"
-          : convertFromVndAmount(v, currency, rates).toLocaleString("en-US", { maximumFractionDigits: 1 }),
+          : convertFromVndAmount(v, currency, rates).toLocaleString("en-US", { maximumFractionDigits: 0 }),
       convertVndToKUsd: (v) => convertVndToKUsdAmount(v, rates),
     }),
     [currency, unitOn, rates],

@@ -24,13 +24,15 @@ export const PIMSVINA_TABLE_KEYS = [
 const MAX_ROWS = 300;
 
 /** DetailDataTable mặc định hiển thị số với tối đa 8 chữ số thập phân — quá dài để review nhanh
- * (VD "0,8383"). Bảng preview này chỉ dùng để đối chiếu trước khi confirm nên làm tròn 1 chữ số
- * thập phân cho gọn; không đổi mặc định của DetailDataTable vì component đó dùng chung ở nhiều
- * màn khác cần độ chính xác cao hơn. */
-function formatPreviewValue(value: unknown): React.ReactNode {
-  return typeof value === "number"
-    ? value.toLocaleString(undefined, { maximumFractionDigits: 1 })
-    : ((value as React.ReactNode) ?? "-");
+ * (VD "0,8383"). Bảng preview này gộp chung nhiều bảng PIMSVINA khác nhau (금액/%/비율 lẫn lộn) nên
+ * không thể luôn làm tròn về số nguyên như tiền tệ — cột nào là %/tỷ lệ (tên trường có "pct"/"ratio",
+ * VD actual_pct, ratio_pct, initial_gross_profit_ratio) vẫn giữ 1 chữ số thập phân; còn lại (tiền,
+ * số lượng) làm tròn số nguyên cho gọn. */
+const PERCENT_LIKE_KEY = /pct|ratio/i;
+function formatPreviewValue(value: unknown, key?: string): React.ReactNode {
+  if (typeof value !== "number") return (value as React.ReactNode) ?? "-";
+  const digits = key != null && PERCENT_LIKE_KEY.test(key) ? 1 : 0;
+  return value.toLocaleString(undefined, { maximumFractionDigits: digits });
 }
 
 /** Some raw PIMSVINA payloads carry far more fields than are useful to review in this
@@ -81,16 +83,22 @@ export function PimsvinaSyncPreviewModal({
       // generic label, then a formatted fallback for unmapped raw database keys.
       const specific = t(`pimsvinaSyncPreview:col_${activeKey}_${k}`, { defaultValue: "" });
       const translated = specific || t(`pimsvinaSyncPreview:col_${k}`, { defaultValue: "" });
+      const format = (v: unknown) => formatPreviewValue(v, k);
       if (translated) {
-        return { key: k, label: translated, align: "left" as const, format: formatPreviewValue };
+        return { key: k, label: translated, align: "left" as const, format };
       }
       const formattedLabel = k
         .replace(/_/g, " ")
         .replace(/\b\w/g, (char) => char.toUpperCase());
-      return { key: k, label: formattedLabel, align: "left" as const, format: formatPreviewValue };
+      return { key: k, label: formattedLabel, align: "left" as const, format };
     });
   }, [rows, t, activeKey]);
-  const visibleRows = rows.slice(0, MAX_ROWS);
+  // Monthly Progress: 실적 없는(0 이하) 달은 검토할 게 없어 소음만 되므로 제외하고 보여준다.
+  const filteredRows =
+    activeKey === "pdProgress"
+      ? rows.filter((row) => Number(row.actual_pct) > 0)
+      : rows;
+  const visibleRows = filteredRows.slice(0, MAX_ROWS);
   const totalRows = PIMSVINA_TABLE_KEYS.reduce((sum, k) => sum + (data[k]?.length ?? 0), 0);
   const tradeCostStatus = data.pdTradeCostSyncStatus?.[0];
   const tradeCostUnavailable = tradeCostStatus?.complete === false;
@@ -203,16 +211,16 @@ export function PimsvinaSyncPreviewModal({
               {t("pimsvinaSyncPreview:tradeCostUnavailable")}
             </div>
           )}
-          {rows.length === 0 ? (
+          {filteredRows.length === 0 ? (
             <div style={{ textAlign: "center", color: "#9aa5b3", fontSize: "13px", padding: "40px 0" }}>
               {t("pimsvinaSyncPreview:empty")}
             </div>
           ) : (
             <>
               <DetailDataTable columns={columns} rows={visibleRows} rowKey={(_, i) => String(i)} />
-              {rows.length > MAX_ROWS && (
+              {filteredRows.length > MAX_ROWS && (
                 <div style={{ fontSize: "11px", color: "#9aa5b3", marginTop: "8px", textAlign: "center" }}>
-                  {t("pimsvinaSyncPreview:truncated", { shown: MAX_ROWS, total: rows.length })}
+                  {t("pimsvinaSyncPreview:truncated", { shown: MAX_ROWS, total: filteredRows.length })}
                 </div>
               )}
             </>

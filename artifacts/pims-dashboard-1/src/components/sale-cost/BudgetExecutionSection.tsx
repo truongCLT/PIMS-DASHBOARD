@@ -18,7 +18,6 @@ export function BudgetExecutionSection({ rows }: { rows: BudgetRow[] }) {
   const { fmtVnd } = useMoney();
 
   const maxBudget = Math.max(...rows.map((r) => r.budget ?? 0), 1);
-  let lastCategory: string | null = null;
 
   return (
     <div style={cardStyle}>
@@ -28,34 +27,30 @@ export function BudgetExecutionSection({ rows }: { rows: BudgetRow[] }) {
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "18px", marginTop: "14px" }}>
           {rows.map((row, i) => {
-            const showCategory = row.category != null && row.category !== lastCategory;
-            lastCategory = row.category ?? lastCategory;
-
             const trackW  = row.budget != null
               ? Math.max((Math.log10(row.budget + 1) / Math.log10(maxBudget + 1)) * 100, 12)
               : 12;
-            const planW   = row.plan   != null ? Math.min((row.plan   / maxBudget) * 100, 100) : 0;
-            const actualW = row.actual != null ? Math.min((row.actual / maxBudget) * 100, 100) : 0;
             const planPct   = ratioPct(row.plan,   row.budget);
             const actualPct = ratioPct(row.actual, row.budget);
+            // 계획/실적 바 너비는 각 행 "자기 예산 대비 비율"(옆에 뜨는 %와 같은 값)만큼 트랙(trackW) 안을
+            // 채워야 한다 — 이전엔 전체 행 중 가장 큰 예산(maxBudget)을 분모로 써서, Outsourcing처럼 예산
+            // 규모가 압도적으로 큰 항목이 있으면 Common/Expense1처럼 실행률이 높아도(68.7%) 항상 최소폭
+            // (3%)으로 뭉개져 보였다 — 그 결과 실행률이 0%인 Contingency와 시각적으로 구분이 안 됐다.
+            const planW   = planPct   != null ? Math.min(Math.max(planPct,   0), 100) / 100 * trackW : 0;
+            const actualW = actualPct != null ? Math.min(Math.max(actualPct, 0), 100) / 100 * trackW : 0;
 
             return (
               <React.Fragment key={`${row.item}-${i}`}>
-                {showCategory && (
-                  <div
-                    style={{
-                      fontSize: "12px",
-                      fontWeight: 700,
-                      color: INK_BODY,
-                      marginTop: i === 0 ? 0 : "2px",
-                      marginBottom: "-8px",
-                    }}
-                  >
-                    {row.category}
-                  </div>
-                )}
-                <div style={{ display: "flex", alignItems: "center" }}>
-                  {/* 항목명 */}
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    paddingTop: row.bold ? "8px" : 0,
+                    borderTop: row.bold ? `1px solid ${chartTheme.gridLine}` : "none",
+                  }}
+                >
+                  {/* 항목명 — 소계/총계 행(bold)은 카테고리 헤더를 따로 두지 않고 이 라벨 자체가 그룹
+                      요약임을 나타낸다(예: "Direct Cost" 소계, "Total Budget" 총계). */}
                   <div
                     style={{
                       width: "110px",
@@ -85,7 +80,7 @@ export function BudgetExecutionSection({ rows }: { rows: BudgetRow[] }) {
                           position: "absolute",
                           top: "4px",
                           left: 0,
-                          width: `${Math.max(planW, 3)}%`,
+                          width: `${row.plan === 0 ? 0 : Math.max(planW, 3)}%`,
                           height: "20px",
                           backgroundColor: chartTheme.outflowRed,
                         }}
@@ -127,7 +122,7 @@ export function BudgetExecutionSection({ rows }: { rows: BudgetRow[] }) {
                           position: "absolute",
                           top: "28px",
                           left: 0,
-                          width: `${Math.max(actualW, 3)}%`,
+                          width: `${row.actual === 0 ? 0 : Math.max(actualW, 3)}%`,
                           height: "20px",
                           backgroundColor: chartTheme.planBlue,
                         }}

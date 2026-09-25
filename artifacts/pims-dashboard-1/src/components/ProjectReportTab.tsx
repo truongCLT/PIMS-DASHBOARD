@@ -93,6 +93,26 @@ export function resolveLatestProjectReportMonth({
   }>;
   revenueActuals: Array<number | null>;
 }): number | null {
+  // 실제 실적(공정/매출) 데이터가 있으면 그 데이터 기준으로 "가장 최근 실적이 있는 달"을 우선 찾는다.
+  // Data Entry의 "Base Month of Record"(asOfMonth)는 수기 입력이라 최신 실적 달과 어긋날 수 있으므로
+  // (예: 실제 실적은 8월까지인데 asOfMonth를 습관적으로 당월 9월로 입력해둔 경우), 실적 데이터가 있는
+  // 한 asOfMonth보다 우선한다 — 그래야 "당월(마감 전) 실적을 기준월로 써서 계획 데이터가 실적 계산에
+  // 섞이는" 문제를 asOfMonth가 다시 일으키지 않는다.
+  //
+  // actualPct(월간 델타)만 보고 판단한다 — actualCumPct는 보지 않는다. PIMSVINA sync는 아직 그 달
+  // 실적이 없으면 지난달과 같은 누계 스냅샷을 그대로 다시 내려주므로(예: 9~12월 actualCumPct가 8월과
+  // 동일하게 59.1로 "얼어붙어" 반복), actualCumPct만으로는 "진짜 최신 실적 달"과 "아직 반영 안 된
+  // 빈 달"을 구분할 수 없다. actualPct는 이번 달 누계 − 지난달 누계라서 반영 안 된 달은 항상 0이
+  // 되므로, actualPct가 0이 아닌 마지막 달을 찾아야 한다(매출 실적 판정과 동일한 규칙).
+  const latestProgressActual = [...progress]
+    .reverse()
+    .find((row) => row.year === REPORT_YEAR && (row.actualPct ?? 0) !== 0);
+  if (latestProgressActual) return latestProgressActual.month;
+
+  for (let index = revenueActuals.length - 1; index >= 0; index -= 1) {
+    if ((revenueActuals[index] ?? 0) !== 0) return index + 1;
+  }
+
   const asOfMatch = /^(\d{4})-(\d{2})$/.exec(asOfMonth ?? "");
   if (
     asOfMatch &&
@@ -103,23 +123,8 @@ export function resolveLatestProjectReportMonth({
     return Number(asOfMatch[2]);
   }
 
-  const latestProgressActual = [...progress]
-    .reverse()
-    .find(
-      (row) =>
-        row.year === REPORT_YEAR &&
-        (row.actualPct != null || row.actualCumPct != null),
-    );
-  if (latestProgressActual) return latestProgressActual.month;
-
-  for (let index = revenueActuals.length - 1; index >= 0; index -= 1) {
-    if ((revenueActuals[index] ?? 0) !== 0) return index + 1;
-  }
-
-  const latestProgressRow = [...progress]
-    .reverse()
-    .find((row) => row.year === REPORT_YEAR);
-  return latestProgressRow?.month ?? null;
+  // 실적 데이터도, asOfMonth도 없으면 "달력 기준 직전월"(당월은 아직 마감 전이라 제외)로 기본값을 둔다.
+  return maxSelectableMonth();
 }
 
 // ─── Main component ────────────────────────────────────────────────────────
@@ -183,11 +188,24 @@ export function ProjectReportTab({
     onResolvedMonthChange(resolvedMonth);
   }, [onResolvedMonthChange, resolvedMonth]);
 
-  // Cumulative revenue up to resolvedMonth
+  // Cumulative revenue up to resolvedMonth — 연 누계(해당 REPORT_YEAR만). "매출" Status row는
+  // 규칙(연 누계 실적 >= 연 누계 계획)에 맞춰 이 값을 그대로 쓴다.
   const cumRev =
     resolvedMonth != null
       ? revMonths.slice(0, resolvedMonth).reduce<number>((a, b) => a + (b ?? 0), 0)
       : revMonths.reduce<number>((a, b) => a + (b ?? 0), 0);
+
+  // 전체 누계(이전 연도 실적 포함) — SalesSection의 "Overall Cumulative"와 동일한 계산이다. Funds
+  // 카드의 "Cumulative Revenue"는 이 값과 일치해야 하므로(자금은 프로젝트 시작부터의 누계 매출 대비
+  // 수금 현황을 보는 것이라 "연 누계"가 아니라 "전체 누계" 기준이 맞다) 여기서 같은 방식으로 계산한다.
+  const overallRefMonth = Math.max(1, Math.min(resolvedMonth ?? 1, 12));
+  const overallCumRev = (detail?.canonicalSalesMonthly ?? [])
+    .filter(
+      (row) =>
+        row.year < REPORT_YEAR ||
+        (row.year === REPORT_YEAR && row.month <= overallRefMonth),
+    )
+    .reduce<number>((sum, row) => sum + (row.actual ?? 0), 0);
 
   // ── Cashflow ─────────────────────────────────────────────────────────────
   const cfRef = getMrCashflowRef(projectName);
@@ -327,6 +345,16 @@ export function ProjectReportTab({
     monthlyBreakdown: makeCostBreakdown(selectedCostRows),
     cumulativeBreakdown: makeCostBreakdown(costPlanRows),
   };
+  // 현황 표의 "원가" 달성률(%)은 costExecution.*Plan/*Actual(항목별 절대 금액 합계, 공정 카드 툴팁용)을
+  // 그대로 쓰면 안 된다 — "외주 건축"/"외주 경비"처럼 Plan이 한 번도 입력된 적 없는 항목까지 실적 합계에
+  // 포함되면서, 그 항목의 실적만 분자에 더해지고 분모(계획)에는 전혀 반영되지 않아 달성률이 수십만%로
+  // 폭주한다(실제로 발생했던 문제). 상태등 판정(costCategoryLevel)과 동일하게 "계획이 있는 항목만" 비교한
+  // 별도 합계를 만들어 현황 표 표시에만 사용한다.
+  const comparableCostRows = (rows: typeof costPlanRows) => rows.filter((row) => row.plan != null);
+  const statusCostMonthlyPlan = sumNullable(comparableCostRows(selectedCostRows), "plan");
+  const statusCostMonthlyActual = sumNullable(comparableCostRows(selectedCostRows), "actual");
+  const statusCostCumulativePlan = sumNullable(comparableCostRows(costPlanRows), "plan");
+  const statusCostCumulativeActual = sumNullable(comparableCostRows(costPlanRows), "actual");
 
   const statusRows: StatusRowData[] = [
     {
@@ -351,14 +379,14 @@ export function ProjectReportTab({
     {
       category: "원가",
       type: "월",
-      plan: costExecution.monthlyPlan,
-      actual: costExecution.monthlyActual,
+      plan: statusCostMonthlyPlan,
+      actual: statusCostMonthlyActual,
     },
     {
       category: "원가",
       type: "누계",
-      plan: costExecution.cumulativePlan,
-      actual: costExecution.cumulativeActual,
+      plan: statusCostCumulativePlan,
+      actual: statusCostCumulativeActual,
     },
     {
       category: "자금",
@@ -369,7 +397,7 @@ export function ProjectReportTab({
     {
       category: "자금",
       type: "누계",
-      plan: cumRev > 0 ? cumRev : null,
+      plan: overallCumRev > 0 ? overallCumRev : null,
       actual: cashIn > 0 ? cashIn : null,
     },
   ];
@@ -524,7 +552,7 @@ export function ProjectReportTab({
             cashIn={cashIn}
             cashOut={cashOut}
             contractAmount={contractAmount}
-            cumRev={cumRev}
+            cumRev={overallCumRev}
           />
           <div style={cardStyle}>
             <div style={{ ...sectionTitle, marginBottom: "8px" }}>{t("projectReportTab:issuesTitle")}</div>

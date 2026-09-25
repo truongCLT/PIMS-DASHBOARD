@@ -56,8 +56,7 @@
   "cumulativeConfirmedLabel": "Tiến độ xác nhận lũy kế",
   "collectionActualLabel": "Thu tiền (Thực hiện)",
   "receivableLabel": "Phải thu (Công nợ)",
-  "collectionRateLabel": "Tỷ lệ thu tiền (Thu tiền / Tiến độ xác nhận lũy kế)",
+  "collectionRateLabel": "Tỷ lệ thu tiền (Thu tiền / Doanh thu lũy kế)",
   "fundsForecastNote": "* Hiển thị kế hoạch, dự báo giống như doanh thu",
-  "fundsDetailNote": "* Bảng xem chi tiết bổ sung doanh thu, xác nhận, thu tiền và công nợ",
-  "fundsConfirmedSameAsRevenueNote": "* Tiến độ xác nhận lũy kế hiện đang dùng chung số với Doanh thu lũy kế, vì chưa có dữ liệu xác nhận riêng."
+  "fundsDetailNote": "* Bảng xem chi tiết bổ sung doanh thu, xác nhận, thu tiền và công nợ"
 }

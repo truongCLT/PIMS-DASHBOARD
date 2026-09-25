@@ -105,6 +105,9 @@ export function ServiceReportTab({
   const salesMonthActual = sumNullable(monthSales, (row) => row.actual);
   const salesCumPlan = sumNullable(cumSales, (row) => row.plan);
   const salesCumActual = sumNullable(cumSales, (row) => row.actual);
+  // 전체 누계(이전 연도 실적 포함) — Funds 카드의 "Cumulative Revenue"는 "연 누계"가 아니라 프로젝트
+  // 시작부터의 전체 누계 매출과 일치해야 한다(시공 ProjectReportTab의 overallCumRev와 동일한 개념).
+  const overallSalesCumActual = sumNullable(throughReference(salesRows), (row) => row.actual);
   const salesPlanMonths = Array.from({ length: 12 }, (_, index) =>
     sumNullable(
       salesRows.filter((row) => row.year === referenceYear && row.month === index + 1),
@@ -135,8 +138,12 @@ export function ServiceReportTab({
       return { label: item === "Contingency" ? "예비비" : item, plan: row?.plan ?? row?.budget ?? null, actual: row?.actual ?? null };
     }),
   ];
-  const budgetPlan = sumNullable(budgetItems, (row) => row.plan);
-  const budgetActual = sumNullable(budgetItems, (row) => row.actual);
+  // 계획이 한 번도 입력된 적 없는 항목(예: 외주)까지 포함해 합산하면, 그 항목의 실적만 분자에 더해지고
+  // 분모(계획)엔 반영되지 않아 달성률이 비정상적으로 폭주한다 — 계획이 있는 항목만 비교한다(시공
+  // ProjectReportTab의 동일 문제 수정과 같은 원칙).
+  const comparableBudgetItems = budgetItems.filter((row) => row.plan != null);
+  const budgetPlan = sumNullable(comparableBudgetItems, (row) => row.plan);
+  const budgetActual = sumNullable(comparableBudgetItems, (row) => row.actual);
   const reportBudgetRows = [
     {
       item: "외주",
@@ -179,7 +186,7 @@ export function ServiceReportTab({
     { category: "원가", type: "월", plan: null, actual: null },
     { category: "원가", type: "누계", plan: budgetPlan, actual: budgetActual },
     { category: "자금", type: "월", plan: salesMonthActual, actual: cashMonthIn },
-    { category: "자금", type: "누계", plan: positiveOrNull(salesCumActual), actual: positiveOrNull(cashCumIn) },
+    { category: "자금", type: "누계", plan: positiveOrNull(overallSalesCumActual), actual: positiveOrNull(cashCumIn) },
   ];
   const costBreakdownRows: CostBreakdownRow[] = budgetItems.map((row) => ({
     label: row.label,
@@ -271,7 +278,7 @@ export function ServiceReportTab({
           cashIn={cashCumIn ?? 0}
           cashOut={cashCumOut ?? 0}
           contractAmount={overview?.contractAmount ?? null}
-          cumRev={salesCumActual ?? 0}
+          cumRev={overallSalesCumActual ?? 0}
         />
 
         <div style={cardStyle}>

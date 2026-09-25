@@ -323,7 +323,7 @@ router.get("/orders/current", async (req, res) => {
       .from(orderEntriesTable)
       .where(eq(orderEntriesTable.year, year))
       .orderBy(asc(orderEntriesTable.projectName));
-    const entries = rows.map((row) => {
+    let entries = rows.map((row) => {
       const planAmount =
         row.planAmount != null && row.planDate?.startsWith(`${year}-`)
           ? Number(row.planAmount)
@@ -349,6 +349,44 @@ router.get("/orders/current", async (req, res) => {
         ),
       };
     });
+
+    // order_entries(전용 수주 업로드)에 아직 그 해 데이터가 없으면, Order Status 카드 자체는
+    // mr_pnl의 "new_orders" 라인으로 대체 표시되고 있으므로 — 여기서도 같은 소스로 최소한의
+    // 상세(월별, 프로젝트 단위 아님)를 보여준다. project-level 구분이 없다는 걸 명확히 하려고
+    // projectName에 라벨을 붙인다. order_entries가 채워지면 이 fallback은 더 이상 쓰이지 않는다.
+    if (entries.length === 0) {
+      const pnlRows = await db
+        .select()
+        .from(mrPnlTable)
+        .where(and(eq(mrPnlTable.year, year), eq(mrPnlTable.lineCode, "new_orders")));
+      const byMonth = new Map<number, { plan: number | null; actual: number | null }>();
+      for (const row of pnlRows) {
+        if (row.month == null) continue;
+        const cur = byMonth.get(row.month) ?? { plan: null, actual: null };
+        if (row.scenario === "plan") cur.plan = Number(row.amountUsd);
+        if (row.scenario === "actual") cur.actual = Number(row.amountUsd);
+        byMonth.set(row.month, cur);
+      }
+      entries = [...byMonth.entries()]
+        .sort(([a], [b]) => a - b)
+        .map(([month, { plan, actual }]) => {
+          const mm = String(month).padStart(2, "0");
+          const planDate = plan != null ? `${year}-${mm}-01` : null;
+          const actualDate = actual != null ? `${year}-${mm}-01` : null;
+          return {
+            projectName: `전사 합계(월별 집계, 프로젝트 구분 없음) - ${month}월`,
+            planAmount: plan,
+            planDate,
+            actualAmount: actual,
+            actualDate,
+            actualKind: classifyOrderActual(
+              { year, referenceMonth, actualAmount: actual, actualDate },
+              referenceMonth,
+            ),
+          };
+        });
+    }
+
     res.json(GetOrderDetailsResponse.parse({ year, referenceMonth, entries }));
   } catch (err) {
     req.log.error({ err }, "failed to get order details");

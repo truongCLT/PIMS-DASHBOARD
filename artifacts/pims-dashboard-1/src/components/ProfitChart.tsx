@@ -288,7 +288,7 @@ export function ProfitChart() {
               strokeDasharray={v === 0 ? undefined : "3 3"}
             />
             <text x={plotLeft - 12} y={yv(v) + 7} textAnchor="end" fontSize={axisFs} fill={chartTheme.axisText}>
-              {v.toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 1 })}
+              {v.toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
             </text>
           </g>
         ))}
@@ -311,7 +311,7 @@ export function ProfitChart() {
 
           if (daewoo) {
             /* ── 대우 예시1: 영업이익(진한색)+판관비(연한 캡) = 매출이익 ── */
-            const chipText = d.op.toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 1 });
+            const chipText = d.op.toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
             const chipColor = DW_OP;
             const chipBg = chartTheme.opRateBg;
             const chipFs = valueFs;
@@ -346,7 +346,7 @@ export function ProfitChart() {
                   strokeDasharray={forecastDash}
                 />
                 {/* 매출이익 값 + 비율 (막대 바로 위) */}
-                <text x={cx} y={Math.min(capTop, opTop) - 34} textAnchor="middle" fontSize={valueFs} fontWeight="700" fill={chartTheme.valueFill}>{gross.toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 1 })}</text>
+                <text x={cx} y={Math.min(capTop, opTop) - 34} textAnchor="middle" fontSize={valueFs} fontWeight="700" fill={chartTheme.valueFill}>{gross.toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</text>
                 <text x={cx} y={Math.min(capTop, opTop) - 10} textAnchor="middle" fontSize={rateFs} fontWeight="700" fill={chartTheme.axisSmall}>{d.totalPct}</text>
                 {/* 월 라벨 */}
                 <text x={cx} y={Y0 + 34} textAnchor="middle" fontSize={monthFs} fontWeight="600" fill={chartTheme.axisText}>{d.m}</text>
@@ -384,7 +384,7 @@ export function ProfitChart() {
                 strokeDasharray={forecastDash}
               />
               {yOpBot - yOpTop > 44 && (
-                <text x={cx} y={(yOpTop + yOpBot) / 2 + 7} textAnchor="middle" fontSize={valueFs} fontWeight="700" fill="#fff">{d.op.toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 1 })}</text>
+                <text x={cx} y={(yOpTop + yOpBot) / 2 + 7} textAnchor="middle" fontSize={valueFs} fontWeight="700" fill="#fff">{d.op.toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</text>
               )}
 
               {/* 판관비 영역 (light): op → gross */}
@@ -410,12 +410,12 @@ export function ProfitChart() {
               />
               {Math.abs(yv(nonBot) - yv(nonTop)) > 22 && (
                 <text x={cx} y={(yv(nonTop) + yv(nonBot)) / 2 + 7} textAnchor="middle" fontSize={valueFs} fontWeight="700" fill="#fff">
-                  {d.non >= 0 ? "+" : ""}{d.non.toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 1 })}
+                  {d.non >= 0 ? "+" : ""}{d.non.toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                 </text>
               )}
 
               {/* 매출이익 label above bar */}
-              <text x={cx} y={labelTopY - 32} textAnchor="middle" fontSize={valueFs} fontWeight="700" fill={NAVY}>{gross.toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 1 })}</text>
+              <text x={cx} y={labelTopY - 32} textAnchor="middle" fontSize={valueFs} fontWeight="700" fill={NAVY}>{gross.toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</text>
               <text x={cx} y={labelTopY - 10} textAnchor="middle" fontSize={rateFs} fontWeight="700" fill={NAVY}>({d.totalPct})</text>
 
               {/* 판관비 bracket — 6개 미만일 때만 표시 */}
@@ -432,7 +432,7 @@ export function ProfitChart() {
                 <>
                   <line x1={bx - 26} y1={yOrd} x2={bx} y2={yOrd} stroke={GREEN} strokeWidth="1.5" strokeDasharray="4 3" />
                   <circle cx={bx - 3} cy={yOrd} r="4" fill={GREEN} />
-                  <text x={bx - 2} y={yOrd + 19} textAnchor="end" fontSize={fs(14)} fill={GREEN}>{d.ord.toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 1 })}({d.ordPct})</text>
+                  <text x={bx - 2} y={yOrd + 19} textAnchor="end" fontSize={fs(14)} fill={GREEN}>{d.ord.toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}({d.ordPct})</text>
                 </>
               )}
 
@@ -484,13 +484,13 @@ export function ProfitChart() {
         <ChartTooltipPanel
           title={`${hoveredRow.m} · ${hoveredRow.isForecast ? t("profitChart:forecast") : t("profitChart:actual")}`}
           lines={[
-            { label: t("common:operatingProfit"), value: hoveredRow.op.toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 1 }), color: NAVY },
-            { label: t("profitChart:ordinaryProfit"), value: `${hoveredRow.ord.toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 1 })} (${hoveredRow.ordPct})`, color: GREEN },
+            { label: t("common:operatingProfit"), value: hoveredRow.op.toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 0 }), color: NAVY },
+            { label: t("profitChart:ordinaryProfit"), value: `${hoveredRow.ord.toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 0 })} (${hoveredRow.ordPct})`, color: GREEN },
             { label: t("common:sga"), value: `${hoveredRow.sga} (${hoveredRow.sgaPct})`, color: ORANGE },
             ...(!daewoo
               ? [{
                   label: t("profitChart:nonOperatingProfitLoss"),
-                  value: `${hoveredRow.non >= 0 ? "+" : ""}${hoveredRow.non.toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 1 })}`,
+                  value: `${hoveredRow.non >= 0 ? "+" : ""}${hoveredRow.non.toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`,
                   color: GREEN,
                 }]
               : []),
@@ -583,11 +583,11 @@ export function ProfitChart() {
               align: "center",
               format: (value) => value == null ? "-" : value ? t("profitChart:forecast") : t("profitChart:actual"),
             },
-            { key: "op", label: t("common:operatingProfit"), format: (_v, row) => `${row.op.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 1 })} (${row.opPct})` },
-            { key: "non", label: t("profitChart:nonOperatingProfitLoss"), format: (_v, row) => `${row.non >= 0 ? "+" : ""}${row.non.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 1 })}` },
-            { key: "ord", label: t("profitChart:ordinaryProfit"), format: (_v, row) => `${row.ord.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 1 })} (${row.ordPct})` },
-            { key: "total", label: t("common:grossProfit"), format: (_v, row) => `${row.total.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 1 })} (${row.totalPct})` },
-            { key: "sgaValue", label: t("common:sga"), format: (_v, row) => `${row.sgaValue.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 1 })} (${row.sgaPct})` },
+            { key: "op", label: t("common:operatingProfit"), format: (_v, row) => `${row.op.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })} (${row.opPct})` },
+            { key: "non", label: t("profitChart:nonOperatingProfitLoss"), format: (_v, row) => `${row.non >= 0 ? "+" : ""}${row.non.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` },
+            { key: "ord", label: t("profitChart:ordinaryProfit"), format: (_v, row) => `${row.ord.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })} (${row.ordPct})` },
+            { key: "total", label: t("common:grossProfit"), format: (_v, row) => `${row.total.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })} (${row.totalPct})` },
+            { key: "sgaValue", label: t("common:sga"), format: (_v, row) => `${row.sgaValue.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })} (${row.sgaPct})` },
           ]}
           rows={data}
           totalRow={(() => {
@@ -658,9 +658,9 @@ export function ProfitChart() {
                 { key: "name", label: t("profitChart:colSiteName"), align: "left" },
                 { key: "category", label: t("profitChart:colCategory"), align: "left" },
                 { key: "bizType", label: t("profitChart:colBizType"), align: "left" },
-                { key: "revenue", label: t("common:revenue"), align: "right", format: (v) => typeof v === "number" ? v.toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 1 }) : "-" },
-                { key: "cogs", label: t("common:cogs"), align: "right", format: (v) => typeof v === "number" ? v.toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 1 }) : "-" },
-                { key: "gross", label: t("common:grossProfit"), align: "right", format: (v) => typeof v === "number" ? v.toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 1 }) : "-" },
+                { key: "revenue", label: t("common:revenue"), align: "right", format: (v) => typeof v === "number" ? v.toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : "-" },
+                { key: "cogs", label: t("common:cogs"), align: "right", format: (v) => typeof v === "number" ? v.toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : "-" },
+                { key: "gross", label: t("common:grossProfit"), align: "right", format: (v) => typeof v === "number" ? v.toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : "-" },
                 { key: "share", label: t("profitChart:colShare"), align: "right" },
               ]}
               rows={drillRowsWithShare}
@@ -673,7 +673,7 @@ export function ProfitChart() {
             />
             <div style={{ ...emptyNote, padding: "8px 12px 0", textAlign: "right" }}>
               {t("profitChart:summaryDifference", {
-                value: drillGrossDifference.toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 1 }),
+                value: drillGrossDifference.toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 0 }),
               })}
             </div>
           </>

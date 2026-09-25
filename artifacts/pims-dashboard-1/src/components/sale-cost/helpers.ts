@@ -133,8 +133,29 @@ export function buildBudgetRows(
 
   if (rows.length === 0) return [];
 
+  // 카테고리별 소계 바 삽입 — 개별 항목뿐 아니라 카테고리 합계도 "총 예산" 행과 같은 방식(그래프 바)으로
+  // 비교할 수 있도록, 카테고리가 있는 모든 행(Direct Cost/Indirect Cost/Contingency 등)에 대해 각 카테고리
+  // 첫 항목 바로 앞에 소계 행을 헤더처럼 추가한다(이 소계 행 자체가 카테고리 라벨을 겸하므로 별도 텍스트
+  // 헤더는 필요 없다) — 항목이 1개뿐인 카테고리(Contingency 등)도 예외 없이 동일하게 적용한다.
+  const rowsWithSubtotals: BudgetRow[] = [];
+  rows.forEach((row, i) => {
+    const isFirstOfCategory = row.category != null && rows[i - 1]?.category !== row.category;
+    if (isFirstOfCategory && row.category != null) {
+      const group = rows.filter((r) => r.category === row.category);
+      rowsWithSubtotals.push({
+        category: null,
+        item: row.category,
+        budget: group.reduce((a, r) => a + (r.budget ?? 0), 0),
+        plan:   group.some((r) => r.plan   != null) ? group.reduce((a, r) => a + (r.plan   ?? 0), 0) : null,
+        actual: group.some((r) => r.actual != null) ? group.reduce((a, r) => a + (r.actual ?? 0), 0) : null,
+        bold: true,
+      });
+    }
+    rowsWithSubtotals.push(row);
+  });
+
   return [
-    ...rows,
+    ...rowsWithSubtotals,
     {
       category: null,
       item: totalLabel,

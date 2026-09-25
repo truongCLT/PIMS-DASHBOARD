@@ -50,31 +50,28 @@ function Donut({
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
   const arc = (p: number) => (Math.min(Math.max(p, 0), 100) / 100) * c;
+  // 실적/계획 arc는 같은 12시 방향에서 시작해 겹치므로, 값이 더 큰 쪽을 먼저(아래) 그리고
+  // 더 작은 쪽을 나중에(위) 그려야 한다 — 실적이 계획보다 클 때(공정이 계획보다 앞선 경우)
+  // 항상 실적 arc를 나중에 그리면 더 짧은 계획 arc가 통째로 가려져 안 보이게 된다.
+  const arcs = extraArc
+    ? [{ percent, color }, extraArc].sort((a, b) => b.percent - a.percent)
+    : [{ percent, color }];
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
       <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={track} strokeWidth={stroke} />
-      {extraArc && (
+      {arcs.map((a, i) => (
         <circle
+          key={i}
           cx={size / 2}
           cy={size / 2}
           r={r}
           fill="none"
-          stroke={extraArc.color}
+          stroke={a.color}
           strokeWidth={stroke}
-          strokeDasharray={`${arc(extraArc.percent)} ${c}`}
+          strokeDasharray={`${arc(a.percent)} ${c}`}
           transform={`rotate(-90 ${size / 2} ${size / 2})`}
         />
-      )}
-      <circle
-        cx={size / 2}
-        cy={size / 2}
-        r={r}
-        fill="none"
-        stroke={color}
-        strokeWidth={stroke}
-        strokeDasharray={`${arc(percent)} ${c}`}
-        transform={`rotate(-90 ${size / 2} ${size / 2})`}
-      />
+      ))}
       {label && (
         <text
           x={size / 2}
@@ -193,7 +190,7 @@ function MilestoneChart({ milestones }: { milestones: ProjectDetail["milestones"
         <div style={{ display: "flex", flexDirection: "column", gap: "4px", fontSize: "11px", color: INK_BODY }}>
           <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
             <span style={{ width: "26px", height: "5px", backgroundColor: chartTheme.outflowRed, display: "inline-block" }} />
-            <u>{t("common:plan")}</u>
+            {t("common:plan")}
           </span>
           <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
             <span style={{ width: "26px", height: "5px", backgroundColor: chartTheme.planBlue, display: "inline-block" }} />
@@ -359,7 +356,7 @@ export function ConstructionProgressTab({
 }) {
   const { t } = useTranslation(["constructionProgressTab", "common"]);
   const { detail, isLoading } = useProjectDetail(projectName);
-  const { fmtVnd } = useMoney();
+  const { fmtVnd, currency } = useMoney();
   const [photoIdx, setPhotoIdx] = useState(0);
   const progressCardHeight = "390px";
   useEffect(() => { setPhotoIdx(0); }, [projectName]);
@@ -428,6 +425,10 @@ export function ConstructionProgressTab({
   const actualAnnual = annualRows.some((p) => p.actualPct != null)
     ? Math.min(annualRows.reduce((s, p) => s + (p.actualPct ?? 0), 0), 100)
     : null;
+  const annualAchievement =
+    planAnnual != null && planAnnual > 0 && actualAnnual != null ? (actualAnnual / planAnnual) * 100 : null;
+  const cumAchievement =
+    planCum != null && planCum > 0 && actualCum != null ? (actualCum / planCum) * 100 : null;
 
   const referenceCostRows = (detail?.costBudgetMonthly ?? []).filter(
     (row) => row.year === referenceYear && row.month === referenceMonth,
@@ -576,11 +577,11 @@ export function ConstructionProgressTab({
               <div style={{ fontSize: "11px", color: INK_SECONDARY, marginTop: "5px", textAlign: "center", lineHeight: 1.6 }}>
                 <div>
                   <span style={{ color: chartTheme.planBlue, fontWeight: 700 }}>계획</span>{" "}
-                  {fmtVnd(costPlanAmount)} VND
+                  {fmtVnd(costPlanAmount)} {currency}
                 </div>
                 <div>
                   <span style={{ color: chartTheme.outflowRed, fontWeight: 700 }}>실적</span>{" "}
-                  {fmtVnd(costActualAmount)} VND
+                  {fmtVnd(costActualAmount)} {currency}
                 </div>
                 <div style={{ fontWeight: 700, color: INK_NAVY }}>
                   달성률 {monthlyAchievement != null ? fmtPct(monthlyAchievement) : "-"}
@@ -605,6 +606,9 @@ export function ConstructionProgressTab({
                 <span style={{ color: chartTheme.planBlue, fontWeight: 600 }}>{t("common:plan")} {planAnnual != null ? fmtPct(planAnnual) : "-"}</span>
                 <span style={{ color: chartTheme.outflowRed, fontWeight: 600 }}>{t("common:actual")} {actualAnnual != null ? fmtPct(actualAnnual) : "-"}</span>
               </div>
+              <div style={{ fontSize: "11px", fontWeight: 700, color: INK_NAVY, marginTop: "2px" }}>
+                달성률 {annualAchievement != null ? fmtPct(annualAchievement) : "-"}
+              </div>
               <span style={{ fontSize: "13px", color: INK_SECONDARY, fontWeight: 700, marginTop: "4px" }}>연</span>
             </div>
 
@@ -624,6 +628,9 @@ export function ConstructionProgressTab({
               <div style={{ display: "flex", gap: "6px", fontSize: "11px", marginTop: "6px" }}>
                 <span style={{ color: chartTheme.planBlue, fontWeight: 600 }}>{t("common:plan")} {fmtPct(planCum)}</span>
                 <span style={{ color: chartTheme.outflowRed, fontWeight: 600 }}>{t("common:actual")} {fmtPct(actualCum)}</span>
+              </div>
+              <div style={{ fontSize: "11px", fontWeight: 700, color: INK_NAVY, marginTop: "2px" }}>
+                달성률 {cumAchievement != null ? fmtPct(cumAchievement) : "-"}
               </div>
               <span style={{ fontSize: "13px", color: INK_SECONDARY, fontWeight: 700, marginTop: "4px" }}>{t("common:cumulative")}</span>
             </div>

@@ -143,7 +143,7 @@ function rangeSum(arr: number[], from: number, to: number): number {
 }
 
 function fmtN(v: number): string {
-  return roundSmart(v).toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 1 });
+  return roundSmart(v).toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 }
 
 function pctStr(actual: number, plan: number): string {
@@ -460,7 +460,9 @@ export function deriveDashboardData(
   let orderStatus: OrderStatusData | null = null;
   if (!projectScope && orders) {
     const pY = orders.planTotal;
-    const aM = orders.actual[M - 1] ?? 0;
+    // "Orders received"는 연초부터 기준월까지 누계(YTD) — 특정 월 단일 값은 Drilldown의
+    // "Order Result (Month X)"(orderMonthActual, 아래)에서 별도로 보여준다.
+    const aM = rangeSum(orders.actual, 1, M);
     orderStatus = {
       planTotal: roundSmart(pY),
       ordered: roundSmart(aM),

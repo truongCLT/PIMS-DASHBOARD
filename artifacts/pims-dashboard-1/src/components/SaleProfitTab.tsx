@@ -178,7 +178,7 @@ export function SaleProfitTab({
               <YAxis yAxisId="cum" hide domain={[0, Math.max(maxCum * 1.1, 1)]} />
               <Tooltip
                 contentStyle={{ fontSize: "13px" }}
-                formatter={(v: number, name: string) => [`${v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 1 })} ${unitLabel}`, name]}
+                formatter={(v: number, name: string) => [`${v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })} ${unitLabel}`, name]}
               />
               <Legend wrapperStyle={{ fontSize: "12px" }} />
               {pdSalesHasAny && (
@@ -196,7 +196,7 @@ export function SaleProfitTab({
                     dataKey="plan"
                     position="top"
                     style={{ fontSize: "11px", fill: chartTheme.axisText }}
-                    formatter={(v: number) => (v !== 0 ? v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 1 }) : "")}
+                    formatter={(v: number) => (v !== 0 ? v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : "")}
                   />
                 </Area>
               )}
@@ -211,7 +211,7 @@ export function SaleProfitTab({
                   dataKey="revenue"
                   position="top"
                   style={{ fontSize: "11px", fill: chartTheme.axisText }}
-                  formatter={(v: number) => (v !== 0 ? v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 1 }) : "")}
+                  formatter={(v: number) => (v !== 0 ? v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : "")}
                 />
               </Bar>
               <Line
@@ -229,7 +229,7 @@ export function SaleProfitTab({
                   position="top"
                   offset={8}
                   style={{ fontSize: "11px", fill: chartTheme.outflowRed }}
-                  formatter={(v: number) => v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 1 })}
+                  formatter={(v: number) => v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                 />
               </Line>
             </ComposedChart>
@@ -265,7 +265,7 @@ export function SaleProfitTab({
                 />
                 <Tooltip
                   contentStyle={{ fontSize: "13px" }}
-                  formatter={(v: number, name: string) => [`${v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 1 })} ${unitLabel}`, name]}
+                  formatter={(v: number, name: string) => [`${v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })} ${unitLabel}`, name]}
                 />
                 <Legend wrapperStyle={{ fontSize: "12px" }} />
                 <Bar dataKey="acctCogs" name={t("saleProfitTab:acctCogs")} fill={chartTheme.planBlue} barSize={14} isAnimationActive={false}>
@@ -273,7 +273,7 @@ export function SaleProfitTab({
                     dataKey="acctCogs"
                     position="top"
                     style={{ fontSize: "11px", fill: chartTheme.axisText }}
-                    formatter={(v: number) => (v !== 0 ? v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 1 }) : "")}
+                    formatter={(v: number) => (v !== 0 ? v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : "")}
                   />
                 </Bar>
                 <Bar dataKey="wipCogs" name={t("saleProfitTab:wipCogs")} fill={chartTheme.actualGreen} barSize={14} isAnimationActive={false}>
@@ -281,7 +281,7 @@ export function SaleProfitTab({
                     dataKey="wipCogs"
                     position="top"
                     style={{ fontSize: "11px", fill: chartTheme.axisText }}
-                    formatter={(v: number) => (v !== 0 ? v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 1 }) : "")}
+                    formatter={(v: number) => (v !== 0 ? v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : "")}
                   />
                 </Bar>
                 <Line
