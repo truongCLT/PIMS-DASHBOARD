@@ -347,6 +347,11 @@ export const getProjectdetailResponseCostEstimationItemMonthMax = 12;
 
 export const getProjectdetailResponseCostBudgetMonthlyItemMonthMax = 12;
 
+export const getProjectdetailResponseOutsourcingItemYearMin = 2000;
+export const getProjectdetailResponseOutsourcingItemYearMax = 2100;
+
+export const getProjectdetailResponseOutsourcingItemMonthMax = 12;
+
 export const getProjectdetailResponseCashflowItemMonthMax = 12;
 
 export const getProjectdetailResponseCogsMonthlyItemMonthMax = 12;
@@ -433,6 +438,8 @@ export const GetProjectdetailResponse = zod.object({
   "actual": zod.number().nullish()
 })).optional(),
   "outsourcing": zod.array(zod.object({
+  "fldCode": zod.string().nullish().describe('PIMSVINA site code (FLDCODE)'),
+  "ordContTypeCode": zod.string().nullish().describe('PIMSVINA CDTB_ORDCONTTYPE.ORDCONTTYPECODE — 계약 식별자(월별 이력 grouping key)'),
   "tradeGroup": zod.string().nullish().describe('대공종 (공통\/토목\/건축\/기계\/전기\/조경)'),
   "trade": zod.string(),
   "vendor": zod.string().nullish(),
@@ -442,6 +449,8 @@ export const GetProjectdetailResponse = zod.object({
   "budget": zod.number().nullish(),
   "executedBudget": zod.number().nullish(),
   "resolved": zod.number().nullish(),
+  "year": zod.number().min(getProjectdetailResponseOutsourcingItemYearMin).max(getProjectdetailResponseOutsourcingItemYearMax),
+  "month": zod.number().min(1).max(getProjectdetailResponseOutsourcingItemMonthMax),
   "thisMonth": zod.number().nullish(),
   "accum": zod.number().nullish()
 })),
@@ -520,6 +529,11 @@ export const putProjectdetailBodyProgressItemActualCumPctMax = 100;
 export const putProjectdetailBodyCostEstimationItemMonthMax = 12;
 
 export const putProjectdetailBodyCostBudgetMonthlyItemMonthMax = 12;
+
+export const putProjectdetailBodyOutsourcingItemYearMin = 2000;
+export const putProjectdetailBodyOutsourcingItemYearMax = 2100;
+
+export const putProjectdetailBodyOutsourcingItemMonthMax = 12;
 
 export const putProjectdetailBodyCashflowItemMonthMax = 12;
 
@@ -607,6 +621,8 @@ export const PutProjectdetailBody = zod.object({
   "actual": zod.number().nullish()
 })).optional(),
   "outsourcing": zod.array(zod.object({
+  "fldCode": zod.string().nullish().describe('PIMSVINA site code (FLDCODE)'),
+  "ordContTypeCode": zod.string().nullish().describe('PIMSVINA CDTB_ORDCONTTYPE.ORDCONTTYPECODE — 계약 식별자(월별 이력 grouping key)'),
   "tradeGroup": zod.string().nullish().describe('대공종 (공통\/토목\/건축\/기계\/전기\/조경)'),
   "trade": zod.string(),
   "vendor": zod.string().nullish(),
@@ -616,6 +632,8 @@ export const PutProjectdetailBody = zod.object({
   "budget": zod.number().nullish(),
   "executedBudget": zod.number().nullish(),
   "resolved": zod.number().nullish(),
+  "year": zod.number().min(putProjectdetailBodyOutsourcingItemYearMin).max(putProjectdetailBodyOutsourcingItemYearMax),
+  "month": zod.number().min(1).max(putProjectdetailBodyOutsourcingItemMonthMax),
   "thisMonth": zod.number().nullish(),
   "accum": zod.number().nullish()
 })),
@@ -690,6 +708,11 @@ export const putProjectdetailResponseProgressItemActualCumPctMax = 100;
 export const putProjectdetailResponseCostEstimationItemMonthMax = 12;
 
 export const putProjectdetailResponseCostBudgetMonthlyItemMonthMax = 12;
+
+export const putProjectdetailResponseOutsourcingItemYearMin = 2000;
+export const putProjectdetailResponseOutsourcingItemYearMax = 2100;
+
+export const putProjectdetailResponseOutsourcingItemMonthMax = 12;
 
 export const putProjectdetailResponseCashflowItemMonthMax = 12;
 
@@ -777,6 +800,8 @@ export const PutProjectdetailResponse = zod.object({
   "actual": zod.number().nullish()
 })).optional(),
   "outsourcing": zod.array(zod.object({
+  "fldCode": zod.string().nullish().describe('PIMSVINA site code (FLDCODE)'),
+  "ordContTypeCode": zod.string().nullish().describe('PIMSVINA CDTB_ORDCONTTYPE.ORDCONTTYPECODE — 계약 식별자(월별 이력 grouping key)'),
   "tradeGroup": zod.string().nullish().describe('대공종 (공통\/토목\/건축\/기계\/전기\/조경)'),
   "trade": zod.string(),
   "vendor": zod.string().nullish(),
@@ -786,6 +811,8 @@ export const PutProjectdetailResponse = zod.object({
   "budget": zod.number().nullish(),
   "executedBudget": zod.number().nullish(),
   "resolved": zod.number().nullish(),
+  "year": zod.number().min(putProjectdetailResponseOutsourcingItemYearMin).max(putProjectdetailResponseOutsourcingItemYearMax),
+  "month": zod.number().min(1).max(putProjectdetailResponseOutsourcingItemMonthMax),
   "thisMonth": zod.number().nullish(),
   "accum": zod.number().nullish()
 })),

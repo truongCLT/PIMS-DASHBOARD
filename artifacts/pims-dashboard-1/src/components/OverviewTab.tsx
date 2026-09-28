@@ -7,7 +7,7 @@ import {
 } from "@workspace/api-client-react";
 import { PhotoPager } from "./PhotoPager";
 import { Donut, MiniBar } from "./charts";
-import { useProjectDetail, fmtPct, ratioPct } from "../lib/projectDetailData";
+import { useProjectDetail, fmtPct, ratioPct, selectOutsourcingForMonth } from "../lib/projectDetailData";
 import { useMoney } from "../lib/displayUnit";
 import { getMrCashflowRef } from "../data/mrProjectLinks";
 import { REPORT_YEAR } from "../lib/mgmtreportData";
@@ -273,7 +273,7 @@ export function OverviewTab({ projectName }: { projectName: string }) {
   const expense1 = findCb("Expense 1");
   const expense2 = findCb("Expense 2");
   const contingency = findCb("Contingency");
-  const outRows = detail?.outsourcing ?? [];
+  const outRows = selectOutsourcingForMonth(detail?.outsourcing ?? [], REPORT_YEAR, resolvedMonth);
   const outBudget = outRows.some((r) => r.budget != null) ? outRows.reduce((a, r) => a + (r.budget ?? 0), 0) : null;
   const outActual = outRows.some((r) => r.accum != null || r.resolved != null)
     ? outRows.reduce((a, r) => a + (r.accum ?? r.resolved ?? 0), 0)

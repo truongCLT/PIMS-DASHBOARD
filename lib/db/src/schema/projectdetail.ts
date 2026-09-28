@@ -317,23 +317,37 @@ export const pdOutsourcingTable = pgTable(
     projectName: text("project_name").notNull(),
     fldCode: text("fld_code"), // PIMSVINA site code (FLDCODE)
     siteCode: text("site_code"), // PIMSVINA financial site code (ACNT_FLDCODE)
+    // PIMSVINA CDTB_ORDCONTTYPE.ORDCONTTYPECODE — 계약 식별자(월별 이력을 하나의 계약으로 묶는 키).
+    // trade/vendor는 자유 텍스트라 중복 가능성이 있어 신뢰할 수 없음 — Oracle에서 FLDCODE 내에서
+    // 유일함을 확인했다.
+    ordContTypeCode: text("ord_cont_type_code"),
     tradeGroup: text("trade_group"), // 대공종 (공통/토목/건축/기계/전기/조경)
     trade: text("trade").notNull(), // 세부 공종
     vendor: text("vendor"), // 업체명
     category: text("category"), // 구분 (예: 용역/외주)
     contractDate: text("contract_date"), // 최초 계약일 (자유 형식)
     changeNo: text("change_no"), // 변경 계약 차수
-    // budget/executedBudget/resolved/thisMonth/accum: PIMSVINA 동기화 전용 — VND 원본 그대로 저장
-    // (천 USD 환산 안 함, dashboard_pd_outsourcing_1q.jsp의 BDGTAMT/EXECAMT/CTRTAMT/PRGSAMT 그대로) —
-    // 표시는 UI에서 fmtVnd()로 통화 변환.
+    // budget/executedBudget/resolved: 계약 단위 값(월별로 바뀌지 않음) — 같은 계약의 월별 행마다
+    // 그대로 반복 저장된다(JOIN이 자연히 그렇게 만들어냄, 별도 테이블로 안 뺀다).
+    // thisMonth/accum: 이제 진짜 월별 값(year/month 행 기준) — PIMSVINA 동기화 전용, VND 원본 그대로
+    // 저장(천 USD 환산 안 함, dashboard_pd_outsourcing_1q.jsp의 BDGTAMT/EXECAMT/CTRTAMT/PRGSAMT 그대로)
+    // — 표시는 UI에서 fmtVnd()로 통화 변환.
     budget: numeric("budget", { precision: 24, scale: 8 }), // 예산 (A)
     executedBudget: numeric("executed_budget", { precision: 24, scale: 8 }), // 집행예산
     resolved: numeric("resolved", { precision: 24, scale: 8 }), // 결의금액 (B)
-    thisMonth: numeric("this_month", { precision: 24, scale: 8 }), // 기성 이번달
-    accum: numeric("accum", { precision: 24, scale: 8 }), // 기성 누계 (C)
+    year: integer("year").notNull(),
+    month: integer("month").notNull(), // 1..12
+    thisMonth: numeric("this_month", { precision: 24, scale: 8 }), // 기성 이번달(해당 월)
+    accum: numeric("accum", { precision: 24, scale: 8 }), // 기성 누계(해당 월까지, 윈도우 함수로 계산)
     sortOrder: integer("sort_order").notNull().default(0),
   },
-  (t) => [index("pd_outsourcing_project_idx").on(t.projectName)],
+  (t) => [
+    // fld_code까지 키에 포함하는 이유: resolveProjectName()이 site_code/fld_code로 여러 FLDCODE를
+    // 같은 projectName으로 매핑할 수 있고, ord_cont_type_code는 FLDCODE 내에서만 유일하기 때문.
+    uniqueIndex("pd_outsourcing_uq").on(t.projectName, t.fldCode, t.ordContTypeCode, t.year, t.month),
+    index("pd_outsourcing_project_idx").on(t.projectName),
+    check("pd_outsourcing_month_ck", sql`${t.month} BETWEEN 1 AND 12`),
+  ],
 );
 
 // 코멘트 — 프로젝트 상세 탭별 코멘트

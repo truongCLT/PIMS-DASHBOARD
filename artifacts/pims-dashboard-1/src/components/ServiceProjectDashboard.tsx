@@ -465,7 +465,6 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
             toMonth={Number(toMonth)}
             showCostRatioLine={false}
             showBudgetExecution={false}
-            showRevenueCumulativeLine={false}
             splitRevenueForecast
           />
         ) : activeTab === "Outsourcing" ? (

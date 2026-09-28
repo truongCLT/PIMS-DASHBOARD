@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ProjectCommentPanel } from "./ProjectCommentPanel";
 
-import { useProjectDetail, fmtPct, ratioPct } from "../lib/projectDetailData";
+import { useProjectDetail, fmtPct, ratioPct, selectOutsourcingForMonth } from "../lib/projectDetailData";
 import { useMoney } from "../lib/displayUnit";
 import {
   cardStyle,
@@ -106,7 +106,7 @@ export function OutsourcingTab({
     });
   };
 
-  const rows = detail?.outsourcing ?? [];
+  const rows = selectOutsourcingForMonth(detail?.outsourcing ?? [], referenceYear, referenceMonth);
 
   const sum = {
     budget: rows.some((r) => r.budget != null) ? rows.reduce((a, r) => a + (r.budget ?? 0), 0) : null,

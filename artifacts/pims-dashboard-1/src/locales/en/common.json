@@ -12,6 +12,8 @@
   "unit": "Unit",
   "period": "Period",
   "year": "Year",
+  "month": "Month",
+  "monthUnit": "",
   "baseMonth": "Base Month",
   "currentMonth": "Current Month",
   "revenue": "Revenue",

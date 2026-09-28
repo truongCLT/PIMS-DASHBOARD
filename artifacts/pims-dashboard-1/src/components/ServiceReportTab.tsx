@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { FileDown, Loader2 } from "lucide-react";
 import { Button } from "@workspace/aqua-glass/components/ui/button";
 import { ProjectCommentPanel } from "./ProjectCommentPanel";
-import { useProjectDetail, fmtPct } from "../lib/projectDetailData";
+import { useProjectDetail, fmtPct, selectOutsourcingForMonth } from "../lib/projectDetailData";
 import { useMoney } from "../lib/displayUnit";
 import { chartTheme } from "../lib/chartTheme";
 import { SalesSection } from "./project-report/SalesSection";
@@ -124,7 +124,7 @@ export function ServiceReportTab({
   const cashCumOut = sumNullable(cumCash, (row) => row.cashOut);
 
   const budgetRows = detail?.costBudget ?? [];
-  const outsourcingRows = detail?.outsourcing ?? [];
+  const outsourcingRows = selectOutsourcingForMonth(detail?.outsourcing ?? [], referenceYear, referenceMonth);
   const budgetItems = [
     {
       label: "외주",

@@ -7,6 +7,10 @@
  */
 
 export interface ProjectDetailOutsourcing {
+  /** PIMSVINA site code (FLDCODE) */
+  fldCode?: string | null;
+  /** PIMSVINA CDTB_ORDCONTTYPE.ORDCONTTYPECODE — 계약 식별자(월별 이력 grouping key) */
+  ordContTypeCode?: string | null;
   /** 대공종 (공통/토목/건축/기계/전기/조경) */
   tradeGroup?: string | null;
   trade: string;
@@ -17,6 +21,16 @@ export interface ProjectDetailOutsourcing {
   budget?: number | null;
   executedBudget?: number | null;
   resolved?: number | null;
+  /**
+     * @minimum 2000
+     * @maximum 2100
+     */
+  year: number;
+  /**
+     * @minimum 1
+     * @maximum 12
+     */
+  month: number;
   thisMonth?: number | null;
   accum?: number | null;
 }

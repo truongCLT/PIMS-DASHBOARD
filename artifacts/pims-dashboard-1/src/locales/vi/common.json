@@ -12,6 +12,8 @@
   "unit": "Đơn vị",
   "period": "Kỳ",
   "year": "Năm",
+  "month": "Tháng",
+  "monthUnit": "",
   "baseMonth": "Tháng cơ sở",
   "currentMonth": "Tháng này",
   "revenue": "Doanh thu",

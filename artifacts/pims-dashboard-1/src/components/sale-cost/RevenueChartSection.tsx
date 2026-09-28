@@ -1,14 +1,14 @@
 /**
- * 매출 차트 섹션 — 월별 매출(막대) · 계획(영역) · 누계(선) + 누계 원가율 라인 차트.
- * 커스텀 툴팁에서 누계 실적/계획 값을 함께 표시한다.
+ * 매출 차트 섹션 — 월별 계획·매출(막대 2개, 나란히 비교) + 누계 원가율 라인 차트.
+ * 누계(계획/실적)는 그래프로 그리면 항상 우상향해 막대가 작아 보이므로 그래프 없이
+ * 커스텀 툴팁에서 숫자로만 표시한다.
  */
-import React from "react";
+import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ComposedChart,
   Bar,
   Line,
-  Area,
   XAxis,
   YAxis,
   Tooltip,
@@ -43,6 +43,8 @@ function RevenueTooltip({
   const idx = chartData.findIndex((d) => d.label === label);
   const cum     = idx >= 0 ? chartData[idx].cumulative : null;
   const planCum = idx >= 0 ? chartData[idx].planCum    : null;
+  // 월 계획 → 월 매출 → 누계(계획) → 누계(실적) 순서로 고정 표시한다(요청) — payload는 월별
+  // 항목(계획/매출)만 담고, 누계 계획/실적은 중복 없이 이 컴포넌트에서 직접 이어 붙인다.
   return (
     <div
       style={{
@@ -61,21 +63,21 @@ function RevenueTooltip({
           {p.name}: {p.value.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })} {unitLabel}
         </div>
       ))}
-      {cum != null && (
+      {planCum != null && planCum > 0 && (
         <div
           style={{
-            color: chartTheme.outflowRed,
+            color: chartTheme.planGray,
             borderTop: "1px solid #eef2f7",
             marginTop: "4px",
             paddingTop: "4px",
           }}
         >
-          {t("common:cumulative")} ({t("common:actual")}): {cum.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })} {unitLabel}
+          {t("common:cumulative")} ({t("common:plan")}): {planCum.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })} {unitLabel}
         </div>
       )}
-      {planCum != null && planCum > 0 && (
-        <div style={{ color: chartTheme.planGray }}>
-          {t("common:cumulative")} ({t("common:plan")}): {planCum.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })} {unitLabel}
+      {cum != null && (
+        <div style={{ color: chartTheme.outflowRed }}>
+          {t("common:cumulative")} ({t("common:actual")}): {cum.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })} {unitLabel}
         </div>
       )}
     </div>
@@ -89,14 +91,12 @@ function RevenueTooltip({
 export function RevenueChartCard({
   chartData,
   pdSalesHasAny,
-  showCumulativeLine = true,
   splitForecast = false,
   referenceYear,
   referenceMonth,
 }: {
   chartData: RevenuePoint[];
   pdSalesHasAny: boolean;
-  showCumulativeLine?: boolean;
   splitForecast?: boolean;
   referenceYear?: number;
   referenceMonth?: number;
@@ -104,13 +104,21 @@ export function RevenueChartCard({
   const { t } = useTranslation(["saleCostTab", "common"]);
   const { unitLabel } = useMoney();
 
-  const maxRevenue = Math.max(...chartData.map((d) => Math.max(d.revenue, d.plan)), 0);
-  const maxCum     = Math.max(...chartData.map((d) => Math.max(d.cumulative, d.planCum)), 0);
+  // 프로젝트 전체 기간(여러 해)이 한 화면에 다 나오면 개월 수가 너무 많아 막대/라벨이 겹친다 — 연도
+  // 선택을 추가해 기본은 기준월(또는 최신)이 속한 해만 보여주고, 필요하면 다른 해로 바꿔볼 수 있게
+  // 한다. 누계 실적/계획은 label이 연도까지 포함돼 전역에서 유일하므로 필터 전 전체 chartData를 그대로
+  // 툴팁에 넘겨도 문제없다.
+  const availableYears = Array.from(new Set(chartData.map((d) => d.year))).sort((a, b) => a - b);
+  const defaultYear = referenceYear ?? availableYears[availableYears.length - 1] ?? new Date().getFullYear();
+  const [selectedYear, setSelectedYear] = useState(defaultYear);
+  const yearData = chartData.filter((d) => d.year === selectedYear);
+
+  const maxRevenue = Math.max(...yearData.map((d) => Math.max(d.revenue, d.plan)), 0);
   const referenceIndex =
     referenceYear != null && referenceMonth != null
       ? referenceYear * 12 + referenceMonth - 1
       : Number.POSITIVE_INFINITY;
-  const displayData = chartData.map((point) => {
+  const displayData = yearData.map((point) => {
     const isForecast = point.year * 12 + point.month - 1 > referenceIndex;
     return {
       ...point,
@@ -118,104 +126,105 @@ export function RevenueChartCard({
       forecastRevenue: splitForecast && isForecast ? point.revenue : 0,
     };
   });
+  // 개월 수가 많으면(전체 기간 보기 등) 고정 너비 안에 막대가 다 들어가면서 라벨 숫자가 서로
+  // 겹쳐 안 보이게 된다 — 개월당 최소 폭을 확보해 가로 스크롤되게 하고, 너무 많을 땐 막대 위 숫자
+  // 라벨을 아예 생략해(툴팁으로 대신 확인) 겹침을 원천 차단한다. (연도 선택으로 보통 12개월 이하가
+  // 되지만, 안전장치로 남겨둔다.)
+  const PX_PER_MONTH = 56;
+  const chartWidth = Math.max(displayData.length * PX_PER_MONTH, 100);
+  const showBarLabels = displayData.length <= 15;
+  const labelListProps = showBarLabels
+    ? {
+        position: "top" as const,
+        style: { fontSize: "11px", fill: chartTheme.axisText },
+        formatter: (v: number) => (v !== 0 ? v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : ""),
+      }
+    : null;
 
   return (
     <div style={cardStyle}>
-      <span style={sectionTitle}>
-        {t("saleCostTab:monthlyRevenueTitle", { unit: unitLabel })}
-      </span>
-      <div style={{ width: "100%", height: "260px", marginTop: "8px" }}>
-        <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={displayData} margin={{ top: 30, right: 40, left: 40, bottom: 0 }}>
-            <XAxis
-              dataKey="label"
-              tick={{ fontSize: 10, fill: chartTheme.axisText }}
-              tickLine={false}
-              axisLine={{ stroke: chartTheme.axisLine }}
-            />
-            <YAxis hide domain={[0, Math.max(maxRevenue * 2.4, 1)]} />
-            <YAxis yAxisId="cum" hide domain={[0, Math.max(maxCum * 1.1, 1)]} />
-            <Tooltip
-              content={
-                <RevenueTooltip
-                  chartData={chartData}
-                  unitLabel={unitLabel}
-                />
-              }
-            />
-            <Legend wrapperStyle={{ fontSize: "12px" }} />
-            {pdSalesHasAny && (
-              <Area
-                dataKey="plan"
-                name={t("saleCostTab:monthlyPlan")}
-                type="monotone"
-                stroke={chartTheme.planGray}
-                strokeWidth={1.5}
-                fill={chartTheme.planGray}
-                fillOpacity={0.42}
-                isAnimationActive={false}
-              >
-                <LabelList
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
+        <span style={sectionTitle}>
+          {t("saleCostTab:monthlyRevenueTitle", { unit: unitLabel })}
+        </span>
+        <select
+          value={selectedYear}
+          onChange={(event) => setSelectedYear(Number(event.target.value))}
+          aria-label={t("common:year")}
+          style={{
+            padding: "4px 22px 4px 8px",
+            border: "1px solid #dbe2ea",
+            borderRadius: "3px",
+            backgroundColor: "#fff",
+            color: INK_NAVY,
+            fontFamily: "inherit",
+            fontSize: "12px",
+            fontWeight: 600,
+            lineHeight: 1.4,
+          }}
+        >
+          {availableYears.map((y) => (
+            <option key={y} value={y}>{y}</option>
+          ))}
+        </select>
+      </div>
+      <div style={{ width: "100%", height: "260px", marginTop: "8px", overflowX: "auto" }}>
+        <div style={{ width: `${chartWidth}px`, height: "100%", minWidth: "100%" }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <ComposedChart data={displayData} margin={{ top: 30, right: 40, left: 40, bottom: 0 }}>
+              <XAxis
+                dataKey="label"
+                tick={{ fontSize: 10, fill: chartTheme.axisText }}
+                tickLine={false}
+                axisLine={{ stroke: chartTheme.axisLine }}
+              />
+              <YAxis hide domain={[0, Math.max(maxRevenue * 2.4, 1)]} />
+              <Tooltip
+                content={
+                  <RevenueTooltip
+                    chartData={chartData}
+                    unitLabel={unitLabel}
+                  />
+                }
+              />
+              <Legend wrapperStyle={{ fontSize: "12px" }} />
+              {pdSalesHasAny && (
+                <Bar
                   dataKey="plan"
-                  position="top"
-                  style={{ fontSize: "11px", fill: chartTheme.axisText }}
-                  formatter={(v: number) => (v !== 0 ? v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : "")}
-                />
-              </Area>
-            )}
-            <Bar
-              dataKey="actualRevenue"
-              name={splitForecast ? t("common:actual") : t("saleCostTab:monthlyRevenue")}
-              fill={chartTheme.planBlue}
-              barSize={pdSalesHasAny ? 14 : 22}
-              isAnimationActive={false}
-            >
-              <LabelList
-                dataKey="actualRevenue"
-                position="top"
-                style={{ fontSize: "11px", fill: chartTheme.axisText }}
-                formatter={(v: number) => (v !== 0 ? v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : "")}
-              />
-            </Bar>
-            {splitForecast && (
+                  name={t("saleCostTab:monthlyPlan")}
+                  fill={chartTheme.planGray}
+                  barSize={14}
+                  isAnimationActive={false}
+                >
+                  {labelListProps && <LabelList dataKey="plan" {...labelListProps} />}
+                </Bar>
+              )}
               <Bar
-                dataKey="forecastRevenue"
-                name={t("saleCostTab:forecast")}
-                fill="#fff"
-                stroke={chartTheme.planBlue}
-                strokeWidth={1.5}
-                strokeDasharray="4 3"
-                barSize={14}
+                dataKey="actualRevenue"
+                name={splitForecast ? t("common:actual") : t("saleCostTab:monthlyRevenue")}
+                fill={chartTheme.planBlue}
+                barSize={pdSalesHasAny ? 14 : 22}
                 isAnimationActive={false}
               >
-                <LabelList
-                  dataKey="forecastRevenue"
-                  position="top"
-                  style={{ fontSize: "11px", fill: chartTheme.axisText }}
-                  formatter={(v: number) => (v !== 0 ? v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : "")}
-                />
+                {labelListProps && <LabelList dataKey="actualRevenue" {...labelListProps} />}
               </Bar>
-            )}
-            {showCumulativeLine && <Line
-              yAxisId="cum"
-              dataKey="cumulative"
-              name={t("common:cumulative")}
-              type="monotone"
-              stroke={chartTheme.outflowRed}
-              strokeWidth={2}
-              dot={{ r: 3, fill: chartTheme.outflowRed }}
-              isAnimationActive={false}
-            >
-              <LabelList
-                dataKey="cumulative"
-                position="top"
-                offset={8}
-                style={{ fontSize: "11px", fill: chartTheme.outflowRed }}
-                formatter={(v: number) => v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-              />
-            </Line>}
-          </ComposedChart>
-        </ResponsiveContainer>
+              {splitForecast && (
+                <Bar
+                  dataKey="forecastRevenue"
+                  name={t("saleCostTab:forecast")}
+                  fill="#fff"
+                  stroke={chartTheme.planBlue}
+                  strokeWidth={1.5}
+                  strokeDasharray="4 3"
+                  barSize={14}
+                  isAnimationActive={false}
+                >
+                  {labelListProps && <LabelList dataKey="forecastRevenue" {...labelListProps} />}
+                </Bar>
+              )}
+            </ComposedChart>
+          </ResponsiveContainer>
+        </div>
       </div>
     </div>
   );
@@ -227,21 +236,56 @@ export function RevenueChartCard({
 
 export function CostRatioLineCard({
   chartData,
-  lastRatioIdx,
 }: {
   chartData: RevenuePoint[];
-  lastRatioIdx: number;
 }) {
-  const { t } = useTranslation(["saleCostTab"]);
-  const ratios  = chartData.filter((d) => d.ratio != null).map((d) => d.ratio as number);
+  const { t } = useTranslation(["saleCostTab", "common"]);
+  // 전체 기간(여러 해)을 한 번에 그리면 개월 수가 너무 많아 안 보인다 — 연도 선택 추가, 기본값은
+  // 오늘 날짜 기준 올해(미래 전망 연도가 아니라 실제 현재 연도) — 데이터에 올해가 없으면 가장
+  // 가까운 해로 대체한다.
+  const availableYears = Array.from(new Set(chartData.map((d) => d.year))).sort((a, b) => a - b);
+  const [selectedYear, setSelectedYear] = useState(() => {
+    const currentYear = new Date().getFullYear();
+    if (availableYears.includes(currentYear)) return currentYear;
+    if (availableYears.length === 0) return currentYear;
+    return availableYears.reduce((closest, y) =>
+      Math.abs(y - currentYear) < Math.abs(closest - currentYear) ? y : closest,
+    );
+  });
+  const yearData = chartData.filter((d) => d.year === selectedYear);
+  const ratios  = yearData.filter((d) => d.ratio != null).map((d) => d.ratio as number);
   const ratioMax = ratios.length > 0 ? Math.max(...ratios) : 100;
+  let lastRatioIdx = -1;
+  yearData.forEach((d, i) => { if (d.ratio != null) lastRatioIdx = i; });
 
   return (
     <div style={cardStyle}>
-      <span style={sectionTitle}>{t("saleCostTab:costRatioLineTitle")}</span>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
+        <span style={sectionTitle}>{t("saleCostTab:costRatioLineTitle")}</span>
+        <select
+          value={selectedYear}
+          onChange={(event) => setSelectedYear(Number(event.target.value))}
+          aria-label={t("common:year")}
+          style={{
+            padding: "4px 22px 4px 8px",
+            border: "1px solid #dbe2ea",
+            borderRadius: "3px",
+            backgroundColor: "#fff",
+            color: INK_NAVY,
+            fontFamily: "inherit",
+            fontSize: "12px",
+            fontWeight: 600,
+            lineHeight: 1.4,
+          }}
+        >
+          {availableYears.map((y) => (
+            <option key={y} value={y}>{y}</option>
+          ))}
+        </select>
+      </div>
       <div style={{ width: "100%", height: "220px", marginTop: "8px" }}>
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={chartData} margin={{ top: 30, right: 40, left: 40, bottom: 0 }}>
+          <ComposedChart data={yearData} margin={{ top: 30, right: 40, left: 40, bottom: 0 }}>
             <XAxis
               dataKey="label"
               tick={{ fontSize: 10, fill: chartTheme.axisText }}

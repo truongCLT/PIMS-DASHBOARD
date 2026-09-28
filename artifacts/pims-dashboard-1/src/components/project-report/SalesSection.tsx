@@ -156,8 +156,10 @@ export function SalesSection({
     (row) => row.plan != null || row.actual != null,
   );
   const annualPlanRows = hasAllPeriodData
-    ? allSalesMonths.filter((row) => row.year === REPORT_YEAR)
-    : chartData;
+    ? allSalesMonths.filter(
+        (row) => row.year === REPORT_YEAR && row.month <= refMonth,
+      )
+    : chartData.slice(0, refMonth);
   const annualActualRows = hasAllPeriodData
     ? allSalesMonths.filter(
         (row) => row.year === REPORT_YEAR && row.month <= refMonth,

@@ -10,7 +10,7 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { useMoney } from "../lib/displayUnit";
-import { useProjectDetail } from "../lib/projectDetailData";
+import { useProjectDetail, selectOutsourcingForMonth } from "../lib/projectDetailData";
 import { ProjectCommentPanel } from "./ProjectCommentPanel";
 import { cardStyle, emptyNote, INK_MUTED } from "../lib/uiTokens";
 import { chartTheme } from "../lib/chartTheme";
@@ -50,7 +50,6 @@ export function SaleCostTab({
   toMonth,
   showCostRatioLine = true,
   showBudgetExecution = true,
-  showRevenueCumulativeLine = true,
   splitRevenueForecast = false,
 }: {
   projectName: string;
@@ -61,7 +60,6 @@ export function SaleCostTab({
   toMonth: number;
   showCostRatioLine?: boolean;
   showBudgetExecution?: boolean;
-  showRevenueCumulativeLine?: boolean;
   splitRevenueForecast?: boolean;
 }) {
   const { t } = useTranslation(["saleCostTab", "costingTab"]);
@@ -115,19 +113,22 @@ export function SaleCostTab({
 
   const hasData      = chartData.some((d) => d.revenue !== 0 || d.cumulative !== 0 || d.plan !== 0);
   const ratios       = chartData.filter((d) => d.ratio != null);
-  let lastRatioIdx   = -1;
-  chartData.forEach((d, i) => { if (d.ratio != null) lastRatioIdx = i; });
   // ── 예산 집행 현황 ────────────────────────────────────────────────────────
   const estimation      = pdDetail?.costEstimation ?? [];
-  const outsourcingRows = pdDetail?.outsourcing    ?? [];
-  const rawBudgetRows   = (pdDetail?.costBudget ?? []).map((r) => ({
-    category: r.category ?? null,
-    item:     r.item,
-    budget:   r.budget ?? null,
-    plan:     r.plan   ?? null,
-    actual:   r.actual ?? null,
-    bold:     r.category == null || /contingency/i.test(r.item), // category 없는 단독 항목 또는 Contingency는 굵게 (CostingTab.tsx와 동일 규칙)
-  }));
+  const outsourcingRows = selectOutsourcingForMonth(pdDetail?.outsourcing ?? [], toYear, toMonth);
+  const rawBudgetRows   = (pdDetail?.costBudget ?? []).map((r) => {
+    const isContingency = /contingency/i.test(r.item);
+    return {
+      // Contingency는 원본 category(보통 "Indirect Cost")를 그대로 두면 Indirect Cost 소계에 합산돼
+      // 버려서 별도 항목으로 요청받은 것과 어긋난다 — category를 null로 둬서 소계 그룹에서 제외한다.
+      category: isContingency ? null : (r.category ?? null),
+      item:     r.item,
+      budget:   r.budget ?? null,
+      plan:     r.plan   ?? null,
+      actual:   r.actual ?? null,
+      bold:     r.category == null || isContingency, // category 없는 단독 항목 또는 Contingency는 굵게 (CostingTab.tsx와 동일 규칙)
+    };
+  });
   const budgetRowsWithSum = buildBudgetRows(
     rawBudgetRows,
     outsourcingRows.length > 0
@@ -159,7 +160,6 @@ export function SaleCostTab({
         <RevenueChartCard
           chartData={chartData}
           pdSalesHasAny={pdSalesHasAny}
-          showCumulativeLine={showRevenueCumulativeLine}
           splitForecast={splitRevenueForecast}
           referenceYear={toYear}
           referenceMonth={toMonth}
@@ -168,7 +168,7 @@ export function SaleCostTab({
 
       {/* 2. 누계 원가율 라인 */}
       {showCostRatioLine && hasData && ratios.length > 0 && (
-        <CostRatioLineCard chartData={chartData} lastRatioIdx={lastRatioIdx} />
+        <CostRatioLineCard chartData={chartData} />
       )}
 
       {/* 3. 원가율 도넛 */}

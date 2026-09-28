@@ -12,6 +12,8 @@
   "unit": "단위",
   "period": "기간",
   "year": "연도",
+  "month": "월",
+  "monthUnit": "월",
   "baseMonth": "기준월",
   "currentMonth": "당월",
   "revenue": "매출",

@@ -144,7 +144,8 @@ function TreeNode({
   const activeColor = isActive ? T.sidebar.activeItemColor : color;
   // Project names / group labels (DECV, TCC, DE HEIM) are data and pass through unchanged.
   const nameLabel = item.isProject ? item.label : treeLabel(item.label, t);
-  const codeLabel = item.isProject && item.siteCode ? `(${item.siteCode})` : "";
+  // site_code(SITEnn)가 없으면 fld_code(PIMSVINA 원본 코드, 예: VH10TC1)라도 대신 보여준다.
+  const codeLabel = item.isProject && (item.siteCode || item.fldCode) ? `(${item.siteCode || item.fldCode})` : "";
   const displayLabel = codeLabel ? `${nameLabel} ${codeLabel}` : nameLabel;
 
   return (
@@ -245,11 +246,10 @@ export function Sidebar({
   const { t, i18n } = useTranslation(["sidebar", "common"]);
   const projectsQuery = useListMgmtreportProjects({ year: REPORT_YEAR });
   const treeData = useMemo(() => {
-    // SITE 코드가 없는 프로젝트(메인 Excel 라벨에 "(SITEnn)"이 없는 경우)도 트리에서 보이게 한다 —
-    // 예전에는 hasSiteNumber(p.siteCode)로 걸러져 이런 프로젝트가 메뉴에서 완전히 사라지고
-    // 헤더 드롭다운으로만 찾을 수 있었다.
+    // SITE 코드가 없는 프로젝트(메인 Excel 라벨에 "(SITEnn)"이 없는 경우)는 트리에서 숨긴다(요청) —
+    // 헤더 드롭다운에서는 계속 찾을 수 있다.
     const projects = (projectsQuery.data?.projects ?? [])
-      .filter((p) => !p.isGroup)
+      .filter((p) => !p.isGroup && p.siteCode)
       .map((p) => ({ name: p.name, siteCode: p.siteCode, fldCode: (p as { fldCode?: string | null }).fldCode, status: p.status, businessType: p.businessType }));
     return buildTreeData(projects);
   }, [projectsQuery.data]);

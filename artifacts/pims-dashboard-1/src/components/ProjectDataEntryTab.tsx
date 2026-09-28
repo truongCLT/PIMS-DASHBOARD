@@ -26,7 +26,7 @@ import type {
   ProjectDetailCogsPoint,
   ProjectDetailSalesPoint,
 } from "@workspace/api-client-react";
-import { useProjectDetail, getGetProjectdetailQueryKey } from "../lib/projectDetailData";
+import { useProjectDetail, getGetProjectdetailQueryKey, selectOutsourcingForMonth } from "../lib/projectDetailData";
 import { downloadMilestonesTemplate, parseMilestonesWorkbook, ExcelParseError } from "../lib/projectDetailExcel";
 import { ANY_PROJECT_LOCKED_QUERY_KEY } from "../lib/useAnyProjectLocked";
 import { REPORT_YEAR } from "../lib/mgmtreportData";
@@ -629,6 +629,21 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
     });
   }, [outsourcingCumPlan, commonCumPlan, expense1CumPlan, expense2CumPlan, contingencyCumPlan]);
   const [outsourcing, setOutsourcing] = useState<ProjectDetailOutsourcing[]>([]);
+  // 외주/자재 표에 표시할 기준월 — 기본값은 "이번 달-1"이되, 전월 실적이 아직 다 안 들어왔을 수 있어
+  // 그 전월의 12일이 지나기 전까지는 한 달 더 이전(이번 달-2)을 보여준다(요청). 예: 9월 5일이면 7월,
+  // 9월 13일이면 8월이 기본값.
+  const [outsourcingYear, setOutsourcingYear] = useState<number>(() => {
+    const now = new Date();
+    const currentAbsMonth = now.getFullYear() * 12 + now.getMonth();
+    const targetAbsMonth = now.getDate() >= 12 ? currentAbsMonth - 1 : currentAbsMonth - 2;
+    return Math.floor(targetAbsMonth / 12);
+  });
+  const [outsourcingMonth, setOutsourcingMonth] = useState<number>(() => {
+    const now = new Date();
+    const currentAbsMonth = now.getFullYear() * 12 + now.getMonth();
+    const targetAbsMonth = now.getDate() >= 12 ? currentAbsMonth - 1 : currentAbsMonth - 2;
+    return (targetAbsMonth % 12) + 1;
+  });
   const [cashflow, setCashflow] = useState<ProjectDetailCashflowPoint[]>([]);
   const [cogsMonthly, setCogsMonthly] = useState<ProjectDetailCogsPoint[]>([]);
   const [salesMonthly, setSalesMonthly] = useState<ProjectDetailSalesPoint[]>([]);
@@ -693,7 +708,10 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
         }),
       );
       setCostBudgetMonthly(detail.costBudgetMonthly ?? []);
-      setOutsourcing(detail.outsourcing);
+      // outsourcing은 이제 계약당 여러 달 이력이다 — 이 화면(입력/수정)은 계약당 대표 행 1개(가장
+      // 최근 달)만 다룬다. tradeGroup만 사용자가 고칠 수 있고, 저장 시 그 계약의 모든 달 행에 똑같이
+      // 반영된다(연/월은 무시) — 아래 PUT 저장 로직 참고.
+      setOutsourcing(selectOutsourcingForMonth(detail.outsourcing, REPORT_YEAR, null));
       if (detail.cashflow.length > 0) {
         setCashflow(detail.cashflow);
         setCfPrefilled(false);
@@ -754,19 +772,22 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
     if (matched) return { year: Number(matched[1]), month: Number(matched[2]) };
     return { year: REPORT_YEAR, month: Math.max(1, actualCutoffMonth) };
   };
-  const getOutsourcingActualByItem = () => {
+  const getOutsourcingActualByItem = (target: { year: number; month: number }) => {
+    // outsourcing은 이제 계약당 여러 달 이력이다 — target 기준월 시점의 계약별 대표 행만 골라서
+    // 합산해야 한다(전체 이력을 그대로 합치면 달 수만큼 중복 합산되어 크게 부풀려진다).
+    const monthRows = selectOutsourcingForMonth(detail?.outsourcing ?? [], target.year, target.month);
     // 용역(Service)은 공종(건축/기계/전기/토목/조경) 개념이 없어 외주 탭 행이 전부 "대공종"으로만
     // 들어온다 — 시공용 트레이드 그룹 매핑(대공종→Common)을 그대로 적용하면 용역의 실제 외주 실적이
     // 전부 "Common"으로 잘못 들어가고 정작 "외주" 항목은 비어버린다. 용역은 트레이드 구분 없이
     // outsourcing 탭 전체 합계를 그대로 "Outsourcing" 한 항목에만 반영한다.
     if (service) {
-      const hasAmount = outsourcing.some((row) => row.accum != null);
-      const total = hasAmount ? outsourcing.reduce((sum, row) => sum + (row.accum ?? 0), 0) : null;
+      const hasAmount = monthRows.some((row) => row.accum != null);
+      const total = hasAmount ? monthRows.reduce((sum, row) => sum + (row.accum ?? 0), 0) : null;
       return new Map([["Outsourcing", total]]);
     }
     const totals = new Map<string, number>();
     const hasAmount = new Set<string>();
-    outsourcing.forEach((row) => {
+    monthRows.forEach((row) => {
       const tradeGroup = normalizeTradeGroup(row.tradeGroup);
       if (!TRADE_GROUPS.includes(tradeGroup as (typeof TRADE_GROUPS)[number])) return;
       const item = TRADE_GROUP_PROCESS_ITEM[tradeGroup as (typeof TRADE_GROUPS)[number]];
@@ -788,7 +809,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
     target: { year: number; month: number } = getOutsourcingActualTarget(),
   ) => {
     const { year, month } = target;
-    const totals = getOutsourcingActualByItem();
+    const totals = getOutsourcingActualByItem(target);
     let merged = [...rows];
     totals.forEach((actual, item) => {
       if (item === "외주 경비") {
@@ -813,6 +834,14 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
     });
     return merged;
   };
+  // "5. 외주/자재" 표에서 선택한 기준월(outsourcingYear/outsourcingMonth) 시점의 계약별 This
+  // Month/Cumulative 값을 찾기 위한 조회 맵 — tradeGroup 수정은 outsourcing state(계약당 대표 행)에
+  // 그대로 하되, 숫자 컬럼(이번달/누계)만 이 맵의 값으로 바꿔 보여준다.
+  const outsourcingMonthByContract = new Map(
+    selectOutsourcingForMonth(detail?.outsourcing ?? [], outsourcingYear, outsourcingMonth).map(
+      (r) => [`${r.fldCode ?? ""}|${r.ordContTypeCode ?? r.trade}`, r] as const,
+    ),
+  );
   const removeAt = <T,>(setter: React.Dispatch<React.SetStateAction<T[]>>, i: number) =>
     setter((rows) => rows.filter((_, j) => j !== i));
 
@@ -2560,7 +2589,52 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
 
       {/* 5. 외주/자재 */}
       <div style={cardStyle}>
-        {cardHead(service ? t("projectDataEntryTab:outsourcingTitleService") : t("projectDataEntryTab:outsourcingTitleConstruction"), "outsourcing")}
+        {cardHead(
+          service ? t("projectDataEntryTab:outsourcingTitleService") : t("projectDataEntryTab:outsourcingTitleConstruction"),
+          "outsourcing",
+          <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+            <select
+              value={outsourcingMonth}
+              onChange={(event) => setOutsourcingMonth(Number(event.target.value))}
+              aria-label={t("common:month")}
+              style={{
+                padding: "5px 24px 5px 8px",
+                border: `1px solid ${BORDER_LIGHT}`,
+                borderRadius: "3px",
+                backgroundColor: "#fff",
+                color: INK_NAVY,
+                fontFamily: "inherit",
+                fontSize: "13px",
+                fontWeight: 600,
+                lineHeight: 1.4,
+              }}
+            >
+              {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+                <option key={m} value={m}>{m}{t("common:monthUnit")}</option>
+              ))}
+            </select>
+            <select
+              value={outsourcingYear}
+              onChange={(event) => setOutsourcingYear(Number(event.target.value))}
+              aria-label={t("common:year")}
+              style={{
+                padding: "5px 24px 5px 8px",
+                border: `1px solid ${BORDER_LIGHT}`,
+                borderRadius: "3px",
+                backgroundColor: "#fff",
+                color: INK_NAVY,
+                fontFamily: "inherit",
+                fontSize: "13px",
+                fontWeight: 600,
+                lineHeight: 1.4,
+              }}
+            >
+              {Array.from({ length: 11 }, (_, i) => REPORT_YEAR - 5 + i).map((y) => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+          </span>,
+        )}
         <div data-tbl="outsourcing" onKeyDown={makeArrowNav("outsourcing")}>
         <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px" }}>
           <thead>
@@ -2579,7 +2653,9 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
             </tr>
           </thead>
           <tbody>
-            {outsourcing.map((o, i) => (
+            {outsourcing.map((o, i) => {
+              const monthRow = outsourcingMonthByContract.get(`${o.fldCode ?? ""}|${o.ordContTypeCode ?? o.trade}`);
+              return (
               <tr key={i}>
                 <td style={tdCell}>
                   <select
@@ -2612,13 +2688,14 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                 {/* budget/executedBudget/resolved/thisMonth/accum lưu ĐÚNG số VND gốc (không quy đổi
                     kUSD) — dùng fmtVnd() thay vì fmtMoney() để hiển thị đúng, mặc định VND, tự chia
                     theo tỷ giá khi chọn USD/KRW. */}
-                <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtVndOrBlank(o.budget)}</td>
-                <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtVndOrBlank(o.executedBudget)}</td>
-                <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtVndOrBlank(o.resolved)}</td>
-                <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtVndOrBlank(o.thisMonth)}</td>
-                <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtVndOrBlank(o.accum)}</td>
+                <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtVndOrBlank(monthRow?.budget ?? o.budget)}</td>
+                <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtVndOrBlank(monthRow?.executedBudget ?? o.executedBudget)}</td>
+                <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtVndOrBlank(monthRow?.resolved ?? o.resolved)}</td>
+                <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtVndOrBlank(monthRow?.thisMonth ?? null)}</td>
+                <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtVndOrBlank(monthRow?.accum ?? null)}</td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
         </div>

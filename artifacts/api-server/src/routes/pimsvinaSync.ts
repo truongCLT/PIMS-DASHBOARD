@@ -400,39 +400,101 @@ export async function applyPimsvinaData(fetched: PimsvinaData) {
     counts.pdProgress++;
   }
 
-  // 11. Sync Project Detail Outsourcing (no natural unique key -> full replace per project)
-  const pdOutsourcingByProject = new Map<string, any[]>();
+  // 11. Sync Project Detail Outsourcing — 계약(projectName+fldCode+ordContTypeCode)당 월별(year/month)
+  // 이력으로 upsert한다. "이번 달이 안 보이면 지운다" 방식은 쓰지 않는다 — 실적이 아직 없는 신규 계약은
+  // 매 sync마다 임시로 당월에 찍히므로(쿼리 쪽 NVL(YYMM, SYSDATE) 처리 참고), 지난달 기록이 이번 sync에
+  // 다시 나타나지 않는다고 해서 지우면 진짜 이력이 날아간다. 계약 자체가 통째로 사라진 경우에만(Oracle
+  // 에서 삭제/재분류) 정리한다.
+  const outsourcingRows = new Map<string, typeof pdOutsourcingTable.$inferInsert>();
+  const outsourcingContractsByProject = new Map<string, Set<string>>();
   for (const item of fetched.pdOutsourcing) {
     const projectName = await resolveProjectName(item);
     if (!projectName || !item.trade) {
       if (!projectName) trackSkipped(item);
       continue;
     }
-    if (!pdOutsourcingByProject.has(projectName)) pdOutsourcingByProject.set(projectName, []);
-    pdOutsourcingByProject.get(projectName)!.push(item);
+    const fldCode = item.fldcode || null;
+    const ordContTypeCode = item.ord_cont_type_code || null;
+    const year = Number(item.year);
+    const month = Number(item.month);
+    if (!Number.isInteger(year) || !Number.isInteger(month) || month < 1 || month > 12) continue;
+    const contractKey = `${fldCode}|${ordContTypeCode}`;
+    if (!outsourcingContractsByProject.has(projectName)) outsourcingContractsByProject.set(projectName, new Set());
+    outsourcingContractsByProject.get(projectName)!.add(contractKey);
+    outsourcingRows.set(`${projectName}|${contractKey}|${year}-${month}`, {
+      projectName,
+      fldCode,
+      siteCode: item.site_code || null,
+      ordContTypeCode,
+      tradeGroup: item.trade_group || null,
+      trade: item.trade,
+      vendor: item.vendor || null,
+      category: item.category || null,
+      contractDate: item.contract_date || null,
+      changeNo: item.change_no != null ? String(item.change_no) : null,
+      budget: rawNum(item.budget),
+      executedBudget: rawNum(item.executed_budget),
+      resolved: rawNum(item.resolved),
+      year,
+      month,
+      thisMonth: rawNum(item.this_month),
+      accum: rawNum(item.accum),
+      sortOrder: Number(item.sort_order) || 0,
+    });
   }
-  for (const [projectName, items] of pdOutsourcingByProject) {
-    await db.delete(pdOutsourcingTable).where(eq(pdOutsourcingTable.projectName, projectName));
-    for (const item of items) {
-      await db.insert(pdOutsourcingTable).values({
-        projectName,
-        fldCode: item.fldcode || null,
-        siteCode: item.site_code || null,
-        tradeGroup: item.trade_group || null,
-        trade: item.trade,
-        vendor: item.vendor || null,
-        category: item.category || null,
-        contractDate: item.contract_date || null,
-        changeNo: item.change_no != null ? String(item.change_no) : null,
-        budget: rawNum(item.budget),
-        executedBudget: rawNum(item.executed_budget),
-        resolved: rawNum(item.resolved),
-        thisMonth: rawNum(item.this_month),
-        accum: rawNum(item.accum),
-        sortOrder: Number(item.sort_order) || 0,
-      });
-      counts.pdOutsourcing++;
+  // 이번 fetch에 아예 나타나지 않은 계약(프로젝트 내 fldCode+ordContTypeCode 조합)만 정리한다.
+  for (const [projectName, liveContracts] of outsourcingContractsByProject) {
+    const existingContracts = await db
+      .selectDistinct({ fldCode: pdOutsourcingTable.fldCode, ordContTypeCode: pdOutsourcingTable.ordContTypeCode })
+      .from(pdOutsourcingTable)
+      .where(eq(pdOutsourcingTable.projectName, projectName));
+    for (const { fldCode, ordContTypeCode } of existingContracts) {
+      if (liveContracts.has(`${fldCode}|${ordContTypeCode}`)) continue;
+      await db
+        .delete(pdOutsourcingTable)
+        .where(
+          and(
+            eq(pdOutsourcingTable.projectName, projectName),
+            fldCode == null ? isNull(pdOutsourcingTable.fldCode) : eq(pdOutsourcingTable.fldCode, fldCode),
+            ordContTypeCode == null
+              ? isNull(pdOutsourcingTable.ordContTypeCode)
+              : eq(pdOutsourcingTable.ordContTypeCode, ordContTypeCode),
+          ),
+        );
     }
+  }
+  const OUTSOURCING_CHUNK_SIZE = 1000;
+  const outsourcingRowsArr = Array.from(outsourcingRows.values());
+  for (let i = 0; i < outsourcingRowsArr.length; i += OUTSOURCING_CHUNK_SIZE) {
+    const chunk = outsourcingRowsArr.slice(i, i + OUTSOURCING_CHUNK_SIZE);
+    await db
+      .insert(pdOutsourcingTable)
+      .values(chunk)
+      .onConflictDoUpdate({
+        target: [
+          pdOutsourcingTable.projectName,
+          pdOutsourcingTable.fldCode,
+          pdOutsourcingTable.ordContTypeCode,
+          pdOutsourcingTable.year,
+          pdOutsourcingTable.month,
+        ],
+        set: {
+          siteCode: sql`excluded.site_code`,
+          tradeGroup: sql`excluded.trade_group`,
+          trade: sql`excluded.trade`,
+          vendor: sql`excluded.vendor`,
+          category: sql`excluded.category`,
+          contractDate: sql`excluded.contract_date`,
+          changeNo: sql`excluded.change_no`,
+          budget: sql`excluded.budget`,
+          executedBudget: sql`excluded.executed_budget`,
+          resolved: sql`excluded.resolved`,
+          thisMonth: sql`excluded.this_month`,
+          accum: sql`excluded.accum`,
+          sortOrder: sql`excluded.sort_order`,
+        },
+      });
+    counts.pdOutsourcing += chunk.length;
   }
 
   // 12. Sync Project Detail Cashflow Monthly (cash in/out per project per month)

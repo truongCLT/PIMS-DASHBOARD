@@ -2487,6 +2487,14 @@ components:
     ProjectDetailOutsourcing:
       type: object
       properties:
+        fldCode:
+          type: string
+          nullable: true
+          description: PIMSVINA site code (FLDCODE)
+        ordContTypeCode:
+          type: string
+          nullable: true
+          description: PIMSVINA CDTB_ORDCONTTYPE.ORDCONTTYPECODE — 계약 식별자(월별 이력 grouping key)
         tradeGroup:
           type: string
           nullable: true
@@ -2514,13 +2522,21 @@ components:
         resolved:
           type: number
           nullable: true
+        year:
+          type: integer
+          minimum: 2000
+          maximum: 2100
+        month:
+          type: integer
+          minimum: 1
+          maximum: 12
         thisMonth:
           type: number
           nullable: true
         accum:
           type: number
           nullable: true
-      required: [trade]
+      required: [trade, year, month]
     ProjectDetail:
       type: object
       properties:

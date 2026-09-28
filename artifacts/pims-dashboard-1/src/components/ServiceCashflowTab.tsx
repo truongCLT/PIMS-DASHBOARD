@@ -136,7 +136,23 @@ export function ServiceCashflowTab({
   const cfConvertible = (query.data?.unit ?? "").includes("USD");
   const applyConvert = hasPdRows || cfConvertible;
   const cv = (v: number) => (applyConvert ? convert(v) : v);
-  const chartData = points.map((p: any) => ({
+  // 전체 기간(여러 해)을 한 화면에 다 그리면 개월 수가 너무 많아 막대가 안 보이고, 다른 해에 있는
+  // 특이값 하나 때문에 Y축 스케일이 늘어나 나머지 달이 다 눌려 보인다 — 연도 선택 추가, 기본값은
+  // 오늘 날짜 기준 올해(미래 전망 연도가 아니라 실제 현재 연도) — 데이터에 올해가 없으면 가장
+  // 가까운 해로 대체한다.
+  const availableCfYears = Array.from(new Set(points.map((p: any) => Number(p.month.slice(0, 4))))).sort(
+    (a, b) => a - b,
+  );
+  const [selectedCfYear, setSelectedCfYear] = useState(() => {
+    const currentYear = new Date().getFullYear();
+    if (availableCfYears.includes(currentYear)) return currentYear;
+    if (availableCfYears.length === 0) return currentYear;
+    return availableCfYears.reduce((closest, y) =>
+      Math.abs(y - currentYear) < Math.abs(closest - currentYear) ? y : closest,
+    );
+  });
+  const yearPoints = points.filter((p: any) => Number(p.month.slice(0, 4)) === selectedCfYear);
+  const chartData = yearPoints.map((p: any) => ({
     month: monthLabel(p.month, t),
     cashIn: cv(p.cashIn),
     cashOut: -cv(p.cashOut),
@@ -357,12 +373,34 @@ export function ServiceCashflowTab({
                   })} · {t("serviceCashflowTab:outlookAfterReference")})
             </span>
           </span>
-          <span style={{ fontSize: "11px", color: INK_MUTED }}>
-            {useCf && query.data
-              ? `${t("common:unit")}: ${cfConvertible ? unitLabel : query.data.unit}`
-              : hasPdData
-                ? `${t("common:unit")}: ${unitLabel}`
-                : ""}
+          <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
+            <select
+              value={selectedCfYear}
+              onChange={(event) => setSelectedCfYear(Number(event.target.value))}
+              aria-label={t("common:year")}
+              style={{
+                padding: "4px 22px 4px 8px",
+                border: "1px solid #dbe2ea",
+                borderRadius: "3px",
+                backgroundColor: "#fff",
+                color: INK_BODY,
+                fontFamily: "inherit",
+                fontSize: "12px",
+                fontWeight: 600,
+                lineHeight: 1.4,
+              }}
+            >
+              {availableCfYears.map((y) => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+            <span style={{ fontSize: "11px", color: INK_MUTED }}>
+              {useCf && query.data
+                ? `${t("common:unit")}: ${cfConvertible ? unitLabel : query.data.unit}`
+                : hasPdData
+                  ? `${t("common:unit")}: ${unitLabel}`
+                  : ""}
+            </span>
           </span>
         </div>
         {body}

@@ -18,7 +18,7 @@ import {
   getGetCashflowMonthlyQueryKey,
 } from "@workspace/api-client-react";
 import { ProjectCommentPanel } from "./ProjectCommentPanel";
-import { useProjectDetail } from "../lib/projectDetailData";
+import { useProjectDetail, selectOutsourcingForMonth } from "../lib/projectDetailData";
 import { getMrCashflowRef } from "../data/mrProjectLinks";
 import { REPORT_YEAR } from "../lib/mgmtreportData";
 import { maxSelectableMonth } from "../lib/monthRange";
@@ -45,26 +45,24 @@ import {
   runProjectReportExport,
 } from "../lib/exportProjectReport";
 
+// "5. 예산 집행 현황"(Budget Execution Status, SaleCostTab/ProjectDataEntryTab의 MONTHLY_BUDGET_ITEMS와
+// 동일한 항목)과 같은 소스를 쓴다 — 예전엔 트레이드별 "외주 건축/기계/전기/토목/조경/경비" 항목을 썼는데,
+// 그 항목들의 월별 실적을 채우던 PIMSVINA 동기화(dashboard_pd_trade_cost_monthly_1q.jsp)가 이 세션에서
+// 이미 제거되어 더 이상 값이 안 들어오면서 "원가" 현황 행이 항상 "-"만 뜨는 버그가 됐다(요청으로 확인/수정).
 const PROCESS_COST_PLAN_ITEMS = new Set([
-  "외주 건축",
-  "외주 기계",
-  "외주 전기",
-  "외주 토목",
-  "외주 조경",
-  "외주 경비",
+  "Outsourcing",
   "Common",
   "Expense 1",
   "Expense 2",
+  "Contingency",
 ]);
 
 const PROCESS_COST_GROUPS = [
-  { label: "대공종", items: ["Common"] },
-  { label: "건축", items: ["외주 건축"] },
-  { label: "기계", items: ["외주 기계"] },
-  { label: "전기", items: ["외주 전기"] },
-  { label: "토목", items: ["외주 토목"] },
-  { label: "조경", items: ["외주 조경"] },
-  { label: "경비", items: ["외주 경비", "Expense 1", "Expense 2"] },
+  { label: "외주", items: ["Outsourcing"] },
+  { label: "Common", items: ["Common"] },
+  { label: "Expense 1", items: ["Expense 1"] },
+  { label: "Expense 2", items: ["Expense 2"] },
+  { label: "Contingency", items: ["Contingency"] },
 ] as const;
 
 // ─── Responsive grid helpers ───────────────────────────────────────────────
@@ -260,7 +258,7 @@ export function ProjectReportTab({
   const expense2 = findCb("Expense 2");
   const contingency = findCb("Contingency");
 
-  const outRows = detail?.outsourcing ?? [];
+  const outRows = selectOutsourcingForMonth(detail?.outsourcing ?? [], REPORT_YEAR, resolvedMonth);
   const outBudget = outRows.some((r) => r.budget != null)
     ? outRows.reduce<number>((a, r) => a + (r.budget ?? 0), 0)
     : null;

@@ -609,6 +609,11 @@ export async function parseProjectDetailWorkbook(file: File, existing: ProjectDe
           resolved: fromVndRaw(cellNum(r[8])),
           thisMonth: fromVndRaw(cellNum(r[9])),
           accum: fromVndRaw(cellNum(r[10])),
+          // Excel 시트에는 fldCode/ordContTypeCode(계약 식별자)가 없다 — pd_outsourcing이 월별 이력
+          // 테이블로 바뀐 뒤로는 서버 PUT 핸들러가 이 두 필드로만 계약을 찾아 tradeGroup을 갱신하므로,
+          // 이 시트로 업로드한 행은 실제로 반영되지 않는다(타입 요구사항만 맞추는 값 — 의미 없음).
+          year: new Date().getFullYear(),
+          month: new Date().getMonth() + 1,
         });
       });
       result.outsourcing = out;

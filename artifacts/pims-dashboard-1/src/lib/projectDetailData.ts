@@ -1,5 +1,5 @@
 import { useGetProjectdetail, getGetProjectdetailQueryKey } from "@workspace/api-client-react";
-import type { ProjectDetail } from "@workspace/api-client-react";
+import type { ProjectDetail, ProjectDetailOutsourcing } from "@workspace/api-client-react";
 
 export type { ProjectDetail };
 export { getGetProjectdetailQueryKey };
@@ -57,4 +57,32 @@ export function indexToYmLabel(idx: number): string {
   const year = Math.floor(idx / 12);
   const month = (idx % 12) + 1;
   return `${String(year).slice(2)}-${String(month).padStart(2, "0")}`;
+}
+
+/** pd_outsourcing 전체 이력(계약당 여러 달)에서 계약(fldCode+ordContTypeCode)별로 기준월 시점의
+ * 대표 행 1개씩만 뽑는다 — 기준월(year/month) 이전(포함) 중 가장 최근 행을 고른다(다른 화면들의
+ * "latest up to reference month" 규칙과 동일). month가 null이면 계약별 "전체 중 가장 최근" 행을
+ * 반환한다(월 필터 없음 — Data Entry 입력 표처럼 아직 기준월 개념이 없는 곳에서 사용). */
+export function selectOutsourcingForMonth(
+  rows: ProjectDetailOutsourcing[],
+  year: number,
+  month: number | null,
+): ProjectDetailOutsourcing[] {
+  const byContract = new Map<string, ProjectDetailOutsourcing[]>();
+  for (const r of rows) {
+    const key = `${r.fldCode ?? ""}|${r.ordContTypeCode ?? r.trade}`;
+    const group = byContract.get(key);
+    if (group) group.push(r);
+    else byContract.set(key, [r]);
+  }
+  const result: ProjectDetailOutsourcing[] = [];
+  for (const contractRows of byContract.values()) {
+    const sorted = [...contractRows].sort((a, b) => a.year * 12 + a.month - (b.year * 12 + b.month));
+    const picked =
+      month == null
+        ? sorted[sorted.length - 1]
+        : [...sorted].reverse().find((r) => r.year * 12 + r.month <= year * 12 + month);
+    if (picked) result.push(picked);
+  }
+  return result;
 }

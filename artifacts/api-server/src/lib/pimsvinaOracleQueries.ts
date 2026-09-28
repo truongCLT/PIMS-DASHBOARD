@@ -130,8 +130,21 @@ export const ORACLE_DASHBOARD_QUERIES: Record<string, OracleEndpointQuery> = {
         NVL(B.BDGTAMT, 0)          AS BUDGET,
         NVL(B.EXECAMT, 0)          AS EXECUTED_BUDGET,
         NVL(B.CTRTAMT, NVL(B.CTRTAMT_TAX, 0))      AS RESOLVED,
-        NVL(S.PRGSAMT_TM, 0)       AS THIS_MONTH,
-        NVL(S.PRGSAMT_AC, 0)       AS ACCUM,
+        T.ORDCONTTYPECODE          AS ORD_CONT_TYPE_CODE,
+        -- 월별 이력으로 반환한다(요청) — 예전엔 CETB_PFMSCHDHIST를 FLDCODE/ORDCONTTYPECODE로만
+        -- GROUP BY 해서 YYMM을 통째로 뭉갰다(오늘 서버 날짜 SYSDATE와 비교해 "이번 달"을 계산 — 화면에서
+        -- 고른 기준월과 무관하게 항상 서버의 실제 오늘 날짜 기준이었음). dashboard_pd_progress_1q.jsp와
+        -- 동일하게 YYMM을 그대로 유지해 YEAR/MONTH로 쪼개고, ACCUM은 윈도우 함수로 월별 누계를 계산한다.
+        -- CETB_PFMSCHDHIST에 이력이 아직 없는(막 계약된) 건도 계약 자체는 사라지면 안 되므로, S.YYMM이
+        -- NULL이면 이번 sync 실행 시점의 YYMM으로 임시 표시한다(계약일 CNSTDATE는 NULL일 수 있고, 의미상
+        -- "계약일에 실적이 있었다"는 것도 틀리므로 대신 오늘 날짜를 씀 — 실제 이력이 생기면 자동으로 대체됨).
+        TO_NUMBER(SUBSTR(NVL(S.YYMM, TO_CHAR(SYSDATE, 'YYYYMM')), 1, 4)) AS YEAR,
+        TO_NUMBER(SUBSTR(NVL(S.YYMM, TO_CHAR(SYSDATE, 'YYYYMM')), 5, 2)) AS MONTH,
+        NVL(S.PRGSAMT, 0)          AS THIS_MONTH,
+        NVL(SUM(S.PRGSAMT) OVER (
+              PARTITION BY B.FLDCODE, B.ORDCONTTYPECODE
+              ORDER BY NVL(S.YYMM, TO_CHAR(SYSDATE, 'YYYYMM'))
+            ), 0)                  AS ACCUM,
         T.ORDCONTTYPECODE          AS SORT_ORDER
     FROM CDTB_ORDCONTTYPE T
     JOIN CETB_PFMCTRTHIST B
@@ -147,16 +160,11 @@ export const ORACLE_DASHBOARD_QUERIES: Record<string, OracleEndpointQuery> = {
              AND X.ORDCONTTYPECODE = B.ORDCONTTYPECODE
              AND X.RQSTSTSCODE >= '600'
          )
-    LEFT JOIN (
-        SELECT FLDCODE, ORDCONTTYPECODE,
-               SUM(DECODE(YYMM, TO_CHAR(SYSDATE, 'YYYYMM'), PRGSAMT, 0)) AS PRGSAMT_TM,
-               SUM(PRGSAMT) AS PRGSAMT_AC
-        FROM CETB_PFMSCHDHIST
-        GROUP BY FLDCODE, ORDCONTTYPECODE
-    ) S ON S.FLDCODE = B.FLDCODE AND S.ORDCONTTYPECODE = B.ORDCONTTYPECODE
+    LEFT JOIN CETB_PFMSCHDHIST S
+      ON S.FLDCODE = B.FLDCODE AND S.ORDCONTTYPECODE = B.ORDCONTTYPECODE
     WHERE T.SVCDVSCODE IN ('1', '2')
       AND T.ORDCONTTYPECODE != '0000'
-    ORDER BY B.FLDCODE, T.ORDCONTTYPECODE`,
+    ORDER BY B.FLDCODE, T.ORDCONTTYPECODE, YEAR, MONTH`,
   },
 
   "dashboard_pd_trade_cost_scopes_1q.jsp": {

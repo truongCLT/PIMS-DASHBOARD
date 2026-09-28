@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, asc, desc, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, isNull, sql } from "drizzle-orm";
 import { createHash } from "node:crypto";
 import {
   db,
@@ -158,7 +158,7 @@ async function loadDetail(projectName: string) {
       .select()
       .from(pdOutsourcingTable)
       .where(eq(pdOutsourcingTable.projectName, projectName))
-      .orderBy(asc(pdOutsourcingTable.sortOrder), asc(pdOutsourcingTable.id)),
+      .orderBy(asc(pdOutsourcingTable.sortOrder), asc(pdOutsourcingTable.year), asc(pdOutsourcingTable.month), asc(pdOutsourcingTable.id)),
     db
       .select()
       .from(pdCashflowMonthlyTable)
@@ -303,6 +303,8 @@ async function loadDetail(projectName: string) {
       actual: num(c.actual),
     })),
     outsourcing: outsourcing.map((o) => ({
+      fldCode: o.fldCode,
+      ordContTypeCode: o.ordContTypeCode,
       tradeGroup: o.tradeGroup,
       trade: o.trade,
       vendor: o.vendor,
@@ -312,6 +314,8 @@ async function loadDetail(projectName: string) {
       budget: num(o.budget),
       executedBudget: num(o.executedBudget),
       resolved: num(o.resolved),
+      year: o.year,
+      month: o.month,
       thisMonth: num(o.thisMonth),
       accum: num(o.accum),
     })),
@@ -755,9 +759,9 @@ router.put("/projectdetail", requireAdmin, async (req, res) => {
         await tx.delete(pdCostBudgetTable).where(eq(pdCostBudgetTable.projectName, projectName));
         await tx.delete(pdCostBudgetMonthlyTable).where(eq(pdCostBudgetMonthlyTable.projectName, projectName));
       }
-      if (!lockedSections.has("outsourcing")) {
-        await tx.delete(pdOutsourcingTable).where(eq(pdOutsourcingTable.projectName, projectName));
-      }
+      // pd_outsourcing은 이제 월별 이력 테이블이라 여기서 delete+insert 하지 않는다(아래 outsourcing
+      // 저장 블록에서 tradeGroup만 targeted UPDATE — 이력을 지우면 매번 Save 누를 때마다 방금 동기화된
+      // 여러 달 이력이 통째로 사라진다).
       if (!lockedSections.has("cashflow")) {
         await tx.delete(pdCashflowMonthlyTable).where(eq(pdCashflowMonthlyTable.projectName, projectName));
       }
@@ -922,49 +926,66 @@ router.put("/projectdetail", requireAdmin, async (req, res) => {
           })),
         );
       }
-      const cbmRows = (body.costBudgetMonthly ?? []).filter(
+      // body.costBudgetMonthly는 화면에 현재 로드된(선택된 항목/연도) 셀만 담을 수 있다 — delete 후
+      // body 내용만으로 다시 insert하면, 화면에 없던 다른 연도/항목 행 전체가 통째로 사라진다(실제
+      // 재현된 버그: 2025년 전체 plan이 사라짐). existing 스냅샷을 베이스로 두고 body 값을 키(item,
+      // year, month)별로 덮어써서 병합한다 — body에 없는 키는 기존 값 그대로, 있는 키는 필드별로
+      // null이 아닐 때만 덮어쓴다(null이면 기존 값 보존, initialBusinessBudget과 동일한 원칙).
+      const cbmByKey = new Map(existingCostBudgetMonthlyByKey);
+      for (const c of body.costBudgetMonthly ?? []) {
+        const key = `${c.item}|${c.year}|${c.month}`;
+        const existing = cbmByKey.get(key);
+        cbmByKey.set(key, {
+          ...existing,
+          projectName,
+          item: c.item,
+          year: c.year,
+          month: c.month,
+          plan: c.plan != null ? str(c.plan) : (existing?.plan ?? null),
+          actual: c.actual != null ? str(c.actual) : (existing?.actual ?? null),
+          actualSource: preservePimsvinaActualSource(
+            existing?.actualSource,
+            existing?.actual,
+            c.actual,
+          ),
+        } as (typeof existingCostBudgetMonthlyRows)[number]);
+      }
+      const cbmRows = Array.from(cbmByKey.values()).filter(
         (r) => r.plan != null || r.actual != null,
       );
       if (!lockedSections.has("costBudget") && cbmRows.length > 0) {
         await tx.insert(pdCostBudgetMonthlyTable).values(
-          cbmRows.map((c) => {
-            const existing = existingCostBudgetMonthlyByKey.get(
-              `${c.item}|${c.year}|${c.month}`,
-            );
-            return {
-              projectName,
-              item: c.item,
-              year: c.year,
-              month: c.month,
-              plan: str(c.plan),
-              actual: str(c.actual),
-              actualSource: preservePimsvinaActualSource(
-                existing?.actualSource,
-                existing?.actual,
-                c.actual,
-              ),
-            };
-          }),
-        );
-      }
-      if (!lockedSections.has("outsourcing") && body.outsourcing.length > 0) {
-        await tx.insert(pdOutsourcingTable).values(
-          body.outsourcing.map((o, i) => ({
+          cbmRows.map((c) => ({
             projectName,
-            tradeGroup: o.tradeGroup ?? null,
-            trade: o.trade,
-            vendor: o.vendor ?? null,
-            category: o.category ?? null,
-            contractDate: o.contractDate ?? null,
-            changeNo: o.changeNo ?? null,
-            budget: str(o.budget),
-            executedBudget: str(o.executedBudget),
-            resolved: str(o.resolved),
-            thisMonth: str(o.thisMonth),
-            accum: str(o.accum),
-            sortOrder: i,
+            item: c.item,
+            year: c.year,
+            month: c.month,
+            plan: c.plan,
+            actual: c.actual,
+            actualSource: c.actualSource ?? null,
           })),
         );
+      }
+      // pd_outsourcing은 PIMSVINA 동기화 전용 월별 이력 테이블 — Data Entry 화면에서 사용자가 직접
+      // 고칠 수 있는 값은 tradeGroup(드롭다운)뿐이다. 계약당 대표 행 1개만 화면에 실려 오므로(연/월은
+      // 무시), 그 계약의 fldCode+ordContTypeCode에 해당하는 모든 달의 행에 동일하게 반영한다 — insert가
+      // 아니라 targeted UPDATE만 한다(이력을 지우고 다시 쓰지 않음).
+      if (!lockedSections.has("outsourcing")) {
+        for (const o of body.outsourcing) {
+          if (o.fldCode == null && o.ordContTypeCode == null) continue;
+          await tx
+            .update(pdOutsourcingTable)
+            .set({ tradeGroup: o.tradeGroup ?? null })
+            .where(
+              and(
+                eq(pdOutsourcingTable.projectName, projectName),
+                o.fldCode == null ? isNull(pdOutsourcingTable.fldCode) : eq(pdOutsourcingTable.fldCode, o.fldCode),
+                o.ordContTypeCode == null
+                  ? isNull(pdOutsourcingTable.ordContTypeCode)
+                  : eq(pdOutsourcingTable.ordContTypeCode, o.ordContTypeCode),
+              ),
+            );
+        }
       }
       if (!lockedSections.has("cashflow") && body.cashflow.length > 0) {
         await tx.insert(pdCashflowMonthlyTable).values(

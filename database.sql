@@ -281,6 +281,7 @@ CREATE TABLE IF NOT EXISTS pd_outsourcing (
     project_name TEXT NOT NULL,
     fld_code TEXT,
     site_code TEXT,
+    ord_cont_type_code TEXT,
     trade_group TEXT,
     trade TEXT NOT NULL,
     vendor TEXT,
@@ -290,9 +291,12 @@ CREATE TABLE IF NOT EXISTS pd_outsourcing (
     budget NUMERIC(24, 8),
     executed_budget NUMERIC(24, 8),
     resolved NUMERIC(24, 8),
+    year INT NOT NULL,
+    month INT NOT NULL CHECK (month BETWEEN 1 AND 12),
     this_month NUMERIC(24, 8),
     accum NUMERIC(24, 8),
-    sort_order INT NOT NULL DEFAULT 0
+    sort_order INT NOT NULL DEFAULT 0,
+    CONSTRAINT pd_outsourcing_uq UNIQUE (project_name, fld_code, ord_cont_type_code, year, month)
 );
 CREATE INDEX IF NOT EXISTS pd_outsourcing_project_idx ON pd_outsourcing(project_name);
 
