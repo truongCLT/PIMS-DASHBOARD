@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { FileDown, Loader2 } from "lucide-react";
 import { Button } from "@workspace/aqua-glass/components/ui/button";
 import { ProjectCommentPanel } from "./ProjectCommentPanel";
-import { useProjectDetail, fmtPct, selectOutsourcingForMonth } from "../lib/projectDetailData";
+import { useProjectDetail, fmtPct } from "../lib/projectDetailData";
 import { useMoney } from "../lib/displayUnit";
 import { chartTheme } from "../lib/chartTheme";
 import { REPORT_YEAR } from "../lib/mgmtreportData";
@@ -185,49 +185,64 @@ export function ServiceReportTab({
   const cashCumIn = sumNullable(cumCash, (row) => row.cashIn);
   const cashCumOut = sumNullable(cumCash, (row) => row.cashOut);
 
+  // 시공 ProjectReportTab과 동일한 원칙 — Outsourcing 포함 5개 항목 모두 pd_outsourcing(pd_outsourcing
+  // 계약 테이블)을 다시 집계하지 않고 costBudget(스냅샷)/costBudgetMonthly(월별 그리드)만 쓴다(데이터
+  // 입력 탭 actualAmount()/"Budget/Actual của cả 5 dòng (kể cả Outsourcing) đọc thẳng từ pd_cost_budget
+  // ... không còn tự cộng từ bảng Ngoài giao (pd_outsourcing) nữa"와 동일 규칙) — 예전엔 pd_outsourcing에서
+  // 다시 집계해서 데이터 입력 탭 "Budget Execution Status" 표의 숫자와 몇 배씩 어긋났다(실제로 발견됨:
+  // Report 탭 Execution이 Data Entry의 Cumulative가 아니라 Monthly 값과 같아지는 등).
+  //
+  // "계획(plan)"은 costBudgetMonthly를 기준월까지 직접 누계해서 뽑는다 — costBudget.plan 스냅샷을
+  // 그대로 읽으면 데이터 입력 탭에서 재계산/저장하기 전까지 값이 비어(null) 있어(실제 발견된 문제:
+  // Indirect Cost/Contingency가 "-"로 표시됨), 방금 입력한 월별 계획과 어긋난다.
   const budgetRows = detail?.costBudget ?? [];
-  const outsourcingRows = selectOutsourcingForMonth(detail?.outsourcing ?? [], REPORT_YEAR, resolvedMonth);
-  const budgetItems = [
-    {
-      label: "외주",
-      plan: sumNullable(outsourcingRows, (row) => row.executedBudget),
-      actual: sumNullable(outsourcingRows, (row) => row.accum),
-    },
-    ...["Common", "Expense 1", "Expense 2", "Contingency"].map((item) => {
-      const row = budgetRows.find((entry) => entry.item === item);
-      return { label: item === "Contingency" ? "예비비" : item, plan: row?.plan ?? row?.budget ?? null, actual: row?.actual ?? null };
-    }),
-  ];
+  const findBudget = (name: string) =>
+    budgetRows.find((r) => r.item.trim().toLowerCase() === name.toLowerCase()) ?? null;
+  const cbMonthly = detail?.costBudgetMonthly ?? [];
+  const cumPlanFor = (item: string): number | null => {
+    const rows = cbMonthly.filter(
+      (row) =>
+        row.item === item &&
+        row.year === REPORT_YEAR &&
+        (resolvedMonth == null || row.month <= resolvedMonth),
+    );
+    return rows.some((row) => row.plan != null)
+      ? rows.reduce<number>((sum, row) => sum + (row.plan ?? 0), 0)
+      : null;
+  };
+  const BUDGET_ITEM_NAMES = ["Outsourcing", "Common", "Expense 1", "Expense 2", "Contingency"] as const;
+  const budgetItems = BUDGET_ITEM_NAMES.map((item) => {
+    const row = findBudget(item);
+    return {
+      label: item === "Outsourcing" ? "외주" : item === "Contingency" ? "예비비" : item,
+      plan: cumPlanFor(item) ?? row?.budget ?? null,
+      actual: row?.actual ?? null,
+    };
+  });
   // 계획이 한 번도 입력된 적 없는 항목(예: 외주)까지 포함해 합산하면, 그 항목의 실적만 분자에 더해지고
   // 분모(계획)엔 반영되지 않아 달성률이 비정상적으로 폭주한다 — 계획이 있는 항목만 비교한다(시공
   // ProjectReportTab의 동일 문제 수정과 같은 원칙).
   const comparableBudgetItems = budgetItems.filter((row) => row.plan != null);
   const budgetPlan = sumNullable(comparableBudgetItems, (row) => row.plan);
   const budgetActual = sumNullable(comparableBudgetItems, (row) => row.actual);
-  const reportBudgetRows = [
-    {
-      item: "외주",
-      budget: sumNullable(outsourcingRows, (row) => row.budget),
-      plan: sumNullable(outsourcingRows, (row) => row.executedBudget),
-      actual: sumNullable(outsourcingRows, (row) => row.accum ?? row.resolved),
-    },
-    ...["Common", "Expense 1", "Expense 2", "Contingency"].map((item) => {
-      const row = budgetRows.find((entry) => entry.item === item);
-      return {
-        item:
-          item === "Expense 1"
+  const reportBudgetRows = BUDGET_ITEM_NAMES.map((item) => {
+    const row = findBudget(item);
+    return {
+      item:
+        item === "Outsourcing"
+          ? "외주"
+          : item === "Expense 1"
             ? "경비1"
             : item === "Expense 2"
               ? "경비2"
               : item === "Contingency"
                 ? "예비비"
                 : item,
-        budget: row?.budget ?? null,
-        plan: row?.plan ?? null,
-        actual: row?.actual ?? null,
-      };
-    }),
-  ].filter((row) => row.budget != null || row.plan != null || row.actual != null);
+      budget: row?.budget ?? null,
+      plan: cumPlanFor(item),
+      actual: row?.actual ?? null,
+    };
+  }).filter((row) => row.budget != null || row.plan != null || row.actual != null);
   const durationMonths = (() => {
     const start = /^(\d{4})-(\d{1,2})/.exec(overview?.startDate ?? "");
     const end = /^(\d{4})-(\d{1,2})/.exec(overview?.endDate ?? "");

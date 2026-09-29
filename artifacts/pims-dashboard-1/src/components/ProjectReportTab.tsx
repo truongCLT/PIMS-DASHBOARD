@@ -376,6 +376,22 @@ export function ProjectReportTab({
   const statusCostCumulativePlan = sumNullable(comparableCostRows(costPlanRows), "plan");
   const statusCostCumulativeActual = sumNullable(comparableCostRows(costPlanRows), "actual");
 
+  // 공정 카드(ProgressSection)의 계획/실적 금액 — ConstructionProgressTab(Progress 탭)의
+  // costPlanAmount/costActualAmount와 동일하게, 기준월의 costBudgetMonthly 전체 행(항목 필터 없음)을
+  // 합산한다. Progress 탭에 보이는 금액과 일치시키기 위한 계산으로, 위 statusCostMonthlyPlan/Actual
+  // (Status 표 원가 판정용, 5개 예산 항목 중 Plan이 있는 것만 합산)과는 다른 수치다.
+  const referenceCostRows = (detail?.costBudgetMonthly ?? []).filter(
+    (row) => row.year === REPORT_YEAR && row.month === resolvedMonth,
+  );
+  const progressCardPlanAmount =
+    referenceCostRows.some((row) => row.plan != null)
+      ? referenceCostRows.reduce<number>((sum, row) => sum + (row.plan ?? 0), 0)
+      : null;
+  const progressCardActualAmount =
+    referenceCostRows.some((row) => row.actual != null)
+      ? referenceCostRows.reduce<number>((sum, row) => sum + (row.actual ?? 0), 0)
+      : null;
+
   const statusRows: StatusRowData[] = [
     {
       category: "공정",
@@ -551,6 +567,8 @@ export function ProjectReportTab({
             resolvedMonth={resolvedMonth}
             startDate={detail?.overview?.startDate}
             endDate={detail?.overview?.endDate}
+            monthlyPlanAmount={progressCardPlanAmount}
+            monthlyActualAmount={progressCardActualAmount}
           />
           <SalesSection
             planMonths={planMonths}

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ProjectCommentPanel } from "./ProjectCommentPanel";
 
@@ -85,20 +85,32 @@ export function ServiceCashflowTab({
   };
   const siteStart = parseYm(detail?.overview?.startDate);
   const siteEnd = parseYm(detail?.overview?.endDate);
-  const effectiveFromYear = siteStart?.year ?? fromYear;
-  const effectiveFromMonth = siteStart?.month ?? fromMonth;
-  const siteRangeMonths =
-    siteStart && siteEnd
-      ? Math.max(
-          1,
-          (siteEnd.year - siteStart.year) * 12 + (siteEnd.month - siteStart.month) + 1,
-        )
-      : months;
-  const effectiveMonths = Math.min(siteRangeMonths, 120);
-  const startIdx = effectiveFromYear * 12 + (effectiveFromMonth - 1);
-  const pdPoints = (detail?.cashflow ?? [])
+  // 데이터 입력 탭 "6. Monthly Cash Flow"는 프로젝트 기간(overview.startDate~endDate)과 무관하게 어느
+  // 연/월이든 자유롭게 행을 추가할 수 있다(다음 달 추가 버튼은 마지막 행 다음 달, 행이 없으면 그냥
+  // "올해"부터 시작) — 계약 기간이 끝난 뒤에도 실제 정산이 이어지거나, overview 종료일이 아직
+  // 갱신되지 않은 경우가 흔하다. 그런데 예전엔 이 컴포넌트가 pd_cashflow_monthly(이미 이 프로젝트로
+  // 필터링되어 내려온 데이터)까지 overview 기간으로 다시 한번 걸러서, 그 기간 밖에 입력된 행이
+  // 전부 조용히 사라지고(달력엔 데이터가 뻔히 보이는데 차트/연도 선택은 완전히 빈 상태) "No cash
+  // flow data for the selected period."가 표시되는 버그가 있었다(실제 발견됨: K2CT1 프리콘 —
+  // 프로젝트 기간은 '23.05~'25.12인데 자금 데이터는 '26.01~'26.08에 입력됨). 실제 입력된 데이터의
+  // 연/월 범위와 overview 기간을 합집합으로 잡아서, 입력된 행은 하나도 누락되지 않게 한다.
+  const cashflowRowsRaw = detail?.cashflow ?? [];
+  const rowIdx = (c: { year: number; month: number }) => c.year * 12 + (c.month - 1);
+  const rowIdxs = cashflowRowsRaw.map(rowIdx);
+  const siteStartIdx = siteStart ? siteStart.year * 12 + (siteStart.month - 1) : null;
+  const siteEndIdx = siteEnd ? siteEnd.year * 12 + (siteEnd.month - 1) : null;
+  const fallbackStartIdx = fromYear * 12 + (fromMonth - 1);
+  const rangeBoundsStart = [siteStartIdx, ...rowIdxs].filter((v): v is number => v != null);
+  const rangeBoundsEnd = [siteEndIdx, ...rowIdxs].filter((v): v is number => v != null);
+  const rangeStartIdx = rangeBoundsStart.length ? Math.min(...rangeBoundsStart) : fallbackStartIdx;
+  const rangeEndIdx = rangeBoundsEnd.length ? Math.max(...rangeBoundsEnd) : fallbackStartIdx + months - 1;
+  const effectiveFromYear = Math.floor(rangeStartIdx / 12);
+  const effectiveFromMonth = (rangeStartIdx % 12) + 1;
+  const effectiveMonths = Math.min(Math.max(rangeEndIdx - rangeStartIdx + 1, 1), 120);
+  const startIdx = rangeStartIdx;
+  const pdPoints = cashflowRowsRaw
     .filter((c: any) => {
-      const idx = c.year * 12 + (c.month - 1);
+      const idx = rowIdx(c);
       return idx >= startIdx && idx < startIdx + effectiveMonths;
     })
     .map((c: any) => ({
@@ -143,14 +155,21 @@ export function ServiceCashflowTab({
   const availableCfYears = Array.from(new Set(points.map((p: any) => Number(p.month.slice(0, 4))))).sort(
     (a, b) => a - b,
   );
-  const [selectedCfYear, setSelectedCfYear] = useState(() => {
+  const [selectedCfYear, setSelectedCfYear] = useState(() => new Date().getFullYear());
+  // 최초 렌더링 시점엔 쿼리가 아직 로딩 중이라 points/availableCfYears가 비어 있어(위 useState
+  // 초기화 함수는 딱 한 번만 실행됨), 프로젝트 기간이 이미 종료돼 "올해"가 데이터 범위 밖인 용역
+  // 현장(예: 계약기간이 2025.12에 끝났는데 오늘이 2026년)에서는 selectedCfYear가 존재하지 않는
+  // 연도(2026)에 영구히 고정되어, 실제로는 데이터가 있는데도 "No cash flow data for the selected
+  // period."로 잘못 표시되는 문제가 있었다(실제 발견됨). 데이터가 로드된 뒤 선택된 연도가 목록에
+  // 없으면 가장 가까운 연도로 보정한다.
+  useEffect(() => {
+    if (availableCfYears.length === 0 || availableCfYears.includes(selectedCfYear)) return;
     const currentYear = new Date().getFullYear();
-    if (availableCfYears.includes(currentYear)) return currentYear;
-    if (availableCfYears.length === 0) return currentYear;
-    return availableCfYears.reduce((closest, y) =>
-      Math.abs(y - currentYear) < Math.abs(closest - currentYear) ? y : closest,
+    const closest = availableCfYears.reduce((closestYear, y) =>
+      Math.abs(y - currentYear) < Math.abs(closestYear - currentYear) ? y : closestYear,
     );
-  });
+    setSelectedCfYear(closest);
+  }, [availableCfYears.join(","), selectedCfYear]);
   const yearPoints = points.filter((p: any) => Number(p.month.slice(0, 4)) === selectedCfYear);
   const chartData = yearPoints.map((p: any) => ({
     month: monthLabel(p.month, t),
@@ -383,12 +402,11 @@ export function ServiceCashflowTab({
           <span style={sectionTitle}>
             {t("common:cashFlow")}
             <span style={{ fontSize: "11px", fontWeight: 400, color: INK_MUTED, marginLeft: "6px" }}>
-              ({siteStart && siteEnd
-                ? `${siteStart.year}.${String(siteStart.month).padStart(2, "0")} ~ ${siteEnd.year}.${String(siteEnd.month).padStart(2, "0")}`
-                : t("serviceCashflowTab:fromMonth", {
-                    year: effectiveFromYear,
-                    month: String(effectiveFromMonth).padStart(2, "0"),
-                  })} · {t("serviceCashflowTab:outlookAfterReference")})
+              {/* 표시 기간은 실제로 차트에 반영되는 effectiveFromYear/effectiveMonths(overview 기간과
+                  입력된 자금 데이터의 합집합) 기준으로 보여준다 — siteStart~siteEnd만 쓰면, 계약 기간
+                  밖에 입력된 달(위 rangeStartIdx/rangeEndIdx 계산 참고)이 차트엔 나오는데 헤더 라벨은
+                  그 달을 포함하지 않는 것처럼 보여 혼란을 준다. */}
+              ({`${effectiveFromYear}.${String(effectiveFromMonth).padStart(2, "0")} ~ ${Math.floor((rangeEndIdx) / 12)}.${String((rangeEndIdx % 12) + 1).padStart(2, "0")}`} · {t("serviceCashflowTab:outlookAfterReference")})
             </span>
           </span>
           <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>

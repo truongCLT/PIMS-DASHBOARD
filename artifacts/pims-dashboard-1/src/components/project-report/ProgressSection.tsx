@@ -6,6 +6,7 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { fmtPct, ratioPct } from "../../lib/projectDetailData";
+import { useMoney } from "../../lib/displayUnit";
 import { chartTheme } from "../../lib/chartTheme";
 import {
   cardStyle,
@@ -25,6 +26,8 @@ interface Props {
   resolvedMonth: number | null;
   startDate: string | null | undefined;
   endDate: string | null | undefined;
+  monthlyPlanAmount?: number | null;
+  monthlyActualAmount?: number | null;
 }
 
 export function selectProgressReportRow(
@@ -66,8 +69,11 @@ export function ProgressSection({
   resolvedMonth,
   startDate,
   endDate,
+  monthlyPlanAmount = null,
+  monthlyActualAmount = null,
 }: Props) {
   const { t } = useTranslation(["projectReportTab", "common"]);
+  const { fmtVnd, unitLabel } = useMoney();
   const latest = selectProgressReportRow(progRows, resolvedMonth);
 
   const planM = latest?.planPct ?? null;
@@ -114,6 +120,8 @@ export function ProgressSection({
                 plan={planM}
                 actual={actualM}
                 rate={monthlyRate}
+                planAmountLabel={monthlyPlanAmount != null ? `${fmtVnd(monthlyPlanAmount)} ${unitLabel}` : null}
+                actualAmountLabel={monthlyActualAmount != null ? `${fmtVnd(monthlyActualAmount)} ${unitLabel}` : null}
               />
             }
           />
@@ -254,11 +262,15 @@ function ProgressPctTooltip({
   plan,
   actual,
   rate,
+  planAmountLabel = null,
+  actualAmountLabel = null,
 }: {
   title: string;
   plan: number | null;
   actual: number | null;
   rate: number | null;
+  planAmountLabel?: string | null;
+  actualAmountLabel?: string | null;
 }) {
   const { t } = useTranslation(["common"]);
   return (
@@ -272,6 +284,20 @@ function ProgressPctTooltip({
         </span>
         {rate != null && <StatusBadge value={rate} />}
       </div>
+      {(planAmountLabel != null || actualAmountLabel != null) && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "2px", borderTop: `1px solid ${DIVIDER}`, paddingTop: "6px" }}>
+          {planAmountLabel != null && (
+            <span style={{ fontSize: "11px", color: INK_SECONDARY }}>
+              {t("common:plan")} <strong>{planAmountLabel}</strong>
+            </span>
+          )}
+          {actualAmountLabel != null && (
+            <span style={{ fontSize: "11px", color: INK_SECONDARY }}>
+              {t("common:actual")} <strong>{actualAmountLabel}</strong>
+            </span>
+          )}
+        </div>
+      )}
     </div>
   );
 }

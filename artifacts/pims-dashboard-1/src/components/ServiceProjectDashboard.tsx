@@ -127,6 +127,15 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
       setToMonth(String(month).padStart(2, "0"));
     }
   }, []);
+  // Outsourcing 탭 자체의 기준월 선택 — 시공 ProjectDashboard와 동일한 패턴: Report 탭과 같은
+  // reportMonth를 공유해서 Report 탭으로 돌아가도 방금 고른 달이 유지되게 하고, toYear/toMonth도
+  // 즉시 갱신한다(Report 탭은 Outsourcing 탭이 떠 있는 동안 마운트되지 않아 그쪽 useEffect가 대신
+  // 갱신해 주지 않으므로 직접 반영 필요).
+  const handleOutsourcingMonthChange = useCallback((month: number) => {
+    setReportMonth(month);
+    setToYear(REPORT_YEAR);
+    setToMonth(String(month).padStart(2, "0"));
+  }, []);
 
   const { detail, isLoading } = useProjectDetail(projectName);
   const siteCode = detail?.overview?.siteCode ?? null;
@@ -487,6 +496,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
             projectName={projectName}
             referenceYear={toYear}
             referenceMonth={Number(toMonth)}
+            onReferenceMonthChange={handleOutsourcingMonthChange}
           />
         ) : activeTab === "Cashflow" ? (
           <ServiceCashflowTab
