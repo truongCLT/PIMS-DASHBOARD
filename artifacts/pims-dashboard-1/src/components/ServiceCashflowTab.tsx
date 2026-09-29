@@ -234,7 +234,7 @@ export function ServiceCashflowTab({
           maxHeight: "540px",
         }}>
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={chartData} stackOffset="sign" margin={{ top: 10, right: 16, left: 10, bottom: 0 }}>
+          <ComposedChart data={chartData} stackOffset="sign" margin={{ top: 36, right: 16, left: 10, bottom: 0 }}>
             <XAxis
               dataKey="month"
               tick={{ fontSize: 12, fill: INK_BODY, fontWeight: 600 }}
@@ -275,8 +275,9 @@ export function ServiceCashflowTab({
             >
               <LabelList
                 dataKey="cashInActual"
-                position="center"
-                style={{ fontSize: "13px", fill: "#fff", fontWeight: 700 }}
+                position="top"
+                offset={6}
+                style={{ fontSize: "12px", fill: chartTheme.inflowBlue, fontWeight: 700 }}
                 formatter={(v: number) => (v !== 0 ? v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : "")}
               />
             </Bar>
@@ -291,9 +292,10 @@ export function ServiceCashflowTab({
             >
               <LabelList
                 dataKey="cashOutActual"
-                position="center"
-                style={{ fontSize: "13px", fill: "#fff", fontWeight: 700 }}
-                formatter={(v: number) => (v !== 0 ? v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : "")}
+                position="bottom"
+                offset={6}
+                style={{ fontSize: "12px", fill: chartTheme.actualGreen, fontWeight: 700 }}
+                formatter={(v: number) => (v !== 0 ? Math.abs(v).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : "")}
               />
             </Bar>
             <Bar
@@ -309,8 +311,9 @@ export function ServiceCashflowTab({
             >
               <LabelList
                 dataKey="cashInForecast"
-                position="center"
-                style={{ fontSize: "13px", fill: chartTheme.inflowBlue, fontWeight: 700 }}
+                position="top"
+                offset={6}
+                style={{ fontSize: "12px", fill: chartTheme.inflowBlue, fontWeight: 700 }}
                 formatter={(v: number) => (v !== 0 ? v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : "")}
               />
             </Bar>
@@ -327,9 +330,10 @@ export function ServiceCashflowTab({
             >
               <LabelList
                 dataKey="cashOutForecast"
-                position="center"
-                style={{ fontSize: "13px", fill: chartTheme.actualGreen, fontWeight: 700 }}
-                formatter={(v: number) => (v !== 0 ? v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : "")}
+                position="bottom"
+                offset={6}
+                style={{ fontSize: "12px", fill: chartTheme.actualGreen, fontWeight: 700 }}
+                formatter={(v: number) => (v !== 0 ? Math.abs(v).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : "")}
               />
             </Bar>
             <Line
@@ -343,11 +347,25 @@ export function ServiceCashflowTab({
             >
               <LabelList
                 dataKey="equivalent"
-                position="top"
-                style={{ fontSize: "12px", fill: chartTheme.actualGreen, fontWeight: 700 }}
-                formatter={(v: number) =>
-                  v !== 0 ? v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : ""
-                }
+                content={(props: any) => {
+                  const { x, y, value, index } = props;
+                  if (value === 0 || value == null) return null;
+                  // 인접한 점들의 값이 비슷하면(선이 거의 평평하면) 라벨이 서로 겹친다 -
+                  // 짝/홀 인덱스마다 세로 위치를 어긋나게 배치해서 겹침을 줄인다.
+                  const dy = index % 2 === 0 ? -10 : -26;
+                  return (
+                    <text
+                      x={x}
+                      y={y + dy}
+                      textAnchor="middle"
+                      fontSize={12}
+                      fontWeight={700}
+                      fill={chartTheme.actualGreen}
+                    >
+                      {value.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                    </text>
+                  );
+                }}
               />
             </Line>
           </ComposedChart>

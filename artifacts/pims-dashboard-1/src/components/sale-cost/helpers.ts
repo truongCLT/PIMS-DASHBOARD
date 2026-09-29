@@ -51,7 +51,33 @@ export function buildFilterPeriod(
   return out;
 }
 
-export type LookupFn = (year: number, metric: "revenue" | "cogs", month: number) => number;
+export type LookupFn = (year: number, month: number) => number;
+
+// 누계 원가율의 합리적 상한 — pd_cost_estimation(execution)의 costAmount/contractAmount는 항상
+// 같은 통화 기준으로 함께 저장되므로 정상적인 범위를 크게 벗어나는 값은 데이터 이상으로 본다.
+const RATIO_SANITY_CAP_PERCENT = 2000;
+
+/** 분모(계약금액) 대비 비정상적으로 큰 비율(데이터 오류로 추정)은 null로 처리한다. */
+export function sanitizeRatioPercent(ratioPercent: number | null): number | null {
+  if (ratioPercent == null) return null;
+  return Math.abs(ratioPercent) > RATIO_SANITY_CAP_PERCENT ? null : ratioPercent;
+}
+
+/** pd_cost_estimation의 execution 행들로 {year}-{month} → 원가율(%) 맵을 만든다 — "4. Cost Rate"의
+ * 표준추정원가율(costAmount/contractAmount)과 동일한 계산·데이터 소스. pd_cogs_monthly와 달리
+ * costAmount/contractAmount는 항상 같은 단위(VND 원본)로 함께 저장되므로 매출-원가 단위 불일치
+ * 문제가 없다. */
+export function buildCostRatioLookup(
+  costEstimation: Array<{ kind: string; year?: number | null; month?: number | null; costAmount?: number | null; contractAmount?: number | null }>,
+): Map<string, number> {
+  const lookup = new Map<string, number>();
+  for (const row of costEstimation) {
+    if (row.kind !== "execution" || row.year == null || row.month == null) continue;
+    if (row.costAmount == null || !row.contractAmount) continue;
+    lookup.set(`${row.year}-${row.month}`, Math.round((row.costAmount / row.contractAmount) * 1000) / 10);
+  }
+  return lookup;
+}
 
 /** effectivePeriod × lookups → RevenuePoint[] */
 export function buildChartData(
@@ -59,31 +85,24 @@ export function buildChartData(
   {
     pdSalesHasAny,
     pdSalesMap,
-    pdCogsHasAny,
-    pdCogsLookup,
+    costRatioLookup,
     lookup,
     convert,
   }: {
     pdSalesHasAny: boolean;
     pdSalesMap: Map<string, { plan: number | null; actual: number | null }>;
-    pdCogsHasAny: boolean;
-    pdCogsLookup: Map<string, number>;
+    costRatioLookup: Map<string, number>;
     lookup: LookupFn;
     convert: (v: number) => number;
   },
 ): RevenuePoint[] {
   let cumulative = 0;
-  let cumCogs = 0;
   let cumPlan = 0;
   return effectivePeriod.map(({ year, month }) => {
     const pdRow = pdSalesHasAny ? pdSalesMap.get(`${year}-${month}`) : undefined;
-    const revenue = pdSalesHasAny ? (pdRow?.actual ?? 0) : lookup(year, "revenue", month);
+    const revenue = pdSalesHasAny ? (pdRow?.actual ?? 0) : lookup(year, month);
     const plan    = pdSalesHasAny ? (pdRow?.plan ?? 0)   : 0;
-    const cogs    = pdSalesHasAny
-      ? (pdCogsHasAny ? (pdCogsLookup.get(`${year}-${month}`) ?? 0) : 0)
-      : lookup(year, "cogs", month);
     cumulative += revenue;
-    cumCogs    += cogs;
     cumPlan    += plan;
     return {
       year,
@@ -93,10 +112,7 @@ export function buildChartData(
       plan:       Math.round(convert(plan)),
       cumulative: Math.round(convert(cumulative)),
       planCum:    Math.round(convert(cumPlan)),
-      ratio:
-        cumulative > 0 && !(pdSalesHasAny && !pdCogsHasAny)
-          ? Math.round((cumCogs / cumulative) * 1000) / 10
-          : null,
+      ratio: sanitizeRatioPercent(costRatioLookup.get(`${year}-${month}`) ?? null),
     };
   });
 }

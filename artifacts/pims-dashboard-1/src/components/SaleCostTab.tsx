@@ -20,6 +20,7 @@ import {
   buildFilterPeriod,
   buildChartData,
   buildBudgetRows,
+  buildCostRatioLookup,
 } from "./sale-cost/helpers";
 import { RevenueChartCard, CostRatioLineCard } from "./sale-cost/RevenueChartSection";
 import { CostRatioCard }       from "./sale-cost/CostRatioSection";
@@ -87,26 +88,22 @@ export function SaleCostTab({
   );
 
   // 서버가 경영보고 기준 + ERP/데이터입력 월별 보완으로 통합한 단일 읽기 모델
-  const pdCogsLookup = new Map<string, number>();
-  for (const c of pdDetail?.canonicalCogsMonthly ?? []) {
-    if (c.acctCogs != null) pdCogsLookup.set(`${c.year}-${c.month}`, c.acctCogs);
-  }
-  const pdCogsHasAny  = filterPeriod.some(({ year, month }) => pdCogsLookup.has(`${year}-${month}`));
   const pdSalesMap = new Map<string, { plan: number | null; actual: number | null }>();
   for (const s of salesMonthly) {
     pdSalesMap.set(`${s.year}-${s.month}`, { plan: s.plan ?? null, actual: s.actual ?? null });
   }
-  const lookup = (year: number, metric: "revenue" | "cogs", month: number) =>
-    metric === "revenue"
-      ? (pdSalesMap.get(`${year}-${month}`)?.actual ?? 0)
-      : (pdCogsLookup.get(`${year}-${month}`) ?? 0);
+  const lookup = (year: number, month: number) => pdSalesMap.get(`${year}-${month}`)?.actual ?? 0;
+  const estimation = pdDetail?.costEstimation ?? [];
+  // 누계 원가율은 "4. Cost Rate"의 표준추정원가율과 동일하게 pd_cost_estimation(execution)의
+  // costAmount/contractAmount에서 가져온다 — pd_cogs_monthly는 프로젝트에 따라 VND/천USD 단위가
+  // 뒤섞여 저장된 레거시 데이터가 있어(수정된 입력 버그의 과거 잔재) 매출과 직접 나누면 안 된다.
+  const costRatioLookup = buildCostRatioLookup(estimation);
 
   // ── 차트 데이터 ───────────────────────────────────────────────────────────
   const chartData = buildChartData(effectivePeriod, {
     pdSalesHasAny,
     pdSalesMap,
-    pdCogsHasAny,
-    pdCogsLookup,
+    costRatioLookup,
     lookup,
     convert,
   });
@@ -114,7 +111,6 @@ export function SaleCostTab({
   const hasData      = chartData.some((d) => d.revenue !== 0 || d.cumulative !== 0 || d.plan !== 0);
   const ratios       = chartData.filter((d) => d.ratio != null);
   // ── 예산 집행 현황 ────────────────────────────────────────────────────────
-  const estimation      = pdDetail?.costEstimation ?? [];
   const outsourcingRows = selectOutsourcingForMonth(pdDetail?.outsourcing ?? [], toYear, toMonth);
   const rawBudgetRows   = (pdDetail?.costBudget ?? []).map((r) => {
     const isContingency = /contingency/i.test(r.item);

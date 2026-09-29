@@ -23,6 +23,7 @@
   "processCostCivil": "토목",
   "processCostLandscape": "조경",
   "processCostOutsourcingExpense": "경비",
+  "outsourcingAutoFilledHint": "외주/자재 탭의 이번달 기성 실적을 대공종별로 자동 합산한 값입니다 (직접 입력 불가)",
   "processCostCommon": "경비",
   "processCostExpense1": "경비",
   "processCostExpense2": "경비",

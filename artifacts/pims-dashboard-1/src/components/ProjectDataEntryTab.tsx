@@ -30,6 +30,7 @@ import { useProjectDetail, getGetProjectdetailQueryKey, selectOutsourcingForMont
 import { downloadMilestonesTemplate, parseMilestonesWorkbook, ExcelParseError } from "../lib/projectDetailExcel";
 import { ANY_PROJECT_LOCKED_QUERY_KEY } from "../lib/useAnyProjectLocked";
 import { REPORT_YEAR } from "../lib/mgmtreportData";
+import { lastClosedYearMonth } from "../lib/monthRange";
 import { getMrCashflowRef } from "../data/mrProjectLinks";
 import { cardStyle, sectionTitle, emptyNote, INK_NAVY, INK_BODY, INK_MUTED, POINT_BLUE, TABLE_HEADER_BG, CARD_BORDER, ACHIEVE_RED, SUCCESS_GREEN, ADMIN_NAVY, BORDER_STRONG, BORDER_MID, BORDER_LIGHT, STATUS_CLOSED_BG, STATUS_OPEN_BG, STATUS_CLOSED_TEXT, STATUS_OPEN_TEXT } from "../lib/uiTokens";
 import { chartTheme } from "../lib/chartTheme";
@@ -575,6 +576,9 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
   const [costBudgetMonthly, setCostBudgetMonthly] = useState<ProjectDetailCostBudgetMonthly[]>([]);
   const [selectedMonthlyBudgetItem, setSelectedMonthlyBudgetItem] = useState<MonthlyBudgetItem>("Common");
   const [selectedMonthlyBudgetYear, setSelectedMonthlyBudgetYear] = useState(REPORT_YEAR);
+  // "3. Cost Plan/Actual by Work Type" 표 — 보여줄 연도, 기본값은 마감 규칙(13일 기준, lastClosedYearMonth)에
+  // 따른 최근 마감 연도(예: 9/13 이전엔 8월이 속한 연도, 9/13 이후엔 9월이 속한 연도).
+  const [selectedProcessCostYear, setSelectedProcessCostYear] = useState(() => lastClosedYearMonth().year);
   // "2. Monthly Revenue" bảng — năm đang xem, mặc định = REPORT_YEAR (chỉ năm này mới có dữ liệu mẫu
   // prefill từ mgmtreport qua mainSalesMonths; năm khác chỉ hiện dữ liệu đã lưu tay, xem getSalesEntryValue).
   const [selectedSalesYear, setSelectedSalesYear] = useState(REPORT_YEAR);
@@ -1159,36 +1163,76 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
   // projectEndIndex는 그대로 둔다). 원가 데이터가 아직 하나도 없는 신규 현장은 기존대로 계약
   // 시작월부터 보여준다.
   const processCostItemKeys = PROCESS_COST_ITEMS.flatMap((item) => item.keys);
+  // 대공종별(건축/기계/전기/토목/조경 + Common) outsourcing 월별 실적 — "이번달"(thisMonth) 값만
+  // 대공종별로 합산한다. 예전에는 "누계"(accum)를 계산해 딱 1개월(기준월)에만 몰아 넣어서 Report
+  // 탭이 월별 실적을 다시 누계로 합산할 때 이중 계산되는 버그가 있었다(2026-09-22 e5c2a80에서
+  // 제거) — 이번엔 각 달 고유의 실적(이번달분)만 그 달 칸에 반영해 재발하지 않는다. service는
+  // 대공종 개념이 없어 이 섹션 자체가 렌더링되지 않으므로 계산하지 않는다.
+  const outsourcingMonthlyDeltaByItem = new Map<string, number>();
+  const outsourcingMonthlyHasData = new Set<string>();
+  if (!service) {
+    for (const row of detail?.outsourcing ?? []) {
+      const tradeGroup = normalizeTradeGroup(row.tradeGroup);
+      if (!TRADE_GROUPS.includes(tradeGroup as (typeof TRADE_GROUPS)[number])) continue;
+      const item = TRADE_GROUP_PROCESS_ITEM[tradeGroup as (typeof TRADE_GROUPS)[number]];
+      const key = `${item}|${row.year}|${row.month}`;
+      outsourcingMonthlyDeltaByItem.set(key, (outsourcingMonthlyDeltaByItem.get(key) ?? 0) + (row.thisMonth ?? 0));
+      if (row.thisMonth != null) outsourcingMonthlyHasData.add(key);
+    }
+  }
+  // "외주 경비"는 Expense 1/Expense 2와 묶인 복합 셀(수동 입력 유지)이라 자동 계산 대상에서 뺀다.
+  const AUTO_OUTSOURCING_ITEMS = new Set<string>(
+    Object.values(TRADE_GROUP_PROCESS_ITEM).filter((item) => item !== "외주 경비"),
+  );
   // PIMSVINA 동기화가 실제 활동 없는 달에도 plan=null/actual=0인 "placeholder" 행을 미리 만들어두는
   // 경우가 있어(공정률 actualPct와 동일한 패턴), 단순히 행이 "있다/없다"만으로는 실제 원가 데이터가
   // 시작된 달을 구분할 수 없다 — plan이 있거나 actual이 0이 아닌 행만 "실제 데이터"로 인정한다.
-  const costDataMonthIndexes = costBudgetMonthly
-    .filter(
-      (row) =>
-        (processCostItemKeys as readonly string[]).includes(row.item) &&
-        (row.plan != null || (row.actual ?? 0) !== 0),
-    )
-    .map((row) => row.year * 12 + row.month - 1);
+  // outsourcing 실적만 있고 manual plan은 아직 없는 초반 달도 표에서 잘리지 않도록 함께 포함한다.
+  const costDataMonthIndexes = [
+    ...costBudgetMonthly
+      .filter(
+        (row) =>
+          (processCostItemKeys as readonly string[]).includes(row.item) &&
+          (row.plan != null || (row.actual ?? 0) !== 0),
+      )
+      .map((row) => row.year * 12 + row.month - 1),
+    ...[...outsourcingMonthlyHasData.keys()].map((key) => {
+      const [, y, m] = key.split("|");
+      return Number(y) * 12 + Number(m) - 1;
+    }),
+  ];
   const processCostStartIndex =
     costDataMonthIndexes.length > 0
       ? Math.max(projectStartIndex, Math.min(...costDataMonthIndexes))
       : projectStartIndex;
-  const processCostMonths = Array.from(
+  const processCostMonthsAll = Array.from(
     { length: Math.min(120, Math.max(1, projectEndIndex - processCostStartIndex + 1)) },
     (_, offset) => {
       const index = processCostStartIndex + offset;
       return { year: Math.floor(index / 12), month: (index % 12) + 1 };
     },
   );
+  const processCostYears = Array.from(
+    new Set([
+      ...processCostMonthsAll.map((m) => m.year),
+      ...Array.from({ length: 11 }, (_, index) => REPORT_YEAR - 5 + index),
+      selectedProcessCostYear,
+    ]),
+  ).sort((a, b) => a - b);
+  const processCostMonths = processCostMonthsAll.filter((m) => m.year === selectedProcessCostYear);
   const getProcessCostValue = (
     items: readonly string[],
     year: number,
     month: number,
     field: "plan" | "actual",
   ) => {
-    // "3. Cost Plan/Actual by Work Type" hiển thị đúng số của riêng từng tháng (không lũy kế) — không
-    // lấy Cumulative Progress Payment (lũy kế) từ Outsourcing đè vào đây nữa (khác với "5. Budget
-    // Execution Status" ở monthlyBudgetAmount(), nơi vẫn cố ý dùng số lũy kế đó cho tháng hiện tại).
+    // 대공종별 단일 항목(Common/외주 건축/기계/전기/토목/조경)의 실적은 outsourcing 월별 실적에서
+    // 그대로 가져온다(수동 입력 아님) — "외주 경비"(Expense 1/2와 묶인 복합 항목)와 plan은 예전처럼
+    // costBudgetMonthly 수동 입력을 그대로 쓴다.
+    if (field === "actual" && items.length === 1 && AUTO_OUTSOURCING_ITEMS.has(items[0])) {
+      const key = `${items[0]}|${year}|${month}`;
+      return outsourcingMonthlyHasData.has(key) ? (outsourcingMonthlyDeltaByItem.get(key) ?? null) : null;
+    }
     const values = items.map(
       (item) =>
         costBudgetMonthly.find(
@@ -2160,7 +2204,31 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
 
       {/* 공정별 원가 계획 */}
       <div style={cardStyle}>
-        {cardHead(t("projectDataEntryTab:processCostPlanTitle"), "costBudget")}
+        {cardHead(
+          t("projectDataEntryTab:processCostPlanTitle"),
+          "costBudget",
+          <select
+            value={selectedProcessCostYear}
+            onChange={(event) => setSelectedProcessCostYear(Number(event.target.value))}
+            aria-label={t("common:year")}
+            style={{
+              minWidth: "90px",
+              padding: "5px 28px 5px 8px",
+              border: `1px solid ${BORDER_LIGHT}`,
+              borderRadius: "3px",
+              backgroundColor: "#fff",
+              color: INK_NAVY,
+              fontFamily: "inherit",
+              fontSize: "13px",
+              fontWeight: 700,
+              lineHeight: 1.4,
+            }}
+          >
+            {processCostYears.map((y) => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>,
+        )}
         <div style={{ fontSize: "12px", color: INK_MUTED, marginTop: "4px" }}>
           {t("projectDataEntryTab:processCostPlanNote")}
         </div>
@@ -2209,14 +2277,24 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                             data-col={itemIndex * 2}
                           />
                         </td>,
-                        <td key={`${item.key}-actual`} style={tdCell}>
-                          <VndRawInput
-                            valueVnd={actualValues[itemIndex]}
-                            onChange={(value) => setProcessCostValue(item.key, item.keys, year, month, "actual", value)}
-                            data-row={rowIndex}
-                            data-col={itemIndex * 2 + 1}
-                          />
-                        </td>,
+                        AUTO_OUTSOURCING_ITEMS.has(item.key) ? (
+                          <td
+                            key={`${item.key}-actual`}
+                            style={{ ...readOnlyCell, textAlign: "right" }}
+                            title={t("projectDataEntryTab:outsourcingAutoFilledHint")}
+                          >
+                            {fmtVndOrBlank(actualValues[itemIndex])}
+                          </td>
+                        ) : (
+                          <td key={`${item.key}-actual`} style={tdCell}>
+                            <VndRawInput
+                              valueVnd={actualValues[itemIndex]}
+                              onChange={(value) => setProcessCostValue(item.key, item.keys, year, month, "actual", value)}
+                              data-row={rowIndex}
+                              data-col={itemIndex * 2 + 1}
+                            />
+                          </td>
+                        ),
                       ])}
                       <td style={{ ...tdCell, textAlign: "right", padding: "5px 6px", fontSize: "13px", fontWeight: 700, color: INK_NAVY, backgroundColor: TABLE_HEADER_BG }}>
                         {fmtVndOrBlank(totalPlan)}
@@ -2657,8 +2735,18 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
             </tr>
           </thead>
           <tbody>
-            {outsourcing.map((o, i) => {
-              const monthRow = outsourcingMonthByContract.get(`${o.fldCode ?? ""}|${o.ordContTypeCode ?? o.trade}`);
+            {outsourcing
+              .map((o, i) => ({
+                o,
+                i,
+                monthRow: outsourcingMonthByContract.get(`${o.fldCode ?? ""}|${o.ordContTypeCode ?? o.trade}`),
+              }))
+              // 선택한 기준월(outsourcingYear/outsourcingMonth)에 실제로 이력 행이 있는 계약만 보여준다 —
+              // 그 전 달 값을 carry-forward해서 보여주면 "이번 달엔 활동이 없던 계약"까지 계속 노출돼
+              // 실제 그 달 검색 결과(DB에서 해당 연/월로 직접 조회한 결과)와 행 개수가 달라 보이는
+              // 문제가 있었다(사용자 확인: DB 조회 11건 vs 화면 24건).
+              .filter(({ monthRow }) => monthRow && monthRow.year === outsourcingYear && monthRow.month === outsourcingMonth)
+              .map(({ o, i, monthRow }) => {
               return (
               <tr key={i}>
                 <td style={tdCell}>
@@ -2695,7 +2783,18 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                 <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtVndOrBlank(monthRow?.budget ?? o.budget)}</td>
                 <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtVndOrBlank(monthRow?.executedBudget ?? o.executedBudget)}</td>
                 <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtVndOrBlank(monthRow?.resolved ?? o.resolved)}</td>
-                <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtVndOrBlank(monthRow?.thisMonth ?? null)}</td>
+                {/* thisMonth(이번달 실적)은 그 달 자체의 델타값이라, 선택한 기준월에 정확히 일치하는
+                    행이 없으면(carry-forward된 이전 달 행이면) 빈칸으로 둔다 — budget/accum 등과 달리
+                    "최신 상태를 이어서 보여주기"가 맞지 않는 값이라 잘못된 달의 실적을 그대로 보여주면
+                    안 된다(예: 마지막 실적이 2024-09인 계약을 2026-08 기준으로 봐도 2024-09 값이 계속
+                    노출되던 문제). */}
+                <td style={{ ...readOnlyCell, textAlign: "right" }}>
+                  {fmtVndOrBlank(
+                    monthRow && monthRow.year === outsourcingYear && monthRow.month === outsourcingMonth
+                      ? (monthRow.thisMonth ?? null)
+                      : null,
+                  )}
+                </td>
                 <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtVndOrBlank(monthRow?.accum ?? null)}</td>
               </tr>
               );

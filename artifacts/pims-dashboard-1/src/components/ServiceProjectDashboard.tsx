@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { useCallback, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePutProjectdetail, useGetPimsvinaSiterate, getBaseUrl } from "@workspace/api-client-react";
@@ -14,6 +14,8 @@ import { useProjectDetail, getGetProjectdetailQueryKey } from "../lib/projectDet
 import { useAdminAuth, readAdminToken } from "../lib/adminAuth";
 import { DisplayUnitProvider, DEFAULT_EXCHANGE_RATES, formatMoney, formatVnd, moneyUnitLabel } from "../lib/displayUnit";
 import { useDashboardFilters } from "../lib/dashboardFilters";
+import { lastClosedYearMonth } from "../lib/monthRange";
+import { REPORT_YEAR } from "../lib/mgmtreportData";
 import { chartTheme } from "../lib/chartTheme";
 import { cardStyle, sectionTitle, emptyNote, INK_NAVY, INK_BODY, INK_MUTED, CARD_BORDER, POINT_BLUE, TABLE_HEADER_BG, MUTED_HINT, SUCCESS_GREEN, DISABLED_GRAY } from "../lib/uiTokens";
 import { ProjectContextBar } from "./ProjectContextBar";
@@ -105,13 +107,26 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
   const [syncing, setSyncing] = useState(false);
   const [syncPreview, setSyncPreview] = useState<PimsvinaPreviewData | null>(null);
   const [confirming, setConfirming] = useState(false);
-  // 기본 기간: 올해 1월 ~ 직전월
+  // 기본 기간: 올해 1월 ~ 마감된 최근월(lastClosedYearMonth — 원가 정산 마감 규칙 반영)
   const now = new Date();
-  const prevMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const closedRef = lastClosedYearMonth();
   const [fromYear, setFromYear] = useState(now.getFullYear());
   const [fromMonth, setFromMonth] = useState("01");
-  const [toYear, setToYear] = useState(prevMonthDate.getFullYear());
-  const [toMonth, setToMonth] = useState(String(prevMonthDate.getMonth() + 1).padStart(2, "0"));
+  const [toYear, setToYear] = useState(closedRef.year);
+  const [toMonth, setToMonth] = useState(String(closedRef.month).padStart(2, "0"));
+  // Report tab의 "기준월" — 시공 ProjectDashboard와 동일한 패턴: null이면 "최신월"(실적 있는
+  // 가장 최근 달)을 자동으로 쓰고, ServiceReportTab이 실제로 정한 달(resolved)을 공유 기간
+  // 필터(toYear/toMonth)에도 반영해 다른 탭(Sale & Cost, Outsourcing, Cashflow)과 맞춘다.
+  const [reportMonth, setReportMonth] = useState<number | null>(null);
+  const handleReportMonthChange = (month: number | null) => {
+    setReportMonth(month);
+  };
+  const handleResolvedReportMonthChange = useCallback((month: number | null) => {
+    if (month != null) {
+      setToYear(REPORT_YEAR);
+      setToMonth(String(month).padStart(2, "0"));
+    }
+  }, []);
 
   const { detail, isLoading } = useProjectDetail(projectName);
   const siteCode = detail?.overview?.siteCode ?? null;
@@ -448,8 +463,9 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
         {activeTab === "Report" ? (
           <ServiceReportTab
             projectName={projectName}
-            referenceYear={toYear}
-            referenceMonth={Number(toMonth)}
+            selectedMonth={reportMonth}
+            onSelectedMonthChange={handleReportMonthChange}
+            onResolvedMonthChange={handleResolvedReportMonthChange}
           />
         ) : activeTab === "Sale & Cost" ? (
           <SaleCostTab

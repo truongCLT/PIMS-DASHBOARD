@@ -23,6 +23,7 @@
   "processCostCivil": "Civil",
   "processCostLandscape": "Landscaping",
   "processCostOutsourcingExpense": "Expense",
+  "outsourcingAutoFilledHint": "Auto-summed from this month's outsourcing progress payments, grouped by trade (not directly editable)",
   "processCostCommon": "Expense",
   "processCostExpense1": "Expense",
   "processCostExpense2": "Expense",

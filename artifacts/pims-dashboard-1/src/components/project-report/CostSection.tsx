@@ -40,7 +40,12 @@ export function CostSection({ budgetRows }: Props) {
   // đổi kUSD) — dùng fmtVnd() thay vì fmtMoney().
   const { t } = useTranslation(["projectReportTab", "common", "projectDataEntryTab"]);
   const { fmtVnd, unitLabel } = useMoney();
-  const getPlan = (row: BudgetRowData) => row.plan ?? row.budget;
+  // row.budget으로 폴백하면 안 된다 — budget은 계약/예산 총액(pd_cost_budget.budget)이고 plan은 그
+  // 항목의 "선택 기준월까지 누계 계획"(costBudgetMonthly 누계)이라, 어떤 항목의 월별 계획이 한 번도
+  // 입력된 적 없어 plan이 null이어도 budget으로 대신 보여주면 데이터 입력 탭 "5. Budget Execution
+  // Status"의 Cumulative Plan(해당 항목은 그냥 "-"로 비어 있음)과 숫자가 어긋난다(실제로 발생/보고됨).
+  // null은 그대로 두고, 합계(sumNullable)가 다른 항목처럼 0으로 취급하게 한다.
+  const getPlan = (row: BudgetRowData) => row.plan;
   const groups: CostGroup[] = [
     {
       label: "Direct Cost",

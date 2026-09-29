@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FileDown, Loader2 } from "lucide-react";
 import { Button } from "@workspace/aqua-glass/components/ui/button";
@@ -6,6 +6,8 @@ import { ProjectCommentPanel } from "./ProjectCommentPanel";
 import { useProjectDetail, fmtPct, selectOutsourcingForMonth } from "../lib/projectDetailData";
 import { useMoney } from "../lib/displayUnit";
 import { chartTheme } from "../lib/chartTheme";
+import { REPORT_YEAR } from "../lib/mgmtreportData";
+import { maxSelectableMonth } from "../lib/monthRange";
 import { SalesSection } from "./project-report/SalesSection";
 import { CostSection } from "./project-report/CostSection";
 import { FundsSection } from "./project-report/FundsSection";
@@ -23,9 +25,20 @@ import {
   INK_MUTED,
   DIVIDER,
   TABLE_HEADER_BG,
+  CARD_BORDER,
 } from "../lib/uiTokens";
 
 const DASH = "-";
+
+const monthSelectStyle: React.CSSProperties = {
+  fontSize: "12px",
+  border: `1px solid ${CARD_BORDER}`,
+  borderRadius: "4px",
+  padding: "2px 6px",
+  color: INK_BODY,
+  cursor: "pointer",
+  backgroundColor: "#fff",
+};
 
 /** 'YYYY-MM-DD...' → 'YYYY-MM-DD' / null·undefined → "-" */
 function fmtDate(d: string | null | undefined): string {
@@ -48,6 +61,37 @@ function MetricRow({ label, value, strong = false }: { label: string; value: str
   );
 }
 
+/** 용역은 공정(진행률) 개념이 없으므로 매출 실적만으로 "가장 최근 실적이 있는 달"을 찾고, 없으면
+ * asOfMonth를 쓴다. 어느 경우든 달력 기준 마감 규칙(maxSelectableMonth — M+2월 13일 이후에야
+ * M월이 마감으로 간주됨)을 넘어설 수 없다 — PIMSVINA 동기화가 마감 전에 미리 값을 채워놔도
+ * (예: 아직 정산 전인 이번 달 매출이 임시로 잡혀있는 경우), 마감되지 않은 달을 기준월로 앞당겨
+ * 쓰면 안 되기 때문이다. */
+export function resolveLatestServiceReportMonth({
+  asOfMonth,
+  revenueActuals,
+}: {
+  asOfMonth?: string | null;
+  revenueActuals: Array<number | null>;
+}): number {
+  const ceiling = maxSelectableMonth();
+
+  for (let index = revenueActuals.length - 1; index >= 0; index -= 1) {
+    if ((revenueActuals[index] ?? 0) !== 0) return Math.min(index + 1, ceiling);
+  }
+
+  const asOfMatch = /^(\d{4})-(\d{2})$/.exec(asOfMonth ?? "");
+  if (
+    asOfMatch &&
+    Number(asOfMatch[1]) === REPORT_YEAR &&
+    Number(asOfMatch[2]) >= 1 &&
+    Number(asOfMatch[2]) <= 12
+  ) {
+    return Math.min(Number(asOfMatch[2]), ceiling);
+  }
+
+  return ceiling;
+}
+
 function PlanActualBar({ plan, actual }: { plan: number | null; actual: number | null }) {
   const max = Math.max(plan ?? 0, actual ?? 0, 1);
   return (
@@ -68,34 +112,52 @@ function PlanActualBar({ plan, actual }: { plan: number | null; actual: number |
 
 export function ServiceReportTab({
   projectName,
-  referenceYear,
-  referenceMonth,
+  selectedMonth,
+  onSelectedMonthChange,
+  onResolvedMonthChange,
 }: {
   projectName: string;
-  referenceYear: number;
-  referenceMonth: number;
+  selectedMonth: number | null;
+  onSelectedMonthChange: (month: number | null) => void;
+  onResolvedMonthChange: (month: number | null) => void;
 }) {
-  const { t } = useTranslation(["serviceReportTab", "projectReportTab", "projectDataEntryTab", "common"]);
+  const { t } = useTranslation(["serviceReportTab", "projectReportTab", "projectDataEntryTab", "overviewTab", "common"]);
   const { detail, isLoading } = useProjectDetail(projectName);
   const { fmtVnd, unitLabel } = useMoney();
   const [isExporting, setIsExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
 
-  if (isLoading) return <div style={{ ...cardStyle, padding: "40px", textAlign: "center", color: INK_MUTED }}>{t("common:loading")}</div>;
-
   const overview = detail?.overview;
-  const monthIndex = referenceYear * 12 + referenceMonth - 1;
+  const salesRows = detail?.canonicalSalesMonthly ?? [];
+  const cashRows = detail?.cashflow ?? [];
+
+  const reportSales = salesRows.filter((row) => row.year === REPORT_YEAR);
+  const revMonths: (number | null)[] = Array.from(
+    { length: 12 },
+    (_, index) => reportSales.find((row) => row.month === index + 1)?.actual ?? null,
+  );
+  const latestActualMonth = resolveLatestServiceReportMonth({
+    asOfMonth: overview?.asOfMonth,
+    revenueActuals: revMonths,
+  });
+  // 시공 ProjectReportTab과 동일한 원칙 — 실적이 있는 가장 최근 월(latestActualMonth)까지만 선택
+  // 가능하게 해서, 아직 마감 전인 당월/향후월의 계획 데이터가 실적 계산에 섞이는 것을 방지한다.
+  const maxSelectable = latestActualMonth ?? maxSelectableMonth();
+  const resolvedMonth = selectedMonth != null ? Math.min(selectedMonth, maxSelectable) : latestActualMonth ?? maxSelectableMonth();
+  useEffect(() => {
+    onResolvedMonthChange(resolvedMonth);
+  }, [onResolvedMonthChange, resolvedMonth]);
+
+  const monthIndex = REPORT_YEAR * 12 + resolvedMonth - 1;
   const throughReference = <T extends { year: number; month: number }>(rows: T[]) =>
     rows.filter((row) => row.year * 12 + row.month - 1 <= monthIndex);
   const atReference = <T extends { year: number; month: number }>(rows: T[]) =>
-    rows.filter((row) => row.year === referenceYear && row.month === referenceMonth);
+    rows.filter((row) => row.year === REPORT_YEAR && row.month === resolvedMonth);
 
-  const salesRows = detail?.canonicalSalesMonthly ?? [];
-  const cashRows = detail?.cashflow ?? [];
   const monthSales = atReference(salesRows);
   // Status 상태등 규칙(연 누계 실적 >= 연 누계 계획)은 "연 누계"이지, 이전 연도까지 합친 전체 누계가
-  // 아니다 — 시공 쪽 ProjectReportTab(reportSales)과 동일하게 referenceYear로 먼저 필터링한다.
-  const cumSales = throughReference(salesRows.filter((row) => row.year === referenceYear));
+  // 아니다 — 시공 쪽 ProjectReportTab(reportSales)과 동일하게 REPORT_YEAR로 먼저 필터링한다.
+  const cumSales = throughReference(reportSales);
   const monthCash = atReference(cashRows);
   const cumCash = throughReference(cashRows);
 
@@ -108,13 +170,13 @@ export function ServiceReportTab({
   const overallSalesCumActual = sumNullable(throughReference(salesRows), (row) => row.actual);
   const salesPlanMonths = Array.from({ length: 12 }, (_, index) =>
     sumNullable(
-      salesRows.filter((row) => row.year === referenceYear && row.month === index + 1),
+      reportSales.filter((row) => row.month === index + 1),
       (row) => row.plan,
     ),
   );
   const salesActualMonths = Array.from({ length: 12 }, (_, index) =>
     sumNullable(
-      salesRows.filter((row) => row.year === referenceYear && row.month === index + 1),
+      reportSales.filter((row) => row.month === index + 1),
       (row) => row.actual,
     ),
   );
@@ -124,7 +186,7 @@ export function ServiceReportTab({
   const cashCumOut = sumNullable(cumCash, (row) => row.cashOut);
 
   const budgetRows = detail?.costBudget ?? [];
-  const outsourcingRows = selectOutsourcingForMonth(detail?.outsourcing ?? [], referenceYear, referenceMonth);
+  const outsourcingRows = selectOutsourcingForMonth(detail?.outsourcing ?? [], REPORT_YEAR, resolvedMonth);
   const budgetItems = [
     {
       label: "외주",
@@ -189,6 +251,10 @@ export function ServiceReportTab({
     plan: row.plan,
     actual: row.actual,
   }));
+  const latestMonthLabel =
+    latestActualMonth != null
+      ? `'${String(REPORT_YEAR).slice(2)}.${String(latestActualMonth).padStart(2, "0")}`
+      : null;
   const reportCaptureId = "service-report-capture";
   const handleReportExport = async () => {
     if (isExporting) return;
@@ -197,13 +263,17 @@ export function ServiceReportTab({
         exportProjectReportPdf({
           elementId: reportCaptureId,
           projectName,
-          reportYear: referenceYear,
-          reportMonth: referenceMonth,
+          reportYear: REPORT_YEAR,
+          reportMonth: resolvedMonth,
         }),
       setExporting: setIsExporting,
       setError: setExportError,
     });
   };
+
+  if (isLoading) {
+    return <div style={{ ...cardStyle, padding: "40px", textAlign: "center", color: INK_MUTED }}>{t("common:loading")}</div>;
+  }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -225,7 +295,24 @@ export function ServiceReportTab({
             {isExporting ? t("projectReportTab:exporting") : t("projectReportTab:exportButton")}
           </Button>
         </div>
-        <span style={{ fontSize: "11px", color: INK_MUTED }}>기준월 '{String(referenceYear).slice(2)}.{String(referenceMonth).padStart(2, "0")} · {unitLabel}</span>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <span style={{ fontSize: "12px", color: INK_BODY, fontWeight: 600 }}>{t("common:baseMonth")}:</span>
+          <select
+            value={selectedMonth ?? ""}
+            onChange={(e) => onSelectedMonthChange(e.target.value === "" ? null : Number(e.target.value))}
+            style={monthSelectStyle}
+          >
+            <option value="">
+              {t("overviewTab:latestMonth")}{latestMonthLabel ? ` (${latestMonthLabel})` : ""}
+            </option>
+            {Array.from({ length: maxSelectable }, (_, i) => i + 1).map((m) => (
+              <option key={m} value={m}>
+                {`'${String(REPORT_YEAR).slice(2)}.${String(m).padStart(2, "0")}`}
+              </option>
+            ))}
+          </select>
+          <span style={{ fontSize: "11px", color: INK_MUTED }}>{unitLabel}</span>
+        </div>
       </div>
       {exportError && (
         <div role="alert" style={{ fontSize: "12px", color: "var(--destructive)" }}>
@@ -254,7 +341,7 @@ export function ServiceReportTab({
         <SalesSection
           planMonths={salesPlanMonths}
           actualMonths={salesActualMonths}
-          resolvedMonth={referenceMonth}
+          resolvedMonth={resolvedMonth}
           allSalesMonths={salesRows}
           contractAmount={overview?.contractAmount ?? null}
         />

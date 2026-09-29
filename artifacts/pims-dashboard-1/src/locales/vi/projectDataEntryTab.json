@@ -23,6 +23,7 @@
   "processCostCivil": "Xây dựng",
   "processCostLandscape": "Cảnh quan",
   "processCostOutsourcingExpense": "Chi phí",
+  "outsourcingAutoFilledHint": "Tự động cộng dồn từ kết quả nghiệm thu tháng này của tab Ngoại nghiệp/Vật tư theo từng hạng mục công tác (không chỉnh sửa trực tiếp)",
   "processCostCommon": "Chi phí",
   "processCostExpense1": "Chi phí",
   "processCostExpense2": "Chi phí",

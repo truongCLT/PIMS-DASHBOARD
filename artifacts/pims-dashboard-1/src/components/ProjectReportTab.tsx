@@ -18,7 +18,7 @@ import {
   getGetCashflowMonthlyQueryKey,
 } from "@workspace/api-client-react";
 import { ProjectCommentPanel } from "./ProjectCommentPanel";
-import { useProjectDetail, selectOutsourcingForMonth } from "../lib/projectDetailData";
+import { useProjectDetail } from "../lib/projectDetailData";
 import { getMrCashflowRef } from "../data/mrProjectLinks";
 import { REPORT_YEAR } from "../lib/mgmtreportData";
 import { maxSelectableMonth } from "../lib/monthRange";
@@ -250,50 +250,72 @@ export function ProjectReportTab({
         )?.cashIn ?? null);
 
   // ── Cost budget ───────────────────────────────────────────────────────────
-  const cb = detail?.costBudget ?? [];
-  const findCb = (name: string) =>
-    cb.find((r) => r.item.trim().toLowerCase() === name.toLowerCase()) ?? null;
-  const common = findCb("Common");
-  const expense1 = findCb("Expense 1");
-  const expense2 = findCb("Expense 2");
-  const contingency = findCb("Contingency");
+  // Common/경비1/경비2/예비비의 "계획(plan)"은 costBudgetMonthly(월별 입력 그리드, 데이터 입력 탭
+  // "5. 예산 집행 현황" 표의 Monthly Plan과 같은 소스)를 보고서 탭이 고른 기준월까지 직접 누계해서
+  // 뽑는다 — 예전엔 detail.costBudget.plan(pd_cost_budget, 데이터 입력 탭이 "자기 자신의" 기준월
+  // (selectedExecutionMonth) 기준으로 계산해 저장해두는 스냅샷)을 그대로 읽었는데, 그 스냅샷의 기준월이
+  // 보고서 탭에서 고른 기준월과 다르면(또는 데이터 입력에서 스냅샷을 재계산/저장하기 전에 월별 그리드만
+  // 수정하면) 여기 숫자가 방금 입력한 값과 어긋나는 버그가 있었다(실제로 발생/보고됨).
+  //
+  // "실적(actual)"은 반대로 costBudgetMonthly를 누계하면 안 된다 — 데이터 입력 탭에서도 Cumulative
+  // Actual은 월별 실적 그리드를 합산하지 않고 pd_cost_budget.actual(PIMSVINA dashboard_pd_costbudget_1q
+  // 동기화가 내려주는, 이미 누계된 단일 스냅샷)을 그대로 읽기 전용으로 보여준다(ProjectDataEntryTab.tsx
+  // actualAmount()/"Cumulative Actual" 칼럼과 동일 규칙) — 월별 실적 그리드는 그 스냅샷만큼 과거 이력이
+  // 다 채워져 있다는 보장이 없어, 합산하면 오히려 실제보다 작게 나오는 값이 된다. 그래서 실적은 데이터
+  // 입력 탭과 동일하게 스냅샷을 그대로 쓴다.
+  const budget = detail?.costBudget ?? [];
+  const findBudget = (name: string) =>
+    budget.find((r) => r.item.trim().toLowerCase() === name.toLowerCase()) ?? null;
+  const cbMonthly = detail?.costBudgetMonthly ?? [];
+  const cumPlanFor = (item: string): number | null => {
+    const rows = cbMonthly.filter(
+      (row) =>
+        row.item === item &&
+        row.year === REPORT_YEAR &&
+        (resolvedMonth == null || row.month <= resolvedMonth),
+    );
+    return rows.some((row) => row.plan != null)
+      ? rows.reduce<number>((sum, row) => sum + (row.plan ?? 0), 0)
+      : null;
+  };
 
-  const outRows = selectOutsourcingForMonth(detail?.outsourcing ?? [], REPORT_YEAR, resolvedMonth);
-  const outBudget = outRows.some((r) => r.budget != null)
-    ? outRows.reduce<number>((a, r) => a + (r.budget ?? 0), 0)
-    : null;
-  const outPlan = outRows.some((r) => r.executedBudget != null)
-    ? outRows.reduce<number>((a, r) => a + (r.executedBudget ?? 0), 0)
-    : null;
-  const outActual = outRows.some((r) => r.accum != null || r.resolved != null)
-    ? outRows.reduce<number>((a, r) => a + (r.accum ?? r.resolved ?? 0), 0)
-    : null;
-
+  // "외주" 행도 나머지 4개 항목과 동일하게 pd_cost_budget(스냅샷)/costBudgetMonthly(월별 계획)에서
+  // 뽑는다 — 데이터 입력 탭 "5. Budget Execution Status" 표는 Outsourcing 행도 그 두 소스만 쓴다(표
+  // 상단 안내문 "Outsourcing-type budget/execution actuals are automatically aggregated from the
+  // 'Outsourcing/Materials' table below"는 그 값이 costBudgetMonthly/costBudget에 미리 합산되어
+  // 들어간다는 뜻이지, 이 보고서가 pd_outsourcing 계약 테이블(outRows/outBudget/outPlan/outActual,
+  // 계약금액·기성 누계 — 단위/기준월 정의가 전혀 다름)을 따로 다시 집계해도 된다는 뜻이 아니다). 예전엔
+  // outRows에서 다시 집계해서 데이터 입력 탭 숫자와 몇 배씩 어긋났다(실제로 발생/보고됨).
   const allBudgetRows = [
-    { item: "외주", budget: outBudget, plan: outPlan, actual: outActual },
+    {
+      item: "외주",
+      budget: findBudget("Outsourcing")?.budget ?? null,
+      plan: cumPlanFor("Outsourcing"),
+      actual: findBudget("Outsourcing")?.actual ?? null,
+    },
     {
       item: "Common",
-      budget: common?.budget ?? null,
-      plan: common?.plan ?? null,
-      actual: common?.actual ?? null,
+      budget: findBudget("Common")?.budget ?? null,
+      plan: cumPlanFor("Common"),
+      actual: findBudget("Common")?.actual ?? null,
     },
     {
       item: "경비1",
-      budget: expense1?.budget ?? null,
-      plan: expense1?.plan ?? null,
-      actual: expense1?.actual ?? null,
+      budget: findBudget("Expense 1")?.budget ?? null,
+      plan: cumPlanFor("Expense 1"),
+      actual: findBudget("Expense 1")?.actual ?? null,
     },
     {
       item: "경비2",
-      budget: expense2?.budget ?? null,
-      plan: expense2?.plan ?? null,
-      actual: expense2?.actual ?? null,
+      budget: findBudget("Expense 2")?.budget ?? null,
+      plan: cumPlanFor("Expense 2"),
+      actual: findBudget("Expense 2")?.actual ?? null,
     },
     {
       item: "예비비",
-      budget: contingency?.budget ?? null,
-      plan: contingency?.plan ?? null,
-      actual: contingency?.actual ?? null,
+      budget: findBudget("Contingency")?.budget ?? null,
+      plan: cumPlanFor("Contingency"),
+      actual: findBudget("Contingency")?.actual ?? null,
     },
   ].filter((r) => r.budget != null || r.actual != null || r.plan != null);
 
@@ -343,7 +365,7 @@ export function ProjectReportTab({
     monthlyBreakdown: makeCostBreakdown(selectedCostRows),
     cumulativeBreakdown: makeCostBreakdown(costPlanRows),
   };
-  // 현황 표의 "원가" 달성률(%)은 costExecution.*Plan/*Actual(항목별 절대 금액 합계, 공정 카드 툴팁용)을
+  // 현황 표의 "원가" 달성률(%)은 costExecution.*Plan/*Actual(항목별 절대 금액 합계, 현황 표 원가 판정용)을
   // 그대로 쓰면 안 된다 — "외주 건축"/"외주 경비"처럼 Plan이 한 번도 입력된 적 없는 항목까지 실적 합계에
   // 포함되면서, 그 항목의 실적만 분자에 더해지고 분모(계획)에는 전혀 반영되지 않아 달성률이 수십만%로
   // 폭주한다(실제로 발생했던 문제). 상태등 판정(costCategoryLevel)과 동일하게 "계획이 있는 항목만" 비교한
@@ -527,7 +549,6 @@ export function ProjectReportTab({
           <ProgressSection
             progRows={progRows}
             resolvedMonth={resolvedMonth}
-            costExecution={costExecution}
             startDate={detail?.overview?.startDate}
             endDate={detail?.overview?.endDate}
           />

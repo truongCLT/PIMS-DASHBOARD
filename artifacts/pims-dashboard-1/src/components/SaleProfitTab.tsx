@@ -17,6 +17,7 @@ import { useMoney } from "../lib/displayUnit";
 import { useProjectDetail } from "../lib/projectDetailData";
 import { ProjectCommentPanel } from "./ProjectCommentPanel";
 import { cardStyle, sectionTitle, emptyNote, INK_MUTED } from "../lib/uiTokens";
+import { sanitizeRatioPercent } from "./sale-cost/helpers";
 
 function Notice({ children, error }: { children: React.ReactNode; error?: boolean }) {
   return (
@@ -93,10 +94,11 @@ export function SaleProfitTab({
       planCum: Math.round(convert(cumPlan)),
       // 누계 원가율 — 기간 초부터 해당 월까지 누적된 원가/매출 비율 (매월 갱신)
       // pd 매출 사용 중인데 pd 원가가 없으면 소스 불일치 방지를 위해 원가율 미표시
-      ratio:
+      ratio: sanitizeRatioPercent(
         cumulative > 0 && !(pdSalesHasAny && !pdCogsHasAny)
           ? Math.round((cumCogs / cumulative) * 1000) / 10
           : null,
+      ),
     };
   });
   let lastRatioIdx = -1;

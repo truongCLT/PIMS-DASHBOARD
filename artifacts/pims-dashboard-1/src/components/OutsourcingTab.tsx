@@ -4,6 +4,7 @@ import { ProjectCommentPanel } from "./ProjectCommentPanel";
 
 import { useProjectDetail, fmtPct, ratioPct, selectOutsourcingForMonth } from "../lib/projectDetailData";
 import { useMoney } from "../lib/displayUnit";
+import { maxSelectableMonth } from "../lib/monthRange";
 import {
   cardStyle,
   sectionTitle,
@@ -17,6 +18,16 @@ import {
   STATUS_POS_BG,
   STATUS_NEG_BG,
 } from "../lib/uiTokens";
+
+const monthSelectStyle: React.CSSProperties = {
+  fontSize: "12px",
+  border: `1px solid ${CARD_BORDER}`,
+  borderRadius: "4px",
+  padding: "2px 6px",
+  color: INK_BODY,
+  cursor: "pointer",
+  backgroundColor: "#fff",
+};
 
 const th: React.CSSProperties = {
   backgroundColor: TABLE_HEADER_BG,
@@ -86,10 +97,12 @@ export function OutsourcingTab({
   projectName,
   referenceYear,
   referenceMonth,
+  onReferenceMonthChange,
 }: {
   projectName: string;
   referenceYear: number;
   referenceMonth: number;
+  onReferenceMonthChange?: (month: number) => void;
 }) {
   const { t } = useTranslation(["outsourcingTab", "common"]);
   // budget/executedBudget/resolved/thisMonth/accum của pd_outsourcing lưu ĐÚNG số VND gốc (không quy
@@ -106,7 +119,12 @@ export function OutsourcingTab({
     });
   };
 
-  const rows = selectOutsourcingForMonth(detail?.outsourcing ?? [], referenceYear, referenceMonth);
+  // 선택한 기준월(referenceYear/referenceMonth)에 실제로 이력 행이 있는 계약만 보여준다 — 지난 달
+  // 값을 carry-forward해서 "이번 달엔 활동이 없던 계약"까지 계속 노출하면, DB에서 해당 연/월로 직접
+  // 조회한 건수와 화면 행 개수가 달라 보인다(사용자 확인: 실제 DB 조회 결과와 일치해야 함).
+  const rows = selectOutsourcingForMonth(detail?.outsourcing ?? [], referenceYear, referenceMonth).filter(
+    (r) => r.year === referenceYear && r.month === referenceMonth,
+  );
 
   const sum = {
     budget: rows.some((r) => r.budget != null) ? rows.reduce((a, r) => a + (r.budget ?? 0), 0) : null,
@@ -126,15 +144,35 @@ export function OutsourcingTab({
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
       {/* Outsourcing and Materials table */}
       <div style={cardStyle}>
-        <span style={sectionTitle}>
-          {t("outsourcingTab:outsourcingAndMaterials")}
-          <span style={{ fontSize: "11px", fontWeight: 400, color: INK_MUTED, marginLeft: "6px" }}>
-            ({t("outsourcingTab:asOf", {
-              year: String(referenceYear).slice(2),
-              month: String(referenceMonth).padStart(2, "0"),
-            })})
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "8px" }}>
+          <span style={{ ...sectionTitle, marginBottom: 0 }}>
+            {t("outsourcingTab:outsourcingAndMaterials")}
+            {!onReferenceMonthChange && (
+              <span style={{ fontSize: "11px", fontWeight: 400, color: INK_MUTED, marginLeft: "6px" }}>
+                ({t("outsourcingTab:asOf", {
+                  year: String(referenceYear).slice(2),
+                  month: String(referenceMonth).padStart(2, "0"),
+                })})
+              </span>
+            )}
           </span>
-        </span>
+          {onReferenceMonthChange && (
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <span style={{ fontSize: "12px", color: INK_BODY, fontWeight: 600 }}>{t("common:baseMonth")}:</span>
+              <select
+                value={referenceMonth}
+                onChange={(e) => onReferenceMonthChange(Number(e.target.value))}
+                style={monthSelectStyle}
+              >
+                {Array.from({ length: Math.max(maxSelectableMonth(), referenceMonth) }, (_, i) => i + 1).map((m) => (
+                  <option key={m} value={m}>
+                    {`'${String(referenceYear).slice(2)}.${String(m).padStart(2, "0")}`}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
         <div style={{ overflowX: "auto", marginTop: "10px" }}>
           <table style={{ width: "100%", minWidth: `${totalWidth}px`, borderCollapse: "collapse", tableLayout: "fixed" }}>
             <colgroup>

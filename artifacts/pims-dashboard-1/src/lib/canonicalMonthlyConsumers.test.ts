@@ -7,8 +7,12 @@ const displayConsumers = [
     canonicalFields: ["canonicalSalesMonthly", "canonicalCogsMonthly"],
   },
   {
+    // 누계 원가율은 더 이상 canonicalCogsMonthly(pd_cogs_monthly)를 쓰지 않는다 — 일부 프로젝트의
+    // acctCogs가 VND/천USD 단위가 뒤섞여 저장된 레거시 데이터라 매출과 직접 나누면 안 되므로,
+    // pd_cost_estimation(execution)의 costAmount/contractAmount(표준추정원가율과 동일 소스)로
+    // 교체했다 — helpers.ts의 buildCostRatioLookup 참고.
     file: "src/components/SaleCostTab.tsx",
-    canonicalFields: ["canonicalSalesMonthly", "canonicalCogsMonthly"],
+    canonicalFields: ["canonicalSalesMonthly"],
   },
   {
     file: "src/components/SaleProfitTab.tsx",

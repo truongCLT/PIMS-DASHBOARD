@@ -506,9 +506,18 @@ export async function applyPimsvinaData(fetched: PimsvinaData) {
       if (!projectName) trackSkipped(item);
       continue;
     }
-    const cashIn = item.cash_in != null ? String(item.cash_in) : null;
-    const cashOut = item.cash_out != null ? String(item.cash_out) : null;
-    const equivalent = item.equivalent != null ? String(item.equivalent) : null;
+    // dashboard_pd_cashflow_1q.jsp의 cash_in/cash_out/equivalent는 원화(VND)를 CHTB_EXCHANGE_RATIO로
+    // 나눈 전액 USD다(JSP 주석 참조). 이 테이블 컬럼은 (다른 pd_* 금액 컬럼들과 동일하게) 천 USD 기준으로
+    // 문서화/사용되고 있어(Data Entry 수동 입력도 VndInput으로 천 USD 저장) 1000으로 나눠 맞춘다 -
+    // 안 그러면 화면 표시 시(convertMoney가 천 USD 기준을 가정) 실제 금액의 1000배로 표시되는 버그가 생긴다.
+    const toKUsd = (v: unknown): string | null => {
+      if (v == null) return null;
+      const n = Number(v);
+      return Number.isFinite(n) ? String(n / 1000) : null;
+    };
+    const cashIn = toKUsd(item.cash_in);
+    const cashOut = toKUsd(item.cash_out);
+    const equivalent = toKUsd(item.equivalent);
 
     await db
       .insert(pdCashflowMonthlyTable)
