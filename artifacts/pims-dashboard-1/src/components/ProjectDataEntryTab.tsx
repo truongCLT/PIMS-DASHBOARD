@@ -680,7 +680,11 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
   useEffect(() => {
     if (detail && !loaded && !(cfRef != null && cfQuery.isLoading)) {
       setOverview(detail.overview ?? EMPTY_OVERVIEW);
-      setProgress(calculateProgressPlanCumulative(detail.progress));
+      setProgress(
+        calculateProgressPlanCumulative(detail.progress).filter(
+          (p) => !!p.planPct || !!p.actualPct || !!p.planCumPct || !!p.actualCumPct,
+        ),
+      );
       setMilestones(detail.milestones);
       {
         // Bidding chỉ có 1 dòng (nhập tay). Execution/Completion đến từ PIMSVINA sync và được lưu

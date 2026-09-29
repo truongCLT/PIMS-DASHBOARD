@@ -379,6 +379,7 @@ export async function applyPimsvinaData(fetched: PimsvinaData) {
     };
 
     const actualPct = sanitizeNumStr(item.actual_pct);
+    if (actualPct == null || Number(actualPct) <= 0) continue;
 
     await db
       .insert(pdProgressMonthlyTable)

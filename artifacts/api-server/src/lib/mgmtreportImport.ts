@@ -1,4 +1,4 @@
-import { desc, eq, gte, notInArray } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, notInArray, sql } from "drizzle-orm";
 import {
   db,
   mrProjectsTable,
@@ -21,110 +21,81 @@ import {
 export { MgmtreportParseError, parseMgmtreportWorkbook, type ParsedMgmtreport };
 export const buildPreview = buildMgmtreportPreview;
 
-// 되돌리기용 스냅샷: project id 대신 이름으로 참조해 재삽입 시 id 재매핑이 필요 없도록 함
+// 되돌리기용 스냅샷: 이번 반영이 실제로 건드리는 키만, 그 반영 직전 값을 기록한다
+// (before === null 이면 그 키가 반영 전에는 존재하지 않았다는 뜻 → 되돌릴 때는 삭제)
 export interface MrSnapshot {
-  projects: { name: string; siteCode: string | null; groupLabel: string | null; sortOrder: number; status?: string }[];
-  monthly: { project: string; year: number; month: number; scenario: string; metric: string; amountUsd: string }[];
-  annual: { project: string; year: number; scenario: string; metric: string; amountUsd: string }[];
-  pnl: { year: number; lineCode: string; lineLabel: string; scenario: string; month: number | null; amountUsd: string; sortOrder: number }[];
+  projects: {
+    name: string;
+    before: { siteCode: string | null; groupLabel: string | null; sortOrder: number; status: string } | null;
+  }[];
+  monthly: { project: string; year: number; month: number; scenario: string; metric: string; before: string | null }[];
+  annual: { project: string; year: number; scenario: string; metric: string; before: string | null }[];
+  pnl: {
+    year: number;
+    lineCode: string;
+    scenario: string;
+    month: number | null;
+    before: { lineLabel: string; amountUsd: string; sortOrder: number } | null;
+  }[];
 }
 
 const HISTORY_KEEP = 5;
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
-async function readSnapshot(tx: Tx): Promise<MrSnapshot> {
-  const projects = await tx.select().from(mrProjectsTable);
-  const nameById = new Map(projects.map((p) => [p.id, p.name]));
-  const monthly = await tx.select().from(mrMonthlyTable);
-  const annual = await tx.select().from(mrAnnualTable);
-  const pnl = await tx.select().from(mrPnlTable);
-  return {
-    projects: projects.map((p) => ({
+// 이번 파일이 실제로 건드리는 키에 대해서만 "반영 직전 값"을 읽어 스냅샷으로 남긴다.
+// mr_projects.fld_code/division_id/code 는 이 import가 손대지 않는 컬럼이므로 스냅샷에도 담지 않는다
+// (PIMSVINA 동기화가 붙여둔 값을 되돌리기가 실수로 건드리지 않도록).
+async function captureBeforeState(tx: Tx, parsed: ParsedMgmtreport): Promise<MrSnapshot> {
+  const existingProjects = await tx.select().from(mrProjectsTable);
+  const projectByName = new Map(existingProjects.map((p) => [p.name, p]));
+
+  const projects = parsed.projects.map((p) => {
+    const ex = projectByName.get(p.name);
+    return {
       name: p.name,
-      siteCode: p.siteCode,
-      groupLabel: p.groupLabel,
-      sortOrder: p.sortOrder,
-      status: p.status,
-    })),
-    monthly: monthly
-      .filter((m) => nameById.has(m.projectId))
-      .map((m) => ({
-        project: nameById.get(m.projectId)!,
-        year: m.year,
-        month: m.month,
-        scenario: m.scenario,
-        metric: m.metric,
-        amountUsd: m.amountUsd,
-      })),
-    annual: annual
-      .filter((a) => nameById.has(a.projectId))
-      .map((a) => ({
-        project: nameById.get(a.projectId)!,
-        year: a.year,
-        scenario: a.scenario,
-        metric: a.metric,
-        amountUsd: a.amountUsd,
-      })),
-    pnl: pnl.map((p) => ({
-      year: p.year,
-      lineCode: p.lineCode,
-      lineLabel: p.lineLabel,
-      scenario: p.scenario,
-      month: p.month,
-      amountUsd: p.amountUsd,
-      sortOrder: p.sortOrder,
-    })),
-  };
-}
+      before: ex ? { siteCode: ex.siteCode, groupLabel: ex.groupLabel, sortOrder: ex.sortOrder, status: ex.status } : null,
+    };
+  });
 
-// mr_* 전체를 스냅샷 내용으로 완전 교체 (mr_comments 제외)
-async function writeSnapshot(tx: Tx, snap: MrSnapshot) {
-  await tx.delete(mrMonthlyTable);
-  await tx.delete(mrAnnualTable);
-  await tx.delete(mrProjectsTable);
-  await tx.delete(mrPnlTable);
+  const existingMonthly = await tx.select().from(mrMonthlyTable).where(eq(mrMonthlyTable.year, parsed.year));
+  const monthlyBefore = new Map(existingMonthly.map((m) => [`${m.projectId}|${m.month}|${m.scenario}|${m.metric}`, m.amountUsd]));
+  const monthly = parsed.monthly.map((m) => {
+    const pid = projectByName.get(m.project)?.id;
+    const before = pid != null ? (monthlyBefore.get(`${pid}|${m.month}|${m.scenario}|${m.metric}`) ?? null) : null;
+    return { project: m.project, year: parsed.year, month: m.month, scenario: m.scenario, metric: m.metric, before };
+  });
 
-  const idByName = new Map<string, number>();
-  for (const p of snap.projects) {
-    const [row] = await tx
-      .insert(mrProjectsTable)
-      .values(p)
-      .returning({ id: mrProjectsTable.id });
-    idByName.set(p.name, row.id);
-  }
+  const annualYears = [...new Set(parsed.annual.map((a) => a.year))];
+  const existingAnnual = annualYears.length
+    ? await tx.select().from(mrAnnualTable).where(inArray(mrAnnualTable.year, annualYears))
+    : [];
+  const annualBefore = new Map(existingAnnual.map((a) => [`${a.projectId}|${a.year}|${a.scenario}|${a.metric}`, a.amountUsd]));
+  const annual = parsed.annual.map((a) => {
+    const pid = projectByName.get(a.project)?.id;
+    const before = pid != null ? (annualBefore.get(`${pid}|${a.year}|${a.scenario}|${a.metric}`) ?? null) : null;
+    return { project: a.project, year: a.year, scenario: a.scenario, metric: a.metric, before };
+  });
 
-  const monthlyValues = snap.monthly
-    .map((m) => {
-      const pid = idByName.get(m.project);
-      if (!pid) return null;
-      return { projectId: pid, year: m.year, month: m.month, scenario: m.scenario, metric: m.metric, amountUsd: m.amountUsd };
-    })
-    .filter((v) => v != null);
-  for (let i = 0; i < monthlyValues.length; i += 500) {
-    await tx.insert(mrMonthlyTable).values(monthlyValues.slice(i, i + 500));
-  }
+  const existingPnl = await tx.select().from(mrPnlTable).where(eq(mrPnlTable.year, parsed.year));
+  const pnlBefore = new Map(
+    existingPnl.map((p) => [`${p.lineCode}|${p.scenario}|${p.month}`, { lineLabel: p.lineLabel, amountUsd: p.amountUsd, sortOrder: p.sortOrder }]),
+  );
+  const pnl = parsed.pnl.map((p) => ({
+    year: parsed.year,
+    lineCode: p.lineCode,
+    scenario: p.scenario,
+    month: p.month,
+    before: pnlBefore.get(`${p.lineCode}|${p.scenario}|${p.month}`) ?? null,
+  }));
 
-  const annualValues = snap.annual
-    .map((a) => {
-      const pid = idByName.get(a.project);
-      if (!pid) return null;
-      return { projectId: pid, year: a.year, scenario: a.scenario, metric: a.metric, amountUsd: a.amountUsd };
-    })
-    .filter((v) => v != null);
-  for (let i = 0; i < annualValues.length; i += 500) {
-    await tx.insert(mrAnnualTable).values(annualValues.slice(i, i + 500));
-  }
-
-  for (let i = 0; i < snap.pnl.length; i += 500) {
-    await tx.insert(mrPnlTable).values(snap.pnl.slice(i, i + 500));
-  }
+  return { projects, monthly, annual, pnl };
 }
 
 export async function applyMgmtreportImport(parsed: ParsedMgmtreport, filename: string) {
   await db.transaction(async (tx) => {
-    // 반영 직전 상태를 이력으로 보관 (되돌리기용)
-    const snapshot = await readSnapshot(tx);
+    // 반영 직전, 이번 파일이 건드릴 키들의 값을 이력으로 보관 (되돌리기용)
+    const snapshot = await captureBeforeState(tx, parsed);
     await tx.insert(mrImportHistoryTable).values({
       filename,
       year: parsed.year,
@@ -143,24 +114,18 @@ export async function applyMgmtreportImport(parsed: ParsedMgmtreport, filename: 
       ),
     );
 
-    // Full replace: this workbook is the single source of truth for mgmtreport data
-    // 단, 프로젝트 진행 상태(status)는 Excel에 없으므로 이름 기준으로 보존한다
-    const statusByName = new Map(snapshot.projects.map((p) => [p.name, p.status ?? "ongoing"]));
-    await tx.delete(mrMonthlyTable);
-    await tx.delete(mrAnnualTable);
-    await tx.delete(mrProjectsTable);
-    await tx.delete(mrPnlTable).where(eq(mrPnlTable.year, parsed.year));
-
+    // 삭제 후 재삽입이 아니라 "값이 바뀐 것만 update, 없던 것만 insert" — 이 파일이 언급하지 않는
+    // 다른 연도/다른 프로젝트의 기존 데이터는 절대 건드리지 않는다.
+    // mr_projects.fld_code/division_id/code 는 여기서 다루지 않으므로 PIMSVINA 동기화가
+    // 붙여둔 값이 그대로 유지된다.
     const idByName = new Map<string, number>();
     for (const p of parsed.projects) {
       const [row] = await tx
         .insert(mrProjectsTable)
-        .values({
-          name: p.name,
-          siteCode: p.siteCode,
-          groupLabel: p.groupLabel,
-          sortOrder: p.sortOrder,
-          status: statusByName.get(p.name) ?? "ongoing",
+        .values({ name: p.name, siteCode: p.siteCode, groupLabel: p.groupLabel, sortOrder: p.sortOrder })
+        .onConflictDoUpdate({
+          target: mrProjectsTable.name,
+          set: { siteCode: p.siteCode, groupLabel: p.groupLabel, sortOrder: p.sortOrder },
         })
         .returning({ id: mrProjectsTable.id });
       idByName.set(p.name, row.id);
@@ -181,7 +146,14 @@ export async function applyMgmtreportImport(parsed: ParsedMgmtreport, filename: 
       })
       .filter((v) => v != null);
     for (let i = 0; i < monthlyValues.length; i += 500) {
-      await tx.insert(mrMonthlyTable).values(monthlyValues.slice(i, i + 500));
+      const chunk = monthlyValues.slice(i, i + 500);
+      await tx
+        .insert(mrMonthlyTable)
+        .values(chunk)
+        .onConflictDoUpdate({
+          target: [mrMonthlyTable.projectId, mrMonthlyTable.year, mrMonthlyTable.month, mrMonthlyTable.scenario, mrMonthlyTable.metric],
+          set: { amountUsd: sql`excluded.amount_usd` },
+        });
     }
 
     const annualValues = parsed.annual
@@ -198,7 +170,14 @@ export async function applyMgmtreportImport(parsed: ParsedMgmtreport, filename: 
       })
       .filter((v) => v != null);
     for (let i = 0; i < annualValues.length; i += 500) {
-      await tx.insert(mrAnnualTable).values(annualValues.slice(i, i + 500));
+      const chunk = annualValues.slice(i, i + 500);
+      await tx
+        .insert(mrAnnualTable)
+        .values(chunk)
+        .onConflictDoUpdate({
+          target: [mrAnnualTable.projectId, mrAnnualTable.year, mrAnnualTable.scenario, mrAnnualTable.metric],
+          set: { amountUsd: sql`excluded.amount_usd` },
+        });
     }
 
     const pnlValues = parsed.pnl.map((p) => ({
@@ -211,7 +190,14 @@ export async function applyMgmtreportImport(parsed: ParsedMgmtreport, filename: 
       sortOrder: p.sortOrder,
     }));
     for (let i = 0; i < pnlValues.length; i += 500) {
-      await tx.insert(mrPnlTable).values(pnlValues.slice(i, i + 500));
+      const chunk = pnlValues.slice(i, i + 500);
+      await tx
+        .insert(mrPnlTable)
+        .values(chunk)
+        .onConflictDoUpdate({
+          target: [mrPnlTable.year, mrPnlTable.lineCode, mrPnlTable.scenario, mrPnlTable.month],
+          set: { lineLabel: sql`excluded.line_label`, amountUsd: sql`excluded.amount_usd`, sortOrder: sql`excluded.sort_order` },
+        });
     }
   });
 }
@@ -228,16 +214,18 @@ export async function listMgmtreportImportHistory() {
       createdAt: r.createdAt.toISOString(),
       filename: r.filename,
       year: r.year,
-      snapshotProjectCount: snap.projects.filter((p) => p.groupLabel == null).length,
+      snapshotProjectCount: snap.projects.length,
       snapshotMonthlyCount: snap.monthly.length,
-      snapshotEmpty: snap.projects.length === 0,
+      // 이번 반영이 건드린 프로젝트 전부가 그 전엔 존재하지 않았다면(=이 파일이 첫 반영) 되돌리기 비활성화
+      snapshotEmpty: snap.projects.length > 0 && snap.projects.every((p) => p.before == null),
     };
   });
 }
 
 export class MgmtreportRevertError extends Error {}
 
-// 선택한 이력의 스냅샷(반영 직전 상태)으로 mr_* 데이터를 되돌린다.
+// 선택한 이력이 건드렸던 키들만 반영 직전 값으로 되돌린다(before=null인 키는 그 반영이 새로 만든 것이므로 삭제).
+// 이 반영이 손대지 않은 다른 연도/다른 프로젝트의 데이터는 전혀 건드리지 않는다.
 export async function revertMgmtreportImport(historyId: number) {
   return await db.transaction(async (tx) => {
     const [row] = await tx
@@ -248,19 +236,104 @@ export async function revertMgmtreportImport(historyId: number) {
       throw new MgmtreportRevertError("해당 반영 이력을 찾을 수 없습니다.");
     }
     const snap = row.snapshot as MrSnapshot;
-    if (snap.projects.length === 0) {
+    if (snap.projects.length > 0 && snap.projects.every((p) => p.before == null)) {
       throw new MgmtreportRevertError(
-        "이 이력은 반영 이전에 데이터가 없던 상태입니다. 되돌리면 모든 경영관리보고회 데이터가 삭제되므로 지원하지 않습니다.",
+        "이 이력은 최초 반영 건이라 되돌릴 이전 상태가 없습니다.",
       );
     }
-    await writeSnapshot(tx, snap);
+
+    // 1) 프로젝트: 이 반영이 새로 만든 프로젝트는 삭제(하위 mr_monthly/mr_annual도 cascade로 함께 삭제),
+    //    기존 프로젝트는 site_code/group_label/sort_order/status만 이전 값으로 복원
+    //    (fld_code/division_id/code는 이 반영이 건드린 적이 없으므로 그대로 둔다)
+    for (const p of snap.projects) {
+      if (p.before == null) {
+        await tx.delete(mrProjectsTable).where(eq(mrProjectsTable.name, p.name));
+      } else {
+        await tx
+          .update(mrProjectsTable)
+          .set({ siteCode: p.before.siteCode, groupLabel: p.before.groupLabel, sortOrder: p.before.sortOrder, status: p.before.status })
+          .where(eq(mrProjectsTable.name, p.name));
+      }
+    }
+
+    const remaining = await tx.select({ id: mrProjectsTable.id, name: mrProjectsTable.name }).from(mrProjectsTable);
+    const idByName = new Map(remaining.map((p) => [p.name, p.id]));
+
+    // 2) 월별/연간: 프로젝트가 위에서 삭제됐다면 cascade로 이미 없어졌으므로 건너뛰고,
+    //    남아있는 프로젝트에 대해서만 이전 값으로 복원하거나(없던 키였다면) 삭제
+    for (const m of snap.monthly) {
+      const pid = idByName.get(m.project);
+      if (pid == null) continue;
+      const where = and(
+        eq(mrMonthlyTable.projectId, pid),
+        eq(mrMonthlyTable.year, m.year),
+        eq(mrMonthlyTable.month, m.month),
+        eq(mrMonthlyTable.scenario, m.scenario),
+        eq(mrMonthlyTable.metric, m.metric),
+      );
+      if (m.before == null) {
+        await tx.delete(mrMonthlyTable).where(where);
+      } else {
+        await tx
+          .insert(mrMonthlyTable)
+          .values({ projectId: pid, year: m.year, month: m.month, scenario: m.scenario, metric: m.metric, amountUsd: m.before })
+          .onConflictDoUpdate({
+            target: [mrMonthlyTable.projectId, mrMonthlyTable.year, mrMonthlyTable.month, mrMonthlyTable.scenario, mrMonthlyTable.metric],
+            set: { amountUsd: m.before },
+          });
+      }
+    }
+
+    for (const a of snap.annual) {
+      const pid = idByName.get(a.project);
+      if (pid == null) continue;
+      const where = and(
+        eq(mrAnnualTable.projectId, pid),
+        eq(mrAnnualTable.year, a.year),
+        eq(mrAnnualTable.scenario, a.scenario),
+        eq(mrAnnualTable.metric, a.metric),
+      );
+      if (a.before == null) {
+        await tx.delete(mrAnnualTable).where(where);
+      } else {
+        await tx
+          .insert(mrAnnualTable)
+          .values({ projectId: pid, year: a.year, scenario: a.scenario, metric: a.metric, amountUsd: a.before })
+          .onConflictDoUpdate({
+            target: [mrAnnualTable.projectId, mrAnnualTable.year, mrAnnualTable.scenario, mrAnnualTable.metric],
+            set: { amountUsd: a.before },
+          });
+      }
+    }
+
+    // 3) 법인 손익(mr_pnl): 프로젝트와 무관하므로 그대로 복원/삭제
+    for (const p of snap.pnl) {
+      const where = and(
+        eq(mrPnlTable.year, p.year),
+        eq(mrPnlTable.lineCode, p.lineCode),
+        eq(mrPnlTable.scenario, p.scenario),
+        p.month == null ? sql`${mrPnlTable.month} IS NULL` : eq(mrPnlTable.month, p.month),
+      );
+      if (p.before == null) {
+        await tx.delete(mrPnlTable).where(where);
+      } else {
+        await tx
+          .insert(mrPnlTable)
+          .values({ year: p.year, lineCode: p.lineCode, lineLabel: p.before.lineLabel, scenario: p.scenario, month: p.month, amountUsd: p.before.amountUsd, sortOrder: p.before.sortOrder })
+          .onConflictDoUpdate({
+            target: [mrPnlTable.year, mrPnlTable.lineCode, mrPnlTable.scenario, mrPnlTable.month],
+            set: { lineLabel: p.before.lineLabel, amountUsd: p.before.amountUsd, sortOrder: p.before.sortOrder },
+          });
+      }
+    }
+
     // 되돌린 이력과 그 이후 이력은 현재 상태와 맞지 않으므로 제거
     await tx.delete(mrImportHistoryTable).where(gte(mrImportHistoryTable.id, row.id));
     return {
       id: row.id,
       filename: row.filename,
       year: row.year,
-      restoredProjects: snap.projects.filter((p) => p.groupLabel == null).length,
+      restoredProjects: snap.projects.length,
       restoredMonthly: snap.monthly.length,
     };
   });

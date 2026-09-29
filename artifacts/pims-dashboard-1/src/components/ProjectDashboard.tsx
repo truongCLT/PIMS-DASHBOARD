@@ -90,24 +90,22 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
     { siteCode: siteCode ?? "" },
     { query: { enabled: !!siteCode, staleTime: 5 * 60_000 } },
   );
-  // 현장 계약 환율(dashboard_common_siterate_1q.jsp) 실데이터가 없으면 DEFAULT_EXCHANGE_RATES 같은
-  // 가짜 환율로 대체하지 않는다 — VND: 0으로 두면 convertFromVndAmount()/convertMoney()가 변환 없이
-  // 원본 VND 그대로 반환하므로, 실제 환율이 없을 때는 항상 VND로 보여준다(잘못된 환율로 계산된 숫자를
-  // 보여주는 것보다 안전).
+  // 현장 계약 환율(dashboard_common_siterate_1q.jsp)이 없으면(예: 계약 환율이 등록되지 않은 현장)
+  // DEFAULT_EXCHANGE_RATES 같은 하드코딩된 값 대신, 이미 조회해 둔 당월 공식 환율(fxRates,
+  // dashboard_common_exchangerate_1q.jsp 기반)로 대체한다 — 둘 다 실제 PIMSVINA 환율이며, 이렇게 하면
+  // 계약 환율이 없는 현장도 Construction과 동일하게 USD/KRW 환산이 표시된다.
   const hasSiteRate = siteRateQuery.data?.rateUsd != null;
   const siteRates = useMemo(() => {
     const vndPerUsd = siteRateQuery.data?.rateUsd;
-    if (!vndPerUsd) return { USD: 1, VND: 0, KRW: 0 };
+    if (!vndPerUsd) return fxRates;
     const vndPerKrw = siteRateQuery.data?.rateKrw;
     return {
       USD: 1,
       VND: vndPerUsd,
       KRW: vndPerKrw ? vndPerUsd / vndPerKrw : DEFAULT_EXCHANGE_RATES.KRW,
     };
-  }, [siteRateQuery.data]);
-  // 실제 변환/표시(금액+단위 라벨)는 실환율이 있을 때만 선택한 통화를 따른다 — 없으면 항상 VND로 보여준다
-  // (버튼 자체는 currency 상태 그대로 눌리는 즉시 활성화 표시되도록 아래 버튼 스타일에서는 currency를 쓴다).
-  const effectiveCurrency = hasSiteRate ? currency : "VND";
+  }, [siteRateQuery.data, fxRates]);
+  const effectiveCurrency = currency;
   const queryClient = useQueryClient();
   const putMutation = usePutProjectdetail();
   const excelFileRef = useRef<HTMLInputElement>(null);
