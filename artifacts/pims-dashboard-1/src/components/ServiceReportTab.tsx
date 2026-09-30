@@ -4,6 +4,11 @@ import { FileDown, Loader2 } from "lucide-react";
 import { Button } from "@workspace/aqua-glass/components/ui/button";
 import { ProjectCommentPanel } from "./ProjectCommentPanel";
 import { useProjectDetail, fmtPct } from "../lib/projectDetailData";
+import {
+  useGetCashflowMonthly,
+  getGetCashflowMonthlyQueryKey,
+} from "@workspace/api-client-react";
+import { getMrCashflowRef } from "../data/mrProjectLinks";
 import { useMoney } from "../lib/displayUnit";
 import { chartTheme } from "../lib/chartTheme";
 import { REPORT_YEAR } from "../lib/mgmtreportData";
@@ -158,8 +163,39 @@ export function ServiceReportTab({
   // Status 상태등 규칙(연 누계 실적 >= 연 누계 계획)은 "연 누계"이지, 이전 연도까지 합친 전체 누계가
   // 아니다 — 시공 쪽 ProjectReportTab(reportSales)과 동일하게 REPORT_YEAR로 먼저 필터링한다.
   const cumSales = throughReference(reportSales);
-  const monthCash = atReference(cashRows);
-  const cumCash = throughReference(cashRows);
+  // 자금: 자금 탭(ServiceCashflowTab)과 같은 우선순위 — 데이터 입력 탭에서 저장한 pd_cashflow_monthly
+  // 행이 있으면 그것을, 없으면 자금수지 Excel(cf_*, getMrCashflowRef 매핑) 값을 쓴다. 예전엔 pd 행만
+  // 읽어서, pd 자금 데이터가 없는 대부분의 용역 현장(자금 탭에는 cf_* 값이 정상 표시됨)에서 보고서
+  // 자금 카드/현황 "자금" 행이 0 또는 "-"로 나왔다(실사용자 보고). 전체 누계이므로 착공월부터 조회한다.
+  const cfRef = getMrCashflowRef(projectName);
+  const cfStart = /^(\d{4})-(\d{1,2})/.exec(overview?.startDate ?? "");
+  const cfStartIdx = cfStart
+    ? Number(cfStart[1]) * 12 + Number(cfStart[2]) - 1
+    : (REPORT_YEAR - 5) * 12;
+  const cfParams = {
+    projectName: cfRef?.name ?? "",
+    division: cfRef?.division,
+    fromYear: Math.floor(Math.min(cfStartIdx, monthIndex) / 12),
+    fromMonth: (Math.min(cfStartIdx, monthIndex) % 12) + 1,
+    months: Math.min(120, Math.max(1, monthIndex - Math.min(cfStartIdx, monthIndex) + 1)),
+  };
+  const cfQ = useGetCashflowMonthly(cfParams, {
+    query: {
+      enabled: cfRef != null && cashRows.length === 0,
+      queryKey: getGetCashflowMonthlyQueryKey(cfParams),
+    },
+  });
+  const cashSourceRows =
+    cashRows.length > 0
+      ? cashRows
+      : (cfQ.data?.points ?? []).map((p) => ({
+          year: Number(p.month.slice(0, 4)),
+          month: Number(p.month.slice(5, 7)),
+          cashIn: p.cashIn ?? null,
+          cashOut: p.cashOut ?? null,
+        }));
+  const monthCash = atReference(cashSourceRows);
+  const cumCash = throughReference(cashSourceRows);
 
   const salesMonthPlan = sumNullable(monthSales, (row) => row.plan);
   const salesMonthActual = sumNullable(monthSales, (row) => row.actual);
@@ -199,12 +235,12 @@ export function ServiceReportTab({
   const findBudget = (name: string) =>
     budgetRows.find((r) => r.item.trim().toLowerCase() === name.toLowerCase()) ?? null;
   const cbMonthly = detail?.costBudgetMonthly ?? [];
+  // 실적(pd_cost_budget.actual)이 프로젝트 시작부터의 전체 누계이므로 계획도 "프로젝트 시작 ~ 기준월"
+  // 전체 누계로 합산한다 — 예전엔 REPORT_YEAR만 합산해서 이전 연도 계획이 빠져 집행률이 폭주했다
+  // (시공 ProjectReportTab cumPlanFor와 동일 수정).
   const cumPlanFor = (item: string): number | null => {
     const rows = cbMonthly.filter(
-      (row) =>
-        row.item === item &&
-        row.year === REPORT_YEAR &&
-        (resolvedMonth == null || row.month <= resolvedMonth),
+      (row) => row.item === item && row.year * 12 + row.month - 1 <= monthIndex,
     );
     return rows.some((row) => row.plan != null)
       ? rows.reduce<number>((sum, row) => sum + (row.plan ?? 0), 0)

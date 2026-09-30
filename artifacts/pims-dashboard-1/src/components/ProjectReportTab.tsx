@@ -39,7 +39,7 @@ import { SalesSection } from "./project-report/SalesSection";
 import { StatusTableSection } from "./project-report/StatusTableSection";
 import { CostSection } from "./project-report/CostSection";
 import { FundsSection } from "./project-report/FundsSection";
-import type { StatusRowData } from "./project-report/reportTypes";
+import type { StatusRowData, TradeProgressRow } from "./project-report/reportTypes";
 import {
   exportProjectReportPdf,
   runProjectReportExport,
@@ -63,6 +63,16 @@ const PROCESS_COST_GROUPS = [
   { label: "Expense 1", items: ["Expense 1"] },
   { label: "Expense 2", items: ["Expense 2"] },
   { label: "Contingency", items: ["Contingency"] },
+] as const;
+
+// 공정 카드 hover 팝업의 공종 목록 — 데이터 입력 탭 TRADE_GROUP_PROCESS_ITEM과 같은 매핑
+// (tradeGroup = pd_outsourcing 대공종, item = costBudgetMonthly 계획 항목).
+const PROCESS_TRADES = [
+  { tradeGroup: "건축", item: "외주 건축", labelKey: "projectDataEntryTab:tradeGroupArchitecture" },
+  { tradeGroup: "기계", item: "외주 기계", labelKey: "projectDataEntryTab:tradeGroupMechanical" },
+  { tradeGroup: "전기", item: "외주 전기", labelKey: "projectDataEntryTab:tradeGroupElectrical" },
+  { tradeGroup: "토목", item: "외주 토목", labelKey: "projectDataEntryTab:tradeGroupCivil" },
+  { tradeGroup: "조경", item: "외주 조경", labelKey: "projectDataEntryTab:tradeGroupLandscape" },
 ] as const;
 
 // ─── Responsive grid helpers ───────────────────────────────────────────────
@@ -269,13 +279,19 @@ export function ProjectReportTab({
   const budget = detail?.costBudget ?? [];
   const findBudget = (name: string) =>
     budget.find((r) => r.item.trim().toLowerCase() === name.toLowerCase()) ?? null;
+  //
+  // 계획 누계는 실적 스냅샷(pd_cost_budget.actual, 프로젝트 시작부터의 전체 누계)과 같은 기준이어야
+  // 하므로 "프로젝트 시작 ~ 기준월" 전체 누계로 합산한다 — 예전엔 REPORT_YEAR만 합산해서 이전 연도
+  // 계획이 통째로 빠져, 계획이 실적의 절반 수준으로 보이고 집행률이 190%대로 나오는 버그가 있었다
+  // (실사용자 확인: 월별 계획/실적을 동일하게 넣었는데 원가 카드와 예산 집행 현황 숫자가 다름).
   const cbMonthly = detail?.costBudgetMonthly ?? [];
   const cumPlanFor = (item: string): number | null => {
     const rows = cbMonthly.filter(
       (row) =>
         row.item === item &&
-        row.year === REPORT_YEAR &&
-        (resolvedMonth == null || row.month <= resolvedMonth),
+        (row.year < REPORT_YEAR ||
+          (row.year === REPORT_YEAR &&
+            (resolvedMonth == null || row.month <= resolvedMonth))),
     );
     return rows.some((row) => row.plan != null)
       ? rows.reduce<number>((sum, row) => sum + (row.plan ?? 0), 0)
@@ -379,7 +395,39 @@ export function ProjectReportTab({
   const statusCostCumulativePlan = sumNullable(comparableCostRows(costPlanRows), "plan");
   const statusCostCumulativeActual = sumNullable(comparableCostRows(costPlanRows), "actual");
 
-  // 공정 카드(ProgressSection)의 계획/실적 금액 — ConstructionProgressTab(Progress 탭)의
+  // 공정 카드 hover 팝업 — 공종(건축/기계/전기/토목/조경)별 계획 대비 달성률. 데이터 입력 탭
+  // "4. 공정별 원가 계획/실적" 표와 같은 규칙으로 뽑는다: 계획 = costBudgetMonthly의 "외주 X" 항목
+  // plan(수동 입력), 실적 = pd_outsourcing의 대공종(tradeGroup)별 이번달(thisMonth) 합계(ProjectDataEntryTab
+  // getProcessCostValue와 동일). 월 = 기준월 1개월, 누계 = 프로젝트 시작 ~ 기준월.
+  const refYm = resolvedMonth != null ? REPORT_YEAR * 12 + resolvedMonth - 1 : null;
+  const sumOrNull = (values: Array<number | null | undefined>) =>
+    values.some((v) => v != null)
+      ? values.reduce<number>((sum, v) => sum + (v ?? 0), 0)
+      : null;
+  const makeTradeBreakdown = (inRange: (ym: number) => boolean): TradeProgressRow[] =>
+    PROCESS_TRADES.map((trade) => ({
+      labelKey: trade.labelKey,
+      plan: sumOrNull(
+        cbMonthly
+          .filter((row) => row.item === trade.item && inRange(row.year * 12 + row.month - 1))
+          .map((row) => row.plan),
+      ),
+      actual: sumOrNull(
+        (detail?.outsourcing ?? [])
+          .filter(
+            (row) =>
+              (row.tradeGroup === "공통" ? "대공종" : row.tradeGroup) === trade.tradeGroup &&
+              inRange(row.year * 12 + row.month - 1),
+          )
+          .map((row) => row.thisMonth),
+      ),
+    }));
+  const tradeMonthlyBreakdown =
+    refYm == null ? [] : makeTradeBreakdown((ym) => ym === refYm);
+  const tradeCumulativeBreakdown =
+    refYm == null ? [] : makeTradeBreakdown((ym) => ym <= refYm);
+
+  // 공정 카드(ProgressSection)의 계획/실적 금액 —ConstructionProgressTab(Progress 탭)의
   // costPlanAmount/costActualAmount와 동일하게, 기준월의 costBudgetMonthly 전체 행(항목 필터 없음)을
   // 합산한다. Progress 탭에 보이는 금액과 일치시키기 위한 계산으로, 위 statusCostMonthlyPlan/Actual
   // (Status 표 원가 판정용, 5개 예산 항목 중 Plan이 있는 것만 합산)과는 다른 수치다.
@@ -572,6 +620,8 @@ export function ProjectReportTab({
             endDate={detail?.overview?.endDate}
             monthlyPlanAmount={progressCardPlanAmount}
             monthlyActualAmount={progressCardActualAmount}
+            tradeMonthly={tradeMonthlyBreakdown}
+            tradeCumulative={tradeCumulativeBreakdown}
           />
           <SalesSection
             planMonths={planMonths}

@@ -32,6 +32,31 @@ function monthLabel(ym: string, t: TFn): string {
   return t("serviceCashflowTab:monthLabel", { month: m, yy: ym.slice(2, 4), year });
 }
 
+// 출금(음수) 막대 라벨 — Recharts의 position="bottom"은 음수 막대에서 height가 음수로 들어와
+// 막대 "아래 끝"이 아니라 0 기준선(입금 막대 바로 밑)에 라벨이 찍혀 입금 숫자와 겹친다(실사용자 요청).
+// 막대의 실제 아래 끝(y, y+height 중 큰 값) 기준으로 직접 그린다.
+function cashOutLabel(fill: string) {
+  return (props: any) => {
+    const { x, y, width, height, value } = props;
+    const v = Number(value);
+    if (!v) return null;
+    const bottom = Math.max(Number(y), Number(y) + Number(height));
+    return (
+      <text
+        x={Number(x) + Number(width) / 2}
+        y={bottom + 6}
+        dy="0.71em"
+        textAnchor="middle"
+        fontSize={12}
+        fontWeight={700}
+        fill={fill}
+      >
+        {Math.abs(v).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+      </text>
+    );
+  };
+}
+
 function niceStep(range: number): number {
   const raw = range / 8;
   const pow = Math.pow(10, Math.floor(Math.log10(Math.max(raw, 1))));
@@ -192,19 +217,39 @@ export function ServiceCashflowTab({
   // 범위)으로 분리해서 둘 다 잘 보이게 한다.
   const maxVal = Math.max(...chartData.map((d: any) => Math.max(d.cashIn, 0)), 0);
   const minVal = Math.min(...chartData.map((d: any) => Math.min(d.cashOut, 0)), 0);
-  const step = niceStep(maxVal - minVal || 10);
+  // 막대는 플롯 아래쪽 밴드(CASH_BAND)만 쓰므로 눈금 수를 줄인다(약 5칸).
+  const step = niceStep(((maxVal - minVal) || 10) * 8 / 5);
   // +1 step 여유를 둬서 막대 꼭대기와 차트 맨 위 사이에 빈 공간을 만든다 - 그래야 그 위 공간을
   // 지나가는 잔액(오른쪽 축) 선과 막대 위 숫자 라벨이 서로 붙지 않고 뚜렷하게 분리되어 보인다.
   const top = (Math.ceil(maxVal / step) + 1) * step || step;
-  const bottom = Math.floor(minVal / step) * step;
+  // 출금 라벨을 막대 아래 끝에 그리므로(cashOutLabel) 아래쪽도 -1 step 여유를 둬서 라벨이 X축
+  // 월 라벨과 겹치거나 잘리지 않게 한다.
+  const bottom = (Math.floor(minVal / step) - (minVal < 0 ? 1 : 0)) * step;
   const ticks: number[] = [];
   for (let t = bottom; t <= top; t += step) ticks.push(t);
 
   const balanceMax = Math.max(...chartData.map((d: any) => d.equivalent), 0);
   const balanceMin = Math.min(...chartData.map((d: any) => d.equivalent), 0);
-  const balanceStep = niceStep(balanceMax - balanceMin || 10);
+  // 잔액 선은 위쪽 밴드만 쓰므로 눈금은 3칸 정도로 둔다.
+  const balanceStep = niceStep(((balanceMax - balanceMin) || 10) * 8 / 3);
   const balanceTop = Math.ceil(balanceMax / balanceStep) * balanceStep || balanceStep;
   const balanceBottom = Math.floor(balanceMin / balanceStep) * balanceStep;
+  const balanceTicks: number[] = [];
+  for (let v = balanceBottom; v <= balanceTop; v += balanceStep) balanceTicks.push(v);
+
+  // 잔액 선과 입금/출금 막대가 같은 플롯 영역에 겹쳐 그려져 선/라벨이 막대·막대 숫자와 뒤엉켜 읽기
+  // 어렵다는 요청(잔액이 음수로 내려가면 특히 심함) — 세로로 두 밴드로 분리한다: 잔액 선은 위쪽
+  // BALANCE_BAND, 막대는 아래쪽 CASH_BAND(비율 = 플롯 높이 기준). 각 축의 domain을 늘려 자기 밴드에만
+  // 그려지게 하고, 눈금(ticks)은 자기 값 범위에만 찍는다.
+  const CASH_BAND = 0.58; // 아래 0% ~ 58%
+  const BALANCE_BAND = { from: 0.7, to: 0.96 }; // 위 70% ~ 96%
+  const cashDomain: [number, number] = [bottom, bottom + (top - bottom) / CASH_BAND];
+  const balanceRange = balanceTop - balanceBottom || 1;
+  const balanceBandHeight = BALANCE_BAND.to - BALANCE_BAND.from;
+  const balanceDomain: [number, number] = [
+    balanceBottom - (balanceRange * BALANCE_BAND.from) / balanceBandHeight,
+    balanceTop + (balanceRange * (1 - BALANCE_BAND.to)) / balanceBandHeight,
+  ];
 
   const hasData = chartData.some((d: any) => d.cashIn !== 0 || d.cashOut !== 0 || d.equivalent !== 0);
 
@@ -276,7 +321,7 @@ export function ServiceCashflowTab({
               tick={{ fontSize: 11, fill: INK_BODY, fontWeight: 600 }}
               tickLine={false}
               axisLine={false}
-              domain={[bottom, top]}
+              domain={cashDomain}
               ticks={ticks}
               tickFormatter={(v: number) => v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
             />
@@ -286,7 +331,8 @@ export function ServiceCashflowTab({
               tick={{ fontSize: 11, fill: chartTheme.actualGreen, fontWeight: 600 }}
               tickLine={false}
               axisLine={false}
-              domain={[balanceBottom, balanceTop]}
+              domain={balanceDomain}
+              ticks={balanceTicks}
               tickFormatter={(v: number) => v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
             />
             <Legend wrapperStyle={{ fontSize: "14px", fontWeight: 600 }} iconSize={14} />
@@ -318,26 +364,11 @@ export function ServiceCashflowTab({
               <LabelList
                 dataKey="equivalent"
                 content={(props: any) => {
-                  const { x, y, value, index } = props;
+                  const { x, y, value } = props;
                   if (value === 0 || value == null) return null;
-                  // 인접한 점들의 값이 비슷하면(선이 거의 평평하면) 라벨이 서로 겹친다 -
-                  // 짝/홀 인덱스마다 세로 위치를 어긋나게 배치해서 겹침을 줄인다.
-                  let dy = index % 2 === 0 ? -10 : -26;
-                  // 잔액(오른쪽 축)과 입금 막대 위 숫자(왼쪽 축)는 서로 다른 축을 쓰지만 같은 플롯
-                  // 영역을 공유한다 - 두 축의 값을 각자의 도메인 기준 0~1 비율로 정규화하면(같은
-                  // 픽셀 높이를 공유하므로) 실제 화면상 얼마나 가까운지 축 종류와 무관하게 비교할 수
-                  // 있다. VND처럼 자릿수가 많아 숫자가 커져도 이 비율은 변하지 않으므로, 두 라벨이
-                  // 겹칠 만큼 가까우면 더 멀리 밀어낸다(원래 있던 자리와 반대 방향으로).
-                  const barTopValue = (chartData[index]?.cashInActual ?? 0) + (chartData[index]?.cashInForecast ?? 0);
-                  if (barTopValue !== 0) {
-                    const balanceRange = balanceTop - balanceBottom || 1;
-                    const cashRange = top - bottom || 1;
-                    const fracLine = (balanceTop - value) / balanceRange;
-                    const fracBarTop = (top - barTopValue) / cashRange;
-                    if (Math.abs(fracLine - fracBarTop) < 0.08) {
-                      dy = fracLine <= fracBarTop ? dy - 26 : Math.abs(dy) + 26;
-                    }
-                  }
+                  // 잔액 선은 막대와 분리된 위쪽 밴드에만 그려지므로(BALANCE_BAND) 막대 숫자와 겹칠
+                  // 일이 없다 — 점 바로 위에 고정 배치한다.
+                  const dy = -10;
                   const text = value.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
                   // Nhãn này hay rơi trúng vùng đông chữ (đường kẻ "Reference month", nhãn cột bar
                   // bên dưới) khiến số bị chồng lên nhau và không đọc được - vẽ thêm nền trắng bo góc
@@ -401,13 +432,7 @@ export function ServiceCashflowTab({
               isAnimationActive={false}
               radius={[0, 0, 4, 4]}
             >
-              <LabelList
-                dataKey="cashOutActual"
-                position="bottom"
-                offset={6}
-                style={{ fontSize: "12px", fill: chartTheme.actualGreen, fontWeight: 700 }}
-                formatter={(v: number) => (v !== 0 ? Math.abs(v).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : "")}
-              />
+              <LabelList dataKey="cashOutActual" content={cashOutLabel(chartTheme.actualGreen)} />
             </Bar>
             <Bar
               yAxisId="cash"
@@ -441,13 +466,7 @@ export function ServiceCashflowTab({
               stackId="cash"
               isAnimationActive={false}
             >
-              <LabelList
-                dataKey="cashOutForecast"
-                position="bottom"
-                offset={6}
-                style={{ fontSize: "12px", fill: chartTheme.actualGreen, fontWeight: 700 }}
-                formatter={(v: number) => (v !== 0 ? Math.abs(v).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : "")}
-              />
+              <LabelList dataKey="cashOutForecast" content={cashOutLabel(chartTheme.actualGreen)} />
             </Bar>
           </ComposedChart>
         </ResponsiveContainer>

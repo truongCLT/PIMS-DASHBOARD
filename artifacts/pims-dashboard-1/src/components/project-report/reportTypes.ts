@@ -23,6 +23,13 @@ export interface CostBreakdownRow {
   actual: number | null;
 }
 
+/** 공정 카드 hover 팝업의 공종별(건축/기계/전기/토목/조경) 계획/실적 금액 한 줄. */
+export interface TradeProgressRow {
+  labelKey: string;
+  plan: number | null;
+  actual: number | null;
+}
+
 export interface ProgRowData {
   year: number;
   month: number;

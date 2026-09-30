@@ -58,6 +58,17 @@ const td: React.CSSProperties = {
 // 이번달(9), 누계(10), 비율(11) 동일 너비
 const DEFAULT_WIDTHS = [64, 90, 90, 70, 46, 92, 92, 92, 60, 80, 80, 80, 92];
 
+// 결의율(B/A)은 낮을수록 좋다(예산 대비 적게 결의) — 100% 미만 초록, 100% 검정(기본 글자색),
+// 100% 초과(예산 초과 결의) 빨강. 화면 표시(소수 1자리) 기준으로 비교해서 "100%"로 보이는 값이
+// 초록으로 칠해지지 않게 한다.
+function resolvedRateColor(rate: number | null): string {
+  if (rate == null) return INK_BODY;
+  const shown = Math.round(rate * 10) / 10;
+  if (shown < 100) return ACHIEVE_GREEN;
+  if (shown > 100) return ACHIEVE_RED;
+  return INK_BODY;
+}
+
 function ResizeHandle({ onDrag }: { onDrag: (dx: number) => void }) {
   const { t } = useTranslation(["outsourcingTab", "common"]);
   return (
@@ -229,7 +240,7 @@ export function OutsourcingTab({
                       <td style={{
                         ...td,
                         fontWeight: 700,
-                        color: ratioPct(r.resolved, r.budget) != null && ratioPct(r.resolved, r.budget)! >= 100 ? ACHIEVE_GREEN : ACHIEVE_RED,
+                        color: resolvedRateColor(ratioPct(r.resolved, r.budget)),
                       }}>{fmtPct(ratioPct(r.resolved, r.budget))}</td>
                       <td style={td}>{fmtVnd(r.thisMonth)}</td>
                       <td style={{ ...td, fontWeight: 700, color: INK_NAVY, backgroundColor: TABLE_HEADER_BG }}>{fmtVnd(r.accum)}</td>
@@ -256,9 +267,9 @@ export function OutsourcingTab({
                     <td style={{ ...td, fontWeight: 600 }}>{fmtVnd(sum.budget)}</td>
                     <td style={{ ...td, fontWeight: 600 }}>{fmtVnd(sum.executedBudget)}</td>
                     <td style={{ ...td, fontWeight: 600 }}>{fmtVnd(sum.resolved)}</td>
-                    <td style={{ ...td, fontWeight: 600 }}>{fmtPct(ratioPct(sum.resolved, sum.budget))}</td>
+                    <td style={{ ...td, fontWeight: 700, color: resolvedRateColor(ratioPct(sum.resolved, sum.budget)) }}>{fmtPct(ratioPct(sum.resolved, sum.budget))}</td>
                     <td style={{ ...td, fontWeight: 600 }}>{fmtVnd(sum.thisMonth)}</td>
-                    <td style={{ ...td, fontWeight: 600 }}>{fmtVnd(sum.accum)}</td>
+                    <td style={{ ...td, fontWeight: 700, color: INK_NAVY, backgroundColor: TABLE_HEADER_BG }}>{fmtVnd(sum.accum)}</td>
                     <td style={{ ...td, fontWeight: 600 }}>{fmtPct(ratioPct(sum.accum, sum.resolved))}</td>
                     <td style={{
                       ...td,

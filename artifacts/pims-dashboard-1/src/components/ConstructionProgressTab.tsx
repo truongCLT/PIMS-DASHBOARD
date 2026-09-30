@@ -28,6 +28,21 @@ import { useMoney } from "../lib/displayUnit";
 
 const emptyStyle = emptyNote;
 
+// 공정 카드 월/연/누계 라벨 — 그래프(달성률 줄)와 붙어 보인다는 요청으로 간격을 띄우고, 굵은 글씨 대신
+// 연한 캡션(pill) 형태로 표시한다.
+const periodLabelStyle: React.CSSProperties = {
+  marginTop: "16px",
+  padding: "2px 14px",
+  borderRadius: "999px",
+  backgroundColor: "#f1f4f9",
+  border: `1px solid ${DIVIDER}`,
+  fontSize: "12px",
+  fontWeight: 400,
+  lineHeight: 1.5,
+  color: INK_SECONDARY,
+  letterSpacing: "0.02em",
+};
+
 function Donut({
   percent,
   size = 130,
@@ -581,7 +596,7 @@ export function ConstructionProgressTab({
               <div style={{ fontSize: "11px", fontWeight: 700, color: INK_NAVY, marginTop: "2px" }}>
                 달성률 {monthlyAchievement != null ? fmtPct(monthlyAchievement) : "-"}
               </div>
-              <span style={{ fontSize: "13px", color: INK_SECONDARY, fontWeight: 700, marginTop: "4px" }}>
+              <span style={periodLabelStyle}>
                 {t("common:monthly").replace("별", "")}
               </span>
             </div>
@@ -606,7 +621,7 @@ export function ConstructionProgressTab({
               <div style={{ fontSize: "11px", fontWeight: 700, color: INK_NAVY, marginTop: "2px" }}>
                 달성률 {annualAchievement != null ? fmtPct(annualAchievement) : "-"}
               </div>
-              <span style={{ fontSize: "13px", color: INK_SECONDARY, fontWeight: 700, marginTop: "4px" }}>연</span>
+              <span style={periodLabelStyle}>연</span>
             </div>
 
             <div style={{ width: "1px", flexShrink: 0, backgroundColor: DIVIDER, alignSelf: "stretch", margin: "0 6px" }} />
@@ -629,7 +644,7 @@ export function ConstructionProgressTab({
               <div style={{ fontSize: "11px", fontWeight: 700, color: INK_NAVY, marginTop: "2px" }}>
                 달성률 {cumAchievement != null ? fmtPct(cumAchievement) : "-"}
               </div>
-              <span style={{ fontSize: "13px", color: INK_SECONDARY, fontWeight: 700, marginTop: "4px" }}>{t("common:cumulative")}</span>
+              <span style={periodLabelStyle}>{t("common:cumulative")}</span>
             </div>
           </div>
 

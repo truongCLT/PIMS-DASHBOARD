@@ -19,7 +19,7 @@ import {
 } from "../../lib/uiTokens";
 import { REPORT_YEAR } from "../../lib/mgmtreportData";
 import { DASH, StatusBadge, ProgressBar, DataKV } from "./ReportPrimitives";
-import type { ProgRowData } from "./reportTypes";
+import type { ProgRowData, TradeProgressRow } from "./reportTypes";
 
 interface Props {
   progRows: ProgRowData[];
@@ -28,6 +28,8 @@ interface Props {
   endDate: string | null | undefined;
   monthlyPlanAmount?: number | null;
   monthlyActualAmount?: number | null;
+  tradeMonthly?: TradeProgressRow[];
+  tradeCumulative?: TradeProgressRow[];
 }
 
 export function selectProgressReportRow(
@@ -71,6 +73,8 @@ export function ProgressSection({
   endDate,
   monthlyPlanAmount = null,
   monthlyActualAmount = null,
+  tradeMonthly = [],
+  tradeCumulative = [],
 }: Props) {
   const { t } = useTranslation(["projectReportTab", "common"]);
   const { fmtVnd, unitLabel } = useMoney();
@@ -120,6 +124,7 @@ export function ProgressSection({
                 plan={planM}
                 actual={actualM}
                 rate={monthlyRate}
+                trades={tradeMonthly}
               />
             }
           />
@@ -139,6 +144,7 @@ export function ProgressSection({
                 plan={planCum}
                 actual={actualCum}
                 rate={cumRate}
+                trades={tradeCumulative}
               />
             }
           />
@@ -221,7 +227,7 @@ function PlanActualGroup({
             zIndex: 20,
             right: 0,
             ...(openUpward ? { bottom: "calc(100% + 10px)" } : { top: "calc(100% + 10px)" }),
-            width: "220px",
+            width: "300px",
             maxWidth: "calc(100vw - 48px)",
             padding: "10px 12px",
             borderRadius: "8px",
@@ -252,14 +258,15 @@ function PlanActualGroup({
   );
 }
 
-/** 공정 카드 hover 팝업 — Data Entry "1. 월별 공정률"의 계획/실적 %를 그대로 다시 보여준다
- * (하나의 % 값만 있고 공종별 breakdown은 없다 — 그 % 자체는 이미 바 위에 표시되어 있어 중복이지만,
- * 팝업에 확대해서 다시 보여달라는 요청). */
+/** 공정 카드 hover 팝업 — 상단에 공정률(%) 계획/실적, 그 아래에 공종(건축/기계/전기/토목/조경)별
+ * 계획 대비 달성률 표. 공종별 금액은 데이터 입력 탭 "4. 공정별 원가 계획/실적"과 같은 소스다
+ * (ProjectReportTab makeTradeBreakdown). 예전엔 공정률 %만 다시 보여줬는데, 요청은 공종별 달성률이었다. */
 function ProgressPctTooltip({
   title,
   plan,
   actual,
   rate,
+  trades = [],
   planAmountLabel = null,
   actualAmountLabel = null,
 }: {
@@ -267,13 +274,43 @@ function ProgressPctTooltip({
   plan: number | null;
   actual: number | null;
   rate: number | null;
+  trades?: TradeProgressRow[];
   planAmountLabel?: string | null;
   actualAmountLabel?: string | null;
 }) {
-  const { t } = useTranslation(["common"]);
+  const { t } = useTranslation(["common", "projectDataEntryTab"]);
+  const { fmtVnd } = useMoney();
+  const cell: React.CSSProperties = { fontSize: "11px", color: INK_SECONDARY, padding: "3px 2px", textAlign: "right", whiteSpace: "nowrap" };
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
       <div style={{ fontSize: "11px", fontWeight: 700, color: INK_SECONDARY }}>{title}</div>
+      {trades.length > 0 && (
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead>
+            <tr style={{ borderBottom: `1px solid ${DIVIDER}` }}>
+              <th style={{ ...cell, textAlign: "left", fontWeight: 700 }} />
+              <th style={{ ...cell, fontWeight: 700 }}>{t("common:plan")}</th>
+              <th style={{ ...cell, fontWeight: 700 }}>{t("common:actual")}</th>
+              <th style={{ ...cell, fontWeight: 700 }}>{t("common:achievementRate")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {trades.map((row) => {
+              const tradeRate = row.plan != null && row.plan !== 0 ? ratioPct(row.actual, row.plan) : null;
+              return (
+                <tr key={row.labelKey} style={{ borderBottom: `1px dotted ${DIVIDER}` }}>
+                  <td style={{ ...cell, textAlign: "left", fontWeight: 600, color: INK_BODY }}>{t(row.labelKey)}</td>
+                  <td style={cell}>{row.plan != null ? fmtVnd(row.plan) : DASH}</td>
+                  <td style={cell}>{row.actual != null ? fmtVnd(row.actual) : DASH}</td>
+                  <td style={{ ...cell, fontWeight: 700, color: tradeRate != null ? rateColor(tradeRate) : INK_MUTED }}>
+                    {tradeRate != null ? fmtPct(tradeRate) : DASH}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      )}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px", flexWrap: "wrap" }}>
         <span style={{ fontSize: "11px", color: INK_SECONDARY }}>
           {t("common:plan")} <strong>{fmtPct(plan)}</strong>
