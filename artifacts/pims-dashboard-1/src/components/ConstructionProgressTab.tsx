@@ -543,16 +543,19 @@ export function ConstructionProgressTab({
           {/* 3-column: 월(막대) / 연(도넛) / 누계(도넛) */}
           <div className="construction-progress-metrics">
 
-            {/* 월 막대 */}
+            {/* 월 막대 — 연/누계 도넛과 시각적 크기를 맞추기 위해 컨테이너를 120x120으로 맞추고,
+                Y축을 고정 [0,100]이 아니라 실제 값 범위에 맞춰 자동으로 잡는다(공정률이 한 자릿수%일 때도
+                막대가 도넛만큼 꽉 차 보이도록). 금액(계획/실적 $)은 이 위젯 성격(공정률)과 무관한 원가
+                데이터라 연/누계 칸과 형식을 맞춰 계획/실적 %와 달성률만 보여준다. */}
             <div style={{ flex: 1, minWidth: "120px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-              <div style={{ width: "120px", height: "140px" }}>
+              <div style={{ width: "120px", height: "120px" }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart
                     data={[{ plan: planMonth ?? 0, actual: actualMonth ?? 0 }]}
                     margin={{ top: 24, right: 10, left: 10, bottom: 0 }}
                   >
-                    <YAxis hide domain={[0, 100]} />
-                    <Bar dataKey="plan" name={t("common:plan")} fill={chartTheme.planBlue} barSize={24} isAnimationActive={false}>
+                    <YAxis hide domain={[0, (max: number) => Math.max(max * 1.25, 1)]} />
+                    <Bar dataKey="plan" name={t("common:plan")} fill={chartTheme.planBlue} barSize={36} isAnimationActive={false}>
                       <LabelList
                         dataKey="plan"
                         position="top"
@@ -560,7 +563,7 @@ export function ConstructionProgressTab({
                         formatter={(v: number) => planMonth != null ? `${Number(v.toFixed(1))}%` : "-"}
                       />
                     </Bar>
-                    <Bar dataKey="actual" name={t("common:actual")} fill={chartTheme.outflowRed} barSize={24} isAnimationActive={false}>
+                    <Bar dataKey="actual" name={t("common:actual")} fill={chartTheme.outflowRed} barSize={36} isAnimationActive={false}>
                       <LabelList
                         dataKey="actual"
                         position="top"
@@ -571,22 +574,16 @@ export function ConstructionProgressTab({
                   </ComposedChart>
                 </ResponsiveContainer>
               </div>
+              <div style={{ display: "flex", gap: "6px", fontSize: "11px", marginTop: "6px" }}>
+                <span style={{ color: chartTheme.planBlue, fontWeight: 600 }}>{t("common:plan")} {planMonth != null ? fmtPct(planMonth) : "-"}</span>
+                <span style={{ color: chartTheme.outflowRed, fontWeight: 600 }}>{t("common:actual")} {actualMonth != null ? fmtPct(actualMonth) : "-"}</span>
+              </div>
+              <div style={{ fontSize: "11px", fontWeight: 700, color: INK_NAVY, marginTop: "2px" }}>
+                달성률 {monthlyAchievement != null ? fmtPct(monthlyAchievement) : "-"}
+              </div>
               <span style={{ fontSize: "13px", color: INK_SECONDARY, fontWeight: 700, marginTop: "4px" }}>
                 {t("common:monthly").replace("별", "")}
               </span>
-              <div style={{ fontSize: "11px", color: INK_SECONDARY, marginTop: "5px", textAlign: "center", lineHeight: 1.6 }}>
-                <div>
-                  <span style={{ color: chartTheme.planBlue, fontWeight: 700 }}>계획</span>{" "}
-                  {fmtVnd(costPlanAmount)} {unitLabel}
-                </div>
-                <div>
-                  <span style={{ color: chartTheme.outflowRed, fontWeight: 700 }}>실적</span>{" "}
-                  {fmtVnd(costActualAmount)} {unitLabel}
-                </div>
-                <div style={{ fontWeight: 700, color: INK_NAVY }}>
-                  달성률 {monthlyAchievement != null ? fmtPct(monthlyAchievement) : "-"}
-                </div>
-              </div>
             </div>
 
             <div style={{ width: "1px", flexShrink: 0, backgroundColor: DIVIDER, alignSelf: "stretch", margin: "0 6px" }} />

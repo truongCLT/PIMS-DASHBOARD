@@ -119,12 +119,9 @@ export function OutsourcingTab({
     });
   };
 
-  // 선택한 기준월(referenceYear/referenceMonth)에 실제로 이력 행이 있는 계약만 보여준다 — 지난 달
-  // 값을 carry-forward해서 "이번 달엔 활동이 없던 계약"까지 계속 노출하면, DB에서 해당 연/월로 직접
-  // 조회한 건수와 화면 행 개수가 달라 보인다(사용자 확인: 실제 DB 조회 결과와 일치해야 함).
-  const rows = selectOutsourcingForMonth(detail?.outsourcing ?? [], referenceYear, referenceMonth).filter(
-    (r) => r.year === referenceYear && r.month === referenceMonth,
-  );
+  // 결의된 전체 공종 계약을 다 보여준다 — 기준월에 정확히 이력 행이 없는 계약(그 전 달까지 carry-forward)도
+  // 제외하지 않는다.
+  const rows = selectOutsourcingForMonth(detail?.outsourcing ?? [], referenceYear, referenceMonth);
 
   const sum = {
     budget: rows.some((r) => r.budget != null) ? rows.reduce((a, r) => a + (r.budget ?? 0), 0) : null,

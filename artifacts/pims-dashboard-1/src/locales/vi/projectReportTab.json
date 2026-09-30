@@ -25,6 +25,7 @@
   "statusAriaSuffix": "trạng thái",
   "categoryCost": "Chi phí",
   "typeMonthly": "Tháng",
+  "typeYearCumulative": "Lũy kế năm",
 
   "costTitle": "Chi phí (Lũy kế thực hiện)",
   "executionRateLabel": "Tỷ lệ thực hiện",

@@ -220,8 +220,11 @@ export function ProjectReportTab({
       queryKey: getGetCashflowMonthlyQueryKey(cfParams),
     },
   });
+  // 자금은 "전체 누계"(프로젝트 시작부터의 누계 매출 대비 수금) 기준이어야 하므로(위 overallCumRev
+  // 주석 참고) REPORT_YEAR로 필터링하지 않는다 — 예전엔 여기서 당해 연도만 남기는 바람에 이전 연도의
+  // 실제 수금액이 통째로 빠져, 미수금(cumRev-cashIn)이 실제보다 훨씬 크게 보이는 문제가 있었다(실사용자
+  // 확인: 실제로는 매출보다 더 많이 받았는데 미수금이 크게 나옴).
   const pdCashPoints = (detail?.cashflow ?? [])
-    .filter((c) => c.year === REPORT_YEAR)
     .map((c) => ({
       month: `${c.year}-${String(c.month).padStart(2, "0")}`,
       cashIn: c.cashIn ?? 0,

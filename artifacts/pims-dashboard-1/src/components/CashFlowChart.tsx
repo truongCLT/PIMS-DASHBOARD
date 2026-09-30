@@ -168,7 +168,7 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
 
   const hasCustomRange = filters.startYm !== "" || filters.endYm !== "";
   const fromMonth = hasCustomRange && !emptyRange ? from : 1;
-  const months = hasCustomRange && !emptyRange ? to - from + 1 : 6;
+  const months = hasCustomRange && !emptyRange ? to - from + 1 : referenceMonth;
 
   const enabled = config.enabled && !projectSelected && !emptyRange;
   const params = {

@@ -593,14 +593,19 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       : null;
   // "Execution Plan" 표의 Cumulative는 PIMS 소스가 없어 예전엔 별도로 수동 입력해야 했다 — Monthly에
   // 이미 12개월치를 다 입력해놓고도 Cumulative가 안 채워진다는 혼란을 반복해서 겪었으므로, 선택된
-  // 기준월(selectedExecutionMonth)까지의 Monthly Plan 합계로 자동 계산한다(연초~기준월 누계).
+  // 기준월(selectedExecutionMonth)까지의 Monthly Plan 합계로 자동 계산한다.
+  // "예산(budget)" 컬럼과 "Execution Actual Cumulative"(pd_cost_budget.actual, PIMSVINA 동기화)가
+  // 둘 다 프로젝트 시작부터의 전체 누계(연도 구분 없음)이므로, Plan Cumulative도 반드시 같은 기준
+  // (프로젝트 시작~기준월 전체 누계)으로 맞춰야 한다 — 예전엔 "연초~기준월"(선택 연도만)로 합산해서,
+  // 여러 해에 걸쳐 Monthly Plan을 다 채워도 Cumulative Actual(전체 누계)의 절반 이하로 보이는 문제가
+  // 있었다(실사용자 확인: Plan/Actual 월별 값을 전부 동일하게 넣었는데 Cumulative만 거의 2배 차이).
   // 이 함수와 아래 useEffect는 (isLoading && !loaded)일 때의 이른 return보다 반드시 앞서 있어야 한다 —
   // 뒤에 두면 로딩 중 렌더와 로딩 완료 후 렌더 사이에 호출되는 Hook 개수가 달라져 React 에러(#300,
   // "Rendered fewer hooks than expected")가 난다(실제로 겪은 버그).
   const cumPlanFromMonthly = (item: string) => {
     const { year, month } = selectedExecutionMonth;
     const rows = costBudgetMonthly.filter(
-      (r) => r.item === item && r.year === year && r.month <= month,
+      (r) => r.item === item && (r.year < year || (r.year === year && r.month <= month)),
     );
     return rows.some((r) => r.plan != null)
       ? rows.reduce<number>((sum, r) => sum + (r.plan ?? 0), 0)
@@ -844,7 +849,9 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
   };
   // "5. 외주/자재" 표에서 선택한 기준월(outsourcingYear/outsourcingMonth) 시점의 계약별 This
   // Month/Cumulative 값을 찾기 위한 조회 맵 — tradeGroup 수정은 outsourcing state(계약당 대표 행)에
-  // 그대로 하되, 숫자 컬럼(이번달/누계)만 이 맵의 값으로 바꿔 보여준다.
+  // 그대로 하되, 숫자 컬럼(이번달/누계)만 이 맵의 값으로 바꿔 보여준다. 계약 자체는(이력이 있는 한)
+  // 선택한 기준월에 정확히 일치하는 행이 없어도 carry-forward된 값으로 계속 보여준다(전체 공종이 다
+  // 보이도록 — 기준월과 정확히 일치하는 계약만 남기고 나머지를 숨기지 않는다).
   const outsourcingMonthByContract = new Map(
     selectOutsourcingForMonth(detail?.outsourcing ?? [], outsourcingYear, outsourcingMonth).map(
       (r) => [`${r.fldCode ?? ""}|${r.ordContTypeCode ?? r.trade}`, r] as const,
@@ -2741,11 +2748,9 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                 i,
                 monthRow: outsourcingMonthByContract.get(`${o.fldCode ?? ""}|${o.ordContTypeCode ?? o.trade}`),
               }))
-              // 선택한 기준월(outsourcingYear/outsourcingMonth)에 실제로 이력 행이 있는 계약만 보여준다 —
-              // 그 전 달 값을 carry-forward해서 보여주면 "이번 달엔 활동이 없던 계약"까지 계속 노출돼
-              // 실제 그 달 검색 결과(DB에서 해당 연/월로 직접 조회한 결과)와 행 개수가 달라 보이는
-              // 문제가 있었다(사용자 확인: DB 조회 11건 vs 화면 24건).
-              .filter(({ monthRow }) => monthRow && monthRow.year === outsourcingYear && monthRow.month === outsourcingMonth)
+              // 선택한 기준월에 정확히 일치하는 행이 없어도(carry-forward) 이력이 하나라도 있는
+              // 계약은 전부 보여준다 — 기준월과 정확히 일치하는 계약만 남기고 나머지를 숨기지 않는다.
+              .filter(({ monthRow }) => monthRow != null)
               .map(({ o, i, monthRow }) => {
               return (
               <tr key={i}>
@@ -2779,21 +2784,15 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                 <td style={{ ...readOnlyCell, textAlign: "center" }}>{o.changeNo || "-"}</td>
                 {/* budget/executedBudget/resolved/thisMonth/accum lưu ĐÚNG số VND gốc (không quy đổi
                     kUSD) — dùng fmtVnd() thay vì fmtMoney() để hiển thị đúng, mặc định VND, tự chia
-                    theo tỷ giá khi chọn USD/KRW. */}
-                <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtVndOrBlank(monthRow?.budget ?? o.budget)}</td>
-                <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtVndOrBlank(monthRow?.executedBudget ?? o.executedBudget)}</td>
-                <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtVndOrBlank(monthRow?.resolved ?? o.resolved)}</td>
-                {/* thisMonth(이번달 실적)은 그 달 자체의 델타값이라, 선택한 기준월에 정확히 일치하는
-                    행이 없으면(carry-forward된 이전 달 행이면) 빈칸으로 둔다 — budget/accum 등과 달리
-                    "최신 상태를 이어서 보여주기"가 맞지 않는 값이라 잘못된 달의 실적을 그대로 보여주면
-                    안 된다(예: 마지막 실적이 2024-09인 계약을 2026-08 기준으로 봐도 2024-09 값이 계속
-                    노출되던 문제). */}
+                    theo tỷ giá khi chọn USD/KRW. 선택한 기준월(monthRow)의 값을 그대로 쓴다 — 계약
+                    대표 행(o)과 섞지 않는다. */}
+                <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtVndOrBlank(monthRow?.budget ?? null)}</td>
+                <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtVndOrBlank(monthRow?.executedBudget ?? null)}</td>
+                <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtVndOrBlank(monthRow?.resolved ?? null)}</td>
+                {/* 선택한 기준월(outsourcingYear/outsourcingMonth)의 데이터를 그대로 이 행에 실어
+                    보여준다 — 그 달 이력이 없으면 carry-forward된 값을 그대로 쓴다. */}
                 <td style={{ ...readOnlyCell, textAlign: "right" }}>
-                  {fmtVndOrBlank(
-                    monthRow && monthRow.year === outsourcingYear && monthRow.month === outsourcingMonth
-                      ? (monthRow.thisMonth ?? null)
-                      : null,
-                  )}
+                  {fmtVndOrBlank(monthRow?.thisMonth ?? null)}
                 </td>
                 <td style={{ ...readOnlyCell, textAlign: "right" }}>{fmtVndOrBlank(monthRow?.accum ?? null)}</td>
               </tr>

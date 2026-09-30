@@ -255,6 +255,11 @@ export function CostRatioLineCard({
   const yearData = chartData.filter((d) => d.year === selectedYear);
   const ratios  = yearData.filter((d) => d.ratio != null).map((d) => d.ratio as number);
   const ratioMax = ratios.length > 0 ? Math.max(...ratios) : 100;
+  // 0부터 시작하는 고정 축이면 원가율이 항상 80~90%대에 몰려 있어 0.1%p 변화도 안 보인다 — 실제 값
+  // 범위(min~max)에 여유만 살짝 두어 작은 변동도 눈에 띄게 한다.
+  const ratioMin = ratios.length > 0 ? Math.min(...ratios) : 0;
+  const ratioPadding = Math.max((ratioMax - ratioMin) * 0.4, 0.5);
+  const yDomain: [number, number] = [Math.max(ratioMin - ratioPadding, 0), ratioMax + ratioPadding];
   let lastRatioIdx = -1;
   yearData.forEach((d, i) => { if (d.ratio != null) lastRatioIdx = i; });
 
@@ -292,7 +297,7 @@ export function CostRatioLineCard({
               tickLine={false}
               axisLine={{ stroke: chartTheme.axisLine }}
             />
-            <YAxis hide domain={[0, Math.max(ratioMax * 1.3, 10)]} />
+            <YAxis hide domain={yDomain} />
             <Tooltip
               contentStyle={{ fontSize: "13px" }}
               formatter={(v) =>

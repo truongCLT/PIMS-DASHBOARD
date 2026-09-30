@@ -88,8 +88,8 @@ describe("project detail Excel current template", () => {
     ].forEach((row) => overview.addRow(row));
 
     const budget = workbook.addWorksheet("4.예산집행");
-    budget.addRow(["Level 1", "Level 2", "비고", "예산(Bil.VND)"]);
-    budget.addRow(["Direct Cost", "Common", "", 1.25]);
+    budget.addRow(["Level 1", "Level 2", "비고", "예산(Bil.VND)", "누계 계획(Bil.VND)", "누계 실적(Bil.VND)"]);
+    budget.addRow(["Direct Cost", "Common", "", 1.25, 0.5, 0.25]);
 
     const cashflow = workbook.addWorksheet("6.월별자금");
     cashflow.addRow(["연도", "월", "수입(Bil.VND)", "지출(Bil.VND)", "보유현금(Bil.VND)", "기성 확정(Bil.VND)"]);
@@ -126,8 +126,8 @@ describe("project detail Excel current template", () => {
     expect(parsed.costBudget[0]).toMatchObject({
       category: "Direct Cost",
       item: "Common",
-      budget: 50,
-      plan: 3,
+      budget: 1_250_000_000, // budget은 VND 원본(fromVndRaw) — 1.25 Bil.VND = 1,250,000,000
+      plan: 3, // 누계 계획/실적은 확인용 컬럼일 뿐, 업로드 시 기존 값을 그대로 보존
       actual: 2,
     });
     expect(parsed.cashflow[0]).toMatchObject({

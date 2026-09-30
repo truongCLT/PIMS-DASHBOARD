@@ -32,7 +32,7 @@ const HEADERS: Record<string, string[]> = {
   [SHEETS.progress]: ["연도", "월", "월간 계획(%)", "월간 실적(%)", "누계 계획(%)", "누계 실적(%)"],
   [SHEETS.milestones]: ["구분", "계획 시작(YYYY-MM-DD)", "계획 종료(YYYY-MM-DD)", "실제 시작(YYYY-MM-DD)", "실제 종료(YYYY-MM-DD)"],
   [SHEETS.costEstimation]: ["구분(bidding/execution/completion)", "기준연도", "기준월", "도급액(Bil.VND)", "원가(Bil.VND)"],
-  [SHEETS.costBudget]: ["Level 1", "Level 2", "비고", "예산(Bil.VND)"],
+  [SHEETS.costBudget]: ["Level 1", "Level 2", "비고", "예산(Bil.VND)", "누계 계획(Bil.VND)", "누계 실적(Bil.VND)"],
   [SHEETS.costBudgetMonthly]: ["항목", "연도", "월", "계획(Bil.VND)", "실적(Bil.VND)"],
   [SHEETS.outsourcing]: [
     "대공종",
@@ -205,9 +205,11 @@ export async function downloadProjectDetailTemplate(
       return [e.kind, e.year ?? null, e.month ?? null, e.contractAmount ?? null, e.costAmount ?? null];
     }),
   );
+  // budget/actual은 PIMSVINA 동기화 값(VND 원본, toVndRaw())이고 plan은 수기 입력(천 USD, tv()) —
+  // 서로 다른 단위가 한 행에 섞여 있는 costBudgetMonthly와 동일한 이유(위 주석 참고).
   const costBudgetSheet = addSheet(
     SHEETS.costBudget,
-    detail.costBudget.map((b) => [b.category ?? null, b.item, null, tv(b.budget)]),
+    detail.costBudget.map((b) => [b.category ?? null, b.item, null, toVndRaw(b.budget), tv(b.plan), toVndRaw(b.actual)]),
   );
   costBudgetSheet.dataValidations.add("A2:A1000", {
     type: "list",
@@ -539,7 +541,10 @@ export async function parseProjectDetailWorkbook(file: File, existing: ProjectDe
         out.push({
           category: cellStr(r[0]),
           item,
-          budget: fv(r[hierarchyLayout ? 3 : 2]),
+          // budget은 VND 원본(toVndRaw() 반대인 fromVndRaw()) — export와 동일 단위(위 costBudgetSheet
+          // 주석 참고). "누계 계획/실적" 두 컬럼은 확인용으로만 내보내며(다른 화면에서 자동 계산되거나
+          // 동기화로 갱신되는 값이라), 기존과 동일하게 업로드 시에는 무시하고 기존 값을 보존한다.
+          budget: hierarchyLayout ? fromVndRaw(cellNum(r[3])) : fv(r[2]),
           plan: hierarchyLayout ? previous?.plan ?? null : fv(r[3]),
           actual: hierarchyLayout ? previous?.actual ?? null : fv(r[4]),
         });

@@ -187,13 +187,22 @@ export function ServiceCashflowTab({
     t,
   );
 
-  const maxVal = Math.max(...chartData.map((d: any) => Math.max(d.cashIn, d.equivalent, 0)), 0);
-  const minVal = Math.min(...chartData.map((d: any) => Math.min(d.cashOut, d.equivalent, 0)), 0);
+  // 입금/출금 막대와 잔액(equivalent) 선은 값 크기가 크게 달라(잔액이 훨씬 큼) 같은 축을 쓰면 막대가
+  // 0 근처에 짓눌려 거의 안 보인다 — 막대는 왼쪽 축(자기 값 범위), 잔액 선은 오른쪽 보조축(자기 값
+  // 범위)으로 분리해서 둘 다 잘 보이게 한다.
+  const maxVal = Math.max(...chartData.map((d: any) => Math.max(d.cashIn, 0)), 0);
+  const minVal = Math.min(...chartData.map((d: any) => Math.min(d.cashOut, 0)), 0);
   const step = niceStep(maxVal - minVal || 10);
   const top = Math.ceil(maxVal / step) * step || step;
   const bottom = Math.floor(minVal / step) * step;
   const ticks: number[] = [];
   for (let t = bottom; t <= top; t += step) ticks.push(t);
+
+  const balanceMax = Math.max(...chartData.map((d: any) => d.equivalent), 0);
+  const balanceMin = Math.min(...chartData.map((d: any) => d.equivalent), 0);
+  const balanceStep = niceStep(balanceMax - balanceMin || 10);
+  const balanceTop = Math.ceil(balanceMax / balanceStep) * balanceStep || balanceStep;
+  const balanceBottom = Math.floor(balanceMin / balanceStep) * balanceStep;
 
   const hasData = chartData.some((d: any) => d.cashIn !== 0 || d.cashOut !== 0 || d.equivalent !== 0);
 
@@ -261,6 +270,7 @@ export function ServiceCashflowTab({
               axisLine={{ stroke: chartTheme.axisLine }}
             />
             <YAxis
+              yAxisId="cash"
               tick={{ fontSize: 11, fill: INK_BODY, fontWeight: 600 }}
               tickLine={false}
               axisLine={false}
@@ -268,10 +278,20 @@ export function ServiceCashflowTab({
               ticks={ticks}
               tickFormatter={(v: number) => v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
             />
+            <YAxis
+              yAxisId="balance"
+              orientation="right"
+              tick={{ fontSize: 11, fill: chartTheme.actualGreen, fontWeight: 600 }}
+              tickLine={false}
+              axisLine={false}
+              domain={[balanceBottom, balanceTop]}
+              tickFormatter={(v: number) => v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+            />
             <Legend wrapperStyle={{ fontSize: "14px", fontWeight: 600 }} iconSize={14} />
-            <ReferenceLine y={0} stroke={chartTheme.sgaOrange} strokeDasharray="3 3" />
+            <ReferenceLine yAxisId="cash" y={0} stroke={chartTheme.sgaOrange} strokeDasharray="3 3" />
             {chartData.some((point) => point.month === referenceLabel) && (
               <ReferenceLine
+                yAxisId="cash"
                 x={referenceLabel}
                 stroke={chartTheme.outflowRed}
                 strokeDasharray="4 4"
@@ -284,6 +304,7 @@ export function ServiceCashflowTab({
               />
             )}
             <Bar
+              yAxisId="cash"
               dataKey="cashInActual"
               name={t("serviceCashflowTab:actualCashIn")}
               fill={chartTheme.inflowBlue}
@@ -301,6 +322,7 @@ export function ServiceCashflowTab({
               />
             </Bar>
             <Bar
+              yAxisId="cash"
               dataKey="cashOutActual"
               name={t("serviceCashflowTab:actualCashOut")}
               fill={chartTheme.actualGreen}
@@ -318,6 +340,7 @@ export function ServiceCashflowTab({
               />
             </Bar>
             <Bar
+              yAxisId="cash"
               dataKey="cashInForecast"
               name={t("serviceCashflowTab:forecastCashIn")}
               fill="#fff"
@@ -337,6 +360,7 @@ export function ServiceCashflowTab({
               />
             </Bar>
             <Bar
+              yAxisId="cash"
               dataKey="cashOutForecast"
               name={t("serviceCashflowTab:forecastCashOut")}
               fill="#fff"
@@ -356,6 +380,7 @@ export function ServiceCashflowTab({
               />
             </Bar>
             <Line
+              yAxisId="balance"
               dataKey="equivalent"
               name={t("serviceCashflowTab:balance")}
               type="linear"

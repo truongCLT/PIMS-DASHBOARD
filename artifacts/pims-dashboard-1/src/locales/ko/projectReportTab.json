@@ -25,6 +25,7 @@
   "statusAriaSuffix": "상태",
   "categoryCost": "원가",
   "typeMonthly": "월",
+  "typeYearCumulative": "연 누계",
 
   "costTitle": "원가 (집행누계)",
   "executionRateLabel": "집행률",

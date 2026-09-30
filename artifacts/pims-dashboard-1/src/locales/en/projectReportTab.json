@@ -25,6 +25,7 @@
   "statusAriaSuffix": "status",
   "categoryCost": "Cost",
   "typeMonthly": "Month",
+  "typeYearCumulative": "Year cumulative",
 
   "costTitle": "Cost (Cumulative Execution)",
   "executionRateLabel": "Execution Rate",

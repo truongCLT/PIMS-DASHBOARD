@@ -303,8 +303,10 @@ export function StatusTableSection({ rows, costBreakdown = [] }: Props) {
                   {t(CATEGORY_LABEL_KEYS[row.category] ?? row.category)}
                 </td>
               )}
-              <td style={{ ...tdStyle, width: "10%", color: INK_MUTED }}>
-                {t(TYPE_LABEL_KEYS[row.type] ?? row.type)}
+              <td style={{ ...tdStyle, width: "10%", color: INK_MUTED, whiteSpace: "nowrap" }}>
+                {row.category === "매출" && row.type === "누계"
+                  ? t("projectReportTab:typeYearCumulative")
+                  : t(TYPE_LABEL_KEYS[row.type] ?? row.type)}
               </td>
               <td style={{ ...tdStyle, textAlign: "right", color: INK_BODY }}>
                 {fmtPct(row.plan)}

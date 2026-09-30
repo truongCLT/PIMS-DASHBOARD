@@ -120,8 +120,6 @@ export function ProgressSection({
                 plan={planM}
                 actual={actualM}
                 rate={monthlyRate}
-                planAmountLabel={monthlyPlanAmount != null ? `${fmtVnd(monthlyPlanAmount)} ${unitLabel}` : null}
-                actualAmountLabel={monthlyActualAmount != null ? `${fmtVnd(monthlyActualAmount)} ${unitLabel}` : null}
               />
             }
           />

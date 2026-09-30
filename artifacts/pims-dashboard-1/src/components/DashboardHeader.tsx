@@ -64,6 +64,9 @@ export function DashboardHeader({
   const projectsQuery = useListMgmtreportProjects({ year: REPORT_YEAR });
   const projectOptions = (projectsQuery.data?.projects ?? []).filter((p) => !p.isGroup);
 
+  const referenceMonth = settingsQuery.data?.month ?? maxSelectableMonth();
+  const maxYm = `${REPORT_YEAR}-${String(referenceMonth).padStart(2, "0")}`;
+
   const unitOptions = UNIT_OPTIONS[currency] ?? UNIT_OPTIONS.USD;
   const [downloadOpen, setDownloadOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -315,6 +318,7 @@ export function DashboardHeader({
             <input
               type="month"
               value={startDate}
+              max={maxYm}
               onChange={(e) => setStartDate(e.target.value)}
               style={{
                 border: "none",
@@ -332,6 +336,7 @@ export function DashboardHeader({
               type="month"
               value={endDate}
               min={startDate || undefined}
+              max={maxYm}
               onChange={(e) => setEndDate(e.target.value)}
               style={{
                 border: "none",
