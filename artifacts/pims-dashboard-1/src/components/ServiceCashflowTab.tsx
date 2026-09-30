@@ -193,7 +193,9 @@ export function ServiceCashflowTab({
   const maxVal = Math.max(...chartData.map((d: any) => Math.max(d.cashIn, 0)), 0);
   const minVal = Math.min(...chartData.map((d: any) => Math.min(d.cashOut, 0)), 0);
   const step = niceStep(maxVal - minVal || 10);
-  const top = Math.ceil(maxVal / step) * step || step;
+  // +1 step 여유를 둬서 막대 꼭대기와 차트 맨 위 사이에 빈 공간을 만든다 - 그래야 그 위 공간을
+  // 지나가는 잔액(오른쪽 축) 선과 막대 위 숫자 라벨이 서로 붙지 않고 뚜렷하게 분리되어 보인다.
+  const top = (Math.ceil(maxVal / step) + 1) * step || step;
   const bottom = Math.floor(minVal / step) * step;
   const ticks: number[] = [];
   for (let t = bottom; t <= top; t += step) ticks.push(t);
@@ -297,12 +299,80 @@ export function ServiceCashflowTab({
                 strokeDasharray="4 4"
                 label={{
                   value: t("serviceCashflowTab:referenceMonth"),
-                  position: "insideTopRight",
+                  position: "top",
                   fontSize: 11,
                   fill: INK_MUTED,
                 }}
               />
             )}
+            <Line
+              yAxisId="balance"
+              dataKey="equivalent"
+              name={t("serviceCashflowTab:balance")}
+              type="linear"
+              stroke={chartTheme.actualGreen}
+              strokeWidth={2}
+              dot={{ r: 3, fill: "#fff", stroke: chartTheme.actualGreen }}
+              isAnimationActive={false}
+            >
+              <LabelList
+                dataKey="equivalent"
+                content={(props: any) => {
+                  const { x, y, value, index } = props;
+                  if (value === 0 || value == null) return null;
+                  // 인접한 점들의 값이 비슷하면(선이 거의 평평하면) 라벨이 서로 겹친다 -
+                  // 짝/홀 인덱스마다 세로 위치를 어긋나게 배치해서 겹침을 줄인다.
+                  let dy = index % 2 === 0 ? -10 : -26;
+                  // 잔액(오른쪽 축)과 입금 막대 위 숫자(왼쪽 축)는 서로 다른 축을 쓰지만 같은 플롯
+                  // 영역을 공유한다 - 두 축의 값을 각자의 도메인 기준 0~1 비율로 정규화하면(같은
+                  // 픽셀 높이를 공유하므로) 실제 화면상 얼마나 가까운지 축 종류와 무관하게 비교할 수
+                  // 있다. VND처럼 자릿수가 많아 숫자가 커져도 이 비율은 변하지 않으므로, 두 라벨이
+                  // 겹칠 만큼 가까우면 더 멀리 밀어낸다(원래 있던 자리와 반대 방향으로).
+                  const barTopValue = (chartData[index]?.cashInActual ?? 0) + (chartData[index]?.cashInForecast ?? 0);
+                  if (barTopValue !== 0) {
+                    const balanceRange = balanceTop - balanceBottom || 1;
+                    const cashRange = top - bottom || 1;
+                    const fracLine = (balanceTop - value) / balanceRange;
+                    const fracBarTop = (top - barTopValue) / cashRange;
+                    if (Math.abs(fracLine - fracBarTop) < 0.08) {
+                      dy = fracLine <= fracBarTop ? dy - 26 : Math.abs(dy) + 26;
+                    }
+                  }
+                  const text = value.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+                  // Nhãn này hay rơi trúng vùng đông chữ (đường kẻ "Reference month", nhãn cột bar
+                  // bên dưới) khiến số bị chồng lên nhau và không đọc được - vẽ thêm nền trắng bo góc
+                  // phía sau chữ để dù có chồng lên vẫn nổi bật và đọc rõ. Line/label này được vẽ
+                  // TRƯỚC các Bar bên dưới trong JSX để nhãn số của cột (vẽ sau) luôn nổi lên trên,
+                  // không bị khung nền trắng này che mất.
+                  const boxWidth = text.length * 7 + 8;
+                  return (
+                    <g>
+                      <rect
+                        x={x - boxWidth / 2}
+                        y={y + dy - 12}
+                        width={boxWidth}
+                        height={16}
+                        rx={3}
+                        fill="#fff"
+                        fillOpacity={0.9}
+                        stroke={chartTheme.actualGreen}
+                        strokeOpacity={0.25}
+                      />
+                      <text
+                        x={x}
+                        y={y + dy}
+                        textAnchor="middle"
+                        fontSize={12}
+                        fontWeight={700}
+                        fill={chartTheme.actualGreen}
+                      >
+                        {text}
+                      </text>
+                    </g>
+                  );
+                }}
+              />
+            </Line>
             <Bar
               yAxisId="cash"
               dataKey="cashInActual"
@@ -379,39 +449,6 @@ export function ServiceCashflowTab({
                 formatter={(v: number) => (v !== 0 ? Math.abs(v).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : "")}
               />
             </Bar>
-            <Line
-              yAxisId="balance"
-              dataKey="equivalent"
-              name={t("serviceCashflowTab:balance")}
-              type="linear"
-              stroke={chartTheme.actualGreen}
-              strokeWidth={2}
-              dot={{ r: 3, fill: "#fff", stroke: chartTheme.actualGreen }}
-              isAnimationActive={false}
-            >
-              <LabelList
-                dataKey="equivalent"
-                content={(props: any) => {
-                  const { x, y, value, index } = props;
-                  if (value === 0 || value == null) return null;
-                  // 인접한 점들의 값이 비슷하면(선이 거의 평평하면) 라벨이 서로 겹친다 -
-                  // 짝/홀 인덱스마다 세로 위치를 어긋나게 배치해서 겹침을 줄인다.
-                  const dy = index % 2 === 0 ? -10 : -26;
-                  return (
-                    <text
-                      x={x}
-                      y={y + dy}
-                      textAnchor="middle"
-                      fontSize={12}
-                      fontWeight={700}
-                      fill={chartTheme.actualGreen}
-                    >
-                      {value.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                    </text>
-                  );
-                }}
-              />
-            </Line>
           </ComposedChart>
         </ResponsiveContainer>
         </div>
