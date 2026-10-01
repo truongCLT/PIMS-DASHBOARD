@@ -53,7 +53,8 @@ const defaultUnit: DisplayUnit = {
 
 /** VND 원본 값(그대로 저장된 값) → 선택된 통화/단위로 변환 (순수 함수)
  * 환율(VND)이 없으면 변환하지 않고 VND 그대로 반환 - "check 없이 그대로 저장" 데이터용.
- * unitOn=false(기본값): 항상 전체 금액(기존과 동일). unitOn=true: VND는 Bil. 단위, USD/KRW는 천 단위. */
+ * unitOn=false(기본값): 항상 전체 금액(기존과 동일). unitOn=true: VND는 Bil.(10억), USD는 천, KRW는 백만(백만원).
+ * 예전엔 KRW도 천 단위로만 나눠서 "백만원" 라벨인데 실제 값은 천원이라 1000배 크게 보였다(실사용자 보고). */
 export function convertFromVndAmount(
   v: number,
   currency: string,
@@ -66,7 +67,8 @@ export function convertFromVndAmount(
   const vndPerUnit = currency === "USD" ? vndRate : vndRate / (rates[currency] ?? 1);
   if (!vndPerUnit) return v;
   const base = v / vndPerUnit;
-  return unitOn ? base / 1000 : base;
+  if (!unitOn) return base;
+  return currency === "KRW" ? base / 1_000_000 : base / 1000;
 }
 
 /** VND 원본 값 → 포맷 문자열 (순수 함수, null → "-", 단위 배율 없음 — formatMoney()와 달리 항상 전체
@@ -98,7 +100,7 @@ const DisplayUnitContext = createContext<DisplayUnit>(defaultUnit);
  *
  * unitOn=true 기준 단위:
  *   USD → 천 USD  (× rate × 1)
- *   KRW → 백만원  (× rate × 1)   [레이블만 변경, 배수 동일]
+ *   KRW → 백만원  (× rate / 1000)
  *   VND → Bil. VND (× rate × 1000 / 1e9 = × rate / 1e6)
  *
  * unitOn=false: 원 단위 (× rate × 1000)
@@ -139,6 +141,10 @@ export function convertToKUsdAmount(
   if (!rate) return v;
   if (currency === "VND" && unitOn) {
     return (v * 1_000_000_000) / (rate * 1000);
+  }
+  if (currency === "KRW" && unitOn) {
+    // 백만원 → 천 USD: v × 1e6 / (rate × 1000)
+    return (v * 1_000_000) / (rate * 1000);
   }
   return unitOn ? v / rate : v / (rate * 1000);
 }

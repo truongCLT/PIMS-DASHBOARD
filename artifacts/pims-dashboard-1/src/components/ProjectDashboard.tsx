@@ -14,6 +14,7 @@ import { OverviewTab } from "./OverviewTab";
 import { ProjectSummaryTab } from "./ProjectSummaryTab";
 import { ProjectReportTab } from "./ProjectReportTab";
 import { useProjectDetail, getGetProjectdetailQueryKey } from "../lib/projectDetailData";
+import { lastClosedYearMonth } from "../lib/monthRange";
 import { downloadProjectDetailTemplate, parseProjectDetailWorkbook, ExcelParseError } from "../lib/projectDetailExcel";
 import { DisplayUnitProvider, DEFAULT_EXCHANGE_RATES, formatMoney, formatVnd, moneyUnitLabel } from "../lib/displayUnit";
 import { useAdminAuth, readAdminToken } from "../lib/adminAuth";
@@ -62,13 +63,14 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
   const [syncing, setSyncing] = useState(false);
   const [syncPreview, setSyncPreview] = useState<PimsvinaPreviewData | null>(null);
   const [confirming, setConfirming] = useState(false);
-  // 기본 기간: 올해 1월 ~ 직전월
   const now = new Date();
-  const prevMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  // 기본 기간: 올해 1월 ~ 마감월(M월은 M+2월 13일부터 마감 — lastClosedYearMonth). 예전엔 "직전월"이라
+  // 마감 전인 달(예: 10/1 기준 9월)까지 실적처럼 보였다(요청: 최신은 8월, 10/13 이후 9월).
+  const closedYm = lastClosedYearMonth();
   const [fromYear, setFromYear] = useState(now.getFullYear());
   const [fromMonth, setFromMonth] = useState("01");
-  const [toYear, setToYear] = useState(prevMonthDate.getFullYear());
-  const [toMonth, setToMonth] = useState(String(prevMonthDate.getMonth() + 1).padStart(2, "0"));
+  const [toYear, setToYear] = useState(closedYm.year);
+  const [toMonth, setToMonth] = useState(String(closedYm.month).padStart(2, "0"));
   const [reportMonth, setReportMonth] = useState<number | null>(null);
   const handleReportMonthChange = (month: number | null) => {
     setReportMonth(month);
@@ -102,7 +104,6 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
   // DEFAULT_EXCHANGE_RATES 같은 하드코딩된 값 대신, 이미 조회해 둔 당월 공식 환율(fxRates,
   // dashboard_common_exchangerate_1q.jsp 기반)로 대체한다 — 둘 다 실제 PIMSVINA 환율이며, 이렇게 하면
   // 계약 환율이 없는 현장도 Construction과 동일하게 USD/KRW 환산이 표시된다.
-  const hasSiteRate = siteRateQuery.data?.rateUsd != null;
   const siteRates = useMemo(() => {
     const vndPerUsd = siteRateQuery.data?.rateUsd;
     if (!vndPerUsd) return fxRates;
@@ -110,10 +111,23 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
     return {
       USD: 1,
       VND: vndPerUsd,
-      KRW: vndPerKrw ? vndPerUsd / vndPerKrw : DEFAULT_EXCHANGE_RATES.KRW,
+      // 계약환율 KRW가 비어있거나 0인 현장(PIMSVINA 공사개요 > 계약사항 "계약환율 KRW 0.00000")은 하드코딩
+      // 1350 대신 대시보드 "FX Rate Settings"의 KRW 환율(fxRates.KRW)로 환산한다.
+      KRW: vndPerKrw ? vndPerUsd / vndPerKrw : (fxRates.KRW || DEFAULT_EXCHANGE_RATES.KRW),
     };
   }, [siteRateQuery.data, fxRates]);
-  const effectiveCurrency = currency;
+  // 계약환율이 0 또는 미등록인 통화(예: PIMSVINA 공사개요 > 계약사항 "계약환율 KRW 0.00000")는 환산하지 않고
+  // VND(원 통화)로 표시한다(요청). 해당 통화 버튼은 비활성화하고 안내 툴팁을 띄운다. 환율 조회가 끝나기
+  // 전에는 선택한 통화를 그대로 둬서 화면이 깜빡이지 않게 한다.
+  const rateUsd = siteRateQuery.data?.rateUsd ?? 0;
+  const rateKrw = siteRateQuery.data?.rateKrw ?? 0;
+  const siteRateResolved = !siteCode || siteRateQuery.isSuccess || siteRateQuery.isError;
+  const isCurrencyAvailable = (c: string) =>
+    c === "VND" || !siteRateResolved || (c === "USD" ? rateUsd > 0 : c === "KRW" ? (rateUsd > 0 && rateKrw > 0) || fxRates.KRW > 0 : true);
+  // KRW 계약환율이 0이면(USD 계약환율 유무와 무관) VND로 막지 않고 "FX Rate Settings"의 KRW 환율(fxRates.KRW)로
+  // 환산한다(요청) — siteRates.KRW도 같은 값으로 폴백한다. 버튼에는 그 사실을 툴팁으로 알린다.
+  const krwUsesFxSetting = siteRateResolved && !(rateUsd > 0 && rateKrw > 0);
+  const effectiveCurrency = isCurrencyAvailable(currency) ? currency : "VND";
   const queryClient = useQueryClient();
   // 탭을 누를 때마다 이 프로젝트의 상세 데이터(pd_*)와 자금수지(cf_*)를 다시 불러온다 — 캐시(staleTime 60초)
   // 때문에 다른 사용자의 저장/PIMSVINA 동기화 결과가 탭을 옮겨도 반영되지 않는다는 요청. 조회 중에도
@@ -210,16 +224,18 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
             {["USD", "KRW", "VND"].map((c) => (
               <button
                 key={c}
-                onClick={() => setCurrency(c)}
-                title={!hasSiteRate && c !== "VND" ? t("projectDashboard:siteRateUnavailable") : undefined}
+                onClick={() => { if (isCurrencyAvailable(c)) setCurrency(c); }}
+                disabled={!isCurrencyAvailable(c)}
+                title={!isCurrencyAvailable(c) ? t("projectDashboard:siteRateUnavailable") : c === "KRW" && krwUsesFxSetting ? t("projectDashboard:siteRateKrwFallback") : undefined}
                 style={{
                   padding: "5px 12px",
                   fontSize: "12px",
                   fontWeight: 600,
                   border: "none",
-                  cursor: "pointer",
-                  backgroundColor: currency === c ? "#fff" : "#f2f5f9",
-                  color: currency === c ? "#2f7cf6" : "#666",
+                  cursor: isCurrencyAvailable(c) ? "pointer" : "not-allowed",
+                  backgroundColor: effectiveCurrency === c ? "#fff" : "#f2f5f9",
+                  color: effectiveCurrency === c ? "#2f7cf6" : "#666",
+                  opacity: isCurrencyAvailable(c) ? 1 : 0.45,
                   borderRight: c !== "VND" ? "1px solid #e2e9f3" : "none",
                 }}
               >
@@ -260,7 +276,7 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
               }}
             />
           </div>
-          <span style={{ fontSize: "12px", color: "#333", fontWeight: 600, display: "inline-block", minWidth: "64px" }}>{moneyUnitLabel(currency, unitOn)}</span>
+          <span style={{ fontSize: "12px", color: "#333", fontWeight: 600, display: "inline-block", minWidth: "64px" }}>{moneyUnitLabel(effectiveCurrency, unitOn)}</span>
         </div>
 
         {/* Sync PIMSVINA Button for Project View */}
@@ -520,6 +536,8 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
               months={periodMonths}
               toYear={toYear}
               toMonth={Number(toMonth)}
+              // 기준월(마감월) 이후 달 매출은 실적이 아니라 전망(경영보고 Forecast)이므로 점선 막대로 구분한다.
+              splitRevenueForecast
             />
           </div>
         ) : (

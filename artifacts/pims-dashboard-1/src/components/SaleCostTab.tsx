@@ -93,7 +93,13 @@ export function SaleCostTab({
     pdSalesMap.set(`${s.year}-${s.month}`, { plan: s.plan ?? null, actual: s.actual ?? null });
   }
   const lookup = (year: number, month: number) => pdSalesMap.get(`${year}-${month}`)?.actual ?? 0;
-  const estimation = pdDetail?.costEstimation ?? [];
+  const estimationAll = pdDetail?.costEstimation ?? [];
+  // 원가율(누계 원가율 선 / Cost Rate 도넛)은 기준월(toYear/toMonth = 마감월, 보고서 기준월과 동기화)까지의
+  // 행만 쓴다 — PIMSVINA가 마감 전 달(예: 10/1 기준 9·10월) 행도 미리 내려줘서 "as of '26.10"처럼 마감
+  // 안 된 달까지 보였다(요청: 최신은 8월, 10/13 이후 9월). 연/월 없는 행(입찰 등 수동 입력)은 유지.
+  const estimation = estimationAll.filter(
+    (e) => e.year == null || e.month == null || e.year * 12 + e.month <= toYear * 12 + toMonth,
+  );
   // 누계 원가율은 "4. Cost Rate"의 표준추정원가율과 동일하게 pd_cost_estimation(execution)의
   // costAmount/contractAmount에서 가져온다 — pd_cogs_monthly는 프로젝트에 따라 VND/천USD 단위가
   // 뒤섞여 저장된 레거시 데이터가 있어(수정된 입력 버그의 과거 잔재) 매출과 직접 나누면 안 된다.

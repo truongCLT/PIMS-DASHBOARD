@@ -20,17 +20,21 @@ export const ORACLE_DASHBOARD_QUERIES: Record<string, OracleEndpointQuery> = {
     // Chỉ lấy đúng 6 cột dùng trên UI (bỏ Client/Scale/Base Month/Scope/Revenue*/Cash*), không NVL
     // dự phòng giữa nhiều nguồn — Contract Amount lấy thẳng CBTB_CTRTSUMM, Start/End Date lấy thẳng
     // dòng CBTB_CONSTPERIOD mới nhất (CHGSEQ lớn nhất) theo từng dự án.
+    // Start/End Date (Dashboard "공사기간" + 공기율) ưu tiên 실착공일 (STCONSTDATE) và 실준공/준공예정일
+    // (CMPLSCHDDATE) của màn 공사개요 등록 > 공사기간 — yêu cầu khách hàng (vd K8HH1: hợp đồng
+    // '23.10.13~'27.06.30 nhưng thực tế '24.10.08~'27.05.31, 32 tháng). Ngày nào trống thì fallback về ngày
+    // hợp đồng (CTRTSTDATE/CTRTEDDATE) như trước. Đồng bộ cùng logic với dashboard_pd_overview_1q.jsp.
     sql: `SELECT
         A.FLDCODE AS FLDCODE,
         (SELECT MAX(FM.ACNT_FLDCODE) FROM CBTB_FLD_MAPPING FM WHERE FM.FLDCODE = A.FLDCODE) AS SITE_CODE,
         A.FLDNAME AS PROJECT_NAME,
         CT.TOTALCTRTWONAMT AS CONTRACT_AMOUNT,
-        SUBSTR(NVL(CP.CTRTSTDATE, ''), 1, 4) || '-' || SUBSTR(NVL(CP.CTRTSTDATE, ''), 5, 2) || '-' || SUBSTR(NVL(CP.CTRTSTDATE, ''), 7, 2) AS START_DATE,
-        SUBSTR(NVL(CP.CTRTEDDATE, ''), 1, 4) || '-' || SUBSTR(NVL(CP.CTRTEDDATE, ''), 5, 2) || '-' || SUBSTR(NVL(CP.CTRTEDDATE, ''), 7, 2) AS END_DATE
+        SUBSTR(COALESCE(TRIM(CP.STCONSTDATE), CP.CTRTSTDATE), 1, 4) || '-' || SUBSTR(COALESCE(TRIM(CP.STCONSTDATE), CP.CTRTSTDATE), 5, 2) || '-' || SUBSTR(COALESCE(TRIM(CP.STCONSTDATE), CP.CTRTSTDATE), 7, 2) AS START_DATE,
+        SUBSTR(COALESCE(TRIM(CP.CMPLSCHDDATE), CP.CTRTEDDATE), 1, 4) || '-' || SUBSTR(COALESCE(TRIM(CP.CMPLSCHDDATE), CP.CTRTEDDATE), 5, 2) || '-' || SUBSTR(COALESCE(TRIM(CP.CMPLSCHDDATE), CP.CTRTEDDATE), 7, 2) AS END_DATE
     FROM CBTB_FLDSUMM A
     LEFT JOIN CBTB_CTRTSUMM CT ON CT.FLDCODE = A.FLDCODE
     LEFT JOIN (
-        SELECT FLDCODE, CTRTSTDATE, CTRTEDDATE
+        SELECT FLDCODE, CTRTSTDATE, CTRTEDDATE, STCONSTDATE, CMPLSCHDDATE
         FROM (SELECT P.*, ROW_NUMBER() OVER (PARTITION BY P.FLDCODE ORDER BY P.CHGSEQ DESC) AS RN FROM CBTB_CONSTPERIOD P)
         WHERE RN = 1
     ) CP ON CP.FLDCODE = A.FLDCODE

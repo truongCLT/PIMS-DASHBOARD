@@ -148,7 +148,6 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
   // 당월 공식 환율(fxRates, dashboard_common_exchangerate_1q.jsp 기반)로 대체한다 — 둘 다 실제
   // PIMSVINA 환율이며, 이렇게 하면 계약 환율이 없는 용역 현장도 시공(Construction)과 동일하게
   // USD/KRW 환산이 표시된다.
-  const hasSiteRate = siteRateQuery.data?.rateUsd != null;
   const siteRates = useMemo(() => {
     const vndPerUsd = siteRateQuery.data?.rateUsd;
     if (!vndPerUsd) return fxRates;
@@ -156,10 +155,23 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
     return {
       USD: 1,
       VND: vndPerUsd,
-      KRW: vndPerKrw ? vndPerUsd / vndPerKrw : DEFAULT_EXCHANGE_RATES.KRW,
+      // 계약환율 KRW가 비어있거나 0인 현장(PIMSVINA 공사개요 > 계약사항 "계약환율 KRW 0.00000")은 하드코딩
+      // 1350 대신 대시보드 "FX Rate Settings"의 KRW 환율(fxRates.KRW)로 환산한다.
+      KRW: vndPerKrw ? vndPerUsd / vndPerKrw : (fxRates.KRW || DEFAULT_EXCHANGE_RATES.KRW),
     };
   }, [siteRateQuery.data, fxRates]);
-  const effectiveCurrency = currency;
+  // 계약환율이 0 또는 미등록인 통화(예: PIMSVINA 공사개요 > 계약사항 "계약환율 KRW 0.00000")는 환산하지 않고
+  // VND(원 통화)로 표시한다(요청). 해당 통화 버튼은 비활성화하고 안내 툴팁을 띄운다. 환율 조회가 끝나기
+  // 전에는 선택한 통화를 그대로 둬서 화면이 깜빡이지 않게 한다.
+  const rateUsd = siteRateQuery.data?.rateUsd ?? 0;
+  const rateKrw = siteRateQuery.data?.rateKrw ?? 0;
+  const siteRateResolved = !siteCode || siteRateQuery.isSuccess || siteRateQuery.isError;
+  const isCurrencyAvailable = (c: string) =>
+    c === "VND" || !siteRateResolved || (c === "USD" ? rateUsd > 0 : c === "KRW" ? (rateUsd > 0 && rateKrw > 0) || fxRates.KRW > 0 : true);
+  // KRW 계약환율이 0이면(USD 계약환율 유무와 무관) VND로 막지 않고 "FX Rate Settings"의 KRW 환율(fxRates.KRW)로
+  // 환산한다(요청) — siteRates.KRW도 같은 값으로 폴백한다. 버튼에는 그 사실을 툴팁으로 알린다.
+  const krwUsesFxSetting = siteRateResolved && !(rateUsd > 0 && rateKrw > 0);
+  const effectiveCurrency = isCurrencyAvailable(currency) ? currency : "VND";
 
   // Excel 양식 다운로드/업로드 (데이터 입력 탭)
   const queryClient = useQueryClient();
@@ -272,16 +284,18 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
               return (
                 <button
                   key={c}
-                  onClick={() => setCurrency(c)}
-                  title={!hasSiteRate && c !== "VND" ? t("serviceProjectDashboard:siteRateUnavailable") : undefined}
+                  onClick={() => { if (isCurrencyAvailable(c)) setCurrency(c); }}
+                  disabled={!isCurrencyAvailable(c)}
+                  title={!isCurrencyAvailable(c) ? t("serviceProjectDashboard:siteRateUnavailable") : c === "KRW" && krwUsesFxSetting ? t("serviceProjectDashboard:siteRateKrwFallback") : undefined}
                   style={{
                     padding: "5px 12px",
                     fontSize: "12px",
                     fontWeight: 600,
                     border: "none",
-                    cursor: "pointer",
-                    backgroundColor: currency === c ? "#fff" : "#f2f5f9",
-                    color: currency === c ? POINT_BLUE : INK_MUTED,
+                    cursor: isCurrencyAvailable(c) ? "pointer" : "not-allowed",
+                    backgroundColor: effectiveCurrency === c ? "#fff" : "#f2f5f9",
+                    color: effectiveCurrency === c ? POINT_BLUE : INK_MUTED,
+                    opacity: isCurrencyAvailable(c) ? 1 : 0.45,
                     borderRight: c !== "VND" ? `1px solid ${CARD_BORDER}` : "none",
                   }}
                 >
@@ -435,7 +449,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
         />
       )}
 
-      <ProjectContextBar projectName={siteCode ? `${projectName} [${siteCode}]` : projectName} businessType="용역" client={ov?.client} period={periodLabel} primaryValue={ov?.scope} contractValue={contractAmountVnd != null ? `${formatVnd(contractAmountVnd, effectiveCurrency, siteRates)} ${effectiveCurrency}` : biddingContractAmountKUsd != null ? `${formatMoney(biddingContractAmountKUsd, currency, unitOn)} ${moneyUnitLabel(currency, unitOn)}` : "-"} referenceMonth={ov?.asOfMonth} isClosed={ov?.isClosed} labels={{ client: t("serviceProjectDashboard:clientLabel"), period: t("serviceProjectDashboard:periodLabel"), primary: t("serviceProjectDashboard:scopeLabel"), contract: t("common:contractAmount"), referenceMonth: t("common:baseMonth"), closed: t("common:closed"), ongoing: t("common:inProgress") }} />
+      <ProjectContextBar projectName={siteCode ? `${projectName} [${siteCode}]` : projectName} businessType="용역" client={ov?.client} period={periodLabel} primaryValue={ov?.scope} contractValue={contractAmountVnd != null ? `${formatVnd(contractAmountVnd, effectiveCurrency, siteRates)} ${effectiveCurrency}` : biddingContractAmountKUsd != null ? `${formatMoney(biddingContractAmountKUsd, effectiveCurrency, unitOn)} ${moneyUnitLabel(effectiveCurrency, unitOn)}` : "-"} referenceMonth={ov?.asOfMonth} isClosed={ov?.isClosed} labels={{ client: t("serviceProjectDashboard:clientLabel"), period: t("serviceProjectDashboard:periodLabel"), primary: t("serviceProjectDashboard:scopeLabel"), contract: t("common:contractAmount"), referenceMonth: t("common:baseMonth"), closed: t("common:closed"), ongoing: t("common:inProgress") }} />
 
       {/* Horizontal tab bar */}
       <div

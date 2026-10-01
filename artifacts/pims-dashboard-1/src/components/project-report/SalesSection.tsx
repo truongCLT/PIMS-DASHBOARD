@@ -259,7 +259,8 @@ export function SalesSection({
     value?: number;
   }) => {
     if (x == null || y == null || width == null || value == null) return null;
-    const text = Number(value).toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    // 차트 데이터는 천 USD 기준값 — 표시 통화(KRW/VND)로 환산해 찍는다(예전엔 원값 그대로라 KRW로 바꿔도 USD 숫자가 보였다).
+    const text = fmtMoney(Number(value));
     return (
       <text
         x={x + width / 2}
@@ -322,7 +323,7 @@ export function SalesSection({
                 domain={[0, "auto"]}
                 tick={{ fontSize: 7.5, fill: chartTheme.axisText }}
                 width={42}
-                tickFormatter={(value: number) => value.toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                tickFormatter={(value: number) => fmtMoney(value)}
                 axisLine={false}
                 tickLine={false}
               />
