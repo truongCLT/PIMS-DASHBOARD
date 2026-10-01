@@ -295,15 +295,13 @@ export function ProjectReportTab({
   // 하므로 "프로젝트 시작 ~ 기준월" 전체 누계로 합산한다 — 예전엔 REPORT_YEAR만 합산해서 이전 연도
   // 계획이 통째로 빠져, 계획이 실적의 절반 수준으로 보이고 집행률이 190%대로 나오는 버그가 있었다
   // (실사용자 확인: 월별 계획/실적을 동일하게 넣었는데 원가 카드와 예산 집행 현황 숫자가 다름).
+  //
+  // 원가 카드의 계획은 "프로젝트 시작 ~ REPORT_YEAR 12월"(그 해 연말까지 전체 누계)로 합산한다 — 매출/원가 탭
+  // "예산 집행 현황"과 같은 규칙(요청: 계획은 그 해 전체, 실적은 기준월까지). 실적(cumActualFor)은 그대로
+  // 기준월까지다. 현황 표의 원가 행(costPlanRows)은 월/누계 비교용이라 이 값과 별개로 기준월까지 유지.
   const cbMonthly = detail?.costBudgetMonthly ?? [];
   const cumPlanFor = (item: string): number | null => {
-    const rows = cbMonthly.filter(
-      (row) =>
-        row.item === item &&
-        (row.year < REPORT_YEAR ||
-          (row.year === REPORT_YEAR &&
-            (resolvedMonth == null || row.month <= resolvedMonth))),
-    );
+    const rows = cbMonthly.filter((row) => row.item === item && row.year <= REPORT_YEAR);
     return rows.some((row) => row.plan != null)
       ? rows.reduce<number>((sum, row) => sum + (row.plan ?? 0), 0)
       : null;

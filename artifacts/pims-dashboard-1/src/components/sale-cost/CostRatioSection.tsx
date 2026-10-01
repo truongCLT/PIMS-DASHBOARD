@@ -112,7 +112,7 @@ export function CostRatioCard({
   // Execution/Completion đến từ PIMSVINA sync và có thể có nhiều dòng lịch sử (1 dòng/tháng) — luôn
   // lấy dòng của tháng MỚI NHẤT đã đồng bộ (giống mục "4. Cost Rate" ở Data Entry), bỏ cutoff theo
   // toYear/toMonth (cutoff đó chỉ hợp lý khi completion từng là dự báo nhập tay nhiều tháng tương lai).
-  const pickLatestByKind = (kind: "execution" | "completion") => {
+  const pickLatestByKind = (kind: "bidding" | "execution" | "completion") => {
     const rows = estimation.filter((e) => e.kind === kind);
     const dated = rows
       .filter((e) => e.year != null && e.month != null)
@@ -121,6 +121,9 @@ export function CostRatioCard({
   };
   const pickedExecution = pickLatestByKind("execution");
   const pickedCompletion = pickLatestByKind("completion");
+  // Bidding도 이제 월별로 저장된다(Data Entry "Cost Rate") — 기준월(estimation은 SaleCostTab에서 기준월까지로
+  // 이미 잘림)까지 중 가장 최근 달 값을 쓴다. 예전엔 첫 행(find)만 써서 여러 달이 있으면 엉뚱한 달이 나왔다.
+  const pickedBidding = pickLatestByKind("bidding");
   // Initial Business Budget(최초 승인 예산)는 Base Month별로 바뀌는 값이 아니라 한 번 승인되면 고정되는
   // 기준선이라, 최신 달 행에 우연히 null이 와도 다른 달 행에는 값이 있을 수 있다 — 이력 전체에서 값이
   // 있는 가장 최근 달의 값을 찾아 쓴다(ProjectDataEntryTab "4. Cost Rate"와 동일한 원칙).
@@ -158,7 +161,9 @@ export function CostRatioCard({
                 ? pickedCompletion
                 : meta.kind === "execution"
                   ? pickedExecution
-                  : estimation.find((e) => e.kind === meta.kind);
+                  : meta.kind === "bidding"
+                    ? pickedBidding
+                    : estimation.find((e) => e.kind === meta.kind);
             // Cùng công thức với mục "4. Cost Rate" (ProjectDataEntryTab)/CostingTab: Execution hiển thị
             // Initial Budget (ngân sách gốc được duyệt lần đầu), không phải Business Budget hiện tại.
             // Completion lấy nguyên Contract Amount/Cost của dòng Execution CÙNG Base Month (Completion

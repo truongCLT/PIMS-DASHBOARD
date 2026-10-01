@@ -245,7 +245,10 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
   // 한 번만 변환하는 ProjectDashboard(시공)와 동일한 방식을 써서 원본 그대로 정확히 표시한다.)
   const ov = detail?.overview;
   const executionContractAmountVnd = detail?.costEstimation.find((e) => e.kind === "execution")?.contractAmount;
-  const biddingContractAmountKUsd = detail?.costEstimation.find((e) => e.kind === "bidding")?.contractAmount;
+  // Bidding은 월별로 저장된다 — 값이 있는 가장 최근 달의 도급액을 쓴다(예전엔 첫 행만 사용).
+  const biddingContractAmountKUsd = (detail?.costEstimation ?? [])
+    .filter((e) => e.kind === "bidding" && e.contractAmount != null)
+    .sort((a, b) => (b.year ?? 0) * 100 + (b.month ?? 0) - ((a.year ?? 0) * 100 + (a.month ?? 0)))[0]?.contractAmount;
   const contractAmountVnd = ov?.contractAmount ?? executionContractAmountVnd ?? null;
 
   // 수행기간 표시 (YY.MM.DD ~ YY.MM.DD (n개월))

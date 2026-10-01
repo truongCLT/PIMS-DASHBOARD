@@ -582,11 +582,11 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
   // "2. Monthly Revenue" bảng — năm đang xem, mặc định = REPORT_YEAR (chỉ năm này mới có dữ liệu mẫu
   // prefill từ mgmtreport qua mainSalesMonths; năm khác chỉ hiện dữ liệu đã lưu tay, xem getSalesEntryValue).
   const [selectedSalesYear, setSelectedSalesYear] = useState(REPORT_YEAR);
-  // "5. Budget Execution Status" bảng Monthly — tháng/năm đang xem, mặc định = tháng hiện tại.
-  const [selectedExecutionMonth, setSelectedExecutionMonth] = useState(() => {
-    const now = new Date();
-    return { year: now.getFullYear(), month: now.getMonth() + 1 };
-  });
+  // "Budget Execution Status" bảng Monthly/Cumulative — tháng/năm đang xem, mặc định = tháng đã chốt
+  // (lastClosedYearMonth: tháng M chốt từ ngày 13 tháng M+2 — vd 10/1 → '26.08, từ 13/10 → '26.09), giống
+  // tháng cơ sở của tab Report/Revenue-Cost. Trước đây mặc định = tháng hiện tại (Month 10) nên Cumulative
+  // Plan cộng cả các tháng chưa chốt, lệch với các màn hình khác (người dùng báo).
+  const [selectedExecutionMonth, setSelectedExecutionMonth] = useState(() => lastClosedYearMonth());
   const sumNullable = (...values: Array<number | null>) =>
     values.some((value) => value != null)
       ? values.reduce<number>((sum, value) => sum + (value ?? 0), 0)
@@ -696,16 +696,27 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       );
       setMilestones(detail.milestones);
       {
-        // Bidding chỉ có 1 dòng (nhập tay). Execution/Completion đến từ PIMSVINA sync và được lưu
-        // theo lịch sử nhiều tháng (unique key projectName+kind+year+month) — giữ TẤT CẢ các dòng ở
-        // đây để bảng "4. Cost Rate" cho chọn Base Month và xem lại dữ liệu từng tháng đã đồng bộ.
-        const bidding = detail.costEstimation.find((e) => e.kind === "bidding") ?? { kind: "bidding" as const, contractAmount: null, costAmount: null };
+        // Bidding (nhập tay) giờ cũng lưu RIÊNG THEO TỪNG THÁNG như Execution/Completion (unique key
+        // projectName+kind+year+month) — trước đây chỉ có 1 dòng, đổi Base Month chỉ đổi nhãn tháng của
+        // chính dòng đó (người dùng báo: "chưa lưu riêng cho từng tháng"). Giữ TẤT CẢ các dòng để bảng
+        // "Cost Rate" chọn Base Month nào thì hiện/sửa đúng số của tháng đó. Dòng cũ không có tháng
+        // (dữ liệu trước đây) được gán tháng hiện tại — giống quy tắc lúc lưu trước giờ.
         const sortByMonth = (a: ProjectDetailCostEstimation, b: ProjectDetailCostEstimation) =>
           (a.year ?? 0) * 100 + (a.month ?? 0) - ((b.year ?? 0) * 100 + (b.month ?? 0));
+        const nowForBidding = new Date();
+        const biddingRows = detail.costEstimation
+          .filter((e) => e.kind === "bidding")
+          .map((e) =>
+            e.year == null || e.month == null
+              ? { ...e, year: nowForBidding.getFullYear(), month: nowForBidding.getMonth() + 1 }
+              : e,
+          )
+          .filter((e, idx, arr) => arr.findIndex((o) => o.year === e.year && o.month === e.month) === idx)
+          .sort(sortByMonth);
         const executions = detail.costEstimation.filter((e) => e.kind === "execution").sort(sortByMonth);
         const completions = detail.costEstimation.filter((e) => e.kind === "completion").sort(sortByMonth);
         setCostEstimation([
-          bidding,
+          ...biddingRows,
           ...(executions.length > 0 ? executions : [{ kind: "execution" as const, contractAmount: null, costAmount: null, year: null, month: null }]),
           ...(completions.length > 0 ? completions : [{ kind: "completion" as const, contractAmount: null, costAmount: null, year: null, month: null }]),
         ]);
@@ -2440,12 +2451,11 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
               return EST_KINDS.map((k) => {
                 const isCompletion = k.kind === "completion";
                 const isExecution = k.kind === "execution";
-                const i = costEstimation.findIndex((r) => r.kind === k.kind);
                 // Execution/Completion đến từ PIMSVINA sync và có thể có NHIỀU dòng lịch sử (1 dòng/
                 // tháng) — Base Month là ô nhập tháng năm tự do (mặc định = tháng năm hiện tại), chọn
                 // tháng nào thì hiển thị đúng dữ liệu lịch sử đã đồng bộ của tháng đó; nếu tháng đó
-                // chưa có dữ liệu thì hiển thị "-". Bidding chỉ có 1 dòng duy nhất (nhập tay), dùng
-                // `i`/costEstimation[i] như cũ.
+                // chưa có dữ liệu thì hiển thị "-". Bidding (nhập tay) cũng lưu riêng theo tháng — xem nhánh
+                // else bên dưới.
                 let row: ProjectDetailCostEstimation;
                 let selectedKey = currentMonthKey;
                 if (isExecution || isCompletion) {
@@ -2455,8 +2465,24 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                     history.find((r) => monthKeyOf(r) === selectedKey) ??
                     { kind: k.kind, contractAmount: null, costAmount: null, year: null, month: null };
                 } else {
-                  row = i >= 0 ? costEstimation[i] : { kind: k.kind, contractAmount: null, costAmount: null, year: null, month: null };
+                  // Bidding: lưu riêng theo tháng — Base Month là tháng đang xem/sửa (mặc định = tháng
+                  // mới nhất đã nhập, chưa có thì tháng hiện tại). Tháng chưa có dữ liệu thì để trống,
+                  // nhập số vào sẽ tạo dòng mới cho đúng tháng đó (xem setBiddingField bên dưới).
+                  const history = costEstimation.filter((r) => r.kind === "bidding" && monthKeyOf(r) !== "");
+                  const latestKey = history.length > 0 ? monthKeyOf(history[history.length - 1]) : currentMonthKey;
+                  selectedKey = selectedEstMonth.bidding ?? latestKey;
+                  row =
+                    history.find((r) => monthKeyOf(r) === selectedKey) ??
+                    { kind: k.kind, contractAmount: null, costAmount: null, year: null, month: null };
                 }
+                const setBiddingField = (patch: Partial<ProjectDetailCostEstimation>) => {
+                  const [y, m] = selectedKey.split("-").map(Number);
+                  setCostEstimation((rows) => {
+                    const idx = rows.findIndex((r) => r.kind === "bidding" && r.year === y && r.month === m);
+                    if (idx >= 0) return rows.map((r, j) => (j === idx ? { ...r, ...patch } : r));
+                    return [...rows, { kind: "bidding", contractAmount: null, costAmount: null, year: y, month: m, ...patch }];
+                  });
+                };
                 // Completion 행 자체의 contractAmount("100" 고정)/costAmount(REC9 %)는 DB에 그대로 두되
                 // (다른 곳에서 쓰일 수 있음), 이 화면 표시는 같은 Base Month의 Execution 행 값을 그대로
                 // 가져와 쓴다 — Contract Amount = CONTRACT_AMOUNT, Cost = BUSINESS_BUDGET(현재 시점 사업
@@ -2502,14 +2528,10 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                       ) : (
                         <input
                           type="month"
-                          value={monthKeyOf(row)}
-                          onChange={(ev) => {
-                            const [y, m] = ev.target.value
-                              ? ev.target.value.split("-").map(Number)
-                              : [null, null];
-                            if (i >= 0) updateAt(setCostEstimation, i, { year: y, month: m });
-                            else setCostEstimation((rows) => [...rows, { kind: k.kind, contractAmount: null, costAmount: null, year: y, month: m }]);
-                          }}
+                          value={selectedKey}
+                          onChange={(ev) =>
+                            setSelectedEstMonth((prev) => ({ ...prev, bidding: ev.target.value || currentMonthKey }))
+                          }
                           style={{ fontSize: "13px", padding: "3px 4px", border: `1px solid ${BORDER_LIGHT}`, borderRadius: "3px" }}
                         />
                       )}
@@ -2520,14 +2542,14 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                         // đổi kUSD) — dùng fmtVnd() thay vì fmtMoney() để hiển thị đúng.
                         <span style={{ fontSize: "13px", color: INK_MUTED }}>{fmtVndOrBlank(contractAmount)}</span>
                       ) : (
-                        <VndInput valueKUsd={row.contractAmount} onChange={(v) => (i >= 0 ? updateAt(setCostEstimation, i, { contractAmount: v }) : setCostEstimation((rows) => [...rows, { kind: k.kind, contractAmount: v, costAmount: null, year: null, month: null }]))} data-row={0} data-col={0} />
+                        <VndInput valueKUsd={row.contractAmount} onChange={(v) => setBiddingField({ contractAmount: v })} data-row={0} data-col={0} />
                       )}
                     </td>
                     <td style={{ ...tdCell, textAlign: "right" }}>
                       {isCompletion || isExecution ? (
                         <span style={{ fontSize: "13px", color: INK_MUTED }}>{fmtVndOrBlank(costAmount)}</span>
                       ) : (
-                        <VndInput valueKUsd={row.costAmount} onChange={(v) => (i >= 0 ? updateAt(setCostEstimation, i, { costAmount: v }) : setCostEstimation((rows) => [...rows, { kind: k.kind, contractAmount: null, costAmount: v, year: null, month: null }]))} data-row={0} data-col={1} />
+                        <VndInput valueKUsd={row.costAmount} onChange={(v) => setBiddingField({ costAmount: v })} data-row={0} data-col={1} />
                       )}
                     </td>
                     <td style={{ ...tdCell, textAlign: "right" }}>

@@ -220,42 +220,53 @@ export const ORACLE_DASHBOARD_QUERIES: Record<string, OracleEndpointQuery> = {
   },
 
   "dashboard_pd_costbudget_1q.jsp": {
-    // Công thức mới: BUDGET lấy từ CHTB_PFMCOSTRMRK.BDGTAMT (RMRKLVL=2, đã verify khớp màn hình "Cost Input
-    // Status by Execution Details") của snapshot THÁNG GẦN NHẤT mỗi dự án; ACTUAL = luỹ kế COSTAMT từ tháng
-    // đầu tiên có dữ liệu đến đúng tháng đó (đã verify khớp cột "Cumulative Amount" cùng màn hình). Mỗi dòng
-    // RMRKLVL=2 (DETLNAME) được map vào 1 trong 5 item chuẩn của dashboard: Common Work→Common, Expense I→
-    // Expense 1, Expense II→Expense 2, Contingency→Contingency, còn lại (Architectural/Mechanical/Electrical/
-    // External & Landscape Works, và bất kỳ hạng mục thầu phụ nào khác chưa liệt kê) → Outsourcing (mặc định).
-    sql: `WITH CTE_RMRK AS (
-        SELECT A.FLDCODE, A.BASEYYMM, A.RMRKMGTNO, A.DETLNAME, A.BDGTAMT
-        FROM CHTB_PFMCOSTRMRK A
-        WHERE A.RMRKLVL = 2
+    // BUDGET = tổng BDGTAMT của snapshot THÁNG GẦN NHẤT mỗi dự án; ACTUAL = luỹ kế COSTAMT từ tháng đầu tiên có
+    // dữ liệu đến đúng tháng đó (nguồn CHTB_PFMCOSTRMRK — màn "Cost Input Status by Execution Details").
+    // Lấy từ DÒNG LÁ (RMRKYN='Y') và phân loại theo cây CBS (STNDCBSCODE → CATB_STNDCBS) như
+    // ch_cost_settle_ratio_q_1q.jsp, thay cho cách cũ (dòng RMRKLVL=2 + so tên DETLNAME bằng LIKE) vốn bỏ sót
+    // "Expenses II" (19 dự án)/"Expenses I"/"COMMON  WORK" và dồn nhầm vào Outsourcing. Đã verify trên Oracle:
+    // K8HH1/K8CT1/THT2 khớp đúng Budget cấp 2 của màn Cost Input; tổng toàn hệ thống lệch <0,03% (dòng lá không
+    // có CBS hợp lệ / nhánh D Other Cost bị bỏ, giống settle report).
+    sql: `WITH CTE_CBS AS (
+        -- Cây CBS (CATB_STNDCBS) cố định cho toàn hệ thống: ROOT1 = gốc cấp 1 (A Direct / B Indirect /
+        -- C Contingency / D Other / H Head Office), ROOT2 = nhánh cấp 2 (vd AWZH Common Works, AWZI
+        -- Expenses I, BWZJ Expenses II, CWDD Contingency, HWZJ Head Office Cost) — đúng như
+        -- ch_cost_settle_ratio_q_1q.jsp (CONNECT BY từ UPPERCBSCODE='-').
+        SELECT STNDCBSCODE,
+               SUBSTR(SYS_CONNECT_BY_PATH(STNDCBSCODE, '/'), 2, 13)  AS ROOT1,
+               SUBSTR(SYS_CONNECT_BY_PATH(STNDCBSCODE, '/'), 16, 13) AS ROOT2
+        FROM CATB_STNDCBS
+        START WITH UPPERCBSCODE = '-'
+        CONNECT BY PRIOR STNDCBSCODE = UPPERCBSCODE
     ),
-    CTE_COST AS (
-        SELECT FLDCODE, BASEYYMM, RMRKMGTNO, SUM(NVL(COSTAMT, 0)) AS COSTAMT_MONTH
-        FROM CHTB_PFMCOSTRMRK
-        GROUP BY FLDCODE, BASEYYMM, RMRKMGTNO
-    ),
+    -- Phân loại theo cây CBS của TỪNG DÒNG LÁ (RMRKYN='Y' — chỉ dòng lá mới có STNDCBSCODE), giống hệt
+    -- ch_cost_settle_ratio_q_1q.jsp — KHÔNG đoán theo tên DETLNAME/nhóm cha của cây Work Type (tên và mã
+    -- cây Work Type khác nhau giữa các dự án: "Expenses II"/"COMMON  WORK"/"Indirect Cost" dưới mã của Direct…).
+    -- Map: C→Contingency, B/H(Head Office, gộp vào Expenses II như SP_SUM_PFM_VINA)→Expense 2 (Indirect),
+    -- A/AWZH→Common, A/AWZI→Expense 1, phần còn lại của A (Architectural/Mechanical/Electrical/Civil/
+    -- Landscape…)→Outsourcing. D (Other Cost) và dòng lá không có CBS hợp lệ bị bỏ qua (settle report cũng vậy).
     CTE_ITEM AS (
         SELECT
             A.FLDCODE,
             A.BASEYYMM,
             CASE
-                WHEN UPPER(A.DETLNAME) LIKE 'COMMON WORK%'  THEN 'Common'
-                WHEN UPPER(A.DETLNAME) LIKE 'EXPENSE I%' AND UPPER(A.DETLNAME) NOT LIKE 'EXPENSE II%' THEN 'Expense 1'
-                WHEN UPPER(A.DETLNAME) LIKE 'EXPENSE II%'   THEN 'Expense 2'
-                WHEN UPPER(A.DETLNAME) LIKE 'CONTINGENCY%'  THEN 'Contingency'
+                WHEN M.ROOT1 = 'C000000000000' THEN 'Contingency'
+                WHEN M.ROOT1 IN ('B000000000000', 'H000000000000') THEN 'Expense 2'
+                WHEN M.ROOT2 = 'AWZH000000000' THEN 'Common'
+                WHEN M.ROOT2 = 'AWZI000000000' THEN 'Expense 1'
                 ELSE 'Outsourcing'
             END AS ITEM,
             CASE
-                WHEN UPPER(A.DETLNAME) LIKE 'EXPENSE II%'   THEN 'Indirect Cost'
-                WHEN UPPER(A.DETLNAME) LIKE 'CONTINGENCY%'  THEN 'Contingency'
+                WHEN M.ROOT1 = 'C000000000000' THEN 'Contingency'
+                WHEN M.ROOT1 IN ('B000000000000', 'H000000000000') THEN 'Indirect Cost'
                 ELSE 'Direct Cost'
             END AS CATEGORY,
-            A.BDGTAMT,
-            C.COSTAMT_MONTH
-        FROM CTE_RMRK A
-        JOIN CTE_COST C ON C.FLDCODE = A.FLDCODE AND C.BASEYYMM = A.BASEYYMM AND C.RMRKMGTNO = A.RMRKMGTNO
+            NVL(A.BDGTAMT, 0) AS BDGTAMT,
+            NVL(A.COSTAMT, 0) AS COSTAMT_MONTH
+        FROM CHTB_PFMCOSTRMRK A
+        JOIN CTE_CBS M ON M.STNDCBSCODE = A.STNDCBSCODE
+        WHERE A.RMRKYN = 'Y'
+          AND M.ROOT1 IN ('A000000000000', 'B000000000000', 'C000000000000', 'H000000000000')
     ),
     CTE_GROUPED AS (
         SELECT FLDCODE, BASEYYMM, ITEM, CATEGORY,
@@ -298,30 +309,35 @@ export const ORACLE_DASHBOARD_QUERIES: Record<string, OracleEndpointQuery> = {
     // 금액은 VND 원본 그대로 반환한다(예전엔 CHTB_EXCHANGE_RATIO로 나눠 천 USD로 환산했으나, 이 프로젝트는
     // "동기화 데이터는 항상 VND 원본 저장, 화면에서만 통화 변환" 원칙으로 통일 — dashboard_pd_costbudget_1q.jsp
     // 의 ACTUAL과 동일하게 무변환).
-    sql: `WITH CTE_RMRK AS (
-        SELECT A.FLDCODE, A.BASEYYMM, A.RMRKMGTNO, A.DETLNAME
-        FROM CHTB_PFMCOSTRMRK A
-        WHERE A.RMRKLVL = 2
+    sql: `WITH CTE_CBS AS (
+        -- Cây CBS (CATB_STNDCBS) cố định cho toàn hệ thống: ROOT1 = gốc cấp 1 (A Direct / B Indirect /
+        -- C Contingency / D Other / H Head Office), ROOT2 = nhánh cấp 2 (vd AWZH Common Works, AWZI
+        -- Expenses I, BWZJ Expenses II, CWDD Contingency, HWZJ Head Office Cost) — đúng như
+        -- ch_cost_settle_ratio_q_1q.jsp (CONNECT BY từ UPPERCBSCODE='-').
+        SELECT STNDCBSCODE,
+               SUBSTR(SYS_CONNECT_BY_PATH(STNDCBSCODE, '/'), 2, 13)  AS ROOT1,
+               SUBSTR(SYS_CONNECT_BY_PATH(STNDCBSCODE, '/'), 16, 13) AS ROOT2
+        FROM CATB_STNDCBS
+        START WITH UPPERCBSCODE = '-'
+        CONNECT BY PRIOR STNDCBSCODE = UPPERCBSCODE
     ),
-    CTE_COST AS (
-        SELECT FLDCODE, BASEYYMM, RMRKMGTNO, SUM(NVL(COSTAMT, 0)) AS COSTAMT_MONTH
-        FROM CHTB_PFMCOSTRMRK
-        GROUP BY FLDCODE, BASEYYMM, RMRKMGTNO
-    ),
+    -- Phân loại GIỐNG HỆT dashboard_pd_costbudget_1q.jsp (cây CBS của từng dòng lá) — xem chú thích ở đó.
     CTE_ITEM AS (
         SELECT
             A.FLDCODE,
             A.BASEYYMM,
             CASE
-                WHEN UPPER(A.DETLNAME) LIKE 'COMMON WORK%'  THEN 'Common'
-                WHEN UPPER(A.DETLNAME) LIKE 'EXPENSE I%' AND UPPER(A.DETLNAME) NOT LIKE 'EXPENSE II%' THEN 'Expense 1'
-                WHEN UPPER(A.DETLNAME) LIKE 'EXPENSE II%'   THEN 'Expense 2'
-                WHEN UPPER(A.DETLNAME) LIKE 'CONTINGENCY%'  THEN 'Contingency'
+                WHEN M.ROOT1 = 'C000000000000' THEN 'Contingency'
+                WHEN M.ROOT1 IN ('B000000000000', 'H000000000000') THEN 'Expense 2'
+                WHEN M.ROOT2 = 'AWZH000000000' THEN 'Common'
+                WHEN M.ROOT2 = 'AWZI000000000' THEN 'Expense 1'
                 ELSE 'Outsourcing'
             END AS ITEM,
-            C.COSTAMT_MONTH
-        FROM CTE_RMRK A
-        JOIN CTE_COST C ON C.FLDCODE = A.FLDCODE AND C.BASEYYMM = A.BASEYYMM AND C.RMRKMGTNO = A.RMRKMGTNO
+            NVL(A.COSTAMT, 0) AS COSTAMT_MONTH
+        FROM CHTB_PFMCOSTRMRK A
+        JOIN CTE_CBS M ON M.STNDCBSCODE = A.STNDCBSCODE
+        WHERE A.RMRKYN = 'Y'
+          AND M.ROOT1 IN ('A000000000000', 'B000000000000', 'C000000000000', 'H000000000000')
     ),
     CTE_GROUPED AS (
         SELECT FLDCODE, BASEYYMM, ITEM, SUM(COSTAMT_MONTH) AS COSTAMT_MONTH_SUM
