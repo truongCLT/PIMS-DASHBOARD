@@ -4,11 +4,31 @@ import { useDashboardData, type PerformanceRow } from "../lib/mgmtreportData";
 import { useDashboardFilters } from "../lib/dashboardFilters";
 import { DetailModal, DetailDataTable } from "./DetailModal";
 
+// mgmtreportData가 내려주는 행 라벨/보조 라벨/단위는 한국어 원문(데이터 키로도 쓰임)이라, 화면에
+// 표시할 때만 번역한다(다국어 요청). 매핑에 없는 값은 원문 그대로 둔다.
+const ROW_LABEL_KEY: Record<string, string> = {
+  "매출액": "performanceTable:rowRevenue",
+  "매출이익": "performanceTable:rowGrossProfit",
+  "판관비": "performanceTable:rowSga",
+  "영업이익": "performanceTable:rowOperatingProfit",
+  "영업외 이익": "performanceTable:rowNonOperatingProfit",
+  "경상이익": "performanceTable:rowOrdinaryProfit",
+};
+const SUB_LABEL_KEY: Record<string, string> = { "이익률": "performanceTable:profitMargin" };
+const UNIT_LABEL_KEY: Record<string, string> = { "천 USD": "performanceTable:unitThousandUsd" };
+
 export function PerformanceTable() {
   const { t } = useTranslation(["performanceTable", "common"]);
   const { derived, isError } = useDashboardData();
   const { unitIndex } = useDashboardFilters();
-  const rows = derived?.performanceRows ?? [];
+  const tr = (map: Record<string, string>, value: string | undefined) =>
+    value != null && map[value] ? t(map[value]) : value;
+  const rows = (derived?.performanceRows ?? []).map((row) => ({
+    ...row,
+    displayLabel: tr(ROW_LABEL_KEY, row.label) ?? row.label,
+    sub: tr(SUB_LABEL_KEY, row.sub),
+  }));
+  const unitLabel = tr(UNIT_LABEL_KEY, derived?.unitLabel);
   const [detailOpen, setDetailOpen] = useState(false);
 
   return (
@@ -22,7 +42,7 @@ export function PerformanceTable() {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
           <span style={{ fontSize: "13px", fontWeight: "600", color: "#16294a" }}>{t("performanceTable:managementPerformanceStatus")}</span>
-          {derived && <span style={{ fontSize: "11px", color: "#7c8ba3" }}>{t("common:unit")}: {derived.unitLabel}</span>}
+          {derived && <span style={{ fontSize: "11px", color: "#7c8ba3" }}>{t("common:unit")}: {unitLabel}</span>}
         </div>
         <button
           onClick={() => setDetailOpen(true)}
@@ -60,7 +80,7 @@ export function PerformanceTable() {
             {rows.map((row, i) => (
               <React.Fragment key={row.label}>
                 <tr style={{ borderBottom: row.sub ? "none" : "1px solid #e7f1fd", backgroundColor: i % 2 === 0 ? "#fff" : "#f8fbff" }}>
-                  <td style={{ padding: "4px 6px", color: "#333", fontWeight: "500" }}>{row.label}</td>
+                  <td style={{ padding: "4px 6px", color: "#333", fontWeight: "500" }}>{row.displayLabel}</td>
                   <td style={{ padding: "4px 6px", textAlign: "right", color: "#333", borderLeft: "1px solid #e7f1fd" }}>{row.planM}</td>
                   <td style={{ padding: "4px 6px", textAlign: "right", color: "#333", borderLeft: "1px solid #e7f1fd" }}>{row.actualM}</td>
                   <td style={{ padding: "4px 6px", textAlign: "right", color: "#2f7cf6", fontWeight: "600", borderLeft: "1px solid #e7f1fd" }}>{row.achM}</td>
@@ -93,7 +113,7 @@ export function PerformanceTable() {
         <DetailDataTable
           rowKey={(row) => row.label}
           columns={[
-            { key: "label", label: t("performanceTable:category"), align: "left" },
+            { key: "displayLabel", label: t("performanceTable:category"), align: "left" },
             { key: "planM", label: `${t("performanceTable:currentMonthCumulative")} ${t("common:plan")}` },
             { key: "actualM", label: `${t("performanceTable:currentMonthCumulative")} ${t("common:actual")}` },
             { key: "achM", label: `${t("performanceTable:currentMonthCumulative")} ${t("common:achievementRate")}` },

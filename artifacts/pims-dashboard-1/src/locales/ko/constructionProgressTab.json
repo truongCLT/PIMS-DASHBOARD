@@ -1,4 +1,10 @@
 {
+  "periodAnnual": "연",
+  "milestoneNoDiff": "차이 없음",
+  "milestoneDelayDays": "{{days}}일 지연",
+  "milestoneEarlyDays": "{{days}}일 단축",
+  "milestoneStartDiff": "착수 차이",
+  "milestoneEndDiff": "완료 차이",
   "noMilestoneData": "마일스톤 데이터가 없습니다. ( - )",
   "siteProgressStatus": "현장 공정 현황",
   "sitePhotoAlt": "{{projectName}} 공사 현장",

@@ -499,7 +499,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
   const { fmtMoney, fmtVnd, unitLabel } = useMoney();
   // 읽기전용 요약 셀: 값이 0이면 "0" 대신 빈칸으로 표시 (저장값 자체는 그대로 0 유지)
   const fmtVndOrBlank = (v: number | null | undefined) => (v === 0 ? "" : fmtVnd(v));
-  const { detail, isLoading } = useProjectDetail(projectName);
+  const { detail, isLoading, isFetching: detailFetching } = useProjectDetail(projectName);
   const queryClient = useQueryClient();
   const mutation = usePutProjectdetail();
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
@@ -687,7 +687,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
   }, [projectName]);
 
   useEffect(() => {
-    if (detail && !loaded && !(cfRef != null && cfQuery.isLoading)) {
+    if (detail && !loaded && !detailFetching && !(cfRef != null && cfQuery.isLoading)) {
       setOverview(detail.overview ?? EMPTY_OVERVIEW);
       setProgress(
         calculateProgressPlanCumulative(detail.progress).filter(
@@ -749,7 +749,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       setPlanVersion(detail.planVersion ?? 0);
       setLoaded(true);
     }
-  }, [detail, loaded, cfRef, cfQuery.isLoading, cfQuery.data]);
+  }, [detail, loaded, detailFetching, cfRef, cfQuery.isLoading, cfQuery.data]);
 
   // Execution/Completion 행은 PIMSVINA 동기화 전용 읽기 전용 데이터라 사용자가 직접 수정할 일이 없다 —
   // 위 초기 로드 effect는 `loaded` 가드로 한 번만 실행되어 사용자가 입력 중인 값(Bidding 등)이 백그라운드
@@ -1141,7 +1141,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
   }, [loaded, locksLoaded, closedSections, overview, progress, milestones, costEstimation, costBudget, costBudgetMonthly, outsourcing, cashflow, cogsMonthly, salesMonthly, photos, slideshowIntervalSeconds]);
 
 
-  if (isLoading && !loaded) {
+  if ((isLoading || detailFetching) && !loaded) {
     return <div style={{ ...cardStyle, textAlign: "center", color: INK_MUTED, fontSize: "14px" }}>{t("common:loading")}</div>;
   }
 
@@ -1605,10 +1605,24 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
     setCostBudget((rows) =>
       rows.map((row) => (row.item === item ? { ...row, budget: value } : row)),
     );
-  // Budget/Actual của cả 5 dòng (kể cả Outsourcing) đọc thẳng từ pd_cost_budget (đồng bộ qua
+  // Budget của cả 5 dòng (kể cả Outsourcing) đọc thẳng từ pd_cost_budget (đồng bộ qua
   // dashboard_pd_costbudget_1q.jsp) - không còn tự cộng từ bảng Ngoài giao (pd_outsourcing) nữa.
-  const actualAmount = (item: string) =>
-    costBudget.find((row) => row.item === item)?.actual ?? null;
+  // "Cumulative Actual" = lũy kế thực tế theo tháng (costBudgetMonthly.actual, PIMSVINA) từ đầu dự án
+  // tới tháng đang chọn (selectedExecutionMonth) — cùng quy tắc với Plan Cumulative ở trên và với thẻ
+  // 원가 / Budget Execution Status ở tab Report / Revenue-Cost (cumActualFor). Trước đây đọc snapshot
+  // pd_cost_budget.actual (lũy kế mới nhất lúc đồng bộ) nên đổi tháng vẫn không đổi và lẫn cả thực tế của
+  // các tháng sau (người dùng báo: chọn Month 1 mà Cumulative Actual vẫn = 59,077). Hạng mục không có
+  // thực tế theo tháng thì vẫn fallback snapshot. Giá trị lưu (pd_cost_budget.actual) không bị thay đổi.
+  const actualAmount = (item: string) => {
+    const itemRows = costBudgetMonthly.filter((row) => row.item === item);
+    if (!itemRows.some((row) => row.actual != null && row.actual !== 0)) {
+      return costBudget.find((row) => row.item === item)?.actual ?? null;
+    }
+    const { year, month } = selectedExecutionMonth;
+    return itemRows
+      .filter((row) => row.year < year || (row.year === year && row.month <= month))
+      .reduce<number>((sum, row) => sum + (row.actual ?? 0), 0);
+  };
   const outsourcingBudget = budgetAmount("Outsourcing");
   const directBudget =
     outsourcingBudget != null ||

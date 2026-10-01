@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import {
   useGetMgmtreportSummary,
   useListMgmtreportProjects,
@@ -507,6 +508,11 @@ export function getDashboardExportData(): DashboardData {
 
 export function useDashboardData() {
   const filters = useDashboardFilters();
+  // "천 USD"는 한국어 표기라 EN/VI에서 그대로 노출됐다(다국어 요청) — 언어별로 바꾼다. 문자열 비교에
+  // 쓰이지 않는 순수 표시용 값이다.
+  const { i18n } = useTranslation();
+  const lang = (i18n.language ?? "ko").slice(0, 2);
+  const thousandUsdLabel = lang === "en" ? "K USD" : lang === "vi" ? "Nghìn USD" : "천 USD";
   const query = useGetMgmtreportSummary();
   const settingsQuery = useGetMgmtreportSettings();
   // 저장된 설정이 없을 때는 "이번 달"이 아니라 "실적이 마감된 가장 최근 달"로 폴백해야 함
@@ -536,7 +542,7 @@ export function useDashboardData() {
     const convert = makeConverter(filters.currency, filters.unitIndex, filters.fxRateHistory);
     const unitLabel =
       filters.currency === "USD" && filters.unitIndex === 0
-        ? "천 USD"
+        ? thousandUsdLabel
         : unitLabelOf(filters.currency, filters.unitIndex);
 
     let projectScope: ProjectScope | null = null;
@@ -586,6 +592,7 @@ export function useDashboardData() {
       managementMonth,
     });
   }, [
+    thousandUsdLabel,
     summaryForYear,
     projectsQuery.data,
     projectSelected,

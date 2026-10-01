@@ -66,35 +66,20 @@ function MetricRow({ label, value, strong = false }: { label: string; value: str
   );
 }
 
-/** 용역은 공정(진행률) 개념이 없으므로 매출 실적만으로 "가장 최근 실적이 있는 달"을 찾고, 없으면
- * asOfMonth를 쓴다. 어느 경우든 달력 기준 마감 규칙(maxSelectableMonth — M+2월 13일 이후에야
- * M월이 마감으로 간주됨)을 넘어설 수 없다 — PIMSVINA 동기화가 마감 전에 미리 값을 채워놔도
- * (예: 아직 정산 전인 이번 달 매출이 임시로 잡혀있는 경우), 마감되지 않은 달을 기준월로 앞당겨
- * 쓰면 안 되기 때문이다. */
-export function resolveLatestServiceReportMonth({
-  asOfMonth,
-  revenueActuals,
-}: {
+/** 용역 보고서의 기본 기준월 = 달력 기준 마감 규칙상 가장 최근 마감월(maxSelectableMonth — M월은
+ * M+2월 13일부터 마감). 시공 보고서/다른 탭의 기준월과 같은 값이다.
+ *
+ * 예전엔 "매출 실적이 0이 아닌 마지막 달"을 기준월로 썼는데, 용역은 매출이 특정 달에만 띄엄띄엄
+ * 발생하는 경우가 많아(예: K2CT1 프리콘 — '26.07에만 매출) 마감월이 '26.08인데도 기준월이 '26.07로
+ * 뒤처져 보였다(실사용자 보고). 매출이 없는 달도 "그 달 실적 0"이 정상 결과이므로 마감월을 그대로
+ * 쓴다. asOfMonth(데이터 입력 탭 수기 입력)는 갱신이 안 된 채 과거 값으로 남아 있는 경우가 많아
+ * 기준월을 다시 뒤로 끌어내리므로 쓰지 않는다. 다른 달은 기준월 선택 박스에서 고를 수 있다.
+ * 인자는 호출부 호환용으로만 남겨둔다. */
+export function resolveLatestServiceReportMonth(_args?: {
   asOfMonth?: string | null;
-  revenueActuals: Array<number | null>;
+  revenueActuals?: Array<number | null>;
 }): number {
-  const ceiling = maxSelectableMonth();
-
-  for (let index = revenueActuals.length - 1; index >= 0; index -= 1) {
-    if ((revenueActuals[index] ?? 0) !== 0) return Math.min(index + 1, ceiling);
-  }
-
-  const asOfMatch = /^(\d{4})-(\d{2})$/.exec(asOfMonth ?? "");
-  if (
-    asOfMatch &&
-    Number(asOfMatch[1]) === REPORT_YEAR &&
-    Number(asOfMatch[2]) >= 1 &&
-    Number(asOfMatch[2]) <= 12
-  ) {
-    return Math.min(Number(asOfMatch[2]), ceiling);
-  }
-
-  return ceiling;
+  return maxSelectableMonth();
 }
 
 function PlanActualBar({ plan, actual }: { plan: number | null; actual: number | null }) {
@@ -246,13 +231,23 @@ export function ServiceReportTab({
       ? rows.reduce<number>((sum, row) => sum + (row.plan ?? 0), 0)
       : null;
   };
+  // 실적도 기준월까지 월별 실적(costBudgetMonthly.actual)을 누계한다 — 스냅샷(pd_cost_budget.actual)은
+  // 기준월 이후 실적이 섞이고 기준월을 바꿔도 안 변한다(시공 ProjectReportTab cumActualFor와 동일).
+  // 월별 실적이 없는 항목만 스냅샷 폴백.
+  const cumActualFor = (item: string): number | null => {
+    const itemRows = cbMonthly.filter((row) => row.item === item);
+    if (!itemRows.some((row) => row.actual != null && row.actual !== 0)) return findBudget(item)?.actual ?? null;
+    return itemRows
+      .filter((row) => row.year * 12 + row.month - 1 <= monthIndex)
+      .reduce<number>((sum, row) => sum + (row.actual ?? 0), 0);
+  };
   const BUDGET_ITEM_NAMES = ["Outsourcing", "Common", "Expense 1", "Expense 2", "Contingency"] as const;
   const budgetItems = BUDGET_ITEM_NAMES.map((item) => {
     const row = findBudget(item);
     return {
       label: item === "Outsourcing" ? "외주" : item === "Contingency" ? "예비비" : item,
       plan: cumPlanFor(item) ?? row?.budget ?? null,
-      actual: row?.actual ?? null,
+      actual: cumActualFor(item),
     };
   });
   // 계획이 한 번도 입력된 적 없는 항목(예: 외주)까지 포함해 합산하면, 그 항목의 실적만 분자에 더해지고
@@ -276,7 +271,7 @@ export function ServiceReportTab({
                 : item,
       budget: row?.budget ?? null,
       plan: cumPlanFor(item),
-      actual: row?.actual ?? null,
+      actual: cumActualFor(item),
     };
   }).filter((row) => row.budget != null || row.plan != null || row.actual != null);
   const durationMonths = (() => {

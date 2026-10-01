@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { localizePeriodLabel } from "../lib/periodLabel";
 import {
   useListMgmtreportProjects,
   getListMgmtreportProjectsQueryKey,
@@ -48,7 +49,7 @@ function niceStep(raw: number): number {
 }
 
 export function ProfitChart() {
-  const { t } = useTranslation(["profitChart", "common"]);
+  const { t, i18n } = useTranslation(["profitChart", "common"]);
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [drillRow, setDrillRow] = useState<ProfitRow | null>(null);
@@ -349,7 +350,7 @@ export function ProfitChart() {
                 <text x={cx} y={Math.min(capTop, opTop) - 34} textAnchor="middle" fontSize={valueFs} fontWeight="700" fill={chartTheme.valueFill}>{gross.toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</text>
                 <text x={cx} y={Math.min(capTop, opTop) - 10} textAnchor="middle" fontSize={rateFs} fontWeight="700" fill={chartTheme.axisSmall}>{d.totalPct}</text>
                 {/* 월 라벨 */}
-                <text x={cx} y={Y0 + 34} textAnchor="middle" fontSize={monthFs} fontWeight="600" fill={chartTheme.axisText}>{d.m}</text>
+                <text x={cx} y={Y0 + 34} textAnchor="middle" fontSize={monthFs} fontWeight="600" fill={chartTheme.axisText}>{localizePeriodLabel(String(d.m), i18n.language)}</text>
                 {/* 영업이익 칩 — 월 라벨 하단 */}
                 <rect x={cx - chipW / 2} y={Y0 + 46} width={chipW} height={chipH} rx={chipH / 2} fill={chipBg} />
                 <text x={cx} y={Y0 + 46 + chipH / 2} textAnchor="middle" dominantBaseline="central" fontSize={chipFs} fontWeight="700" fill={chipColor}>{chipText}</text>
@@ -437,7 +438,7 @@ export function ProfitChart() {
               )}
 
               {/* Month label */}
-              <text x={cx} y={Y0 + 32} textAnchor="middle" fontSize={monthFs} fontWeight="600" fill={chartTheme.axisText}>{d.m}</text>
+              <text x={cx} y={Y0 + 32} textAnchor="middle" fontSize={monthFs} fontWeight="600" fill={chartTheme.axisText}>{localizePeriodLabel(String(d.m), i18n.language)}</text>
             </g>
           );
         })}
@@ -633,7 +634,7 @@ export function ProfitChart() {
       <DetailModal
         open={drillRow != null}
         onClose={() => setDrillRow(null)}
-        title={drillRow ? t("profitChart:siteDetailTitle", { month: drillRow.m }) : ""}
+        title={drillRow ? t("profitChart:siteDetailTitle", { month: localizePeriodLabel(String(drillRow.m), i18n.language) }) : ""}
         subtitle={derived?.unitLabel}
       >
         {drillIsLoading ? (
@@ -657,7 +658,7 @@ export function ProfitChart() {
               columns={[
                 { key: "name", label: t("profitChart:colSiteName"), align: "left" },
                 { key: "category", label: t("profitChart:colCategory"), align: "left" },
-                { key: "bizType", label: t("profitChart:colBizType"), align: "left" },
+                { key: "bizType", label: t("profitChart:colBizType"), align: "left", format: (v) => (v === "시공" ? t("common:construction") : v === "용역" ? t("common:service") : String(v ?? "-")) },
                 { key: "revenue", label: t("common:revenue"), align: "right", format: (v) => typeof v === "number" ? v.toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : "-" },
                 { key: "cogs", label: t("common:cogs"), align: "right", format: (v) => typeof v === "number" ? v.toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : "-" },
                 { key: "gross", label: t("common:grossProfit"), align: "right", format: (v) => typeof v === "number" ? v.toLocaleString("ko-KR", { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : "-" },

@@ -57,6 +57,22 @@ function cashOutLabel(fill: string) {
   };
 }
 
+const fmtFull = (v: number) =>
+  v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+
+// 축 눈금 라벨 — VND 원 단위처럼 자릿수가 큰 값은 그대로 찍으면(예: "3.000.000.000") 축 영역을 넘어
+// 잘린다(실사용자 보고). 백만 이상이면 B/M 축약 표기로 바꾼다(천 USD처럼 작은 값은 그대로).
+function fmtAxis(v: number): string {
+  const abs = Math.abs(v);
+  const trim = (n: number) => Number(n.toFixed(1)).toLocaleString(undefined, { maximumFractionDigits: 1 });
+  if (abs >= 1e9) return `${trim(v / 1e9)}B`;
+  if (abs >= 1e6) return `${trim(v / 1e6)}M`;
+  return fmtFull(v);
+}
+
+// 텍스트 길이 기반 대략적 픽셀 폭(11~12px 굵은 숫자 기준) — 축 폭/컬럼 폭 계산용.
+const textWidth = (s: string, px = 7.2) => Math.ceil(s.length * px);
+
 function niceStep(range: number): number {
   const raw = range / 8;
   const pow = Math.pow(10, Math.floor(Math.log10(Math.max(raw, 1))));
@@ -296,7 +312,16 @@ export function ServiceCashflowTab({
     );
   } else {
     // 월 수에 따라 최소 컬럼 너비 90px 보장 → 막대가 충분히 넓게 표시됨
-    const minChartWidth = Math.max(640, chartData.length * 90);
+    // 컬럼 폭 — 기본 90px, 막대/잔액 숫자 라벨(VND는 15자 이상)이 옆 컬럼 라벨과 겹치지 않게 가장 긴
+    // 라벨 폭 + 여백 이상으로 넓힌다. 좌/우 축 폭도 가장 긴 눈금 라벨에 맞춘다(잘림 방지).
+    const longestValueLabel = Math.max(
+      ...chartData.flatMap((d: any) => [d.cashIn, d.cashOut, d.equivalent].map((v: number) => fmtFull(Math.abs(v ?? 0)).length + (v < 0 ? 1 : 0))),
+      1,
+    );
+    const columnWidth = Math.max(90, textWidth("x".repeat(longestValueLabel)) + 24);
+    const cashAxisWidth = Math.max(40, ...ticks.map((v) => textWidth(fmtAxis(v), 7) + 12));
+    const balanceAxisWidth = Math.max(40, ...balanceTicks.map((v) => textWidth(fmtAxis(v), 7) + 12));
+    const minChartWidth = Math.max(640, chartData.length * columnWidth + cashAxisWidth + balanceAxisWidth);
     const barSize = Math.max(32, Math.min(80, Math.floor((minChartWidth / chartData.length) * 0.5)));
     body = (
       // 가로 스크롤: 월 수가 많아도 막대 너비 유지
@@ -318,22 +343,24 @@ export function ServiceCashflowTab({
             />
             <YAxis
               yAxisId="cash"
+              width={cashAxisWidth}
               tick={{ fontSize: 11, fill: INK_BODY, fontWeight: 600 }}
               tickLine={false}
               axisLine={false}
               domain={cashDomain}
               ticks={ticks}
-              tickFormatter={(v: number) => v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+              tickFormatter={fmtAxis}
             />
             <YAxis
               yAxisId="balance"
+              width={balanceAxisWidth}
               orientation="right"
               tick={{ fontSize: 11, fill: chartTheme.actualGreen, fontWeight: 600 }}
               tickLine={false}
               axisLine={false}
               domain={balanceDomain}
               ticks={balanceTicks}
-              tickFormatter={(v: number) => v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+              tickFormatter={fmtAxis}
             />
             <Legend wrapperStyle={{ fontSize: "14px", fontWeight: 600 }} iconSize={14} />
             <ReferenceLine yAxisId="cash" y={0} stroke={chartTheme.sgaOrange} strokeDasharray="3 3" />

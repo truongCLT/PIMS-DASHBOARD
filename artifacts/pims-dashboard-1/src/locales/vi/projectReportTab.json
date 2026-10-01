@@ -8,6 +8,9 @@
 
   "monthlyProgressLabel": "Tỷ lệ tiến độ theo tháng (kế hoạch so với thực hiện)",
   "cumulativeProgressLabel": "Tỷ lệ tiến độ lũy kế (kế hoạch so với thực hiện)",
+  "costGroupDirectSub": "Chi phí trực tiếp",
+  "costGroupIndirectSub": "Chi phí gián tiếp",
+  "costGroupContingencySub": "Chi phí dự phòng",
   "durationRate": "Tỷ lệ thời gian thi công",
   "durationVsProgressGap": "Tỷ lệ thời gian thi công − tỷ lệ tiến độ lũy kế",
 

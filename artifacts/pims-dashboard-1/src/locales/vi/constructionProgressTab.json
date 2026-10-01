@@ -1,4 +1,10 @@
 {
+  "periodAnnual": "Theo năm",
+  "milestoneNoDiff": "Không chênh lệch",
+  "milestoneDelayDays": "Trễ {{days}} ngày",
+  "milestoneEarlyDays": "Sớm {{days}} ngày",
+  "milestoneStartDiff": "Chênh lệch khởi công",
+  "milestoneEndDiff": "Chênh lệch hoàn thành",
   "noMilestoneData": "Không có dữ liệu mốc tiến độ. ( - )",
   "siteProgressStatus": "Hiện trạng tiến độ công trường",
   "sitePhotoAlt": "Công trường {{projectName}}",

@@ -130,16 +130,61 @@ export function RevenueChartCard({
   // 겹쳐 안 보이게 된다 — 개월당 최소 폭을 확보해 가로 스크롤되게 하고, 너무 많을 땐 막대 위 숫자
   // 라벨을 아예 생략해(툴팁으로 대신 확인) 겹침을 원천 차단한다. (연도 선택으로 보통 12개월 이하가
   // 되지만, 안전장치로 남겨둔다.)
-  const PX_PER_MONTH = 56;
-  const chartWidth = Math.max(displayData.length * PX_PER_MONTH, 100);
+  //
+  // 계획/매출 막대가 14px로 바짝 붙어 있어 각 막대 위 숫자를 따로 찍으면, VND 원 단위처럼 긴 숫자
+  // ("190.478.300.000")는 좌우로 서로 겹쳐 읽을 수 없다(실사용자 보고). 그래서 한 달의 숫자를 "더 높은
+  // 막대" 하나가 대표로 위아래 2줄(위: 계획 회색, 아래: 매출 파랑)로 쌓아 그리고, 개월당 폭도 가장 긴
+  // 숫자 폭에 맞춰 넓힌다.
+  const fmtNum = (v: number) => v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  const revenueOf = (d: (typeof displayData)[number]) => (d.actualRevenue || d.forecastRevenue || 0);
+  const longestLabel = Math.max(
+    ...displayData.flatMap((d) => [fmtNum(d.plan ?? 0).length, fmtNum(revenueOf(d)).length]),
+    1,
+  );
+  const labelPx = Math.ceil(longestLabel * 6.2);
+  const PX_PER_MONTH = Math.max(56, labelPx + 16);
+  const sideMargin = Math.max(40, Math.ceil(labelPx / 2) + 4);
+  const chartWidth = Math.max(displayData.length * PX_PER_MONTH + sideMargin * 2, 100);
   const showBarLabels = displayData.length <= 15;
-  const labelListProps = showBarLabels
-    ? {
-        position: "top" as const,
-        style: { fontSize: "11px", fill: chartTheme.axisText },
-        formatter: (v: number) => (v !== 0 ? v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : ""),
-      }
-    : null;
+  // owner = 이 LabelList가 붙은 막대 종류. 그 달에서 가장 높은 막대(동점이면 plan → actual → forecast
+  // 순)만 라벨을 그린다. 같은 축(0 기준)이라 그 막대 꼭대기가 곧 그 달의 최고점이다.
+  const stackedLabel = (owner: "plan" | "actualRevenue" | "forecastRevenue") => (props: any) => {
+    const { x, y, width, index } = props;
+    const d = displayData[index];
+    if (!d) return null;
+    const plan = pdSalesHasAny ? (d.plan ?? 0) : 0;
+    const values = { plan, actualRevenue: d.actualRevenue ?? 0, forecastRevenue: d.forecastRevenue ?? 0 };
+    const order = ["plan", "actualRevenue", "forecastRevenue"] as const;
+    const maxValue = Math.max(values.plan, values.actualRevenue, values.forecastRevenue);
+    if (maxValue === 0) return null;
+    const drawer = order.find((k) => values[k] === maxValue);
+    if (drawer !== owner) return null;
+    // 그룹(계획+매출 막대 2개)의 가운데 — 계획 막대가 왼쪽, 매출 막대가 오른쪽에 있다.
+    const groupCenter = pdSalesHasAny
+      ? owner === "plan" ? Number(x) + Number(width) : Number(x)
+      : Number(x) + Number(width) / 2;
+    const revenue = revenueOf(d);
+    const lines: Array<{ text: string; color: string }> = [];
+    if (plan !== 0) lines.push({ text: fmtNum(plan), color: chartTheme.axisText });
+    if (revenue !== 0) lines.push({ text: fmtNum(revenue), color: chartTheme.planBlue });
+    return (
+      <g>
+        {lines.map((line, i) => (
+          <text
+            key={i}
+            x={groupCenter}
+            y={Number(y) - 6 - (lines.length - 1 - i) * 13}
+            textAnchor="middle"
+            fontSize={11}
+            fontWeight={i === lines.length - 1 && revenue !== 0 ? 600 : 400}
+            fill={line.color}
+          >
+            {line.text}
+          </text>
+        ))}
+      </g>
+    );
+  };
 
   return (
     <div style={cardStyle}>
@@ -171,7 +216,7 @@ export function RevenueChartCard({
       <div style={{ width: "100%", height: "260px", marginTop: "8px", overflowX: "auto" }}>
         <div style={{ width: `${chartWidth}px`, height: "100%", minWidth: "100%" }}>
           <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart data={displayData} margin={{ top: 30, right: 40, left: 40, bottom: 0 }}>
+            <ComposedChart data={displayData} margin={{ top: 30, right: sideMargin, left: sideMargin, bottom: 0 }}>
               <XAxis
                 dataKey="label"
                 tick={{ fontSize: 10, fill: chartTheme.axisText }}
@@ -196,7 +241,7 @@ export function RevenueChartCard({
                   barSize={14}
                   isAnimationActive={false}
                 >
-                  {labelListProps && <LabelList dataKey="plan" {...labelListProps} />}
+                  {showBarLabels && <LabelList dataKey="plan" content={stackedLabel("plan")} />}
                 </Bar>
               )}
               <Bar
@@ -206,7 +251,7 @@ export function RevenueChartCard({
                 barSize={pdSalesHasAny ? 14 : 22}
                 isAnimationActive={false}
               >
-                {labelListProps && <LabelList dataKey="actualRevenue" {...labelListProps} />}
+                {showBarLabels && <LabelList dataKey="actualRevenue" content={stackedLabel("actualRevenue")} />}
               </Bar>
               {splitForecast && (
                 <Bar
@@ -219,7 +264,7 @@ export function RevenueChartCard({
                   barSize={14}
                   isAnimationActive={false}
                 >
-                  {labelListProps && <LabelList dataKey="forecastRevenue" {...labelListProps} />}
+                  {showBarLabels && <LabelList dataKey="forecastRevenue" content={stackedLabel("forecastRevenue")} />}
                 </Bar>
               )}
             </ComposedChart>

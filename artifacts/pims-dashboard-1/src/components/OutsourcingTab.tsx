@@ -54,6 +54,23 @@ const td: React.CSSProperties = {
   whiteSpace: "nowrap",
 };
 
+// 데이터 셀 정렬 — 텍스트(대공종/세부공종/업체명)는 왼쪽, 금액·비율 숫자는 오른쪽(자릿수 정렬),
+// 날짜/차수는 가운데(요청: "text căn trái số căn phải").
+const tdText: React.CSSProperties = { ...td, textAlign: "left" };
+const tdNum: React.CSSProperties = { ...td, textAlign: "right", fontVariantNumeric: "tabular-nums" };
+
+// 대공종(tradeGroup) 원문 → projectDataEntryTab 번역 키 (ProjectDataEntryTab TRADE_GROUP_LABEL_KEY와 동일)
+const TRADE_GROUP_LABEL_KEY: Record<string, string> = {
+  "대공종": "processCostMajorWork",
+  "공통": "tradeGroupCommon",
+  "건축": "tradeGroupArchitecture",
+  "기계": "tradeGroupMechanical",
+  "전기": "tradeGroupElectrical",
+  "토목": "tradeGroupCivil",
+  "조경": "tradeGroupLandscape",
+  "경비": "processCostExpense",
+};
+
 // 컬럼: 대공종, 세부공종, 업체명, 계약일, 차수, 예산, 집행예산, 결의금액, 결의율, 이번달, 누계, 비율
 // 이번달(9), 누계(10), 비율(11) 동일 너비
 const DEFAULT_WIDTHS = [64, 90, 90, 70, 46, 92, 92, 92, 60, 80, 80, 80, 92];
@@ -115,7 +132,14 @@ export function OutsourcingTab({
   referenceMonth: number;
   onReferenceMonthChange?: (month: number) => void;
 }) {
-  const { t } = useTranslation(["outsourcingTab", "common"]);
+  const { t } = useTranslation(["outsourcingTab", "common", "projectDataEntryTab"]);
+  // 대공종(tradeGroup)은 한국어 고정 식별자로 저장된 데이터라 화면에서만 번역한다(데이터 입력 탭
+  // TRADE_GROUP_LABEL_KEY와 같은 키). 매핑에 없는 값은 원문 그대로.
+  const tradeGroupLabel = (value: string | null | undefined) => {
+    if (!value) return "-";
+    const key = TRADE_GROUP_LABEL_KEY[value];
+    return key ? t(`projectDataEntryTab:${key}`) : value;
+  };
   // budget/executedBudget/resolved/thisMonth/accum của pd_outsourcing lưu ĐÚNG số VND gốc (không quy
   // đổi kUSD) — dùng fmtVnd() thay vì fmtMoney().
   const { fmtVnd } = useMoney();
@@ -229,24 +253,24 @@ export function OutsourcingTab({
                 <>
                   {rows.map((r, i) => (
                     <tr key={i}>
-                      <td style={td} title={r.tradeGroup ?? undefined}>{r.tradeGroup ?? "-"}</td>
-                      <td style={td} title={r.trade || undefined}>{r.trade || "-"}</td>
-                      <td style={td} title={r.vendor ?? undefined}>{r.vendor ?? "-"}</td>
+                      <td style={tdText} title={r.tradeGroup ?? undefined}>{tradeGroupLabel(r.tradeGroup)}</td>
+                      <td style={tdText} title={r.trade || undefined}>{r.trade || "-"}</td>
+                      <td style={tdText} title={r.vendor ?? undefined}>{r.vendor ?? "-"}</td>
                       <td style={td}>{r.contractDate ?? "-"}</td>
                       <td style={td}>{r.changeNo ?? "-"}</td>
-                      <td style={td}>{fmtVnd(r.budget)}</td>
-                      <td style={td}>{fmtVnd(r.executedBudget)}</td>
-                      <td style={td}>{fmtVnd(r.resolved)}</td>
+                      <td style={tdNum}>{fmtVnd(r.budget)}</td>
+                      <td style={tdNum}>{fmtVnd(r.executedBudget)}</td>
+                      <td style={tdNum}>{fmtVnd(r.resolved)}</td>
                       <td style={{
-                        ...td,
+                        ...tdNum,
                         fontWeight: 700,
                         color: resolvedRateColor(ratioPct(r.resolved, r.budget)),
                       }}>{fmtPct(ratioPct(r.resolved, r.budget))}</td>
-                      <td style={td}>{fmtVnd(r.thisMonth)}</td>
-                      <td style={{ ...td, fontWeight: 700, color: INK_NAVY, backgroundColor: TABLE_HEADER_BG }}>{fmtVnd(r.accum)}</td>
-                      <td style={{ ...td, fontWeight: 700, color: INK_NAVY }}>{fmtPct(ratioPct(r.accum, r.resolved))}</td>
+                      <td style={tdNum}>{fmtVnd(r.thisMonth)}</td>
+                      <td style={{ ...tdNum, fontWeight: 700, color: INK_NAVY, backgroundColor: TABLE_HEADER_BG }}>{fmtVnd(r.accum)}</td>
+                      <td style={{ ...tdNum, fontWeight: 700, color: INK_NAVY }}>{fmtPct(ratioPct(r.accum, r.resolved))}</td>
                       <td style={{
-                        ...td,
+                        ...tdNum,
                         fontWeight: 700,
                         color: Math.max((r.resolved ?? 0) - (r.accum ?? 0), 0) > 0 ? ACHIEVE_RED : ACHIEVE_GREEN,
                         backgroundColor: Math.max((r.resolved ?? 0) - (r.accum ?? 0), 0) > 0 ? STATUS_NEG_BG : STATUS_POS_BG,
@@ -264,15 +288,15 @@ export function OutsourcingTab({
                     <td style={td} />
                     <td style={td} />
                     <td style={td} />
-                    <td style={{ ...td, fontWeight: 600 }}>{fmtVnd(sum.budget)}</td>
-                    <td style={{ ...td, fontWeight: 600 }}>{fmtVnd(sum.executedBudget)}</td>
-                    <td style={{ ...td, fontWeight: 600 }}>{fmtVnd(sum.resolved)}</td>
-                    <td style={{ ...td, fontWeight: 700, color: resolvedRateColor(ratioPct(sum.resolved, sum.budget)) }}>{fmtPct(ratioPct(sum.resolved, sum.budget))}</td>
-                    <td style={{ ...td, fontWeight: 600 }}>{fmtVnd(sum.thisMonth)}</td>
-                    <td style={{ ...td, fontWeight: 700, color: INK_NAVY, backgroundColor: TABLE_HEADER_BG }}>{fmtVnd(sum.accum)}</td>
-                    <td style={{ ...td, fontWeight: 600 }}>{fmtPct(ratioPct(sum.accum, sum.resolved))}</td>
+                    <td style={{ ...tdNum, fontWeight: 600 }}>{fmtVnd(sum.budget)}</td>
+                    <td style={{ ...tdNum, fontWeight: 600 }}>{fmtVnd(sum.executedBudget)}</td>
+                    <td style={{ ...tdNum, fontWeight: 600 }}>{fmtVnd(sum.resolved)}</td>
+                    <td style={{ ...tdNum, fontWeight: 700, color: resolvedRateColor(ratioPct(sum.resolved, sum.budget)) }}>{fmtPct(ratioPct(sum.resolved, sum.budget))}</td>
+                    <td style={{ ...tdNum, fontWeight: 600 }}>{fmtVnd(sum.thisMonth)}</td>
+                    <td style={{ ...tdNum, fontWeight: 700, color: INK_NAVY, backgroundColor: TABLE_HEADER_BG }}>{fmtVnd(sum.accum)}</td>
+                    <td style={{ ...tdNum, fontWeight: 600 }}>{fmtPct(ratioPct(sum.accum, sum.resolved))}</td>
                     <td style={{
-                      ...td,
+                      ...tdNum,
                       fontWeight: 700,
                       color: (sum.remaining ?? 0) > 0 ? ACHIEVE_RED : ACHIEVE_GREEN,
                       backgroundColor: (sum.remaining ?? 0) > 0 ? STATUS_NEG_BG : STATUS_POS_BG,

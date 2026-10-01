@@ -8,6 +8,9 @@
 
   "monthlyProgressLabel": "월별 공정율 (계획 대비 실적)",
   "cumulativeProgressLabel": "누계 공정율 (계획 대비 실적)",
+  "costGroupDirectSub": "직접비",
+  "costGroupIndirectSub": "간접비",
+  "costGroupContingencySub": "예비비",
   "durationRate": "공기율",
   "durationVsProgressGap": "공기율 - 누계 공정률",
 

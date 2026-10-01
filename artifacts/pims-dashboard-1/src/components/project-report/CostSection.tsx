@@ -20,7 +20,7 @@ interface Props {
 
 interface CostGroup {
   label: string;
-  koreanLabel: string;
+  subLabelKey: string;
   plan: number | null;
   actual: number | null;
 }
@@ -38,7 +38,7 @@ function sumNullable<T>(
 export function CostSection({ budgetRows }: Props) {
   // plan/actual đến từ pd_cost_budget + tổng hợp pd_outsourcing — cả hai đều lưu VND gốc (không quy
   // đổi kUSD) — dùng fmtVnd() thay vì fmtMoney().
-  const { t } = useTranslation(["projectReportTab", "common", "projectDataEntryTab"]);
+  const { t, i18n } = useTranslation(["projectReportTab", "common", "projectDataEntryTab"]);
   const { fmtVnd, unitLabel } = useMoney();
   // row.budget으로 폴백하면 안 된다 — budget은 계약/예산 총액(pd_cost_budget.budget)이고 plan은 그
   // 항목의 "선택 기준월까지 누계 계획"(costBudgetMonthly 누계)이라, 어떤 항목의 월별 계획이 한 번도
@@ -49,10 +49,8 @@ export function CostSection({ budgetRows }: Props) {
   const groups: CostGroup[] = [
     {
       label: "Direct Cost",
-      // 화면 언어와 무관하게 한국 본사 담당자가 바로 알아볼 수 있도록 원어(한국어) 항목명을 항상
-      // 그대로 병기한다 — locale 파일로 "번역"하면 EN 로케일에서 "Direct Cost"가 그대로 중복 표시되고
-      // (실제 발견된 문제), VI 로케일에서는 정작 한국어 원문이 사라지는 문제가 있었다.
-      koreanLabel: "직접비",
+      // 보조 라벨은 화면 언어로 번역한다(KO 직접비 / VI Chi phí trực tiếp). EN은 메인 라벨과 같아 중복이므로 생략.
+      subLabelKey: "projectReportTab:costGroupDirectSub",
       plan: sumNullable(
         budgetRows.filter((row) => ["외주", "Common", "경비1"].includes(row.item)),
         getPlan,
@@ -64,7 +62,7 @@ export function CostSection({ budgetRows }: Props) {
     },
     {
       label: "Indirect Cost",
-      koreanLabel: "간접비",
+      subLabelKey: "projectReportTab:costGroupIndirectSub",
       plan: sumNullable(
         budgetRows.filter((row) => row.item === "경비2"),
         getPlan,
@@ -76,7 +74,7 @@ export function CostSection({ budgetRows }: Props) {
     },
     {
       label: "Contingency",
-      koreanLabel: "예비비",
+      subLabelKey: "projectReportTab:costGroupContingencySub",
       plan: sumNullable(
         budgetRows.filter((row) => row.item === "예비비"),
         getPlan,
@@ -133,7 +131,9 @@ export function CostSection({ budgetRows }: Props) {
                 <span style={{ fontSize: "11px", fontWeight: 700, color: INK_BODY, whiteSpace: "nowrap" }}>
                   {group.label}
                 </span>
-                <span style={{ fontSize: "10px", color: INK_MUTED }}>{group.koreanLabel}</span>
+                {!i18n.language?.startsWith("en") && t(group.subLabelKey) && (
+                  <span style={{ fontSize: "10px", color: INK_MUTED }}>{t(group.subLabelKey)}</span>
+                )}
               </span>
               <div>
                 <div

@@ -18,6 +18,12 @@ export function BudgetExecutionSection({ rows }: { rows: BudgetRow[] }) {
   const { fmtVnd } = useMoney();
 
   const maxBudget = Math.max(...rows.map((r) => r.budget ?? 0), 1);
+  // 오른쪽 예산 금액 컬럼 폭 — 예전엔 58px 고정이라 천 USD("98,927")는 맞지만 VND 원 단위
+  // ("2,476,143,121,551")는 잘려서 안 보였다(실사용자 보고). 가장 긴 금액 문자열 길이에 맞춘다.
+  const budgetColWidth = Math.max(
+    58,
+    ...rows.map((r) => Math.ceil(fmtVnd(r.budget).length * 6.6) + 8),
+  );
 
   return (
     <div style={cardStyle}>
@@ -91,6 +97,7 @@ export function BudgetExecutionSection({ rows }: { rows: BudgetRow[] }) {
                             top: "50%",
                             left: "50%",
                             transform: "translate(-50%,-50%)",
+                            whiteSpace: "nowrap",
                             fontSize: "10px",
                             color: "#fff",
                             fontWeight: 700,
@@ -105,6 +112,7 @@ export function BudgetExecutionSection({ rows }: { rows: BudgetRow[] }) {
                               right: "-6px",
                               top: "50%",
                               transform: "translate(100%,-50%)",
+                              whiteSpace: "nowrap",
                               fontSize: "10px",
                               color: chartTheme.outflowRed,
                               fontWeight: 700,
@@ -133,6 +141,7 @@ export function BudgetExecutionSection({ rows }: { rows: BudgetRow[] }) {
                             top: "50%",
                             left: "50%",
                             transform: "translate(-50%,-50%)",
+                            whiteSpace: "nowrap",
                             fontSize: "10px",
                             color: "#fff",
                             fontWeight: 700,
@@ -147,6 +156,7 @@ export function BudgetExecutionSection({ rows }: { rows: BudgetRow[] }) {
                               right: "-6px",
                               top: "50%",
                               transform: "translate(100%,-50%)",
+                              whiteSpace: "nowrap",
                               fontSize: "10px",
                               color: chartTheme.planBlue,
                               fontWeight: 700,
@@ -162,12 +172,14 @@ export function BudgetExecutionSection({ rows }: { rows: BudgetRow[] }) {
                   {/* 예산 금액 — 고정 너비 컬럼 */}
                   <div
                     style={{
-                      width: "58px",
-                      minWidth: "58px",
+                      width: `${budgetColWidth}px`,
+                      minWidth: `${budgetColWidth}px`,
                       textAlign: "right",
                       fontSize: "11px",
                       color: INK_SECONDARY,
-                      paddingLeft: "4px",
+                      paddingLeft: "8px",
+                      whiteSpace: "nowrap",
+                      fontVariantNumeric: "tabular-nums",
                     }}
                   >
                     {fmtVnd(row.budget)}

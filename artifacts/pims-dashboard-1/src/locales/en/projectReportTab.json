@@ -8,6 +8,9 @@
 
   "monthlyProgressLabel": "Monthly progress rate (plan vs. actual)",
   "cumulativeProgressLabel": "Cumulative progress rate (plan vs. actual)",
+  "costGroupDirectSub": "",
+  "costGroupIndirectSub": "",
+  "costGroupContingencySub": "",
   "durationRate": "Duration rate",
   "durationVsProgressGap": "Duration rate − cumulative progress rate",
 

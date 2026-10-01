@@ -56,11 +56,17 @@ function RingGauge({ pct, color, size = 52, subLabel }: { pct: number; color: st
       <text x="50%" y={subLabel ? "44%" : "50%"} textAnchor="middle" dominantBaseline="central" fontSize={size * 0.23} fontWeight={800} fill={color}>
         {Math.round(pct)}%
       </text>
-      {subLabel && (
-        <text x="50%" y="62%" textAnchor="middle" dominantBaseline="central" fontSize={size * 0.135} fill={color}>
-          {subLabel}
-        </text>
-      )}
+      {subLabel && (() => {
+        // 링 안쪽(선 두께 제외) 폭에 맞춰 글자 크기를 줄인다 — 영어 "Achievement Rate"처럼 긴 라벨이
+        // 링 밖으로 삐져나와 잘려 보였다(실사용자 보고). 대략 글자 폭 ≈ 0.56em.
+        const innerWidth = (r - 5) * 2 * 0.9;
+        const subFont = Math.max(7, Math.min(size * 0.135, innerWidth / (subLabel.length * 0.56)));
+        return (
+          <text x="50%" y="62%" textAnchor="middle" dominantBaseline="central" fontSize={subFont} fill={color}>
+            {subLabel}
+          </text>
+        );
+      })()}
     </svg>
   );
 }
@@ -145,7 +151,7 @@ function KPICard({
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
             {hasPct
-              ? <RingGauge pct={pctNum} color={gaugeColor} size={compact ? 72 : 84} subLabel={t("common:achievementRate")} />
+              ? <RingGauge pct={pctNum} color={gaugeColor} size={compact ? 72 : 84} subLabel={t("kpiCards:ringAchievement")} />
               : <div style={{ width: 56, textAlign: "center", fontSize: 12, color: K.labelColor, flexShrink: 0 }}>{achievement}</div>}
             <div style={{ minWidth: 0 }}>
               <div style={{ display: "flex", alignItems: "baseline", gap: "5px", minWidth: 0 }}>

@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { localizePeriodLabel } from "../lib/periodLabel";
 import {
   ComposedChart,
   Line,
@@ -143,7 +144,7 @@ function extractMonthIdx(label: string): number | null {
 }
 
 export function SalesChart() {
-  const { t } = useTranslation(["salesChart", "common"]);
+  const { t, i18n } = useTranslation(["salesChart", "common"]);
   const [detailOpen, setDetailOpen] = useState(false);
   const [drillRow, setDrillRow] = useState<SalesRow | null>(null);
 
@@ -243,7 +244,7 @@ export function SalesChart() {
     const chipW = chipText ? Math.max(34, chipText.length * 6.2 + 12) : 0;
     return (
       <g>
-        <text x={x} y={y + 12} textAnchor="middle" fontSize={chartTypography.month} fontFamily={chartTypography.fontFamily} fontWeight={600} fill={chartTheme.axisText}>{payload.value}</text>
+        <text x={x} y={y + 12} textAnchor="middle" fontSize={chartTypography.month} fontFamily={chartTypography.fontFamily} fontWeight={600} fill={chartTheme.axisText}>{localizePeriodLabel(String(payload.value), i18n.language)}</text>
         {chipText && (
           <g>
             <rect x={x - chipW / 2} y={y + 19} width={chipW} height={16} rx={8}
@@ -435,6 +436,7 @@ export function SalesChart() {
               <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.gridLine} vertical={false} />
               <XAxis
                 dataKey="month"
+                tickFormatter={(v: string) => localizePeriodLabel(String(v), i18n.language)}
                 tick={{ fontSize: chartTypography.axis, fontFamily: chartTypography.fontFamily, fill: chartTheme.axisText }}
                 axisLine={false}
                 tickLine={false}
@@ -488,6 +490,7 @@ export function SalesChart() {
             <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.gridLine} vertical={false} />
             <XAxis
               dataKey="month"
+              tickFormatter={(v: string) => localizePeriodLabel(String(v), i18n.language)}
               tick={{ fontSize: chartTypography.month, fontFamily: chartTypography.fontFamily, fill: chartTheme.axisText }}
               axisLine={false}
               tickLine={false}
@@ -560,7 +563,7 @@ export function SalesChart() {
               0,
             );
             return {
-              month: "합계",
+              month: t("common:total"),
               plan,
               actual,
               rate: plan > 0 ? Math.round((actual / plan) * 100) : null,
@@ -577,7 +580,7 @@ export function SalesChart() {
       <DetailModal
         open={drillRow != null}
         onClose={() => setDrillRow(null)}
-        title={drillRow ? t("salesChart:siteDetailTitle", { month: drillRow.month }) : ""}
+        title={drillRow ? t("salesChart:siteDetailTitle", { month: localizePeriodLabel(drillRow.month, i18n.language) }) : ""}
         subtitle={derived?.unitLabel}
       >
         {drillIsLoading ? (
@@ -629,7 +632,7 @@ export function SalesChart() {
                       <th style={{ ...thBase, textAlign: "left" }} rowSpan={2}>{t("salesChart:colBizType")}</th>
                       <th style={{ ...thBase, textAlign: "center" }} colSpan={3}>{t("salesChart:groupCurrentMonth")}</th>
                       <th style={{ ...thBase, textAlign: "center" }} colSpan={3}>
-                        {t("salesChart:groupYtd", { from: "1월", to: drillRow?.month ?? "" })}
+                        {t("salesChart:groupYtd", { from: localizePeriodLabel("1월", i18n.language), to: localizePeriodLabel(drillRow?.month ?? "", i18n.language) })}
                       </th>
                     </tr>
                     <tr style={{ backgroundColor: "#e7f1fd" }}>
@@ -645,7 +648,7 @@ export function SalesChart() {
                     {drillSiteRows.map((row, i) => (
                       <tr key={row.name} style={{ backgroundColor: i % 2 === 0 ? "#fff" : "#f8fbff" }}>
                         <td style={{ ...tdBase, textAlign: "left" }}>{row.name}</td>
-                        <td style={{ ...tdBase, textAlign: "left" }}>{row.bizType}</td>
+                        <td style={{ ...tdBase, textAlign: "left" }}>{row.bizType === "시공" ? t("common:construction") : row.bizType === "용역" ? t("common:service") : row.bizType}</td>
                         <td style={tdBase}>{fmtAmt(row.plan)}</td>
                         <td style={tdBase}>{fmtAmt(row.actual)}</td>
                         <td style={tdBase}>{row.achievementRate}</td>
@@ -655,7 +658,7 @@ export function SalesChart() {
                       </tr>
                     ))}
                     <tr style={{ backgroundColor: "#e7f1fd", borderTop: `2px solid ${CARD_BORDER}` }}>
-                      <td style={{ ...tdBase, textAlign: "left", color: INK_NAVY, fontWeight: 700 }}>합계</td>
+                      <td style={{ ...tdBase, textAlign: "left", color: INK_NAVY, fontWeight: 700 }}>{t("common:total")}</td>
                       <td style={tdBase} />
                       <td style={{ ...tdBase, color: INK_NAVY, fontWeight: 700 }}>{fmtAmt(totalPlan)}</td>
                       <td style={{ ...tdBase, color: INK_NAVY, fontWeight: 700 }}>{fmtAmt(totalActual)}</td>

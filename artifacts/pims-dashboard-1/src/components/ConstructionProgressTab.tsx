@@ -31,7 +31,7 @@ const emptyStyle = emptyNote;
 // 공정 카드 월/연/누계 라벨 — 그래프(달성률 줄)와 붙어 보인다는 요청으로 간격을 띄우고, 굵은 글씨 대신
 // 연한 캡션(pill) 형태로 표시한다.
 const periodLabelStyle: React.CSSProperties = {
-  marginTop: "16px",
+  marginTop: "22px",
   padding: "2px 14px",
   borderRadius: "999px",
   backgroundColor: "#f1f4f9",
@@ -145,17 +145,24 @@ function durationRateAtMonthEnd(
   return (elapsed / (end - start)) * 100;
 }
 
-function milestoneTooltip(m: ProjectDetail["milestones"][number]): string {
+function milestoneTooltip(
+  m: ProjectDetail["milestones"][number],
+  t: ReturnType<typeof useTranslation>["t"],
+): string {
   const startDiff = dateDiffDays(m.planStart, m.actualStart);
   const endDiff = dateDiffDays(m.planEnd, m.actualEnd);
   const fmtDiff = (value: number | null) =>
-    value == null ? "-" : value === 0 ? "차이 없음" : `${Math.abs(value)}일 ${value > 0 ? "지연" : "단축"}`;
+    value == null
+      ? "-"
+      : value === 0
+        ? t("constructionProgressTab:milestoneNoDiff")
+        : t(value > 0 ? "constructionProgressTab:milestoneDelayDays" : "constructionProgressTab:milestoneEarlyDays", { days: Math.abs(value) });
   return [
     m.label,
-    `계획: ${dateRange(m.planStart, m.planEnd) || "-"}`,
-    `실적: ${dateRange(m.actualStart, m.actualEnd) || "-"}`,
-    `착수 차이: ${fmtDiff(startDiff)}`,
-    `완료 차이: ${fmtDiff(endDiff)}`,
+    `${t("common:plan")}: ${dateRange(m.planStart, m.planEnd) || "-"}`,
+    `${t("common:actual")}: ${dateRange(m.actualStart, m.actualEnd) || "-"}`,
+    `${t("constructionProgressTab:milestoneStartDiff")}: ${fmtDiff(startDiff)}`,
+    `${t("constructionProgressTab:milestoneEndDiff")}: ${fmtDiff(endDiff)}`,
   ].join("\n");
 }
 
@@ -235,7 +242,7 @@ function MilestoneChart({ milestones }: { milestones: ProjectDetail["milestones"
             const actual = barPos(m.actualStart, m.actualEnd, true);
             const planLabel = dateRange(m.planStart, m.planEnd);
             const actualLabel = dateRange(m.actualStart, m.actualEnd);
-            const tooltip = milestoneTooltip(m);
+            const tooltip = milestoneTooltip(m, t);
             return (
               <div
                 key={`${m.label}-${mi}`}
@@ -552,7 +559,7 @@ export function ConstructionProgressTab({
                 fontWeight: 700,
               }}
             >
-              공기율 {durationRate != null ? fmtPct(durationRate) : "-"}
+              {t("projectReportTab:durationRate")} {durationRate != null ? fmtPct(durationRate) : "-"}
             </span>
           </div>
           {/* 3-column: 월(막대) / 연(도넛) / 누계(도넛) */}
@@ -562,15 +569,15 @@ export function ConstructionProgressTab({
                 Y축을 고정 [0,100]이 아니라 실제 값 범위에 맞춰 자동으로 잡는다(공정률이 한 자릿수%일 때도
                 막대가 도넛만큼 꽉 차 보이도록). 금액(계획/실적 $)은 이 위젯 성격(공정률)과 무관한 원가
                 데이터라 연/누계 칸과 형식을 맞춰 계획/실적 %와 달성률만 보여준다. */}
-            <div style={{ flex: 1, minWidth: "120px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-              <div style={{ width: "120px", height: "120px" }}>
+            <div style={{ flex: 1, minWidth: "150px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+              <div style={{ width: "150px", height: "150px" }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart
                     data={[{ plan: planMonth ?? 0, actual: actualMonth ?? 0 }]}
                     margin={{ top: 24, right: 10, left: 10, bottom: 0 }}
                   >
                     <YAxis hide domain={[0, (max: number) => Math.max(max * 1.25, 1)]} />
-                    <Bar dataKey="plan" name={t("common:plan")} fill={chartTheme.planBlue} barSize={36} isAnimationActive={false}>
+                    <Bar dataKey="plan" name={t("common:plan")} fill={chartTheme.planBlue} barSize={44} isAnimationActive={false}>
                       <LabelList
                         dataKey="plan"
                         position="top"
@@ -578,7 +585,7 @@ export function ConstructionProgressTab({
                         formatter={(v: number) => planMonth != null ? `${Number(v.toFixed(1))}%` : "-"}
                       />
                     </Bar>
-                    <Bar dataKey="actual" name={t("common:actual")} fill={chartTheme.outflowRed} barSize={36} isAnimationActive={false}>
+                    <Bar dataKey="actual" name={t("common:actual")} fill={chartTheme.outflowRed} barSize={44} isAnimationActive={false}>
                       <LabelList
                         dataKey="actual"
                         position="top"
@@ -589,12 +596,12 @@ export function ConstructionProgressTab({
                   </ComposedChart>
                 </ResponsiveContainer>
               </div>
-              <div style={{ display: "flex", gap: "6px", fontSize: "11px", marginTop: "6px" }}>
+              <div style={{ display: "flex", gap: "8px", fontSize: "12px", marginTop: "14px", lineHeight: 1.5 }}>
                 <span style={{ color: chartTheme.planBlue, fontWeight: 600 }}>{t("common:plan")} {planMonth != null ? fmtPct(planMonth) : "-"}</span>
                 <span style={{ color: chartTheme.outflowRed, fontWeight: 600 }}>{t("common:actual")} {actualMonth != null ? fmtPct(actualMonth) : "-"}</span>
               </div>
-              <div style={{ fontSize: "11px", fontWeight: 700, color: INK_NAVY, marginTop: "2px" }}>
-                달성률 {monthlyAchievement != null ? fmtPct(monthlyAchievement) : "-"}
+              <div style={{ fontSize: "12px", fontWeight: 700, color: INK_NAVY, marginTop: "8px", lineHeight: 1.5 }}>
+                {t("common:achievementRate")} {monthlyAchievement != null ? fmtPct(monthlyAchievement) : "-"}
               </div>
               <span style={periodLabelStyle}>
                 {t("common:monthly").replace("별", "")}
@@ -604,45 +611,45 @@ export function ConstructionProgressTab({
             <div style={{ width: "1px", flexShrink: 0, backgroundColor: DIVIDER, alignSelf: "stretch", margin: "0 6px" }} />
 
             {/* 연 도넛 */}
-            <div style={{ flex: 1, minWidth: "120px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ flex: 1, minWidth: "150px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
               <Donut
                 percent={actualAnnual ?? 0}
                 color={chartTheme.outflowRed}
                 extraArc={planAnnual != null ? { percent: planAnnual, color: chartTheme.planBlue } : undefined}
                 label={actualAnnual != null ? fmtPct(actualAnnual) : "-"}
-                size={120}
-                stroke={15}
-                labelSize={18}
+                size={150}
+                stroke={18}
+                labelSize={22}
               />
-              <div style={{ display: "flex", gap: "6px", fontSize: "11px", marginTop: "6px" }}>
+              <div style={{ display: "flex", gap: "8px", fontSize: "12px", marginTop: "14px", lineHeight: 1.5 }}>
                 <span style={{ color: chartTheme.planBlue, fontWeight: 600 }}>{t("common:plan")} {planAnnual != null ? fmtPct(planAnnual) : "-"}</span>
                 <span style={{ color: chartTheme.outflowRed, fontWeight: 600 }}>{t("common:actual")} {actualAnnual != null ? fmtPct(actualAnnual) : "-"}</span>
               </div>
-              <div style={{ fontSize: "11px", fontWeight: 700, color: INK_NAVY, marginTop: "2px" }}>
-                달성률 {annualAchievement != null ? fmtPct(annualAchievement) : "-"}
+              <div style={{ fontSize: "12px", fontWeight: 700, color: INK_NAVY, marginTop: "8px", lineHeight: 1.5 }}>
+                {t("common:achievementRate")} {annualAchievement != null ? fmtPct(annualAchievement) : "-"}
               </div>
-              <span style={periodLabelStyle}>연</span>
+              <span style={periodLabelStyle}>{t("constructionProgressTab:periodAnnual")}</span>
             </div>
 
             <div style={{ width: "1px", flexShrink: 0, backgroundColor: DIVIDER, alignSelf: "stretch", margin: "0 6px" }} />
 
             {/* 누계 도넛 */}
-            <div style={{ flex: 1, minWidth: "120px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ flex: 1, minWidth: "150px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
               <Donut
                 percent={actualCum ?? 0}
                 color={chartTheme.outflowRed}
                 extraArc={planCum != null ? { percent: planCum, color: chartTheme.planBlue } : undefined}
                 label={actualCum != null ? fmtPct(actualCum) : "-"}
-                size={120}
-                stroke={15}
-                labelSize={18}
+                size={150}
+                stroke={18}
+                labelSize={22}
               />
-              <div style={{ display: "flex", gap: "6px", fontSize: "11px", marginTop: "6px" }}>
+              <div style={{ display: "flex", gap: "8px", fontSize: "12px", marginTop: "14px", lineHeight: 1.5 }}>
                 <span style={{ color: chartTheme.planBlue, fontWeight: 600 }}>{t("common:plan")} {fmtPct(planCum)}</span>
                 <span style={{ color: chartTheme.outflowRed, fontWeight: 600 }}>{t("common:actual")} {fmtPct(actualCum)}</span>
               </div>
-              <div style={{ fontSize: "11px", fontWeight: 700, color: INK_NAVY, marginTop: "2px" }}>
-                달성률 {cumAchievement != null ? fmtPct(cumAchievement) : "-"}
+              <div style={{ fontSize: "12px", fontWeight: 700, color: INK_NAVY, marginTop: "8px", lineHeight: 1.5 }}>
+                {t("common:achievementRate")} {cumAchievement != null ? fmtPct(cumAchievement) : "-"}
               </div>
               <span style={periodLabelStyle}>{t("common:cumulative")}</span>
             </div>

@@ -1,5 +1,13 @@
 {
   "managementPerformanceStatus": "경영실적 현황",
+  "rowRevenue": "매출액",
+  "rowGrossProfit": "매출이익",
+  "rowSga": "판관비",
+  "rowOperatingProfit": "영업이익",
+  "rowNonOperatingProfit": "영업외 이익",
+  "rowOrdinaryProfit": "경상이익",
+  "profitMargin": "이익률",
+  "unitThousandUsd": "천 USD",
   "viewDetails": "상세보기",
   "category": "구분",
   "currentMonthCumulative": "당월 누적",

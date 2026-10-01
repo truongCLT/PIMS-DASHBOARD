@@ -1,5 +1,13 @@
 {
   "managementPerformanceStatus": "Management Performance Status",
+  "rowRevenue": "Revenue",
+  "rowGrossProfit": "Gross Profit",
+  "rowSga": "SG&A",
+  "rowOperatingProfit": "Operating Profit",
+  "rowNonOperatingProfit": "Non-operating Profit",
+  "rowOrdinaryProfit": "Ordinary Profit",
+  "profitMargin": "Margin",
+  "unitThousandUsd": "K USD",
   "viewDetails": "View Details",
   "category": "Category",
   "currentMonthCumulative": "Current Month Cumulative",

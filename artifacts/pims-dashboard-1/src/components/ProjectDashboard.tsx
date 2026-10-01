@@ -1,7 +1,7 @@
 import React, { useCallback, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
-import { usePutProjectdetail, useGetPimsvinaSiterate, getBaseUrl } from "@workspace/api-client-react";
+import { usePutProjectdetail, useGetPimsvinaSiterate, getBaseUrl, getGetCashflowMonthlyQueryKey } from "@workspace/api-client-react";
 import { ProjectCommentPanel } from "./ProjectCommentPanel";
 import { Upload, FileSpreadsheet, RefreshCw } from "lucide-react";
 import projectPhoto from "../assets/project-photo.png";
@@ -115,6 +115,14 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
   }, [siteRateQuery.data, fxRates]);
   const effectiveCurrency = currency;
   const queryClient = useQueryClient();
+  // 탭을 누를 때마다 이 프로젝트의 상세 데이터(pd_*)와 자금수지(cf_*)를 다시 불러온다 — 캐시(staleTime 60초)
+  // 때문에 다른 사용자의 저장/PIMSVINA 동기화 결과가 탭을 옮겨도 반영되지 않는다는 요청. 조회 중에도
+  // 이전 값을 그대로 보여주므로 화면이 깜빡이지 않는다(데이터 입력 탭은 재조회 완료 후 폼을 채운다).
+  const handleTabClick = (tab: string) => {
+    setActiveTab(tab);
+    void queryClient.invalidateQueries({ queryKey: getGetProjectdetailQueryKey({ projectName }) });
+    void queryClient.invalidateQueries({ queryKey: getGetCashflowMonthlyQueryKey() });
+  };
   const putMutation = usePutProjectdetail();
   const excelFileRef = useRef<HTMLInputElement>(null);
   const [excelMsg, setExcelMsg] = useState<string | null>(null);
@@ -362,7 +370,7 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
           return (
             <button
               key={tab}
-              onClick={() => setActiveTab(tab)}
+              onClick={() => handleTabClick(tab)}
               style={{
                 padding: "7px 20px",
                 fontSize: "12px",

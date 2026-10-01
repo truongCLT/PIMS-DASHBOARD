@@ -1,5 +1,13 @@
 {
   "managementPerformanceStatus": "Tình hình kết quả kinh doanh",
+  "rowRevenue": "Doanh thu",
+  "rowGrossProfit": "Lợi nhuận gộp",
+  "rowSga": "Chi phí BH & QLDN",
+  "rowOperatingProfit": "Lợi nhuận hoạt động",
+  "rowNonOperatingProfit": "Lợi nhuận ngoài HĐKD",
+  "rowOrdinaryProfit": "Lợi nhuận trước thuế",
+  "profitMargin": "Tỷ suất LN",
+  "unitThousandUsd": "Nghìn USD",
   "viewDetails": "Xem chi tiết",
   "category": "Phân loại",
   "currentMonthCumulative": "Lũy kế tháng hiện tại",

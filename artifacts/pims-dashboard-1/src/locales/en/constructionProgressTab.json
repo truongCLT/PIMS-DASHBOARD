@@ -1,4 +1,10 @@
 {
+  "periodAnnual": "Annual",
+  "milestoneNoDiff": "No difference",
+  "milestoneDelayDays": "{{days}} days late",
+  "milestoneEarlyDays": "{{days}} days early",
+  "milestoneStartDiff": "Start variance",
+  "milestoneEndDiff": "Finish variance",
   "noMilestoneData": "No milestone data available. ( - )",
   "siteProgressStatus": "Site Progress Status",
   "sitePhotoAlt": "{{projectName}} construction site",

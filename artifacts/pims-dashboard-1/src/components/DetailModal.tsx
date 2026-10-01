@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { localizePeriodLabel } from "../lib/periodLabel";
 import { X } from "lucide-react";
 import { INK_NAVY, INK_SECONDARY, INK_MUTED, CARD_BORDER, DIVIDER } from "../lib/uiTokens";
 
@@ -96,7 +98,7 @@ export function DetailDataTable<T extends object>({
   onRowClick,
   isRowClickable,
   totalRow,
-  totalLabel = "합계",
+  totalLabel,
 }: {
   columns: DetailColumn<T>[];
   rows: T[];
@@ -110,6 +112,15 @@ export function DetailDataTable<T extends object>({
   totalLabel?: React.ReactNode;
 }) {
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+  // 다국어: 합계 라벨 기본값과, 원문이 한국어 기간 라벨("6월"/"3분기"/"2026년")인 문자열 셀은 현재
+  // 언어로 바꿔 표시한다(값 자체는 rowKey/드릴다운 키로 쓰이므로 데이터는 그대로 둔다).
+  const { t, i18n } = useTranslation(["common"]);
+  const effectiveTotalLabel = totalLabel ?? t("common:total");
+  const showRaw = (raw: unknown): React.ReactNode =>
+    raw === "시공" ? t("common:construction")
+    : raw === "용역" ? t("common:service")
+    : typeof raw === "string" ? localizePeriodLabel(raw, i18n.language)
+    : ((raw as React.ReactNode) ?? "-");
   const hasClick = !!onRowClick;
 
   return (
@@ -175,7 +186,7 @@ export function DetailDataTable<T extends object>({
                       ? c.format(raw, row)
                       : typeof raw === "number"
                         ? raw.toLocaleString(undefined, { maximumFractionDigits: 8 })
-                        : (raw as React.ReactNode) ?? "-";
+                        : showRaw(raw);
                     return (
                       <td
                         key={c.key}
@@ -220,12 +231,12 @@ export function DetailDataTable<T extends object>({
                 {columns.map((c, columnIndex) => {
                   const raw = totalRow[c.key as keyof T];
                   const content = columnIndex === 0
-                    ? totalLabel
+                    ? effectiveTotalLabel
                     : c.format
                       ? c.format(raw, totalRow as T)
                       : typeof raw === "number"
                         ? raw.toLocaleString(undefined, { maximumFractionDigits: 8 })
-                        : (raw as React.ReactNode) ?? "-";
+                        : showRaw(raw);
                   return (
                     <td
                       key={c.key}

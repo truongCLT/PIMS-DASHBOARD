@@ -288,10 +288,10 @@ function ProgressPctTooltip({
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr style={{ borderBottom: `1px solid ${DIVIDER}` }}>
-              <th style={{ ...cell, textAlign: "left", fontWeight: 700 }} />
-              <th style={{ ...cell, fontWeight: 700 }}>{t("common:plan")}</th>
-              <th style={{ ...cell, fontWeight: 700 }}>{t("common:actual")}</th>
-              <th style={{ ...cell, fontWeight: 700 }}>{t("common:achievementRate")}</th>
+              <th style={{ ...cell, textAlign: "left", fontWeight: 400, color: INK_MUTED }} />
+              <th style={{ ...cell, fontWeight: 400, color: INK_MUTED }}>{t("common:plan")}</th>
+              <th style={{ ...cell, fontWeight: 400, color: INK_MUTED }}>{t("common:actual")}</th>
+              <th style={{ ...cell, fontWeight: 400, color: INK_MUTED }}>{t("common:achievementRate")}</th>
             </tr>
           </thead>
           <tbody>
@@ -299,10 +299,10 @@ function ProgressPctTooltip({
               const tradeRate = row.plan != null && row.plan !== 0 ? ratioPct(row.actual, row.plan) : null;
               return (
                 <tr key={row.labelKey} style={{ borderBottom: `1px dotted ${DIVIDER}` }}>
-                  <td style={{ ...cell, textAlign: "left", fontWeight: 600, color: INK_BODY }}>{t(row.labelKey)}</td>
+                  <td style={{ ...cell, textAlign: "left", fontWeight: 400, color: INK_BODY }}>{t(row.labelKey)}</td>
                   <td style={cell}>{row.plan != null ? fmtVnd(row.plan) : DASH}</td>
                   <td style={cell}>{row.actual != null ? fmtVnd(row.actual) : DASH}</td>
-                  <td style={{ ...cell, fontWeight: 700, color: tradeRate != null ? rateColor(tradeRate) : INK_MUTED }}>
+                  <td style={{ ...cell, fontWeight: 400, color: tradeRate != null ? rateColor(tradeRate) : INK_MUTED }}>
                     {tradeRate != null ? fmtPct(tradeRate) : DASH}
                   </td>
                 </tr>

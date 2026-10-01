@@ -19,6 +19,9 @@ export function useProjectDetail(projectName: string) {
     detail: query.data ?? null,
     isLoading: query.isLoading,
     isError: query.isError,
+    // 백그라운드 재조회 중(캐시된 이전 값이 detail에 있는 상태) — 탭 전환 시 재조회하므로, 한 번만
+    // 초기화하는 화면(데이터 입력 탭)이 오래된 캐시로 폼을 채우지 않도록 이 값을 같이 확인한다.
+    isFetching: query.isFetching,
   };
 }
 

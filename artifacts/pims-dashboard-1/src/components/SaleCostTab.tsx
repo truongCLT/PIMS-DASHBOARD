@@ -136,6 +136,17 @@ export function SaleCostTab({
     const key = item.trim().toLowerCase();
     return cbMonthly.some((row) => row.item.trim().toLowerCase() === key && row.plan != null);
   };
+  // 실적도 기준월까지 월별 실적(costBudgetMonthly.actual, PIMSVINA)을 누계한다 — 스냅샷
+  // (pd_cost_budget.actual)은 동기화 시점 최신 누계라 기준월 이후 실적이 섞이고 기준월을 바꿔도 안 변한다
+  // (실사용자 보고). 월별 실적이 없는 항목만 스냅샷 폴백. 보고서 탭 원가 카드(cumActualFor)와 동일 규칙.
+  const cumActualFor = (item: string, snapshot: number | null): number | null => {
+    const key = item.trim().toLowerCase();
+    const itemRows = cbMonthly.filter((row) => row.item.trim().toLowerCase() === key);
+    if (!itemRows.some((row) => row.actual != null && row.actual !== 0)) return snapshot;
+    return itemRows
+      .filter((row) => row.year < toYear || (row.year === toYear && row.month <= toMonth))
+      .reduce<number>((sum, row) => sum + (row.actual ?? 0), 0);
+  };
   const rawBudgetRows   = (pdDetail?.costBudget ?? []).map((r) => {
     const isContingency = /contingency/i.test(r.item);
     const monthlyCumPlan = hasMonthlyPlan(r.item) ? cumPlanFor(r.item) : (r.plan ?? null);
@@ -146,7 +157,7 @@ export function SaleCostTab({
       item:     r.item,
       budget:   r.budget ?? null,
       plan:     monthlyCumPlan,
-      actual:   r.actual ?? null,
+      actual:   cumActualFor(r.item, r.actual ?? null),
       bold:     r.category == null || isContingency, // category 없는 단독 항목 또는 Contingency는 굵게 (CostingTab.tsx와 동일 규칙)
     };
   });

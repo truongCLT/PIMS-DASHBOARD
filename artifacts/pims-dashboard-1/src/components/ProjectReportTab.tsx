@@ -67,13 +67,25 @@ const PROCESS_COST_GROUPS = [
 
 // 공정 카드 hover 팝업의 공종 목록 — 데이터 입력 탭 TRADE_GROUP_PROCESS_ITEM과 같은 매핑
 // (tradeGroup = pd_outsourcing 대공종, item = costBudgetMonthly 계획 항목).
-const PROCESS_TRADES = [
-  { tradeGroup: "건축", item: "외주 건축", labelKey: "projectDataEntryTab:tradeGroupArchitecture" },
-  { tradeGroup: "기계", item: "외주 기계", labelKey: "projectDataEntryTab:tradeGroupMechanical" },
-  { tradeGroup: "전기", item: "외주 전기", labelKey: "projectDataEntryTab:tradeGroupElectrical" },
-  { tradeGroup: "토목", item: "외주 토목", labelKey: "projectDataEntryTab:tradeGroupCivil" },
-  { tradeGroup: "조경", item: "외주 조경", labelKey: "projectDataEntryTab:tradeGroupLandscape" },
-] as const;
+// 데이터 입력 탭 "4. 공정별 원가 계획/실적" 표의 7개 컬럼(PROCESS_COST_ITEMS)과 동일한 순서/구성 —
+// 예전엔 건축~조경 5개만 있어 대공종/경비가 빠졌다(실사용자 보고).
+// - items: 계획(및 actualFromOutsourcing=false일 때 실적)을 합산할 costBudgetMonthly 항목들
+// - actualFromOutsourcing: 실적을 pd_outsourcing 대공종별 이번달 합계에서 가져오는지(데이터 입력 탭
+//   AUTO_OUTSOURCING_ITEMS와 동일 — "경비"는 Expense 1/2와 묶인 복합 항목이라 수동 입력 그대로).
+const PROCESS_TRADES: ReadonlyArray<{
+  tradeGroup: string;
+  items: readonly string[];
+  actualFromOutsourcing: boolean;
+  labelKey: string;
+}> = [
+  { tradeGroup: "대공종", items: ["Common"], actualFromOutsourcing: true, labelKey: "projectDataEntryTab:processCostMajorWork" },
+  { tradeGroup: "건축", items: ["외주 건축"], actualFromOutsourcing: true, labelKey: "projectDataEntryTab:tradeGroupArchitecture" },
+  { tradeGroup: "기계", items: ["외주 기계"], actualFromOutsourcing: true, labelKey: "projectDataEntryTab:tradeGroupMechanical" },
+  { tradeGroup: "전기", items: ["외주 전기"], actualFromOutsourcing: true, labelKey: "projectDataEntryTab:tradeGroupElectrical" },
+  { tradeGroup: "토목", items: ["외주 토목"], actualFromOutsourcing: true, labelKey: "projectDataEntryTab:tradeGroupCivil" },
+  { tradeGroup: "조경", items: ["외주 조경"], actualFromOutsourcing: true, labelKey: "projectDataEntryTab:tradeGroupLandscape" },
+  { tradeGroup: "경비", items: ["외주 경비", "Expense 1", "Expense 2"], actualFromOutsourcing: false, labelKey: "projectDataEntryTab:processCostExpense" },
+];
 
 // ─── Responsive grid helpers ───────────────────────────────────────────────
 
@@ -270,12 +282,11 @@ export function ProjectReportTab({
   // 보고서 탭에서 고른 기준월과 다르면(또는 데이터 입력에서 스냅샷을 재계산/저장하기 전에 월별 그리드만
   // 수정하면) 여기 숫자가 방금 입력한 값과 어긋나는 버그가 있었다(실제로 발생/보고됨).
   //
-  // "실적(actual)"은 반대로 costBudgetMonthly를 누계하면 안 된다 — 데이터 입력 탭에서도 Cumulative
-  // Actual은 월별 실적 그리드를 합산하지 않고 pd_cost_budget.actual(PIMSVINA dashboard_pd_costbudget_1q
-  // 동기화가 내려주는, 이미 누계된 단일 스냅샷)을 그대로 읽기 전용으로 보여준다(ProjectDataEntryTab.tsx
-  // actualAmount()/"Cumulative Actual" 칼럼과 동일 규칙) — 월별 실적 그리드는 그 스냅샷만큼 과거 이력이
-  // 다 채워져 있다는 보장이 없어, 합산하면 오히려 실제보다 작게 나오는 값이 된다. 그래서 실적은 데이터
-  // 입력 탭과 동일하게 스냅샷을 그대로 쓴다.
+  // "실적(actual)"도 기준월까지 costBudgetMonthly.actual(PIMSVINA 월별 실적)을 누계한다 — 예전엔
+  // pd_cost_budget.actual(동기화 시점의 최신 누계 스냅샷)을 그대로 써서, 기준월을 바꿔도 실적은 그대로이고
+  // 기준월 이후 달의 실적까지 섞였다(실사용자 보고: 기준월 '26.08인데 '26.09 실적 포함). 현재는 월별
+  // 실적이 착공월부터 다 채워져 있어 전체 합 = 스냅샷이다(DB 확인). 월별 실적이 하나도 없는 항목만
+  // 스냅샷으로 폴백한다.
   const budget = detail?.costBudget ?? [];
   const findBudget = (name: string) =>
     budget.find((r) => r.item.trim().toLowerCase() === name.toLowerCase()) ?? null;
@@ -297,6 +308,21 @@ export function ProjectReportTab({
       ? rows.reduce<number>((sum, row) => sum + (row.plan ?? 0), 0)
       : null;
   };
+  const cumActualFor = (item: string): number | null => {
+    const hasMonthlyActual = cbMonthly.some(
+      (row) => row.item === item && row.actual != null && row.actual !== 0,
+    );
+    if (!hasMonthlyActual) return findBudget(item)?.actual ?? null;
+    return cbMonthly
+      .filter(
+        (row) =>
+          row.item === item &&
+          (row.year < REPORT_YEAR ||
+            (row.year === REPORT_YEAR &&
+              (resolvedMonth == null || row.month <= resolvedMonth))),
+      )
+      .reduce<number>((sum, row) => sum + (row.actual ?? 0), 0);
+  };
 
   // "외주" 행도 나머지 4개 항목과 동일하게 pd_cost_budget(스냅샷)/costBudgetMonthly(월별 계획)에서
   // 뽑는다 — 데이터 입력 탭 "5. Budget Execution Status" 표는 Outsourcing 행도 그 두 소스만 쓴다(표
@@ -310,31 +336,31 @@ export function ProjectReportTab({
       item: "외주",
       budget: findBudget("Outsourcing")?.budget ?? null,
       plan: cumPlanFor("Outsourcing"),
-      actual: findBudget("Outsourcing")?.actual ?? null,
+      actual: cumActualFor("Outsourcing"),
     },
     {
       item: "Common",
       budget: findBudget("Common")?.budget ?? null,
       plan: cumPlanFor("Common"),
-      actual: findBudget("Common")?.actual ?? null,
+      actual: cumActualFor("Common"),
     },
     {
       item: "경비1",
       budget: findBudget("Expense 1")?.budget ?? null,
       plan: cumPlanFor("Expense 1"),
-      actual: findBudget("Expense 1")?.actual ?? null,
+      actual: cumActualFor("Expense 1"),
     },
     {
       item: "경비2",
       budget: findBudget("Expense 2")?.budget ?? null,
       plan: cumPlanFor("Expense 2"),
-      actual: findBudget("Expense 2")?.actual ?? null,
+      actual: cumActualFor("Expense 2"),
     },
     {
       item: "예비비",
       budget: findBudget("Contingency")?.budget ?? null,
       plan: cumPlanFor("Contingency"),
-      actual: findBudget("Contingency")?.actual ?? null,
+      actual: cumActualFor("Contingency"),
     },
   ].filter((r) => r.budget != null || r.actual != null || r.plan != null);
 
@@ -395,10 +421,11 @@ export function ProjectReportTab({
   const statusCostCumulativePlan = sumNullable(comparableCostRows(costPlanRows), "plan");
   const statusCostCumulativeActual = sumNullable(comparableCostRows(costPlanRows), "actual");
 
-  // 공정 카드 hover 팝업 — 공종(건축/기계/전기/토목/조경)별 계획 대비 달성률. 데이터 입력 탭
-  // "4. 공정별 원가 계획/실적" 표와 같은 규칙으로 뽑는다: 계획 = costBudgetMonthly의 "외주 X" 항목
-  // plan(수동 입력), 실적 = pd_outsourcing의 대공종(tradeGroup)별 이번달(thisMonth) 합계(ProjectDataEntryTab
-  // getProcessCostValue와 동일). 월 = 기준월 1개월, 누계 = 프로젝트 시작 ~ 기준월.
+  // 공정 카드 hover 팝업 — 공종(대공종/건축/기계/전기/토목/조경/경비)별 계획 대비 달성률. 데이터 입력 탭
+  // "4. 공정별 원가 계획/실적" 표와 같은 규칙으로 뽑는다(ProjectDataEntryTab getProcessCostValue와 동일):
+  // 계획 = costBudgetMonthly 항목 plan(수동 입력), 실적 = 대공종~조경은 pd_outsourcing 대공종(tradeGroup)별
+  // 이번달(thisMonth) 합계, 경비는 costBudgetMonthly actual(외주 경비+Expense 1+Expense 2).
+  // 월 = 기준월 1개월, 누계 = 프로젝트 시작 ~ 기준월.
   const refYm = resolvedMonth != null ? REPORT_YEAR * 12 + resolvedMonth - 1 : null;
   const sumOrNull = (values: Array<number | null | undefined>) =>
     values.some((v) => v != null)
@@ -409,18 +436,24 @@ export function ProjectReportTab({
       labelKey: trade.labelKey,
       plan: sumOrNull(
         cbMonthly
-          .filter((row) => row.item === trade.item && inRange(row.year * 12 + row.month - 1))
+          .filter((row) => trade.items.includes(row.item) && inRange(row.year * 12 + row.month - 1))
           .map((row) => row.plan),
       ),
-      actual: sumOrNull(
-        (detail?.outsourcing ?? [])
-          .filter(
-            (row) =>
-              (row.tradeGroup === "공통" ? "대공종" : row.tradeGroup) === trade.tradeGroup &&
-              inRange(row.year * 12 + row.month - 1),
+      actual: trade.actualFromOutsourcing
+        ? sumOrNull(
+            (detail?.outsourcing ?? [])
+              .filter(
+                (row) =>
+                  (row.tradeGroup === "공통" ? "대공종" : row.tradeGroup) === trade.tradeGroup &&
+                  inRange(row.year * 12 + row.month - 1),
+              )
+              .map((row) => row.thisMonth),
           )
-          .map((row) => row.thisMonth),
-      ),
+        : sumOrNull(
+            cbMonthly
+              .filter((row) => trade.items.includes(row.item) && inRange(row.year * 12 + row.month - 1))
+              .map((row) => row.actual),
+          ),
     }));
   const tradeMonthlyBreakdown =
     refYm == null ? [] : makeTradeBreakdown((ym) => ym === refYm);
