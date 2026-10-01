@@ -220,17 +220,6 @@ export function ServiceReportTab({
   const findBudget = (name: string) =>
     budgetRows.find((r) => r.item.trim().toLowerCase() === name.toLowerCase()) ?? null;
   const cbMonthly = detail?.costBudgetMonthly ?? [];
-  // 실적(pd_cost_budget.actual)이 프로젝트 시작부터의 전체 누계이므로 계획도 "프로젝트 시작 ~ 기준월"
-  // 전체 누계로 합산한다 — 예전엔 REPORT_YEAR만 합산해서 이전 연도 계획이 빠져 집행률이 폭주했다
-  // (시공 ProjectReportTab cumPlanFor와 동일 수정).
-  const cumPlanFor = (item: string): number | null => {
-    const rows = cbMonthly.filter(
-      (row) => row.item === item && row.year * 12 + row.month - 1 <= monthIndex,
-    );
-    return rows.some((row) => row.plan != null)
-      ? rows.reduce<number>((sum, row) => sum + (row.plan ?? 0), 0)
-      : null;
-  };
   // 실적도 기준월까지 월별 실적(costBudgetMonthly.actual)을 누계한다 — 스냅샷(pd_cost_budget.actual)은
   // 기준월 이후 실적이 섞이고 기준월을 바꿔도 안 변한다(시공 ProjectReportTab cumActualFor와 동일).
   // 월별 실적이 없는 항목만 스냅샷 폴백.
@@ -242,20 +231,44 @@ export function ServiceReportTab({
       .reduce<number>((sum, row) => sum + (row.actual ?? 0), 0);
   };
   const BUDGET_ITEM_NAMES = ["Outsourcing", "Common", "Expense 1", "Expense 2", "Contingency"] as const;
-  const budgetItems = BUDGET_ITEM_NAMES.map((item) => {
-    const row = findBudget(item);
+  // 원가 카드의 계획 = "프로젝트 시작 ~ REPORT_YEAR 12월"(그 해 전체) — 시공 ProjectReportTab 원가 카드와
+  // 동일(요청: 계획은 그 해 전체, 실적은 기준월까지).
+  const cumPlanFullYearFor = (item: string): number | null => {
+    const rows = cbMonthly.filter((row) => row.item === item && row.year <= REPORT_YEAR);
+    return rows.some((row) => row.plan != null)
+      ? rows.reduce<number>((sum, row) => sum + (row.plan ?? 0), 0)
+      : null;
+  };
+
+  // 현황 표 "원가" 행 — 시공 ProjectReportTab과 완전히 동일한 규칙: costBudgetMonthly의 5개 예산 항목을
+  // REPORT_YEAR 1월 ~ 기준월(누계) / 기준월 1개월(월)로 잘라, 계획이 있는 항목만 계획·실적을 비교한다.
+  // 예전엔 월 행은 항상 비워두고, 누계는 "프로젝트 시작~기준월" 계획(없으면 예산 총액 budget으로 폴백)
+  // 대비 실적이라 시공과 판정 기준이 달랐다(예: 계획 100% / 실적 40.5%처럼 예산 대비 집행률이 표시됨).
+  const STATUS_COST_GROUPS = [
+    { label: "외주", items: ["Outsourcing"] },
+    { label: "Common", items: ["Common"] },
+    { label: "Expense 1", items: ["Expense 1"] },
+    { label: "Expense 2", items: ["Expense 2"] },
+    { label: "Contingency", items: ["Contingency"] },
+  ] as const;
+  const statusCostItems = new Set<string>(BUDGET_ITEM_NAMES);
+  const costPlanRows = cbMonthly.filter(
+    (row) => statusCostItems.has(row.item) && row.year === REPORT_YEAR && row.month <= resolvedMonth,
+  );
+  const selectedCostRows = costPlanRows.filter((row) => row.month === resolvedMonth);
+  const comparableCostRows = (rows: typeof costPlanRows) => rows.filter((row) => row.plan != null);
+  const statusCostMonthlyPlan = sumNullable(comparableCostRows(selectedCostRows), (row) => row.plan);
+  const statusCostMonthlyActual = sumNullable(comparableCostRows(selectedCostRows), (row) => row.actual);
+  const budgetPlan = sumNullable(comparableCostRows(costPlanRows), (row) => row.plan);
+  const budgetActual = sumNullable(comparableCostRows(costPlanRows), (row) => row.actual);
+  const budgetItems = STATUS_COST_GROUPS.map((group) => {
+    const groupRows = costPlanRows.filter((row) => (group.items as readonly string[]).includes(row.item));
     return {
-      label: item === "Outsourcing" ? "외주" : item === "Contingency" ? "예비비" : item,
-      plan: cumPlanFor(item) ?? row?.budget ?? null,
-      actual: cumActualFor(item),
+      label: group.label,
+      plan: sumNullable(groupRows, (row) => row.plan),
+      actual: sumNullable(groupRows, (row) => row.actual),
     };
   });
-  // 계획이 한 번도 입력된 적 없는 항목(예: 외주)까지 포함해 합산하면, 그 항목의 실적만 분자에 더해지고
-  // 분모(계획)엔 반영되지 않아 달성률이 비정상적으로 폭주한다 — 계획이 있는 항목만 비교한다(시공
-  // ProjectReportTab의 동일 문제 수정과 같은 원칙).
-  const comparableBudgetItems = budgetItems.filter((row) => row.plan != null);
-  const budgetPlan = sumNullable(comparableBudgetItems, (row) => row.plan);
-  const budgetActual = sumNullable(comparableBudgetItems, (row) => row.actual);
   const reportBudgetRows = BUDGET_ITEM_NAMES.map((item) => {
     const row = findBudget(item);
     return {
@@ -270,7 +283,7 @@ export function ServiceReportTab({
                 ? "예비비"
                 : item,
       budget: row?.budget ?? null,
-      plan: cumPlanFor(item),
+      plan: cumPlanFullYearFor(item),
       actual: cumActualFor(item),
     };
   }).filter((row) => row.budget != null || row.plan != null || row.actual != null);
@@ -282,12 +295,12 @@ export function ServiceReportTab({
   const contractConditions = overview?.paymentTerms ?? null;
   // 시공(Construction) 보고서와 동일한 StatusTableSection을 그대로 재사용 — 구분(매출/원가/자금)별
   // 월/누계 계획·실적과 규칙 기반 상태등을 표시한다. 용역은 공정(진행률) 개념이 없어 "공정" 행은
-  // 아예 넣지 않고, 원가의 "월" 행은 월별 원가 계획 데이터 소스가 따로 없어 비워둔다(누계만 채용).
+  // 아예 넣지 않는다. 원가 월/누계는 위 statusCost*/budgetPlan·budgetActual(시공과 동일 규칙).
   const positiveOrNull = (value: number | null) => (value != null && value > 0 ? value : null);
   const statusRows: StatusRowData[] = [
     { category: "매출", type: "월", plan: salesMonthPlan, actual: salesMonthActual },
     { category: "매출", type: "누계", plan: positiveOrNull(salesCumPlan), actual: positiveOrNull(salesCumActual) },
-    { category: "원가", type: "월", plan: null, actual: null },
+    { category: "원가", type: "월", plan: statusCostMonthlyPlan, actual: statusCostMonthlyActual },
     { category: "원가", type: "누계", plan: budgetPlan, actual: budgetActual },
     { category: "자금", type: "월", plan: salesMonthActual, actual: cashMonthIn },
     { category: "자금", type: "누계", plan: positiveOrNull(overallSalesCumActual), actual: positiveOrNull(cashCumIn) },
