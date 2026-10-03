@@ -799,77 +799,6 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
     setCfPrefilled(false);
     setCashflow(action);
   };
-  const getOutsourcingActualTarget = () => {
-    const matched = /^(\d{4})-(\d{2})$/.exec(overview.asOfMonth ?? "");
-    if (matched) return { year: Number(matched[1]), month: Number(matched[2]) };
-    return { year: REPORT_YEAR, month: Math.max(1, actualCutoffMonth) };
-  };
-  const getOutsourcingActualByItem = (target: { year: number; month: number }) => {
-    // outsourcing은 이제 계약당 여러 달 이력이다 — target 기준월 시점의 계약별 대표 행만 골라서
-    // 합산해야 한다(전체 이력을 그대로 합치면 달 수만큼 중복 합산되어 크게 부풀려진다).
-    const monthRows = selectOutsourcingForMonth(detail?.outsourcing ?? [], target.year, target.month);
-    // 용역(Service)은 공종(건축/기계/전기/토목/조경) 개념이 없어 외주 탭 행이 전부 "대공종"으로만
-    // 들어온다 — 시공용 트레이드 그룹 매핑(대공종→Common)을 그대로 적용하면 용역의 실제 외주 실적이
-    // 전부 "Common"으로 잘못 들어가고 정작 "외주" 항목은 비어버린다. 용역은 트레이드 구분 없이
-    // outsourcing 탭 전체 합계를 그대로 "Outsourcing" 한 항목에만 반영한다.
-    if (service) {
-      const hasAmount = monthRows.some((row) => row.accum != null);
-      const total = hasAmount ? monthRows.reduce((sum, row) => sum + (row.accum ?? 0), 0) : null;
-      return new Map([["Outsourcing", total]]);
-    }
-    const totals = new Map<string, number>();
-    const hasAmount = new Set<string>();
-    monthRows.forEach((row) => {
-      const tradeGroup = normalizeTradeGroup(row.tradeGroup);
-      if (!TRADE_GROUPS.includes(tradeGroup as (typeof TRADE_GROUPS)[number])) return;
-      const item = TRADE_GROUP_PROCESS_ITEM[tradeGroup as (typeof TRADE_GROUPS)[number]];
-      totals.set(item, (totals.get(item) ?? 0) + (row.accum ?? 0));
-      if (row.accum != null) hasAmount.add(item);
-    });
-    // 7개 공종(Common 포함) 전부를 항상 채운다 — outsourcing 탭에 해당 공종의 행이 아예 없으면
-    // null로 명시해 기준월 실적 칸을 비운다. 예전에는 outsourcing에 행이 있는 공종만 totals에 들어가서,
-    // 행이 전혀 없는 공종(예: Landscape)은 이 merge를 안 거치고 costBudgetMonthly에 남아있던 예전
-    // 값(단위가 잘못 저장된 값 등)이 그대로 노출되는 문제가 있었다.
-    return new Map(
-      Object.values(TRADE_GROUP_PROCESS_ITEM).map(
-        (item) => [item, hasAmount.has(item) ? (totals.get(item) ?? null) : null] as const,
-      ),
-    );
-  };
-  const mergeOutsourcingActuals = (
-    rows: ProjectDetailCostBudgetMonthly[],
-    target: { year: number; month: number } = getOutsourcingActualTarget(),
-  ) => {
-    const { year, month } = target;
-    const totals = getOutsourcingActualByItem(target);
-    let merged = [...rows];
-    totals.forEach((actual, item) => {
-      if (item === "외주 경비") {
-        merged = merged.map((row) =>
-          row.year === year &&
-          row.month === month &&
-          (row.item === "Expense 1" || row.item === "Expense 2")
-            ? { ...row, actual: null }
-            : row,
-        );
-      }
-      const index = merged.findIndex(
-        (row) => row.item === item && row.year === year && row.month === month,
-      );
-      if (index >= 0) {
-        merged = merged.map((row, rowIndex) =>
-          rowIndex === index ? { ...row, actual } : row,
-        );
-      } else if (costBudget.some((row) => row.item === item)) {
-        // 해당 사이트에 이 항목(예: Outsourcing)의 예산 라인이 실제로 존재할 때만 새 행을 만든다 —
-        // 예산 항목이 아예 없는데 outsourcing 탭 데이터만 있는 경우(동기화 쪽 사이트 매핑 오류로 보이는
-        // 사례 다수 보고됨: 용역 사이트에 Direct Cost 예산이 없는데도 외주 실적이 표시됨)까지 행을
-        // 새로 만들어버리면 예산 없는 유령 비용 항목이 화면에 노출된다.
-        merged.push({ item, year, month, plan: null, actual });
-      }
-    });
-    return merged;
-  };
   // "5. 외주/자재" 표에서 선택한 기준월(outsourcingYear/outsourcingMonth) 시점의 계약별 This
   // Month/Cumulative 값을 찾기 위한 조회 맵 — tradeGroup 수정은 outsourcing state(계약당 대표 행)에
   // 그대로 하되, 숫자 컬럼(이번달/누계)만 이 맵의 값으로 바꿔 보여준다. 계약 자체는(이력이 있는 한)
@@ -1710,8 +1639,12 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
   // 천 USD로 저장했으나 pd_cost_budget_monthly.plan/actual 전체를 VND 원본으로 통일했다),
   // Cumulative는 별도의 단일 스냅샷 값(pd_cost_budget.plan, VND 원본)을 그대로 입력받는다 — 월별
   // 합산이 아니다.
+  // Outsourcing의 Monthly도 costBudgetMonthly.actual을 그대로 읽는다 — dashboard_pd_costbudget_monthly_1q.jsp가
+  // 이미 Outsourcing 항목까지 동기화해주므로(Cumulative actualAmount()와 같은 소스), pd_outsourcing(외주/자재
+  // 탭의 계약별 accum)으로 따로 재계산(mergeOutsourcingActuals)하면 Cumulative와 다른 소스가 되어 두 값이
+  // 어긋난다(실사용자 보고: Monthly가 costBudgetMonthly 기준과 다르게 나옴).
   const monthlyBudgetAmount = (item: string, field: "plan" | "actual") => {
-    const row = mergeOutsourcingActuals(costBudgetMonthly, selectedExecutionMonth).find(
+    const row = costBudgetMonthly.find(
       (r) => r.item === item && r.year === selectedExecutionMonth.year && r.month === selectedExecutionMonth.month,
     );
     return row?.[field] ?? null;

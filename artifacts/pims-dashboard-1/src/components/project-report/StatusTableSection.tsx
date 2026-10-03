@@ -98,7 +98,7 @@ function fundsLevel(plan: number | null, actual: number | null): StatusLevel {
   if (plan == null || actual == null) return "empty";
   const receivable = Math.max(plan - actual, 0);
   if (receivable === 0) return "green";
-  // 보고서 금액 단위는 K USD이며 1,000은 약 10억 원 구간에 해당한다.
+  // 보고서 금액 단위는 K USD(천 USD)이므로 1,000 = 1 Mil. $(백만 달러) 구간이다.
   return receivable < 1_000 ? "yellow" : "red";
 }
 

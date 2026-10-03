@@ -624,7 +624,15 @@ export async function applyPimsvinaData(fetched: PimsvinaData) {
   const COST_BUDGET_MONTHLY_ITEMS = ["Common", "Expense 1", "Expense 2", "Contingency", "Outsourcing"];
   const costBudgetMonthlyUpdates = new Map<
     string,
-    { projectName: string; item: string; year: number; month: number; actual: number }
+    {
+      projectName: string;
+      fldCode: string | null;
+      siteCode: string | null;
+      item: string;
+      year: number;
+      month: number;
+      actual: number;
+    }
   >();
   for (const item of fetched.pdCostBudgetMonthly) {
     const projectName = await resolveProjectName(item);
@@ -645,7 +653,15 @@ export async function applyPimsvinaData(fetched: PimsvinaData) {
     }
     costBudgetMonthlyUpdates.set(
       tradeCostKey({ projectName, item: item.item, year, month }),
-      { projectName, item: item.item, year, month, actual: actualVnd },
+      {
+        projectName,
+        fldCode: item.fldcode || null,
+        siteCode: item.site_code || null,
+        item: item.item,
+        year,
+        month,
+        actual: actualVnd,
+      },
     );
   }
   for (const update of costBudgetMonthlyUpdates.values()) {
@@ -653,6 +669,8 @@ export async function applyPimsvinaData(fetched: PimsvinaData) {
       .insert(pdCostBudgetMonthlyTable)
       .values({
         projectName: update.projectName,
+        fldCode: update.fldCode,
+        siteCode: update.siteCode,
         item: update.item,
         year: update.year,
         month: update.month,
@@ -666,7 +684,12 @@ export async function applyPimsvinaData(fetched: PimsvinaData) {
           pdCostBudgetMonthlyTable.year,
           pdCostBudgetMonthlyTable.month,
         ],
-        set: { actual: String(update.actual), actualSource: "pimsvina" },
+        set: {
+          fldCode: update.fldCode,
+          siteCode: update.siteCode,
+          actual: String(update.actual),
+          actualSource: "pimsvina",
+        },
       });
     counts.pdCostBudgetMonthly++;
   }

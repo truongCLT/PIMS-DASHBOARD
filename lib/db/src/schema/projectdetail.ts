@@ -187,6 +187,8 @@ export const pdCostBudgetMonthlyTable = pgTable(
   {
     id: serial("id").primaryKey(),
     projectName: text("project_name").notNull(),
+    fldCode: text("fld_code"), // PIMSVINA site code (FLDCODE) — pd_cost_budget와 동일하게 저장
+    siteCode: text("site_code"), // PIMSVINA financial site code (ACNT_FLDCODE)
     item: text("item").notNull(), // 'Common' | 'Expense 1'
     year: integer("year").notNull(),
     month: integer("month").notNull(), // 1..12
