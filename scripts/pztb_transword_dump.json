@@ -1,0 +1,2997 @@
+[
+  {
+    "BASE_WORD": "(외주)입찰목록",
+    "TRANS_WORD1": "(Sub-Contract) Bidding List",
+    "TRANS_WORD4": "(Thầu phụ) Danh sách đấu thầu"
+  },
+  {
+    "BASE_WORD": "(외주)총액입찰등록",
+    "TRANS_WORD1": "(Sub-Contract) Total Bid Registration",
+    "TRANS_WORD4": "(Thầu phụ) Đăng ký đấu thầu tổng giá"
+  },
+  {
+    "BASE_WORD": "(외주)내역입찰등록",
+    "TRANS_WORD1": "(Sub-Contract) Detailed Bid Registration",
+    "TRANS_WORD4": "(Thầu phụ) Đăng ký đấu thầu có bảng tính BOQ"
+  },
+  {
+    "BASE_WORD": "(외주)입찰내역",
+    "TRANS_WORD1": "(Sub-Contract) Bidding Details",
+    "TRANS_WORD4": "(Thầu phụ) Chi tiết đấu thầu"
+  },
+  {
+    "BASE_WORD": "실행예산(공사)품의서-최초",
+    "TRANS_WORD1": "Execution Budget (Construction) Proposal - Initial",
+    "TRANS_WORD4": "Đơn xin chấp thuận ngân sách thực hiện (Xây dựng) - Ban đầu"
+  },
+  {
+    "BASE_WORD": "협력업체요청자료적용처리",
+    "TRANS_WORD1": "Processing Partner Company Request Data",
+    "TRANS_WORD4": "Xử lý áp dụng dữ liệu yêu cầu của công ty đối tác"
+  },
+  {
+    "BASE_WORD": "협력업체삭제",
+    "TRANS_WORD1": "Delete Partner Company",
+    "TRANS_WORD4": "Xóa công ty đối tác"
+  },
+  {
+    "BASE_WORD": "실행예산(공사)품의서-도급반영",
+    "TRANS_WORD1": "Execution Budget (Construction) Proposal - Reflected in Contract",
+    "TRANS_WORD4": "Đơn xin chấp thuận ngân sách thực hiện (Xây dựng) - Phản ánh trong gói thầu"
+  },
+  {
+    "BASE_WORD": "실행예산(공사)품의서-도급반영(예정)",
+    "TRANS_WORD1": "Execution Budget (Construction) Proposal - Reflected in Contract (Planned)",
+    "TRANS_WORD4": "Đơn xin chấp thuận ngân sách thực hiện (Xây dựng) - Phản ánh trong gói thầu(dự kiến)"
+  },
+  {
+    "BASE_WORD": "실행예산(공사)품의서-도급반영(실행반영(예정)",
+    "TRANS_WORD1": "Execution Budget (Construction) Proposal - Reflected in Contract (Execution Planned)",
+    "TRANS_WORD4": "Đơn xin chấp thuận ngân sách thực hiện (Xây dựng) - Phản ánh trong gói thầu ((dự kiến) phản ánh thực hiện)"
+  },
+  {
+    "BASE_WORD": "실행예산(공사)품의서-도급(실행)미반영",
+    "TRANS_WORD1": "Execution Budget (Construction) Proposal - Not Reflected in Contract (Execution)",
+    "TRANS_WORD4": "Đơn xin chấp thuận ngân sách thực hiện (Xây dựng) - Không phản ánh trong gói thầu (Thực hiện)"
+  },
+  {
+    "BASE_WORD": "실행예산(공사)품의서",
+    "TRANS_WORD1": "Execution Budget (Construction) Proposal",
+    "TRANS_WORD4": "Đơn xin chấp thuận ngân sách thực hiện (Xây dựng)"
+  },
+  {
+    "BASE_WORD": "예산반영승인서",
+    "TRANS_WORD1": "Budget Reflection Approval",
+    "TRANS_WORD4": "Bản chấp thuận phản ánh ngân sách"
+  },
+  {
+    "BASE_WORD": "시행기성(현장)",
+    "TRANS_WORD1": "Execution Progress (Site)",
+    "TRANS_WORD4": "Tiến độ thanh toán thi hành (Công trường)"
+  },
+  {
+    "BASE_WORD": "기성(B)",
+    "TRANS_WORD1": "Progress Payment (B)",
+    "TRANS_WORD4": "Thanh toán tiến độ (B)"
+  },
+  {
+    "BASE_WORD": "기성(E)",
+    "TRANS_WORD1": "Progress Payment (E)",
+    "TRANS_WORD4": "Thanh toán tiến độ (E)"
+  },
+  {
+    "BASE_WORD": "기성(J=B+E)",
+    "TRANS_WORD1": "Progress Payment (J=B+E)",
+    "TRANS_WORD4": "Thanh toán tiến độ (J=B+E)"
+  },
+  {
+    "BASE_WORD": "용역",
+    "TRANS_WORD1": "Service",
+    "TRANS_WORD4": "Dịch vụ"
+  },
+  {
+    "BASE_WORD": "수금예정금액",
+    "TRANS_WORD1": "Expected Collection Amount",
+    "TRANS_WORD4": "Số tiền thu dự kiến"
+  },
+  {
+    "BASE_WORD": "차수",
+    "TRANS_WORD1": "Sequence",
+    "TRANS_WORD4": "Số lần"
+  },
+  {
+    "BASE_WORD": "매출",
+    "TRANS_WORD1": "Sales",
+    "TRANS_WORD4": "Doanh thu"
+  },
+  {
+    "BASE_WORD": "매출구분",
+    "TRANS_WORD1": "Sales Classification",
+    "TRANS_WORD4": "Phân loại doanh thu"
+  },
+  {
+    "BASE_WORD": "시행기성팝업(현장)",
+    "TRANS_WORD1": "Execution Progress Popup (Site)",
+    "TRANS_WORD4": "Pop-up tiến độ thanh toán thi hành (Công trường)"
+  },
+  {
+    "BASE_WORD": "기성상태",
+    "TRANS_WORD1": "Progress Payment Status",
+    "TRANS_WORD4": "Tình trạng thanh toán tiến độ"
+  },
+  {
+    "BASE_WORD": "본사원가마감이완료되었습니다.",
+    "TRANS_WORD1": "Headquarters Cost Closing is completed.",
+    "TRANS_WORD4": "Đã hoàn thành đóng chi phí tổng công ty."
+  },
+  {
+    "BASE_WORD": "기성개요",
+    "TRANS_WORD1": "Progress Payment Overview",
+    "TRANS_WORD4": "Tổng quan thanh toán tiến độ"
+  },
+  {
+    "BASE_WORD": "기성금액-선급금공제",
+    "TRANS_WORD1": "Progress Payment Amount - Advance Deduction",
+    "TRANS_WORD4": "Số tiền thanh toán tiến độ - Khấu trừ tiền tạm ứng"
+  },
+  {
+    "BASE_WORD": "기성내역과기성금액이틀립니다",
+    "TRANS_WORD1": "The progress details and amount do not match.",
+    "TRANS_WORD4": "Chi tiết và số tiền thanh toán tiến độ không khớp."
+  },
+  {
+    "BASE_WORD": "시행기성내역",
+    "TRANS_WORD1": "Execution Progress Details",
+    "TRANS_WORD4": "Chi tiết tiến độ thanh toán thi hành"
+  },
+  {
+    "BASE_WORD": "기성금액이100%를초과했습니다.",
+    "TRANS_WORD1": "The progress payment amount has exceeded 100%.",
+    "TRANS_WORD4": "Số tiền thanh toán tiến độ đã vượt quá 100%."
+  },
+  {
+    "BASE_WORD": "기성율이100%를초과했습니다.",
+    "TRANS_WORD1": "The progress payment rate has exceeded 100%.",
+    "TRANS_WORD4": "Tỷ lệ thanh toán tiến độ đã vượt quá 100%."
+  },
+  {
+    "BASE_WORD": "현장원가마감이완료되었습니다.",
+    "TRANS_WORD1": "Site cost closing is completed.",
+    "TRANS_WORD4": "Đã hoàn tất đóng chi phí tại công trường."
+  },
+  {
+    "BASE_WORD": "현장시행기성마감이완료되었습니다.",
+    "TRANS_WORD1": "Site progress payment closing is completed.",
+    "TRANS_WORD4": "Đã hoàn tất kết thúc thanh toán tiến độ thi hành tại công trường."
+  },
+  {
+    "BASE_WORD": "투입",
+    "TRANS_WORD1": "Input",
+    "TRANS_WORD4": "đưa vào/Đưa vào"
+  },
+  {
+    "BASE_WORD": "외주비",
+    "TRANS_WORD1": "Sub-Contract Cost",
+    "TRANS_WORD4": "Chi phí thuê ngoài"
+  },
+  {
+    "BASE_WORD": "매출액",
+    "TRANS_WORD1": "Sales Amount",
+    "TRANS_WORD4": "Số tiền doanh thu"
+  },
+  {
+    "BASE_WORD": "EXPR:ORGNAME=='[투입예정인원]'?\"Y\":\"\"",
+    "TRANS_WORD1": "expr:ORGNAME=='[Expected Input Personnel]'?\"Y\":\"\"",
+    "TRANS_WORD4": "expr:ORGNAME=='[Nhân sự dự kiến đưa vào]'?\"Y\":\"\""
+  },
+  {
+    "BASE_WORD": "진행중인외주기성",
+    "TRANS_WORD1": "Subcontract in Progress",
+    "TRANS_WORD4": "Gia công phần mềm đang tiến hành"
+  },
+  {
+    "BASE_WORD": "DATA중복(예산내역번호중복)",
+    "TRANS_WORD1": "DATA duplication (duplication of budget details No)",
+    "TRANS_WORD4": "Trùng lặp DỮ LIỆU (trùng lặp số chi tiết ngân sách)"
+  },
+  {
+    "BASE_WORD": "공종코드중복오류",
+    "TRANS_WORD1": "Duplicate work code error",
+    "TRANS_WORD4": "Lỗi mã công việc trùng lặp"
+  },
+  {
+    "BASE_WORD": "외주비목이면직영발주공종을등록불가함",
+    "TRANS_WORD1": "If it is an outsourced item, it cannot be registered as a direct order work item.",
+    "TRANS_WORD4": "Nếu là mặt hàng gia công ngoài thì không thể đăng ký là mặt hàng công việc theo đơn đặt hàng trực tiếp."
+  },
+  {
+    "BASE_WORD": "존재하지않는발주공종코드가입력됨",
+    "TRANS_WORD1": "A non-existent ordering code was entered",
+    "TRANS_WORD4": "Đã nhập mã đặt hàng không tồn tại"
+  },
+  {
+    "BASE_WORD": "실행기성율(%)",
+    "TRANS_WORD1": "Budget Progress Payment Rate (%)",
+    "TRANS_WORD4": "So với Tỷ lệ thanh toán theo tiến độ (%)"
+  },
+  {
+    "BASE_WORD": "도급기성율(%)",
+    "TRANS_WORD1": "Contract Progress Payment Rate (%)",
+    "TRANS_WORD4": "gói thầu Tỷ lệ thanh toán theo tiến độ (%)"
+  },
+  {
+    "BASE_WORD": "도급대비원가율(%)",
+    "TRANS_WORD1": "Contract Compared Cost Rate(%)",
+    "TRANS_WORD4": "gói thầu So sánh Tỷ lệ chi phí(%)"
+  },
+  {
+    "BASE_WORD": "(용역)입찰목록",
+    "TRANS_WORD1": "(Service) Bidding List",
+    "TRANS_WORD4": "(Dịch vụ) Danh sách đấu thầu"
+  },
+  {
+    "BASE_WORD": "계약환율",
+    "TRANS_WORD1": "Contract Exchange Rate",
+    "TRANS_WORD4": "Contract Exchange Rate"
+  },
+  {
+    "BASE_WORD": "청구실행금액",
+    "TRANS_WORD1": "Request Budget Amount",
+    "TRANS_WORD4": "Số tiền thực hiện yêu cầu"
+  },
+  {
+    "BASE_WORD": "현장구매:\"3.3.4\"실행예산3만USD미만,\"3.5\"구매금액10,000USD이하",
+    "TRANS_WORD1": "Site purchase: \"3.3.4\" execution budget less than 30,000 USD, \"3.5\" purchase amount less than 10,000 USD",
+    "TRANS_WORD4": "Mua tại chỗ: Ngân sách khớp lệnh \"3.3.4\" dưới 30.000 USD, số tiền mua \"3,5\" dưới 10.000 USD"
+  },
+  {
+    "BASE_WORD": "실행금액(당초)",
+    "TRANS_WORD1": "Budget Amount(Initial)",
+    "TRANS_WORD4": "Số tiền ngân sách (Ban đầu)"
+  },
+  {
+    "BASE_WORD": "예산수량(TON환산)",
+    "TRANS_WORD1": "Budget Quantity (Converted to TON)",
+    "TRANS_WORD4": "Số lượng ngân sách (Chuyển đổi sang TON)"
+  },
+  {
+    "BASE_WORD": "총예산수량(A)",
+    "TRANS_WORD1": "Total Budget Quantity (A)",
+    "TRANS_WORD4": "Số lượng ngân sách"
+  },
+  {
+    "BASE_WORD": "본사용역입찰",
+    "TRANS_WORD1": "Head Office Purchasing Bidding",
+    "TRANS_WORD4": "Trụ sở chính Mua sắm Đấu thầu"
+  },
+  {
+    "BASE_WORD": "4.타사분기성재계산",
+    "TRANS_WORD1": "4.Joint Contract Colculation",
+    "TRANS_WORD4": "4.Tính toán lại của bên thứ ba"
+  },
+  {
+    "BASE_WORD": "(용역)내역입찰등록",
+    "TRANS_WORD1": "(Service) Detailed Bid Registration",
+    "TRANS_WORD4": "(Dịch vụ) Đăng ký đấu thầu có bảng tính BOQ"
+  },
+  {
+    "BASE_WORD": "기성(D)",
+    "TRANS_WORD1": "Progress Payment (D)",
+    "TRANS_WORD4": "Thanh toán tiến độ (D)"
+  },
+  {
+    "BASE_WORD": "기성(G=B+D)",
+    "TRANS_WORD1": "Progress Payment (G=B+D)",
+    "TRANS_WORD4": "Thanh toán tiến độ (G=B+D)"
+  },
+  {
+    "BASE_WORD": "\"원가확정\"되지않은현장이존재합니다.",
+    "TRANS_WORD1": "There is a site that has not been \"cost determined\".",
+    "TRANS_WORD4": "There is a site that has not been \"cost determined\"."
+  },
+  {
+    "BASE_WORD": "※관련메뉴:구매관리>자재관리>수불관리>자재원가마감",
+    "TRANS_WORD1": "※ Related Menu: Procurement Management > Material Management > Inventory Management > Material Cost Closing",
+    "TRANS_WORD4": "※ Menu liên quan: Quản lý mua sắm > Quản lý vật liệu > Quản lý xuất nhập tồn > Kết thúc giá thành vật liệu"
+  },
+  {
+    "BASE_WORD": "(마감시,위현장의\"자재원가\"는자동으로\"확정\"처리됩니다.)",
+    "TRANS_WORD1": "(At closing, the above site's \"material cost\" is automatically \"confirmed.\")",
+    "TRANS_WORD4": "(At closing, the above site's \"material cost\" is automatically \"confirmed.\")"
+  },
+  {
+    "BASE_WORD": "전월환율또는변경전환율적용협의필요함",
+    "TRANS_WORD1": "Need to consult for applying last month's exchange rate or changed conversion rate.",
+    "TRANS_WORD4": "Cần thỏa thuận để áp dụng tỷ giá hối đoái tháng trước hoặc tỷ giá chuyển đổi đã thay đổi."
+  },
+  {
+    "BASE_WORD": "입찰차수",
+    "TRANS_WORD1": "Bidding Sequence",
+    "TRANS_WORD4": "số lượng hồ sơ dự thầu"
+  },
+  {
+    "BASE_WORD": "예산잔액",
+    "TRANS_WORD1": "Budget Balance Amount",
+    "TRANS_WORD4": "Số dư ngân sách"
+  },
+  {
+    "BASE_WORD": "시행차수",
+    "TRANS_WORD1": "Implementation Sequence",
+    "TRANS_WORD4": "Số lần thi hành"
+  },
+  {
+    "BASE_WORD": "PJ특징및수주배경",
+    "TRANS_WORD1": "PJ Characteristics and Order Background",
+    "TRANS_WORD4": "Đặc điểm PJ và bối cảnh đặt hàng"
+  },
+  {
+    "BASE_WORD": "발주공종",
+    "TRANS_WORD1": "Order Work Type",
+    "TRANS_WORD4": "Loại công việc thi công đặt hàng"
+  },
+  {
+    "BASE_WORD": "협력업체",
+    "TRANS_WORD1": "Partner Company",
+    "TRANS_WORD4": "Công ty đối tác"
+  },
+  {
+    "BASE_WORD": "최초발주예산",
+    "TRANS_WORD1": "Initial Order Budget",
+    "TRANS_WORD4": "Ngân sách đặt hàng ban đầu"
+  },
+  {
+    "BASE_WORD": "집행예산",
+    "TRANS_WORD1": "Operational Budget",
+    "TRANS_WORD4": "Ngân sách thi hành"
+  },
+  {
+    "BASE_WORD": "등록공종",
+    "TRANS_WORD1": "Registered Work Type",
+    "TRANS_WORD4": "Loại công việc thi công đã đăng ký"
+  },
+  {
+    "BASE_WORD": "기성년월",
+    "TRANS_WORD1": "Progress Payment Month",
+    "TRANS_WORD4": "Năm và tháng thanh toán theo tiến độ"
+  },
+  {
+    "BASE_WORD": "확정기성타사당월",
+    "TRANS_WORD1": "Confirmed Monthly Progress of Other Companies",
+    "TRANS_WORD4": "Tiến độ tháng này được xác định của các công ty khác"
+  },
+  {
+    "BASE_WORD": "실행기성타사누계",
+    "TRANS_WORD1": "Execution Progress Other Companies Cumulative",
+    "TRANS_WORD4": "Tiến độ thực hiện lũy kế của các công ty khác"
+  },
+  {
+    "BASE_WORD": "도급기성타사누계",
+    "TRANS_WORD1": "Contract Progress Cumulative for Other Companies",
+    "TRANS_WORD4": "Tiến độ thanh toán gói thầu lũy kế cho công ty khác"
+  },
+  {
+    "BASE_WORD": "확정기성타사누계",
+    "TRANS_WORD1": "Confirmed Cumulative Progress of Other Companies",
+    "TRANS_WORD4": "Tiến độ lũy kế được xác định của các công ty khác"
+  },
+  {
+    "BASE_WORD": "미확정기성타사누계",
+    "TRANS_WORD1": "Unconfirmed Progress Cumulative for Other Companies",
+    "TRANS_WORD4": "Tiến độ thanh toán chưa xác định lũy kế cho công ty khác"
+  },
+  {
+    "BASE_WORD": "기성금액타사분",
+    "TRANS_WORD1": "Progress Payment Amount for Other Companies",
+    "TRANS_WORD4": "Số tiền thanh toán theo tiến độ cho công ty khác"
+  },
+  {
+    "BASE_WORD": "도급/실행기성산정",
+    "TRANS_WORD1": "Contracr/Budget Progress Calculation",
+    "TRANS_WORD4": "Gói thầu/Tính toán thực hiện thanh toán theo tiến độ"
+  },
+  {
+    "BASE_WORD": "년도별예산등록",
+    "TRANS_WORD1": "Annual Budget Registration",
+    "TRANS_WORD4": "Đăng ký ngân sách theo từng năm"
+  },
+  {
+    "BASE_WORD": "준공예정원가율승인",
+    "TRANS_WORD1": "Approval of Expected Cost Ratio at Final Completion",
+    "TRANS_WORD4": "Chấp thuận tỷ lệ chi phí hoàn công dự kiến"
+  },
+  {
+    "BASE_WORD": "신규공급단가차수생성",
+    "TRANS_WORD1": "Create New Supply Unit Price Sequence",
+    "TRANS_WORD4": "Tạo số lần đơn giá cung cấp mới"
+  },
+  {
+    "BASE_WORD": "계약차수",
+    "TRANS_WORD1": "Contract Sequence",
+    "TRANS_WORD4": "Số lần hợp đồng"
+  },
+  {
+    "BASE_WORD": "신규가공단가차수생성",
+    "TRANS_WORD1": "Create New Processing Unit Price Sequence",
+    "TRANS_WORD4": "Tạo số lần đơn giá gia công mới"
+  },
+  {
+    "BASE_WORD": "차수현황",
+    "TRANS_WORD1": "Sequence Status",
+    "TRANS_WORD4": "Hiện trạng số lần"
+  },
+  {
+    "BASE_WORD": "지역별레미콘협정차수생성",
+    "TRANS_WORD1": "Creation of Regional Ready-Mix Concrete Agreement Installments",
+    "TRANS_WORD4": "Tạo số lần thỏa thuận bê tông trộn sẵn theo khu vực"
+  },
+  {
+    "BASE_WORD": "협정차수",
+    "TRANS_WORD1": "Agreement Sequence",
+    "TRANS_WORD4": "Số lần thỏa thuận"
+  },
+  {
+    "BASE_WORD": "신규차수생성시전차수내역이자동복사됩니다.",
+    "TRANS_WORD1": "When Creating a New Sequence, the Previous Sequence Details are Automatically Copied.",
+    "TRANS_WORD4": "Khi tạo số lần mới, chi tiết số lần trước đó sẽ được sao chép tự động."
+  },
+  {
+    "BASE_WORD": "레미콘협정차수생성",
+    "TRANS_WORD1": "Generate Ready-Mixed Concrete Agreement Sequence",
+    "TRANS_WORD4": "Tạo số lần thỏa thuận bê tông tươi"
+  },
+  {
+    "BASE_WORD": "공급차수",
+    "TRANS_WORD1": "Supply Sequence",
+    "TRANS_WORD4": "Số lần cung cấp"
+  },
+  {
+    "BASE_WORD": "레미콘공급단가차수생성",
+    "TRANS_WORD1": "Generate Ready-Mixed Concrete Supply Unit Price Sequence",
+    "TRANS_WORD4": "Tạo số lần đơn giá cung cấp bê tông tươi"
+  },
+  {
+    "BASE_WORD": "선수금차수",
+    "TRANS_WORD1": "Prepayment Sequence",
+    "TRANS_WORD4": "Số lần trả trước"
+  },
+  {
+    "BASE_WORD": "예정도급액",
+    "TRANS_WORD1": "Scheduled Contract Amount",
+    "TRANS_WORD4": "Số tiền gói thầu dự kiến"
+  },
+  {
+    "BASE_WORD": "예정원가",
+    "TRANS_WORD1": "Scheduled Cost",
+    "TRANS_WORD4": "chi phí dự kiến"
+  },
+  {
+    "BASE_WORD": "용역구분",
+    "TRANS_WORD1": "Service Classification",
+    "TRANS_WORD4": "Phân loại dịch vụ"
+  },
+  {
+    "BASE_WORD": "직영/외주",
+    "TRANS_WORD1": "Direct Management/Subcontract",
+    "TRANS_WORD4": "Quản lý trực tiếp/Thuê ngoài"
+  },
+  {
+    "BASE_WORD": "공종등록",
+    "TRANS_WORD1": "Work Type Registration",
+    "TRANS_WORD4": "Đăng ký loại công việc thi công"
+  },
+  {
+    "BASE_WORD": "예산실적조회",
+    "TRANS_WORD1": "View Budget Performance",
+    "TRANS_WORD4": "Xem kết quả thực tế ngân sách"
+  },
+  {
+    "BASE_WORD": "예산을작성하세요.",
+    "TRANS_WORD1": "Please write the budget.",
+    "TRANS_WORD4": "Vui lòng soạn ngân sách."
+  },
+  {
+    "BASE_WORD": "집행내역을변경하세요.",
+    "TRANS_WORD1": "Please Change the Operational Details",
+    "TRANS_WORD4": "Vui lòng thay đổi chi tiết thi hành"
+  },
+  {
+    "BASE_WORD": "원가확정취소",
+    "TRANS_WORD1": "Cancel Cost Confirmation",
+    "TRANS_WORD4": "Hủy xác định chi phí"
+  },
+  {
+    "BASE_WORD": "원가확정",
+    "TRANS_WORD1": "Cost Confirmation",
+    "TRANS_WORD4": "Xác nhận chi phí"
+  },
+  {
+    "BASE_WORD": "수금방법",
+    "TRANS_WORD1": "Collection Method",
+    "TRANS_WORD4": "Phương pháp thu tiền"
+  },
+  {
+    "BASE_WORD": "이후에만출고가능합니다.예산번호",
+    "TRANS_WORD1": "Can only be shipped afterwards. Budget No",
+    "TRANS_WORD4": "Chỉ có thể xuất kho sau đó. Số ngân sách"
+  },
+  {
+    "BASE_WORD": "원가투입",
+    "TRANS_WORD1": "Cost Input",
+    "TRANS_WORD4": "đưa vào chi phí"
+  },
+  {
+    "BASE_WORD": "실행예산내역",
+    "TRANS_WORD1": "Execution Budget Details",
+    "TRANS_WORD4": "Chi tiết ngân sách thực hiện"
+  },
+  {
+    "BASE_WORD": "기성누계",
+    "TRANS_WORD1": "Cumulative Progress Payment",
+    "TRANS_WORD4": "Thanh toán theo tiến độ tích lũy"
+  },
+  {
+    "BASE_WORD": "기성률(%)",
+    "TRANS_WORD1": "Progress Payment Rate (%)",
+    "TRANS_WORD4": "Tỷ lệ thanh toán theo tiến độ (%)"
+  },
+  {
+    "BASE_WORD": "기성차수",
+    "TRANS_WORD1": "Progress Payment Sequence",
+    "TRANS_WORD4": "Số lần thanh toán theo tiến độ"
+  },
+  {
+    "BASE_WORD": "기성구분",
+    "TRANS_WORD1": "Progress Payment Classification",
+    "TRANS_WORD4": "Phân loại thanh toán theo tiến độ"
+  },
+  {
+    "BASE_WORD": "금회기성",
+    "TRANS_WORD1": "This Time's Progress",
+    "TRANS_WORD4": "Tiến độ thanh toán lần này"
+  },
+  {
+    "BASE_WORD": "기성률",
+    "TRANS_WORD1": "Progress Payment Rate",
+    "TRANS_WORD4": "Tỷ lệ thanh toán theo tiến độ"
+  },
+  {
+    "BASE_WORD": "누계기성",
+    "TRANS_WORD1": "Cumulative Progress Payment",
+    "TRANS_WORD4": "Thanh toán theo tiến độ lũy kế"
+  },
+  {
+    "BASE_WORD": "실행예산(시행)",
+    "TRANS_WORD1": "Execution Budget (Implementation)",
+    "TRANS_WORD4": "Ngân sách thực hiện (Thi hành)"
+  },
+  {
+    "BASE_WORD": "발주공종명",
+    "TRANS_WORD1": "Order Work Type Name",
+    "TRANS_WORD4": "Tên chính thức loại công việc thi công đặt hàng"
+  },
+  {
+    "BASE_WORD": "기성금액",
+    "TRANS_WORD1": "Progress Payment Amount",
+    "TRANS_WORD4": "Số tiền thanh toán theo tiến độ"
+  },
+  {
+    "BASE_WORD": "지급차수",
+    "TRANS_WORD1": "Payment Installment",
+    "TRANS_WORD4": "Số lần thanh toán"
+  },
+  {
+    "BASE_WORD": "투입예정인원여부",
+    "TRANS_WORD1": "Scheduled Input Personnel Status",
+    "TRANS_WORD4": "Tình trạng nhân sự đưa vào dự kiến"
+  },
+  {
+    "BASE_WORD": "[투입예정인원]",
+    "TRANS_WORD1": "[Expected Input Personnel]",
+    "TRANS_WORD4": "[Nhân sự dự kiến đưa vào]"
+  },
+  {
+    "BASE_WORD": "월투입공수",
+    "TRANS_WORD1": "Monthly Labor Hours",
+    "TRANS_WORD4": "Số giờ lao động hàng tháng"
+  },
+  {
+    "BASE_WORD": "투입계획(월별)",
+    "TRANS_WORD1": "Input Plan (Monthly)",
+    "TRANS_WORD4": "Kế hoạch đưa vào (Hàng tháng)"
+  },
+  {
+    "BASE_WORD": "투입계획(최초)",
+    "TRANS_WORD1": "Input Plan (Initial)",
+    "TRANS_WORD4": "Kế hoạch đưa vào (Ban đầu)"
+  },
+  {
+    "BASE_WORD": "투입예정인원생성",
+    "TRANS_WORD1": "Create Scheduled Input Personnel",
+    "TRANS_WORD4": "Tạo nhân sự đưa vào dự kiến"
+  },
+  {
+    "BASE_WORD": "투입예정인원삭제",
+    "TRANS_WORD1": "Delete Scheduled Input Personnel",
+    "TRANS_WORD4": "Xóa nhân sự đưa vào dự kiến"
+  },
+  {
+    "BASE_WORD": "투입시작일",
+    "TRANS_WORD1": "Input Start Date",
+    "TRANS_WORD4": "Ngày bắt đầu đưa vào"
+  },
+  {
+    "BASE_WORD": "투입종료일",
+    "TRANS_WORD1": "Input End Date",
+    "TRANS_WORD4": "Ngày kết thúc đưa vào"
+  },
+  {
+    "BASE_WORD": "예산구분",
+    "TRANS_WORD1": "Budget Classification",
+    "TRANS_WORD4": "Phân loại ngân sách"
+  },
+  {
+    "BASE_WORD": "도급/실행금액",
+    "TRANS_WORD1": "Contract/Budget Amount",
+    "TRANS_WORD4": "Gói thầu/Số tiền thực hiện"
+  },
+  {
+    "BASE_WORD": "실행금액",
+    "TRANS_WORD1": "Budget Amount",
+    "TRANS_WORD4": "Số tiền thực hiện"
+  },
+  {
+    "BASE_WORD": "첨부문서",
+    "TRANS_WORD1": "Attached Document",
+    "TRANS_WORD4": "Văn bản đính kèm"
+  },
+  {
+    "BASE_WORD": "공종/내역번호",
+    "TRANS_WORD1": "Work Type/Details No",
+    "TRANS_WORD4": "Số loại công việc thi công/chi tiết"
+  },
+  {
+    "BASE_WORD": "공종/내역명",
+    "TRANS_WORD1": "Work Type/Details Name",
+    "TRANS_WORD4": "Tên loại công việc thi công/chi tiết"
+  },
+  {
+    "BASE_WORD": "전표관리_자재원가마감체크",
+    "TRANS_WORD1": "Voucher Management_Material Cost Closing Check",
+    "TRANS_WORD4": "Quản lý chứng từ_Kiểm tra đóng giá thành vật liệu"
+  },
+  {
+    "BASE_WORD": "대비예산번호",
+    "TRANS_WORD1": "Compared Budget No",
+    "TRANS_WORD4": "Số ngân sách so sánh"
+  },
+  {
+    "BASE_WORD": "공종코드",
+    "TRANS_WORD1": "Work Type Code",
+    "TRANS_WORD4": "Mã loại công việc thi công"
+  },
+  {
+    "BASE_WORD": "발주공종코드는6자리",
+    "TRANS_WORD1": "Order Work Type Code is 6 Digits",
+    "TRANS_WORD4": "Mã loại công việc thi công đặt hàng là 6 chữ số"
+  },
+  {
+    "BASE_WORD": "실행변경차수",
+    "TRANS_WORD1": "Budget Change Sequence",
+    "TRANS_WORD4": "Số lần thay đổi thực hiện"
+  },
+  {
+    "BASE_WORD": "공종레벨",
+    "TRANS_WORD1": "Work Type Level",
+    "TRANS_WORD4": "Cấp độ loại công việc thi công"
+  },
+  {
+    "BASE_WORD": "집행금액",
+    "TRANS_WORD1": "Operational Budget",
+    "TRANS_WORD4": "Số tiền thi hành"
+  },
+  {
+    "BASE_WORD": "발주공종코드",
+    "TRANS_WORD1": "Order Work Type Code",
+    "TRANS_WORD4": "Mã loại công việc thi công đặt hàng"
+  },
+  {
+    "BASE_WORD": "발주처도급금액",
+    "TRANS_WORD1": "Ordering Party Contract Amount",
+    "TRANS_WORD4": "Số tiền gói thầu bên đặt hàng"
+  },
+  {
+    "BASE_WORD": "변경차수",
+    "TRANS_WORD1": "Change Sequence",
+    "TRANS_WORD4": "Số lần thay đổi"
+  },
+  {
+    "BASE_WORD": "기성조건",
+    "TRANS_WORD1": "Progress Payment Conditions",
+    "TRANS_WORD4": "Điều kiện thanh toán theo tiến độ"
+  },
+  {
+    "BASE_WORD": "준공시목표원가율",
+    "TRANS_WORD1": "Target Cost Ratio at Final Completion",
+    "TRANS_WORD4": "Tỷ lệ chi phí mục tiêu khi hoàn công"
+  },
+  {
+    "BASE_WORD": "수금조건",
+    "TRANS_WORD1": "Collection Conditions",
+    "TRANS_WORD4": "Điều kiện thu tiền"
+  },
+  {
+    "BASE_WORD": "선수금조건",
+    "TRANS_WORD1": "Prepayment Conditions",
+    "TRANS_WORD4": "Điều kiện trả trước"
+  },
+  {
+    "BASE_WORD": "미입고(실행예산-입고)",
+    "TRANS_WORD1": "Not Received (Execution Budget - Receipt)",
+    "TRANS_WORD4": "Chưa nhập kho (Ngân sách thực hiện - Nhập kho)"
+  },
+  {
+    "BASE_WORD": "도급/실행기성산정(공종별)",
+    "TRANS_WORD1": "Contract/Budget Progress Calculation (by Work Type)",
+    "TRANS_WORD4": "Gói thầu/Tính toán thực hiện thanh toán theo tiến độ(theo loại công việc thi công)"
+  },
+  {
+    "BASE_WORD": "실행기성",
+    "TRANS_WORD1": "Budget Progress",
+    "TRANS_WORD4": "Tiến độ thực hiện"
+  },
+  {
+    "BASE_WORD": "도급기성",
+    "TRANS_WORD1": "Contract Progress",
+    "TRANS_WORD4": "Tiến độ thanh toán của gói thầu"
+  },
+  {
+    "BASE_WORD": "확정도급기성",
+    "TRANS_WORD1": "Confirmed Contract Progress",
+    "TRANS_WORD4": "Tiến độ gói thầu được xác định"
+  },
+  {
+    "BASE_WORD": "미확정도급기성",
+    "TRANS_WORD1": "Unconfirmed Contract Progress",
+    "TRANS_WORD4": "Tiến độ thanh toán gói thầu chưa xác định"
+  },
+  {
+    "BASE_WORD": "실행기성타사전월",
+    "TRANS_WORD1": "Execution Progress Other Companies Previous Month",
+    "TRANS_WORD4": "Tiến độ thực hiện của các công ty khác trong tháng trước"
+  },
+  {
+    "BASE_WORD": "도급기성타사전월",
+    "TRANS_WORD1": "Contract Progress for Other Companies Last Month",
+    "TRANS_WORD4": "Tiến độ thanh toán gói thầu cho công ty khác tháng trước"
+  },
+  {
+    "BASE_WORD": "확정기성타사전월",
+    "TRANS_WORD1": "Confirmed Previous Month Progress of Other Companies",
+    "TRANS_WORD4": "Tiến độ tháng trước được xác định của các công ty khác"
+  },
+  {
+    "BASE_WORD": "미확정기성타사전월",
+    "TRANS_WORD1": "Unconfirmed Progress for Other Companies Last Month",
+    "TRANS_WORD4": "Tiến độ thanh toán chưa xác định cho công ty khác tháng trước"
+  },
+  {
+    "BASE_WORD": "실행기성타사당월",
+    "TRANS_WORD1": "Execution Progress Other Companies This Month",
+    "TRANS_WORD4": "Tiến độ thực hiện của các công ty khác trong tháng này"
+  },
+  {
+    "BASE_WORD": "도급기성타사당월",
+    "TRANS_WORD1": "Contract Progress for Other Companies This Month",
+    "TRANS_WORD4": "Tiến độ thanh toán gói thầu cho công ty khác tháng này"
+  },
+  {
+    "BASE_WORD": "실행예산단가를초과했습니다.",
+    "TRANS_WORD1": "Exceeded Execution Budget Unit Price",
+    "TRANS_WORD4": "Đã vượt quá đơn giá ngân sách thực hiện"
+  },
+  {
+    "BASE_WORD": "시행체결이완료된자료만차수생성이가능합니다.",
+    "TRANS_WORD1": "Only Completed Implementation Contract Data Can Generate Sequence.",
+    "TRANS_WORD4": "Chỉ dữ liệu thi hành đã hoàn thành ký kết mới có thể tạo số lần."
+  },
+  {
+    "BASE_WORD": "공사기간은결의일자이후만가능합니다.",
+    "TRANS_WORD1": "Construction period can only start after the resolution date.",
+    "TRANS_WORD4": "Thời gian xây dựng chỉ có thể bắt đầu sau ngày có quyết định"
+  },
+  {
+    "BASE_WORD": "미투입자료를처리완료후확정처리하세요.",
+    "TRANS_WORD1": "Confirm After Processing Uninputted Data",
+    "TRANS_WORD4": "Vui lòng xác định sau khi hoàn thành xử lý dữ liệu chưa nhập vào."
+  },
+  {
+    "BASE_WORD": "기성확정",
+    "TRANS_WORD1": "Confirmed Progress Payment",
+    "TRANS_WORD4": "Xác nhận thanh toán tiến độ"
+  },
+  {
+    "BASE_WORD": "(승인예산결의분+승인예산결의유보분)은승인예산전체분보다작거나같아야됩니다.",
+    "TRANS_WORD1": "(The sum of Approved Budget Resolutions + Reserved Approved Budget Resolutions must be less than or equal to the total Approved Budget.",
+    "TRANS_WORD4": "(Phần ngân sách đã quyết định phê duyệt + Phần ngân sách bảo lưu phê duyệt) phải nhỏ hơn hoặc bằng Tổng ngân sách đã phê duyệt."
+  },
+  {
+    "BASE_WORD": "준공예정원가자료가없습니다.",
+    "TRANS_WORD1": "No Expected Cost Data at Final Completion",
+    "TRANS_WORD4": "Không có dữ liệu chi phí hoàn công dự kiến"
+  },
+  {
+    "BASE_WORD": "원가투입/분개전표자료를먼저삭제하세요.",
+    "TRANS_WORD1": "Delete Cost Input/Journal Entry Data First.",
+    "TRANS_WORD4": "Vui lòng xóa dữ liệu đưa vào chi phí/phiếu bút toán trước."
+  },
+  {
+    "BASE_WORD": "기성",
+    "TRANS_WORD1": "Progress Payment",
+    "TRANS_WORD4": "Thanh toán theo tiến độ"
+  },
+  {
+    "BASE_WORD": "보증기간준공일로부터",
+    "TRANS_WORD1": "Warranty Period from Final Completion Date",
+    "TRANS_WORD4": "Thời gian bảo hành từ ngày hoàn công"
+  },
+  {
+    "BASE_WORD": "집행단가변경",
+    "TRANS_WORD1": "Change Execution Unit Price",
+    "TRANS_WORD4": "Thay đổi đơn giá thi hành"
+  },
+  {
+    "BASE_WORD": "실행예산을초과했습니다.",
+    "TRANS_WORD1": "Exceeded Execution Budget",
+    "TRANS_WORD4": "Đã vượt quá ngân sách thực hiện."
+  },
+  {
+    "BASE_WORD": "차수생성오류",
+    "TRANS_WORD1": "Sequence Creation Error",
+    "TRANS_WORD4": "Lỗi tạo số lần"
+  },
+  {
+    "BASE_WORD": "판관비실적",
+    "TRANS_WORD1": "SG&A Performance",
+    "TRANS_WORD4": "Thành tích chi phí SG&A"
+  },
+  {
+    "BASE_WORD": "사업예산",
+    "TRANS_WORD1": "Business Budget",
+    "TRANS_WORD4": "Ngân sách cho dự án"
+  },
+  {
+    "BASE_WORD": "전체판관비",
+    "TRANS_WORD1": "Total SG&A Expenses",
+    "TRANS_WORD4": "Tổng chi phí quản lý bán hàng (SG&A)"
+  },
+  {
+    "BASE_WORD": "실행예산총괄표",
+    "TRANS_WORD1": "Execution Budget Summary Table",
+    "TRANS_WORD4": "Bảng tổng quát ngân sách thực hiện"
+  },
+  {
+    "BASE_WORD": "예산대비집행현황팝업",
+    "TRANS_WORD1": "Budget / Excution Status Popup",
+    "TRANS_WORD4": "pop-up hiện trạng thi hành so với ngân sách"
+  },
+  {
+    "BASE_WORD": "예산별청구내역조회",
+    "TRANS_WORD1": "View Request Details by Budget",
+    "TRANS_WORD4": "Xem chi tiết yêu cầu theo ngân sách"
+  },
+  {
+    "BASE_WORD": "잔여(예산-청구)",
+    "TRANS_WORD1": "Remaining (Budget - Request)",
+    "TRANS_WORD4": "Còn lại (Ngân sách - Yêu cầu)"
+  },
+  {
+    "BASE_WORD": "예산금액(전체)",
+    "TRANS_WORD1": "Total Budget Amount",
+    "TRANS_WORD4": "Số tiền ngân sách (tổng)"
+  },
+  {
+    "BASE_WORD": "예산금액(청구)",
+    "TRANS_WORD1": "Request Budget Amount",
+    "TRANS_WORD4": "Số tiền ngân sách (yêu cầu)"
+  },
+  {
+    "BASE_WORD": "첨부문서명칭",
+    "TRANS_WORD1": "Attached Document Name",
+    "TRANS_WORD4": "Tên văn bản đính kèm"
+  },
+  {
+    "BASE_WORD": "본사협력업체리스트",
+    "TRANS_WORD1": "Head Office Partner Company List",
+    "TRANS_WORD4": "Danh sách công ty đối tác của tổng công ty"
+  },
+  {
+    "BASE_WORD": "발주처등록",
+    "TRANS_WORD1": "Ordering Party Registration",
+    "TRANS_WORD4": "Đăng ký bên đặt hàng"
+  },
+  {
+    "BASE_WORD": "인력투입실적",
+    "TRANS_WORD1": "Human resource input efficiency",
+    "TRANS_WORD4": "Kết quả thực tế đưa vào nhân lực"
+  },
+  {
+    "BASE_WORD": "공사개요등록",
+    "TRANS_WORD1": "Construction Overview Registration",
+    "TRANS_WORD4": "Đăng ký khái quát công trình xây dựng"
+  },
+  {
+    "BASE_WORD": "월별도급기성현황",
+    "TRANS_WORD1": "Monthly Contract Progress Status",
+    "TRANS_WORD4": "Hiện trạng tiến độ gói thầu hàng tháng"
+  },
+  {
+    "BASE_WORD": "기성잔액",
+    "TRANS_WORD1": "Progress Payment Balance",
+    "TRANS_WORD4": "Số dư thanh toán theo tiến độ"
+  },
+  {
+    "BASE_WORD": "도급기성등록",
+    "TRANS_WORD1": "Contract Progress Registration",
+    "TRANS_WORD4": "Đăng ký tiến độ thanh toán của gói thầu"
+  },
+  {
+    "BASE_WORD": "수금예정일자",
+    "TRANS_WORD1": "Expected Collection Date",
+    "TRANS_WORD4": "Ngày thu tieefn dự kiến"
+  },
+  {
+    "BASE_WORD": "도급기성현황",
+    "TRANS_WORD1": "Contract Progress Status",
+    "TRANS_WORD4": "Hiện trạng tiến độ thanh toán gói thầu"
+  },
+  {
+    "BASE_WORD": "최종기성년월",
+    "TRANS_WORD1": "Final Progress Year and Month",
+    "TRANS_WORD4": "Năm và tháng tiến độ cuối cùng"
+  },
+  {
+    "BASE_WORD": "도급차수등록",
+    "TRANS_WORD1": "Contract Sequence Registration",
+    "TRANS_WORD4": "Đăng ký số lần thầu"
+  },
+  {
+    "BASE_WORD": "도급차수",
+    "TRANS_WORD1": "Contract Sequence",
+    "TRANS_WORD4": "Số lần thầu"
+  },
+  {
+    "BASE_WORD": "대비도급차수",
+    "TRANS_WORD1": "Compared Contract Sequence",
+    "TRANS_WORD4": "So sánh số lần hợp đồng"
+  },
+  {
+    "BASE_WORD": "판관비율",
+    "TRANS_WORD1": "SG&A Ratio",
+    "TRANS_WORD4": "Tỷ lệ chi phí SG&A trên doanh thu"
+  },
+  {
+    "BASE_WORD": "사업계획차수",
+    "TRANS_WORD1": "Business Plan Sequence",
+    "TRANS_WORD4": "Số lần của kế hoạch dự án"
+  },
+  {
+    "BASE_WORD": "계정과목검색(지출결의)",
+    "TRANS_WORD1": "Account Title Search (Expense Resolution)",
+    "TRANS_WORD4": "Tìm kiếm khoản mục tài khoản kế toán(quyết định chi tiêu)"
+  },
+  {
+    "BASE_WORD": "실행예산내역선택",
+    "TRANS_WORD1": "Select Execution Budget Details",
+    "TRANS_WORD4": "Chọn chi tiết ngân sách thực hiện"
+  },
+  {
+    "BASE_WORD": "실행예산내역선택(TREE형태)",
+    "TRANS_WORD1": "Select Execution Budget Details (TREE Format)",
+    "TRANS_WORD4": "Chọn chi tiết ngân sách thực hiện (Dạng cây)"
+  },
+  {
+    "BASE_WORD": "발주공종검색",
+    "TRANS_WORD1": "Order Work Type Search",
+    "TRANS_WORD4": "Tìm kiếm loại công việc thi công đặt hàng"
+  },
+  {
+    "BASE_WORD": "입찰및시행결의(협력업체용)",
+    "TRANS_WORD1": "Bidding and Execution Resolution (For Partners)",
+    "TRANS_WORD4": "Đấu thầu và quyết định thực hiện (Dành cho đối tác)"
+  },
+  {
+    "BASE_WORD": "협력업체입찰상세",
+    "TRANS_WORD1": "Partner Company Bid Details",
+    "TRANS_WORD4": "Chi tiết đấu thầu của công ty đối tác"
+  },
+  {
+    "BASE_WORD": "입찰등록(협력업체용)",
+    "TRANS_WORD1": "Bid Registration (For Partners)",
+    "TRANS_WORD4": "Đăng ký đấu thầu (Dành cho đối tác)"
+  },
+  {
+    "BASE_WORD": "UPLOADFILE(협력업체가등록)",
+    "TRANS_WORD1": "Upload File (Registered by Partner Company)",
+    "TRANS_WORD4": "Tải lên tệp (đã đăng ký bởi công ty đối tác)"
+  },
+  {
+    "BASE_WORD": "총량자재예산관리",
+    "TRANS_WORD1": "Total Quantity Material Budget Management",
+    "TRANS_WORD4": "Quản lý ngân sách vật liệu quản lý tổng lượng"
+  },
+  {
+    "BASE_WORD": "발주공종등록",
+    "TRANS_WORD1": "Order Work Type Registration",
+    "TRANS_WORD4": "Đăng ký loại công việc thi công đặt hàng"
+  },
+  {
+    "BASE_WORD": "예산실적조회POPUP",
+    "TRANS_WORD1": "View Budget Performance Popup",
+    "TRANS_WORD4": "pop-up xem kết quả thực tế ngân sách"
+  },
+  {
+    "BASE_WORD": "투입원가",
+    "TRANS_WORD1": "Input Cost",
+    "TRANS_WORD4": "Chi phí đưa vào"
+  },
+  {
+    "BASE_WORD": "예산데이터체크POPUP",
+    "TRANS_WORD1": "Budget Data Check Popup",
+    "TRANS_WORD4": "pop-up kiểm tra dữ liệu ngân sách"
+  },
+  {
+    "BASE_WORD": "예산차수등록",
+    "TRANS_WORD1": "Register Budget Sequence",
+    "TRANS_WORD4": "Đăng ký số lần ngân sách"
+  },
+  {
+    "BASE_WORD": "실행내역조회(공종별)",
+    "TRANS_WORD1": "View Budget Details (By Work Type)",
+    "TRANS_WORD4": "Xem chi tiết thực hiện (Theo loại công việc thi công)"
+  },
+  {
+    "BASE_WORD": "예산전회대비",
+    "TRANS_WORD1": "Compared to Previous Budget",
+    "TRANS_WORD4": "So với ngân sách trước"
+  },
+  {
+    "BASE_WORD": "예산내역",
+    "TRANS_WORD1": "Budget Details",
+    "TRANS_WORD4": "Chi tiết ngân sách"
+  },
+  {
+    "BASE_WORD": "표준발주공종",
+    "TRANS_WORD1": "Standard Order Work Type",
+    "TRANS_WORD4": "Loại công việc thi công đơn hàng tiêu chuẩn"
+  },
+  {
+    "BASE_WORD": "공종등록POPUP",
+    "TRANS_WORD1": "Work Type Registration Popup",
+    "TRANS_WORD4": "pop-up đăng ký loại công việc thi công"
+  },
+  {
+    "BASE_WORD": "집행내역변경",
+    "TRANS_WORD1": "Change Operational Details",
+    "TRANS_WORD4": "Thay đổi chi tiết thi hành"
+  },
+  {
+    "BASE_WORD": "미확정기성타사당월",
+    "TRANS_WORD1": "Unconfirmed Progress for Other Companies This Month",
+    "TRANS_WORD4": "Tiến độ thanh toán chưa xác định cho công ty khác tháng này"
+  },
+  {
+    "BASE_WORD": "품목구분별협력업체검색",
+    "TRANS_WORD1": "Search Partner by Item Classification",
+    "TRANS_WORD4": "Tìm kiếm đối tác theo phân loại sản phẩm"
+  },
+  {
+    "BASE_WORD": "업체공급단가등록협력업체검색",
+    "TRANS_WORD1": "Search Cooperative Company for Supply Unit Price Registration",
+    "TRANS_WORD4": "Tìm kiếm công ty hợp tác đăng ký đơn giá cung cấp"
+  },
+  {
+    "BASE_WORD": "업체공급단가등록협력업체검색(팝업)",
+    "TRANS_WORD1": "Search Cooperative Company for Supply Unit Price Registration (Popup)",
+    "TRANS_WORD4": "Tìm kiếm công ty hợp tác đăng ký đơn giá cung cấp (pop-up)"
+  },
+  {
+    "BASE_WORD": "첨부문서유무",
+    "TRANS_WORD1": "Whether to Attach Documents",
+    "TRANS_WORD4": "Có văn bản đính kèm hay không"
+  },
+  {
+    "BASE_WORD": "잔여예산추정내역(내역별)",
+    "TRANS_WORD1": "Remaining Budget Estimate Details (by item)",
+    "TRANS_WORD4": "Chi tiết ước tính ngân sách còn lại (theo mục)"
+  },
+  {
+    "BASE_WORD": "실행예산총괄표및승인",
+    "TRANS_WORD1": "Execution Budget Summary Table and Approval",
+    "TRANS_WORD4": "Bảng tổng quát ngân sách thực hiện và chấp thuận"
+  },
+  {
+    "BASE_WORD": "표준발주공종등록",
+    "TRANS_WORD1": "Register Standard Order Work Type",
+    "TRANS_WORD4": "Đăng ký loại công việc thi công đơn hàng tiêu chuẩn"
+  },
+  {
+    "BASE_WORD": "공종검색",
+    "TRANS_WORD1": "Work Type Search",
+    "TRANS_WORD4": "Tìm kiếm loại công việc thi công"
+  },
+  {
+    "BASE_WORD": "총량정산예산내역선택",
+    "TRANS_WORD1": "Select Total Quantity Settlement Budget Details",
+    "TRANS_WORD4": "Chọn chi tiết ngân sách quyết toán tổng lượng"
+  },
+  {
+    "BASE_WORD": "표준발주공종검색",
+    "TRANS_WORD1": "Search Standard Order Work Type",
+    "TRANS_WORD4": "Tìm kiếm loại công việc thi công đơn hàng tiêu chuẩn"
+  },
+  {
+    "BASE_WORD": "2.원가복사",
+    "TRANS_WORD1": "2.Cost Copy",
+    "TRANS_WORD4": "2.Sao chép chi phí"
+  },
+  {
+    "BASE_WORD": "공종명칭",
+    "TRANS_WORD1": "Work Type Title",
+    "TRANS_WORD4": "Tiêu đề loại công việc thi công"
+  },
+  {
+    "BASE_WORD": "3.기성산정",
+    "TRANS_WORD1": "3.Progress Calculation",
+    "TRANS_WORD4": "3.thực hiện thanh toán theo tiến độ"
+  },
+  {
+    "BASE_WORD": "발주공종명칭",
+    "TRANS_WORD1": "Order Work Type Title",
+    "TRANS_WORD4": "Tên gọi loại công việc thi công đặt hàng"
+  },
+  {
+    "BASE_WORD": "대금차수",
+    "TRANS_WORD1": "Payment Sequence",
+    "TRANS_WORD4": "Số lần thanh toán"
+  },
+  {
+    "BASE_WORD": "용역은용역시행결의",
+    "TRANS_WORD1": "Service is Service Execution Resolution",
+    "TRANS_WORD4": "Dịch vụ là Quyết định thi hành dịch vụ"
+  },
+  {
+    "BASE_WORD": "협력업체정보입력",
+    "TRANS_WORD1": "Input Information Partner Company",
+    "TRANS_WORD4": "Thông tin đầu vào Công ty đối tác"
+  },
+  {
+    "BASE_WORD": "계정과목(원가)",
+    "TRANS_WORD1": "Account Title (Cost)",
+    "TRANS_WORD4": "Khoản mục tài khoản kế toán (đơn giá gốc)"
+  },
+  {
+    "BASE_WORD": "준공시예상원가율",
+    "TRANS_WORD1": "Expected Cost Ratio at Final Completion",
+    "TRANS_WORD4": "Tỷ lệ chi phí dự kiến khi hoàn công"
+  },
+  {
+    "BASE_WORD": "미확정기성현황",
+    "TRANS_WORD1": "Unconfirmed Progress Status",
+    "TRANS_WORD4": "Hiện trạng thanh toán theo tiến độ chưa xác định"
+  },
+  {
+    "BASE_WORD": "확정미수금수금계획",
+    "TRANS_WORD1": "Confirmed Receivables Collection Plan",
+    "TRANS_WORD4": "Kế hoạch thu hồi các khoản phải thu được xác định"
+  },
+  {
+    "BASE_WORD": "부분미시공",
+    "TRANS_WORD1": "Partially Unconstructed",
+    "TRANS_WORD4": "Chưa thi công một phần"
+  },
+  {
+    "BASE_WORD": "발주처미인정",
+    "TRANS_WORD1": "Ordering Party Not Recognized",
+    "TRANS_WORD4": "Bên đặt hàng không được công nhận"
+  },
+  {
+    "BASE_WORD": "사업비예산",
+    "TRANS_WORD1": "Business Expense Budget",
+    "TRANS_WORD4": "Ngân sách chi phí dự án"
+  },
+  {
+    "BASE_WORD": "(외주)계약목록",
+    "TRANS_WORD1": "(Sub-Contract) Contract List",
+    "TRANS_WORD4": "(Thầu phụ) Danh sách hợp đồng"
+  },
+  {
+    "BASE_WORD": "(외주)계약내역등록",
+    "TRANS_WORD1": "(Sub-Contract) Contract Details Registration",
+    "TRANS_WORD4": "(Thầu phụ) Đăng ký chi tiết hợp đồng"
+  },
+  {
+    "BASE_WORD": "(외주)계약내역",
+    "TRANS_WORD1": "(Sub-Contract) Contract Details",
+    "TRANS_WORD4": "(Thầu phụ) Chi tiết hợp đồng"
+  },
+  {
+    "BASE_WORD": "협력업체등록메뉴얼",
+    "TRANS_WORD1": "Partner Registration Manual",
+    "TRANS_WORD4": "Hướng dẫn đăng ký công ty đối tác"
+  },
+  {
+    "BASE_WORD": "외주기성",
+    "TRANS_WORD1": "Sub-Contract Progress Payment",
+    "TRANS_WORD4": "Thanh toán tiến độ thầu phụ"
+  },
+  {
+    "BASE_WORD": "전회기성",
+    "TRANS_WORD1": "Previous Progress Payment",
+    "TRANS_WORD4": "Thanh toán tiến độ kỳ trước "
+  },
+  {
+    "BASE_WORD": "외주기성내역",
+    "TRANS_WORD1": "Sub-Contract Progress Payment Details",
+    "TRANS_WORD4": "Chi tiết thanh toán tiến độ thầu phụ"
+  },
+  {
+    "BASE_WORD": "금회기성(A)",
+    "TRANS_WORD1": "This Period Progress Payment (A)",
+    "TRANS_WORD4": "Thanh toán tiến độ kỳ này (A)"
+  },
+  {
+    "BASE_WORD": "누계기성(2)",
+    "TRANS_WORD1": "Cumulative Progress Payment (2)",
+    "TRANS_WORD4": "Thanh toán tiến độ tích lũy (2)"
+  },
+  {
+    "BASE_WORD": "환율",
+    "TRANS_WORD1": "Exchange rate",
+    "TRANS_WORD4": "Tỷ giá hối đoái"
+  },
+  {
+    "BASE_WORD": "기성율(2/1)",
+    "TRANS_WORD1": "Progress Payment Rate (2/1)",
+    "TRANS_WORD4": "Tỷ lệ thanh toán tiến độ (2/1)"
+  },
+  {
+    "BASE_WORD": "기성특기사항",
+    "TRANS_WORD1": "Progress Payment Special Notes",
+    "TRANS_WORD4": "Điều khoản đặc biệt về thanh toán tiến độ"
+  },
+  {
+    "BASE_WORD": "잔여기성",
+    "TRANS_WORD1": "Remaining Progress Payment",
+    "TRANS_WORD4": "Thanh toán tiến độ còn lại"
+  },
+  {
+    "BASE_WORD": "기성취소",
+    "TRANS_WORD1": "Cancel Progress Payment",
+    "TRANS_WORD4": "Hủy bỏ thanh toán tiến độ"
+  },
+  {
+    "BASE_WORD": "당월투입시작일",
+    "TRANS_WORD1": "This Month's Input Start Date",
+    "TRANS_WORD4": "Ngày bắt đầu nhập đưa vào tháng này"
+  },
+  {
+    "BASE_WORD": "당월투입종료일",
+    "TRANS_WORD1": "This Month's Input End Date",
+    "TRANS_WORD4": "Ngày kết thúc nhập đưa vào tháng này"
+  },
+  {
+    "BASE_WORD": "공종",
+    "TRANS_WORD1": "Work Type",
+    "TRANS_WORD4": "Loại công việc thi công"
+  },
+  {
+    "BASE_WORD": "공종별협력업체등록",
+    "TRANS_WORD1": "Registration of subcontractors by type of construction",
+    "TRANS_WORD4": "Đăng ký nhà thầu phụ theo loại công trình"
+  },
+  {
+    "BASE_WORD": "공종별등록업체",
+    "TRANS_WORD1": "Registered companies by type of construction",
+    "TRANS_WORD4": "Công ty đăng ký theo loại hình xây dựng"
+  },
+  {
+    "BASE_WORD": "등록업체별공종",
+    "TRANS_WORD1": "Work Type by Registered Company",
+    "TRANS_WORD4": "Loại công việc thi công theo công ty đã đăng ký"
+  },
+  {
+    "BASE_WORD": "등록공종조회",
+    "TRANS_WORD1": "Registered Work Type Inquiry",
+    "TRANS_WORD4": "Loại công việc thi công đã đăng ký Tra cứu"
+  },
+  {
+    "BASE_WORD": "협력업체상세팝업",
+    "TRANS_WORD1": "Partner Company Detail Popup",
+    "TRANS_WORD4": "Pop-up chi tiết công ty đối tác"
+  },
+  {
+    "BASE_WORD": "시행기성진행상태",
+    "TRANS_WORD1": "Execution Progress Status",
+    "TRANS_WORD4": "Tình trạng thực hiện tiến độ thanh toán thi hành"
+  },
+  {
+    "BASE_WORD": "예산내역명",
+    "TRANS_WORD1": "Budget Details Name",
+    "TRANS_WORD4": "Tên chi tiết ngân sách"
+  },
+  {
+    "BASE_WORD": "예산규격",
+    "TRANS_WORD1": "Budget Specifications",
+    "TRANS_WORD4": "Quy cach ngan sach"
+  },
+  {
+    "BASE_WORD": "예산단위",
+    "TRANS_WORD1": "Budget Unit",
+    "TRANS_WORD4": "Đơn vị ngân sách"
+  },
+  {
+    "BASE_WORD": "실행예산금액",
+    "TRANS_WORD1": "Execution Budget Amount",
+    "TRANS_WORD4": "Số tiền ngân sách thực hiện"
+  },
+  {
+    "BASE_WORD": "실행예산내역명",
+    "TRANS_WORD1": "Execution Budget Details Name",
+    "TRANS_WORD4": "Tên chi tiết ngân sách thực hiện"
+  },
+  {
+    "BASE_WORD": "결의차수",
+    "TRANS_WORD1": "Resolution Number",
+    "TRANS_WORD4": "Số lần xin phê duyệt"
+  },
+  {
+    "BASE_WORD": "기성산정",
+    "TRANS_WORD1": "Progress Calculation",
+    "TRANS_WORD4": "thực hiện thanh toán theo tiến độ"
+  },
+  {
+    "BASE_WORD": "예산적용",
+    "TRANS_WORD1": "Application Budget",
+    "TRANS_WORD4": "So với áp dụng"
+  },
+  {
+    "BASE_WORD": "원가복사",
+    "TRANS_WORD1": "Cost Copy",
+    "TRANS_WORD4": "Sao chép chi phí"
+  },
+  {
+    "BASE_WORD": "타사분기성재계산",
+    "TRANS_WORD1": "Joint Contract Colculation",
+    "TRANS_WORD4": "Tính toán lại của bên thứ ba"
+  },
+  {
+    "BASE_WORD": "발주처",
+    "TRANS_WORD1": "Ordering Party",
+    "TRANS_WORD4": "Bên đặt hàng"
+  },
+  {
+    "BASE_WORD": "발주처명",
+    "TRANS_WORD1": "Ordering Party Name",
+    "TRANS_WORD4": "Tên bên đặt hàng"
+  },
+  {
+    "BASE_WORD": "선수금",
+    "TRANS_WORD1": "Prepayment",
+    "TRANS_WORD4": "Tiền trả trước"
+  },
+  {
+    "BASE_WORD": "예산번호",
+    "TRANS_WORD1": "Budget No",
+    "TRANS_WORD4": "Số ngân sách"
+  },
+  {
+    "BASE_WORD": "원가",
+    "TRANS_WORD1": "Cost",
+    "TRANS_WORD4": "chi phí"
+  },
+  {
+    "BASE_WORD": "투입내역금액을확인하세요.",
+    "TRANS_WORD1": "Please Check the Input Amount",
+    "TRANS_WORD4": "Vui lòng kiểm tra chi tiếp số tiền đưa vào."
+  },
+  {
+    "BASE_WORD": "실행예산",
+    "TRANS_WORD1": "Execution Budget",
+    "TRANS_WORD4": "Ngân sách thực hiện"
+  },
+  {
+    "BASE_WORD": "수금",
+    "TRANS_WORD1": "Collection",
+    "TRANS_WORD4": "Thu tiền"
+  },
+  {
+    "BASE_WORD": "차수삭제",
+    "TRANS_WORD1": "Delete Sequence",
+    "TRANS_WORD4": "Xoá số lần"
+  },
+  {
+    "BASE_WORD": "차수생성",
+    "TRANS_WORD1": "Create Sequence",
+    "TRANS_WORD4": "Tạo số lần"
+  },
+  {
+    "BASE_WORD": "공종구분",
+    "TRANS_WORD1": "Work Type Classification",
+    "TRANS_WORD4": "Phân loại loại công việc thi công"
+  },
+  {
+    "BASE_WORD": "실착공일",
+    "TRANS_WORD1": "Actual Start Date",
+    "TRANS_WORD4": "Ngày khởi công thực tế"
+  },
+  {
+    "BASE_WORD": "시공지분율(%)",
+    "TRANS_WORD1": "Construction Share Ratio (%)",
+    "TRANS_WORD4": "Tỷ lệ cổ phần thi công (%)"
+  },
+  {
+    "BASE_WORD": "공사기간",
+    "TRANS_WORD1": "Construction Period",
+    "TRANS_WORD4": "Thời gian xây dựng"
+  },
+  {
+    "BASE_WORD": "공사개요구분",
+    "TRANS_WORD1": "Construction Overview Classification",
+    "TRANS_WORD4": "Phân loại khái quát công trình xây dựng"
+  },
+  {
+    "BASE_WORD": "총계약금액",
+    "TRANS_WORD1": "Total Contract Amount",
+    "TRANS_WORD4": "Tổng số tiền hợp đồng"
+  },
+  {
+    "BASE_WORD": "외주",
+    "TRANS_WORD1": "Sub-Contract",
+    "TRANS_WORD4": "Thuê ngoài"
+  },
+  {
+    "BASE_WORD": "예산통제구분",
+    "TRANS_WORD1": "Budget Control Classification",
+    "TRANS_WORD4": "Phân loại Kiểm soát So với"
+  },
+  {
+    "BASE_WORD": "계약일자",
+    "TRANS_WORD1": "Contract Date",
+    "TRANS_WORD4": "Ngày hợp đồng"
+  },
+  {
+    "BASE_WORD": "공종명",
+    "TRANS_WORD1": "Work Type Name",
+    "TRANS_WORD4": "Tên loại công việc thi công"
+  },
+  {
+    "BASE_WORD": "도급/실행기성을작성하세요.",
+    "TRANS_WORD1": "Contract/Budget Progress",
+    "TRANS_WORD4": "Gói thầu/Vui lòng soạn nội dung thực hiện thanh toán theo tiến độ"
+  },
+  {
+    "BASE_WORD": "예산",
+    "TRANS_WORD1": "Budget",
+    "TRANS_WORD4": "Ngân sách"
+  },
+  {
+    "BASE_WORD": "예산과목",
+    "TRANS_WORD1": "Budget Item",
+    "TRANS_WORD4": "Khoản mục ngân sách"
+  },
+  {
+    "BASE_WORD": "자재원가마감",
+    "TRANS_WORD1": "Material Cost Closing",
+    "TRANS_WORD4": "Đóng chi phí vật liệu"
+  },
+  {
+    "BASE_WORD": "예산코드",
+    "TRANS_WORD1": "Budget Code",
+    "TRANS_WORD4": "Mã ngân sách"
+  },
+  {
+    "BASE_WORD": "배정평가기준적용차수",
+    "TRANS_WORD1": "Application Sequence of Allocation Evaluation Criteria",
+    "TRANS_WORD4": "Số lần áp dụng tiêu chuẩn đánh giá phân bổ"
+  },
+  {
+    "BASE_WORD": "요청차수",
+    "TRANS_WORD1": "Requested Sequence",
+    "TRANS_WORD4": "Số lần yêu cầu"
+  },
+  {
+    "BASE_WORD": "현장별원가투입현황",
+    "TRANS_WORD1": "Site Cost Input Status",
+    "TRANS_WORD4": "Hiện trạng chi phí đưa vào theo công trường"
+  },
+  {
+    "BASE_WORD": "현장집행",
+    "TRANS_WORD1": "Site Execution",
+    "TRANS_WORD4": "Chấp hành tại công trường"
+  },
+  {
+    "BASE_WORD": "공사개요",
+    "TRANS_WORD1": "Construction Overview",
+    "TRANS_WORD4": "khái quát công trình xây dựng"
+  },
+  {
+    "BASE_WORD": "본사원가",
+    "TRANS_WORD1": "Head Office Cost",
+    "TRANS_WORD4": "chi phí tổng công ty"
+  },
+  {
+    "BASE_WORD": "본사원가마감",
+    "TRANS_WORD1": "Head Office Cost Closing",
+    "TRANS_WORD4": "Kết thúc chi phí của tổng công ty"
+  },
+  {
+    "BASE_WORD": "미투입",
+    "TRANS_WORD1": "Not Inputted",
+    "TRANS_WORD4": "Chưa nhập vào"
+  },
+  {
+    "BASE_WORD": "공종내역명",
+    "TRANS_WORD1": "Work Type Details Name",
+    "TRANS_WORD4": "Tên chi tiết loại công việc thi công"
+  },
+  {
+    "BASE_WORD": "지출결의대비원장상세POPUP",
+    "TRANS_WORD1": "Detailed Ledger Compared with Expenditure Resolution POPUP",
+    "TRANS_WORD4": "Pop-up sổ cái chi tiết so với phê duyệt chi tiêu"
+  },
+  {
+    "BASE_WORD": "웹지출결의전표",
+    "TRANS_WORD1": "Web Expense Resolution Statement",
+    "TRANS_WORD4": "Phiếu xin phê duyệt chi tiêu trên web"
+  },
+  {
+    "BASE_WORD": "지출결의대비원장상세",
+    "TRANS_WORD1": "Detailed Ledger Compared with Expenditure Resolution",
+    "TRANS_WORD4": "Sổ cái chi tiết so với phê duyệt chi tiêu"
+  },
+  {
+    "BASE_WORD": "엡지출결의대비재무원장조회",
+    "TRANS_WORD1": "View Financial Ledger Compared to Web Expense Resolution",
+    "TRANS_WORD4": "Tra cứu sổ cái tài chính so với quyết định chi tiêu trên web"
+  },
+  {
+    "BASE_WORD": "예산금액(USD)",
+    "TRANS_WORD1": "Budget Amount (USD)",
+    "TRANS_WORD4": "Số tiền ngân sách (USD)"
+  },
+  {
+    "BASE_WORD": "예산금액(KRW)",
+    "TRANS_WORD1": "Budget Amount (KRW)",
+    "TRANS_WORD4": "Số tiền ngân sách (KRW)"
+  },
+  {
+    "BASE_WORD": "실행금액(USD)",
+    "TRANS_WORD1": "Execution Amount (USD)",
+    "TRANS_WORD4": "Số tiền thực hiện (USD)"
+  },
+  {
+    "BASE_WORD": "실행금액(KRW)",
+    "TRANS_WORD1": "Execution Amount (KRW)",
+    "TRANS_WORD4": "Số tiền thực hiện (KRW)"
+  },
+  {
+    "BASE_WORD": "예산계정코드",
+    "TRANS_WORD1": "Budget Account Code",
+    "TRANS_WORD4": "Mã tài khoản kế toán ngân sách"
+  },
+  {
+    "BASE_WORD": "기성현황",
+    "TRANS_WORD1": "Progress Payment Status",
+    "TRANS_WORD4": "Hiện trạng thanh toán theo tiến độ"
+  },
+  {
+    "BASE_WORD": "협력업체조회팝업",
+    "TRANS_WORD1": "Partner Company Inquiry Popup",
+    "TRANS_WORD4": "Pop-up tra cứu công ty đối tác"
+  },
+  {
+    "BASE_WORD": "시공능력평가유효기간",
+    "TRANS_WORD1": "Construction Capacity Evaluation Validity Period",
+    "TRANS_WORD4": "Thời hạn hiệu lực đánh giá năng lực thi công"
+  },
+  {
+    "BASE_WORD": "자재원가분석상세팝업",
+    "TRANS_WORD1": "Detailed Material Cost Analysis Popup",
+    "TRANS_WORD4": "Pop-up chi tiết phân tích chi phí vật liệu"
+  },
+  {
+    "BASE_WORD": "잔여(실행예산-입고누계)",
+    "TRANS_WORD1": "Remaining (Execution Budget - Accumulated Receipt)",
+    "TRANS_WORD4": "Còn lại (Ngân sách thực hiện - Nhập kho lũy kế)"
+  },
+  {
+    "BASE_WORD": "(예산-입고-잔여)",
+    "TRANS_WORD1": "(Budget - Received - Remaining)",
+    "TRANS_WORD4": "(Ngân sách - Đã nhận - Còn lại)"
+  },
+  {
+    "BASE_WORD": "자재원가분석상세",
+    "TRANS_WORD1": "Detailed Material Cost Analysis",
+    "TRANS_WORD4": "Phân tích chi tiết chi phí vật liệu"
+  },
+  {
+    "BASE_WORD": "자재원가분석",
+    "TRANS_WORD1": "Material Cost Analysis",
+    "TRANS_WORD4": "Phân tích chi phí vật liệu"
+  },
+  {
+    "BASE_WORD": "실행내역별예산대비집행현황",
+    "TRANS_WORD1": "Budget vs Budget Status by Details",
+    "TRANS_WORD4": "Hiện trạng thi hành so với ngân sách theo chi tiết thực hiện"
+  },
+  {
+    "BASE_WORD": "현장원가확정",
+    "TRANS_WORD1": "Site Cost Confirmation",
+    "TRANS_WORD4": "Xác nhận chi phí công trường"
+  },
+  {
+    "BASE_WORD": "기성율(%)",
+    "TRANS_WORD1": "Progress Payment Rate (%)",
+    "TRANS_WORD4": "Tỷ lệ thanh toán theo tiến độ (%)"
+  },
+  {
+    "BASE_WORD": "기성율",
+    "TRANS_WORD1": "Progress Payment Rate",
+    "TRANS_WORD4": "Tỷ lệ thanh toán theo tiến độ"
+  },
+  {
+    "BASE_WORD": "누계기성율",
+    "TRANS_WORD1": "Cumulative Progress Payment Rate",
+    "TRANS_WORD4": "Tỷ lệ thanh toán theo tiến độ lũy kế"
+  },
+  {
+    "BASE_WORD": "기성금(A)",
+    "TRANS_WORD1": "Progress Payment Amount (A)",
+    "TRANS_WORD4": "Số tiền thanh toán theo tiến độ (A)"
+  },
+  {
+    "BASE_WORD": "기성청구일",
+    "TRANS_WORD1": "Progress Payment Request Date",
+    "TRANS_WORD4": "Ngày yêu cầu thanh toán theo tiến độ"
+  },
+  {
+    "BASE_WORD": "직영공종",
+    "TRANS_WORD1": "Direct Management Work Type",
+    "TRANS_WORD4": "Loại công việc thi công quản lý trực tiếp"
+  },
+  {
+    "BASE_WORD": "시공담당",
+    "TRANS_WORD1": "Construction Manager",
+    "TRANS_WORD4": "Phụ trách thi công"
+  },
+  {
+    "BASE_WORD": "실행예산(A)",
+    "TRANS_WORD1": "Execution Budget (A)",
+    "TRANS_WORD4": "Ngân sách thực hiện (A)"
+  },
+  {
+    "BASE_WORD": "예산사용(원가)",
+    "TRANS_WORD1": "Budget Use (Cost)",
+    "TRANS_WORD4": "Sử dụng ngân sách (chi phí)"
+  },
+  {
+    "BASE_WORD": "직영결의발생원가조회",
+    "TRANS_WORD1": "Direct Management Resolution Cost Inquiry",
+    "TRANS_WORD4": "Tra cứu chi phí phát sinh phê duyệt quản lý trực tiếp"
+  },
+  {
+    "BASE_WORD": "집행율(%)",
+    "TRANS_WORD1": "Operational Rate (%)",
+    "TRANS_WORD4": "Tỷ lệ thi hành (%)"
+  },
+  {
+    "BASE_WORD": "직영기성실적내역",
+    "TRANS_WORD1": "Details of Direct Management Progress Performance",
+    "TRANS_WORD4": "Chi tiết kết quả tiến độ quản lý trực tiếp"
+  },
+  {
+    "BASE_WORD": "시공능력평가순위",
+    "TRANS_WORD1": "Construction Capacity Evaluation Rank",
+    "TRANS_WORD4": "Xếp hạng đánh giá năng lực thi công"
+  },
+  {
+    "BASE_WORD": "시공능력평가금액",
+    "TRANS_WORD1": "Construction Capacity Evaluation Amount",
+    "TRANS_WORD4": "Số tiền đánh giá năng lực thi công"
+  },
+  {
+    "BASE_WORD": "협력업체등록요청화면에는업체등급,업체상태를제외함",
+    "TRANS_WORD1": "Exclude company grade and status in the partner registration request screen",
+    "TRANS_WORD4": "Loại trừ thứ hạng và trạng thái công ty trong màn hình yêu cầu đăng ký đối tác"
+  },
+  {
+    "BASE_WORD": "기성/세금계산서담당자정보",
+    "TRANS_WORD1": "Progress Payment/Tax Invoice Manager Information",
+    "TRANS_WORD4": "Thông tin người quản lý thanh toán theo tiến độ/hóa đơn thuế"
+  },
+  {
+    "BASE_WORD": "매출순이익율(%)",
+    "TRANS_WORD1": "Sales Net Profit Margin (%)",
+    "TRANS_WORD4": "Tỷ suất lợi nhuận ròng của doanh thu (%)"
+  },
+  {
+    "BASE_WORD": "매출액중가율(%)",
+    "TRANS_WORD1": "Sales Growth Rate (%)",
+    "TRANS_WORD4": "Tỷ lệ tăng trưởng doanh thu (%)"
+  },
+  {
+    "BASE_WORD": "발생원가조회",
+    "TRANS_WORD1": "Occurrence Cost Inquiry",
+    "TRANS_WORD4": "Tra cứu chi phí phát sinh"
+  },
+  {
+    "BASE_WORD": "실행대비집행비율",
+    "TRANS_WORD1": "Budget Comparison Execution Ratio",
+    "TRANS_WORD4": "Tỷ lệ thi hành so với thực hiện"
+  },
+  {
+    "BASE_WORD": "직영기성기성목록",
+    "TRANS_WORD1": "List of Direct Management Progress",
+    "TRANS_WORD4": "Danh sách tiến độ quản lý trực tiếp"
+  },
+  {
+    "BASE_WORD": "지출결의대비원장(전표별)",
+    "TRANS_WORD1": "Ledger Compared with Expenditure Resolution (by Voucher)",
+    "TRANS_WORD4": "Sổ cái so với phê duyệt chi tiêu (theo các phiếu)"
+  },
+  {
+    "BASE_WORD": "지출결의",
+    "TRANS_WORD1": "Expenditure Resolution",
+    "TRANS_WORD4": "Xin phê duyệt chi tiêu"
+  },
+  {
+    "BASE_WORD": "실행내역별원가투입현황",
+    "TRANS_WORD1": "Cost Input Status by Budget Details",
+    "TRANS_WORD4": "Hiện trạng đưa vào chi phí theo chi tiết thực hiện"
+  },
+  {
+    "BASE_WORD": "직영결의원가투입현황상세POPUP",
+    "TRANS_WORD1": "Detailed POPUP of Direct Management Resolution Cost Input Status",
+    "TRANS_WORD4": "Pop-up chi tiết tình trạng nhập chi phí phê duyệt quản lý trực tiếp"
+  },
+  {
+    "BASE_WORD": "직영결의원가투입현황",
+    "TRANS_WORD1": "Status of Direct Management Resolution Cost Input",
+    "TRANS_WORD4": "Tình trạng nhập chi phí phê duyệt quản lý trực tiếp"
+  },
+  {
+    "BASE_WORD": "현장별투입원가현황",
+    "TRANS_WORD1": "Site Cost Input Status",
+    "TRANS_WORD4": "Hiện trạng chi phí đưa vào theo công trường"
+  },
+  {
+    "BASE_WORD": "투입금액",
+    "TRANS_WORD1": "Input Amount",
+    "TRANS_WORD4": "Số tiền đưa vào"
+  },
+  {
+    "BASE_WORD": "집행율",
+    "TRANS_WORD1": "Operational Rate",
+    "TRANS_WORD4": "Tỷ lệ thi hành"
+  },
+  {
+    "BASE_WORD": "원가투입내역지정",
+    "TRANS_WORD1": "Designate Cost Input Details",
+    "TRANS_WORD4": "Chỉ định chi tiết đưa vào chi phí"
+  },
+  {
+    "BASE_WORD": "집행승인구분",
+    "TRANS_WORD1": "Operational Approval Classification",
+    "TRANS_WORD4": "Phân loại chấp thuận thi hành"
+  },
+  {
+    "BASE_WORD": "현장원가마감",
+    "TRANS_WORD1": "Site Cost Closure",
+    "TRANS_WORD4": "Đóng chi phí công trường"
+  },
+  {
+    "BASE_WORD": "시행기성",
+    "TRANS_WORD1": "Implementation Performance",
+    "TRANS_WORD4": "Thi hành theo tiến độ"
+  },
+  {
+    "BASE_WORD": "현장별원가투입현황상세POPUP",
+    "TRANS_WORD1": "Site Cost Input Status Details POPUP",
+    "TRANS_WORD4": "Pop-up chi tiết hiện trạng chi phí đưa vào theo công trường"
+  },
+  {
+    "BASE_WORD": "시공샘플.JPG외10종",
+    "TRANS_WORD1": "Construction Sample.jpg and 10 more",
+    "TRANS_WORD4": "Mẫu thi công.jpg và 10 mẫu khác"
+  },
+  {
+    "BASE_WORD": "협력업체조회",
+    "TRANS_WORD1": "Partner Company Inquiry",
+    "TRANS_WORD4": "Tra cứu công ty đối tác"
+  },
+  {
+    "BASE_WORD": "구매품목별협력업체등록",
+    "TRANS_WORD1": "Registration of Partner Companies by Purchase Item",
+    "TRANS_WORD4": "Đăng ký công ty đối tác theo từng mặt hàng mua sắm"
+  },
+  {
+    "BASE_WORD": "협력업체명",
+    "TRANS_WORD1": "Partner Company Name",
+    "TRANS_WORD4": "Tên công ty đối tác"
+  },
+  {
+    "BASE_WORD": "최저가투찰및우수시공업체",
+    "TRANS_WORD1": "Lowest Bid and Excellent Construction Company",
+    "TRANS_WORD4": "Nhà thầu báo giá thấp nhất và thi công xuất sắc"
+  },
+  {
+    "BASE_WORD": "기성신청내역",
+    "TRANS_WORD1": "Progress Payment Application Details",
+    "TRANS_WORD4": "Chi tiết đơn đăng ký thanh toán theo tiến độ"
+  },
+  {
+    "BASE_WORD": "기성내역",
+    "TRANS_WORD1": "Progress Payment Details",
+    "TRANS_WORD4": "Chi tiết thanh toán theo tiến độ"
+  },
+  {
+    "BASE_WORD": "전회누계기성",
+    "TRANS_WORD1": "Previous Cumulative Progress",
+    "TRANS_WORD4": "Tiến độ lũy kế đợt trước"
+  },
+  {
+    "BASE_WORD": "예산명",
+    "TRANS_WORD1": "Budget Name",
+    "TRANS_WORD4": "Tên ngân sách"
+  },
+  {
+    "BASE_WORD": "등록공종코드",
+    "TRANS_WORD1": "Registered Work Type Code",
+    "TRANS_WORD4": "Mã loại công việc thi công đã đăng ký"
+  },
+  {
+    "BASE_WORD": "등록공종명",
+    "TRANS_WORD1": "Registered Work Type Name",
+    "TRANS_WORD4": "Tên loại công việc thi công đã đăng ký"
+  },
+  {
+    "BASE_WORD": "자재예산내역조회",
+    "TRANS_WORD1": "Material Budget Details Inquiry",
+    "TRANS_WORD4": "Tra cứu chi tiết ngân sách vật liệu"
+  },
+  {
+    "BASE_WORD": "매출원가구분",
+    "TRANS_WORD1": "Cost of Sales Classification",
+    "TRANS_WORD4": "Phân loại giá vốn hàng bán"
+  },
+  {
+    "BASE_WORD": "VE매출",
+    "TRANS_WORD1": "VE Sales",
+    "TRANS_WORD4": "Doanh số VE"
+  },
+  {
+    "BASE_WORD": "VE원가",
+    "TRANS_WORD1": "VE Cost",
+    "TRANS_WORD4": "Chi phí VE"
+  },
+  {
+    "BASE_WORD": "기준통화실행환율환산",
+    "TRANS_WORD1": "Standard Currency Execution Exchange Rate Conversion",
+    "TRANS_WORD4": "Quy đổi tỷ giá thực hiện về đồng tiền tiêu chuẩn"
+  },
+  {
+    "BASE_WORD": "매출변동",
+    "TRANS_WORD1": "Sales Fluctuation",
+    "TRANS_WORD4": "Biến động doanh thu"
+  },
+  {
+    "BASE_WORD": "발주처심의중",
+    "TRANS_WORD1": "Ordering Party Under Review",
+    "TRANS_WORD4": "Bên đặt hàng đang được xem xét"
+  },
+  {
+    "BASE_WORD": "판관비",
+    "TRANS_WORD1": "SG&A (Selling, General & Administrative Expenses)",
+    "TRANS_WORD4": "Chi phí bán hàng, hành chính, quản lý doanh nghiệp (SG&A)"
+  },
+  {
+    "BASE_WORD": "계획판관비율",
+    "TRANS_WORD1": "Plan Selling and Administrative Expense Ratio",
+    "TRANS_WORD4": "Kế hoạch Tỷ lệ chi phí SG^A trên doanh thu"
+  },
+  {
+    "BASE_WORD": "일반경비웹지출결의서등록",
+    "TRANS_WORD1": "General Expense Web Expense Resolution Registration",
+    "TRANS_WORD4": "Đăng ký Đơn Xin phê duyệt chi tiêu trên web chi phí thông thường"
+  },
+  {
+    "BASE_WORD": "웹지출결의지출유형코드등록",
+    "TRANS_WORD1": "Web Expense Resolution Expense Type Code Registration",
+    "TRANS_WORD4": "Đăng ký mã loại chi phí xin phê duyệt chi tiêu trên web"
+  },
+  {
+    "BASE_WORD": "지출유형코드",
+    "TRANS_WORD1": "Expenditure Type Code",
+    "TRANS_WORD4": "Mã loại chi tiêu"
+  },
+  {
+    "BASE_WORD": "지출유형",
+    "TRANS_WORD1": "Expenditure Type",
+    "TRANS_WORD4": "Loại chi tiêu"
+  },
+  {
+    "BASE_WORD": "최초공사기간",
+    "TRANS_WORD1": "Initial Construction Period",
+    "TRANS_WORD4": "Thời gian thi công ban đầu"
+  },
+  {
+    "BASE_WORD": "변경공사기간",
+    "TRANS_WORD1": "Change Construction Period",
+    "TRANS_WORD4": "Thay đổi thời gian xây dựng"
+  },
+  {
+    "BASE_WORD": "원가율",
+    "TRANS_WORD1": "Cost Rate",
+    "TRANS_WORD4": "Tỷ lệ chi phí"
+  },
+  {
+    "BASE_WORD": "관리매출",
+    "TRANS_WORD1": "Management Sales",
+    "TRANS_WORD4": "Doanh số quản lý"
+  },
+  {
+    "BASE_WORD": "재무매출",
+    "TRANS_WORD1": "Financial Sales",
+    "TRANS_WORD4": "Doanh số tài chính"
+  },
+  {
+    "BASE_WORD": "실행매출",
+    "TRANS_WORD1": "Budget Sales",
+    "TRANS_WORD4": "Doanh số thực hiện"
+  },
+  {
+    "BASE_WORD": "재무매출대비율",
+    "TRANS_WORD1": "Financial Sales Ratio",
+    "TRANS_WORD4": "Tỷ số doanh số tài chính"
+  },
+  {
+    "BASE_WORD": "실행공종명",
+    "TRANS_WORD1": "Budget Work Type Name",
+    "TRANS_WORD4": "So với Tên loại công việc thi công"
+  },
+  {
+    "BASE_WORD": "대공종명",
+    "TRANS_WORD1": "Large Work Type Name",
+    "TRANS_WORD4": "Lớn Tên loại công việc thi công"
+  },
+  {
+    "BASE_WORD": "소공종명",
+    "TRANS_WORD1": "Medium Work Type Name",
+    "TRANS_WORD4": "vừa Tên loại công việc thi công"
+  },
+  {
+    "BASE_WORD": "신청시공실적",
+    "TRANS_WORD1": "Construction Performance Application",
+    "TRANS_WORD4": "đăng ký Kết quả thi công xây dựng"
+  },
+  {
+    "BASE_WORD": "DECVVINA시공실적",
+    "TRANS_WORD1": "Construction Performance DECV VINA",
+    "TRANS_WORD4": "Kết quả thi công xây dựng DECV VINA"
+  },
+  {
+    "BASE_WORD": "공사시공실적(DECVVINA)",
+    "TRANS_WORD1": "Construction Performance(DECV VINA)",
+    "TRANS_WORD4": "Kết quả thi công xây dựng thực tế(DECV VINA)"
+  },
+  {
+    "BASE_WORD": "공사시공실적(신청)",
+    "TRANS_WORD1": "Construction performance (application)",
+    "TRANS_WORD4": "Hiệu suất xây dựng (ứng dụng)"
+  },
+  {
+    "BASE_WORD": "예산보기",
+    "TRANS_WORD1": "View Budget",
+    "TRANS_WORD4": "Xem ngân sách"
+  },
+  {
+    "BASE_WORD": "실행공종",
+    "TRANS_WORD1": "Budget Work Type",
+    "TRANS_WORD4": "So với Tên loại công việc thi công"
+  },
+  {
+    "BASE_WORD": "C.준공예정원가율",
+    "TRANS_WORD1": "C. Estimated Final Completion Cost Rate",
+    "TRANS_WORD4": "C. Tỷ lệ chi phí dự kiến hoàn công"
+  },
+  {
+    "BASE_WORD": "승인예산결의유보분",
+    "TRANS_WORD1": "Approved Budget Resolution Reserved Part",
+    "TRANS_WORD4": "Phần bảo lưu quyết định ngân sách được chấp thuận"
+  },
+  {
+    "BASE_WORD": "준공예정원가율산정(비주간)",
+    "TRANS_WORD1": "Calculate Expected Cost Ratio at Final Completion (Non-Weekly)",
+    "TRANS_WORD4": "Tính tỷ lệ chi phí hoàn công dự kiến (không phải công ty chứng khoán)"
+  },
+  {
+    "BASE_WORD": "변경전예산",
+    "TRANS_WORD1": "Budget Before Change",
+    "TRANS_WORD4": "Ngân sách trước thay đổi"
+  },
+  {
+    "BASE_WORD": "변경후예산",
+    "TRANS_WORD1": "Budget After Change",
+    "TRANS_WORD4": "Ngân sách sau thay đổi"
+  },
+  {
+    "BASE_WORD": "증감예산",
+    "TRANS_WORD1": "Increase/Decrease Budget",
+    "TRANS_WORD4": "Ngân sách tăng/giảm"
+  },
+  {
+    "BASE_WORD": "원가변동",
+    "TRANS_WORD1": "Cost Variation",
+    "TRANS_WORD4": "Biến động chi phí"
+  },
+  {
+    "BASE_WORD": "매출반영",
+    "TRANS_WORD1": "Sales Reflection",
+    "TRANS_WORD4": "Phản ánh doanh thu"
+  },
+  {
+    "BASE_WORD": "매출원가차이(EQKRW)",
+    "TRANS_WORD1": "Cost of Sales Difference (EqKRW)",
+    "TRANS_WORD4": "Chênh lệch giá vốn hàng bán (EqKRW)"
+  },
+  {
+    "BASE_WORD": "*도급기준현장:실행내역의본실행금액",
+    "TRANS_WORD1": "*Contract Basis Site: The main execution amount in the execution details",
+    "TRANS_WORD4": "*Công trường cơ sở gói thầu: Chi phí dự kiến sau nhận thầu trong kế hoạch thực hiện chi tiết."
+  },
+  {
+    "BASE_WORD": "예정원가율",
+    "TRANS_WORD1": "Scheduled Cost Rate",
+    "TRANS_WORD4": "Tỷ lệ chi phí dự kiến"
+  },
+  {
+    "BASE_WORD": "예정원가율(확정)",
+    "TRANS_WORD1": "Confirmed Scheduled Cost Rate",
+    "TRANS_WORD4": "Tỷ lệ chi phí dự kiến (xác nhận)"
+  },
+  {
+    "BASE_WORD": "전월투입",
+    "TRANS_WORD1": "Last Month's Input",
+    "TRANS_WORD4": "đưa vào tháng trước"
+  },
+  {
+    "BASE_WORD": "원가누계",
+    "TRANS_WORD1": "Cumulative Cost",
+    "TRANS_WORD4": "chi phí luỹ kế"
+  },
+  {
+    "BASE_WORD": "당월적용원가율",
+    "TRANS_WORD1": "This Month's Applied Cost Rate",
+    "TRANS_WORD4": "Tỷ lệ chi phí áp dụng tháng này"
+  },
+  {
+    "BASE_WORD": "매출원가",
+    "TRANS_WORD1": "Cost of Sales",
+    "TRANS_WORD4": "Giá vốn hàng bán"
+  },
+  {
+    "BASE_WORD": "매출이익",
+    "TRANS_WORD1": "Sales Profit",
+    "TRANS_WORD4": "Lợi nhuận doanh thu"
+  },
+  {
+    "BASE_WORD": "지출결의전표현황",
+    "TRANS_WORD1": "Expenditure Resolution Voucher Status",
+    "TRANS_WORD4": "Hiện trạng phiếu xin phê duyệt chi tiêu"
+  },
+  {
+    "BASE_WORD": "협력업체등록신청",
+    "TRANS_WORD1": "Registration Application Partner Company",
+    "TRANS_WORD4": "Đơn đăng ký làm đối tác"
+  },
+  {
+    "BASE_WORD": "발주서(예산미편성)상세",
+    "TRANS_WORD1": "Order Form (Unbudgeted) Details",
+    "TRANS_WORD4": "Chi tiết đơn đặt hàng (Chưa lập ngân sách)"
+  },
+  {
+    "BASE_WORD": "발주서(예산미편성)",
+    "TRANS_WORD1": "Order Form (Unbudgeted)",
+    "TRANS_WORD4": "Đơn đặt hàng (Chưa lập ngân sách)"
+  },
+  {
+    "BASE_WORD": "선급차수",
+    "TRANS_WORD1": "A.P Sequence",
+    "TRANS_WORD4": "Số lần chi tạm ứng"
+  },
+  {
+    "BASE_WORD": "지출결의명",
+    "TRANS_WORD1": "Expenditure Resolution Name",
+    "TRANS_WORD4": "Tên xin phê duyệt chi tiêu"
+  },
+  {
+    "BASE_WORD": "입찰예산",
+    "TRANS_WORD1": "Bidding Budget",
+    "TRANS_WORD4": "Ngân sách đấu thầu"
+  },
+  {
+    "BASE_WORD": "최초예산",
+    "TRANS_WORD1": "Initial Budget",
+    "TRANS_WORD4": "Ngân sách ban đầu"
+  },
+  {
+    "BASE_WORD": "변경예산",
+    "TRANS_WORD1": "Change Budget",
+    "TRANS_WORD4": "Thay đổi ngân sách"
+  },
+  {
+    "BASE_WORD": "예산항목",
+    "TRANS_WORD1": "Budget Item",
+    "TRANS_WORD4": "Mục ngân sách"
+  },
+  {
+    "BASE_WORD": "지출결의(PJ)",
+    "TRANS_WORD1": "Expenditure Resolution (PJ)",
+    "TRANS_WORD4": "Xin phê duyệt chi tiêu (PJ)"
+  },
+  {
+    "BASE_WORD": "지출결의(부서)",
+    "TRANS_WORD1": "Expenditure Resolution (Department)",
+    "TRANS_WORD4": "Xin phê duyệt chi tiêu (Phòng ban)"
+  },
+  {
+    "BASE_WORD": "기타원가",
+    "TRANS_WORD1": "Other Costs",
+    "TRANS_WORD4": "Chi phí khác"
+  },
+  {
+    "BASE_WORD": "매입세금계산서웹지출결의서등록",
+    "TRANS_WORD1": "Web Purchase Tax Invoice Expense Resolution Registration",
+    "TRANS_WORD4": "Đăng ký xin chấp thuận chi tiêu trên web với hóa đơn thuế mua hàng"
+  },
+  {
+    "BASE_WORD": "법인카드웹지출결의서등록",
+    "TRANS_WORD1": "Corporate Card Web Expense Resolution Registration",
+    "TRANS_WORD4": "Đăng ký Đơn đề nghị chi tiêu bằng thẻ doanh nghiệp trên web"
+  },
+  {
+    "BASE_WORD": "직영결의/예산",
+    "TRANS_WORD1": "Direct Management Resolution/Budget",
+    "TRANS_WORD4": "Xin phê duyệt quản lý trực tiếp/Ngân sách"
+  },
+  {
+    "BASE_WORD": "공사기간시작일자",
+    "TRANS_WORD1": "Construction Period Start Date",
+    "TRANS_WORD4": "Ngày bắt đầu thời gian xây dựng"
+  },
+  {
+    "BASE_WORD": "공사기간종료일자",
+    "TRANS_WORD1": "Construction Period End Date",
+    "TRANS_WORD4": "Ngày kết thúc thời gian xây dựng"
+  },
+  {
+    "BASE_WORD": "입찰,계약,기성및협력사평가",
+    "TRANS_WORD1": "Bidding, contracting, completion and supplier evaluation",
+    "TRANS_WORD4": "Đấu thầu, ký kết hợp đồng, hoàn thiện và đánh giá nhà cung cấp"
+  },
+  {
+    "BASE_WORD": "예산대비구매의뢰현황",
+    "TRANS_WORD1": "Purchase Request Status Compared to Budget",
+    "TRANS_WORD4": "Hiện trạng uỷ thác mua so với ngân sách"
+  },
+  {
+    "BASE_WORD": "잔여실행금액",
+    "TRANS_WORD1": "Remaining Execution Amount",
+    "TRANS_WORD4": "Số tiền thực hiện còn lại"
+  },
+  {
+    "BASE_WORD": "예정원가율(%)",
+    "TRANS_WORD1": "Scheduled Cost Rate (%)",
+    "TRANS_WORD4": "Tỷ lệ chi phí dự kiến (%)"
+  },
+  {
+    "BASE_WORD": "준공예정원가율산정",
+    "TRANS_WORD1": "Calculate Expected Cost Ratio at Final Completion",
+    "TRANS_WORD4": "Tính tỷ lệ chi phí hoàn công dự kiến"
+  },
+  {
+    "BASE_WORD": "※준공예정원가는당사분기준으로작성",
+    "TRANS_WORD1": "※Estimated Final Completion cost is prepared based on our share.",
+    "TRANS_WORD4": "※chi phí hoàn công dự kiến được soạn thảo dựa trên lập trường của công ty chúng tôi."
+  },
+  {
+    "BASE_WORD": "원가계산",
+    "TRANS_WORD1": "Cost Calculation",
+    "TRANS_WORD4": "Tính toán chi phí"
+  },
+  {
+    "BASE_WORD": "준공예정원가율",
+    "TRANS_WORD1": "Expected Cost Ratio at Final Completion",
+    "TRANS_WORD4": "Tỷ lệ chi phí hoàn công dự kiến"
+  },
+  {
+    "BASE_WORD": "B.준공예정원가",
+    "TRANS_WORD1": "B. Estimated Final Completion Cost",
+    "TRANS_WORD4": "B. Đơn giá hoàn công dự kiến"
+  },
+  {
+    "BASE_WORD": "산정식:잔여원가-(잔여매출*실행율)",
+    "TRANS_WORD1": "Formula: Remaining Cost - (Remaining Sales * Execution Rate)",
+    "TRANS_WORD4": "Công thức tính: Chi phí còn lại - (Doanh số còn lại * Tỷ lệ thực hiện)"
+  },
+  {
+    "BASE_WORD": "실행예산(공사비)*하자보수비율(0.6%)",
+    "TRANS_WORD1": "Execution Budget (Construction Cost) * Defect Repair Ratio (0.6%)",
+    "TRANS_WORD4": "Ngân sách thực hiện (Chi phí xây dựng) * Tỷ lệ sửa chữa bảo hành(0.6%)"
+  },
+  {
+    "BASE_WORD": "C1.준공예정원가율(%)",
+    "TRANS_WORD1": "C1. Estimated Final Completion Cost Rate (%)",
+    "TRANS_WORD4": "C1. Tỷ lệ chi phí dự kiến hoàn công(%)"
+  },
+  {
+    "BASE_WORD": "도급액",
+    "TRANS_WORD1": "Contract Amount",
+    "TRANS_WORD4": "Số tiền gói thầu"
+  },
+  {
+    "BASE_WORD": "준공예정원가",
+    "TRANS_WORD1": "Expected Cost at Final Completion",
+    "TRANS_WORD4": "Chi phí hoàn công dự kiến"
+  },
+  {
+    "BASE_WORD": "차수구분",
+    "TRANS_WORD1": "Sequence Classification",
+    "TRANS_WORD4": "Phân loại số lần"
+  },
+  {
+    "BASE_WORD": "최종차수",
+    "TRANS_WORD1": "Final Sequence",
+    "TRANS_WORD4": "Lần cuối cùng"
+  },
+  {
+    "BASE_WORD": "결의번호=청구번호+결의번호+결의차수",
+    "TRANS_WORD1": "Resolution No = Request No + Resolution No + Resolution Sequence",
+    "TRANS_WORD4": "Số quyết định = Số yêu cầu + Số quyết định + Số lần quyết định"
+  },
+  {
+    "BASE_WORD": "청구번호=청구번호+청구차수",
+    "TRANS_WORD1": "Request No = Request No + Request Sequence",
+    "TRANS_WORD4": "Số yêu cầu = Số yêu cầu + Số thứ tự yêu cầu"
+  },
+  {
+    "BASE_WORD": "기성금",
+    "TRANS_WORD1": "Progress Payment Amount",
+    "TRANS_WORD4": "Số tiền thanh toán theo tiến độ"
+  },
+  {
+    "BASE_WORD": "예산수량",
+    "TRANS_WORD1": "Budget Quantity",
+    "TRANS_WORD4": "Số lượng ngân sách"
+  },
+  {
+    "BASE_WORD": "공사비준공예정원가",
+    "TRANS_WORD1": "Construction Cost Estimated Final Completion Cost",
+    "TRANS_WORD4": "Giá gốc chi phí hoàn công xây dựng dự kiến"
+  },
+  {
+    "BASE_WORD": "공사비준공예정원가총계",
+    "TRANS_WORD1": "Total Construction Cost Estimated Final Completion Cost",
+    "TRANS_WORD4": "Tổng giá gốc chi phí hoàn công xây dựng dự kiến"
+  },
+  {
+    "BASE_WORD": "승인예산결의분",
+    "TRANS_WORD1": "Approved Budget Resolution Part",
+    "TRANS_WORD4": "Phần quyết định ngân sách được chấp thuận"
+  },
+  {
+    "BASE_WORD": "승인예산결의분유보",
+    "TRANS_WORD1": "Approved Budget Resolution Part Reserved",
+    "TRANS_WORD4": "Bảo lưu phần quyết định ngân sách được chấp thuận"
+  },
+  {
+    "BASE_WORD": "승인예산전체분",
+    "TRANS_WORD1": "Total Approved Budget",
+    "TRANS_WORD4": "Tổng ngân sách được chấp thuận"
+  },
+  {
+    "BASE_WORD": "승인예산잔여",
+    "TRANS_WORD1": "Remaining Approved Budget",
+    "TRANS_WORD4": "Ngân sách được chấp thuận còn lại"
+  },
+  {
+    "BASE_WORD": "준공예정공사비(공종별)",
+    "TRANS_WORD1": "Expected Construction Cost (by Type)",
+    "TRANS_WORD4": "Chi phí xây dựng hoàn công dự kiến (theo loại công việc thi công)"
+  },
+  {
+    "BASE_WORD": "원가증감",
+    "TRANS_WORD1": "Cost Increase/Decrease",
+    "TRANS_WORD4": "Tăng/Giảm chi phí"
+  },
+  {
+    "BASE_WORD": "경비집행율(%)",
+    "TRANS_WORD1": "Expense Execution Rate (%)",
+    "TRANS_WORD4": "Tỷ lệ thực hiện chi phí (%)"
+  },
+  {
+    "BASE_WORD": "원가공정율(%)",
+    "TRANS_WORD1": "Cost Progress Rate (%)",
+    "TRANS_WORD4": "Tỷ lệ tiến độ chi phí (%)"
+  },
+  {
+    "BASE_WORD": "준공추정원가",
+    "TRANS_WORD1": "Estimated Cost at Final Completion",
+    "TRANS_WORD4": "Chi phí hoàn công ước tính"
+  },
+  {
+    "BASE_WORD": "예산초과항목이있습니다.변경후승인요청하세요.",
+    "TRANS_WORD1": "There are budget items that exceed the limit. Please request approval after changing.",
+    "TRANS_WORD4": "Có hạng mục vượt quá ngân sách. Vui lòng thay đổi sau đó yêu cầu chấp thuận."
+  },
+  {
+    "BASE_WORD": "환율(USD)",
+    "TRANS_WORD1": "Exchange Rate (USD)",
+    "TRANS_WORD4": "Tỷ giá hối đoái (USD)"
+  },
+  {
+    "BASE_WORD": "환율(KRW)",
+    "TRANS_WORD1": "Exchange Rate (KRW)",
+    "TRANS_WORD4": "Tỷ giá hối đoái (KRW)"
+  },
+  {
+    "BASE_WORD": "예산데이터체크",
+    "TRANS_WORD1": "Budget Data Check",
+    "TRANS_WORD4": "Kiểm tra dữ liệu ngân sách"
+  },
+  {
+    "BASE_WORD": "공종번호",
+    "TRANS_WORD1": "Work Type No",
+    "TRANS_WORD4": "Số loại công việc thi công"
+  },
+  {
+    "BASE_WORD": "등록차수",
+    "TRANS_WORD1": "Registered Sequence",
+    "TRANS_WORD4": "Số lần đăng ký"
+  },
+  {
+    "BASE_WORD": "외주와용역의차이점확인필요함",
+    "TRANS_WORD1": "Need to confirm the difference between subcontract and services",
+    "TRANS_WORD4": "Cần xác nhận sự khác biệt dịch vụ với thuê ngoài"
+  },
+  {
+    "BASE_WORD": "협력업체상세입력",
+    "TRANS_WORD1": "Detailed Partner Company Input",
+    "TRANS_WORD4": "Nhập chi tiết công ty đối tác"
+  },
+  {
+    "BASE_WORD": "선택된차수가없어추가할수없습니다.차수를선택하여주세요.",
+    "TRANS_WORD1": "No selected sequence to add. Please select a sequence.",
+    "TRANS_WORD4": "Không có số lần nào được chọn nên không thể thêm. Vui lòng chọn một số lần."
+  },
+  {
+    "BASE_WORD": "최종차수만삭제가능합니다.",
+    "TRANS_WORD1": "Only the Final Sequence Can Be Deleted",
+    "TRANS_WORD4": "Chỉ có thể xóa số lần cuối cùng"
+  },
+  {
+    "BASE_WORD": "레미콘공급단가등록_차수현황",
+    "TRANS_WORD1": "Ready-Mixed Concrete Supply Unit Price Registration_Sequence Status",
+    "TRANS_WORD4": "Đăng ký đơn giá cung cấp bê tông tươi_Hiện trạng số lần"
+  },
+  {
+    "BASE_WORD": "※예산초과확인(예산/시행의뢰)",
+    "TRANS_WORD1": "※Budget Overrun Check (Budget/Implementation Request)",
+    "TRANS_WORD4": "※Xác nhận vượt ngân sách (Ngân sách/Uỷ thác mua hàng)"
+  },
+  {
+    "BASE_WORD": "실행예산단가를초과했습니다.재료비및노무비집행예산포함단가==>예산:",
+    "TRANS_WORD1": "Exceeded Execution Budget Unit Price Including Material and Labor Costs Budget ==> Budget:",
+    "TRANS_WORD4": "Đã vượt quá đơn giá ngân sách thực hiện. Đơn giá bao gồm ngân sách chi phí nguyên vật liệu và chi phí lao động ==> Ngân sách:"
+  },
+  {
+    "BASE_WORD": "차수삭제오류",
+    "TRANS_WORD1": "Sequence Deletion Error",
+    "TRANS_WORD4": "Lỗi xóa số lần"
+  },
+  {
+    "BASE_WORD": "전체기성현황",
+    "TRANS_WORD1": "Overall Progress Status",
+    "TRANS_WORD4": "Tình trạng tiến độ tổng thể"
+  },
+  {
+    "BASE_WORD": "당월기성현황",
+    "TRANS_WORD1": "This Month's Progress Payment Status",
+    "TRANS_WORD4": "Hiện trạng thanh toán theo tiến độ tháng này"
+  },
+  {
+    "BASE_WORD": "현장별투입원가",
+    "TRANS_WORD1": "Site Cost Input",
+    "TRANS_WORD4": "Chi phí đưa vào theo công trường"
+  },
+  {
+    "BASE_WORD": "예산초과확인",
+    "TRANS_WORD1": "Confirm Budget Exceedance",
+    "TRANS_WORD4": "Xác nhận vượt ngân sách"
+  },
+  {
+    "BASE_WORD": "원가투입내역",
+    "TRANS_WORD1": "Cost Input Details",
+    "TRANS_WORD4": "Chi tiết đưa vào chi phí"
+  },
+  {
+    "BASE_WORD": "도급실행기성내역",
+    "TRANS_WORD1": "Contract Execution Progress Details",
+    "TRANS_WORD4": "Chi tiết thanh toán theo tiến độ thực hiện gói thầu"
+  },
+  {
+    "BASE_WORD": "준공예정원가승인",
+    "TRANS_WORD1": "Approval of Expected Cost at Final Completion",
+    "TRANS_WORD4": "Chấp thuận chi phí hoàn công dự kiến"
+  },
+  {
+    "BASE_WORD": "준공예정원가총괄표",
+    "TRANS_WORD1": "Summary of Expected Cost at Final Completion",
+    "TRANS_WORD4": "Bảng tổng quát chi phí hoàn công dự kiến"
+  },
+  {
+    "BASE_WORD": "준공예정원가VE",
+    "TRANS_WORD1": "Expected VE Cost at Final Completion",
+    "TRANS_WORD4": "Chi phí VE hoàn công dự kiến"
+  },
+  {
+    "BASE_WORD": "준공예정원가생성오류",
+    "TRANS_WORD1": "Error in Generating Expected Cost at Final Completion",
+    "TRANS_WORD4": "Lỗi khi tạo chi phí hoàn công dự kiến"
+  },
+  {
+    "BASE_WORD": "준공예정원가생성",
+    "TRANS_WORD1": "Generate Expected Cost at Final Completion",
+    "TRANS_WORD4": "Tạo chi phí hoàn công dự kiến"
+  },
+  {
+    "BASE_WORD": "실행예산에계정이등록된자료는수정할수없습니다.",
+    "TRANS_WORD1": "Cannot modify data with registered accounts in the execution budget",
+    "TRANS_WORD4": "Không thể sửa đổi dữ liệu có tài khoản đã đăng ký trong ngân sách thực hiện"
+  },
+  {
+    "BASE_WORD": "원가투입내역지정마감",
+    "TRANS_WORD1": "Designate Cost Input Details Closing",
+    "TRANS_WORD4": "Kết thúc chỉ định chi tiết đưa vào chi phí"
+  },
+  {
+    "BASE_WORD": "원가계정만등록가능합니다.",
+    "TRANS_WORD1": "Only cost accounts can be registered.",
+    "TRANS_WORD4": "Chỉ có thể đăng ký tài khoản kế toán chi phí."
+  },
+  {
+    "BASE_WORD": "지출결의결재요청목록",
+    "TRANS_WORD1": "List of Expenditure Resolution Approval Requests",
+    "TRANS_WORD4": "Danh sách yêu cầu phê duyệt chi tiêu"
+  },
+  {
+    "BASE_WORD": "지출결의결재요청분개내역",
+    "TRANS_WORD1": "Details of Expenditure Resolution Approval Requests",
+    "TRANS_WORD4": "Chi tiết bút toán yêu cầu phê duyệt chi tiêu"
+  },
+  {
+    "BASE_WORD": "수금실적현황",
+    "TRANS_WORD1": "Collection Performance Status",
+    "TRANS_WORD4": "Tình hình thu tiền thực tế"
+  },
+  {
+    "BASE_WORD": "투입원가현황",
+    "TRANS_WORD1": "Input Cost Status",
+    "TRANS_WORD4": "Hiện trạng chi phí đưa vào"
+  },
+  {
+    "BASE_WORD": "수주예정현장등록",
+    "TRANS_WORD1": "Register Expected Site",
+    "TRANS_WORD4": "Đăng ký công trường dự kiến phát sinh nhu cầu"
+  },
+  {
+    "BASE_WORD": "매출실적현황",
+    "TRANS_WORD1": "Sales Performance Status",
+    "TRANS_WORD4": "Hiện trạng kết quả thực tế doanh thu"
+  },
+  {
+    "BASE_WORD": "차수증가선택후추가해주세요.",
+    "TRANS_WORD1": "Please Select and Add Sequence Increase",
+    "TRANS_WORD4": "Vui lòng chọn tăng số lần rồi và thêm."
+  },
+  {
+    "BASE_WORD": "이전차수적용기간의다음날짜를입력하세요.",
+    "TRANS_WORD1": "Please enter the date after the previous sequence application period.",
+    "TRANS_WORD4": "Vui lòng nhập ngày sau thời gian áp dụng của lần trước đó."
+  },
+  {
+    "BASE_WORD": "예산과목코드",
+    "TRANS_WORD1": "Budget Item Code",
+    "TRANS_WORD4": "Mã khoản mục ngân sách"
+  },
+  {
+    "BASE_WORD": "자재예산내역",
+    "TRANS_WORD1": "Material Budget Details",
+    "TRANS_WORD4": "Chi tiết ngân sách vật liệu"
+  },
+  {
+    "BASE_WORD": "등록공종별협력업체검색",
+    "TRANS_WORD1": "Search for Partner Companies by Registered Work Type",
+    "TRANS_WORD4": "Tìm kiếm công ty đối tác theo loại công việc thi công đã đăng ký"
+  },
+  {
+    "BASE_WORD": "투입내역",
+    "TRANS_WORD1": "Input Details",
+    "TRANS_WORD4": "Chi tiết đưa vào"
+  },
+  {
+    "BASE_WORD": "승인예산",
+    "TRANS_WORD1": "Approved Budget",
+    "TRANS_WORD4": "Ngân sách được chấp thuận"
+  },
+  {
+    "BASE_WORD": "전월누계투입",
+    "TRANS_WORD1": "Last Month's Total",
+    "TRANS_WORD4": "đưa vào lũy kế của tháng trước"
+  },
+  {
+    "BASE_WORD": "당월투입",
+    "TRANS_WORD1": "This Month's Input",
+    "TRANS_WORD4": "đưa vào tháng này"
+  },
+  {
+    "BASE_WORD": "누계투입",
+    "TRANS_WORD1": "Cumulative Input",
+    "TRANS_WORD4": "đưa vào lũy kế"
+  },
+  {
+    "BASE_WORD": "공종별투입내역",
+    "TRANS_WORD1": "Input Details by Work Type",
+    "TRANS_WORD4": "Chi tiết đưa vào theo loại công việc thi công"
+  },
+  {
+    "BASE_WORD": "대공종",
+    "TRANS_WORD1": "Major Work Type",
+    "TRANS_WORD4": "Loại công việc thi công lớn"
+  },
+  {
+    "BASE_WORD": "소공종",
+    "TRANS_WORD1": "Small Subcontractor",
+    "TRANS_WORD4": "Công việc thi công nhỏ"
+  },
+  {
+    "BASE_WORD": "계약일자(FROM)",
+    "TRANS_WORD1": "Contract Date (FROM)",
+    "TRANS_WORD4": "Ngày hợp đồng (TỪ)"
+  },
+  {
+    "BASE_WORD": "예산잔량",
+    "TRANS_WORD1": "Remaining Budget Qty",
+    "TRANS_WORD4": "Lượng dư ngân sách"
+  },
+  {
+    "BASE_WORD": "예산잔여금액",
+    "TRANS_WORD1": "Remaining Budget Amount",
+    "TRANS_WORD4": "Số tiền ngân sách còn lại"
+  },
+  {
+    "BASE_WORD": "예산단가",
+    "TRANS_WORD1": "Budget Unit Price",
+    "TRANS_WORD4": "Đơn giá ngân sách"
+  },
+  {
+    "BASE_WORD": "예산금액",
+    "TRANS_WORD1": "Budget Amount",
+    "TRANS_WORD4": "Số tiền ngân sách"
+  },
+  {
+    "BASE_WORD": "공사시공실적",
+    "TRANS_WORD1": "Construction Performance",
+    "TRANS_WORD4": "Kết quả thi công xây dựng thực tế"
+  },
+  {
+    "BASE_WORD": "외주검사",
+    "TRANS_WORD1": "Sub-Contract Inspection",
+    "TRANS_WORD4": "Kiểm tra thuê ngoài"
+  },
+  {
+    "BASE_WORD": "협력업체상세입력팝업",
+    "TRANS_WORD1": "Detailed Partner Company Input Popup",
+    "TRANS_WORD4": "Pop-up nhập chi tiết công ty đối tác"
+  },
+  {
+    "BASE_WORD": "하위공종존재",
+    "TRANS_WORD1": "Subcategory Exists",
+    "TRANS_WORD4": "Có loại công việc thi công cấp thấp"
+  },
+  {
+    "BASE_WORD": "예산실적",
+    "TRANS_WORD1": "Budget Performance",
+    "TRANS_WORD4": "Kết quả thực tế ngân sách"
+  },
+  {
+    "BASE_WORD": "예산차수",
+    "TRANS_WORD1": "Budget Sequence",
+    "TRANS_WORD4": "Số lần ngân sách"
+  },
+  {
+    "BASE_WORD": "이전예산구분선택불가",
+    "TRANS_WORD1": "Cannot Select Previous Budget Classification",
+    "TRANS_WORD4": "Không thể chọn phân loại ngân sách trước đó"
+  },
+  {
+    "BASE_WORD": "대비(예산번호)",
+    "TRANS_WORD1": "Compared (Budget No)",
+    "TRANS_WORD4": "So sánh (số ngân sách)"
+  },
+  {
+    "BASE_WORD": "실행금액불일치",
+    "TRANS_WORD1": "Budget Amount Mismatch",
+    "TRANS_WORD4": "Số tiền thực hiện không khớp"
+  },
+  {
+    "BASE_WORD": "계약일자(TO)",
+    "TRANS_WORD1": "Contract Date (TO)",
+    "TRANS_WORD4": "Ngày hợp đồng (ĐẾN)"
+  },
+  {
+    "BASE_WORD": "ESC실행금액",
+    "TRANS_WORD1": "ESC Budget Amount",
+    "TRANS_WORD4": "Số tiền thực hiện ESC"
+  },
+  {
+    "BASE_WORD": "예산대비집행현황",
+    "TRANS_WORD1": "Budget / Excution Status",
+    "TRANS_WORD4": "Hiện trạng thi hành so với ngân sách"
+  },
+  {
+    "BASE_WORD": "실행대비원가율(%)",
+    "TRANS_WORD1": "Contract Compared Rate(%)",
+    "TRANS_WORD4": "Contract Compared Rate(%)"
+  },
+  {
+    "BASE_WORD": "협력업체등록승인",
+    "TRANS_WORD1": "Partner Company Approval",
+    "TRANS_WORD4": "Chấp thuận Công ty đối tác"
+  },
+  {
+    "BASE_WORD": "협력업체등록반려",
+    "TRANS_WORD1": "Partner Company cancellation",
+    "TRANS_WORD4": "hủy bỏ Công ty đối tác"
+  },
+  {
+    "BASE_WORD": "집행율(B/A)",
+    "TRANS_WORD1": "Operational Rate(B/A)",
+    "TRANS_WORD4": "Tỷ lệ thi hành(B/A)"
+  },
+  {
+    "BASE_WORD": "협력업체포탈FAQ등록",
+    "TRANS_WORD1": "Partner Company FAQ Registration",
+    "TRANS_WORD4": "Đăng ký FAQ công ty đối tác"
+  },
+  {
+    "BASE_WORD": "기성(0)",
+    "TRANS_WORD1": "Payment (0)",
+    "TRANS_WORD4": "Thanh toán theo tiến độ (0)"
+  },
+  {
+    "BASE_WORD": "예산대비_집행현황",
+    "TRANS_WORD1": "Execution Status Compared to Budget",
+    "TRANS_WORD4": "Hiện trạng thực hiện_so với ngân sách"
+  },
+  {
+    "BASE_WORD": "예산별청구내역",
+    "TRANS_WORD1": "Request Details by Budget",
+    "TRANS_WORD4": "Chi tiết yêu cầu theo ngân sách"
+  },
+  {
+    "BASE_WORD": "※예산초과확인(예산/구매의뢰)",
+    "TRANS_WORD1": "※Budget Overrun Check (Budget/Purchase Request)",
+    "TRANS_WORD4": "※Xác nhận vượt ngân sách (Ngân sách/Uỷ thác mua hàng)"
+  },
+  {
+    "BASE_WORD": "등록된차수가없습니다.",
+    "TRANS_WORD1": "No Registered Sequence",
+    "TRANS_WORD4": "Không có số lần đã đăng ký"
+  },
+  {
+    "BASE_WORD": "예산수량(TON환산)과편성수량(TON환산)이다릅니다.",
+    "TRANS_WORD1": "Budget Quantity (TON Conversion) differs from Allocated Quantity (TON Conversion).",
+    "TRANS_WORD4": "Số lượng ngân sách (quy đổi sang tấn) khác với số lượng phân bổ (quy đổi sang tấn)."
+  },
+  {
+    "BASE_WORD": "총괄정산자재등록차수생성오류",
+    "TRANS_WORD1": "An error occurred while creating counts during material registration and final settlement",
+    "TRANS_WORD4": "Xảy ra lỗi khi tạo số lần trong quá trình đăng ký vật liệu và tổng quyết toán"
+  },
+  {
+    "BASE_WORD": "총량자재잔여예산추정",
+    "TRANS_WORD1": "Estimated Remaining Budget of Total Quantity Materials",
+    "TRANS_WORD4": "Dự toán ngân sách còn lại của vật liệu quản lý tổng lượng"
+  },
+  {
+    "BASE_WORD": "투입금액이공급가액을초과했습니다.",
+    "TRANS_WORD1": "Input Amount Exceeds Supply Price",
+    "TRANS_WORD4": "Số tiền đưa vào vượt quá giá cung cấp."
+  },
+  {
+    "BASE_WORD": "협력업체등록",
+    "TRANS_WORD1": "Partner Company Registration",
+    "TRANS_WORD4": "Đăng ký công ty đối tác"
+  },
+  {
+    "BASE_WORD": "현장예산품목만조회",
+    "TRANS_WORD1": "View Only Site Budget Items",
+    "TRANS_WORD4": "Chỉ xem các mục ngân sách công trường"
+  },
+  {
+    "BASE_WORD": "발주공종명(한국어)",
+    "TRANS_WORD1": "Order Work Type Name(Korean)",
+    "TRANS_WORD4": "Tên chính thức loại công việc thi công đặt hàng(Tiếng Hàn)"
+  },
+  {
+    "BASE_WORD": "*.마감이되면원가와관련된자료는수정할수없음",
+    "TRANS_WORD1": "*. When closed, data related to cost cannot be modified",
+    "TRANS_WORD4": "*. Khi đóng, dữ liệu liên quan đến chi phí không thể được sửa đổi"
+  },
+  {
+    "BASE_WORD": "집행번호",
+    "TRANS_WORD1": "Operational No",
+    "TRANS_WORD4": "Số thực hiện"
+  },
+  {
+    "BASE_WORD": "대비집행번호",
+    "TRANS_WORD1": "Compared Operational No",
+    "TRANS_WORD4": "So sánh số hoạt động"
+  },
+  {
+    "BASE_WORD": "본사경비예산등록",
+    "TRANS_WORD1": "Head Office Budget",
+    "TRANS_WORD4": "Ngân sách văn phòng chính"
+  },
+  {
+    "BASE_WORD": "집행내역변경승인",
+    "TRANS_WORD1": "Request for Partial Budget Approval",
+    "TRANS_WORD4": "Yêu cầu phê duyệt một phần ngân sách"
+  },
+  {
+    "BASE_WORD": "실행예산총액",
+    "TRANS_WORD1": "Total Execution Budget Amount",
+    "TRANS_WORD4": "Tổng số tiền ngân sách thực hiện"
+  },
+  {
+    "BASE_WORD": "잔여예산",
+    "TRANS_WORD1": "Remaining Budget",
+    "TRANS_WORD4": "Còn lại Ngân sách"
+  },
+  {
+    "BASE_WORD": "현장별경비원가투입현황",
+    "TRANS_WORD1": "Expenses Input Status by Site",
+    "TRANS_WORD4": "Chi phí đầu vào Trạng thái theo Site"
+  },
+  {
+    "BASE_WORD": "경비집행내역",
+    "TRANS_WORD1": "Expenses Execution Details",
+    "TRANS_WORD4": "Chi tiết thực hiện chi phí"
+  },
+  {
+    "BASE_WORD": "금회집행예산",
+    "TRANS_WORD1": "Current execution budget",
+    "TRANS_WORD4": "Ngân sách thực hiện hiện tại"
+  },
+  {
+    "BASE_WORD": "집행예정일자",
+    "TRANS_WORD1": "Payment Date",
+    "TRANS_WORD4": "Ngày thanh toán"
+  },
+  {
+    "BASE_WORD": "기성(I=B+E))",
+    "TRANS_WORD1": "Progress Payment (I=B+E)",
+    "TRANS_WORD4": "Thanh toán theo tiến độ (I=B+E)"
+  },
+  {
+    "BASE_WORD": "상위공종",
+    "TRANS_WORD1": "Parent work type",
+    "TRANS_WORD4": "Loại công việc của phụ huynh"
+  },
+  {
+    "BASE_WORD": "금회집행금액",
+    "TRANS_WORD1": "Current execution amount",
+    "TRANS_WORD4": "Số tiền thực hiện hiện tại"
+  },
+  {
+    "BASE_WORD": "도급예산",
+    "TRANS_WORD1": "M Budget",
+    "TRANS_WORD4": "Ngân sách hợp đồng"
+  },
+  {
+    "BASE_WORD": "적용환율",
+    "TRANS_WORD1": "Applied Rate",
+    "TRANS_WORD4": "Tỷ giá áp dụng"
+  },
+  {
+    "BASE_WORD": "현장예산(1+2+3)",
+    "TRANS_WORD1": "Site budget (1+2+3)",
+    "TRANS_WORD4": "Ngân sách công trường (1+2+3)"
+  },
+  {
+    "BASE_WORD": "사업예산(4+5+6)",
+    "TRANS_WORD1": "Business budget (4+5+6)",
+    "TRANS_WORD4": "Ngân sách kinh doanh (4+5+6)"
+  },
+  {
+    "BASE_WORD": "매출이익(13-7)",
+    "TRANS_WORD1": "Sale profit (13-7)",
+    "TRANS_WORD4": "Lợi nhuận gộp (13-7)"
+  },
+  {
+    "BASE_WORD": "총예산(7+10)",
+    "TRANS_WORD1": "Total budget (7+10)",
+    "TRANS_WORD4": "Tổng ngân sách (7+10)"
+  },
+  {
+    "BASE_WORD": "경상이익(13-11)",
+    "TRANS_WORD1": "Ordinary profit (13-11)",
+    "TRANS_WORD4": "Lợi nhuận thuần (13-11)"
+  },
+  {
+    "BASE_WORD": "시행대비기성율(%)",
+    "TRANS_WORD1": "Completion rate compared to implementation (%)",
+    "TRANS_WORD4": "Tỷ lệ hoàn thành so với triển khai (%)"
+  },
+  {
+    "BASE_WORD": "예산/기성대비현황",
+    "TRANS_WORD1": "Budget/Payment Comparison Status",
+    "TRANS_WORD4": "Trạng thái so sánh ngân sách/thanh toán"
+  },
+  {
+    "BASE_WORD": "이미지급된기성수량보다작습니다.",
+    "TRANS_WORD1": "The quantity is smaller than what has already been paid.",
+    "TRANS_WORD4": "Khối lượng này nhỏ hơn so với khối lượng đã được thanh toán trước đó."
+  },
+  {
+    "BASE_WORD": "사업예산경비코드",
+    "TRANS_WORD1": "Budget Project Expense Code",
+    "TRANS_WORD4": "Mã chi phí dự án ngân sách"
+  },
+  {
+    "BASE_WORD": "사업예산경비명",
+    "TRANS_WORD1": "Budget Project Expense Name",
+    "TRANS_WORD4": "Tên chi phí dự án ngân sách"
+  },
+  {
+    "BASE_WORD": "예산대시보드",
+    "TRANS_WORD1": "Budget Dashboard",
+    "TRANS_WORD4": "Bảng điều khiển ngân sách"
+  },
+  {
+    "BASE_WORD": "I.예산사용현황",
+    "TRANS_WORD1": "I. Budget Utilization Overview",
+    "TRANS_WORD4": "I. Tổng quan sử dụng ngân sách"
+  },
+  {
+    "BASE_WORD": "II.비용코드별예산배분",
+    "TRANS_WORD1": "II. Expense Code Budget Allocation",
+    "TRANS_WORD4": "II. Phân bổ ngân sách theo mã chi phí"
+  },
+  {
+    "BASE_WORD": "III.비용코드별월별예산",
+    "TRANS_WORD1": "III. Monthly Budget by Expense Code",
+    "TRANS_WORD4": "III. Ngân sách tháng theo mã chi phí"
+  },
+  {
+    "BASE_WORD": "예산코드선택(1개이상)",
+    "TRANS_WORD1": "Select Budget code (1 or more)",
+    "TRANS_WORD4": "Chọn mã ngân sách (1 hoặc nhiều)"
+  },
+  {
+    "BASE_WORD": "실적예산",
+    "TRANS_WORD1": "Actual Budget",
+    "TRANS_WORD4": "Ngân sách thực tế"
+  },
+  {
+    "BASE_WORD": "잠정예산",
+    "TRANS_WORD1": "Provisional Budget",
+    "TRANS_WORD4": "Ngân sách tạm tính"
+  },
+  {
+    "BASE_WORD": "예산선택(승인요청기준)",
+    "TRANS_WORD1": "Choose Budget (Based on AR)",
+    "TRANS_WORD4": "Chọn ngân sách (theo yêu cầu phê duyệt)"
+  },
+  {
+    "BASE_WORD": "예산현황(지급지시기준)",
+    "TRANS_WORD1": "Data Budget (Based on PO)",
+    "TRANS_WORD4": "Ngân sách (theo lệnh thanh toán)"
+  },
+  {
+    "BASE_WORD": "년계획(승인예산)",
+    "TRANS_WORD1": "Approved Budget",
+    "TRANS_WORD4": "Kế hoạch hàng năm (Ngân sách đã được phê duyệt)"
+  },
+  {
+    "BASE_WORD": "기성청구",
+    "TRANS_WORD1": "Progress Payment Request",
+    "TRANS_WORD4": "Progress Payment Request"
+  },
+  {
+    "BASE_WORD": "현금흐름 수입/지출 그룹",
+    "TRANS_WORD1": "Group cash flow by income/outcome",
+    "TRANS_WORD4": "Nhóm dòng tiền theo thu/chi"
+  },
+  {
+    "BASE_WORD": "1차지출",
+    "TRANS_WORD1": "1st Expense",
+    "TRANS_WORD4": "Chi phí đợt 1"
+  },
+  {
+    "BASE_WORD": "비율(지출/계획)",
+    "TRANS_WORD1": "Ratio (Expense/Plan)",
+    "TRANS_WORD4": "Tỷ lệ (Chi phí/Kế hoạch)"
+  },
+  {
+    "BASE_WORD": "2차지출",
+    "TRANS_WORD1": "2nd Expense",
+    "TRANS_WORD4": "Chi phí đợt 2"
+  },
+  {
+    "BASE_WORD": "지출합계",
+    "TRANS_WORD1": "Sum of Expense",
+    "TRANS_WORD4": "Tổng chi phí"
+  },
+  {
+    "BASE_WORD": "CBS Level3 배정예산을 초과했습니다.",
+    "TRANS_WORD1": "Exceeds allocated budget (CBS L3).",
+    "TRANS_WORD4": "Vượt quá ngân sách phân bổ (CBS L3)."
+  },
+  {
+    "BASE_WORD": "USD환율",
+    "TRANS_WORD1": "USD Rate",
+    "TRANS_WORD4": "Tỷ giá USD"
+  },
+  {
+    "BASE_WORD": "공종별선급금계획",
+    "TRANS_WORD1": "Advance Payment Plan by Work Type",
+    "TRANS_WORD4": "Kế hoạch tạm ứng theo loại công việc"
+  },
+  {
+    "BASE_WORD": "배정예산(CBS L4)",
+    "TRANS_WORD1": "Allocated Budget (CBS L4)",
+    "TRANS_WORD4": "Ngân sách phân bổ (CBS L4)"
+  },
+  {
+    "BASE_WORD": "예산대비누계비율",
+    "TRANS_WORD1": "Acc. Ratio after this month (compare with budget)",
+    "TRANS_WORD4": "Tỷ lệ lũy kế so với ngân sách"
+  },
+  {
+    "BASE_WORD": "합계(B) = 당월예산",
+    "TRANS_WORD1": "Total (B) = This month's amount",
+    "TRANS_WORD4": "Tổng (B) = Số tiền tháng này"
+  },
+  {
+    "BASE_WORD": "배정예산(CBSL4)",
+    "TRANS_WORD1": "Allocated Budget (CBS L4)",
+    "TRANS_WORD4": "Ngân sách phân bổ (CBS L4)"
+  },
+  {
+    "BASE_WORD": "합계(B)=당월예산",
+    "TRANS_WORD1": "Total (B) = This month's amount",
+    "TRANS_WORD4": "Tổng (B) = Số tiền tháng này"
+  },
+  {
+    "BASE_WORD": "CBSLEVEL3배정예산을초과했습니다.",
+    "TRANS_WORD1": "Exceeds allocated budget (CBS L3).",
+    "TRANS_WORD4": "Vượt quá ngân sách phân bổ (CBS L3)."
+  },
+  {
+    "BASE_WORD": "당월선수금(=2-1)",
+    "TRANS_WORD1": "Advance received this month (= 2 - 1)",
+    "TRANS_WORD4": "Tạm ứng nhận trong tháng (= 2 - 1)"
+  }
+]
