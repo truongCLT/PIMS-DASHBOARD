@@ -220,79 +220,74 @@ export const ORACLE_DASHBOARD_QUERIES: Record<string, OracleEndpointQuery> = {
   },
 
   "dashboard_pd_costbudget_1q.jsp": {
-    // BUDGET = tổng BDGTAMT của snapshot THÁNG GẦN NHẤT mỗi dự án; ACTUAL = luỹ kế COSTAMT từ tháng đầu tiên có
-    // dữ liệu đến đúng tháng đó (nguồn CHTB_PFMCOSTRMRK — màn "Cost Input Status by Execution Details").
-    // Lấy từ DÒNG LÁ (RMRKYN='Y') và phân loại theo cây CBS (STNDCBSCODE → CATB_STNDCBS) như
-    // ch_cost_settle_ratio_q_1q.jsp, thay cho cách cũ (dòng RMRKLVL=2 + so tên DETLNAME bằng LIKE) vốn bỏ sót
-    // "Expenses II" (19 dự án)/"Expenses I"/"COMMON  WORK" và dồn nhầm vào Outsourcing. Đã verify trên Oracle:
-    // K8HH1/K8CT1/THT2 khớp đúng Budget cấp 2 của màn Cost Input; tổng toàn hệ thống lệch <0,03% (dòng lá không
-    // có CBS hợp lệ / nhánh D Other Cost bị bỏ, giống settle report).
-    sql: `WITH CTE_CBS AS (
-        -- Cây CBS (CATB_STNDCBS) cố định cho toàn hệ thống: ROOT1 = gốc cấp 1 (A Direct / B Indirect /
-        -- C Contingency / D Other / H Head Office), ROOT2 = nhánh cấp 2 (vd AWZH Common Works, AWZI
-        -- Expenses I, BWZJ Expenses II, CWDD Contingency, HWZJ Head Office Cost) — đúng như
-        -- ch_cost_settle_ratio_q_1q.jsp (CONNECT BY từ UPPERCBSCODE='-').
-        SELECT STNDCBSCODE,
-               SUBSTR(SYS_CONNECT_BY_PATH(STNDCBSCODE, '/'), 2, 13)  AS ROOT1,
-               SUBSTR(SYS_CONNECT_BY_PATH(STNDCBSCODE, '/'), 16, 13) AS ROOT2
-        FROM CATB_STNDCBS
-        START WITH UPPERCBSCODE = '-'
-        CONNECT BY PRIOR STNDCBSCODE = UPPERCBSCODE
+    // Công thức: BUDGET lấy từ CHTB_PFMCOSTRMRK.BDGTAMT (RMRKLVL=2) của snapshot THÁNG GẦN NHẤT mỗi dự án;
+    // ACTUAL = luỹ kế COSTAMT từ tháng đầu tiên có dữ liệu đến đúng tháng đó. Mỗi dòng RMRKLVL=2 (DETLNAME)
+    // được map vào 1 trong 5 item chuẩn của dashboard: Common Work→Common, Expense I→Expense 1, Expense II→
+    // Expense 2, Contingency→Contingency, còn lại (Architectural/Mechanical/Electrical/External & Landscape
+    // Works, và bất kỳ hạng mục thầu phụ nào khác chưa liệt kê) → Outsourcing (mặc định).
+    // Gộp theo PROJECT_NAME (FUN_GET_FLDNAME) thay vì FLDCODE — FLDCODE (mã công trình con/hạng mục) có thể
+    // tách cùng một dự án ra nhiều mã khác nhau, hoặc CBTB_FLD_MAPPING gán nhầm FLDCODE sang SITE_CODE của dự
+    // án khác, khiến Budget/Actual bị lẫn sang nhầm dự án (đã gặp: dự án 용역 không có dòng ngân sách
+    // Outsourcing nhưng vẫn hiện số tiền Outsourcing). Gộp theo tên trước để tránh ô nhiễm theo mã này.
+    // FLDCODE/SITE_CODE trả về chỉ mang tính tham khảo (đại diện, lấy MIN).
+    sql: `WITH CTE_RMRK AS (
+        SELECT A.FLDCODE, A.BASEYYMM, A.RMRKMGTNO, A.DETLNAME, A.BDGTAMT
+        FROM CHTB_PFMCOSTRMRK A
+        WHERE A.RMRKLVL = 2
     ),
-    -- Phân loại theo cây CBS của TỪNG DÒNG LÁ (RMRKYN='Y' — chỉ dòng lá mới có STNDCBSCODE), giống hệt
-    -- ch_cost_settle_ratio_q_1q.jsp — KHÔNG đoán theo tên DETLNAME/nhóm cha của cây Work Type (tên và mã
-    -- cây Work Type khác nhau giữa các dự án: "Expenses II"/"COMMON  WORK"/"Indirect Cost" dưới mã của Direct…).
-    -- Map: C→Contingency, B/H(Head Office, gộp vào Expenses II như SP_SUM_PFM_VINA)→Expense 2 (Indirect),
-    -- A/AWZH→Common, A/AWZI→Expense 1, phần còn lại của A (Architectural/Mechanical/Electrical/Civil/
-    -- Landscape…)→Outsourcing. D (Other Cost) và dòng lá không có CBS hợp lệ bị bỏ qua (settle report cũng vậy).
+    CTE_COST AS (
+        SELECT FLDCODE, BASEYYMM, RMRKMGTNO, SUM(NVL(COSTAMT, 0)) AS COSTAMT_MONTH
+        FROM CHTB_PFMCOSTRMRK
+        GROUP BY FLDCODE, BASEYYMM, RMRKMGTNO
+    ),
     CTE_ITEM AS (
         SELECT
             A.FLDCODE,
+            FUN_GET_FLDNAME(A.FLDCODE) AS PROJECT_NAME,
             A.BASEYYMM,
             CASE
-                WHEN M.ROOT1 = 'C000000000000' THEN 'Contingency'
-                WHEN M.ROOT1 IN ('B000000000000', 'H000000000000') THEN 'Expense 2'
-                WHEN M.ROOT2 = 'AWZH000000000' THEN 'Common'
-                WHEN M.ROOT2 = 'AWZI000000000' THEN 'Expense 1'
+                WHEN UPPER(A.DETLNAME) LIKE 'COMMON WORK%'  THEN 'Common'
+                WHEN UPPER(A.DETLNAME) LIKE 'EXPENSE I%' AND UPPER(A.DETLNAME) NOT LIKE 'EXPENSE II%' THEN 'Expense 1'
+                WHEN UPPER(A.DETLNAME) LIKE 'EXPENSE II%'   THEN 'Expense 2'
+                WHEN UPPER(A.DETLNAME) LIKE 'CONTINGENCY%'  THEN 'Contingency'
                 ELSE 'Outsourcing'
             END AS ITEM,
             CASE
-                WHEN M.ROOT1 = 'C000000000000' THEN 'Contingency'
-                WHEN M.ROOT1 IN ('B000000000000', 'H000000000000') THEN 'Indirect Cost'
+                WHEN UPPER(A.DETLNAME) LIKE 'EXPENSE II%'   THEN 'Indirect Cost'
+                WHEN UPPER(A.DETLNAME) LIKE 'CONTINGENCY%'  THEN 'Contingency'
                 ELSE 'Direct Cost'
             END AS CATEGORY,
-            NVL(A.BDGTAMT, 0) AS BDGTAMT,
-            NVL(A.COSTAMT, 0) AS COSTAMT_MONTH
-        FROM CHTB_PFMCOSTRMRK A
-        JOIN CTE_CBS M ON M.STNDCBSCODE = A.STNDCBSCODE
-        WHERE A.RMRKYN = 'Y'
-          AND M.ROOT1 IN ('A000000000000', 'B000000000000', 'C000000000000', 'H000000000000')
+            A.BDGTAMT,
+            C.COSTAMT_MONTH
+        FROM CTE_RMRK A
+        JOIN CTE_COST C ON C.FLDCODE = A.FLDCODE AND C.BASEYYMM = A.BASEYYMM AND C.RMRKMGTNO = A.RMRKMGTNO
     ),
     CTE_GROUPED AS (
-        SELECT FLDCODE, BASEYYMM, ITEM, CATEGORY,
+        SELECT PROJECT_NAME, BASEYYMM, ITEM, CATEGORY,
+               MIN(FLDCODE) AS FLDCODE,
                SUM(BDGTAMT) AS BUDGET,
                SUM(COSTAMT_MONTH) AS COSTAMT_MONTH_SUM
         FROM CTE_ITEM
-        GROUP BY FLDCODE, BASEYYMM, ITEM, CATEGORY
+        GROUP BY PROJECT_NAME, BASEYYMM, ITEM, CATEGORY
     ),
     CTE_LATEST AS (
-        SELECT FLDCODE, MAX(BASEYYMM) AS MAX_BASEYYMM
+        SELECT PROJECT_NAME, MAX(BASEYYMM) AS MAX_BASEYYMM
         FROM CTE_GROUPED
-        GROUP BY FLDCODE
+        GROUP BY PROJECT_NAME
     ),
     CTE_FINAL AS (
         SELECT
-            G.FLDCODE, G.ITEM, G.CATEGORY, G.BUDGET,
+            G.PROJECT_NAME, G.FLDCODE, G.ITEM, G.CATEGORY, G.BUDGET,
             SUM(H.COSTAMT_MONTH_SUM) AS ACTUAL
         FROM CTE_GROUPED G
-        JOIN CTE_LATEST L ON L.FLDCODE = G.FLDCODE AND L.MAX_BASEYYMM = G.BASEYYMM
-        JOIN CTE_GROUPED H ON H.FLDCODE = G.FLDCODE AND H.ITEM = G.ITEM AND H.BASEYYMM <= G.BASEYYMM
-        GROUP BY G.FLDCODE, G.ITEM, G.CATEGORY, G.BUDGET
+        JOIN CTE_LATEST L ON L.PROJECT_NAME = G.PROJECT_NAME AND L.MAX_BASEYYMM = G.BASEYYMM
+        JOIN CTE_GROUPED H ON H.PROJECT_NAME = G.PROJECT_NAME AND H.ITEM = G.ITEM AND H.BASEYYMM <= G.BASEYYMM
+        GROUP BY G.PROJECT_NAME, G.FLDCODE, G.ITEM, G.CATEGORY, G.BUDGET
     )
     SELECT
         F.FLDCODE AS FLDCODE,
         (SELECT MAX(FM.ACNT_FLDCODE) FROM CBTB_FLD_MAPPING FM WHERE FM.FLDCODE = F.FLDCODE) AS SITE_CODE,
-        FUN_GET_FLDNAME(F.FLDCODE) AS PROJECT_NAME,
+        F.PROJECT_NAME AS PROJECT_NAME,
         F.CATEGORY AS CATEGORY,
         F.ITEM AS ITEM,
         F.BUDGET AS BUDGET,
@@ -308,46 +303,43 @@ export const ORACLE_DASHBOARD_QUERIES: Record<string, OracleEndpointQuery> = {
     // 같은 원본 데이터를 놓고도 서로 다른 항목 집합을 내놓는 불일치가 있었다.
     // 금액은 VND 원본 그대로 반환한다(예전엔 CHTB_EXCHANGE_RATIO로 나눠 천 USD로 환산했으나, 이 프로젝트는
     // "동기화 데이터는 항상 VND 원본 저장, 화면에서만 통화 변환" 원칙으로 통일 — dashboard_pd_costbudget_1q.jsp
-    // 의 ACTUAL과 동일하게 무변환).
-    sql: `WITH CTE_CBS AS (
-        -- Cây CBS (CATB_STNDCBS) cố định cho toàn hệ thống: ROOT1 = gốc cấp 1 (A Direct / B Indirect /
-        -- C Contingency / D Other / H Head Office), ROOT2 = nhánh cấp 2 (vd AWZH Common Works, AWZI
-        -- Expenses I, BWZJ Expenses II, CWDD Contingency, HWZJ Head Office Cost) — đúng như
-        -- ch_cost_settle_ratio_q_1q.jsp (CONNECT BY từ UPPERCBSCODE='-').
-        SELECT STNDCBSCODE,
-               SUBSTR(SYS_CONNECT_BY_PATH(STNDCBSCODE, '/'), 2, 13)  AS ROOT1,
-               SUBSTR(SYS_CONNECT_BY_PATH(STNDCBSCODE, '/'), 16, 13) AS ROOT2
-        FROM CATB_STNDCBS
-        START WITH UPPERCBSCODE = '-'
-        CONNECT BY PRIOR STNDCBSCODE = UPPERCBSCODE
+    // 의 ACTUAL과 동일하게 무변환). PROJECT_NAME 기준 그룹핑은 dashboard_pd_costbudget_1q.jsp와 동일한 이유
+    // (FLDCODE 단위로 묶으면 다른 프로젝트 데이터가 섞여 들어가는 문제 방지).
+    sql: `WITH CTE_RMRK AS (
+        SELECT A.FLDCODE, A.BASEYYMM, A.RMRKMGTNO, A.DETLNAME
+        FROM CHTB_PFMCOSTRMRK A
+        WHERE A.RMRKLVL = 2
     ),
-    -- Phân loại GIỐNG HỆT dashboard_pd_costbudget_1q.jsp (cây CBS của từng dòng lá) — xem chú thích ở đó.
+    CTE_COST AS (
+        SELECT FLDCODE, BASEYYMM, RMRKMGTNO, SUM(NVL(COSTAMT, 0)) AS COSTAMT_MONTH
+        FROM CHTB_PFMCOSTRMRK
+        GROUP BY FLDCODE, BASEYYMM, RMRKMGTNO
+    ),
     CTE_ITEM AS (
         SELECT
             A.FLDCODE,
+            FUN_GET_FLDNAME(A.FLDCODE) AS PROJECT_NAME,
             A.BASEYYMM,
             CASE
-                WHEN M.ROOT1 = 'C000000000000' THEN 'Contingency'
-                WHEN M.ROOT1 IN ('B000000000000', 'H000000000000') THEN 'Expense 2'
-                WHEN M.ROOT2 = 'AWZH000000000' THEN 'Common'
-                WHEN M.ROOT2 = 'AWZI000000000' THEN 'Expense 1'
+                WHEN UPPER(A.DETLNAME) LIKE 'COMMON WORK%'  THEN 'Common'
+                WHEN UPPER(A.DETLNAME) LIKE 'EXPENSE I%' AND UPPER(A.DETLNAME) NOT LIKE 'EXPENSE II%' THEN 'Expense 1'
+                WHEN UPPER(A.DETLNAME) LIKE 'EXPENSE II%'   THEN 'Expense 2'
+                WHEN UPPER(A.DETLNAME) LIKE 'CONTINGENCY%'  THEN 'Contingency'
                 ELSE 'Outsourcing'
             END AS ITEM,
-            NVL(A.COSTAMT, 0) AS COSTAMT_MONTH
-        FROM CHTB_PFMCOSTRMRK A
-        JOIN CTE_CBS M ON M.STNDCBSCODE = A.STNDCBSCODE
-        WHERE A.RMRKYN = 'Y'
-          AND M.ROOT1 IN ('A000000000000', 'B000000000000', 'C000000000000', 'H000000000000')
+            C.COSTAMT_MONTH
+        FROM CTE_RMRK A
+        JOIN CTE_COST C ON C.FLDCODE = A.FLDCODE AND C.BASEYYMM = A.BASEYYMM AND C.RMRKMGTNO = A.RMRKMGTNO
     ),
     CTE_GROUPED AS (
-        SELECT FLDCODE, BASEYYMM, ITEM, SUM(COSTAMT_MONTH) AS COSTAMT_MONTH_SUM
+        SELECT PROJECT_NAME, MIN(FLDCODE) AS FLDCODE, BASEYYMM, ITEM, SUM(COSTAMT_MONTH) AS COSTAMT_MONTH_SUM
         FROM CTE_ITEM
-        GROUP BY FLDCODE, BASEYYMM, ITEM
+        GROUP BY PROJECT_NAME, BASEYYMM, ITEM
     )
     SELECT
         G.FLDCODE AS FLDCODE,
         (SELECT MAX(FM.ACNT_FLDCODE) FROM CBTB_FLD_MAPPING FM WHERE FM.FLDCODE = G.FLDCODE) AS SITE_CODE,
-        FUN_GET_FLDNAME(G.FLDCODE) AS PROJECT_NAME,
+        G.PROJECT_NAME AS PROJECT_NAME,
         TO_NUMBER(SUBSTR(G.BASEYYMM, 1, 4)) AS YEAR,
         TO_NUMBER(SUBSTR(G.BASEYYMM, 5, 2)) AS MONTH,
         G.ITEM AS ITEM,

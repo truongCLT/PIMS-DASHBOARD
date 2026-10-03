@@ -21,6 +21,7 @@ import {
   pdPlanVersionsTable,
   pdSiteOverviewPhotoTable,
   pdSitePhotosMonthlyTable,
+  fxRatesTable,
 } from "@workspace/db";
 import { buildProjectMonthlyReadModel } from "../lib/canonicalProjectMonthly";
 import {
@@ -359,11 +360,31 @@ router.get("/projectdetail", async (req, res) => {
   }
 });
 
-// Must match VND_PER_K_USD in ProjectDataEntryTab.tsx — that's the rate the Data Entry tab
-// used to convert the entered VND into the "천 USD" (thousand USD) values stored in pd_sales_monthly,
-// so it's also the rate needed to convert them back to VND for this endpoint's consumer.
-const VND_PER_K_USD = 25_400_000;
-const toVnd = (kUsd: string | null) => (kUsd == null ? null : Math.round(Number(kUsd) * VND_PER_K_USD));
+// 예전엔 고정 환율(1 kUSD = 25,400,000 VND) 하나로 모든 달을 역변환했는데, 월별로 실제 환율이 달라서
+// 달마다 오차가 생겼다. fx_rates(연/월별 환율, 이미 환율 설정 화면에 존재)를 조회해 해당 연/월의 환율을
+// 쓰고, 없으면 그 이전 가장 가까운 달의 환율로, 그래도 없으면 이 고정값으로 폴백한다.
+const DEFAULT_VND_PER_K_USD = 25_400_000;
+async function buildVndRateLookup(): Promise<(year: number | null, month: number | null) => number> {
+  const rows = await db
+    .select({ year: fxRatesTable.year, month: fxRatesTable.month, rate: fxRatesTable.rate })
+    .from(fxRatesTable)
+    .where(eq(fxRatesTable.currency, "VND"));
+  return (year, month) => {
+    if (year != null && month != null) {
+      const exact = rows.find((r) => r.year === year && r.month === month);
+      if (exact) return exact.rate * 1000;
+      const priorOrSame = rows
+        .filter((r) => r.year < year || (r.year === year && r.month <= month))
+        .sort((a, b) => b.year - a.year || b.month - a.month);
+      if (priorOrSame.length > 0) return priorOrSame[0].rate * 1000;
+    }
+    if (rows.length > 0) {
+      const latest = [...rows].sort((a, b) => b.year - a.year || b.month - a.month)[0];
+      return latest.rate * 1000;
+    }
+    return DEFAULT_VND_PER_K_USD;
+  };
+}
 
 /**
  * GET all Monthly Revenue (Data Entry tab, "Monthly Revenue" section — pd_sales_monthly) rows
@@ -387,11 +408,14 @@ router.get("/outsourcing/all", async (req, res) => {
       .from(pdSalesMonthlyTable)
       .leftJoin(mrProjectsTable, eq(mrProjectsTable.name, pdSalesMonthlyTable.projectName))
       .orderBy(asc(pdSalesMonthlyTable.projectName), asc(pdSalesMonthlyTable.year), asc(pdSalesMonthlyTable.month));
+    const vndRateFor = await buildVndRateLookup();
+    const toVnd = (kUsd: string | null, year: number | null, month: number | null) =>
+      kUsd == null ? null : Math.round(Number(kUsd) * vndRateFor(year, month));
     res.json({
       data: rows.map((r) => ({
         ...r,
-        revenuePlan: toVnd(r.revenuePlan),
-        revenueActual: toVnd(r.revenueActual),
+        revenuePlan: toVnd(r.revenuePlan, r.year, r.month),
+        revenueActual: toVnd(r.revenueActual, r.year, r.month),
       })),
     });
   } catch (err) {

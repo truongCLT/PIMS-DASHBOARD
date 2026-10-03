@@ -524,6 +524,13 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       ? (currentProject?.revenueActual[index] ?? null)
       : null,
   }));
+  // 메인 경영현황판 Excel의 Site별 월 매출원가(COGS)를 기본값으로 사용 (mainSalesMonths와 동일한 패턴)
+  const mainCogsMonths = Array.from({ length: 12 }, (_, index) => ({
+    month: index + 1,
+    actual: index + 1 <= actualCutoffMonth
+      ? (currentProject?.cogsActual[index] ?? null)
+      : null,
+  }));
   const currentStatus = currentProject?.status ?? "ongoing";
   const currentBusinessType = currentProject?.businessType ?? (service ? "용역" : "시공");
   const statusMutation = useUpdateMgmtreportProjectStatus();
@@ -582,6 +589,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
   // "2. Monthly Revenue" bảng — năm đang xem, mặc định = REPORT_YEAR (chỉ năm này mới có dữ liệu mẫu
   // prefill từ mgmtreport qua mainSalesMonths; năm khác chỉ hiện dữ liệu đã lưu tay, xem getSalesEntryValue).
   const [selectedSalesYear, setSelectedSalesYear] = useState(REPORT_YEAR);
+  const [selectedCogsYear, setSelectedCogsYear] = useState(REPORT_YEAR);
   // "Budget Execution Status" bảng Monthly/Cumulative — tháng/năm đang xem, mặc định = tháng đã chốt
   // (lastClosedYearMonth: tháng M chốt từ ngày 13 tháng M+2 — vd 10/1 → '26.08, từ 13/10 → '26.09), giống
   // tháng cơ sở của tab Report/Revenue-Cost. Trước đây mặc định = tháng hiện tại (Month 10) nên Cumulative
@@ -852,7 +860,11 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
         merged = merged.map((row, rowIndex) =>
           rowIndex === index ? { ...row, actual } : row,
         );
-      } else {
+      } else if (costBudget.some((row) => row.item === item)) {
+        // 해당 사이트에 이 항목(예: Outsourcing)의 예산 라인이 실제로 존재할 때만 새 행을 만든다 —
+        // 예산 항목이 아예 없는데 outsourcing 탭 데이터만 있는 경우(동기화 쪽 사이트 매핑 오류로 보이는
+        // 사례 다수 보고됨: 용역 사이트에 Direct Cost 예산이 없는데도 외주 실적이 표시됨)까지 행을
+        // 새로 만들어버리면 예산 없는 유령 비용 항목이 화면에 노출된다.
         merged.push({ item, year, month, plan: null, actual });
       }
     });
@@ -1336,6 +1348,22 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
         },
       ];
     });
+  const getCogsEntryValue = (year: number, month: number) => {
+    const saved = cogsMonthly.find(
+      (row) => row.year === year && row.month === month,
+    )?.acctCogs;
+    if (saved != null) return saved;
+    if (year !== REPORT_YEAR) return null;
+    return mainCogsMonths[month - 1]?.actual ?? null;
+  };
+  const setCogsEntryValue = (year: number, month: number, value: number | null) =>
+    setCogsMonthly((rows) => {
+      const index = rows.findIndex((row) => row.year === year && row.month === month);
+      if (index >= 0) {
+        return rows.map((row, i) => (i === index ? { ...row, acctCogs: value } : row));
+      }
+      return [...rows, { year, month, acctCogs: value, wipCogs: null }];
+    });
   const getProgressPlan = (year: number, month: number) =>
     progress.find((row) => row.year === year && row.month === month)?.planPct ?? null;
   const setProgressPlan = (year: number, month: number, value: number | null) =>
@@ -1564,10 +1592,27 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
     </div>
   );
 
-  // 용역: 월별 매출원가 (매출 탭)
+  // 수기 입력 행 (전년 누계 등) — month=0인 행. salesMonthly와 동일한 관례.
+  const manualCogsRows = cogsMonthly
+    .map((row, i) => ({ row, i }))
+    .filter(({ row }) => row.month === 0);
+
+  // 용역: 월별 매출원가 (매출 탭) — 메인 경영현황판 Excel의 Site별 월 매출원가를 기본값으로 사용.
   const cogsMonthlyCard = (
     <div style={cardStyle}>
-      {cardHead(t("projectDataEntryTab:cogsMonthlyTitle"), "cogsMonthly")}
+      {cardHead(
+        `${t("projectDataEntryTab:cogsMonthlyTitle")} · ${unitLabel}`,
+        "cogsMonthly",
+        <select
+          value={selectedCogsYear}
+          onChange={(e) => setSelectedCogsYear(Number(e.target.value))}
+          style={{ fontSize: "13px", padding: "3px 4px", border: `1px solid ${BORDER_LIGHT}`, borderRadius: "3px" }}
+        >
+          {Array.from({ length: 5 }, (_, i) => REPORT_YEAR - 2 + i).map((y) => (
+            <option key={y} value={y}>{y}</option>
+          ))}
+        </select>,
+      )}
       <div data-tbl="cogsMonthly" onKeyDown={makeArrowNav("cogsMonthly")}>
       <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px" }}>
         <thead>
@@ -1579,12 +1624,27 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
           </tr>
         </thead>
         <tbody>
-          {cogsMonthly.map((c, i) => (
-            <tr key={i}>
-              <td style={tdCell}><NumInput value={c.year} onChange={(v) => updateAt(setCogsMonthly, i, { year: v ?? 0 })} data-row={i} data-col={0} /></td>
-              <td style={tdCell}><NumInput value={c.month} onChange={(v) => updateAt(setCogsMonthly, i, { month: v ?? 0 })} data-row={i} data-col={1} /></td>
-              <td style={tdCell}><VndInput valueKUsd={c.acctCogs} onChange={(v) => updateAt(setCogsMonthly, i, { acctCogs: v })} data-row={i} data-col={2} /></td>
+          {manualCogsRows.map(({ row, i }) => (
+            <tr key={`manual-${i}`}>
+              <td style={tdCell}><NumInput value={row.year} onChange={(v) => updateAt(setCogsMonthly, i, { year: v ?? row.year })} min={2000} max={2100} step={1} hideZero={false} data-row={i} data-col={0} /></td>
+              <td style={tdCell}><NumInput value={row.month} onChange={(v) => updateAt(setCogsMonthly, i, { month: v ?? 0 })} min={0} max={12} step={1} hideZero={false} data-row={i} data-col={1} /></td>
+              <td style={tdCell}><VndInput valueKUsd={row.acctCogs} onChange={(v) => updateAt(setCogsMonthly, i, { acctCogs: v })} data-row={i} data-col={2} /></td>
               <td style={{ ...tdCell, textAlign: "center" }}><DelBtn onClick={() => removeAt(setCogsMonthly, i)} /></td>
+            </tr>
+          ))}
+          {Array.from({ length: 12 }, (_, index) => index + 1).map((month, rowIndex) => (
+            <tr key={month}>
+              <td style={{ ...tdCell, textAlign: "center", color: INK_BODY, fontSize: "12px" }}>{selectedCogsYear}</td>
+              <td style={{ ...tdCell, textAlign: "center", color: INK_BODY, fontSize: "12px" }}>{month}</td>
+              <td style={tdCell}>
+                <VndInput
+                  valueKUsd={getCogsEntryValue(selectedCogsYear, month)}
+                  onChange={(value) => setCogsEntryValue(selectedCogsYear, month, value)}
+                  data-row={manualCogsRows.length + rowIndex}
+                  data-col={0}
+                />
+              </td>
+              <td style={tdCell}></td>
             </tr>
           ))}
         </tbody>
@@ -1592,17 +1652,11 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       </div>
       <button
         style={addBtn}
-        onClick={() => {
-          const last = cogsMonthly[cogsMonthly.length - 1];
-          const next = last
-            ? last.month >= 12
-              ? { year: last.year + 1, month: 1 }
-              : { year: last.year, month: last.month + 1 }
-            : { year: new Date().getFullYear(), month: 1 };
-          setCogsMonthly((rows) => [...rows, { ...next, acctCogs: null, wipCogs: null }]);
-        }}
+        onClick={() =>
+          setCogsMonthly((rows) => [...rows, { year: selectedCogsYear, month: 0, acctCogs: null, wipCogs: null }])
+        }
       >
-        <Plus size={12} /> {t("projectDataEntryTab:addMonth")}
+        <Plus size={12} /> {t("projectDataEntryTab:addPriorYearCumulative")}
       </button>
       <div style={{ fontSize: "12px", color: INK_MUTED, marginTop: "6px" }}>
         {t("projectDataEntryTab:cogsMonthlyNote")}

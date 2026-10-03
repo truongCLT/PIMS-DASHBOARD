@@ -122,14 +122,15 @@ export function SaleCostTab({
   // 스냅샷)을 그대로 쓰면 이 화면의 기준월(toYear/toMonth, 보고서 탭 기준월과 동기화)과 어긋난다
   // (예: 기준월 '26.08인데 '26.09 계획까지 포함). costBudgetMonthly 월별 계획을 직접 합산한다.
   //
-  // 이 "예산 집행 현황" 카드의 계획은 "프로젝트 시작 ~ 기준월이 속한 해의 12월"(연말까지의 전체 누계)로
-  // 합산한다(요청: 계획은 그 해 전체, 실적은 기존대로 기준월까지) — 그 해 연간 계획 대비 현재까지 집행
-  // 진도를 보는 용도. 보고서 탭 원가 카드(ProjectReportTab cumPlanFor)는 기준월까지라 이 카드와 계획 값이 다르다.
+  // 이 "예산 집행 현황" 카드의 계획은 실적과 동일하게 기준월(toYear/toMonth)까지 누계로 합산한다
+  // (요청: 계획도 실적처럼 현재 기준월까지로 통일) — 보고서 탭 원가 카드(ProjectReportTab cumPlanFor)와 동일 규칙.
   const cbMonthly = pdDetail?.costBudgetMonthly ?? [];
   const cumPlanFor = (item: string): number | null => {
     const key = item.trim().toLowerCase();
     const rows = cbMonthly.filter(
-      (row) => row.item.trim().toLowerCase() === key && row.year <= toYear,
+      (row) =>
+        row.item.trim().toLowerCase() === key &&
+        (row.year < toYear || (row.year === toYear && row.month <= toMonth)),
     );
     return rows.some((row) => row.plan != null)
       ? rows.reduce<number>((sum, row) => sum + (row.plan ?? 0), 0)

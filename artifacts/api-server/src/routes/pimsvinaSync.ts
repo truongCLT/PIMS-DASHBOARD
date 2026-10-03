@@ -195,15 +195,37 @@ export async function applyPimsvinaData(fetched: PimsvinaData) {
     skippedProjects.add(String(label));
   };
 
-  // PIMS-DASHBOARD thiết kế lưu trữ chuẩn theo đơn vị kUSD (1 kUSD = 25.400.000 VND).
-  // Khi PIMSVINA trả về số tiền VND gốc (> 100M VND), chia cho 25.400.000 để lưu về kUSD chuẩn.
-  const VND_PER_K_USD = 25_400_000;
-  const toK = (v: any) => {
+  // PIMS-DASHBOARD thiết kế lưu trữ chuẩn theo đơn vị kUSD. Trước đây dùng hằng số tỷ giá cố định
+  // (1 kUSD = 25.400.000 VND) cho MỌI tháng, trong khi Excel 경영현황판 nguồn gốc quy đổi theo tỷ giá
+  // THỰC TẾ của từng tháng (khác nhau giữa các tháng) — gây lệch khi so sánh. Giờ tra bảng fx_rates
+  // (đã có sẵn, khoá theo currency+year+month) lấy đúng tỷ giá của tháng as_of_month; nếu tháng đó
+  // chưa có thì lấy tỷ giá gần nhất trước đó, và cuối cùng mới rơi về hằng số cũ làm giá trị bảo hiểm.
+  const DEFAULT_VND_PER_K_USD = 25_400_000;
+  const fxRateRows = await db
+    .select({ year: fxRatesTable.year, month: fxRatesTable.month, rate: fxRatesTable.rate })
+    .from(fxRatesTable)
+    .where(eq(fxRatesTable.currency, "VND"));
+  const getVndPerKUsd = (year: number | null, month: number | null): number => {
+    if (year != null && month != null) {
+      const exact = fxRateRows.find((r) => r.year === year && r.month === month);
+      if (exact) return exact.rate * 1000;
+      const priorOrSame = fxRateRows
+        .filter((r) => r.year < year || (r.year === year && r.month <= month))
+        .sort((a, b) => b.year - a.year || b.month - a.month);
+      if (priorOrSame.length > 0) return priorOrSame[0].rate * 1000;
+    }
+    if (fxRateRows.length > 0) {
+      const latest = [...fxRateRows].sort((a, b) => b.year - a.year || b.month - a.month)[0];
+      return latest.rate * 1000;
+    }
+    return DEFAULT_VND_PER_K_USD;
+  };
+  const toK = (v: any, year: number | null = null, month: number | null = null) => {
     if (v == null || v === "") return null;
     const n = Number(v);
     if (isNaN(n)) return null;
     if (n > 100000000) {
-      return String(n / VND_PER_K_USD);
+      return String(n / getVndPerKUsd(year, month));
     }
     return String(n / 1000);
   };
@@ -312,6 +334,10 @@ export async function applyPimsvinaData(fetched: PimsvinaData) {
       trackSkipped(item);
       continue;
     }
+    const asOfNormalized = item.as_of_month != null ? normalizeAsOfMonth(item.as_of_month) : null;
+    const asOfMatch = asOfNormalized != null ? /^(\d{4})-(\d{2})$/.exec(asOfNormalized) : null;
+    const rateYear = asOfMatch ? Number(asOfMatch[1]) : null;
+    const rateMonth = asOfMatch ? Number(asOfMatch[2]) : null;
     const [existing] = await db
       .select()
       .from(pdOverviewTable)
@@ -332,12 +358,12 @@ export async function applyPimsvinaData(fetched: PimsvinaData) {
           endDate: item.end_date ?? null,
           client: item.client || existing.client,
           scale: item.scale || existing.scale,
-          asOfMonth: item.as_of_month != null ? normalizeAsOfMonth(item.as_of_month) : existing.asOfMonth,
+          asOfMonth: asOfNormalized ?? existing.asOfMonth,
           scope: item.scope || existing.scope,
-          revenueAnnualTarget: item.revenue_annual_target != null ? toK(item.revenue_annual_target) : existing.revenueAnnualTarget,
-          revenueTotal: item.revenue_total != null ? toK(item.revenue_total) : existing.revenueTotal,
-          cashConfirmed: item.cash_confirmed != null ? toK(item.cash_confirmed) : existing.cashConfirmed,
-          cashCollection: item.cash_collection != null ? toK(item.cash_collection) : existing.cashCollection,
+          revenueAnnualTarget: item.revenue_annual_target != null ? toK(item.revenue_annual_target, rateYear, rateMonth) : existing.revenueAnnualTarget,
+          revenueTotal: item.revenue_total != null ? toK(item.revenue_total, rateYear, rateMonth) : existing.revenueTotal,
+          cashConfirmed: item.cash_confirmed != null ? toK(item.cash_confirmed, rateYear, rateMonth) : existing.cashConfirmed,
+          cashCollection: item.cash_collection != null ? toK(item.cash_collection, rateYear, rateMonth) : existing.cashCollection,
         })
         .where(eq(pdOverviewTable.projectName, projectName));
     } else {
