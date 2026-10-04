@@ -296,17 +296,23 @@ export function ProjectReportTab({
   // 계획이 통째로 빠져, 계획이 실적의 절반 수준으로 보이고 집행률이 190%대로 나오는 버그가 있었다
   // (실사용자 확인: 월별 계획/실적을 동일하게 넣었는데 원가 카드와 예산 집행 현황 숫자가 다름).
   //
-  // 원가 카드의 계획은 "프로젝트 시작 ~ REPORT_YEAR 12월"(그 해 연말까지 전체 누계, 1~12월 전체)로
-  // 합산한다 — 월별 계획이 그 해 뒷부분(예: 9월부터)에만 입력된 프로젝트가 많아, 기준월까지만 자르면
-  // 아직 계획 없는 이른 달까지만 걸려 Plan이 통째로 비어버리는 문제가 실사용자 보고로 확인됨(요청:
-  // Cost (Cumulative Execution) 카드의 Plan은 1~12월 전체를 보도록 되돌림). 실적(cumActualFor)은 그대로
-  // 기준월까지다.
+  // 원가 카드의 계획은 실적(cumActualFor)과 동일한 공통 규칙으로 통일한다: "프로젝트 시작 ~ 기준월"까지
+  // 월별 계획(costBudgetMonthly.plan)을 누계하고, 월별 계획이 그 항목에 하나도 없으면(아직 월별로 안
+  // 쪼개 입력한 프로젝트) pd_cost_budget.plan 스냅샷으로 폴백한다 — 매출/원가 탭 "예산 집행 현황"
+  // (SaleCostTab cumPlanFor/hasMonthlyPlan)과 동일한 규칙. 월별 계획은 있는데 기준월 이전 달에는 아직
+  // 안 채워진 경우(예: 9월부터만 입력)는 폴백 없이 null(그 시점까진 계획 미정이라는 뜻)로 둔다.
   const cbMonthly = detail?.costBudgetMonthly ?? [];
+  const hasMonthlyPlan = (item: string) => cbMonthly.some((row) => row.item === item && row.plan != null);
   const cumPlanFor = (item: string): number | null => {
-    const rows = cbMonthly.filter((row) => row.item === item && row.year <= REPORT_YEAR);
-    return rows.some((row) => row.plan != null)
-      ? rows.reduce<number>((sum, row) => sum + (row.plan ?? 0), 0)
-      : null;
+    if (!hasMonthlyPlan(item)) return findBudget(item)?.plan ?? null;
+    return cbMonthly
+      .filter(
+        (row) =>
+          row.item === item &&
+          (row.year < REPORT_YEAR ||
+            (row.year === REPORT_YEAR && (resolvedMonth == null || row.month <= resolvedMonth))),
+      )
+      .reduce<number>((sum, row) => sum + (row.plan ?? 0), 0);
   };
   const cumActualFor = (item: string): number | null => {
     const hasMonthlyActual = cbMonthly.some(
