@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { usePutProjectdetail, useGetPimsvinaSiterate, getBaseUrl, getGetCashflowMonthlyQueryKey } from "@workspace/api-client-react";
 import { Download, FileSpreadsheet, Upload, RefreshCw } from "lucide-react";
 import { downloadProjectDetailTemplate, parseProjectDetailWorkbook, ExcelParseError } from "../lib/projectDetailExcel";
+import { useMonthlyFxRates } from "../lib/monthlyFxRates";
 import { SaleCostTab } from "./SaleCostTab";
 import { OutsourcingTab } from "./OutsourcingTab";
 import { ServiceCashflowTab } from "./ServiceCashflowTab";
@@ -189,13 +190,16 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
   const [excelMsgIsSuccess, setExcelMsgIsSuccess] = useState(false);
   const [excelBusy, setExcelBusy] = useState(false);
 
+  const { getRatesForMonth } = useMonthlyFxRates();
+  const monthlyVndRate = (year: number, month: number) => getRatesForMonth(year, month)?.VND ?? null;
+
   const handleTemplateDownload = async () => {
     if (!detail || excelBusy) return;
     setExcelBusy(true);
     setExcelMsg(null);
     setExcelMsgIsSuccess(false);
     try {
-      await downloadProjectDetailTemplate(projectName, detail, fxRates.VND, "용역");
+      await downloadProjectDetailTemplate(projectName, detail, fxRates.VND, "용역", monthlyVndRate);
     } catch (err) {
       console.error("Excel template download failed", err);
       setExcelMsg(t("serviceProjectDashboard:templateDownloadFailed"));
@@ -211,7 +215,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
     setExcelMsg(null);
     setExcelMsgIsSuccess(false);
     try {
-      const parsed = await parseProjectDetailWorkbook(file, detail, fxRates.VND);
+      const parsed = await parseProjectDetailWorkbook(file, detail, fxRates.VND, monthlyVndRate);
       if (!window.confirm(t("serviceProjectDashboard:uploadConfirm"))) {
         setExcelBusy(false);
         return;

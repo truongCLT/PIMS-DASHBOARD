@@ -54,10 +54,22 @@ const HEADERS: Record<string, string[]> = {
 
 type Cell = string | number | null;
 
-/** 천USD → Bil.VND 변환 (Excel 출력용) */
-function toVnd(v: number | null | undefined, fxRateVnd: number): number | null {
+/** (year,month)별 환율 조회 함수 — "월별 매출 환율 설정"(fx_rates/history)에서 그 달 환율을 찾고,
+ * 없으면 null을 반환해 호출하는 쪽이 fxRateVnd(현재/계약 환율)로 폴백하게 한다. */
+export type MonthlyVndRateLookup = (year: number, month: number) => number | null;
+
+/** 천USD → Bil.VND 변환 (Excel 출력용). year/month와 monthlyRate가 있으면 그 달 환율을 우선 쓴다
+ * (월별 매출/매출원가 시트 전용 — 다른 시트는 기존처럼 year/month 없이 현재/계약 환율만 쓴다). */
+function toVnd(
+  v: number | null | undefined,
+  fxRateVnd: number,
+  year?: number,
+  month?: number,
+  monthlyRate?: MonthlyVndRateLookup,
+): number | null {
   if (v == null) return null;
-  return v * fxRateVnd / 1_000_000;
+  const rate = (year != null && month != null ? monthlyRate?.(year, month) : null) ?? fxRateVnd;
+  return v * rate / 1_000_000;
 }
 
 /** VND 원본 값 → Bil.VND 변환 (환율 곱하지 않음 — 이미 VND이므로 1e9로만 나눔).
@@ -80,6 +92,7 @@ export async function downloadProjectDetailTemplate(
   detail: ProjectDetail,
   fxRateVnd: number,
   businessType: ProjectBusinessType = "시공",
+  monthlyVndRate?: MonthlyVndRateLookup,
 ): Promise<void> {
   const ExcelJS = (await import("exceljs")).default;
   const wb = new ExcelJS.Workbook();
@@ -104,6 +117,9 @@ export async function downloadProjectDetailTemplate(
   };
 
   const tv = (v: number | null | undefined) => toVnd(v, fxRateVnd);
+  // 월별 매출/매출원가 시트 전용 — 그 달에 "월별 매출 환율 설정"이 있으면 우선 적용한다.
+  const tvm = (v: number | null | undefined, year: number, month: number) =>
+    toVnd(v, fxRateVnd, year, month, monthlyVndRate);
 
   // 사업 유형에 맞는 작성 순서와 단위를 양식 안에서 바로 확인할 수 있게 한다.
   {
@@ -257,12 +273,12 @@ export async function downloadProjectDetailTemplate(
   if (businessType === "용역") {
     addSheet(
       SHEETS.cogsMonthly,
-      (detail.cogsMonthly ?? []).map((c) => [c.year, c.month, tv(c.acctCogs), tv(c.wipCogs)]),
+      (detail.cogsMonthly ?? []).map((c) => [c.year, c.month, tvm(c.acctCogs, c.year, c.month), tvm(c.wipCogs, c.year, c.month)]),
     );
   }
   addSheet(
     SHEETS.salesMonthly,
-    (detail.salesMonthly ?? []).map((s) => [s.year, s.month, tv(s.plan), tv(s.actual)]),
+    (detail.salesMonthly ?? []).map((s) => [s.year, s.month, tvm(s.plan, s.year, s.month), tvm(s.actual, s.year, s.month)]),
   );
 
   const buf = await wb.xlsx.writeBuffer();
@@ -352,17 +368,30 @@ function cellYmd(v: unknown): string | null {
 
 export class ExcelParseError extends Error {}
 
-/** Bil.VND → 천USD 역변환 (Excel 업로드용) */
-function fromVnd(v: number | null, fxRateVnd: number): number | null {
+/** Bil.VND → 천USD 역변환 (Excel 업로드용). year/month와 monthlyRate가 있으면 그 달 환율을 우선 쓴다
+ * (toVnd()의 정확한 역변환 — 내보낼 때 쓴 환율 그대로 되돌려야 왕복(다운로드→업로드)이 어긋나지 않는다). */
+function fromVnd(
+  v: number | null,
+  fxRateVnd: number,
+  year?: number,
+  month?: number,
+  monthlyRate?: MonthlyVndRateLookup,
+): number | null {
   if (v == null) return null;
-  return v * 1_000_000 / fxRateVnd;
+  const rate = (year != null && month != null ? monthlyRate?.(year, month) : null) ?? fxRateVnd;
+  return v * 1_000_000 / rate;
 }
 
 /**
  * 업로드된 양식을 파싱해 ProjectDetail 본문을 만든다.
  * 시트가 없는 항목은 기존(existing) 값을 유지하고, 사진(photos)은 항상 기존 값을 유지한다.
  */
-export async function parseProjectDetailWorkbook(file: File, existing: ProjectDetail, fxRateVnd: number): Promise<ProjectDetail> {
+export async function parseProjectDetailWorkbook(
+  file: File,
+  existing: ProjectDetail,
+  fxRateVnd: number,
+  monthlyVndRate?: MonthlyVndRateLookup,
+): Promise<ProjectDetail> {
   const ExcelJS = (await import("exceljs")).default;
   const wb = new ExcelJS.Workbook();
   await wb.xlsx.load(await file.arrayBuffer());
@@ -384,6 +413,9 @@ export async function parseProjectDetailWorkbook(file: File, existing: ProjectDe
   };
 
   const fv = (v: unknown) => fromVnd(cellNum(v), fxRateVnd);
+  // 월별 매출/매출원가 시트 전용 — 그 달 "월별 매출 환율 설정"이 있으면 우선 적용한다.
+  const fvm = (v: unknown, year: number, month: number) =>
+    fromVnd(cellNum(v), fxRateVnd, year, month, monthlyVndRate);
 
   const result: ProjectDetail = { ...existing, photos: existing.photos };
 
@@ -664,7 +696,7 @@ export async function parseProjectDetailWorkbook(file: File, existing: ProjectDe
           throw new ExcelParseError(`[${SHEETS.cogsMonthly}] 같은 월(${year}.${String(month).padStart(2, "0")})이 중복 입력되었습니다.`);
         }
         seen.add(key);
-        out.push({ year, month, acctCogs: fv(r[2]), wipCogs: fv(r[3]) });
+        out.push({ year, month, acctCogs: fvm(r[2], year, month), wipCogs: fvm(r[3], year, month) });
       });
       result.cogsMonthly = out;
     }
@@ -691,7 +723,7 @@ export async function parseProjectDetailWorkbook(file: File, existing: ProjectDe
           throw new ExcelParseError(`[${SHEETS.salesMonthly}] 같은 월(${year}.${String(month).padStart(2, "0")})이 중복 입력되었습니다.`);
         }
         seen.add(key);
-        out.push({ year, month, plan: fv(r[2]), actual: fv(r[3]) });
+        out.push({ year, month, plan: fvm(r[2], year, month), actual: fvm(r[3], year, month) });
       });
       result.salesMonthly = out;
     }

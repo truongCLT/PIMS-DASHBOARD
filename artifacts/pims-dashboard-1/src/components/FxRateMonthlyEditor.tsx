@@ -15,6 +15,32 @@ import { lastClosedYearMonth } from "../lib/monthRange";
 
 type Tab = "current" | "monthly";
 
+// 환율 입력란은 그냥 <input type="text">라서(VndInput처럼 자리에서 숫자만 걸러주지 않음), "1.600" 같은
+// 천단위 구분(VN/KR 표기 관례)이나 "25.985,50"처럼 쉼표를 소수점으로 쓴 입력이 그대로 들어오면
+// Number()가 NaN을 반환해 "저장 실패"가 떴다(실사용자 보고). 쉼표/마침표를 보고 어느 쪽이 소수점인지
+// 판단해서 숫자로 정규화한다: 마지막에 나오는 구분자를 소수점으로, 그 앞의 같은 종류 구분자는
+// 천단위로 간주해 제거한다. 구분자가 하나뿐이고 뒤에 정확히 2자리면 소수점으로, 아니면 천단위로 본다.
+function parseRateInput(raw: string): number {
+  const s = raw.trim();
+  if (s === "") return NaN;
+  const lastDot = s.lastIndexOf(".");
+  const lastComma = s.lastIndexOf(",");
+  let decimalPos = -1;
+  if (lastDot >= 0 && lastComma >= 0) {
+    decimalPos = Math.max(lastDot, lastComma);
+  } else if (lastDot >= 0 || lastComma >= 0) {
+    const pos = Math.max(lastDot, lastComma);
+    // 구분자가 하나뿐이면, 그 뒤 자릿수가 1~2개일 때만 소수점으로 본다(예: "25985,5" → 소수,
+    // "1.600" → 천단위 구분으로 보고 정수로 처리).
+    if (s.length - pos - 1 <= 2) decimalPos = pos;
+  }
+  let intPart = decimalPos >= 0 ? s.slice(0, decimalPos) : s;
+  const fracPart = decimalPos >= 0 ? s.slice(decimalPos + 1) : "";
+  intPart = intPart.replace(/[.,\s]/g, "");
+  const normalized = fracPart ? `${intPart}.${fracPart}` : intPart;
+  return Number(normalized);
+}
+
 // 환율 설정 버튼 하나 안에 탭 2개:
 // - "현재 환율" 탭: 기존 FxRateEditor와 동일 — 화면 표시용 "지금" 환율 하나만 빠르게 수정(PUT /fxrates).
 // - "월별 매출 환율" 탭: 경영현황판 Excel이 매달 그 달 실제 환율로 USD 환산해서 들어오는데, "현재" 환율
@@ -108,8 +134,8 @@ export function FxRateMonthlyEditor() {
   });
 
   const saveCurrent = () => {
-    const krwNum = Number(curKrw);
-    const vndNum = Number(curVnd);
+    const krwNum = parseRateInput(curKrw);
+    const vndNum = parseRateInput(curVnd);
     if (!Number.isFinite(krwNum) || krwNum <= 0 || !Number.isFinite(vndNum) || vndNum <= 0) {
       setCurError(t("fxRateEditor:invalidNumber"));
       return;
@@ -125,8 +151,8 @@ export function FxRateMonthlyEditor() {
   });
 
   const saveMonthly = async () => {
-    const krwNum = Number(krw);
-    const vndNum = Number(vnd);
+    const krwNum = parseRateInput(krw);
+    const vndNum = parseRateInput(vnd);
     if (!Number.isFinite(krwNum) || krwNum <= 0 || !Number.isFinite(vndNum) || vndNum <= 0) {
       setError(t("fxRateEditor:invalidNumber"));
       return;

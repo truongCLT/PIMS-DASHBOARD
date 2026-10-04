@@ -16,6 +16,7 @@ import { ProjectReportTab } from "./ProjectReportTab";
 import { useProjectDetail, getGetProjectdetailQueryKey } from "../lib/projectDetailData";
 import { lastClosedYearMonth } from "../lib/monthRange";
 import { downloadProjectDetailTemplate, parseProjectDetailWorkbook, ExcelParseError } from "../lib/projectDetailExcel";
+import { useMonthlyFxRates } from "../lib/monthlyFxRates";
 import { DisplayUnitProvider, DEFAULT_EXCHANGE_RATES, formatMoney, formatVnd, moneyUnitLabel } from "../lib/displayUnit";
 import { useAdminAuth, readAdminToken } from "../lib/adminAuth";
 import { useDashboardFilters } from "../lib/dashboardFilters";
@@ -142,6 +143,8 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
   const [excelMsg, setExcelMsg] = useState<string | null>(null);
   const [excelStatus, setExcelStatus] = useState<"success" | "error" | null>(null);
   const [excelBusy, setExcelBusy] = useState(false);
+  const { getRatesForMonth } = useMonthlyFxRates();
+  const monthlyVndRate = (year: number, month: number) => getRatesForMonth(year, month)?.VND ?? null;
 
   const handleTemplateDownload = async () => {
     if (!detail || excelBusy) return;
@@ -149,7 +152,7 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
     setExcelMsg(null);
     setExcelStatus(null);
     try {
-      await downloadProjectDetailTemplate(projectName, detail, fxRates.VND, "시공");
+      await downloadProjectDetailTemplate(projectName, detail, fxRates.VND, "시공", monthlyVndRate);
     } catch (err) {
       console.error("Excel template download failed", err);
       setExcelMsg(t("projectDashboard:templateDownloadFailed"));
@@ -165,7 +168,7 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
     setExcelMsg(null);
     setExcelStatus(null);
     try {
-      const parsed = await parseProjectDetailWorkbook(file, detail, fxRates.VND);
+      const parsed = await parseProjectDetailWorkbook(file, detail, fxRates.VND, monthlyVndRate);
       if (!window.confirm(t("projectDashboard:confirmReplaceData"))) {
         setExcelBusy(false);
         return;
