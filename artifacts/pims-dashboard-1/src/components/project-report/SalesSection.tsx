@@ -13,7 +13,8 @@ import {
 } from "recharts";
 import type { ProjectDetailSalesPoint } from "@workspace/api-client-react";
 import { chartTheme } from "../../lib/chartTheme";
-import { useMoney } from "../../lib/displayUnit";
+import { useMoney, convertMoney } from "../../lib/displayUnit";
+import { useMonthlyFxRates } from "../../lib/monthlyFxRates";
 import { REPORT_YEAR } from "../../lib/mgmtreportData";
 import { ratioPct } from "../../lib/projectDetailData";
 import { cardStyle, INK_MUTED, sectionTitle } from "../../lib/uiTokens";
@@ -123,7 +124,17 @@ export function SalesSection({
   contractAmount,
 }: Props) {
   const { t } = useTranslation(["projectReportTab", "common"]);
-  const { fmtMoney, unitLabel, convertVndToKUsd } = useMoney();
+  const { convert, unitLabel, convertVndToKUsd, currency, unitOn } = useMoney();
+  const { getRatesForMonth } = useMonthlyFxRates();
+  // "월별 매출 환율 설정"에 그 달 환율이 있으면 그걸로, 없으면 기존(현재/계약) 환율로 변환한다 — 이
+  // 차트/누계에 표시되는 매출 수치는 전부 이 함수로 먼저 변환한 "이미 변환된 값"이고, 아래 fmtMoney는
+  // (status 카드의 원본 천 USD 로직과 겹치지 않도록) 그 값을 그대로 포맷만 한다.
+  const convertForMonth = (v: number, year: number, month: number) => {
+    const monthlyRates = getRatesForMonth(year, month);
+    return monthlyRates ? convertMoney(v, currency, unitOn, monthlyRates) : convert(v);
+  };
+  const fmtMoney = (v: number | null | undefined) =>
+    v == null || Number.isNaN(v) ? "-" : Math.round(v).toLocaleString("en-US");
   // contractAmount đến từ pd_overview, lưu VND gốc — actualMonths/allSalesMonths đều ở đơn vị 천 USD,
   // phải quy đổi trước khi so sánh/hiển thị chung (nếu không sẽ lệch đơn vị và tỷ lệ % sai hoàn toàn).
   const contractAmountKUsd = contractAmount != null ? convertVndToKUsd(contractAmount) : null;
@@ -136,9 +147,13 @@ export function SalesSection({
     Math.min((resolvedMonth ?? latestActualIdx + 1) - 1, 11),
   );
   const chartData: SalesChartRow[] = Array.from({ length: 12 }, (_, index) => {
-    const plan = planMonths[index] ?? null;
+    const rawPlan = planMonths[index] ?? null;
     const isForecast = index > actualThroughIdx;
-    const actual = actualMonths[index] ?? null;
+    const rawActual = actualMonths[index] ?? null;
+    // 달성률(rate)은 같은 달의 계획/실적을 같은 환율로 변환한 값끼리 비교하므로 원본이든 변환값이든
+    // 비율은 동일하다 — 변환된 값으로 계산해 일관성을 유지한다.
+    const plan = rawPlan == null ? null : convertForMonth(rawPlan, REPORT_YEAR, index + 1);
+    const actual = rawActual == null ? null : convertForMonth(rawActual, REPORT_YEAR, index + 1);
     const rawRate = isForecast ? null : ratioPct(actual, plan);
     return {
       month: `${index + 1}월`,
@@ -172,12 +187,20 @@ export function SalesSection({
           (row.year === REPORT_YEAR && row.month <= refMonth),
       )
     : annualActualRows;
+  // allSalesMonths 쪽(row.year/row.month 있음)은 그 달 환율로 변환한 뒤 누계하고, chartData 폴백
+  // 쪽(row.plan/row.actual만 있음)은 위에서 이미 변환돼 있으므로 그대로 더한다.
   const sumValues = (
-    rows: Array<{ plan?: number | null; actual?: number | null }>,
+    rows: Array<{ year?: number; month?: number | string; plan?: number | null; actual?: number | null }>,
     key: "plan" | "actual",
   ): number | null => {
     const values = rows
-      .map((row) => row[key])
+      .map((row) => {
+        const raw = row[key];
+        if (raw == null) return null;
+        return row.year != null && typeof row.month === "number"
+          ? convertForMonth(raw, row.year, row.month)
+          : raw;
+      })
       .filter((value): value is number => value != null);
     return values.length > 0 ? values.reduce((sum, value) => sum + value, 0) : null;
   };
@@ -193,8 +216,11 @@ export function SalesSection({
     sumValues(annualPlanRows, "plan"),
     sumValues(annualActualRows, "actual"),
   );
+  // 계약금액(overallSummary.plan)은 특정 달에 묶인 값이 아니라 "현재까지" 스냅샷이므로, 기준월(refMonth)
+  // 환율로 변환한다(위 매출 수치들과 동일한 변환 체계를 맞추기 위함 — fmtMoney가 더 이상 환율 변환을
+  // 하지 않고 그대로 포맷만 하므로, 여기서 안 바꾸면 이 값만 원본 천 USD로 남아 단위가 어긋난다).
   const overallSummary = makeSummary(
-    contractAmountKUsd,
+    contractAmountKUsd == null ? null : convertForMonth(contractAmountKUsd, REPORT_YEAR, refMonth),
     sumValues(overallActualRows, "actual"),
   );
 

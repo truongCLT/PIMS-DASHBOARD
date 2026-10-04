@@ -90,13 +90,16 @@ const addBtn: React.CSSProperties = {
   marginTop: "8px",
 };
 
-import { useMoney } from "../lib/displayUnit";
+import { useMoney, convertMoney, convertToKUsdAmount } from "../lib/displayUnit";
+import { useMonthlyFxRates } from "../lib/monthlyFxRates";
 
 function VndInput({
   valueKUsd,
   onChange,
   forceFullAmount,
   hideZero = true,
+  year,
+  month,
   "data-row": dataRow,
   "data-col": dataCol,
 }: {
@@ -108,19 +111,31 @@ function VndInput({
   forceFullAmount?: boolean;
   /** 값이 0일 때 "0" 대신 빈칸으로 표시(저장값은 그대로 0 유지) — 기본 true */
   hideZero?: boolean;
+  /** 매출처럼 "그 달" 금액일 때 넘긴다 — "월별 매출 환율 설정"에 그 연/월 환율이 있으면 현재/계약
+   * 환율 대신 그 환율로 변환한다(입력/표시 모두). 넘기지 않으면 기존 동작(현재 환율)과 동일하다. */
+  year?: number;
+  month?: number;
   "data-row"?: string | number;
   "data-col"?: string | number;
 }) {
-  const { convert, convertToKUsd, fmtMoney, fmtMoneyFull } = useMoney();
+  const { convert, convertToKUsd, fmtMoney, fmtMoneyFull, currency, unitOn } = useMoney();
+  const { getRatesForMonth } = useMonthlyFxRates();
+  const monthlyRates = year != null && month != null ? getRatesForMonth(year, month) : null;
+  const convertDisplay = (v: number) => (monthlyRates ? convertMoney(v, currency, unitOn, monthlyRates) : convert(v));
+  const convertToStorage = (v: number) =>
+    monthlyRates ? convertToKUsdAmount(v, currency, unitOn, monthlyRates) : convertToKUsd(v);
   const [editing, setEditing] = React.useState(false);
   const [rawStr, setRawStr] = React.useState("");
 
+  const fmt = (v: number, full: boolean) => {
+    if (!monthlyRates) return full ? fmtMoneyFull(v) : fmtMoney(v);
+    const converted = convertDisplay(v);
+    return Math.round(converted).toLocaleString("en-US");
+  };
   const displayValue = editing
     ? rawStr
     : valueKUsd != null && !(hideZero && valueKUsd === 0)
-      ? forceFullAmount
-        ? fmtMoneyFull(valueKUsd)
-        : fmtMoney(valueKUsd)
+      ? fmt(valueKUsd, !!forceFullAmount)
       : "";
 
   return (
@@ -132,7 +147,7 @@ function VndInput({
       data-col={dataCol}
       style={{ ...inputStyle, textAlign: "right" }}
       onFocus={() => {
-        const convertedVal = valueKUsd != null ? convert(valueKUsd) : 0;
+        const convertedVal = valueKUsd != null ? convertDisplay(valueKUsd) : 0;
         setRawStr(convertedVal === 0 ? "" : String(Math.round(convertedVal)));
         setEditing(true);
       }}
@@ -148,9 +163,10 @@ function VndInput({
         } else {
           const val = parseFloat(cleaned);
           // 사용자가 입력한 값은 현재 선택된 표시 통화/단위 기준이므로, 저장 단위(천 USD)로
-          // 되돌려야 한다 - onFocus의 convert()와 정확히 반대 방향 변환 (버그: 예전에는 이 역변환이
-          // 빠져 있어 VND/KRW 선택 시 입력값이 그대로 천 USD로 저장되어 수천만 배 부풀려졌었다).
-          onChange(isNaN(val) ? null : convertToKUsd(val));
+          // 되돌려야 한다 - onFocus의 convertDisplay()와 정확히 반대 방향 변환 (버그: 예전에는 이
+          // 역변환이 빠져 있어 VND/KRW 선택 시 입력값이 그대로 천 USD로 저장되어 수천만 배
+          // 부풀려졌었다). year/month가 있으면(매출) 그 달 환율로, 없으면 현재/계약 환율로 되돌린다.
+          onChange(isNaN(val) ? null : convertToStorage(val));
         }
         setRawStr("");
       }}
@@ -1453,6 +1469,8 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                   <VndInput
                     valueKUsd={row.plan}
                     onChange={(value) => updateAt(setSalesMonthly, i, { plan: value })}
+                    year={row.year}
+                    month={row.month}
                     data-row={i}
                     data-col={2}
                   />
@@ -1461,6 +1479,8 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                   <VndInput
                     valueKUsd={row.actual}
                     onChange={(value) => updateAt(setSalesMonthly, i, { actual: value })}
+                    year={row.year}
+                    month={row.month}
                     data-row={i}
                     data-col={3}
                   />
@@ -1484,6 +1504,8 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                     onChange={(value) =>
                       setSalesEntryValue(selectedSalesYear, month, "plan", value)
                     }
+                    year={selectedSalesYear}
+                    month={month}
                     data-row={manualSalesRows.length + rowIndex}
                     data-col={0}
                   />
@@ -1494,6 +1516,8 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                     onChange={(value) =>
                       setSalesEntryValue(selectedSalesYear, month, "actual", value)
                     }
+                    year={selectedSalesYear}
+                    month={month}
                     data-row={manualSalesRows.length + rowIndex}
                     data-col={1}
                   />

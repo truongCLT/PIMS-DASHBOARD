@@ -12,7 +12,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { exportDashboardExcel, exportDashboardPdf } from "../lib/exportDashboard";
 import { MgmtReportUploadModal } from "./MgmtReportUploadModal";
-import { FxRateEditor } from "./FxRateEditor";
+import { FxRateMonthlyEditor } from "./FxRateMonthlyEditor";
 import { useAdminAuth, readAdminToken } from "../lib/adminAuth";
 import { getBaseUrl } from "@workspace/api-client-react";
 import { PimsvinaSyncPreviewModal, type PimsvinaPreviewData } from "./PimsvinaSyncPreviewModal";
@@ -463,7 +463,7 @@ export function DashboardHeader({
         </div>
 
         {/* 관리자 전용: 환율 설정 + Excel 업로드 */}
-        {isAdmin && <FxRateEditor />}
+        {isAdmin && <FxRateMonthlyEditor />}
         {isAdmin && (
           <button
             onClick={() => setUploadOpen(true)}

@@ -2,6 +2,9 @@
   "settingsButtonTitle": "FX Rate Settings (Admin)",
   "settingsButtonLabel": "FX Rate Settings",
   "popupTitle": "FX Rate Settings (Based on USD)",
+  "currentTabLabel": "Current Rate",
+  "monthlyTabLabel": "Monthly Revenue Rate",
+  "monthlyPopupTitle": "Monthly Revenue FX Rate Settings (Based on USD)",
   "saveFailed": "Failed to save the exchange rate.",
   "invalidNumber": "Please enter a number greater than 0.",
   "saving": "Saving…"

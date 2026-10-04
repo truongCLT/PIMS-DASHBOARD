@@ -93,25 +93,35 @@ export function buildChartData(
     pdSalesMap: Map<string, { plan: number | null; actual: number | null }>;
     costRatioLookup: Map<string, number>;
     lookup: LookupFn;
-    convert: (v: number) => number;
+    // "월별 매출 환율 설정"에 그 달 환율이 입력돼 있으면 그 환율로, 없으면 호출하는 쪽의 기존
+    // 환율(현재/계약 환율)로 변환한다 — year/month를 받아 달마다 다른 환율을 적용할 수 있게 한다.
+    convert: (v: number, year: number, month: number) => number;
   },
 ): RevenuePoint[] {
   let cumulative = 0;
   let cumPlan = 0;
+  // 누계는 "그 달 환율로 변환된 금액"을 그대로 누적한다(월별 원본 USD 값을 누적한 뒤 한 환율로
+  // 일괄 변환하면 달마다 다른 환율이 반영되지 않는다) — 요청: 누계도 달별 환율 그대로 반영.
+  let cumulativeConverted = 0;
+  let cumPlanConverted = 0;
   return effectivePeriod.map(({ year, month }) => {
     const pdRow = pdSalesHasAny ? pdSalesMap.get(`${year}-${month}`) : undefined;
     const revenue = pdSalesHasAny ? (pdRow?.actual ?? 0) : lookup(year, month);
     const plan    = pdSalesHasAny ? (pdRow?.plan ?? 0)   : 0;
     cumulative += revenue;
     cumPlan    += plan;
+    const revenueConverted = convert(revenue, year, month);
+    const planConverted    = convert(plan, year, month);
+    cumulativeConverted += revenueConverted;
+    cumPlanConverted    += planConverted;
     return {
       year,
       month,
       label: `'${String(year).slice(2)}.${String(month).padStart(2, "0")}`,
-      revenue:    Math.round(convert(revenue)),
-      plan:       Math.round(convert(plan)),
-      cumulative: Math.round(convert(cumulative)),
-      planCum:    Math.round(convert(cumPlan)),
+      revenue:    Math.round(revenueConverted),
+      plan:       Math.round(planConverted),
+      cumulative: Math.round(cumulativeConverted),
+      planCum:    Math.round(cumPlanConverted),
       ratio: sanitizeRatioPercent(costRatioLookup.get(`${year}-${month}`) ?? null),
     };
   });

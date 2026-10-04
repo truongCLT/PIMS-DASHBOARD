@@ -9,7 +9,8 @@
  */
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { useMoney } from "../lib/displayUnit";
+import { useMoney, convertMoney } from "../lib/displayUnit";
+import { useMonthlyFxRates } from "../lib/monthlyFxRates";
 import { useProjectDetail, selectOutsourcingForMonth } from "../lib/projectDetailData";
 import { ProjectCommentPanel } from "./ProjectCommentPanel";
 import { cardStyle, emptyNote, INK_MUTED } from "../lib/uiTokens";
@@ -64,7 +65,14 @@ export function SaleCostTab({
   splitRevenueForecast?: boolean;
 }) {
   const { t } = useTranslation(["saleCostTab", "costingTab"]);
-  const { convert, fmtMoney } = useMoney();
+  const { convert, fmtMoney, currency, unitOn } = useMoney();
+  const { getRatesForMonth } = useMonthlyFxRates();
+  // "월별 매출 환율 설정"에 그 달 환율이 있으면 그걸로, 없으면 기존 환율(현재/계약 환율, useMoney().convert)로
+  // 변환한다 — 매출 차트/누계는 달마다 다른 환율을 반영해야 한다는 요청.
+  const convertForMonth = (v: number, year: number, month: number) => {
+    const monthlyRates = getRatesForMonth(year, month);
+    return monthlyRates ? convertMoney(v, currency, unitOn, monthlyRates) : convert(v);
+  };
   const {
     detail: pdDetail,
     isLoading,
@@ -111,7 +119,7 @@ export function SaleCostTab({
     pdSalesMap,
     costRatioLookup,
     lookup,
-    convert,
+    convert: convertForMonth,
   });
 
   const hasData      = chartData.some((d) => d.revenue !== 0 || d.cumulative !== 0 || d.plan !== 0);
