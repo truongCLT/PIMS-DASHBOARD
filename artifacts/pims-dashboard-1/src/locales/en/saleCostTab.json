@@ -1,5 +1,7 @@
 {
   "forecast": "Forecast",
+  "monthlyForecastLabel": "Actual (Forecast)",
+  "cumulativeActualForecastLabel": "Cumulative (Actual / Forecast)",
   "loadingNotice": "Loading revenue/cost data...",
   "errorNotice": "Failed to load revenue/cost data. Please try again shortly.",
   "noDataNotice": "No data for the selected period.",

@@ -1,5 +1,7 @@
 {
   "forecast": "Dự báo",
+  "monthlyForecastLabel": "Thực hiện (Dự báo)",
+  "cumulativeActualForecastLabel": "Lũy kế (Thực hiện/Dự báo)",
   "loadingNotice": "Dang tai du lieu doanh thu/chi phi...",
   "errorNotice": "Khong the tai du lieu doanh thu/chi phi. Vui long thu lai sau.",
   "noDataNotice": "Khong co du lieu trong khoang thoi gian da chon.",

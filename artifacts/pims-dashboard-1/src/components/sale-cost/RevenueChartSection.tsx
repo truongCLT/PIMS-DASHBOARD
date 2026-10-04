@@ -31,18 +31,26 @@ function RevenueTooltip({
   label,
   chartData,
   unitLabel,
+  referenceIndex,
 }: {
   active?: boolean;
   payload?: Array<{ name: string; value: number; color: string }>;
   label?: string;
   chartData: RevenuePoint[];
   unitLabel: string;
+  referenceIndex: number;
 }) {
-  const { t } = useTranslation(["common"]);
+  const { t } = useTranslation(["common", "saleCostTab"]);
   if (!active || !payload || payload.length === 0) return null;
   const idx = chartData.findIndex((d) => d.label === label);
   const cum     = idx >= 0 ? chartData[idx].cumulative : null;
   const planCum = idx >= 0 ? chartData[idx].planCum    : null;
+  // 기준월(referenceIndex)까지는 "Cumulative (Actual)", 그 다음 달(Forecast 구간)부터만
+  // "Cumulative (Actual / Forecast)"로 구분해 보여준다(요청: 8월 이전엔 Forecast 문구 불필요).
+  const isForecastPoint = idx >= 0 && chartData[idx].year * 12 + chartData[idx].month - 1 > referenceIndex;
+  const cumLabel = isForecastPoint
+    ? t("saleCostTab:cumulativeActualForecastLabel")
+    : `${t("common:cumulative")} (${t("common:actual")})`;
   // 월 계획 → 월 매출 → 누계(계획) → 누계(실적) 순서로 고정 표시한다(요청) — payload는 월별
   // 항목(계획/매출)만 담고, 누계 계획/실적은 중복 없이 이 컴포넌트에서 직접 이어 붙인다.
   return (
@@ -58,11 +66,21 @@ function RevenueTooltip({
       }}
     >
       <div style={{ fontWeight: 700, marginBottom: "4px", color: INK_NAVY }}>{label}</div>
-      {payload.map((p, i) => (
-        <div key={i} style={{ color: p.color }}>
-          {p.name}: {p.value.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })} {unitLabel}
-        </div>
-      ))}
+      {payload.map((p, i) => {
+        // Forecast 막대(dataKey="forecastRevenue")는 모든 달에 항상 존재하고 값만 0/실값으로
+        // 갈린다 — Forecast 구간이 아닌 달(기준월 이전)에서는 "Actual (Forecast): 0" 줄 자체를
+        // 아예 숨긴다(요청: 8월 이전엔 Forecast 문구 불필요).
+        if (!isForecastPoint && p.name === t("saleCostTab:monthlyForecastLabel")) return null;
+        // Forecast 막대는 fill="#fff"(흰색)으로 그려서 테두리만 보이게 하는데, Recharts가 이 fill을
+        // 그대로 payload.color로 넘겨주는 바람에 흰 배경 툴팁 위에 흰 글씨가 찍혀 안 보였다(요청:
+        // hover 시 forecast 안 보임 — 데이터 누락이 아니라 흰색 텍스트 때문).
+        const isWhiteText = p.color === "#fff" || p.color?.toLowerCase() === "#ffffff";
+        return (
+          <div key={i} style={{ color: isWhiteText ? chartTheme.planBlue : p.color }}>
+            {p.name}: {p.value.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })} {unitLabel}
+          </div>
+        );
+      })}
       {planCum != null && planCum > 0 && (
         <div
           style={{
@@ -77,7 +95,7 @@ function RevenueTooltip({
       )}
       {cum != null && (
         <div style={{ color: chartTheme.outflowRed }}>
-          {t("common:cumulative")} ({t("common:actual")}): {cum.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })} {unitLabel}
+          {cumLabel}: {cum.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })} {unitLabel}
         </div>
       )}
     </div>
@@ -119,6 +137,10 @@ export function RevenueChartCard({
       ? referenceYear * 12 + referenceMonth - 1
       : Number.POSITIVE_INFINITY;
   const displayData = yearData.map((point) => {
+    // 다른 화면(보고서 탭 원가 카드 등)과 동일한 공통 규칙: 기준월(referenceIndex)까지는 Actual,
+    // 그 다음 달부터는 전부 Forecast로 그린다 — hasActual로 나누면 경영보고 Excel이 연간 전체를
+    // 미리 채워둔 프로젝트는 9월 이후도 전부 Actual로 보여 기준월 구분이 무의미해졌다(요청: 다시
+    // 기준월 기준으로 통일, 1~8월은 Actual, 9월부터는 Forecast).
     const isForecast = point.year * 12 + point.month - 1 > referenceIndex;
     return {
       ...point,
@@ -229,6 +251,7 @@ export function RevenueChartCard({
                   <RevenueTooltip
                     chartData={chartData}
                     unitLabel={unitLabel}
+                    referenceIndex={referenceIndex}
                   />
                 }
               />
@@ -256,7 +279,7 @@ export function RevenueChartCard({
               {splitForecast && (
                 <Bar
                   dataKey="forecastRevenue"
-                  name={t("saleCostTab:forecast")}
+                  name={t("saleCostTab:monthlyForecastLabel")}
                   fill="#fff"
                   stroke={chartTheme.planBlue}
                   strokeWidth={1.5}
