@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Plus, Trash2, Save, Upload, X, Lock, LockOpen, ChevronRight, FileSpreadsheet } from "lucide-react";
@@ -100,11 +100,14 @@ function VndInput({
   hideZero = true,
   year,
   month,
+  disabled,
   "data-row": dataRow,
   "data-col": dataCol,
 }: {
   valueKUsd: number | null | undefined;
   onChange: (kUsd: number | null) => void;
+  /** 자동 계산되는 값이라 직접 수정할 수 없을 때(예: 누적 Cash Equivalent) — 표시 포맷은 그대로 유지 */
+  disabled?: boolean;
   // true = luôn hiển thị số ĐẦY ĐỦ, bỏ qua toggle Unit (천 USD/Bil.VND) — dùng khi cần so sánh
   // trực quan với các dòng khác trong cùng bảng luôn hiển thị số đầy đủ (VD: bảng "4. Cost Rate",
   // dòng Execution/Completion dùng fmtVnd() vốn không áp dụng toggle Unit).
@@ -143,10 +146,12 @@ function VndInput({
       type="text"
       inputMode="numeric"
       value={displayValue}
+      disabled={disabled}
       data-row={dataRow}
       data-col={dataCol}
-      style={{ ...inputStyle, textAlign: "right" }}
+      style={{ ...inputStyle, textAlign: "right", ...(disabled ? { backgroundColor: "#f2f5f8", color: INK_MUTED } : {}) }}
       onFocus={() => {
+        if (disabled) return;
         const convertedVal = valueKUsd != null ? convertDisplay(valueKUsd) : 0;
         setRawStr(convertedVal === 0 ? "" : String(Math.round(convertedVal)));
         setEditing(true);
@@ -678,6 +683,10 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
     return (targetAbsMonth % 12) + 1;
   });
   const [cashflow, setCashflow] = useState<ProjectDetailCashflowPoint[]>([]);
+  // "8. 월별 자금" 표가 여러 연도 행을 한꺼번에 담고 있어 길어지는 문제 — 연도를 골라 그 해만 보이게
+  // 걸러준다("전체"를 고르면 기존처럼 전부 표시). 행 수정/삭제는 필터와 무관하게 원본 배열의 실제
+  // index를 그대로 써야 하므로, 아래 렌더링에서 (row, 원본 index) 쌍을 유지한 뒤에 필터링한다.
+  const [cashflowYearFilter, setCashflowYearFilter] = useState<number | "all">("all");
   const [cogsMonthly, setCogsMonthly] = useState<ProjectDetailCogsPoint[]>([]);
   const [salesMonthly, setSalesMonthly] = useState<ProjectDetailSalesPoint[]>([]);
   const [photos, setPhotos] = useState<{ objectPath: string }[]>([]);
@@ -806,6 +815,13 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
 
   const updateAt = <T,>(setter: React.Dispatch<React.SetStateAction<T[]>>, i: number, patch: Partial<T>) =>
     setter((rows) => rows.map((r, j) => (j === i ? { ...r, ...patch } : r)));
+  // "보유 현금(Cash Equivalent)" — 누적(이월) 없이 그 달의 Cash In - Cash Out만 보여준다(실사용자
+  // 요청: 누적 말고 딱 그 달 Cash In - Cash Out만). Cash In/Out은 소수점이 있는 원본 값이라, 화면에
+  // 보이는 정수 기준으로 반올림한 뒤 뺀다.
+  const cashflowEquivalents = useMemo(
+    () => cashflow.map((c) => Math.round(c.cashIn ?? 0) - Math.round(c.cashOut ?? 0)),
+    [cashflow],
+  );
   const updateProgressAt = (i: number, patch: Partial<ProjectDetailProgressPoint>) =>
     setProgress((rows) =>
       calculateProgressPlanCumulative(rows.map((row, j) => (j === i ? { ...row, ...patch } : row))),
@@ -1052,7 +1068,14 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       costBudgetMonthly: costBudgetMonthly.filter((r) => r.plan != null || r.actual != null),
       outsourcing: outsourcing.filter((o) => o.trade.trim() !== ""),
       // 자금수지 Excel prefill을 아직 수정하지 않았다면 저장하지 않음(향후 Excel 갱신 반영 유지)
-      cashflow: cfPrefilled ? [] : cashflow.filter((c) => c.year > 0 && c.month >= 1 && c.month <= 12),
+      // equivalent는 화면에 보이는 자동 계산값(cashflowEquivalents)으로 덮어써서 저장한다 — DB에는
+      // 항상 "첫 행 기초 잔액 + 이후 누적"으로 일관된 값이 들어가야 다른 소비처(엑셀 export 등)도
+      // 맞는 값을 본다.
+      cashflow: cfPrefilled
+        ? []
+        : cashflow
+            .map((c, i) => ({ ...c, equivalent: cashflowEquivalents[i] }))
+            .filter((c) => c.year > 0 && c.month >= 1 && c.month <= 12),
       cogsMonthly: cogsMonthly.filter((c) => c.year > 0 && c.month >= 1 && c.month <= 12),
       salesMonthly: salesMonthly.filter((s) => s.year > 0 && s.month >= 1 && s.month <= 12),
       photos,
@@ -2852,7 +2875,21 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
 
       {/* 6. 월별 자금 */}
       <div style={cardStyle}>
-        {cardHead(service ? t("projectDataEntryTab:cashflowTitleService") : t("projectDataEntryTab:cashflowTitleConstruction"), "cashflow")}
+        {cardHead(
+          service ? t("projectDataEntryTab:cashflowTitleService") : t("projectDataEntryTab:cashflowTitleConstruction"),
+          "cashflow",
+          <select
+            value={cashflowYearFilter}
+            onChange={(e) => setCashflowYearFilter(e.target.value === "all" ? "all" : Number(e.target.value))}
+            aria-label={t("common:year")}
+            style={{ fontSize: "13px", padding: "3px 4px", border: `1px solid ${BORDER_LIGHT}`, borderRadius: "3px" }}
+          >
+            <option value="all">{t("projectDataEntryTab:allYears")}</option>
+            {Array.from(new Set(cashflow.map((c) => c.year))).sort((a, b) => a - b).map((y) => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>,
+        )}
         <div data-tbl="cashflow" onKeyDown={makeArrowNav("cashflow")}>
         <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px" }}>
           <thead>
@@ -2867,13 +2904,24 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
             </tr>
           </thead>
           <tbody>
-            {cashflow.map((c, i) => (
+            {cashflow
+              .map((c, i) => ({ c, i }))
+              .filter(({ c }) => cashflowYearFilter === "all" || c.year === cashflowYearFilter)
+              .map(({ c, i }) => (
               <tr key={i}>
                 <td style={tdCell}><NumInput value={c.year} onChange={(v) => updateAt(editCashflow, i, { year: v ?? 0 })} data-row={i} data-col={0} /></td>
                 <td style={tdCell}><NumInput value={c.month} onChange={(v) => updateAt(editCashflow, i, { month: v ?? 0 })} data-row={i} data-col={1} /></td>
                 <td style={tdCell}><VndInput valueKUsd={c.cashIn} onChange={(v) => updateAt(editCashflow, i, { cashIn: v })} data-row={i} data-col={2} /></td>
                 <td style={tdCell}><VndInput valueKUsd={c.cashOut} onChange={(v) => updateAt(editCashflow, i, { cashOut: v })} data-row={i} data-col={3} /></td>
-                <td style={tdCell}><VndInput valueKUsd={c.equivalent} onChange={(v) => updateAt(editCashflow, i, { equivalent: v })} data-row={i} data-col={4} /></td>
+                <td style={tdCell}>
+                  <VndInput
+                    valueKUsd={cashflowEquivalents[i]}
+                    onChange={() => {}}
+                    disabled
+                    data-row={i}
+                    data-col={4}
+                  />
+                </td>
                 {!service && <td style={tdCell}><VndInput valueKUsd={c.confirmedProgress} onChange={(v) => updateAt(editCashflow, i, { confirmedProgress: v })} data-row={i} data-col={5} /></td>}
                 <td style={{ ...tdCell, textAlign: "center" }}><DelBtn onClick={() => removeAt(editCashflow, i)} /></td>
               </tr>

@@ -152,21 +152,14 @@ router.get("/cashflow/monthly", async (req, res) => {
       }
     }
 
-    const sortedKeys = [...byMonth.keys()].sort();
     const points = requested.map((key) => {
       const rec = byMonth.get(key) ?? { cashIn: 0, cashOut: 0 };
-      // cumulative balance across all history up to and including this month
-      let cumulative = 0;
-      for (const k of sortedKeys) {
-        if (k > key) break;
-        const r = byMonth.get(k)!;
-        cumulative += r.cashIn - r.cashOut;
-      }
+      // 누적(이월) 없이 그 달 Cash In - Cash Out만 Equivalent로 쓴다(프로젝트 상세 화면과 동일 규칙).
       return {
         month: key,
         cashIn: Math.round(rec.cashIn * 100) / 100,
         cashOut: Math.round(rec.cashOut * 100) / 100,
-        equivalent: Math.round(cumulative * 100) / 100,
+        equivalent: Math.round((rec.cashIn - rec.cashOut) * 100) / 100,
       };
     });
 
@@ -269,20 +262,14 @@ router.get("/cashflow/aggregate", async (req, res) => {
       }
     }
 
-    const sortedKeys = [...byMonth.keys()].sort();
     const points = requested.map((key) => {
       const rec = byMonth.get(key) ?? { cashIn: 0, cashOut: 0 };
-      let cumulative = 0;
-      for (const k of sortedKeys) {
-        if (k > key) break;
-        const r = byMonth.get(k)!;
-        cumulative += r.cashIn - r.cashOut;
-      }
+      // 누적(이월) 없이 그 달 Cash In - Cash Out만 Equivalent로 쓴다(프로젝트 상세 화면과 동일 규칙).
       return {
         month: key,
         cashIn: Math.round(rec.cashIn * 100) / 100,
         cashOut: Math.round(rec.cashOut * 100) / 100,
-        equivalent: Math.round(cumulative * 100) / 100,
+        equivalent: Math.round((rec.cashIn - rec.cashOut) * 100) / 100,
       };
     });
 
