@@ -29,8 +29,12 @@ const summary = {
 };
 
 describe("today-based actual and forecast cutoff", () => {
-  it("uses the previous month for the current report year", () => {
-    expect(getActualThroughMonth(2026, new Date(2026, 8, 12))).toBe(8);
+  it("uses the same closing rule as the 기준월 selector (M+2월 13일 마감), not just the previous month", () => {
+    // Sept 12, 2026 (before the 13th) → July is still the latest closed month, same as
+    // lastClosedMonth()/maxSelectableMonth() used by the "기준월" dropdown — these two must agree,
+    // otherwise the dropdown shows one month while the chart's actual/forecast split uses another
+    // (실사용자 보고: 기준월 8월인데 차트는 9월까지 Actual로 나옴).
+    expect(getActualThroughMonth(2026, new Date(2026, 8, 12))).toBe(7);
   });
 
   it("treats a past year as all actual and a future year as all forecast", () => {
@@ -48,15 +52,15 @@ describe("today-based actual and forecast cutoff", () => {
     });
 
     expect(data.salesData.map((row) => row.isForecast)).toEqual([
-      false, false, false, false, false, false, false, false,
-      true, true, true, true,
+      false, false, false, false, false, false, false,
+      true, true, true, true, true,
     ]);
     expect(data.profitData.map((row) => row.isForecast)).toEqual([
-      false, false, false, false, false, false, false, false,
-      true, true, true, true,
+      false, false, false, false, false, false, false,
+      true, true, true, true, true,
     ]);
-    expect(data.salesData[7]?.rate).not.toBeNull();
-    expect(data.salesData[8]?.rate).toBeNull();
+    expect(data.salesData[6]?.rate).not.toBeNull();
+    expect(data.salesData[7]?.rate).toBeNull();
   });
 
   it("treats every month as forecast during January", () => {

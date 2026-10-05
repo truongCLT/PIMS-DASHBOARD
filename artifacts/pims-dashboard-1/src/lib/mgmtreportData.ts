@@ -209,13 +209,20 @@ export interface DeriveOptions {
 
 /**
  * 해당 보고 연도에서 실적으로 표시할 마지막 월.
- * 현재 연도는 오늘 날짜의 전월, 과거 연도는 12월, 미래 연도는 0월(전체 전망)이다.
+ * 현재 연도는 "기준월" 드롭다운(managementMonth)과 같은 마감 규칙(lastClosedMonth, M+2월 13일 마감)을
+ * 쓴다 — 예전엔 그냥 "오늘의 전월"을 썼는데, 이러면 기준월 선택기는 8월인데 차트는 9월까지 실적으로
+ * 그려서 서로 어긋났다(실사용자 보고: 기준월 8월인데 9월 막대가 Forecast가 아니라 Actual로 나옴).
+ * 과거 연도는 12월, 미래 연도는 0월(전체 전망)이다.
  */
 export function getActualThroughMonth(reportYear: number, asOfDate = new Date()): number {
   const currentYear = asOfDate.getFullYear();
   if (reportYear < currentYear) return 12;
   if (reportYear > currentYear) return 0;
-  return asOfDate.getMonth();
+  // lib/monthRange.ts의 lastClosedMonth()와 동일한 규칙(M+2월 13일 마감)이지만, 그 함수는 테스트에서
+  // 날짜를 주입할 수 있도록 항상 실제 new Date()를 쓴다 — 여기서는 전달받은 asOfDate 기준으로 똑같이
+  // 계산해 테스트 가능하게 하면서도 규칙 자체는 반드시 일치시킨다.
+  const monthsBack = asOfDate.getDate() >= 13 ? 1 : 2;
+  return asOfDate.getMonth() + 1 - monthsBack;
 }
 
 export function defaultDeriveOptions(month: number): DeriveOptions {
