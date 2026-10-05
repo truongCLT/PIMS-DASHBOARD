@@ -26,6 +26,17 @@ function currentYearMonth(): { year: number; month: number } {
 }
 
 /**
+ * 통화별 환율 소수점 자릿수에 맞춰 반올림한다.
+ * VND는 1 USD 대비 값이 매우 작아(예: 0.05490) 2자리 반올림 시 정밀도가
+ * 거의 사라지므로 5자리까지 보존하고, USD/KRW는 2자리로 반올림한다.
+ */
+function roundRate(currency: "USD" | "KRW" | "VND", value: number): number {
+  const decimals = currency === "VND" ? 5 : 2;
+  const factor = 10 ** decimals;
+  return Math.round(value * factor) / factor;
+}
+
+/**
  * PIMSVINA의 공식 환율(최신 월)을 조회한다. 계산(교차환율) 없이 각 통화의 행 값을 그대로 사용한다:
  * - USD: BASEMONEY='USD', CHGMONEY='USD' 행의 값 (자기참조 행, 그대로 사용)
  * - VND: BASEMONEY='VND', CHGMONEY='USD' 행의 값 (1 USD = ? VND)
@@ -104,9 +115,9 @@ router.put("/fxrates", requireAdmin, async (req, res) => {
   const { year, month } = currentYearMonth();
   try {
     const entries: Array<{ currency: "USD" | "KRW" | "VND"; rate: number }> = [
-      { currency: "USD", rate: Math.round(usd * 100) / 100 },
-      { currency: "KRW", rate: Math.round(krw * 100) / 100 },
-      { currency: "VND", rate: Math.round(vnd * 100) / 100 },
+      { currency: "USD", rate: roundRate("USD", usd) },
+      { currency: "KRW", rate: roundRate("KRW", krw) },
+      { currency: "VND", rate: roundRate("VND", vnd) },
     ];
     for (const e of entries) {
       await db
@@ -118,9 +129,9 @@ router.put("/fxrates", requireAdmin, async (req, res) => {
         });
     }
     res.json(PutFxRatesResponse.parse({
-      usd: Math.round(usd * 100) / 100,
-      krw: Math.round(krw * 100) / 100,
-      vnd: Math.round(vnd * 100) / 100,
+      usd: roundRate("USD", usd),
+      krw: roundRate("KRW", krw),
+      vnd: roundRate("VND", vnd),
     }));
   } catch (err) {
     req.log.error({ err }, "failed to save fx rates");
@@ -157,7 +168,7 @@ router.put("/fxrates/history", requireAdmin, async (req, res) => {
     return;
   }
   const { currency, year, month, rate: rawRate } = parsed.data;
-  const rate = Math.round(rawRate * 100) / 100;
+  const rate = roundRate(currency, rawRate);
   try {
     await db
       .insert(fxRatesTable)

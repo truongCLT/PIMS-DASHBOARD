@@ -20,9 +20,11 @@ type Tab = "current" | "monthly";
 // Number()가 NaN을 반환해 "저장 실패"가 떴다(실사용자 보고). 쉼표/마침표를 보고 어느 쪽이 소수점인지
 // 판단해서 숫자로 정규화한다: 마지막에 나오는 구분자를 소수점으로, 그 앞의 같은 종류 구분자는
 // 천단위로 간주해 제거한다. 구분자가 하나뿐이고 뒤에 정확히 2자리면 소수점으로, 아니면 천단위로 본다.
-function parseRateInput(raw: string): number {
+// 입력 중인 원문을 "정수부(구분자 제거).소수부" 형태로 정규화한다. 사용자가 막 "."나 ","를 쳐서
+// 소수부가 아직 비어 있는 중간 상태("123.")도 그대로 보존해야 타이핑 중 포맷팅이 끊기지 않는다.
+function normalizeRateInput(raw: string): string {
   const s = raw.trim();
-  if (s === "") return NaN;
+  if (s === "") return "";
   const lastDot = s.lastIndexOf(".");
   const lastComma = s.lastIndexOf(",");
   let decimalPos = -1;
@@ -37,8 +39,27 @@ function parseRateInput(raw: string): number {
   let intPart = decimalPos >= 0 ? s.slice(0, decimalPos) : s;
   const fracPart = decimalPos >= 0 ? s.slice(decimalPos + 1) : "";
   intPart = intPart.replace(/[.,\s]/g, "");
-  const normalized = fracPart ? `${intPart}.${fracPart}` : intPart;
+  return decimalPos >= 0 ? `${intPart}.${fracPart}` : intPart;
+}
+
+function parseRateInput(raw: string): number {
+  const normalized = normalizeRateInput(raw);
+  if (normalized === "" || normalized === ".") return NaN;
   return Number(normalized);
+}
+
+// 입력란에 천단위 구분 쉼표를 넣어 보여준다("148739000" → "148,739,000"). 소수부와 타이핑 중인
+// 마침표는 그대로 보존해 커서가 끊기지 않게 한다.
+function formatRateDisplay(raw: string): string {
+  const normalized = normalizeRateInput(raw);
+  if (normalized === "") return "";
+  const dotIdx = normalized.indexOf(".");
+  const hasDot = dotIdx >= 0;
+  let intPart = hasDot ? normalized.slice(0, dotIdx) : normalized;
+  const fracPart = hasDot ? normalized.slice(dotIdx + 1) : "";
+  intPart = intPart.replace(/\D/g, "");
+  const grouped = intPart === "" ? "0" : intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  return hasDot ? `${grouped}.${fracPart}` : grouped;
 }
 
 // 환율 설정 버튼 하나 안에 탭 2개:
@@ -80,8 +101,8 @@ export function FxRateMonthlyEditor() {
 
   useEffect(() => {
     if (!open) return;
-    setCurKrw(String(fxRates.KRW));
-    setCurVnd(String(fxRates.VND));
+    setCurKrw(formatRateDisplay(String(fxRates.KRW)));
+    setCurVnd(formatRateDisplay(String(fxRates.VND)));
     setCurError(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
@@ -90,8 +111,8 @@ export function FxRateMonthlyEditor() {
     if (!open || tab !== "monthly") return;
     const krwRow = history.find((r) => r.currency === "KRW" && r.year === year && r.month === month);
     const vndRow = history.find((r) => r.currency === "VND" && r.year === year && r.month === month);
-    setKrw(krwRow ? String(krwRow.rate) : "");
-    setVnd(vndRow ? String(vndRow.rate) : "");
+    setKrw(krwRow ? formatRateDisplay(String(krwRow.rate)) : "");
+    setVnd(vndRow ? formatRateDisplay(String(vndRow.rate)) : "");
     setError(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, tab, year, month, history.length]);
@@ -266,11 +287,11 @@ export function FxRateMonthlyEditor() {
                 </div>
                 <div style={{ marginBottom: "8px" }}>
                   <div style={labelStyle}>KRW</div>
-                  <input value={curKrw} onChange={(e) => setCurKrw(e.target.value)} inputMode="decimal" style={inputStyle} />
+                  <input value={curKrw} onChange={(e) => setCurKrw(formatRateDisplay(e.target.value))} inputMode="decimal" style={inputStyle} />
                 </div>
                 <div style={{ marginBottom: "10px" }}>
                   <div style={labelStyle}>VND</div>
-                  <input value={curVnd} onChange={(e) => setCurVnd(e.target.value)} inputMode="decimal" style={inputStyle} />
+                  <input value={curVnd} onChange={(e) => setCurVnd(formatRateDisplay(e.target.value))} inputMode="decimal" style={inputStyle} />
                 </div>
                 {curError && (
                   <div style={{ fontSize: "11px", color: "#e0655c", marginBottom: "8px" }}>{curError}</div>
@@ -334,11 +355,11 @@ export function FxRateMonthlyEditor() {
                 </div>
                 <div style={{ marginBottom: "8px" }}>
                   <div style={labelStyle}>KRW</div>
-                  <input value={krw} onChange={(e) => setKrw(e.target.value)} inputMode="decimal" style={inputStyle} />
+                  <input value={krw} onChange={(e) => setKrw(formatRateDisplay(e.target.value))} inputMode="decimal" style={inputStyle} />
                 </div>
                 <div style={{ marginBottom: "10px" }}>
                   <div style={labelStyle}>VND</div>
-                  <input value={vnd} onChange={(e) => setVnd(e.target.value)} inputMode="decimal" style={inputStyle} />
+                  <input value={vnd} onChange={(e) => setVnd(formatRateDisplay(e.target.value))} inputMode="decimal" style={inputStyle} />
                 </div>
                 {error && (
                   <div style={{ fontSize: "11px", color: "#e0655c", marginBottom: "8px" }}>{error}</div>
