@@ -15,6 +15,7 @@ import {
   useDashboardFilters,
   resolveMonthWindow,
   makeConverter,
+  makeCurrentRateConverter,
   unitLabelOf,
   roundSmart,
   type PeriodMode,
@@ -513,7 +514,12 @@ export function getDashboardExportData(): DashboardData {
   return exportSnapshot;
 }
 
-export function useDashboardData() {
+/**
+ * @param rateMode "monthly"(기본) = 월별 매출 환율 설정을 적용(매출 실적/전망용). "current" = 월별
+ *   설정과 무관하게 항상 당월 환율만 적용(손익현황 등 매출 외 화면용 — 요구사항: 월별 매출 환율
+ *   설정은 매출 실적/전망에만 영향을 줘야 한다).
+ */
+export function useDashboardData(rateMode: "monthly" | "current" = "monthly") {
   const filters = useDashboardFilters();
   // "천 USD"는 한국어 표기라 EN/VI에서 그대로 노출됐다(다국어 요청) — 언어별로 바꾼다. 문자열 비교에
   // 쓰이지 않는 순수 표시용 값이다.
@@ -546,7 +552,10 @@ export function useDashboardData() {
     if (needProjects && !projectsQuery.data) return null;
 
     const { from, to } = resolveMonthWindow(filters.startYm, filters.endYm, managementMonth);
-    const convert = makeConverter(filters.currency, filters.unitIndex, filters.fxRateHistory);
+    const convert =
+      rateMode === "current"
+        ? makeCurrentRateConverter(filters.currency, filters.unitIndex, filters.fxRates)
+        : makeConverter(filters.currency, filters.unitIndex, filters.fxRateHistory);
     const unitLabel =
       filters.currency === "USD" && filters.unitIndex === 0
         ? thousandUsdLabel
@@ -614,6 +623,8 @@ export function useDashboardData() {
     filters.currency,
     filters.unitIndex,
     filters.fxRateHistory,
+    filters.fxRates,
+    rateMode,
     managementMonth,
   ]);
 

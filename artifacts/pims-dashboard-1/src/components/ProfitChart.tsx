@@ -6,7 +6,7 @@ import {
   getListMgmtreportProjectsQueryKey,
 } from "@workspace/api-client-react";
 import { useDashboardData, type ProfitRow, REPORT_YEAR } from "../lib/mgmtreportData";
-import { useDashboardFilters, makeConverter } from "../lib/dashboardFilters";
+import { useDashboardFilters, makeCurrentRateConverter } from "../lib/dashboardFilters";
 import { classifyMrProject, resolveProjectBusinessType } from "../data/projects";
 import { filterProfitProjects } from "../lib/mgmtreportReconciliation";
 import { chartTheme, chartTypography } from "../lib/chartTheme";
@@ -66,10 +66,13 @@ export function ProfitChart() {
     return () => ro.disconnect();
   }, []);
 
-  const { derived, isError } = useDashboardData();
+  // 손익현황은 월별 매출 환율 설정의 영향을 받지 않고 항상 당월 환율로만 환산한다.
+  const { derived, isError } = useDashboardData("current");
   const filters = useDashboardFilters();
-  const { unitIndex, currency, fxRateHistory, project, division, statusFilter } = filters;
-  const convert = makeConverter(currency, unitIndex, fxRateHistory);
+  const { unitIndex, currency, fxRates, project, division, statusFilter } = filters;
+  // 손익현황(P&L)은 "매출 실적/전망" 전용인 월별 매출 환율 설정의 영향을 받지 않고, 항상 당월
+  // 환율(fxRates)로만 환산한다(요구사항: 월별 매출 환율 설정은 매출에만 적용).
+  const convert = makeCurrentRateConverter(currency, unitIndex, fxRates);
 
   /* ── 경영보고 프로젝트별 월 매출/원가 ── */
   const projectSelected = project !== "All";

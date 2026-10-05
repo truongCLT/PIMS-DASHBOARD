@@ -85,6 +85,22 @@ export function makeConverter(
   };
 }
 
+/**
+ * 손익현황(P&L)처럼 "매출 실적/전망"이 아닌 화면을 위한 변환 함수 — 월별 환율 이력(fxRateHistory)을
+ * 쓰지 않고 항상 당월 환율(fxRates) 하나만 적용한다. 월별 매출 환율 설정은 매출 실적/전망 환산에만
+ * 쓰이고, 그 외 화면(손익현황 등)은 이 값에 영향받지 않아야 한다는 요구사항에 따른 분리.
+ */
+export function makeCurrentRateConverter(
+  currency: CurrencyCode,
+  unitIndex: 0 | 1,
+  fxRates: FxRateMap = FX_RATES,
+): (v: number) => number {
+  const rate = fxRates[currency] ?? FX_RATES[currency] ?? 1;
+  const divisor = UNIT_DIVISORS[currency]?.[unitIndex] ?? 1e3;
+  const factor = (1000 * rate) / divisor;
+  return (v: number) => v * factor;
+}
+
 export function unitLabelOf(currency: CurrencyCode, unitIndex: 0 | 1): string {
   return UNIT_OPTIONS[currency][unitIndex];
 }

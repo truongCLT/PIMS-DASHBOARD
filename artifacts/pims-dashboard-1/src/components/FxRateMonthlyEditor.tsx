@@ -11,7 +11,6 @@ import {
 } from "@workspace/api-client-react";
 import { useTranslation } from "react-i18next";
 import { useDashboardFilters } from "../lib/dashboardFilters";
-import { lastClosedYearMonth } from "../lib/monthRange";
 
 type Tab = "current" | "monthly";
 
@@ -85,11 +84,11 @@ export function FxRateMonthlyEditor() {
 
   // ── 탭 2: 월별 매출 환율 ──────────────────────────────────────────────────
   const now = new Date();
-  // 실적 마감 규칙과 동일하게 "최근 마감된 달"까지만 고른다 — 예: 10/13 이전에는 8월까지만,
-  // 10/13부터는 9월까지(원가/매출 보고서의 기준월 상한과 같은 규칙, lib/monthRange.ts 참고).
-  const closedYm = lastClosedYearMonth();
-  const [year, setYear] = useState(closedYm.year);
-  const [month, setMonth] = useState(closedYm.month);
+  // 이 탭은 "실적 마감 여부"와 무관하게, 매출 실적/전망 환산에 쓸 환율을 연도 전체(1~12월)에
+  // 대해 미리 입력해 둘 수 있어야 한다(9~12월 전망 환율도 포함). 원가/매출 보고서의 "기준월
+  // 상한"(lastClosedYearMonth)은 여기 적용 대상이 아니다.
+  const [year, setYear] = useState(now.getFullYear());
+  const [month, setMonth] = useState(now.getMonth() + 1);
   const [krw, setKrw] = useState("");
   const [vnd, setVnd] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -322,12 +321,7 @@ export function FxRateMonthlyEditor() {
                 <div style={{ display: "flex", gap: "6px", marginBottom: "8px" }}>
                   <select
                     value={year}
-                    onChange={(e) => {
-                      const nextYear = Number(e.target.value);
-                      setYear(nextYear);
-                      const nextMax = nextYear === closedYm.year ? closedYm.month : nextYear < closedYm.year ? 12 : 0;
-                      if (month > nextMax) setMonth(Math.max(1, nextMax));
-                    }}
+                    onChange={(e) => setYear(Number(e.target.value))}
                     style={selectStyle}
                   >
                     {Array.from({ length: 5 }, (_, i) => now.getFullYear() - 2 + i).map((y) => (
@@ -335,16 +329,9 @@ export function FxRateMonthlyEditor() {
                     ))}
                   </select>
                   <select value={month} onChange={(e) => setMonth(Number(e.target.value))} style={selectStyle}>
-                    {/* 원가/매출 보고서의 기준월 상한과 같은 "마감 규칙"(M+2월 13일 마감)을 그대로 쓴다
-                        — 그 해(closedYm.year)는 마감된 달(closedYm.month)까지만, 이전 연도는 12개월 전체,
-                        이후 연도는 아직 마감된 달이 없다. */}
-                    {Array.from(
-                      {
-                        length:
-                          year === closedYm.year ? closedYm.month : year < closedYm.year ? 12 : 0,
-                      },
-                      (_, i) => i + 1,
-                    ).map((m) => (
+                    {/* 매출 실적/전망 환산용 환율이므로 선택한 연도의 1~12월 전체를 고를 수 있어야
+                        한다(전망 월도 미리 환율을 입력해야 해서 마감 규칙으로 제한하지 않는다). */}
+                    {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
                       <option key={m} value={m}>{t("projectDataEntryTab:monthSuffix", { month: m })}</option>
                     ))}
                   </select>
