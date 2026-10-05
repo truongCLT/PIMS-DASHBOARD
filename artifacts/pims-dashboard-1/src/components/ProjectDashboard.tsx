@@ -45,7 +45,8 @@ const selectStyle: React.CSSProperties = {
 };
 
 export function ProjectDashboard({ projectName }: { projectName: string }) {
-  const { t } = useTranslation(["projectDashboard", "common"]);
+  const { t, i18n } = useTranslation(["projectDashboard", "common", "projectDataEntryTab"]);
+  const excelLang = (i18n.language?.slice(0, 2) === "en" || i18n.language?.slice(0, 2) === "vi" ? i18n.language.slice(0, 2) : "ko") as "ko" | "en" | "vi";
   const SIDE_TAB_LABELS: Record<string, string> = {
     Summary: t("common:overview"),
     Report: t("projectDashboard:report"),
@@ -152,7 +153,20 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
     setExcelMsg(null);
     setExcelStatus(null);
     try {
-      await downloadProjectDetailTemplate(projectName, detail, fxRates.VND, "시공", monthlyVndRate);
+      // "데이터 입력" 탭에서 실제로 보여주는 섹션 제목을 그대로 엑셀 배너로 넘긴다(요청: 엑셀 시트가
+      // 화면과 똑같은 제목을 보여줘야 함) — costBudgetMonthly(4-1)는 화면상 별도 번호 섹션이 아니라
+      // Budget Execution 카드 안의 하위 표라 배너를 달지 않는다.
+      const sectionTitles = {
+        overview: t("projectDataEntryTab:overviewTitle"),
+        progress: t("projectDataEntryTab:progressTitle"),
+        milestones: t("projectDataEntryTab:milestonesTitle"),
+        costEstimation: t("projectDataEntryTab:costEstimationTitleConstruction"),
+        costBudget: t("projectDataEntryTab:costBudgetTitleConstruction"),
+        outsourcing: t("projectDataEntryTab:outsourcingTitleConstruction"),
+        cashflow: t("projectDataEntryTab:cashflowTitleConstruction"),
+        salesMonthly: t("projectDataEntryTab:salesMonthlyTitleConstruction"),
+      };
+      await downloadProjectDetailTemplate(projectName, detail, fxRates.VND, "시공", monthlyVndRate, excelLang, sectionTitles);
     } catch (err) {
       console.error("Excel template download failed", err);
       setExcelMsg(t("projectDashboard:templateDownloadFailed"));
@@ -168,7 +182,7 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
     setExcelMsg(null);
     setExcelStatus(null);
     try {
-      const parsed = await parseProjectDetailWorkbook(file, detail, fxRates.VND, monthlyVndRate);
+      const parsed = await parseProjectDetailWorkbook(file, detail, fxRates.VND, monthlyVndRate, "시공");
       if (!window.confirm(t("projectDashboard:confirmReplaceData"))) {
         setExcelBusy(false);
         return;

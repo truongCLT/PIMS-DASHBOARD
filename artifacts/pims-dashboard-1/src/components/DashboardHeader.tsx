@@ -46,7 +46,7 @@ export function DashboardHeader({
     setUnitIndex,
   } = useDashboardFilters();
 
-  const { t } = useTranslation(["dashboardHeader", "common"]);
+  const { t } = useTranslation(["dashboardHeader", "common", "projectDataEntryTab"]);
   const { isAdmin } = useAdminAuth();
   const queryClient = useQueryClient();
   const settingsQuery = useGetMgmtreportSettings();
@@ -62,7 +62,12 @@ export function DashboardHeader({
     },
   });
   const projectsQuery = useListMgmtreportProjects({ year: REPORT_YEAR });
-  const projectOptions = (projectsQuery.data?.projects ?? []).filter((p) => !p.isGroup);
+  // site_code가 없는 프로젝트(예: HEAD OFFICE/BUSINESS EXPENSES처럼 집계용 항목, site_code 미등록
+  // 항목)는 PIMSVINA 현장과 실제로 연결되지 않은 것이라 드롭다운에서 제외하고, 있는 것만 "이름
+  // (SITE코드)"로 붙여 보여준다(요청: site code 가진 프로젝트만 로드, 이름에 site code 표시).
+  const projectOptions = (projectsQuery.data?.projects ?? [])
+    .filter((p) => !p.isGroup && !!p.siteCode)
+    .map((p) => ({ ...p, displayName: `${p.name} (${p.siteCode})` }));
 
   const referenceMonth = settingsQuery.data?.month ?? maxSelectableMonth();
   const maxYm = `${REPORT_YEAR}-${String(referenceMonth).padStart(2, "0")}`;
@@ -281,7 +286,7 @@ export function DashboardHeader({
             <option value="All">{t("common:all")}</option>
             {projectOptions.map((p) => (
               <option key={p.name} value={p.name}>
-                {p.name}
+                {p.displayName}
               </option>
             ))}
           </select>
@@ -376,9 +381,9 @@ export function DashboardHeader({
 
         {/* 기준 월: 선택 즉시 화면 반영, 관리자는 전사 공통 설정으로 저장 */}
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span style={{ fontSize: "12px", color: "#333", fontWeight: "600" }}>기준 월</span>
+          <span style={{ fontSize: "12px", color: "#333", fontWeight: "600" }}>{t("common:baseMonth")}</span>
           <select
-            aria-label="기준 월"
+            aria-label={t("common:baseMonth")}
             value={settingsQuery.data?.month ?? ""}
             disabled={settingsQuery.isLoading || settingsMutation.isPending}
             onChange={(e) => {
@@ -401,7 +406,7 @@ export function DashboardHeader({
             {/* 당월(및 그 이후)은 실적이 아직 마감되지 않아 선택할 수 없음 — 계획 데이터가
                 실적 계산에 섞이는 것을 방지하기 위해 직전월까지만 선택 가능. */}
             {Array.from({ length: maxSelectableMonth() }, (_, index) => index + 1).map((month) => (
-              <option key={month} value={month}>{month}월</option>
+              <option key={month} value={month}>{t("projectDataEntryTab:monthSuffix", { month })}</option>
             ))}
           </select>
         </div>

@@ -99,7 +99,8 @@ function EmptyHint({ label }: { label: string }) {
 }
 
 export function ServiceProjectDashboard({ projectName }: { projectName: string }) {
-  const { t } = useTranslation(["serviceProjectDashboard", "overviewTab", "common"]);
+  const { t, i18n } = useTranslation(["serviceProjectDashboard", "overviewTab", "common", "projectDataEntryTab"]);
+  const excelLang = (i18n.language?.slice(0, 2) === "en" || i18n.language?.slice(0, 2) === "vi" ? i18n.language.slice(0, 2) : "ko") as "ko" | "en" | "vi";
   const { fxRates } = useDashboardFilters();
   const [currency, setCurrency] = useState("USD");
   const [unitOn, setUnitOn] = useState(true);
@@ -199,7 +200,16 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
     setExcelMsg(null);
     setExcelMsgIsSuccess(false);
     try {
-      await downloadProjectDetailTemplate(projectName, detail, fxRates.VND, "용역", monthlyVndRate);
+      const sectionTitles = {
+        overview: t("projectDataEntryTab:overviewTitle"),
+        costEstimation: t("projectDataEntryTab:costEstimationTitleService"),
+        costBudget: t("projectDataEntryTab:costBudgetTitleService"),
+        outsourcing: t("projectDataEntryTab:outsourcingTitleService"),
+        cashflow: t("projectDataEntryTab:cashflowTitleService"),
+        cogsMonthly: t("projectDataEntryTab:cogsMonthlyTitle"),
+        salesMonthly: t("projectDataEntryTab:salesMonthlyTitleService"),
+      };
+      await downloadProjectDetailTemplate(projectName, detail, fxRates.VND, "용역", monthlyVndRate, excelLang, sectionTitles);
     } catch (err) {
       console.error("Excel template download failed", err);
       setExcelMsg(t("serviceProjectDashboard:templateDownloadFailed"));
@@ -215,7 +225,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
     setExcelMsg(null);
     setExcelMsgIsSuccess(false);
     try {
-      const parsed = await parseProjectDetailWorkbook(file, detail, fxRates.VND, monthlyVndRate);
+      const parsed = await parseProjectDetailWorkbook(file, detail, fxRates.VND, monthlyVndRate, "용역");
       if (!window.confirm(t("serviceProjectDashboard:uploadConfirm"))) {
         setExcelBusy(false);
         return;

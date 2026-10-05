@@ -102,7 +102,7 @@ export function FxRateMonthlyEditor() {
       const btn = ref.current;
       if (!btn) return;
       const rect = btn.getBoundingClientRect();
-      const width = 260;
+      const width = 300;
       const left = Math.max(8, Math.min(rect.right - width, window.innerWidth - width - 8));
       setPopupPos({ top: rect.bottom + 4, left });
     };
@@ -196,10 +196,11 @@ export function FxRateMonthlyEditor() {
   };
   const tabButtonStyle = (active: boolean): React.CSSProperties => ({
     flex: 1,
-    padding: "7px 0",
-    fontSize: "12px",
+    padding: "7px 4px",
+    fontSize: "11px",
     fontWeight: 600,
     textAlign: "center",
+    whiteSpace: "nowrap",
     cursor: "pointer",
     border: "none",
     borderBottom: active ? "2px solid #1e3a6e" : "2px solid transparent",
@@ -242,7 +243,7 @@ export function FxRateMonthlyEditor() {
           borderRadius: "8px",
           boxShadow: "0 4px 12px rgba(20,40,80,0.15)",
           zIndex: 1000,
-          width: "260px",
+          width: "300px",
         }}>
           <div style={{ display: "flex", borderBottom: "1px solid #eef2f7" }}>
             <button style={tabButtonStyle(tab === "current")} onClick={() => setTab("current")}>
