@@ -110,6 +110,167 @@ function createBullet(text, boldPrefix = "") {
   });
 }
 
+// Input type badges (icon + localized label), reused across the lineage matrix rows below.
+const TYPE = {
+  EXCEL: { en: "📤 Excel Upload", kr: "📤 엑셀 업로드", vn: "📤 Tải lên Excel" },
+  ERP: { en: "🔄 ERP Sync", kr: "🔄 ERP 자동동기화", vn: "🔄 Đồng bộ ERP" },
+  MANUAL: { en: "✍️ Manual Entry", kr: "✍️ 수기 직접입력", vn: "✍️ Nhập tay" },
+  EXCEL_ERP: { en: "📤 Excel Upload, 🔄 ERP Sync", kr: "📤 엑셀 업로드, 🔄 ERP 자동동기화", vn: "📤 Tải lên Excel, 🔄 Đồng bộ ERP" },
+  MANUAL_ERP: { en: "✍️ Manual Entry, 🔄 ERP Sync", kr: "✍️ 수기 직접입력, 🔄 ERP 자동동기화", vn: "✍️ Nhập tay, 🔄 Đồng bộ ERP" }
+};
+
+// Reusable screen/module labels for the lineage matrix (translated per language).
+const SCREEN = {
+  COMPANY_OVERVIEW: { en: "Company Dashboard - Main Overview", kr: "전체 관리 대시보드 (종합 현황)", vn: "Dashboard Toàn Công Ty - Tổng Quan" },
+  COMPANY_CHARTS: { en: "Company Dashboard - Charts", kr: "전체 관리 대시보드 (차트)", vn: "Dashboard Toàn Công Ty - Biểu Đồ" },
+  COMPANY_COMMENTS: { en: "Company Dashboard - Comments", kr: "전체 관리 대시보드 (코멘트)", vn: "Dashboard Toàn Công Ty - Nhận Xét" },
+  CONS_OVERVIEW: { en: "Project Detail (Construction) - Overview Tab", kr: "시공 프로젝트 상세 (개요 탭)", vn: "Chi Tiết Dự Án (Xây Dựng) - Tab Khái Yếu" },
+  CONS_PROGRESS: { en: "Project Detail (Construction) - Progress Tab", kr: "시공 프로젝트 상세 (공정 탭)", vn: "Chi Tiết Dự Án (Xây Dựng) - Tab Tiến Độ" },
+  CONS_SALE_PROFIT: { en: "Project Detail (Construction) - Sale/Profit Tab", kr: "시공 프로젝트 상세 (매출/원가 탭)", vn: "Chi Tiết Dự Án (Xây Dựng) - Tab Doanh Thu/Giá Vốn" },
+  CONS_OUTSOURCING: { en: "Project Detail (Construction) - Outsourcing Tab", kr: "시공 프로젝트 상세 (외주 탭)", vn: "Chi Tiết Dự Án (Xây Dựng) - Tab Thầu Phụ" },
+  CONS_COSTING: { en: "Project Detail (Construction) - Costing Tab", kr: "시공 프로젝트 상세 (비용 탭)", vn: "Chi Tiết Dự Án (Xây Dựng) - Tab Chi Phí" },
+  CONS_CASHFLOW: { en: "Project Detail (Construction) - Cash Flow Tab", kr: "시공 프로젝트 상세 (자금수지 탭)", vn: "Chi Tiết Dự Án (Xây Dựng) - Tab Dòng Tiền" },
+  SVC_OVERVIEW: { en: "Project Detail (Service) - Overview & Sales", kr: "용역 프로젝트 상세 (개요 및 매출)", vn: "Chi Tiết Dự Án (Dịch Vụ) - Khái Yếu & Doanh Thu" },
+  SVC_SALES_COGS: { en: "Project Detail (Service) - Sales & COGS Tab", kr: "용역 프로젝트 상세 (매출/원가 탭)", vn: "Chi Tiết Dự Án (Dịch Vụ) - Tab Doanh Thu/Giá Vốn" },
+  SYSADMIN: { en: "System Administration - Data Sync & Imports", kr: "시스템 관리 (데이터 연동 및 업로드)", vn: "Quản Trị Hệ Thống - Đồng Bộ & Nạp Dữ Liệu" }
+};
+
+// Indicator & Data Lineage Mapping Matrix (Section 2), aligned 1:1 with the user's
+// hand-corrected reference EN docx (2026-10-06). The "PIMSVINA Menu" and "PIMSVINA
+// name UI" columns are literal ERP navigation breadcrumbs/UI labels and are kept
+// identical across EN/KR/VN since they must match what appears on screen in PIMSVINA.
+const LINEAGE_ROWS = [
+  { screen: SCREEN.COMPANY_OVERVIEW, type: TYPE.EXCEL,
+    indicator: { en: "YTD Revenue (Plan / Actual / Achievement Rate)", kr: "당월 누적 매출 (계획/실적/달성률)", vn: "Doanh thu lũy kế (Kế hoạch / Thực tế / Tỷ lệ đạt)" },
+    menu: "", ui: "" },
+  { screen: SCREEN.COMPANY_OVERVIEW, type: TYPE.EXCEL,
+    indicator: { en: "YTD Operating Profit (Plan / Actual / Achievement Rate)", kr: "당월 누적 영업이익 (계획/실적/달성률)", vn: "Lợi nhuận kinh doanh lũy kế (Kế hoạch / Thực tế / Tỷ lệ đạt)" },
+    menu: "", ui: "" },
+  { screen: SCREEN.COMPANY_OVERVIEW, type: TYPE.EXCEL,
+    indicator: { en: "Annual Revenue (Plan / Forecast / Achievement Rate)", kr: "연간 매출 (계획/전망/달성률)", vn: "Doanh thu cả năm (Kế hoạch / Dự báo / Tỷ lệ đạt)" },
+    menu: "", ui: "" },
+  { screen: SCREEN.COMPANY_OVERVIEW, type: TYPE.EXCEL,
+    indicator: { en: "Annual Operating Profit (Plan / Forecast / Achievement Rate)", kr: "연간 영업이익 (계획/전망/달성률)", vn: "Lợi nhuận kinh doanh cả năm (Kế hoạch / Dự báo / Tỷ lệ đạt)" },
+    menu: "", ui: "" },
+  { screen: SCREEN.COMPANY_CHARTS, type: TYPE.EXCEL,
+    indicator: { en: "Monthly Sales Trend (Plan vs Actual/Forecast)", kr: "월별 매출 추이 (계획 대비 실적/전망)", vn: "Xu hướng doanh thu hàng tháng (Kế hoạch so với Thực tế/Dự báo)" },
+    menu: "", ui: "" },
+  { screen: SCREEN.COMPANY_CHARTS, type: TYPE.EXCEL,
+    indicator: { en: "Monthly P&L Status (Gross Profit, SG&A, Operating Profit)", kr: "월별 손익 현황 (매출이익, 판관비, 영업이익)", vn: "Tình hình lãi/lỗ hàng tháng (Lợi nhuận gộp, Chi phí QLDN, Lợi nhuận KD)" },
+    menu: "", ui: "" },
+  { screen: SCREEN.COMPANY_CHARTS, type: TYPE.EXCEL,
+    indicator: { en: "Order Status (Contract Target, Incurred Orders, Balance)", kr: "수주 현황 (수주 목표, 발생 수주, 잔여)", vn: "Tình hình trúng thầu (Mục tiêu hợp đồng, Đơn hàng phát sinh, Số dư)" },
+    menu: "", ui: "" },
+  { screen: SCREEN.COMPANY_CHARTS, type: TYPE.EXCEL_ERP,
+    indicator: { en: "Company Cash Flow (Inflow, Outflow, Net Balance)", kr: "회사 자금수지 (입금, 출금, 순잔액)", vn: "Dòng tiền công ty (Thu, Chi, Số dư ròng)" },
+    menu: "Cash Flow > Report > Cash Flow ReportCash Flow Excel Upload",
+    ui: "Income > month (1-12)Outcome > month (1-12)" },
+  { screen: SCREEN.COMPANY_COMMENTS, type: TYPE.MANUAL,
+    indicator: { en: "Executive Comments (Performance Analysis & Outlook)", kr: "경영진 코멘트 (실적 분석 및 전망)", vn: "Nhận xét Ban Giám đốc (Phân tích kết quả & Triển vọng)" },
+    menu: "", ui: "" },
+  { screen: SCREEN.CONS_OVERVIEW, type: TYPE.ERP,
+    indicator: { en: "Contract Amount", kr: "도급액", vn: "Giá trị hợp đồng" },
+    menu: "Common > Construction Overview > Register Construction Overview",
+    ui: "Tab Contract Details > Total Contract Amount" },
+  { screen: SCREEN.CONS_OVERVIEW, type: TYPE.ERP,
+    indicator: { en: "Construction Period (Construction Start Date & Construction End Date)", kr: "공사기간 (착공일 및 준공일)", vn: "Thời gian thi công (Ngày khởi công & Ngày hoàn thành)" },
+    menu: "Common > Construction Overview > Register Construction Overview",
+    ui: "Tab Construction Period > - Actual Start Date- Actual Final Completion / Expected Final Completion Date" },
+  { screen: SCREEN.CONS_OVERVIEW, type: TYPE.MANUAL,
+    indicator: {
+      en: "Project Specifications (Client, Scale, Location, Site Area, Gross Floor Area, Purpose, Ownership Stake, Partner Company, Contract Method, Payment Terms, Defect Warranty Period, Defect Warranty Bond, Advance Payment, Retention, VE Terms)",
+      kr: "프로젝트 제원 (발주처, 규모, 위치, 대지면적, 연면적, 용도, 지분율, 파트너사, 계약방식, 지급조건, 하자보증기간, 하자보증금, 선수금, 유보금, VE 조건)",
+      vn: "Thông số dự án (Chủ đầu tư, Quy mô, Vị trí, Diện tích đất, Tổng diện tích sàn, Mục đích, Tỷ lệ sở hữu, Đối tác, Phương thức hợp đồng, Điều khoản thanh toán, Thời hạn bảo hành, Bảo lãnh bảo hành, Tạm ứng, Giữ lại, Điều khoản VE)"
+    },
+    menu: "", ui: "" },
+  { screen: SCREEN.CONS_OVERVIEW, type: TYPE.ERP,
+    indicator: { en: "Site Photo", kr: "현장 사진", vn: "Ảnh công trường" },
+    menu: "Common > Perspective/Photo > Register Perspective",
+    ui: "Aerial rendering" },
+  { screen: SCREEN.CONS_PROGRESS, type: TYPE.ERP,
+    indicator: { en: "Monthly Actual (%)", kr: "월별 실적 (%)", vn: "Thực tế hàng tháng (%)" },
+    menu: "1. Cost > Cost Performance > Cost Input Status by Execution Details2. Sub-Contracting > Request Execution Resolution (Site) > Request Execution Resolution(Site)",
+    ui: "1. Sum total column input By Month(1-12)2. Sum column Execution Budget > Amount3. Request Execution Resolution(Site) sum column Execution Budget minus sum column Implementation AmountActual = (1(each month)/(2-3))*100%" },
+  { screen: SCREEN.CONS_PROGRESS, type: TYPE.MANUAL,
+    indicator: { en: "Monthly Plan(%)", kr: "월별 계획 (%)", vn: "Kế hoạch hàng tháng (%)" },
+    menu: "", ui: "" },
+  { screen: SCREEN.CONS_PROGRESS, type: TYPE.ERP,
+    indicator: { en: "Site Progress Status", kr: "현장 진행 현황", vn: "Tình trạng tiến độ công trường" },
+    menu: "Common > Perspective/Photo > Register Site Photos",
+    ui: "Photo List" },
+  { screen: SCREEN.CONS_SALE_PROFIT, type: TYPE.EXCEL,
+    indicator: { en: "Site Monthly Revenue (Plan / Actual / Forecast)", kr: "현장 월별 매출 (계획/실적/전망)", vn: "Doanh thu hàng tháng của công trường (Kế hoạch / Thực tế / Dự báo)" },
+    menu: "", ui: "" },
+  { screen: SCREEN.CONS_SALE_PROFIT, type: TYPE.ERP,
+    indicator: { en: "Cost Rate", kr: "원가율", vn: "Tỷ lệ giá vốn" },
+    menu: "Cost > Settlement ratio cost >  Settlement Cost Ratio",
+    ui: "Row in column month > Business Budget, Contract Amount, Gross Profit Ratio" },
+  { screen: SCREEN.CONS_OUTSOURCING, type: TYPE.ERP,
+    indicator: {
+      en: "Outsourcing/Materials 1.Budget (A), Executed Budget, Resolved Amount (B), 2. This Month's Progress Payment, Cumulative Progress Payment (C))",
+      kr: "외주/자재 1.예산(A), 실행예산, 확정금액(B), 2. 당월 기성금, 누계 기성금(C))",
+      vn: "Thầu phụ/Vật tư 1.Ngân sách (A), Ngân sách thực hiện, Giá trị đã xác định (B), 2. Thanh toán tiến độ tháng này, Thanh toán tiến độ lũy kế (C))"
+    },
+    menu: "1. Sub-Contracting > Request Execution Resolution (Site) > Request Execution Resolution(Site)2. Sub-Contracting > Implementation Progress Payment(Site) > Interim Payment Status",
+    ui: "1. Execution Budget, Operational Budget, Implementation Amount2. - Tab This Month column 당월기성금액 (B)- Tab All column Progress Payment > Amount (B)" },
+  { screen: SCREEN.CONS_COSTING, type: TYPE.ERP,
+    indicator: { en: "Budget Execution Status (Direct Cost, Indirect Cost, Contingency)", kr: "예산 집행 현황 (직접비, 간접비, 예비비)", vn: "Tình hình thực hiện ngân sách (Chi phí trực tiếp, Chi phí gián tiếp, Dự phòng)" },
+    menu: "Cost > Cost Performance > Cost Input Status by Execution Details",
+    ui: "-Row Direct Cost > Common Work, Expense I, Outsoucre (data not in Common Work, Expense I)- Row Indirect Cost > Expense II- Row Contingency > Contingency" },
+  { screen: SCREEN.CONS_COSTING, type: TYPE.MANUAL,
+    indicator: { en: "Monthly Cost Plan & Work Type Breakdown", kr: "월별 원가 계획 및 공종별 내역", vn: "Kế hoạch chi phí hàng tháng & Phân loại theo loại công việc" },
+    menu: "", ui: "Data Entry Tab > 4. Cost Plan/Actual by Work Type" },
+  { screen: SCREEN.CONS_CASHFLOW, type: TYPE.ERP,
+    indicator: { en: "Project Cash Inflow / Cash Outflow / Cash Balance", kr: "프로젝트 입금 / 출금 / 자금 잔액", vn: "Thu / Chi / Số dư tiền mặt của dự án" },
+    menu: "Cash Flow > Report > Cash Flow Report",
+    ui: "Income > month (1-12)Outcome > month (1-12)" },
+  { screen: SCREEN.SVC_OVERVIEW, type: TYPE.MANUAL,
+    indicator: { en: "Service Contract & Scope Details", kr: "용역 계약 및 범위 상세", vn: "Chi tiết hợp đồng & phạm vi dịch vụ" },
+    menu: "", ui: "Data Entry Tab > Service Overview ( Client, Scope of Work, Payment Terms)" },
+  { screen: SCREEN.SVC_SALES_COGS, type: TYPE.MANUAL,
+    indicator: { en: "Service Monthly Accounting & Executed COGS", kr: "용역 월별 회계 및 집행 원가(COGS)", vn: "Kế toán hàng tháng dịch vụ & Giá vốn đã thực hiện" },
+    menu: "", ui: "Data Entry Tab > 3. Monthly Cost of Revenue" },
+  { screen: SCREEN.SYSADMIN, type: TYPE.MANUAL_ERP,
+    indicator: { en: "Exchange Rate Maintenance (USD / VND / KRW)", kr: "환율 관리 (USD / VND / KRW)", vn: "Quản lý tỷ giá (USD / VND / KRW)" },
+    menu: "1.Common > Construction Overview > Register Construction Overview2. Main Dashboard button Fx Rate Setting- Current rate- Monthly Revenue rate",
+    ui: "1. Contract Exchange Rate2. Input save data" },
+  { screen: SCREEN.SYSADMIN, type: TYPE.EXCEL,
+    indicator: { en: "Management Report Excel Import & Rollback", kr: "경영보고서 엑셀 업로드 및 롤백", vn: "Nhập Excel báo cáo quản trị & Hoàn tác" },
+    menu: "", ui: "Upload Modal (Management Report Excel Parsing)" },
+  { screen: SCREEN.SYSADMIN, type: TYPE.ERP,
+    indicator: { en: "Automated PIMSVINA Sync (Preview & Confirm)", kr: "PIMSVINA 자동 동기화 (미리보기 및 확정)", vn: "Đồng bộ tự động PIMSVINA (Xem trước & Xác nhận)" },
+    menu: "ERP All Modules",
+    ui: "Top 'PIMS Sync' button -> Preview Popup -> Confirm Apply" }
+];
+
+function buildLineageTableRows(lang) {
+  const isEn = lang === 'EN';
+  const isVn = lang === 'VN';
+  const pick = (obj) => (isVn ? obj.vn : (isEn ? obj.en : obj.kr));
+
+  const headerRow = new TableRow({
+    children: [
+      createCell(isVn ? "Màn Hình" : (isEn ? "Screen" : "화면"), true, false, 18),
+      createCell(isVn ? "Tên Chỉ Tiêu" : (isEn ? "Indicator Name" : "지표명"), true, false, 20),
+      createCell(isVn ? "Cơ Chế Nạp" : (isEn ? "Input Type" : "입력 구분"), true, false, 14),
+      createCell(isVn ? "Menu PIMSVINA" : (isEn ? "PIMSVINA Menu" : "PIMSVINA 메뉴"), true, false, 24),
+      createCell(isVn ? "Tên Màn Hình PIMSVINA (UI)" : (isEn ? "PIMSVINA name UI" : "PIMSVINA 화면명 (UI)"), true, false, 24)
+    ]
+  });
+
+  const dataRows = LINEAGE_ROWS.map((row, i) => new TableRow({
+    children: [
+      createCell(pick(row.screen)),
+      createCell(pick(row.indicator)),
+      createCell(pick(row.type), false, false, null, true),
+      createCell(row.menu, false, i % 2 === 1),
+      createCell(row.ui, false, i % 2 === 1)
+    ]
+  }));
+
+  return [headerRow, ...dataRows];
+}
+
 function generateDocx(lang) {
   const isEn = lang === 'EN';
   const isVn = lang === 'VN';
@@ -251,137 +412,7 @@ function generateDocx(lang) {
           // Lineage Table
           new Table({
             width: { size: 100, type: WidthType.PERCENTAGE },
-            rows: [
-              new TableRow({
-                children: [
-                  createCell(isVn ? "Màn Hình / Phân Hệ" : (isEn ? "Module / Screen" : "대시보드 모듈"), true, false, 18),
-                  createCell(isVn ? "Tên Chỉ Tiêu Dashboard" : (isEn ? "Indicator Name" : "지표명"), true, false, 20),
-                  createCell(isVn ? "Cơ Chế Nạp" : (isEn ? "Input Type" : "입력 구분"), true, false, 14),
-                  createCell(isVn ? "Menu & Màn Hình PIMSVINA ERP" : (isEn ? "PIMSVINA ERP Menu & UI" : "PIMSVINA 연동 메뉴 및 화면"), true, false, 24),
-                  createCell(isVn ? "Bảng Dữ Liệu & Quy Tắc Tính" : (isEn ? "DB Source & Logic" : "DB 테이블 및 산출 로직"), true, false, 24)
-                ]
-              }),
-              // Row 1
-              new TableRow({
-                children: [
-                  createCell(isVn ? "Dashboard Toàn Công Ty\n(Màn Hình Tổng Quan)" : (isEn ? "Company Dashboard\n(Main Overview)" : "전체 관리 대시보드\n(종합 현황)")),
-                  createCell(isVn ? "Doanh thu & Lợi nhuận KD lũy kế (YTD)" : (isEn ? "YTD Revenue & Operating Profit" : "당월 누적 매출 및 영업이익")),
-                  createCell(isVn ? "📤 Tải lên Excel" : (isEn ? "📤 Excel Upload" : "📤 엑셀 업로드"), false, false, null, true),
-                  createCell(isVn ? "Đăng ký kết quả KD hàng tháng\n(월별경영실적등록)" : (isEn ? "Monthly Management Performance Registration" : "월별경영실적등록\n(경영보고서 엑셀 매출/영업이익)")),
-                  createCell(isVn ? "mr_monthly_amounts\n(Cộng dồn tháng 1 -> tháng chuẩn M)" : (isEn ? "mr_monthly_amounts\n(Sum m01 to reference month M)" : "mr_monthly_amounts\n(기준월 M까지의 월별 합계)"))
-                ]
-              }),
-              // Row 2
-              new TableRow({
-                children: [
-                  createCell(isVn ? "Dashboard Toàn Công Ty\n(Biểu Đồ & Thẻ Widget)" : (isEn ? "Company Dashboard\n(Charts & Widgets)" : "전체 관리 대시보드\n(차트 및 현황)")),
-                  createCell(isVn ? "Doanh thu năm & Tỷ lệ trúng thầu" : (isEn ? "Full-Year Revenue & Orders Donut" : "연간 매출 및 수주 실적")),
-                  createCell(isVn ? "📤 Tải lên Excel" : (isEn ? "📤 Excel Upload" : "📤 엑셀 업로드"), false, true, null, true),
-                  createCell(isVn ? "Báo cáo quản trị tổng thể hàng tháng\n(연간 매출 및 신규 수주 라인)" : (isEn ? "Monthly Management Performance Registration\n(Annual target/orders)" : "월별경영실적등록\n(연간 목표 및 수주 라인)")),
-                  createCell(isVn ? "mr_annual_amounts\n(Kế hoạch vs Dự báo cả năm)" : (isEn ? "mr_annual_amounts\n(plan_total vs actual_total)" : "mr_annual_amounts\n(연간 계획 대비 실적)"))
-                ]
-              }),
-              // Row 3
-              new TableRow({
-                children: [
-                  createCell(isVn ? "Dashboard Toàn Công Ty\n(Khung Nhận Xét Dưới Cùng)" : (isEn ? "Company Dashboard\n(Bottom Comments)" : "전체 관리 대시보드\n(하단 코멘트)")),
-                  createCell(isVn ? "Phân tích kết quả & Triển vọng" : (isEn ? "Performance Analysis & Outlook" : "실적 분석 및 향후 전망 코멘트")),
-                  createCell(isVn ? "✍️ Nhập tay" : (isEn ? "✍️ Manual Entry" : "✍️ 수기 직접입력"), false, false, null, true),
-                  createCell(isVn ? "Khung Comment Dashboard\n(Quản trị viên chỉnh sửa trực tiếp)" : (isEn ? "Dashboard Comment Panel\n(Admin Inline Editor)" : "대시보드 코멘트 패널\n(관리자 직접 작성)")),
-                  createCell(isVn ? "mr_comments\n(Lưu theo năm và tháng báo cáo)" : (isEn ? "mr_comments\n(PUT /api/mgmtreport/comments)" : "mr_comments\n(월별/연도별 코멘트 저장)"))
-                ]
-              }),
-              // Row 4
-              new TableRow({
-                children: [
-                  createCell(isVn ? "Chi Tiết Dự Án Xây Dựng\n(Tab Khái Yếu)" : (isEn ? "Project Detail\n(Overview Tab)" : "시공 프로젝트 상세\n(개요 탭)")),
-                  createCell(isVn ? "Giá trị gói thầu / Hợp đồng (VND)" : (isEn ? "Contract Amount (VND)" : "도급액 (VND)")),
-                  createCell(isVn ? "🔄 Đồng bộ ERP" : (isEn ? "🔄 ERP Sync" : "🔄 ERP 자동동기화"), false, true, null, true),
-                  createCell(isVn ? "Đăng ký khái yếu công trình > Hợp đồng\n(공사개요등록 / TOTALCTRTWONAMT)" : (isEn ? "Construction Overview Registration\n(TOTALCTRTWONAMT)" : "공사개요등록 / 도급계약관리\n(도급합계금액)")),
-                  createCell(isVn ? "CBTB_CTRTSUMM.TOTALCTRTWONAMT\nqua dashboard_pd_overview_1q.jsp" : (isEn ? "CBTB_CTRTSUMM.TOTALCTRTWONAMT\nvia dashboard_pd_overview_1q.jsp" : "CBTB_CTRTSUMM.TOTALCTRTWONAMT\n(JSP 조회 후 pd_overview 저장)"))
-                ]
-              }),
-              // Row 5
-              new TableRow({
-                children: [
-                  createCell(isVn ? "Chi Tiết Dự Án Xây Dựng\n(Tab Khái Yếu)" : (isEn ? "Project Detail\n(Overview Tab)" : "시공 프로젝트 상세\n(개요 탭)")),
-                  createCell(isVn ? "Thời gian thi công (Khởi công - Hoàn thành)" : (isEn ? "Construction Period\n(Start & End Date)" : "공사기간 (착공일 ~ 준공일)")),
-                  createCell(isVn ? "🔄 Đồng bộ ERP" : (isEn ? "🔄 ERP Sync" : "🔄 ERP 자동동기화"), false, false, null, true),
-                  createCell(isVn ? "Khái yếu công trình > Thời gian thi công\n(STCONSTDATE / CMPLSCHDDATE)" : (isEn ? "Construction Overview Registration > Period\n(STCONSTDATE / CMPLSCHDDATE)" : "공사개요등록 > 공사기간\n(실착공일 / 실준공예정일)")),
-                  createCell(isVn ? "CBTB_CONSTPERIOD (Số lần CHGSEQ mới nhất)\nƯu tiên ngày thực tế, fallback ngày HĐ" : (isEn ? "CBTB_CONSTPERIOD (latest CHGSEQ)\nFallback to CTRTSTDATE/EDDATE" : "CBTB_CONSTPERIOD 최신 차수\n(미등록 시 계약일자 폴백)"))
-                ]
-              }),
-              // Row 6
-              new TableRow({
-                children: [
-                  createCell(isVn ? "Chi Tiết Dự Án Xây Dựng\n(Tab Khái Yếu)" : (isEn ? "Project Detail\n(Overview Tab)" : "시공 프로젝트 상세\n(개요 탭)")),
-                  createCell(isVn ? "Quy cách kỹ thuật (Quy mô, Chủ ĐT, DT sàn)" : (isEn ? "Project Specifications\n(Scale, Area, Purpose, Terms)" : "프로젝트 일반제원\n(공사규모, 연면적, 용도, 보증)")),
-                  createCell(isVn ? "✍️ Nhập tay" : (isEn ? "✍️ Manual Entry" : "✍️ 수기 직접입력"), false, true, null, true),
-                  createCell(isVn ? "Tab Nhập dữ liệu dự án > 0. Khái yếu" : (isEn ? "Data Entry Tab > 0. Overview" : "데이터 입력 탭 > 0. 개요 정보")),
-                  createCell(isVn ? "Bảng pd_overview\n(Quản trị viên cập nhật trực tiếp)" : (isEn ? "pd_overview table\n(Saved via PUT /api/projectdetail)" : "pd_overview 테이블\n(현장별 입력값 영속 저장)"))
-                ]
-              }),
-              // Row 7
-              new TableRow({
-                children: [
-                  createCell(isVn ? "Chi Tiết Dự Án Xây Dựng\n(Tab Tiến Độ)" : (isEn ? "Project Detail\n(Progress Tab)" : "시공 프로젝트 상세\n(공정 탭)")),
-                  createCell(isVn ? "Tiến độ thực tế hàng tháng (%)" : (isEn ? "Monthly Actual Progress (%)" : "월별 실적 공정률 (%)")),
-                  createCell(isVn ? "🔄 Đồng bộ ERP" : (isEn ? "🔄 ERP Sync" : "🔄 ERP 자동동기화"), false, false, null, true),
-                  createCell(isVn ? "Tỷ lệ tiến độ chi phí (%)\n(원가공정율 / 시행기성)" : (isEn ? "Cost Progress Rate (%)\nExecution Progress (Site)" : "원가공정율(%) / 시행기성(현장)\n(비목별 투입 원가)")),
-                  createCell(isVn ? "CHTB_PFMCOSTRMRK & CETB_PFMCTRTHIST\nCông thức: Chi phí / (Ngân sách - Lệch)" : (isEn ? "CHTB_PFMCOSTRMRK & CETB_PFMCTRTHIST\nFormula: SUM_COST / (BDGT - DIFF)" : "CHTB_PFMCOSTRMRK & CETB_PFMCTRTHIST\n공식: 투입원가 / (실행예산 - 결의차액)"))
-                ]
-              }),
-              // Row 8
-              new TableRow({
-                children: [
-                  createCell(isVn ? "Chi Tiết Dự Án Xây Dựng\n(Tab Tiến Độ)" : (isEn ? "Project Detail\n(Progress Tab)" : "시공 프로젝트 상세\n(공정 탭)")),
-                  createCell(isVn ? "Tiến độ kế hoạch & Mốc mốc tiến độ" : (isEn ? "Monthly Plan Progress & Milestones" : "월별 계획 공정률 및 마일스톤")),
-                  createCell(isVn ? "✍️ Nhập tay\n(File Excel)" : (isEn ? "✍️ Manual Entry\n(Excel Template)" : "✍️ 수기 직접입력\n(엑셀 템플릿 지원)"), false, true, null, true),
-                  createCell(isVn ? "Tab Nhập dữ liệu > 1. Tiến độ / 2. Mốc tiến độ" : (isEn ? "Data Entry Tab > 1. Progress / 2. Milestones" : "데이터 입력 탭 > 1. 공정률 / 2. 마일스톤")),
-                  createCell(isVn ? "pd_progress_monthly.plan_pct\npd_milestones (Hỗ trợ upload Excel)" : (isEn ? "pd_progress_monthly.plan_pct\npd_milestones (Excel upload supported)" : "pd_progress_monthly.plan_pct\npd_milestones (마일스톤 엑셀 일괄 업로드)"))
-                ]
-              }),
-              // Row 9
-              new TableRow({
-                children: [
-                  createCell(isVn ? "Chi Tiết Dự Án Xây Dựng\n(Tab Doanh Thu/Giá Vốn)" : (isEn ? "Project Detail\n(Sale/Profit Tab)" : "시공 프로젝트 상세\n(매출/원가 탭)")),
-                  createCell(isVn ? "Tỷ lệ giá vốn (Ngân sách & Ước hoàn thành)" : (isEn ? "Cost Rate Setup\n(Execution & Completion)" : "원가율 설정\n(실행예산 및 준공추정)")),
-                  createCell(isVn ? "🔄 Đồng bộ ERP" : (isEn ? "🔄 ERP Sync" : "🔄 ERP 자동동기화"), false, false, null, true),
-                  createCell(isVn ? "Màn hình Báo cáo Quyết toán Tỷ lệ Chi phí\n(Business Budget REC7, Gross Profit REC9)" : (isEn ? "Settlement Ratio Cost Screen\n(Business Budget, Gross Profit %)" : "정산원가율 리포트 화면\n(사업예산 REC7, 매출이익율 REC9)")),
-                  createCell(isVn ? "ch_cost_settle_ratio_q_1q.jsp\nLưu giá trị gốc VND & lịch sử các tháng" : (isEn ? "ch_cost_settle_ratio_q_1q.jsp\nExact VND amounts & historical months" : "ch_cost_settle_ratio_q_1q.jsp\n(VND 원본 및 전 월별 이력 저장)"))
-                ]
-              }),
-              // Row 10
-              new TableRow({
-                children: [
-                  createCell(isVn ? "Chi Tiết Dự Án Xây Dựng\n(Tab Thầu Phụ / Thuê Ngoài)" : (isEn ? "Project Detail\n(Outsourcing Tab)" : "시공 프로젝트 상세\n(외주 탭)")),
-                  createCell(isVn ? "Danh sách HĐ thầu phụ & Giá trị nghiệm thu" : (isEn ? "Subcontract List & Monthly Progress" : "외주 계약 및 월별 기성 실적")),
-                  createCell(isVn ? "🔄 Đồng bộ ERP" : (isEn ? "🔄 ERP Sync" : "🔄 ERP 자동동기화"), false, true, null, true),
-                  createCell(isVn ? "Tiến độ thanh toán thi hành (Công trường)\n(시행기성 / Đăng ký chi tiết BOQ)" : (isEn ? "Execution Progress (Site)\nRequest Execution Resolution" : "시행기성(현장) / (외주)내역입찰\n(도급예산, 실행예산, 결의금액, 당월/누계기성)")),
-                  createCell(isVn ? "CDTB_ORDCONTTYPE, CETB_PFMCTRTHIST\nCETB_PFMSCHDHIST qua dashboard_pd_outsourcing" : (isEn ? "CDTB_ORDCONTTYPE, CETB_PFMCTRTHIST\nCETB_PFMSCHDHIST via dashboard_pd_outsourcing" : "CDTB_ORDCONTTYPE, CETB_PFMCTRTHIST\n(VND 원본 저장으로 환율 왜곡 방지)"))
-                ]
-              }),
-              // Row 11
-              new TableRow({
-                children: [
-                  createCell(isVn ? "Chi Tiết Dự Án Xây Dựng\n(Tab Chi Phí / CBS)" : (isEn ? "Project Detail\n(Costing Tab)" : "시공 프로젝트 상세\n(비용 탭)")),
-                  createCell(isVn ? "Tình hình giải ngân theo cây chi phí CBS" : (isEn ? "CBS Budget Execution\n(Direct / Indirect / Contingency)" : "CBS 비목별 예산 집행 현황\n(직접비, 간접비, 예비비)")),
-                  createCell(isVn ? "🔄 Đồng bộ ERP" : (isEn ? "🔄 ERP Sync" : "🔄 ERP 자동동기화"), false, false, null, true),
-                  createCell(isVn ? "Tờ trình ngân sách thực hiện > Chi tiết chi phí\n(실행예산품의서 / 비목별 원가투입 현황)" : (isEn ? "Execution Budget Proposal > Breakdown\nCost Input Status by Execution Details" : "실행예산품의서 / 비목별 원가투입 현황\n(표준 CBS 트리 분류)")),
-                  createCell(isVn ? "CATB_STNDCBS & CHTB_PFMCOSTRMRK\nTrực tiếp (Thầu phụ/Chung/CP1), Gián tiếp (CP2)" : (isEn ? "CATB_STNDCBS & CHTB_PFMCOSTRMRK\nDirect(Outsourcing/Common/Exp1), Indirect(Exp2)" : "CATB_STNDCBS & CHTB_PFMCOSTRMRK\n(표준 CBS 잎사귀 노드 기반 100% 일치 매핑)"))
-                ]
-              }),
-              // Row 12
-              new TableRow({
-                children: [
-                  createCell(isVn ? "Chi Tiết Dự Án Xây Dựng\n(Tab Dòng Tiền)" : (isEn ? "Project Detail\n(Cash Flow Tab)" : "시공 프로젝트 상세\n(자금수지 탭)")),
-                  createCell(isVn ? "Dòng tiền dự án (Thu, Chi, Số dư)" : (isEn ? "Project Monthly Cash Flow" : "프로젝트 월별 자금 입출금")),
-                  createCell(isVn ? "🔄 Đồng bộ ERP" : (isEn ? "🔄 ERP Sync" : "🔄 ERP 자동동기화"), false, true, null, true),
-                  createCell(isVn ? "Biến động quỹ công trường (Tiền mặt/Tiền gửi)\n(1.현장자금변동 / CFTB_CFTRANSACTION)" : (isEn ? "1. Site Fund Movement (Cash / Bank)\nCash Flow Transactions" : "1.현장자금변동(현금/예금)\n(입금, 출금, 기초잔액)")),
-                  createCell(isVn ? "CFTB_CFTRANSACTION, CFTB_OPENINGBALANCE\nFallback dữ liệu excel dòng tiền nếu chưa có" : (isEn ? "CFTB_CFTRANSACTION, CFTB_OPENINGBALANCE\nFallback to uploaded CF excel if missing" : "CFTB_CFTRANSACTION, CFTB_OPENINGBALANCE\n(ERP 미등록 시 자금수지 엑셀 데이터 사전채움)"))
-                ]
-              })
-            ]
+            rows: buildLineageTableRows(lang)
           }),
 
           // Section 3: User Operations Guide
@@ -554,7 +585,11 @@ async function main() {
   console.log('Word document generation (VN, EN, KR) completed successfully!');
 }
 
-main().catch(err => {
-  console.error('Error generating Word docs:', err);
-  process.exit(1);
-});
+module.exports = { TYPE, SCREEN, LINEAGE_ROWS };
+
+if (require.main === module) {
+  main().catch(err => {
+    console.error('Error generating Word docs:', err);
+    process.exit(1);
+  });
+}
