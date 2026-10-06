@@ -127,8 +127,13 @@ export const PutFxRatesResponse = zod.object({
 /**
  * @summary Full monthly FX rate history (all currencies, all declared months)
  */
+export const GetFxRatesHistoryQueryParams = zod.object({
+  "purpose": zod.enum(['actual_forecast', 'plan']).optional().describe('주어지면 해당 purpose(actual_forecast | plan)만 필터링. 생략 시 전체(모든 purpose) 반환.')
+})
+
 export const getFxRatesHistoryResponseMonthMax = 12;
 
+export const getFxRatesHistoryResponsePurposeDefault = `actual_forecast`;
 export const getFxRatesHistoryResponseRateExclusiveMin = 0;
 
 
@@ -137,6 +142,7 @@ export const GetFxRatesHistoryResponseItem = zod.object({
   "currency": zod.enum(['USD', 'KRW', 'VND']),
   "year": zod.number(),
   "month": zod.number().min(1).max(getFxRatesHistoryResponseMonthMax),
+  "purpose": zod.enum(['actual_forecast', 'plan']).default(getFxRatesHistoryResponsePurposeDefault).describe('actual_forecast: 실적\/전망 환산용(기본값). plan: 계획 매출 환산용 — 같은 연\/월이라도 실적\/전망과 다른 환율을 따로 보관한다.'),
   "rate": zod.number().gt(getFxRatesHistoryResponseRateExclusiveMin)
 }).describe('특정 통화·연·월의 환율 (1 USD 기준)')
 export const GetFxRatesHistoryResponse = zod.array(GetFxRatesHistoryResponseItem)
@@ -147,6 +153,7 @@ export const GetFxRatesHistoryResponse = zod.array(GetFxRatesHistoryResponseItem
  */
 export const putFxRatesHistoryBodyMonthMax = 12;
 
+export const putFxRatesHistoryBodyPurposeDefault = `actual_forecast`;
 export const putFxRatesHistoryBodyRateExclusiveMin = 0;
 
 
@@ -155,11 +162,13 @@ export const PutFxRatesHistoryBody = zod.object({
   "currency": zod.enum(['USD', 'KRW', 'VND']),
   "year": zod.number(),
   "month": zod.number().min(1).max(putFxRatesHistoryBodyMonthMax),
+  "purpose": zod.enum(['actual_forecast', 'plan']).default(putFxRatesHistoryBodyPurposeDefault).describe('actual_forecast: 실적\/전망 환산용(기본값). plan: 계획 매출 환산용 — 같은 연\/월이라도 실적\/전망과 다른 환율을 따로 보관한다.'),
   "rate": zod.number().gt(putFxRatesHistoryBodyRateExclusiveMin)
 }).describe('특정 통화·연·월의 환율 (1 USD 기준)')
 
 export const putFxRatesHistoryResponseMonthMax = 12;
 
+export const putFxRatesHistoryResponsePurposeDefault = `actual_forecast`;
 export const putFxRatesHistoryResponseRateExclusiveMin = 0;
 
 
@@ -168,6 +177,7 @@ export const PutFxRatesHistoryResponse = zod.object({
   "currency": zod.enum(['USD', 'KRW', 'VND']),
   "year": zod.number(),
   "month": zod.number().min(1).max(putFxRatesHistoryResponseMonthMax),
+  "purpose": zod.enum(['actual_forecast', 'plan']).default(putFxRatesHistoryResponsePurposeDefault).describe('actual_forecast: 실적\/전망 환산용(기본값). plan: 계획 매출 환산용 — 같은 연\/월이라도 실적\/전망과 다른 환율을 따로 보관한다.'),
   "rate": zod.number().gt(putFxRatesHistoryResponseRateExclusiveMin)
 }).describe('특정 통화·연·월의 환율 (1 USD 기준)')
 

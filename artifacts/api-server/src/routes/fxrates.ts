@@ -1,9 +1,11 @@
 import { Router, type IRouter } from "express";
+import { and, eq } from "drizzle-orm";
 import { db, fxRatesTable } from "@workspace/db";
 import {
   GetFxRatesResponse,
   PutFxRatesBody,
   PutFxRatesResponse,
+  GetFxRatesHistoryQueryParams,
   GetFxRatesHistoryResponse,
   PutFxRatesHistoryBody,
   PutFxRatesHistoryResponse,
@@ -76,7 +78,8 @@ router.get("/fxrates", async (req, res) => {
       return;
     }
 
-    const rows = await db.select().from(fxRatesTable);
+    // "현재 환율" 폴백은 실적/전망용 환율만 봐야 한다(계획 환율은 별도 용도라 섞이면 안 됨).
+    const rows = await db.select().from(fxRatesTable).where(eq(fxRatesTable.purpose, "actual_forecast"));
     const { year: curYear, month: curMonth } = currentYearMonth();
     const getLatestRate = (curr: "USD" | "KRW" | "VND"): number => {
       const filtered = rows.filter(
@@ -122,9 +125,9 @@ router.put("/fxrates", requireAdmin, async (req, res) => {
     for (const e of entries) {
       await db
         .insert(fxRatesTable)
-        .values({ currency: e.currency, year, month, rate: e.rate, updatedAt: new Date() })
+        .values({ currency: e.currency, year, month, purpose: "actual_forecast", rate: e.rate, updatedAt: new Date() })
         .onConflictDoUpdate({
-          target: [fxRatesTable.currency, fxRatesTable.year, fxRatesTable.month],
+          target: [fxRatesTable.currency, fxRatesTable.year, fxRatesTable.month, fxRatesTable.purpose],
           set: { rate: e.rate, updatedAt: new Date() },
         });
     }
@@ -140,8 +143,16 @@ router.put("/fxrates", requireAdmin, async (req, res) => {
 });
 
 router.get("/fxrates/history", async (req, res) => {
+  const parsedQuery = GetFxRatesHistoryQueryParams.safeParse(req.query);
+  if (!parsedQuery.success) {
+    res.status(400).json({ error: "잘못된 요청 파라미터입니다." });
+    return;
+  }
+  const { purpose } = parsedQuery.data;
   try {
-    const rows = await db.select().from(fxRatesTable);
+    const rows = purpose
+      ? await db.select().from(fxRatesTable).where(eq(fxRatesTable.purpose, purpose))
+      : await db.select().from(fxRatesTable);
     type FxRateRow = typeof fxRatesTable.$inferSelect;
     const sorted = [...rows].sort((a: FxRateRow, b: FxRateRow) =>
       a.currency !== b.currency
@@ -152,7 +163,13 @@ router.get("/fxrates/history", async (req, res) => {
     );
     res.json(
       GetFxRatesHistoryResponse.parse(
-        sorted.map((r: FxRateRow) => ({ currency: r.currency, year: r.year, month: r.month, rate: r.rate })),
+        sorted.map((r: FxRateRow) => ({
+          currency: r.currency,
+          year: r.year,
+          month: r.month,
+          purpose: r.purpose,
+          rate: r.rate,
+        })),
       ),
     );
   } catch (err) {
@@ -167,17 +184,17 @@ router.put("/fxrates/history", requireAdmin, async (req, res) => {
     res.status(400).json({ error: "환율 값이 올바르지 않습니다. 통화·연·월·환율을 확인해 주세요." });
     return;
   }
-  const { currency, year, month, rate: rawRate } = parsed.data;
+  const { currency, year, month, purpose, rate: rawRate } = parsed.data;
   const rate = roundRate(currency, rawRate);
   try {
     await db
       .insert(fxRatesTable)
-      .values({ currency, year, month, rate, updatedAt: new Date() })
+      .values({ currency, year, month, purpose, rate, updatedAt: new Date() })
       .onConflictDoUpdate({
-        target: [fxRatesTable.currency, fxRatesTable.year, fxRatesTable.month],
+        target: [fxRatesTable.currency, fxRatesTable.year, fxRatesTable.month, fxRatesTable.purpose],
         set: { rate, updatedAt: new Date() },
       });
-    res.json(PutFxRatesHistoryResponse.parse({ currency, year, month, rate }));
+    res.json(PutFxRatesHistoryResponse.parse({ currency, year, month, purpose, rate }));
   } catch (err) {
     req.log.error({ err }, "failed to save fx rate history entry");
     res.status(500).json({ error: "환율 이력 저장에 실패했습니다." });

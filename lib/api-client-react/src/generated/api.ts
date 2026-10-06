@@ -40,6 +40,7 @@ import type {
   FxRates,
   GetCashflowAggregateParams,
   GetCashflowMonthlyParams,
+  GetFxRatesHistoryParams,
   GetOrderDetailsParams,
   GetPimsvinaSiterateParams,
   GetProjectdetailParams,
@@ -562,20 +563,27 @@ export const usePutFxRates = <TError = ErrorType<ApiErrorMessage>,
       return useMutation(getPutFxRatesMutationOptions(options));
     }
 
-export const getGetFxRatesHistoryUrl = () => {
+export const getGetFxRatesHistoryUrl = (params?: GetFxRatesHistoryParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/api/fxrates/history`
+  return stringifiedParams.length > 0 ? `/api/fxrates/history?${stringifiedParams}` : `/api/fxrates/history`
 }
 
 /**
  * @summary Full monthly FX rate history (all currencies, all declared months)
  */
-export const getFxRatesHistory = async ( options?: RequestInit): Promise<FxRateHistoryEntry[]> => {
+export const getFxRatesHistory = async (params?: GetFxRatesHistoryParams, options?: RequestInit): Promise<FxRateHistoryEntry[]> => {
 
-  return customFetch<FxRateHistoryEntry[]>(getGetFxRatesHistoryUrl(),
+  return customFetch<FxRateHistoryEntry[]>(getGetFxRatesHistoryUrl(params),
   {
     ...options,
     method: 'GET'
@@ -588,23 +596,23 @@ export const getFxRatesHistory = async ( options?: RequestInit): Promise<FxRateH
 
 
 
-export const getGetFxRatesHistoryQueryKey = () => {
+export const getGetFxRatesHistoryQueryKey = (params?: GetFxRatesHistoryParams,) => {
     return [
-    `/api/fxrates/history`
+    `/api/fxrates/history`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getGetFxRatesHistoryQueryOptions = <TData = Awaited<ReturnType<typeof getFxRatesHistory>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFxRatesHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetFxRatesHistoryQueryOptions = <TData = Awaited<ReturnType<typeof getFxRatesHistory>>, TError = ErrorType<unknown>>(params?: GetFxRatesHistoryParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFxRatesHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetFxRatesHistoryQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getGetFxRatesHistoryQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFxRatesHistory>>> = ({ signal }) => getFxRatesHistory({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFxRatesHistory>>> = ({ signal }) => getFxRatesHistory(params, { signal, ...requestOptions });
 
 
 
@@ -622,11 +630,11 @@ export type GetFxRatesHistoryQueryError = ErrorType<unknown>
  */
 
 export function useGetFxRatesHistory<TData = Awaited<ReturnType<typeof getFxRatesHistory>>, TError = ErrorType<unknown>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFxRatesHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+ params?: GetFxRatesHistoryParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFxRatesHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetFxRatesHistoryQueryOptions(options)
+  const queryOptions = getGetFxRatesHistoryQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

@@ -195,6 +195,14 @@ paths:
       operationId: getFxRatesHistory
       tags: [fxrates]
       summary: Full monthly FX rate history (all currencies, all declared months)
+      parameters:
+        - name: purpose
+          in: query
+          required: false
+          description: "주어지면 해당 purpose(actual_forecast | plan)만 필터링. 생략 시 전체(모든 purpose) 반환."
+          schema:
+            type: string
+            enum: [actual_forecast, plan]
       responses:
         "200":
           description: FX rate history
@@ -1435,6 +1443,11 @@ components:
           type: integer
           minimum: 1
           maximum: 12
+        purpose:
+          type: string
+          description: "actual_forecast: 실적/전망 환산용(기본값). plan: 계획 매출 환산용 — 같은 연/월이라도 실적/전망과 다른 환율을 따로 보관한다."
+          enum: [actual_forecast, plan]
+          default: actual_forecast
         rate:
           type: number
           exclusiveMinimum: 0

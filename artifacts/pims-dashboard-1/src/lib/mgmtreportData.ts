@@ -556,8 +556,10 @@ export function useDashboardData(rateMode: "monthly" | "current" = "monthly") {
       rateMode === "current"
         ? makeCurrentRateConverter(filters.currency, filters.unitIndex, filters.fxRates)
         : makeConverter(filters.currency, filters.unitIndex, filters.fxRateHistory);
+    // unitIndex 1 = "K USD"(1,000으로 나눈 값) 상태 — 토글 꺼짐(0)은 이제 환산 없는 실제 USD 값이라
+    // 이 특수 라벨(현지화된 "천 USD"/"Nghìn USD")이 필요 없다.
     const unitLabel =
-      filters.currency === "USD" && filters.unitIndex === 0
+      filters.currency === "USD" && filters.unitIndex === 1
         ? thousandUsdLabel
         : unitLabelOf(filters.currency, filters.unitIndex);
 

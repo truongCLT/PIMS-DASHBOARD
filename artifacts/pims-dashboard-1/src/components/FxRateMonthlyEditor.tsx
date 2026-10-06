@@ -87,13 +87,17 @@ export function FxRateMonthlyEditor() {
   // 이 탭은 "실적 마감 여부"와 무관하게, 매출 실적/전망 환산에 쓸 환율을 연도 전체(1~12월)에
   // 대해 미리 입력해 둘 수 있어야 한다(9~12월 전망 환율도 포함). 원가/매출 보고서의 "기준월
   // 상한"(lastClosedYearMonth)은 여기 적용 대상이 아니다.
+  // 월 선택란에 "계획"을 1~12월과 같은 드롭다운 옵션으로 넣는다(PLAN_MONTH 센티널 값).
+  // "계획"을 고르고 저장하면 입력한 KRW/VND를 선택한 연도의 1~12월 전체에 동일하게 반영한다
+  // (본사에서 내려주는 연간 계획 환율은 월별로 따로 입력할 필요가 없어서).
+  const PLAN_MONTH = 0;
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [krw, setKrw] = useState("");
   const [vnd, setVnd] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  const historyQuery = useGetFxRatesHistory({
+  const historyQuery = useGetFxRatesHistory(undefined, {
     query: { queryKey: getGetFxRatesHistoryQueryKey(), enabled: open && tab === "monthly" },
   });
   const history = historyQuery.data ?? [];
@@ -108,8 +112,18 @@ export function FxRateMonthlyEditor() {
 
   useEffect(() => {
     if (!open || tab !== "monthly") return;
-    const krwRow = history.find((r) => r.currency === "KRW" && r.year === year && r.month === month);
-    const vndRow = history.find((r) => r.currency === "VND" && r.year === year && r.month === month);
+    if (month === PLAN_MONTH) {
+      // 계획은 연도당 1건으로 취급 — 1월 자리에 저장된 purpose="plan" 행을 보여준다
+      // (저장 시 1~12월 전체에 같은 값을 반영하므로 아무 달이나 대표로 조회해도 된다).
+      const krwRow = history.find((r) => r.currency === "KRW" && r.year === year && r.month === 1 && r.purpose === "plan");
+      const vndRow = history.find((r) => r.currency === "VND" && r.year === year && r.month === 1 && r.purpose === "plan");
+      setKrw(krwRow ? formatRateDisplay(String(krwRow.rate)) : "");
+      setVnd(vndRow ? formatRateDisplay(String(vndRow.rate)) : "");
+      setError(null);
+      return;
+    }
+    const krwRow = history.find((r) => r.currency === "KRW" && r.year === year && r.month === month && (r.purpose ?? "actual_forecast") === "actual_forecast");
+    const vndRow = history.find((r) => r.currency === "VND" && r.year === year && r.month === month && (r.purpose ?? "actual_forecast") === "actual_forecast");
     setKrw(krwRow ? formatRateDisplay(String(krwRow.rate)) : "");
     setVnd(vndRow ? formatRateDisplay(String(vndRow.rate)) : "");
     setError(null);
@@ -178,14 +192,42 @@ export function FxRateMonthlyEditor() {
       return;
     }
     setError(null);
-    try {
-      await putMonthlyMutation.mutateAsync({ data: { currency: "KRW", year, month, rate: krwNum } });
-      await putMonthlyMutation.mutateAsync({ data: { currency: "VND", year, month, rate: vndNum } });
+    if (month === PLAN_MONTH) {
+      // "계획" 선택 시 선택한 연도의 1~12월 전체에 같은 값을 반영한다 — purpose="plan"(계획 매출
+      // 환산용)뿐 아니라 purpose="actual_forecast"(실적/전망 환산용, 월별 탭이 보는 행)에도 같이
+      // 써서 그 달의 환율 자체를 계획값으로 덮어쓴다(실사용자 요청: 계획 저장 시 월별 환율도 같이
+      // 갱신). 이후 특정 달을 따로 수정하면 그 달의 actual_forecast 값만 바뀐다.
+      // 한 달 저장이 실패해도 나머지 달 저장을 계속 시도한다(이전에 한 달에서 실패하면 그 뒤
+      // 달들이 전부 저장되지 않고 조용히 빠지는 문제가 있었다) — 실패한 달이 있으면 모아서 에러로
+      // 알려준다.
+      const failedMonths: number[] = [];
+      for (let m = 1; m <= 12; m++) {
+        try {
+          await putMonthlyMutation.mutateAsync({ data: { currency: "KRW", year, month: m, purpose: "plan", rate: krwNum } });
+          await putMonthlyMutation.mutateAsync({ data: { currency: "VND", year, month: m, purpose: "plan", rate: vndNum } });
+          await putMonthlyMutation.mutateAsync({ data: { currency: "KRW", year, month: m, purpose: "actual_forecast", rate: krwNum } });
+          await putMonthlyMutation.mutateAsync({ data: { currency: "VND", year, month: m, purpose: "actual_forecast", rate: vndNum } });
+        } catch {
+          failedMonths.push(m);
+        }
+      }
       await queryClient.invalidateQueries({ queryKey: getGetFxRatesHistoryQueryKey() });
       await queryClient.invalidateQueries({ queryKey: getGetFxRatesQueryKey() });
+      if (failedMonths.length > 0) {
+        setError(`${t("fxRateEditor:saveFailed")} (${failedMonths.join(", ")})`);
+        return;
+      }
       setOpen(false);
-    } catch {
-      setError(t("fxRateEditor:saveFailed"));
+    } else {
+      try {
+        await putMonthlyMutation.mutateAsync({ data: { currency: "KRW", year, month, purpose: "actual_forecast", rate: krwNum } });
+        await putMonthlyMutation.mutateAsync({ data: { currency: "VND", year, month, purpose: "actual_forecast", rate: vndNum } });
+        await queryClient.invalidateQueries({ queryKey: getGetFxRatesHistoryQueryKey() });
+        await queryClient.invalidateQueries({ queryKey: getGetFxRatesQueryKey() });
+        setOpen(false);
+      } catch {
+        setError(t("fxRateEditor:saveFailed"));
+      }
     }
   };
 
@@ -318,6 +360,7 @@ export function FxRateMonthlyEditor() {
                 <div style={{ fontSize: "12px", fontWeight: 700, color: "#16294a", marginBottom: "10px" }}>
                   {t("fxRateEditor:monthlyPopupTitle")}
                 </div>
+
                 <div style={{ display: "flex", gap: "6px", marginBottom: "8px" }}>
                   <select
                     value={year}
@@ -329,13 +372,20 @@ export function FxRateMonthlyEditor() {
                     ))}
                   </select>
                   <select value={month} onChange={(e) => setMonth(Number(e.target.value))} style={selectStyle}>
-                    {/* 매출 실적/전망 환산용 환율이므로 선택한 연도의 1~12월 전체를 고를 수 있어야
+                    {/* "계획"을 고르면 입력한 값이 저장 시 1~12월 전체에 일괄 반영된다. 그 외에는
+                        매출 실적/전망 환산용 환율이므로 선택한 연도의 1~12월 전체를 고를 수 있어야
                         한다(전망 월도 미리 환율을 입력해야 해서 마감 규칙으로 제한하지 않는다). */}
+                    <option value={PLAN_MONTH}>{t("fxRateEditor:planOption")}</option>
                     {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
                       <option key={m} value={m}>{t("projectDataEntryTab:monthSuffix", { month: m })}</option>
                     ))}
                   </select>
                 </div>
+                {month === PLAN_MONTH && (
+                  <div style={{ fontSize: "11px", color: "#8a6d1e", marginBottom: "8px" }}>
+                    {t("fxRateEditor:planHint")}
+                  </div>
+                )}
                 <div style={{ marginBottom: "8px" }}>
                   <div style={labelStyle}>USD</div>
                   <input value="1" disabled style={{ ...inputStyle, backgroundColor: "#f2f5f8", color: "#8a94a3" }} />

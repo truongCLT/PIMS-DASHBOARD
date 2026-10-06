@@ -64,9 +64,14 @@ export async function applyCashflowImport(parsed: ParsedCashflow) {
     // import 시점에 바로 정식 반영한다(사용자가 그 프로젝트에서 직접 입력/수정한 confirmedProgress
     // 등 다른 칸은 그대로 두고, Cash In/Out/Equivalent만 덮어쓴다).
     for (const [projectName, monthMap] of byNameMonth) {
-      for (const [monthKey, { cashIn, cashOut }] of monthMap) {
-        // 화면 표시와 동일한 규칙: 누적(이월) 없이 그 달 Cash In - Cash Out만 Equivalent로 쓴다.
-        const equivalent = Math.round(cashIn) - Math.round(cashOut);
+      // 화면 표시와 동일한 규칙: Equivalent = 잔여자금(프로젝트 시작월부터의 누적 Cash In - Cash Out).
+      // monthMap은 Map 삽입 순서이므로 연/월 오름차순으로 정렬한 뒤 누적한다.
+      const sortedMonths = Array.from(monthMap.keys()).sort();
+      let running = 0;
+      for (const monthKey of sortedMonths) {
+        const { cashIn, cashOut } = monthMap.get(monthKey)!;
+        running += Math.round(cashIn) - Math.round(cashOut);
+        const equivalent = running;
         const [year, month] = monthKey.slice(0, 7).split("-").map(Number);
         await tx
           .insert(pdCashflowMonthlyTable)

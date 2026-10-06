@@ -152,14 +152,24 @@ router.get("/cashflow/monthly", async (req, res) => {
       }
     }
 
+    // Equivalent = 잔여자금(누적 잔액). pre2023 버킷이 개시 전 누계를 담고 있으므로, byMonth에
+    // 있는 모든 월(요청 구간 밖 포함)을 연대순으로 먼저 훑어 누적한 뒤 요청 구간만 뽑아 쓴다.
+    const allKeys = Array.from(new Set([...byMonth.keys(), ...requested])).sort();
+    let running = 0;
+    const cumulativeByMonth = new Map<string, number>();
+    for (const key of allKeys) {
+      const rec = byMonth.get(key) ?? { cashIn: 0, cashOut: 0 };
+      running += rec.cashIn - rec.cashOut;
+      cumulativeByMonth.set(key, running);
+    }
+
     const points = requested.map((key) => {
       const rec = byMonth.get(key) ?? { cashIn: 0, cashOut: 0 };
-      // 누적(이월) 없이 그 달 Cash In - Cash Out만 Equivalent로 쓴다(프로젝트 상세 화면과 동일 규칙).
       return {
         month: key,
         cashIn: Math.round(rec.cashIn * 100) / 100,
         cashOut: Math.round(rec.cashOut * 100) / 100,
-        equivalent: Math.round((rec.cashIn - rec.cashOut) * 100) / 100,
+        equivalent: Math.round((cumulativeByMonth.get(key) ?? 0) * 100) / 100,
       };
     });
 
@@ -262,14 +272,24 @@ router.get("/cashflow/aggregate", async (req, res) => {
       }
     }
 
+    // Equivalent = 잔여자금(누적 잔액). pre2023 버킷이 개시 전 누계를 담고 있으므로, byMonth에
+    // 있는 모든 월(요청 구간 밖 포함)을 연대순으로 먼저 훑어 누적한 뒤 요청 구간만 뽑아 쓴다.
+    const allKeys = Array.from(new Set([...byMonth.keys(), ...requested])).sort();
+    let running = 0;
+    const cumulativeByMonth = new Map<string, number>();
+    for (const key of allKeys) {
+      const rec = byMonth.get(key) ?? { cashIn: 0, cashOut: 0 };
+      running += rec.cashIn - rec.cashOut;
+      cumulativeByMonth.set(key, running);
+    }
+
     const points = requested.map((key) => {
       const rec = byMonth.get(key) ?? { cashIn: 0, cashOut: 0 };
-      // 누적(이월) 없이 그 달 Cash In - Cash Out만 Equivalent로 쓴다(프로젝트 상세 화면과 동일 규칙).
       return {
         month: key,
         cashIn: Math.round(rec.cashIn * 100) / 100,
         cashOut: Math.round(rec.cashOut * 100) / 100,
-        equivalent: Math.round((rec.cashIn - rec.cashOut) * 100) / 100,
+        equivalent: Math.round((cumulativeByMonth.get(key) ?? 0) * 100) / 100,
       };
     });
 

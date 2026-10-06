@@ -129,8 +129,8 @@ export function SalesSection({
   // "월별 매출 환율 설정"에 그 달 환율이 있으면 그걸로, 없으면 기존(현재/계약) 환율로 변환한다 — 이
   // 차트/누계에 표시되는 매출 수치는 전부 이 함수로 먼저 변환한 "이미 변환된 값"이고, 아래 fmtMoney는
   // (status 카드의 원본 천 USD 로직과 겹치지 않도록) 그 값을 그대로 포맷만 한다.
-  const convertForMonth = (v: number, year: number, month: number) => {
-    const monthlyRates = getRatesForMonth(year, month);
+  const convertForMonth = (v: number, year: number, month: number, purpose: "actual_forecast" | "plan" = "actual_forecast") => {
+    const monthlyRates = getRatesForMonth(year, month, purpose);
     return monthlyRates ? convertMoney(v, currency, unitOn, monthlyRates) : convert(v);
   };
   const fmtMoney = (v: number | null | undefined) =>
@@ -152,8 +152,8 @@ export function SalesSection({
     const rawActual = actualMonths[index] ?? null;
     // 달성률(rate)은 같은 달의 계획/실적을 같은 환율로 변환한 값끼리 비교하므로 원본이든 변환값이든
     // 비율은 동일하다 — 변환된 값으로 계산해 일관성을 유지한다.
-    const plan = rawPlan == null ? null : convertForMonth(rawPlan, REPORT_YEAR, index + 1);
-    const actual = rawActual == null ? null : convertForMonth(rawActual, REPORT_YEAR, index + 1);
+    const plan = rawPlan == null ? null : convertForMonth(rawPlan, REPORT_YEAR, index + 1, "plan");
+    const actual = rawActual == null ? null : convertForMonth(rawActual, REPORT_YEAR, index + 1, "actual_forecast");
     const rawRate = isForecast ? null : ratioPct(actual, plan);
     return {
       month: `${index + 1}월`,
@@ -198,7 +198,7 @@ export function SalesSection({
         const raw = row[key];
         if (raw == null) return null;
         return row.year != null && typeof row.month === "number"
-          ? convertForMonth(raw, row.year, row.month)
+          ? convertForMonth(raw, row.year, row.month, key === "plan" ? "plan" : "actual_forecast")
           : raw;
       })
       .filter((value): value is number => value != null);
@@ -220,7 +220,7 @@ export function SalesSection({
   // 환율로 변환한다(위 매출 수치들과 동일한 변환 체계를 맞추기 위함 — fmtMoney가 더 이상 환율 변환을
   // 하지 않고 그대로 포맷만 하므로, 여기서 안 바꾸면 이 값만 원본 천 USD로 남아 단위가 어긋난다).
   const overallSummary = makeSummary(
-    contractAmountKUsd == null ? null : convertForMonth(contractAmountKUsd, REPORT_YEAR, refMonth),
+    contractAmountKUsd == null ? null : convertForMonth(contractAmountKUsd, REPORT_YEAR, refMonth, "plan"),
     sumValues(overallActualRows, "actual"),
   );
 

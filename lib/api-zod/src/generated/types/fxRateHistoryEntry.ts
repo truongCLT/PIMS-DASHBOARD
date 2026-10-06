@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { FxRateHistoryEntryCurrency } from './fxRateHistoryEntryCurrency';
+import type { FxRateHistoryEntryPurpose } from './fxRateHistoryEntryPurpose';
 
 /**
  * 특정 통화·연·월의 환율 (1 USD 기준)
@@ -18,6 +19,8 @@ export interface FxRateHistoryEntry {
      * @maximum 12
      */
   month: number;
+  /** actual_forecast: 실적/전망 환산용(기본값). plan: 계획 매출 환산용 — 같은 연/월이라도 실적/전망과 다른 환율을 따로 보관한다. */
+  purpose?: FxRateHistoryEntryPurpose;
   /** @exclusiveMinimum 0 */
   rate: number;
 }

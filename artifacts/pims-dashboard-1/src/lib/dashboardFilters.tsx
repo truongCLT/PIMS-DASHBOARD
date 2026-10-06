@@ -53,17 +53,19 @@ export function lookupFxRate(
   return best?.rate ?? FX_RATES[currency] ?? 1;
 }
 
+// 토글 꺼짐(index 0) = 환산 없이 실제 통화 금액 그대로("정확한 환율" 값). 켜짐(index 1) = 보기 편한
+// 축약 단위(USD/KRW는 1,000으로, VND는 1,000,000,000("1 tỷ")으로 나눔).
 export const UNIT_OPTIONS: Record<CurrencyCode, [string, string]> = {
-  USD: ["K USD", "USD"],
-  VND: ["M VND", "Bil. VND"],
-  KRW: ["M KRW", "Bil. KRW"],
+  USD: ["USD", "K USD"],
+  VND: ["VND", "Bil. VND"],
+  KRW: ["KRW", "K KRW"],
 };
 
 /* 단위 나누는 값 (원 단위 통화 금액 기준) */
 const UNIT_DIVISORS: Record<CurrencyCode, [number, number]> = {
-  USD: [1e3, 1],
-  VND: [1e6, 1e9],
-  KRW: [1e6, 1e9],
+  USD: [1, 1e3],
+  VND: [1, 1e9],
+  KRW: [1, 1e3],
 };
 
 /**
@@ -146,7 +148,8 @@ export const DEFAULT_FILTERS: DashboardFilterState = {
   endYm: "",
   period: "Month",
   currency: "USD",
-  unitIndex: 0,
+  // 기본값: 토글 켜짐(축약 단위 — K USD/K KRW/Bil. VND)
+  unitIndex: 1,
 };
 
 const FilterContext = createContext<DashboardFilterContextValue | null>(null);

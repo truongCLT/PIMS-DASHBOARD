@@ -38,6 +38,17 @@ export const FxRateHistoryEntryCurrency = {
 } as const;
 
 /**
+ * actual_forecast: 실적/전망 환산용(기본값). plan: 계획 매출 환산용 — 같은 연/월이라도 실적/전망과 다른 환율을 따로 보관한다.
+ */
+export type FxRateHistoryEntryPurpose = typeof FxRateHistoryEntryPurpose[keyof typeof FxRateHistoryEntryPurpose];
+
+
+export const FxRateHistoryEntryPurpose = {
+  actual_forecast: 'actual_forecast',
+  plan: 'plan',
+} as const;
+
+/**
  * 특정 통화·연·월의 환율 (1 USD 기준)
  */
 export interface FxRateHistoryEntry {
@@ -48,6 +59,8 @@ export interface FxRateHistoryEntry {
      * @maximum 12
      */
   month: number;
+  /** actual_forecast: 실적/전망 환산용(기본값). plan: 계획 매출 환산용 — 같은 연/월이라도 실적/전망과 다른 환율을 따로 보관한다. */
+  purpose?: FxRateHistoryEntryPurpose;
   /** @exclusiveMinimum 0 */
   rate: number;
 }
@@ -920,6 +933,21 @@ export interface ErrorEnvelope {
 export interface HealthStatus {
   status: string;
 }
+
+export type GetFxRatesHistoryParams = {
+/**
+ * 주어지면 해당 purpose(actual_forecast | plan)만 필터링. 생략 시 전체(모든 purpose) 반환.
+ */
+purpose?: GetFxRatesHistoryPurpose;
+};
+
+export type GetFxRatesHistoryPurpose = typeof GetFxRatesHistoryPurpose[keyof typeof GetFxRatesHistoryPurpose];
+
+
+export const GetFxRatesHistoryPurpose = {
+  actual_forecast: 'actual_forecast',
+  plan: 'plan',
+} as const;
 
 export type GetPimsvinaSiterateParams = {
 siteCode: string;

@@ -7,5 +7,7 @@
   "monthlyPopupTitle": "월별 매출 환율 설정 (USD 기준)",
   "saveFailed": "환율 저장에 실패했습니다.",
   "invalidNumber": "0보다 큰 숫자를 입력해 주세요.",
-  "saving": "저장 중…"
+  "saving": "저장 중…",
+  "planOption": "계획",
+  "planHint": "\"계획\"으로 저장하면 입력한 값이 선택한 연도의 1~12월 전체에 반영됩니다."
 }
