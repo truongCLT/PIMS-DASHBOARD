@@ -31,9 +31,9 @@ function normalizeRateInput(raw: string): string {
     decimalPos = Math.max(lastDot, lastComma);
   } else if (lastDot >= 0 || lastComma >= 0) {
     const pos = Math.max(lastDot, lastComma);
-    // 구분자가 하나뿐이면, 그 뒤 자릿수가 1~2개일 때만 소수점으로 본다(예: "25985,5" → 소수,
-    // "1.600" → 천단위 구분으로 보고 정수로 처리).
-    if (s.length - pos - 1 <= 2) decimalPos = pos;
+    // 구분자가 하나뿐이면, 그 뒤 자릿수가 정확히 3개일 때만 천단위 구분으로 본다(예: "1.600").
+    // 그 외(1~2자리, 또는 VND 환율처럼 4자리 이상인 "0.05570")는 소수점으로 처리한다.
+    if (s.length - pos - 1 !== 3) decimalPos = pos;
   }
   let intPart = decimalPos >= 0 ? s.slice(0, decimalPos) : s;
   const fracPart = decimalPos >= 0 ? s.slice(decimalPos + 1) : "";

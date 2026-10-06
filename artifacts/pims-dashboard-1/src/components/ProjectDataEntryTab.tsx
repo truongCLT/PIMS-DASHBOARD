@@ -815,13 +815,17 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
 
   const updateAt = <T,>(setter: React.Dispatch<React.SetStateAction<T[]>>, i: number, patch: Partial<T>) =>
     setter((rows) => rows.map((r, j) => (j === i ? { ...r, ...patch } : r)));
-  // "보유 현금(Cash Equivalent)" — 누적(이월) 없이 그 달의 Cash In - Cash Out만 보여준다(실사용자
-  // 요청: 누적 말고 딱 그 달 Cash In - Cash Out만). Cash In/Out은 소수점이 있는 원본 값이라, 화면에
-  // 보이는 정수 기준으로 반올림한 뒤 뺀다.
-  const cashflowEquivalents = useMemo(
-    () => cashflow.map((c) => Math.round(c.cashIn ?? 0) - Math.round(c.cashOut ?? 0)),
-    [cashflow],
-  );
+  // "보유 현금(Cash Equivalent)" = 잔여자금 — 현장 시작월부터 현재월까지 (Cash In - Cash Out)의
+  // 누적 합계(실사용자 요청: 그 달만의 증감이 아니라 누계 잔액). cashflow는 연/월 오름차순으로
+  // 쌓이므로(첫 로드 순서 + "Add Month"로 다음 달만 추가) 배열 순서 그대로 누적한다. Cash In/Out은
+  // 소수점이 있는 원본 값이라, 화면에 보이는 정수 기준으로 반올림한 뒤 뺀다.
+  const cashflowEquivalents = useMemo(() => {
+    let running = 0;
+    return cashflow.map((c) => {
+      running += Math.round(c.cashIn ?? 0) - Math.round(c.cashOut ?? 0);
+      return running;
+    });
+  }, [cashflow]);
   const updateProgressAt = (i: number, patch: Partial<ProjectDetailProgressPoint>) =>
     setProgress((rows) =>
       calculateProgressPlanCumulative(rows.map((row, j) => (j === i ? { ...row, ...patch } : row))),
