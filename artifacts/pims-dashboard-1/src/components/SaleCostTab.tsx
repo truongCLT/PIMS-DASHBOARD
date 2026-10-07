@@ -69,8 +69,14 @@ export function SaleCostTab({
   const { getRatesForMonth } = useMonthlyFxRates();
   // "월별 매출 환율 설정"에 그 달 환율이 있으면 그걸로, 없으면 기존 환율(현재/계약 환율, useMoney().convert)로
   // 변환한다 — 매출 차트/누계는 달마다 다른 환율을 반영해야 한다는 요청.
+  // 실적(actual_forecast)과 계획(plan)은 서로 다른 환율 트랙을 쓴다 — 같은 트랙을 쓰면 통화를
+  // 바꿔도 달성률이 USD 기준과 똑같이 나오는 버그가 생긴다(실사용자 보고로 발견).
   const convertForMonth = (v: number, year: number, month: number) => {
-    const monthlyRates = getRatesForMonth(year, month);
+    const monthlyRates = getRatesForMonth(year, month, "actual_forecast");
+    return monthlyRates ? convertMoney(v, currency, unitOn, monthlyRates) : convert(v);
+  };
+  const convertPlanForMonth = (v: number, year: number, month: number) => {
+    const monthlyRates = getRatesForMonth(year, month, "plan");
     return monthlyRates ? convertMoney(v, currency, unitOn, monthlyRates) : convert(v);
   };
   const {
@@ -120,6 +126,7 @@ export function SaleCostTab({
     costRatioLookup,
     lookup,
     convert: convertForMonth,
+    convertPlan: convertPlanForMonth,
   });
 
   const hasData      = chartData.some((d) => d.revenue !== 0 || d.cumulative !== 0 || d.plan !== 0);

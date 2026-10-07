@@ -16,31 +16,45 @@ export const FX_RATES: Record<CurrencyCode, number> = {
 
 export type FxRateMap = Record<CurrencyCode, number>;
 
+/** 환율 이력의 용도 — "plan"(계획 수립 시 고정한 환율, 1~12월 전체에 동일값) vs
+ * "actual_forecast"(월별로 실제 변동을 반영해 개별 수정하는 환율). FxRateMonthlyEditor가 저장한다. */
+export type FxRatePurpose = "plan" | "actual_forecast";
+
 /** 통화별 월별 환율 이력 한 건 */
 export interface FxRateHistoryEntry {
   currency: CurrencyCode;
   year: number;
   month: number; // 1..12
   rate: number;
+  /** 생략 시 "actual_forecast"로 취급(과거 데이터 호환) */
+  purpose?: FxRatePurpose;
 }
 export type FxRateHistory = FxRateHistoryEntry[];
 
 /**
- * (currency, year, month)에 해당하는 환율을 찾는다.
- * 정확히 일치하는 값이 없으면, 해당 통화의 이력 중 target보다 이전(또는 같은) 가장 최근 월을 사용한다.
+ * (currency, year, month, purpose)에 해당하는 환율을 찾는다.
+ * 정확히 일치하는 값이 없으면, 해당 통화·purpose의 이력 중 target보다 이전(또는 같은) 가장 최근 월을 사용한다.
  * (SRS 공통 규칙: "해당 월 환율이 없으면 가장 최근 이전 월의 환율을 사용")
  * 이력이 전혀 없으면 정적 기본값(FX_RATES)으로 폴백한다.
+ *
+ * purpose를 구분하지 않으면 같은 (currency, year, month)에 "plan"과 "actual_forecast" 두 행이
+ * 동시에 존재할 때(계획 수립 이후 일부 달만 실적 환율을 수정한 경우) 어느 쪽이 뽑힐지 불확정이 되어,
+ * 계획/실적 금액에 서로 다른 환율이 적용되어야 할 상황에서 우연히 같은 환율이 적용되는 버그가 있었다
+ * (실사용자 보고: KRW로 봐도 달성률이 USD와 똑같이 나옴 — 분자/분모에 같은 상수를 곱하면 비율은
+ * 불변이므로).
  */
 export function lookupFxRate(
   history: FxRateHistory,
   currency: CurrencyCode,
   year: number,
   month: number,
+  purpose: FxRatePurpose = "actual_forecast",
 ): number {
   if (!Array.isArray(history)) return FX_RATES[currency] ?? 1;
   let best: FxRateHistoryEntry | null = null;
   for (const e of history) {
     if (!e || e.currency !== currency) continue;
+    if ((e.purpose ?? "actual_forecast") !== purpose) continue;
     if (e.year > year || (e.year === year && e.month > month)) continue; // target보다 미래는 후보 아님
     if (
       !best ||
@@ -89,16 +103,22 @@ const UNIT_DIVISORS: Record<CurrencyCode, [number, number]> = {
 /**
  * 기준 데이터(천 USD) → 선택된 통화·단위 값으로 변환하는 함수를 만든다.
  * 반환 함수는 (value, year, month)를 받아 해당 월의 환율로 변환한다 — 월별 환율 이력을 반영.
+ * year/month를 생략하면 당해(REPORT_YEAR) 1월 환율이 적용되므로, 월별 시계열(매출 차트 등)을
+ * 변환할 때는 반드시 각 값의 실제 (year, month)를 넘겨야 한다 — 생략하면 모든 달이 1월 환율로
+ * 잘못 계산되는 버그가 생긴다.
+ * purpose: "plan"(계획 수립 시 고정 환율)과 "actual_forecast"(월별 실적 환율)를 구분해서 조회한다 —
+ * 계획 금액은 "plan", 실적/전망 금액은 "actual_forecast"(기본값)로 호출해야 한다.
  */
 export function makeConverter(
   currency: CurrencyCode,
   unitIndex: 0 | 1,
   fxRateHistory: FxRateHistory = [],
+  purpose: FxRatePurpose = "actual_forecast",
 ): (v: number, year?: number, month?: number) => number {
   return (v: number, year?: number, month?: number) => {
     const y = year ?? REPORT_YEAR;
     const m = month ?? 1;
-    const rate = lookupFxRate(fxRateHistory, currency, y, m);
+    const rate = lookupFxRate(fxRateHistory, currency, y, m, purpose);
     const divisor = UNIT_DIVISORS[currency]?.[unitIndex] ?? 1e3;
     const factor = (1000 * rate) / divisor;
     return v * factor;

@@ -197,7 +197,12 @@ export interface DeriveOptions {
   from: number; // 1..12
   to: number; // 1..12 (from > to → empty range)
   bucket: PeriodMode;
+  /** 실적/전망(Actual) 금액 변환 — purpose: "actual_forecast" 환율로 만든 converter를 넘긴다. */
   convert: (v: number, year?: number, month?: number) => number;
+  /** 계획(Plan) 금액 변환 — purpose: "plan" 환율로 만든 converter를 넘긴다. 생략하면 convert와
+   * 동일하게 취급한다(손익현황처럼 plan/actual 환율 구분이 의미 없는 화면용 — makeCurrentRateConverter
+   * 는 애초에 월별 환율을 쓰지 않으므로 plan/actual이 같은 값이어야 맞다). */
+  convertPlan?: (v: number, year?: number, month?: number) => number;
   unitLabel: string;
   projectScope: ProjectScope | null;
   /** 매출 차트 데이터를 조회 기간과 무관하게 12개월 전체로 생성 (엑셀 보고서용) */
@@ -243,6 +248,7 @@ export function deriveDashboardData(
   opts: DeriveOptions,
 ): DashboardData {
   const { from, to, bucket, convert, unitLabel, projectScope } = opts;
+  const convertPlan = opts.convertPlan ?? convert;
   const emptyRange = from > to;
   const M = Math.min(Math.max(to, 1), 12);
   const F = Math.min(Math.max(from, 1), 12);
@@ -257,7 +263,12 @@ export function deriveDashboardData(
   const getLine = (code: string): Line => byCode.get(code) ?? ZERO;
 
   // 배열 인덱스 i는 summary.year의 (i+1)월 — 월별 환율을 적용해 변환한다.
+  // 계획(cvPlan)과 실적(cv)은 서로 다른 환율 트랙(purpose: "plan" vs "actual_forecast")을 쓰므로
+  // 반드시 별도 converter를 써야 한다 — 같은 converter를 쓰면 계획 수립 시 고정된 환율이 실적에도
+  // 적용되어, 통화를 바꿔도 달성률(실적/계획)이 USD 기준과 똑같이 나오는 버그가 생긴다(분자·분모에
+  // 같은 환율을 곱하면 비율이 불변이기 때문 — 실사용자 보고로 발견).
   const cv = (arr: number[]) => arr.map((v, i) => convert(v, summary.year, i + 1));
+  const cvPlan = (arr: number[]) => arr.map((v, i) => convertPlan(v, summary.year, i + 1));
   const totalOf = (arr: number[]) => arr.reduce((a, b) => a + b, 0);
 
   let revenue: Line;
@@ -269,10 +280,10 @@ export function deriveDashboardData(
   let orders: Line | null;
 
   if (projectScope) {
-    const revPlan = cv(projectScope.revenuePlan);
+    const revPlan = cvPlan(projectScope.revenuePlan);
     const revActual = cv(projectScope.revenueActual);
     const grossPlan = projectScope.revenuePlan.map((v, i) =>
-      convert(v - (projectScope.cogsPlan[i] ?? 0), summary.year, i + 1),
+      convertPlan(v - (projectScope.cogsPlan[i] ?? 0), summary.year, i + 1),
     );
     const grossActual = projectScope.revenueActual.map((v, i) =>
       convert(v - (projectScope.cogsActual[i] ?? 0), summary.year, i + 1),
@@ -299,9 +310,9 @@ export function deriveDashboardData(
     // 이 화면의 기준월(M, 조회 종료월)의 환율을 앵커로 사용해 변환한다.
     const conv = (l: Line): Line => ({
       ...l,
-      plan: cv(l.plan),
+      plan: cvPlan(l.plan),
       actual: cv(l.actual),
-      planTotal: convert(l.planTotal, summary.year, M),
+      planTotal: convertPlan(l.planTotal, summary.year, M),
       actualTotal: convert(l.actualTotal, summary.year, M),
     });
     revenue = conv(getLine("revenue"));
@@ -552,10 +563,17 @@ export function useDashboardData(rateMode: "monthly" | "current" = "monthly") {
     if (needProjects && !projectsQuery.data) return null;
 
     const { from, to } = resolveMonthWindow(filters.startYm, filters.endYm, managementMonth);
+    // rateMode "current"(손익현황 등)는 애초에 월별 환율을 쓰지 않으므로 plan/actual 구분이 필요
+    // 없다 — 같은 converter를 그대로 쓴다. rateMode "monthly"(매출 실적/전망)만 계획(plan)과
+    // 실적(actual_forecast) 환율 트랙을 분리해서 써야 달성률이 통화별로 올바르게 달라진다.
     const convert =
       rateMode === "current"
         ? makeCurrentRateConverter(filters.currency, filters.unitIndex, filters.fxRates)
-        : makeConverter(filters.currency, filters.unitIndex, filters.fxRateHistory);
+        : makeConverter(filters.currency, filters.unitIndex, filters.fxRateHistory, "actual_forecast");
+    const convertPlan =
+      rateMode === "current"
+        ? convert
+        : makeConverter(filters.currency, filters.unitIndex, filters.fxRateHistory, "plan");
     // unitIndex 1 = "K USD"(1,000으로 나눈 값) 상태 — 토글 꺼짐(0)은 이제 환산 없는 실제 USD 값이라
     // 이 특수 라벨(현지화된 "천 USD"/"Nghìn USD")이 필요 없다.
     const unitLabel =
@@ -604,6 +622,7 @@ export function useDashboardData(rateMode: "monthly" | "current" = "monthly") {
       to,
       bucket: filters.period,
       convert,
+      convertPlan,
       unitLabel,
       projectScope,
       salesFullYear: true,

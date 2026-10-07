@@ -38,6 +38,13 @@ import { maxSelectableMonth } from "../lib/monthRange";
 
 type TFunc = ReturnType<typeof useTranslation>["t"];
 
+/** "YYYY-MM" → [year, month]. convert()에 각 포인트의 실제 월을 넘기기 위함 — 생략하면 1월 환율이
+ * 모든 달에 적용되는 버그가 생긴다(실사용자 보고로 발견된 매출 차트의 동일 버그와 같은 종류). */
+function parseYm(ym: string): [number, number] {
+  const [y, m] = ym.split("-").map(Number);
+  return [y, m];
+}
+
 // DECV 전체 = 시공(도급 사업) + 용역(용역 사업) 합산
 const BASE_SCOPE_PARAMS: Record<string, { division?: string; divisions?: string }> = {
   전체: { divisions: "도급 사업,용역 사업" },
@@ -185,13 +192,16 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
   });
 
   const points = query.data?.points ?? [];
-  const chartData: ChartRow[] = points.map((p) => ({
-    month: monthLabel(p.month, t),
-    rawMonth: p.month,
-    inflow: convert(p.cashIn),
-    outflow: -convert(p.cashOut),
-    balance: convert(p.equivalent),
-  }));
+  const chartData: ChartRow[] = points.map((p) => {
+    const [y, m] = parseYm(p.month);
+    return {
+      month: monthLabel(p.month, t),
+      rawMonth: p.month,
+      inflow: convert(p.cashIn, y, m),
+      outflow: -convert(p.cashOut, y, m),
+      balance: convert(p.equivalent, y, m),
+    };
+  });
   const hasData = chartData.some((d) => d.inflow !== 0 || d.outflow !== 0 || d.balance !== 0);
 
   /* ── 현장별 드릴다운 ──
@@ -242,14 +252,15 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
   const drillRows = useMemo(() => {
     if (!drillRow || !hasDrilldown) return [];
     const ym = drillRow.rawMonth;
+    const [y, m] = parseYm(ym);
     return drillRefs
       .map((ref, i) => {
         const qData = projectQueries[i]?.data;
         const pt = qData?.points.find((p) => p.month === ym);
         return {
           name: ref.name,
-          inflow: Math.round(convert(pt?.cashIn ?? 0) * 10) / 10,
-          outflow: Math.round(convert(pt?.cashOut ?? 0) * 10) / 10,
+          inflow: Math.round(convert(pt?.cashIn ?? 0, y, m) * 10) / 10,
+          outflow: Math.round(convert(pt?.cashOut ?? 0, y, m) * 10) / 10,
         };
       })
       .filter((r) => r.inflow !== 0 || r.outflow !== 0)

@@ -88,6 +88,7 @@ export function buildChartData(
     costRatioLookup,
     lookup,
     convert,
+    convertPlan,
   }: {
     pdSalesHasAny: boolean;
     pdSalesMap: Map<string, { plan: number | null; actual: number | null }>;
@@ -96,8 +97,13 @@ export function buildChartData(
     // "월별 매출 환율 설정"에 그 달 환율이 입력돼 있으면 그 환율로, 없으면 호출하는 쪽의 기존
     // 환율(현재/계약 환율)로 변환한다 — year/month를 받아 달마다 다른 환율을 적용할 수 있게 한다.
     convert: (v: number, year: number, month: number) => number;
+    // 계획(plan)은 계획 수립 시 고정한 환율 트랙(purpose: "plan")을 써야 한다 — revenue(실적)와 같은
+    // converter를 쓰면 통화를 바꿔도 달성률이 USD 기준과 똑같이 나오는 버그가 생긴다(메인 대시보드
+    // 매출 차트에서 실사용자 보고로 발견된 것과 같은 종류의 버그). 생략하면 convert와 동일하게 취급.
+    convertPlan?: (v: number, year: number, month: number) => number;
   },
 ): RevenuePoint[] {
+  const convertPlanFn = convertPlan ?? convert;
   let cumulative = 0;
   let cumPlan = 0;
   // 누계는 "그 달 환율로 변환된 금액"을 그대로 누적한다(월별 원본 USD 값을 누적한 뒤 한 환율로
@@ -111,7 +117,7 @@ export function buildChartData(
     cumulative += revenue;
     cumPlan    += plan;
     const revenueConverted = convert(revenue, year, month);
-    const planConverted    = convert(plan, year, month);
+    const planConverted    = convertPlanFn(plan, year, month);
     cumulativeConverted += revenueConverted;
     cumPlanConverted    += planConverted;
     return {

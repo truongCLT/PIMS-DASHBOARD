@@ -131,6 +131,13 @@ export async function applyMgmtreportImport(parsed: ParsedMgmtreport, filename: 
       idByName.set(p.name, row.id);
     }
 
+    // mr_monthly도 mr_pnl과 같은 이유로 전체 교체가 맞다 — 이 파일은 해당 연도의 전사 월별
+    // 매출/원가 표 전체를 담고 있으므로("반영 시 기존 경영관리보고회 데이터가 새 파일 내용으로
+    // 교체됩니다" — 업로드 모달 안내문), 이전 파일엔 있었지만 이번 파일에서 셀이 비워진 (project,
+    // month, scenario, metric) 조합은 parsed.monthly에 아예 나타나지 않는다. 그대로 두면 지운 값이
+    // 화면에 계속 남는 동일한 버그가 나므로, 연도 단위로 먼저 비우고 이번 파일 내용으로 다시 채운다.
+    await tx.delete(mrMonthlyTable).where(eq(mrMonthlyTable.year, parsed.year));
+
     const monthlyValues = parsed.monthly
       .map((m) => {
         const pid = idByName.get(m.project);
@@ -156,6 +163,13 @@ export async function applyMgmtreportImport(parsed: ParsedMgmtreport, filename: 
         });
     }
 
+    // mr_annual도 동일한 이유로 전체 교체 — 이 파일이 언급하는 연도들(전년 실적 + 당년~+4년 전망)
+    // 범위 안에서는, 이전엔 있었지만 이번 파일에서 비워진 값이 남지 않도록 먼저 비우고 다시 채운다.
+    const annualYears = [...new Set(parsed.annual.map((a) => a.year))];
+    if (annualYears.length > 0) {
+      await tx.delete(mrAnnualTable).where(inArray(mrAnnualTable.year, annualYears));
+    }
+
     const annualValues = parsed.annual
       .map((a) => {
         const pid = idByName.get(a.project);
@@ -179,6 +193,13 @@ export async function applyMgmtreportImport(parsed: ParsedMgmtreport, filename: 
           set: { amountUsd: sql`excluded.amount_usd` },
         });
     }
+
+    // mr_pnl(법인 손익)은 project와 무관한 해당 연도 전체 보고서 — 이 파일이 그 해의 완전한 표를
+    // 담고 있으므로, 이전 반영에서 값이 있었지만 이번 파일에서는 셀이 비어 있어 parsed.pnl에 아예
+    // 나타나지 않는 키(예: 실적 칸을 지운 경우)는 그대로 두면 옛 값이 영원히 남는다(버그 재현:
+    // 8월 실적 수주를 지워도 화면엔 이전 값이 계속 표시됨). 그래서 project 테이블과 달리 mr_pnl만은
+    // 연도 단위로 먼저 비우고 이번 파일 내용으로 다시 채운다.
+    await tx.delete(mrPnlTable).where(eq(mrPnlTable.year, parsed.year));
 
     const pnlValues = parsed.pnl.map((p) => ({
       year: parsed.year,

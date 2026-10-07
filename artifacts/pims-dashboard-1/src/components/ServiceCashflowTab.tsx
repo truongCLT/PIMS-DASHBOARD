@@ -97,7 +97,9 @@ export function ServiceCashflowTab({
   toYear: number;
   toMonth: number;
 }) {
-  const { t } = useTranslation(["serviceCashflowTab", "common"]);
+  const { t, i18n } = useTranslation(["serviceCashflowTab", "common"]);
+  const langCode = (i18n.language ?? "ko").slice(0, 2);
+  const unitLang = langCode === "en" ? "en" : langCode === "vi" ? "vi" : "ko";
   // Cashflow 탭은 (사이트별 계약 환율이 아닌) PIMSVINA의 공식 월별 환율(최신월)을 사용한다.
   const { currency, unitOn } = useMoney();
   const officialRateQuery = useGetPimsvinaExchangerate({ query: { staleTime: 5 * 60_000 } });
@@ -116,7 +118,7 @@ export function ServiceCashflowTab({
   }, [officialRateQuery.data, usdRow]);
   const effectiveCurrency = usdRow != null ? currency : "VND";
   const convert = (v: number) => convertMoney(v, effectiveCurrency, unitOn, officialRates);
-  const unitLabel = moneyUnitLabel(effectiveCurrency, unitOn);
+  const unitLabel = moneyUnitLabel(effectiveCurrency, unitOn, unitLang);
 
   // 보조: 데이터 입력 탭에서 저장한 프로젝트별 자금 데이터 (pd_cashflow_monthly)
   const { detail, isLoading: pdLoading } = useProjectDetail(projectName);

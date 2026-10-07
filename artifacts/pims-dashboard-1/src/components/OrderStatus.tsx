@@ -46,14 +46,22 @@ export function OrderStatus() {
       enabled: detailOpen && derived != null,
     },
   });
-  const convert = useMemo(
-    () => makeConverter(currency, unitIndex, fxRateHistory),
+  // 계획(planAmount)과 실적/전망(actualAmount)은 서로 다른 환율 트랙(purpose)을 쓴다 — 같은
+  // converter를 쓰면 통화를 바꿔도 비율이 USD 기준과 똑같이 나오는 버그가 생긴다(매출 차트에서
+  // 실사용자 보고로 발견된 것과 같은 종류의 버그).
+  const convertActual = useMemo(
+    () => makeConverter(currency, unitIndex, fxRateHistory, "actual_forecast"),
+    [currency, unitIndex, fxRateHistory],
+  );
+  const convertPlan = useMemo(
+    () => makeConverter(currency, unitIndex, fxRateHistory, "plan"),
     [currency, unitIndex, fxRateHistory],
   );
   const formatDate = (date: string | null) =>
     date ? date.slice(0, 7).replace("-", ".") : "-";
-  const formatAmount = (amount: number | null) => {
+  const formatAmount = (amount: number | null, purpose: "plan" | "actual_forecast" = "actual_forecast") => {
     if (amount == null) return "-";
+    const convert = purpose === "plan" ? convertPlan : convertActual;
     const converted = convert(
       amount,
       derived?.year,
@@ -78,7 +86,7 @@ export function OrderStatus() {
     {
       key: "planAmount",
       label: t("orderStatus:planAmount"),
-      format: (value) => formatAmount(typeof value === "number" ? value : null),
+      format: (value) => formatAmount(typeof value === "number" ? value : null, "plan"),
     },
     {
       key: "planDate",

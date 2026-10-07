@@ -151,7 +151,10 @@ export function SalesChart() {
   const { derived, isError } = useDashboardData();
   const filters = useDashboardFilters();
   const { unitIndex, currency, fxRateHistory, project, division, statusFilter } = filters;
-  const convert = makeConverter(currency, unitIndex, fxRateHistory);
+  // 계획(Plan)과 실적(Actual)은 서로 다른 환율 트랙(purpose)을 쓴다 — 같은 converter를 쓰면
+  // 통화를 바꿔도 달성률이 USD 기준과 똑같이 나오는 버그가 생긴다(실사용자 보고로 발견).
+  const convert = makeConverter(currency, unitIndex, fxRateHistory, "actual_forecast");
+  const convertPlan = makeConverter(currency, unitIndex, fxRateHistory, "plan");
 
   const { theme } = useTheme();
   const variant = theme.charts?.salesVariant;
@@ -201,15 +204,15 @@ export function SalesChart() {
     if (drillMonthIdx == null) return [];
     const mapped = scopedProjects
       .map((p) => {
-        const plan = Math.round(convert(p.revenuePlan[drillMonthIdx] ?? 0));
-        const actual = Math.round(convert(p.revenueActual[drillMonthIdx] ?? 0));
+        const plan = Math.round(convertPlan(p.revenuePlan[drillMonthIdx] ?? 0, REPORT_YEAR, drillMonthIdx + 1));
+        const actual = Math.round(convert(p.revenueActual[drillMonthIdx] ?? 0, REPORT_YEAR, drillMonthIdx + 1));
         // 연 누계(YTD) = 1월부터 클릭된 월까지 누적 — convert()를 매달 적용한 뒤 합산해야
         // 통화/단위 변환이 월별 환율 차이까지 정확히 반영된다 (합산 후 한 번에 convert하면 안 됨).
         let ytdPlan = 0;
         let ytdActual = 0;
         for (let i = 0; i <= drillMonthIdx; i++) {
-          ytdPlan += convert(p.revenuePlan[i] ?? 0);
-          ytdActual += convert(p.revenueActual[i] ?? 0);
+          ytdPlan += convertPlan(p.revenuePlan[i] ?? 0, REPORT_YEAR, i + 1);
+          ytdActual += convert(p.revenueActual[i] ?? 0, REPORT_YEAR, i + 1);
         }
         ytdPlan = Math.round(ytdPlan);
         ytdActual = Math.round(ytdActual);
@@ -229,7 +232,7 @@ export function SalesChart() {
       .sort((a, b) => b.actual - a.actual);
 
     return mapped;
-  }, [drillMonthIdx, scopedProjects, convert]);
+  }, [drillMonthIdx, scopedProjects, convert, convertPlan]);
 
   /* ── 드릴다운 로딩 상태 ──
    * 부문/프로젝트 스코프가 있는데 projects 목록이 아직 오는 중이면 "loading" 표시 */

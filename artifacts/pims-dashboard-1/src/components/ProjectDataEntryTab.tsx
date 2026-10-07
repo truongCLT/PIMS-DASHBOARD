@@ -100,6 +100,7 @@ function VndInput({
   hideZero = true,
   year,
   month,
+  purpose = "actual_forecast",
   disabled,
   "data-row": dataRow,
   "data-col": dataCol,
@@ -118,12 +119,16 @@ function VndInput({
    * 환율 대신 그 환율로 변환한다(입력/표시 모두). 넘기지 않으면 기존 동작(현재 환율)과 동일하다. */
   year?: number;
   month?: number;
+  /** year/month와 함께 쓰일 때만 의미 있음 — 계획(Plan) 입력란이면 "plan", 실적/전망이면
+   * "actual_forecast"(기본값)를 넘긴다. Plan/Actual 입력란이 같은 환율 트랙을 쓰면 통화를 바꿔도
+   * 값이 잘못 환산되는 버그가 생긴다(실사용자 보고로 매출 차트에서 발견된 것과 같은 종류). */
+  purpose?: "plan" | "actual_forecast";
   "data-row"?: string | number;
   "data-col"?: string | number;
 }) {
   const { convert, convertToKUsd, fmtMoney, fmtMoneyFull, currency, unitOn } = useMoney();
   const { getRatesForMonth } = useMonthlyFxRates();
-  const monthlyRates = year != null && month != null ? getRatesForMonth(year, month) : null;
+  const monthlyRates = year != null && month != null ? getRatesForMonth(year, month, purpose) : null;
   const convertDisplay = (v: number) => (monthlyRates ? convertMoney(v, currency, unitOn, monthlyRates) : convert(v));
   const convertToStorage = (v: number) =>
     monthlyRates ? convertToKUsdAmount(v, currency, unitOn, monthlyRates) : convertToKUsd(v);
@@ -1498,6 +1503,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                     onChange={(value) => updateAt(setSalesMonthly, i, { plan: value })}
                     year={row.year}
                     month={row.month}
+                    purpose="plan"
                     data-row={i}
                     data-col={2}
                   />
@@ -1533,6 +1539,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                     }
                     year={selectedSalesYear}
                     month={month}
+                    purpose="plan"
                     data-row={manualSalesRows.length + rowIndex}
                     data-col={0}
                   />
