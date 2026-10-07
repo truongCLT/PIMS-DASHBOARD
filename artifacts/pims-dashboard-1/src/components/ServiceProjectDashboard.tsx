@@ -251,19 +251,11 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
     }
   };
 
-  // 도급액 — 개요 입력값 우선, 없으면 원가율 데이터(execution 우선, 없으면 bidding)의 도급액 사용.
-  // overview/execution은 VND 원본 그대로 저장되고 bidding만 천 USD로 저장되어 단위가 서로 다르다.
-  // (버그 수정: 예전에는 VND 원본을 convertVndToKUsdAmount(siteRates)로 천 USD로 바꾼 뒤 헤더에서
-  // formatMoney(...,DEFAULT_EXCHANGE_RATES)로 다시 VND로 되돌렸는데, 두 변환에 쓰는 환율표가 서로 달라
-  // (siteRates vs DEFAULT_EXCHANGE_RATES) 왕복 과정에서 금액이 어긋났다. VND 원본 값은 formatVnd()로
-  // 한 번만 변환하는 ProjectDashboard(시공)와 동일한 방식을 써서 원본 그대로 정확히 표시한다.)
+  // 도급액 — Overview 입력값만 사용한다(요청: execution/bidding으로 fallback하지 않고 정확한 값만 표시).
+  // overview는 VND 원본 그대로 저장된다. VND 원본 값은 formatVnd()로 한 번만 변환하는
+  // ProjectDashboard(시공)와 동일한 방식을 써서 원본 그대로 정확히 표시한다.
   const ov = detail?.overview;
-  const executionContractAmountVnd = detail?.costEstimation.find((e) => e.kind === "execution")?.contractAmount;
-  // Bidding은 월별로 저장된다 — 값이 있는 가장 최근 달의 도급액을 쓴다(예전엔 첫 행만 사용).
-  const biddingContractAmountKUsd = (detail?.costEstimation ?? [])
-    .filter((e) => e.kind === "bidding" && e.contractAmount != null)
-    .sort((a, b) => (b.year ?? 0) * 100 + (b.month ?? 0) - ((a.year ?? 0) * 100 + (a.month ?? 0)))[0]?.contractAmount;
-  const contractAmountVnd = ov?.contractAmount ?? executionContractAmountVnd ?? null;
+  const contractAmountVnd = ov?.contractAmount ?? null;
 
   // 수행기간 표시 (YY.MM.DD ~ YY.MM.DD (n개월))
   const periodLabel = (() => {
@@ -466,7 +458,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
         />
       )}
 
-      <ProjectContextBar projectName={siteCode ? `${projectName} [${siteCode}]` : projectName} businessType="용역" client={ov?.client} period={periodLabel} primaryValue={ov?.scope} contractValue={contractAmountVnd != null ? `${formatVnd(contractAmountVnd, effectiveCurrency, siteRates)} ${effectiveCurrency}` : biddingContractAmountKUsd != null ? `${formatMoney(biddingContractAmountKUsd, effectiveCurrency, unitOn)} ${moneyUnitLabel(effectiveCurrency, unitOn)}` : "-"} referenceMonth={ov?.asOfMonth} isClosed={ov?.isClosed} labels={{ client: t("serviceProjectDashboard:clientLabel"), period: t("serviceProjectDashboard:periodLabel"), primary: t("serviceProjectDashboard:scopeLabel"), contract: t("common:contractAmount"), referenceMonth: t("common:baseMonth"), closed: t("common:closed"), ongoing: t("common:inProgress") }} />
+      <ProjectContextBar projectName={siteCode ? `${projectName} [${siteCode}]` : projectName} businessType="용역" client={ov?.client} period={periodLabel} primaryValue={ov?.scope} contractValue={contractAmountVnd != null ? `${formatVnd(contractAmountVnd, effectiveCurrency, siteRates)} ${effectiveCurrency}` : "-"} referenceMonth={ov?.asOfMonth} isClosed={ov?.isClosed} labels={{ client: t("serviceProjectDashboard:clientLabel"), period: t("serviceProjectDashboard:periodLabel"), primary: t("serviceProjectDashboard:scopeLabel"), contract: t("common:contractAmount"), referenceMonth: t("common:baseMonth"), closed: t("common:closed"), ongoing: t("common:inProgress") }} />
 
       {/* Horizontal tab bar */}
       <div
