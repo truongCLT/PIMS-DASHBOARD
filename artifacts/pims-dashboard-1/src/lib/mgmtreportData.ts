@@ -561,7 +561,7 @@ export function useDashboardData(rateMode: "monthly" | "current" = "monthly") {
     const unitLabel =
       filters.currency === "USD" && filters.unitIndex === 1
         ? thousandUsdLabel
-        : unitLabelOf(filters.currency, filters.unitIndex);
+        : unitLabelOf(filters.currency, filters.unitIndex, lang === "en" ? "en" : lang === "vi" ? "vi" : "ko");
 
     let projectScope: ProjectScope | null = null;
     if (projectSelected) {

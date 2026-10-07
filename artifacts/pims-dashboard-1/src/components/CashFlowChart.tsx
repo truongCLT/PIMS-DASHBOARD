@@ -148,7 +148,8 @@ type ChartRow = {
 };
 
 export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) {
-  const { t } = useTranslation(["cashFlowChart", "common"]);
+  const { t, i18n } = useTranslation(["cashFlowChart", "common"]);
+  const lang = (i18n.language ?? "ko").slice(0, 2);
   const [detailOpen, setDetailOpen] = useState(false);
   const [drillRow, setDrillRow] = useState<ChartRow | null>(null);
 
@@ -164,7 +165,7 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
   const unitLabel =
     filters.currency === "USD" && filters.unitIndex === 0
       ? t("cashFlowChart:thousandUsd")
-      : unitLabelOf(filters.currency, filters.unitIndex);
+      : unitLabelOf(filters.currency, filters.unitIndex, lang === "en" ? "en" : lang === "vi" ? "vi" : "ko");
 
   const hasCustomRange = filters.startYm !== "" || filters.endYm !== "";
   const fromMonth = hasCustomRange && !emptyRange ? from : 1;

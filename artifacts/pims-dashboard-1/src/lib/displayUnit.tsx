@@ -149,23 +149,25 @@ export function convertToKUsdAmount(
   return unitOn ? v / rate : v / (rate * 1000);
 }
 
-/** 단위 라벨 (순수 함수) */
-export function moneyUnitLabel(currency: string, unitOn: boolean): string {
+/** 단위 라벨 (순수 함수). lang: "ko"(기본)/"en"/"vi" — 다국어 UI 지원. */
+export function moneyUnitLabel(currency: string, unitOn: boolean, lang: "ko" | "en" | "vi" = "ko"): string {
   if (!unitOn) return currency;
-  if (currency === "KRW") return "백만원";
-  if (currency === "VND") return "Bil. VND";
-  return `천 ${currency}`;
+  if (currency === "KRW") return lang === "en" ? "Mil. KRW" : lang === "vi" ? "Triệu KRW" : "백만원";
+  if (currency === "VND") return lang === "vi" ? "Tỷ VND" : "Bil. VND";
+  return lang === "en" ? `K ${currency}` : lang === "vi" ? `Nghìn ${currency}` : `천 ${currency}`;
 }
 
 export function DisplayUnitProvider({
   currency,
   unitOn,
   rates = DEFAULT_EXCHANGE_RATES,
+  lang = "ko",
   children,
 }: {
   currency: string;
   unitOn: boolean;
   rates?: Record<string, number>;
+  lang?: "ko" | "en" | "vi";
   children: React.ReactNode;
 }) {
   const value = useMemo<DisplayUnit>(
@@ -176,7 +178,7 @@ export function DisplayUnitProvider({
       convertToKUsd: (v) => convertToKUsdAmount(v, currency, unitOn, rates),
       fmtMoney: (v, digits = 0) => formatMoney(v, currency, unitOn, digits, rates),
       fmtMoneyFull: (v) => formatMoney(v, currency, false, 0, rates),
-      unitLabel: moneyUnitLabel(currency, unitOn),
+      unitLabel: moneyUnitLabel(currency, unitOn, lang),
       convertFromVnd: (v) => convertFromVndAmount(v, currency, unitOn, rates),
       // 금액(돈)은 항상 정수로 반올림해서 표시한다(% 표시만 소수점 1자리 유지) — formatMoney()와 동일 원칙.
       fmtVnd: (v) =>
@@ -185,7 +187,7 @@ export function DisplayUnitProvider({
           : convertFromVndAmount(v, currency, unitOn, rates).toLocaleString("en-US", { maximumFractionDigits: 0 }),
       convertVndToKUsd: (v) => convertVndToKUsdAmount(v, rates),
     }),
-    [currency, unitOn, rates],
+    [currency, unitOn, rates, lang],
   );
   return <DisplayUnitContext.Provider value={value}>{children}</DisplayUnitContext.Provider>;
 }

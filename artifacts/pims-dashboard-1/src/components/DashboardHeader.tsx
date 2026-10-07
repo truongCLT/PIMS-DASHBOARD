@@ -18,7 +18,7 @@ import { getBaseUrl } from "@workspace/api-client-react";
 import { PimsvinaSyncPreviewModal, type PimsvinaPreviewData } from "./PimsvinaSyncPreviewModal";
 import {
   useDashboardFilters,
-  UNIT_OPTIONS,
+  getUnitOptions,
   REPORT_YEAR,
   type PeriodMode,
   type CurrencyCode,
@@ -46,7 +46,9 @@ export function DashboardHeader({
     setUnitIndex,
   } = useDashboardFilters();
 
-  const { t } = useTranslation(["dashboardHeader", "common", "projectDataEntryTab"]);
+  const { t, i18n } = useTranslation(["dashboardHeader", "common", "projectDataEntryTab"]);
+  const langCode = (i18n.language ?? "ko").slice(0, 2);
+  const unitLang = langCode === "en" ? "en" : langCode === "vi" ? "vi" : "ko";
   const { isAdmin } = useAdminAuth();
   const queryClient = useQueryClient();
   const settingsQuery = useGetMgmtreportSettings();
@@ -72,7 +74,7 @@ export function DashboardHeader({
   const referenceMonth = settingsQuery.data?.month ?? maxSelectableMonth();
   const maxYm = `${REPORT_YEAR}-${String(referenceMonth).padStart(2, "0")}`;
 
-  const unitOptions = UNIT_OPTIONS[currency] ?? UNIT_OPTIONS.USD;
+  const unitOptions = getUnitOptions(currency as CurrencyCode, unitLang) ?? getUnitOptions("USD", unitLang);
   const [downloadOpen, setDownloadOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);

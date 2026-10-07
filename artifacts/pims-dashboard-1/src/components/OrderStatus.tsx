@@ -22,7 +22,9 @@ import {
 import { maxSelectableMonth } from "../lib/monthRange";
 
 export function OrderStatus() {
-  const { t } = useTranslation(["orderStatus", "common"]);
+  const { t, i18n } = useTranslation(["orderStatus", "common"]);
+  const lang = (i18n.language ?? "ko").slice(0, 2);
+  const unitLang = lang === "en" ? "en" : lang === "vi" ? "vi" : "ko";
   const { derived } = useDashboardData();
   const { unitIndex, currency, fxRateHistory } = useDashboardFilters();
   const [detailOpen, setDetailOpen] = useState(false);
@@ -265,7 +267,7 @@ export function OrderStatus() {
         subtitle={t("orderStatus:detailSubtitle", {
           year: derived?.year,
           month: derived?.month,
-          unit: unitLabelOf(currency, unitIndex),
+          unit: unitLabelOf(currency, unitIndex, unitLang),
         })}
       >
         {detailQuery.isLoading ? (

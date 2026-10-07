@@ -221,7 +221,7 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
       : "-";
 
   return (
-    <DisplayUnitProvider currency={effectiveCurrency} unitOn={unitOn} rates={siteRates}>
+    <DisplayUnitProvider currency={effectiveCurrency} unitOn={unitOn} rates={siteRates} lang={excelLang}>
     <div style={{ flex: 1, overflowY: "auto", backgroundColor: "#eef2f7" }}>
       {/* Filter row */}
       <div

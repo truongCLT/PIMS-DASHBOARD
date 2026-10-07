@@ -280,7 +280,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
   })();
 
   return (
-    <DisplayUnitProvider currency={effectiveCurrency} unitOn={unitOn} rates={siteRates}>
+    <DisplayUnitProvider currency={effectiveCurrency} unitOn={unitOn} rates={siteRates} lang={excelLang}>
     <div style={{ flex: 1, overflowY: "auto", backgroundColor: TABLE_HEADER_BG }}>
       {/* Filter row */}
       <div
@@ -354,7 +354,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
               }}
             />
           </div>
-          <span style={{ fontSize: "12px", color: INK_BODY, fontWeight: 600 }}>1K {currency}</span>
+          <span style={{ fontSize: "12px", color: INK_BODY, fontWeight: 600 }}>{moneyUnitLabel(effectiveCurrency, unitOn, excelLang)}</span>
         </div>
 
         {/* Sync PIMSVINA Button for Service Project View */}

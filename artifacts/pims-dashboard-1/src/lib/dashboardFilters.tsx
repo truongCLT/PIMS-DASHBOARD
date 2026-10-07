@@ -54,18 +54,36 @@ export function lookupFxRate(
 }
 
 // 토글 꺼짐(index 0) = 환산 없이 실제 통화 금액 그대로("정확한 환율" 값). 켜짐(index 1) = 보기 편한
-// 축약 단위(USD/KRW는 1,000으로, VND는 1,000,000,000("1 tỷ")으로 나눔).
+// 축약 단위(USD는 1,000으로, VND는 1,000,000,000("1 tỷ")으로, KRW는 시공 화면과 동일하게
+// 1,000,000(백만원)으로 나눔).
+/** ko 기본값(하위 호환용) — 언어별 라벨이 필요하면 getUnitOptions()/unitLabelOf()에 lang을 넘긴다. */
 export const UNIT_OPTIONS: Record<CurrencyCode, [string, string]> = {
   USD: ["USD", "K USD"],
   VND: ["VND", "Bil. VND"],
-  KRW: ["KRW", "K KRW"],
+  KRW: ["KRW", "백만원"],
 };
+
+/** 언어별 통화 단위(index 1) 라벨 — mgmtreportData.ts의 thousandUsdLabel과 동일한 패턴. */
+const UNIT_LABELS_BY_LANG: Record<CurrencyCode, Record<"ko" | "en" | "vi", string>> = {
+  USD: { ko: "K USD", en: "K USD", vi: "K USD" },
+  VND: { ko: "Bil. VND", en: "Bil. VND", vi: "Tỷ VND" },
+  KRW: { ko: "백만원", en: "Mil. KRW", vi: "Triệu KRW" },
+};
+
+/** 언어별 통화 단위 옵션(index 0 = 통화 코드, index 1 = 축약 단위 라벨) */
+export function getUnitOptions(
+  currency: CurrencyCode,
+  lang: "ko" | "en" | "vi" = "ko",
+): [string, string] {
+  const c = UNIT_OPTIONS[currency] ? currency : "USD";
+  return [UNIT_OPTIONS[c][0], UNIT_LABELS_BY_LANG[c][lang]];
+}
 
 /* 단위 나누는 값 (원 단위 통화 금액 기준) */
 const UNIT_DIVISORS: Record<CurrencyCode, [number, number]> = {
   USD: [1, 1e3],
   VND: [1, 1e9],
-  KRW: [1, 1e3],
+  KRW: [1, 1e6],
 };
 
 /**
@@ -103,8 +121,12 @@ export function makeCurrentRateConverter(
   return (v: number) => v * factor;
 }
 
-export function unitLabelOf(currency: CurrencyCode, unitIndex: 0 | 1): string {
-  return UNIT_OPTIONS[currency][unitIndex];
+export function unitLabelOf(
+  currency: CurrencyCode,
+  unitIndex: 0 | 1,
+  lang: "ko" | "en" | "vi" = "ko",
+): string {
+  return unitIndex === 0 ? currency : getUnitOptions(currency, lang)[1];
 }
 
 /** 금액/수량 값 반올림 — 정수로 표시한다 (% 표시는 fmtPct 등 별도 함수에서 소수점 1자리 유지). */
