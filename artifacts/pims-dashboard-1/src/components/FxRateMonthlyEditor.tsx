@@ -193,10 +193,11 @@ export function FxRateMonthlyEditor() {
     }
     setError(null);
     if (month === PLAN_MONTH) {
-      // "계획" 선택 시 선택한 연도의 1~12월 전체에 같은 값을 반영한다 — purpose="plan"(계획 매출
-      // 환산용)뿐 아니라 purpose="actual_forecast"(실적/전망 환산용, 월별 탭이 보는 행)에도 같이
-      // 써서 그 달의 환율 자체를 계획값으로 덮어쓴다(실사용자 요청: 계획 저장 시 월별 환율도 같이
-      // 갱신). 이후 특정 달을 따로 수정하면 그 달의 actual_forecast 값만 바뀐다.
+      // "계획" 선택 시 선택한 연도의 1~12월 전체에 같은 값을 purpose="plan"으로만 반영한다.
+      // (버그 수정: 예전에는 purpose="actual_forecast"에도 같이 써서 그 달의 월별 매출 환율
+      // 설정을 계획값으로 덮어썼다 — 실사용자 보고: 계획 환율을 저장했더니 이미 따로 입력해 둔
+      // 월별 실적 환율이 전부 사라지고 계획값 하나로 통일돼 버렸다. plan과 actual_forecast는
+      // 완전히 독립된 환율 트랙이라 plan 저장이 actual_forecast를 절대 건드리면 안 된다.)
       // 한 달 저장이 실패해도 나머지 달 저장을 계속 시도한다(이전에 한 달에서 실패하면 그 뒤
       // 달들이 전부 저장되지 않고 조용히 빠지는 문제가 있었다) — 실패한 달이 있으면 모아서 에러로
       // 알려준다.
@@ -205,8 +206,6 @@ export function FxRateMonthlyEditor() {
         try {
           await putMonthlyMutation.mutateAsync({ data: { currency: "KRW", year, month: m, purpose: "plan", rate: krwNum } });
           await putMonthlyMutation.mutateAsync({ data: { currency: "VND", year, month: m, purpose: "plan", rate: vndNum } });
-          await putMonthlyMutation.mutateAsync({ data: { currency: "KRW", year, month: m, purpose: "actual_forecast", rate: krwNum } });
-          await putMonthlyMutation.mutateAsync({ data: { currency: "VND", year, month: m, purpose: "actual_forecast", rate: vndNum } });
         } catch {
           failedMonths.push(m);
         }

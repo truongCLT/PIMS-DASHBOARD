@@ -226,6 +226,11 @@ export async function downloadProjectDetailTemplate(
    * "1. Monthly Progress (Progress tab)") — 호출 측이 t()로 번역해 넘긴다(요청: 엑셀 시트가 데이터
    * 입력 탭과 똑같은 제목을 보여줘야 함). 안 넘기면 시트 탭 이름만 쓰고 배너는 생략한다. */
   sectionTitles: Partial<Record<SheetKey, string>> = {},
+  /** "월별 매출/매출원가" 시트의 계획(Plan) 열 전용 환율 조회 — purpose="plan" 트랙을 쓴다.
+   * 생략하면 monthlyVndRate(실적, purpose="actual_forecast")로 대체한다(버그 수정: 예전에는 Plan도
+   * 실적 환율로 변환해서, 계획 수립 시 고정 환율과 실적 월별 환율이 다를 때 Excel에 찍히는 Bil.VND
+   * 금액이 화면 대시보드와 달라졌었다). */
+  monthlyVndRatePlan?: MonthlyVndRateLookup,
 ): Promise<void> {
   const ExcelJS = (await import("exceljs")).default;
   const wb = new ExcelJS.Workbook();
@@ -286,8 +291,12 @@ export async function downloadProjectDetailTemplate(
 
   const tv = (v: number | null | undefined) => toVnd(v, fxRateVnd);
   // 월별 매출/매출원가 시트 전용 — 그 달에 "월별 매출 환율 설정"이 있으면 우선 적용한다.
+  // 실적(Actual)은 purpose="actual_forecast" 트랙, 계획(Plan)은 purpose="plan" 트랙을 쓴다 — 서로
+  // 다른 환율이므로 반드시 구분해야 한다(위 monthlyVndRatePlan 파라미터 주석 참고).
   const tvm = (v: number | null | undefined, year: number, month: number) =>
     toVnd(v, fxRateVnd, year, month, monthlyVndRate);
+  const tvmPlan = (v: number | null | undefined, year: number, month: number) =>
+    toVnd(v, fxRateVnd, year, month, monthlyVndRatePlan ?? monthlyVndRate);
 
   // 사업 유형에 맞는 작성 순서와 단위를 양식 안에서 바로 확인할 수 있게 한다 — 실제 시트 생성 순서와
   // 100% 일치시킨다 — 데이터 입력 탭 화면에 실제로 찍히는 번호 순서(SHEET_PREFIX_BY_TYPE)를 그대로
@@ -467,7 +476,7 @@ export async function downloadProjectDetailTemplate(
   }
   addSheet(
     "salesMonthly",
-    (detail.salesMonthly ?? []).map((s) => [s.year, s.month, tvm(s.plan, s.year, s.month), tvm(s.actual, s.year, s.month)]),
+    (detail.salesMonthly ?? []).map((s) => [s.year, s.month, tvmPlan(s.plan, s.year, s.month), tvm(s.actual, s.year, s.month)]),
     { intCols: [1, 2], moneyCols: [3, 4] },
   );
 
@@ -582,6 +591,9 @@ export async function parseProjectDetailWorkbook(
   fxRateVnd: number,
   monthlyVndRate?: MonthlyVndRateLookup,
   businessType: ProjectBusinessType = "시공",
+  /** downloadProjectDetailTemplate()의 monthlyVndRatePlan과 동일 — Plan 열은 purpose="plan" 환율로
+   * 되돌려야 다운로드 때 쓴 환율과 정확히 역변환된다(왕복 불일치 버그 방지). */
+  monthlyVndRatePlan?: MonthlyVndRateLookup,
 ): Promise<ProjectDetail> {
   const ExcelJS = (await import("exceljs")).default;
   const wb = new ExcelJS.Workbook();
@@ -621,9 +633,12 @@ export async function parseProjectDetailWorkbook(
   };
 
   const fv = (v: unknown) => fromVnd(cellNum(v), fxRateVnd);
-  // 월별 매출/매출원가 시트 전용 — 그 달 "월별 매출 환율 설정"이 있으면 우선 적용한다.
+  // 월별 매출/매출원가 시트 전용 — 그 달 "월별 매출 환율 설정"이 있으면 우선 적용한다. Plan 열은
+  // purpose="plan" 트랙(fvmPlan), Actual 열은 purpose="actual_forecast" 트랙(fvm)을 쓴다.
   const fvm = (v: unknown, year: number, month: number) =>
     fromVnd(cellNum(v), fxRateVnd, year, month, monthlyVndRate);
+  const fvmPlan = (v: unknown, year: number, month: number) =>
+    fromVnd(cellNum(v), fxRateVnd, year, month, monthlyVndRatePlan ?? monthlyVndRate);
 
   const result: ProjectDetail = { ...existing, photos: existing.photos };
 
@@ -935,7 +950,7 @@ export async function parseProjectDetailWorkbook(
           throw new ExcelParseError(`[${SHEET_NAME_I18N.salesMonthly.ko}] 같은 월(${year}.${String(month).padStart(2, "0")})이 중복 입력되었습니다.`);
         }
         seen.add(key);
-        out.push({ year, month, plan: fvm(r[2], year, month), actual: fvm(r[3], year, month) });
+        out.push({ year, month, plan: fvmPlan(r[2], year, month), actual: fvm(r[3], year, month) });
       });
       result.salesMonthly = out;
     }

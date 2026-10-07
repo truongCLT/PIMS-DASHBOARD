@@ -145,7 +145,8 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
   const [excelStatus, setExcelStatus] = useState<"success" | "error" | null>(null);
   const [excelBusy, setExcelBusy] = useState(false);
   const { getRatesForMonth } = useMonthlyFxRates();
-  const monthlyVndRate = (year: number, month: number) => getRatesForMonth(year, month)?.VND ?? null;
+  const monthlyVndRate = (year: number, month: number) => getRatesForMonth(year, month, "actual_forecast")?.VND ?? null;
+  const monthlyVndRatePlan = (year: number, month: number) => getRatesForMonth(year, month, "plan")?.VND ?? null;
 
   const handleTemplateDownload = async () => {
     if (!detail || excelBusy) return;
@@ -166,7 +167,7 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
         cashflow: t("projectDataEntryTab:cashflowTitleConstruction"),
         salesMonthly: t("projectDataEntryTab:salesMonthlyTitleConstruction"),
       };
-      await downloadProjectDetailTemplate(projectName, detail, fxRates.VND, "시공", monthlyVndRate, excelLang, sectionTitles);
+      await downloadProjectDetailTemplate(projectName, detail, fxRates.VND, "시공", monthlyVndRate, excelLang, sectionTitles, monthlyVndRatePlan);
     } catch (err) {
       console.error("Excel template download failed", err);
       setExcelMsg(t("projectDashboard:templateDownloadFailed"));
@@ -182,7 +183,7 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
     setExcelMsg(null);
     setExcelStatus(null);
     try {
-      const parsed = await parseProjectDetailWorkbook(file, detail, fxRates.VND, monthlyVndRate, "시공");
+      const parsed = await parseProjectDetailWorkbook(file, detail, fxRates.VND, monthlyVndRate, "시공", monthlyVndRatePlan);
       if (!window.confirm(t("projectDashboard:confirmReplaceData"))) {
         setExcelBusy(false);
         return;
