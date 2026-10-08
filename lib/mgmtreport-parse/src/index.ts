@@ -96,6 +96,9 @@ export const PNL_LINES: Record<string, string> = {
 
 function parseWorksheet(ws: ExcelJS.Worksheet, year: number): ParsedMgmtreport {
   const projects = new Map<string, MgmtreportProjectRec>();
+  // 동일 siteCode가 서로 다른 레이블(예: "K8CT1 모델하우스 (SITE39)" vs "THT K8CT1 MODEL... (SITE39)")로
+  // 등장해도 같은 사이트로 취급하기 위한 역방향 매핑 — 먼저 나온 name을 canonical로 사용한다.
+  const nameBySiteCode = new Map<string, string>();
   const monthly: MgmtreportMonthlyRec[] = [];
   const annual: MgmtreportAnnualRec[] = [];
   const pnl: MgmtreportPnlRec[] = [];
@@ -160,7 +163,14 @@ function parseWorksheet(ws: ExcelJS.Worksheet, year: number): ParsedMgmtreport {
         const siteMatch = /\(SITE\s*(\d+)\)/i.exec(labelNorm);
         const siteCode = siteMatch ? `SITE${siteMatch[1].padStart(2, "0")}` : null;
         const isGroup = labelNorm.startsWith("DECV법인");
-        const name = labelNorm.replace(/\(SITE\s*\d+\)/i, "").replace(/\s+/g, " ").trim();
+        let name = labelNorm.replace(/\(SITE\s*\d+\)/i, "").replace(/\s+/g, " ").trim();
+        // 같은 siteCode가 이미 다른 레이블로 등록되어 있으면, 그 레이블을 canonical name으로 재사용
+        // (레이블 표기가 달라도 같은 사이트를 두 개의 project row로 쪼개지 않기 위함)
+        if (siteCode && nameBySiteCode.has(siteCode)) {
+          name = nameBySiteCode.get(siteCode)!;
+        } else if (siteCode) {
+          nameBySiteCode.set(siteCode, name);
+        }
         currentProject = name;
         if (!projects.has(name)) {
           projects.set(name, {

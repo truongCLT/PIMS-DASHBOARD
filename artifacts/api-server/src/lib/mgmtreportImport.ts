@@ -120,14 +120,34 @@ export async function applyMgmtreportImport(parsed: ParsedMgmtreport, filename: 
     // 붙여둔 값이 그대로 유지된다.
     const idByName = new Map<string, number>();
     for (const p of parsed.projects) {
-      const [row] = await tx
-        .insert(mrProjectsTable)
-        .values({ name: p.name, siteCode: p.siteCode, groupLabel: p.groupLabel, sortOrder: p.sortOrder })
-        .onConflictDoUpdate({
-          target: mrProjectsTable.name,
-          set: { siteCode: p.siteCode, groupLabel: p.groupLabel, sortOrder: p.sortOrder },
-        })
-        .returning({ id: mrProjectsTable.id });
+      // name 이 바뀌었더라도 같은 siteCode를 가진 기존 row 가 있으면 그 row 를 재사용한다
+      // (파서가 siteCode 기준으로 레이블을 canonical name 으로 합치지만, 과거 업로드에서
+      // 이미 다른 name 으로 들어간 row 가 DB 에 남아있을 수 있으므로 여기서도 한 번 더 막는다)
+      const existingBySite = p.siteCode
+        ? await tx
+            .select({ id: mrProjectsTable.id, name: mrProjectsTable.name })
+            .from(mrProjectsTable)
+            .where(eq(mrProjectsTable.siteCode, p.siteCode))
+            .limit(1)
+        : [];
+
+      let row: { id: number };
+      if (existingBySite.length > 0 && existingBySite[0].name !== p.name) {
+        [row] = await tx
+          .update(mrProjectsTable)
+          .set({ name: p.name, groupLabel: p.groupLabel, sortOrder: p.sortOrder })
+          .where(eq(mrProjectsTable.id, existingBySite[0].id))
+          .returning({ id: mrProjectsTable.id });
+      } else {
+        [row] = await tx
+          .insert(mrProjectsTable)
+          .values({ name: p.name, siteCode: p.siteCode, groupLabel: p.groupLabel, sortOrder: p.sortOrder })
+          .onConflictDoUpdate({
+            target: mrProjectsTable.name,
+            set: { siteCode: p.siteCode, groupLabel: p.groupLabel, sortOrder: p.sortOrder },
+          })
+          .returning({ id: mrProjectsTable.id });
+      }
       idByName.set(p.name, row.id);
     }
 
