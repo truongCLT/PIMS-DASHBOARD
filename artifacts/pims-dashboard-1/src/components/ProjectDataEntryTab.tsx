@@ -134,6 +134,12 @@ function VndInput({
     monthlyRates ? convertToKUsdAmount(v, currency, unitOn, monthlyRates) : convertToKUsd(v);
   const [editing, setEditing] = React.useState(false);
   const [rawStr, setRawStr] = React.useState("");
+  // Giá trị gốc lúc focus (trước khi gõ) — dùng để phát hiện "click vào rồi click ra, không gõ
+  // gì" (VD: ô đang hiển thị giá trị fallback tự động như Sales Actual chưa tới hạn chốt). Nếu
+  // không đổi gì, onBlur KHÔNG được gọi onChange — nếu không, giá trị fallback hiển thị sẽ bị
+  // "chốt cứng" thành dữ liệu đã lưu thật trong DB dù người dùng chưa hề nhập/sửa gì (thực tế đã
+  // xảy ra: Sales Actual tháng chưa tới hạn chốt vẫn hiện số vì lỡ click qua ô đó).
+  const originalRawStrRef = React.useRef("");
 
   const fmt = (v: number, full: boolean) => {
     if (!monthlyRates) return full ? fmtMoneyFull(v) : fmtMoney(v);
@@ -158,7 +164,9 @@ function VndInput({
       onFocus={() => {
         if (disabled) return;
         const convertedVal = valueKUsd != null ? convertDisplay(valueKUsd) : 0;
-        setRawStr(convertedVal === 0 ? "" : String(Math.round(convertedVal)));
+        const initial = convertedVal === 0 ? "" : String(Math.round(convertedVal));
+        setRawStr(initial);
+        originalRawStrRef.current = initial;
         setEditing(true);
       }}
       onChange={(e) => {
@@ -168,15 +176,17 @@ function VndInput({
       onBlur={() => {
         setEditing(false);
         const cleaned = rawStr.replace(/,/g, "");
-        if (cleaned === "" || cleaned === "0") {
-          onChange(null);
-        } else {
-          const val = parseFloat(cleaned);
-          // 사용자가 입력한 값은 현재 선택된 표시 통화/단위 기준이므로, 저장 단위(천 USD)로
-          // 되돌려야 한다 - onFocus의 convertDisplay()와 정확히 반대 방향 변환 (버그: 예전에는 이
-          // 역변환이 빠져 있어 VND/KRW 선택 시 입력값이 그대로 천 USD로 저장되어 수천만 배
-          // 부풀려졌었다). year/month가 있으면(매출) 그 달 환율로, 없으면 현재/계약 환율로 되돌린다.
-          onChange(isNaN(val) ? null : convertToStorage(val));
+        if (cleaned !== originalRawStrRef.current) {
+          if (cleaned === "" || cleaned === "0") {
+            onChange(null);
+          } else {
+            const val = parseFloat(cleaned);
+            // 사용자가 입력한 값은 현재 선택된 표시 통화/단위 기준이므로, 저장 단위(천 USD)로
+            // 되돌려야 한다 - onFocus의 convertDisplay()와 정확히 반대 방향 변환 (버그: 예전에는 이
+            // 역변환이 빠져 있어 VND/KRW 선택 시 입력값이 그대로 천 USD로 저장되어 수천만 배
+            // 부풀려졌었다). year/month가 있으면(매출) 그 달 환율로, 없으면 현재/계약 환율로 되돌린다.
+            onChange(isNaN(val) ? null : convertToStorage(val));
+          }
         }
         setRawStr("");
       }}
@@ -537,9 +547,13 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
 
   const mrProjectsQuery = useListMgmtreportProjects({ year: REPORT_YEAR });
   const currentProject = mrProjectsQuery.data?.projects.find((p) => p.name === projectName);
-  const currentYear = new Date().getFullYear();
+  // Ngưỡng "actual" cho Sales/COGS tháng phải theo đúng quy tắc marking chung của toàn app
+  // (lastClosedYearMonth: tháng M chỉ coi là đã chốt từ ngày 13 tháng M+2), không dùng
+  // new Date().getMonth() thô — nếu không, tháng chưa chốt (vd tháng 9 khi mới 9/10) vẫn bị
+  // tính là actual trong khi nơi khác (Execution Plan/Cost) coi là chưa chốt.
+  const closedRef = lastClosedYearMonth();
   const actualCutoffMonth =
-    REPORT_YEAR < currentYear ? 12 : REPORT_YEAR > currentYear ? 0 : new Date().getMonth();
+    REPORT_YEAR < closedRef.year ? 12 : REPORT_YEAR > closedRef.year ? 0 : closedRef.month;
   const mainSalesMonths = Array.from({ length: 12 }, (_, index) => ({
     month: index + 1,
     plan: currentProject?.revenuePlan[index] ?? null,
@@ -1465,12 +1479,14 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
               <th style={{ ...th, width: "14%" }}>{t("projectDataEntryTab:monthColumn")}</th>
               <th style={th}>{t("projectDataEntryTab:salesPlan")}</th>
               <th style={th}>{t("projectDataEntryTab:salesActual")}</th>
+              <th style={th}>{t("projectDataEntryTab:salesForecast")}</th>
               <th style={{ ...th, width: "36px" }}></th>
             </tr>
           </thead>
           <tbody>
             {/* 수기 입력 행 (전년 누계 등) — 자동 업로드 기능 완성 전까지, 연/월/계획/실적을 모두 직접
-                입력·수정하는 행. month=0이면 "해당 연도 이전 누계"라는 관례로 쓴다(강제는 아님). */}
+                입력·수정하는 행. month=0이면 "해당 연도 이전 누계"라는 관례로 쓴다(강제는 아님).
+                이 행들은 마감일 cutoff 개념이 없는 수기 입력이라 Forecast 칸은 항상 비워둔다. */}
             {manualSalesRows.map(({ row, i }) => (
               <tr key={`manual-${i}`}>
                 <td style={tdCell}>
@@ -1518,47 +1534,69 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                     data-col={3}
                   />
                 </td>
+                <td style={tdCell}></td>
                 <td style={{ ...tdCell, textAlign: "center" }}>
                   <DelBtn onClick={() => removeAt(setSalesMonthly, i)} />
                 </td>
               </tr>
             ))}
-            {Array.from({ length: 12 }, (_, index) => index + 1).map((month, rowIndex) => (
-              <tr key={month}>
-                <td style={{ ...tdCell, textAlign: "center", color: INK_BODY, fontSize: "12px" }}>
-                  {selectedSalesYear}
-                </td>
-                <td style={{ ...tdCell, textAlign: "center", color: INK_BODY, fontSize: "12px" }}>
-                  {month}
-                </td>
-                <td style={tdCell}>
-                  <VndInput
-                    valueKUsd={getSalesEntryValue(selectedSalesYear, month, "plan")}
-                    onChange={(value) =>
-                      setSalesEntryValue(selectedSalesYear, month, "plan", value)
-                    }
-                    year={selectedSalesYear}
-                    month={month}
-                    purpose="plan"
-                    data-row={manualSalesRows.length + rowIndex}
-                    data-col={0}
-                  />
-                </td>
-                <td style={tdCell}>
-                  <VndInput
-                    valueKUsd={getSalesEntryValue(selectedSalesYear, month, "actual")}
-                    onChange={(value) =>
-                      setSalesEntryValue(selectedSalesYear, month, "actual", value)
-                    }
-                    year={selectedSalesYear}
-                    month={month}
-                    data-row={manualSalesRows.length + rowIndex}
-                    data-col={1}
-                  />
-                </td>
-                <td style={tdCell}></td>
-              </tr>
-            ))}
+            {Array.from({ length: 12 }, (_, index) => index + 1).map((month, rowIndex) => {
+              // Cutoff theo quy tắc chốt chung (actualCutoffMonth, định nghĩa phía trên) chỉ áp
+              // dụng cho REPORT_YEAR — các năm khác luôn coi là đã chốt (Actual nhập bình thường,
+              // không có Forecast). Tháng đã chốt (<=cutoff): cột Actual hiển thị/nhập được, cột
+              // Forecast luôn trống. Tháng chưa chốt (>cutoff): cột Actual khóa + luôn trống (tránh
+              // tái diễn lỗi lưu nhầm giá trị fallback khi lỡ click/blur), số liệu đồng bộ (nếu có)
+              // chỉ hiện ở cột Forecast, read-only.
+              const isClosedMonth = selectedSalesYear !== REPORT_YEAR || month <= actualCutoffMonth;
+              return (
+                <tr key={month}>
+                  <td style={{ ...tdCell, textAlign: "center", color: INK_BODY, fontSize: "12px" }}>
+                    {selectedSalesYear}
+                  </td>
+                  <td style={{ ...tdCell, textAlign: "center", color: INK_BODY, fontSize: "12px" }}>
+                    {month}
+                  </td>
+                  <td style={tdCell}>
+                    <VndInput
+                      valueKUsd={getSalesEntryValue(selectedSalesYear, month, "plan")}
+                      onChange={(value) =>
+                        setSalesEntryValue(selectedSalesYear, month, "plan", value)
+                      }
+                      year={selectedSalesYear}
+                      month={month}
+                      purpose="plan"
+                      data-row={manualSalesRows.length + rowIndex}
+                      data-col={0}
+                    />
+                  </td>
+                  <td style={tdCell}>
+                    <VndInput
+                      valueKUsd={isClosedMonth ? getSalesEntryValue(selectedSalesYear, month, "actual") : null}
+                      onChange={(value) =>
+                        setSalesEntryValue(selectedSalesYear, month, "actual", value)
+                      }
+                      disabled={!isClosedMonth}
+                      year={selectedSalesYear}
+                      month={month}
+                      data-row={manualSalesRows.length + rowIndex}
+                      data-col={1}
+                    />
+                  </td>
+                  <td style={tdCell}>
+                    <VndInput
+                      valueKUsd={isClosedMonth ? null : (mainSalesMonths[month - 1]?.forecast ?? null)}
+                      onChange={() => {}}
+                      disabled
+                      year={selectedSalesYear}
+                      month={month}
+                      data-row={manualSalesRows.length + rowIndex}
+                      data-col={2}
+                    />
+                  </td>
+                  <td style={tdCell}></td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

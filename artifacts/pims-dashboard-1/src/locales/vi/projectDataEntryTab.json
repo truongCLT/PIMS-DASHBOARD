@@ -142,6 +142,7 @@
   "monthSuffix": "Tháng {{month}}",
   "salesPlan": "Kế hoạch doanh thu",
   "salesActual": "Doanh thu thực hiện",
+  "salesForecast": "Doanh thu dự báo",
   "priorYearCumulative": "Lũy kế năm trước",
   "addPriorYearCumulative": "Thêm lũy kế năm trước",
   "priorYearCumulativeNote": "Dòng nhập tự do cho Năm/Tháng/Kế hoạch/Thực tế. Dùng tạm trong thời gian chờ hoàn thiện tính năng upload tự động (Tháng = 0 theo quy ước nghĩa là \"lũy kế trước năm đó\").",

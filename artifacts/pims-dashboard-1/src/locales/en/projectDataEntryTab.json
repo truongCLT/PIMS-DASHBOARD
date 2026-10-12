@@ -142,6 +142,7 @@
   "monthSuffix": "Month {{month}}",
   "salesPlan": "Sales Plan",
   "salesActual": "Sales Actual",
+  "salesForecast": "Sales Forecast",
   "priorYearCumulative": "Prior-Year Cumulative",
   "addPriorYearCumulative": "Add Prior-Year Cumulative",
   "priorYearCumulativeNote": "A freely editable row for Year/Month/Plan/Actual. Use this as a temporary workaround until the automatic upload feature is completed (Month = 0 conventionally means \"cumulative before that year\").",
