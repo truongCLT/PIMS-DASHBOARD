@@ -363,26 +363,31 @@ router.get("/projectdetail", async (req, res) => {
 // 예전엔 고정 환율(1 kUSD = 25,400,000 VND) 하나로 모든 달을 역변환했는데, 월별로 실제 환율이 달라서
 // 달마다 오차가 생겼다. fx_rates(연/월별 환율, 이미 환율 설정 화면에 존재)를 조회해 해당 연/월의 환율을
 // 쓰고, 없으면 그 이전 가장 가까운 달의 환율로, 그래도 없으면 이 고정값으로 폴백한다.
-const DEFAULT_VND_PER_K_USD = 25_400_000;
-async function buildVndRateLookup(): Promise<(year: number | null, month: number | null) => number> {
+// rate는 "1 USD 기준" 환율(해당 통화 / 1 USD)이다. USD 요청은 환산이 필요 없어 rate=1 로 취급한다.
+const DEFAULT_VND_RATE_PER_USD = 25_400;
+type RevenueCurrency = "USD" | "KRW" | "VND";
+async function buildRateLookup(currency: RevenueCurrency): Promise<(year: number | null, month: number | null) => number | null> {
+  if (currency === "USD") {
+    return () => 1;
+  }
   const rows = await db
     .select({ year: fxRatesTable.year, month: fxRatesTable.month, rate: fxRatesTable.rate })
     .from(fxRatesTable)
-    .where(eq(fxRatesTable.currency, "VND"));
+    .where(eq(fxRatesTable.currency, currency));
   return (year, month) => {
     if (year != null && month != null) {
       const exact = rows.find((r) => r.year === year && r.month === month);
-      if (exact) return exact.rate * 1000;
+      if (exact) return exact.rate;
       const priorOrSame = rows
         .filter((r) => r.year < year || (r.year === year && r.month <= month))
         .sort((a, b) => b.year - a.year || b.month - a.month);
-      if (priorOrSame.length > 0) return priorOrSame[0].rate * 1000;
+      if (priorOrSame.length > 0) return priorOrSame[0].rate;
     }
     if (rows.length > 0) {
       const latest = [...rows].sort((a, b) => b.year - a.year || b.month - a.month)[0];
-      return latest.rate * 1000;
+      return latest.rate;
     }
-    return DEFAULT_VND_PER_K_USD;
+    return currency === "VND" ? DEFAULT_VND_RATE_PER_USD : null;
   };
 }
 
@@ -391,9 +396,14 @@ async function buildVndRateLookup(): Promise<(year: number | null, month: number
  * across every project — for bulk export/consumption by an external report (Productivity Report).
  * NOTE: kept at the "/outsourcing/all" path because that is the URL the consuming report already
  * calls; despite the path name this no longer returns pd_outsourcing data.
+ * Accepts an optional ?currency=USD|KRW|VND query param (defaults to VND for backward compatibility)
+ * and converts the stored kUSD plan/actual using fx_rates itself, so callers no longer need to
+ * re-divide the VND figure by their own exchange rate.
  */
 router.get("/outsourcing/all", async (req, res) => {
   try {
+    const currencyParam = typeof req.query.currency === "string" ? req.query.currency.trim().toUpperCase() : "";
+    const currency: RevenueCurrency = currencyParam === "USD" || currencyParam === "KRW" ? currencyParam : "VND";
     const rows = await db
       .select({
         projectName: pdSalesMonthlyTable.projectName,
@@ -408,14 +418,19 @@ router.get("/outsourcing/all", async (req, res) => {
       .from(pdSalesMonthlyTable)
       .leftJoin(mrProjectsTable, eq(mrProjectsTable.name, pdSalesMonthlyTable.projectName))
       .orderBy(asc(pdSalesMonthlyTable.projectName), asc(pdSalesMonthlyTable.year), asc(pdSalesMonthlyTable.month));
-    const vndRateFor = await buildVndRateLookup();
-    const toVnd = (kUsd: string | null, year: number | null, month: number | null) =>
-      kUsd == null ? null : Math.round(Number(kUsd) * vndRateFor(year, month));
+    const rateFor = await buildRateLookup(currency);
+    const toCurrency = (kUsd: string | null, year: number | null, month: number | null) => {
+      if (kUsd == null) return null;
+      const rate = rateFor(year, month);
+      if (rate == null) return null;
+      return Math.round(Number(kUsd) * 1000 * rate);
+    };
     res.json({
+      currency,
       data: rows.map((r) => ({
         ...r,
-        revenuePlan: toVnd(r.revenuePlan, r.year, r.month),
-        revenueActual: toVnd(r.revenueActual, r.year, r.month),
+        revenuePlan: toCurrency(r.revenuePlan, r.year, r.month),
+        revenueActual: toCurrency(r.revenueActual, r.year, r.month),
       })),
     });
   } catch (err) {
