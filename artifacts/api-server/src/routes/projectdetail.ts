@@ -24,6 +24,7 @@ import {
   fxRatesTable,
 } from "@workspace/db";
 import { buildProjectMonthlyReadModel } from "../lib/canonicalProjectMonthly";
+import { applyProjectMonthlyRows, type ProjectMonthlyTarget } from "../lib/mgmtreportAggregation";
 import {
   GetProjectdetailQueryParams,
   GetProjectdetailResponse,
@@ -391,6 +392,17 @@ async function buildRateLookup(currency: RevenueCurrency): Promise<(year: number
   };
 }
 
+// Data Entry 화면(ProjectDataEntryTab)이 월별 Plan/Actual 셀을 그리는 것과 동일한 마감 규칙.
+// M월 실적은 M+2월 13일부터 "마감 완료"로 간주한다 — frontend의 lib/monthRange.ts#lastClosedYearMonth
+// 와 반드시 같은 값을 내야 하므로 그 로직을 그대로 복제한다(공유 패키지가 아니라 프론트 전용 lib라 import 불가).
+const MR_CLOSE_CUTOFF_DAY = 13;
+function lastClosedYearMonth(): { year: number; month: number } {
+  const now = new Date();
+  const monthsBack = now.getDate() >= MR_CLOSE_CUTOFF_DAY ? 1 : 2;
+  const d = new Date(now.getFullYear(), now.getMonth() - monthsBack, 1);
+  return { year: d.getFullYear(), month: d.getMonth() + 1 };
+}
+
 /**
  * GET all Monthly Revenue (Data Entry tab, "Monthly Revenue" section — pd_sales_monthly) rows
  * across every project — for bulk export/consumption by an external report (Productivity Report).
@@ -399,6 +411,12 @@ async function buildRateLookup(currency: RevenueCurrency): Promise<(year: number
  * Accepts an optional ?currency=USD|KRW|VND query param (defaults to VND for backward compatibility)
  * and converts the stored kUSD plan/actual using fx_rates itself, so callers no longer need to
  * re-divide the VND figure by their own exchange rate.
+ *
+ * Mirrors ProjectDataEntryTab's getSalesEntryValue fallback: when pd_sales_monthly has no row for
+ * a given (project, current-report-year, month), the Data Entry screen falls back to the mgmt-report
+ * Excel snapshot (mr_projects/mr_monthly revenue) instead of showing blank. Without the same fallback
+ * here, a site whose Monthly Revenue was never explicitly saved (only shown via that fallback) simply
+ * disappeared from this bulk export even though the UI displays numbers for it.
  */
 router.get("/outsourcing/all", async (req, res) => {
   try {
@@ -418,6 +436,68 @@ router.get("/outsourcing/all", async (req, res) => {
       .from(pdSalesMonthlyTable)
       .leftJoin(mrProjectsTable, eq(mrProjectsTable.name, pdSalesMonthlyTable.projectName))
       .orderBy(asc(pdSalesMonthlyTable.projectName), asc(pdSalesMonthlyTable.year), asc(pdSalesMonthlyTable.month));
+
+    const existingCellKeys = new Set(rows.map((r) => `${r.projectName}|${r.year}|${r.month}`));
+
+    // mgmt-report (경영현황판 Excel) fallback - only applies to the current report year, same as
+    // the frontend's `year !== REPORT_YEAR ? null : mainSalesMonths[...]` guard.
+    const reportYear = new Date().getFullYear();
+    const actualCutoffMonth = (() => {
+      const closed = lastClosedYearMonth();
+      if (reportYear < closed.year) return 12;
+      if (reportYear > closed.year) return 0;
+      return closed.month;
+    })();
+
+    const mrProjects = await db
+      .select({ id: mrProjectsTable.id, name: mrProjectsTable.name, siteCode: mrProjectsTable.siteCode, fldCode: mrProjectsTable.fldCode })
+      .from(mrProjectsTable);
+    const mrMonthlyRows = await db
+      .select({ projectId: mrMonthlyTable.projectId, month: mrMonthlyTable.month, scenario: mrMonthlyTable.scenario, metric: mrMonthlyTable.metric, amountUsd: mrMonthlyTable.amountUsd })
+      .from(mrMonthlyTable)
+      .where(and(eq(mrMonthlyTable.year, reportYear), eq(mrMonthlyTable.metric, "revenue")));
+
+    const mrTargetById = new Map<number, ProjectMonthlyTarget>();
+    for (const p of mrProjects) {
+      mrTargetById.set(p.id, { revenuePlan: Array(12).fill(0), revenueActual: Array(12).fill(0), cogsPlan: Array(12).fill(0), cogsActual: Array(12).fill(0) });
+    }
+    // Track which (projectId, month) cells actually have a real mr_monthly row, since
+    // applyProjectMonthlyRows pre-fills every month with 0 and we must not treat that default as data.
+    const mrHasPlan = new Set<string>();
+    const mrHasActual = new Set<string>();
+    for (const r of mrMonthlyRows) {
+      const key = `${r.projectId}_${r.month}`;
+      if (r.scenario === "plan") mrHasPlan.add(key);
+      else mrHasActual.add(key);
+    }
+    applyProjectMonthlyRows(mrTargetById, mrMonthlyRows);
+
+    type FallbackRow = { projectName: string; siteCode: string | null; fldCode: string | null; year: number; month: number; revenuePlan: string | null; revenueActual: string | null };
+    const fallbackRows: FallbackRow[] = [];
+    for (const p of mrProjects) {
+      const target = mrTargetById.get(p.id);
+      if (!target) continue;
+      for (let month = 1; month <= 12; month++) {
+        if (existingCellKeys.has(`${p.name}|${reportYear}|${month}`)) continue;
+        const key = `${p.id}_${month}`;
+        const hasPlan = mrHasPlan.has(key);
+        // Beyond the close cutoff the Excel column holds a forecast, not an actual - same as the
+        // Data Entry screen, we don't surface it here as "actual".
+        const hasActual = month <= actualCutoffMonth && mrHasActual.has(key);
+        if (!hasPlan && !hasActual) continue;
+        fallbackRows.push({
+          projectName: p.name,
+          siteCode: p.siteCode,
+          fldCode: p.fldCode,
+          year: reportYear,
+          month,
+          revenuePlan: hasPlan ? String(target.revenuePlan[month - 1]) : null,
+          revenueActual: hasActual ? String(target.revenueActual[month - 1]) : null,
+        });
+      }
+    }
+
+    const allRows = [...rows, ...fallbackRows];
     const rateFor = await buildRateLookup(currency);
     const toCurrency = (kUsd: string | null, year: number | null, month: number | null) => {
       if (kUsd == null) return null;
@@ -427,7 +507,7 @@ router.get("/outsourcing/all", async (req, res) => {
     };
     res.json({
       currency,
-      data: rows.map((r) => ({
+      data: allRows.map((r) => ({
         ...r,
         revenuePlan: toCurrency(r.revenuePlan, r.year, r.month),
         revenueActual: toCurrency(r.revenueActual, r.year, r.month),
