@@ -502,7 +502,7 @@ router.get("/outsourcing/all", async (req, res) => {
     const toCurrency = (kUsd: string | null, year: number | null, month: number | null) => {
       if (kUsd == null) return null;
       const rate = rateFor(year, month);
-      if (rate == null) return null;
+      if (rate == null) return 0;
       return Math.round(Number(kUsd) * 1000 * rate);
     };
     res.json({
