@@ -168,8 +168,11 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
   const rateUsd = siteRateQuery.data?.rateUsd ?? 0;
   const rateKrw = siteRateQuery.data?.rateKrw ?? 0;
   const siteRateResolved = !siteCode || siteRateQuery.isSuccess || siteRateQuery.isError;
+  // USD는 siteRates.USD가 항상 1(기준 통화)이라 계약환율 유무와 무관하게 항상 변환 가능 — VND와
+  // 마찬가지로 막을 이유가 없다. 계약환율이 없는 현장(rateUsd<=0)에서 USD 버튼까지 잠겨 있던 건
+  // KRW에는 있는 폴백(|| fxRates.KRW > 0)이 USD에는 빠져 있던 누락이었다(실사용자 보고).
   const isCurrencyAvailable = (c: string) =>
-    c === "VND" || !siteRateResolved || (c === "USD" ? rateUsd > 0 : c === "KRW" ? (rateUsd > 0 && rateKrw > 0) || fxRates.KRW > 0 : true);
+    c === "VND" || c === "USD" || !siteRateResolved || (rateUsd > 0 && rateKrw > 0) || fxRates.KRW > 0;
   // KRW 계약환율이 0이면(USD 계약환율 유무와 무관) VND로 막지 않고 "FX Rate Settings"의 KRW 환율(fxRates.KRW)로
   // 환산한다(요청) — siteRates.KRW도 같은 값으로 폴백한다. 버튼에는 그 사실을 툴팁으로 알린다.
   const krwUsesFxSetting = siteRateResolved && !(rateUsd > 0 && rateKrw > 0);

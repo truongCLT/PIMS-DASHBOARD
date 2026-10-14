@@ -1,5 +1,5 @@
-import { eq } from "drizzle-orm";
-import { db, fxRatesTable } from "@workspace/db";
+import { eq, inArray } from "drizzle-orm";
+import { db, fxRatesTable, pdOverviewTable } from "@workspace/db";
 import { fetchPimsvinaApi } from "./pimsvinaClient";
 
 export type FxCurrency = "USD" | "KRW" | "VND";
@@ -68,4 +68,44 @@ export async function getCurrentRate(currency: FxCurrency): Promise<number> {
   }
   filtered.sort((a, b) => b.year - a.year || b.month - a.month || b.updatedAt.getTime() - a.updatedAt.getTime());
   return filtered[0].rate;
+}
+
+/**
+ * 현장 계약 환율(CBTB_CTRTSUMM.RATEUSD/RATEKRW, dashboard_common_siterate_1q.jsp) — Revenue/Costing/
+ * Outsourcing 탭(ProjectDashboard.tsx의 siteRates)이 "현재 환율" 대신 우선적으로 쓰는 값이다. "월별 매출
+ * 환율 설정"에 그 달 행이 없을 때의 폴백은 전역 "현재 환율"이 아니라 이 현장별 계약 환율이어야
+ * 화면과 일치한다(실사용자 보고: Revenue tab의 Sales Actual 금액이 API 값과 달랐던 이유).
+ * siteCode는 우리 DB의 pseudo site_code(예: "SITE18")이고, CBTB_CTRTSUMM은 PIMSVINA FLDCODE로
+ * 키가 잡혀 있어 pd_overview에서 먼저 FLDCODE를 찾아야 한다(없으면 siteCode를 그대로 FLDCODE로
+ * 간주 — /pimsvina/siterate 라우트와 동일한 폴백).
+ */
+export async function getSiteContractRates(
+  siteCodes: string[],
+): Promise<Map<string, { rateUsd: number | null; rateKrw: number | null }>> {
+  const distinct = [...new Set(siteCodes.filter((s) => s))];
+  const result = new Map<string, { rateUsd: number | null; rateKrw: number | null }>();
+  if (distinct.length === 0) return result;
+
+  const overviewRows = await db
+    .select({ siteCode: pdOverviewTable.siteCode, fldCode: pdOverviewTable.fldCode })
+    .from(pdOverviewTable)
+    .where(inArray(pdOverviewTable.siteCode, distinct));
+  const fldCodeBySite = new Map(overviewRows.map((r) => [r.siteCode, r.fldCode]));
+
+  await Promise.all(
+    distinct.map(async (siteCode) => {
+      const fldCode = fldCodeBySite.get(siteCode) || siteCode;
+      try {
+        const rows = await fetchPimsvinaApi("dashboard_common_siterate_1q.jsp", { site_code: fldCode });
+        const row = rows[0];
+        result.set(siteCode, {
+          rateUsd: row?.rate_usd != null ? Number(row.rate_usd) : null,
+          rateKrw: row?.rate_krw != null ? Number(row.rate_krw) : null,
+        });
+      } catch {
+        result.set(siteCode, { rateUsd: null, rateKrw: null });
+      }
+    }),
+  );
+  return result;
 }

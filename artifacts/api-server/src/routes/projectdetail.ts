@@ -40,7 +40,7 @@ import {
 import { requireAdmin } from "../middlewares/adminAuth";
 import { preservePimsvinaActualSource } from "../lib/pimsvinaTradeCost";
 import { buildPimsvinaFileUrl } from "../lib/pimsvinaClient";
-import { getCurrentRate, type FxCurrency } from "../lib/currentFxRate";
+import { getCurrentRate, getSiteContractRates, type FxCurrency } from "../lib/currentFxRate";
 
 const router: IRouter = Router();
 const SECTION_KEYS = [
@@ -365,10 +365,10 @@ router.get("/projectdetail", async (req, res) => {
 // 예전엔 고정 환율(1 kUSD = 25,400,000 VND) 하나로 모든 달을 역변환했는데, 월별로 실제 환율이 달라서
 // 달마다 오차가 생겼다. fx_rates(연/월별 환율, 이미 환율 설정 화면에 존재)를 조회해 해당 연/월의 환율을
 // 쓰는데, "월별 매출 환율 설정" 화면(ProjectDataEntryTab/VndInput)과 똑같이 그 연/월에 정확히 저장된
-// 행이 있을 때만 쓰고, 없으면 "현재 환율"(getCurrentRate - GET /fxrates와 동일: PIMSVINA 실시간 환율
-// 우선, 없으면 오늘 이전 가장 최근 actual_forecast 행, 그래도 없으면 기본값)로 대체한다.
-// 예전엔 이전 가장 가까운 달의 환율로 대체했었는데, 그 달에 환율이 입력되지 않았을 때 화면은 "현재
-// 환율"을 보여주는 반면 이 API는 몇 달 전 환율을 썼었어서 금액이 서로 어긋났다(실사용자 보고).
+// 행이 있을 때만 쓴다. 없으면 - ProjectDashboard.tsx의 siteRates와 동일하게 - 전역 "현재 환율"이 아니라
+// 그 현장의 계약 환율(CBTB_CTRTSUMM, dashboard_common_siterate_1q.jsp)로 대체하고, 계약 환율도 없는
+// 현장일 때만 전역 "현재 환율"로 떨어진다. (실사용자 보고: Revenue tab의 Sales Actual 금액이 API 값과
+// 달랐던 원인 — 처음엔 전역 현재 환율로만 폴백했는데, 이 화면은 현장별 계약 환율을 우선한다.)
 // rate는 "1 USD 기준" 환율(해당 통화 / 1 USD)이다. USD 요청은 환산이 필요 없어 rate=1 로 취급한다.
 type RevenueCurrency = FxCurrency;
 type FxRatePurpose = "plan" | "actual_forecast";
@@ -378,7 +378,8 @@ type FxRatePurpose = "plan" | "actual_forecast";
 async function buildRateLookup(
   currency: RevenueCurrency,
   purpose: FxRatePurpose,
-): Promise<(year: number | null, month: number | null) => number | null> {
+  siteContractRates: Map<string, { rateUsd: number | null; rateKrw: number | null }>,
+): Promise<(year: number | null, month: number | null, siteCode: string | null) => number | null> {
   if (currency === "USD") {
     return () => 1;
   }
@@ -387,10 +388,17 @@ async function buildRateLookup(
     .from(fxRatesTable)
     .where(and(eq(fxRatesTable.currency, currency), eq(fxRatesTable.purpose, purpose)));
   const currentRate = await getCurrentRate(currency);
-  return (year, month) => {
+  return (year, month, siteCode) => {
     if (year != null && month != null) {
       const exact = rows.find((r) => r.year === year && r.month === month);
       if (exact) return exact.rate;
+    }
+    const contract = siteCode ? siteContractRates.get(siteCode) : null;
+    if (contract?.rateUsd) {
+      // siteRates(ProjectDashboard.tsx)와 동일: VND는 계약환율(rateUsd) 그대로, KRW는
+      // rateUsd/rateKrw(계약환율 KRW가 0/미등록이면 전역 현재 환율로 대체).
+      if (currency === "VND") return contract.rateUsd;
+      if (currency === "KRW") return contract.rateKrw ? contract.rateUsd / contract.rateKrw : currentRate;
     }
     return currentRate;
   };
@@ -502,16 +510,18 @@ router.get("/outsourcing/all", async (req, res) => {
     }
 
     const allRows = [...rows, ...fallbackRows];
-    const rateForPlan = await buildRateLookup(currency, "plan");
-    const rateForActual = await buildRateLookup(currency, "actual_forecast");
+    const siteContractRates = await getSiteContractRates(allRows.map((r) => r.siteCode).filter((s): s is string => !!s));
+    const rateForPlan = await buildRateLookup(currency, "plan", siteContractRates);
+    const rateForActual = await buildRateLookup(currency, "actual_forecast", siteContractRates);
     const toCurrency = (
       kUsd: string | null,
       year: number | null,
       month: number | null,
-      rateFor: (year: number | null, month: number | null) => number | null,
+      siteCode: string | null,
+      rateFor: (year: number | null, month: number | null, siteCode: string | null) => number | null,
     ) => {
       if (kUsd == null) return null;
-      const rate = rateFor(year, month);
+      const rate = rateFor(year, month, siteCode);
       if (rate == null) return 0;
       return Math.round(Number(kUsd) * 1000 * rate);
     };
@@ -519,8 +529,8 @@ router.get("/outsourcing/all", async (req, res) => {
       currency,
       data: allRows.map((r) => ({
         ...r,
-        revenuePlan: toCurrency(r.revenuePlan, r.year, r.month, rateForPlan),
-        revenueActual: toCurrency(r.revenueActual, r.year, r.month, rateForActual),
+        revenuePlan: toCurrency(r.revenuePlan, r.year, r.month, r.siteCode, rateForPlan),
+        revenueActual: toCurrency(r.revenueActual, r.year, r.month, r.siteCode, rateForActual),
       })),
     });
   } catch (err) {
