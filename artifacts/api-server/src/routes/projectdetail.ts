@@ -40,6 +40,7 @@ import {
 import { requireAdmin } from "../middlewares/adminAuth";
 import { preservePimsvinaActualSource } from "../lib/pimsvinaTradeCost";
 import { buildPimsvinaFileUrl } from "../lib/pimsvinaClient";
+import { getCurrentRate, type FxCurrency } from "../lib/currentFxRate";
 
 const router: IRouter = Router();
 const SECTION_KEYS = [
@@ -363,32 +364,35 @@ router.get("/projectdetail", async (req, res) => {
 
 // 예전엔 고정 환율(1 kUSD = 25,400,000 VND) 하나로 모든 달을 역변환했는데, 월별로 실제 환율이 달라서
 // 달마다 오차가 생겼다. fx_rates(연/월별 환율, 이미 환율 설정 화면에 존재)를 조회해 해당 연/월의 환율을
-// 쓰고, 없으면 그 이전 가장 가까운 달의 환율로, 그래도 없으면 이 고정값으로 폴백한다.
+// 쓰는데, "월별 매출 환율 설정" 화면(ProjectDataEntryTab/VndInput)과 똑같이 그 연/월에 정확히 저장된
+// 행이 있을 때만 쓰고, 없으면 "현재 환율"(getCurrentRate - GET /fxrates와 동일: PIMSVINA 실시간 환율
+// 우선, 없으면 오늘 이전 가장 최근 actual_forecast 행, 그래도 없으면 기본값)로 대체한다.
+// 예전엔 이전 가장 가까운 달의 환율로 대체했었는데, 그 달에 환율이 입력되지 않았을 때 화면은 "현재
+// 환율"을 보여주는 반면 이 API는 몇 달 전 환율을 썼었어서 금액이 서로 어긋났다(실사용자 보고).
 // rate는 "1 USD 기준" 환율(해당 통화 / 1 USD)이다. USD 요청은 환산이 필요 없어 rate=1 로 취급한다.
-const DEFAULT_VND_RATE_PER_USD = 25_400;
-type RevenueCurrency = "USD" | "KRW" | "VND";
-async function buildRateLookup(currency: RevenueCurrency): Promise<(year: number | null, month: number | null) => number | null> {
+type RevenueCurrency = FxCurrency;
+type FxRatePurpose = "plan" | "actual_forecast";
+// Plan과 Actual/Forecast는 서로 다른 환율 트랙(purpose)을 쓴다 — FxRateMonthlyEditor/projectDetailExcel과
+// 동일한 구분을 여기서도 적용해야, 같은 (currency, year, month)에 두 purpose 행이 섞여
+// find()가 엉뚱한 쪽을 집어오는 일이 없다.
+async function buildRateLookup(
+  currency: RevenueCurrency,
+  purpose: FxRatePurpose,
+): Promise<(year: number | null, month: number | null) => number | null> {
   if (currency === "USD") {
     return () => 1;
   }
   const rows = await db
     .select({ year: fxRatesTable.year, month: fxRatesTable.month, rate: fxRatesTable.rate })
     .from(fxRatesTable)
-    .where(eq(fxRatesTable.currency, currency));
+    .where(and(eq(fxRatesTable.currency, currency), eq(fxRatesTable.purpose, purpose)));
+  const currentRate = await getCurrentRate(currency);
   return (year, month) => {
     if (year != null && month != null) {
       const exact = rows.find((r) => r.year === year && r.month === month);
       if (exact) return exact.rate;
-      const priorOrSame = rows
-        .filter((r) => r.year < year || (r.year === year && r.month <= month))
-        .sort((a, b) => b.year - a.year || b.month - a.month);
-      if (priorOrSame.length > 0) return priorOrSame[0].rate;
     }
-    if (rows.length > 0) {
-      const latest = [...rows].sort((a, b) => b.year - a.year || b.month - a.month)[0];
-      return latest.rate;
-    }
-    return currency === "VND" ? DEFAULT_VND_RATE_PER_USD : null;
+    return currentRate;
   };
 }
 
@@ -498,8 +502,14 @@ router.get("/outsourcing/all", async (req, res) => {
     }
 
     const allRows = [...rows, ...fallbackRows];
-    const rateFor = await buildRateLookup(currency);
-    const toCurrency = (kUsd: string | null, year: number | null, month: number | null) => {
+    const rateForPlan = await buildRateLookup(currency, "plan");
+    const rateForActual = await buildRateLookup(currency, "actual_forecast");
+    const toCurrency = (
+      kUsd: string | null,
+      year: number | null,
+      month: number | null,
+      rateFor: (year: number | null, month: number | null) => number | null,
+    ) => {
       if (kUsd == null) return null;
       const rate = rateFor(year, month);
       if (rate == null) return 0;
@@ -509,8 +519,8 @@ router.get("/outsourcing/all", async (req, res) => {
       currency,
       data: allRows.map((r) => ({
         ...r,
-        revenuePlan: toCurrency(r.revenuePlan, r.year, r.month),
-        revenueActual: toCurrency(r.revenueActual, r.year, r.month),
+        revenuePlan: toCurrency(r.revenuePlan, r.year, r.month, rateForPlan),
+        revenueActual: toCurrency(r.revenueActual, r.year, r.month, rateForActual),
       })),
     });
   } catch (err) {
