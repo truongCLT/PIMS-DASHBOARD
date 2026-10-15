@@ -34,6 +34,8 @@ import type {
   CashflowProject,
   CreateMgmtreportComment,
   CreateProjectdetailComment,
+  DeleteFxRatesHistory200,
+  DeleteFxRatesHistoryParams,
   DownloadCurrentOrdersParams,
   ErrorEnvelope,
   FxRateHistoryEntry,
@@ -716,6 +718,84 @@ export const usePutFxRatesHistory = <TError = ErrorType<ApiErrorMessage>,
         TContext
       > => {
       return useMutation(getPutFxRatesHistoryMutationOptions(options));
+    }
+
+export const getDeleteFxRatesHistoryUrl = (params: DeleteFxRatesHistoryParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/fxrates/history?${stringifiedParams}` : `/api/fxrates/history`
+}
+
+/**
+ * @summary Clear (unset) one month's FX rate for one currency (admin only). Lets a previously-saved monthly rate be removed, falling back to site/current rate again.
+ */
+export const deleteFxRatesHistory = async (params: DeleteFxRatesHistoryParams, options?: RequestInit): Promise<DeleteFxRatesHistory200> => {
+
+  return customFetch<DeleteFxRatesHistory200>(getDeleteFxRatesHistoryUrl(params),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteFxRatesHistoryMutationOptions = <TError = ErrorType<ApiErrorMessage>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteFxRatesHistory>>, TError,{params: DeleteFxRatesHistoryParams}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteFxRatesHistory>>, TError,{params: DeleteFxRatesHistoryParams}, TContext> => {
+
+const mutationKey = ['deleteFxRatesHistory'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteFxRatesHistory>>, {params: DeleteFxRatesHistoryParams}> = (props) => {
+          const {params} = props ?? {};
+
+          return  deleteFxRatesHistory(params,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteFxRatesHistoryMutationResult = NonNullable<Awaited<ReturnType<typeof deleteFxRatesHistory>>>
+
+    export type DeleteFxRatesHistoryMutationError = ErrorType<ApiErrorMessage>
+
+    /**
+ * @summary Clear (unset) one month's FX rate for one currency (admin only). Lets a previously-saved monthly rate be removed, falling back to site/current rate again.
+ */
+export const useDeleteFxRatesHistory = <TError = ErrorType<ApiErrorMessage>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteFxRatesHistory>>, TError,{params: DeleteFxRatesHistoryParams}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteFxRatesHistory>>,
+        TError,
+        {params: DeleteFxRatesHistoryParams},
+        TContext
+      > => {
+      return useMutation(getDeleteFxRatesHistoryMutationOptions(options));
     }
 
 export const getGetPimsvinaSiterateUrl = (params: GetPimsvinaSiterateParams,) => {

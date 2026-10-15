@@ -422,7 +422,11 @@ function lastClosedYearMonth(): { year: number; month: number } {
  * calls; despite the path name this no longer returns pd_outsourcing data.
  * Accepts an optional ?currency=USD|KRW|VND query param (defaults to VND for backward compatibility)
  * and converts the stored kUSD plan/actual using fx_rates itself, so callers no longer need to
- * re-divide the VND figure by their own exchange rate.
+ * re-divide the figure by their own exchange rate. The converted amount is also pre-divided into a
+ * readable unit per currency (same scale as the frontend's moneyUnitLabel): VND ÷ 1e9 ("Bil. VND"),
+ * USD ÷ 1e3 ("K USD"), KRW ÷ 1e6 ("Mil. KRW"). For USD/KRW, each row also includes exchangeRate —
+ * the per-(year, month, site) rate actually applied (same monthly rate as the "FX Rate Settings"
+ * screen); omitted for VND since no conversion is needed.
  *
  * Mirrors ProjectDataEntryTab's getSalesEntryValue fallback: when pd_sales_monthly has no row for
  * a given (project, current-report-year, month), the Data Entry screen falls back to the mgmt-report
@@ -513,6 +517,10 @@ router.get("/outsourcing/all", async (req, res) => {
     const siteContractRates = await getSiteContractRates(allRows.map((r) => r.siteCode).filter((s): s is string => !!s));
     const rateForPlan = await buildRateLookup(currency, "plan", siteContractRates);
     const rateForActual = await buildRateLookup(currency, "actual_forecast", siteContractRates);
+    // exchangeRate로 내려줄 값은 항상 "FX Rate Settings" 화면에 보이는 VND 환율이어야 한다(통화가
+    // USD일 때 rateForPlan이 자기참조라 그냥 1을 내려주면 호출자 입장에서 의미가 없다 — 실사용자 보고).
+    const rateForPlanVnd = currency === "VND" ? rateForPlan : await buildRateLookup("VND", "plan", siteContractRates);
+    const rateForActualVnd = currency === "VND" ? rateForActual : await buildRateLookup("VND", "actual_forecast", siteContractRates);
     const toCurrency = (
       kUsd: string | null,
       year: number | null,
@@ -520,18 +528,33 @@ router.get("/outsourcing/all", async (req, res) => {
       siteCode: string | null,
       rateFor: (year: number | null, month: number | null, siteCode: string | null) => number | null,
     ) => {
-      if (kUsd == null) return null;
+      if (kUsd == null) return { amount: null, rate: null };
       const rate = rateFor(year, month, siteCode);
-      if (rate == null) return 0;
-      return Math.round(Number(kUsd) * 1000 * rate);
+      if (rate == null) return { amount: 0, rate: null };
+      return { amount: Math.round(Number(kUsd) * 1000 * rate), rate };
     };
+    // 호출자가 매번 자기 쪽에서 다시 나눌 필요 없게, 통화별로 보기 좋은 단위(천 USD / 백만 KRW /
+    // 10억 VND — 프론트 moneyUnitLabel과 동일한 축척)까지 미리 나눠서 내려준다.
+    const unitScale = currency === "VND" ? 1_000_000_000 : currency === "KRW" ? 1_000_000 : 1_000;
     res.json({
       currency,
-      data: allRows.map((r) => ({
-        ...r,
-        revenuePlan: toCurrency(r.revenuePlan, r.year, r.month, r.siteCode, rateForPlan),
-        revenueActual: toCurrency(r.revenueActual, r.year, r.month, r.siteCode, rateForActual),
-      })),
+      data: allRows.map((r) => {
+        const plan = toCurrency(r.revenuePlan, r.year, r.month, r.siteCode, rateForPlan);
+        const actual = toCurrency(r.revenueActual, r.year, r.month, r.siteCode, rateForActual);
+        const planVndRate = rateForPlanVnd(r.year, r.month, r.siteCode);
+        const actualVndRate = rateForActualVnd(r.year, r.month, r.siteCode);
+        return {
+          ...r,
+          revenuePlan: plan.amount == null ? null : plan.amount / unitScale,
+          revenueActual: actual.amount == null ? null : actual.amount / unitScale,
+          // VND는 환율 변환이 필요 없는 기준 통화라 exchangeRate를 내려줄 이유가 없다 — USD/KRW일 때만
+          // "FX Rate Settings"의 VND 환율(그 달 실제로 적용된 값, Plan과 Actual이 다른 환율 트랙을
+          // 쓰지만 보통 같은 값이라 Plan 쪽을 대표값으로 사용)을 포함한다. 적용할 환율을 전혀 찾지
+          // 못하면(이론상 buildRateLookup은 항상 "현재 환율"로 폴백하지만, 방어적으로) 0으로 내려준다
+          // — 그러면 revenuePlan/revenueActual도 toCurrency()에서 이미 0으로 계산돼 있어 서로 일관된다.
+          ...(currency === "VND" ? {} : { exchangeRate: planVndRate ?? actualVndRate ?? 0 }),
+        };
+      }),
     });
   } catch (err) {
     req.log.error({ err }, "failed to list all monthly revenue rows");

@@ -183,6 +183,25 @@ export const PutFxRatesHistoryResponse = zod.object({
 
 
 /**
+ * @summary Clear (unset) one month's FX rate for one currency (admin only). Lets a previously-saved monthly rate be removed, falling back to site/current rate again.
+ */
+export const deleteFxRatesHistoryQueryMonthMax = 12;
+
+export const deleteFxRatesHistoryQueryPurposeDefault = `actual_forecast`;
+
+export const DeleteFxRatesHistoryQueryParams = zod.object({
+  "currency": zod.enum(['USD', 'KRW', 'VND']),
+  "year": zod.coerce.number(),
+  "month": zod.coerce.number().min(1).max(deleteFxRatesHistoryQueryMonthMax),
+  "purpose": zod.enum(['actual_forecast', 'plan']).default(deleteFxRatesHistoryQueryPurposeDefault)
+})
+
+export const DeleteFxRatesHistoryResponse = zod.object({
+  "success": zod.boolean()
+})
+
+
+/**
  * @summary PIMSVINA per-site contract exchange rate (CBTB_CTRTSUMM.RATEUSD/RATEKRW)
  */
 export const GetPimsvinaSiterateQueryParams = zod.object({

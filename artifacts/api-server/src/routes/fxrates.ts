@@ -9,6 +9,8 @@ import {
   GetFxRatesHistoryResponse,
   PutFxRatesHistoryBody,
   PutFxRatesHistoryResponse,
+  DeleteFxRatesHistoryQueryParams,
+  DeleteFxRatesHistoryResponse,
 } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/adminAuth";
 import { fetchPimsvinaApi } from "../lib/pimsvinaClient";
@@ -198,6 +200,33 @@ router.put("/fxrates/history", requireAdmin, async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "failed to save fx rate history entry");
     res.status(500).json({ error: "환율 이력 저장에 실패했습니다." });
+  }
+});
+
+// 그 달 환율을 "입력 안 함(비움)" 상태로 되돌린다 — 저장된 행을 지워서 site 계약 환율/현재 환율
+// 폴백으로 돌아가게 한다. FxRateMonthlyEditor에서 KRW/VND 입력란을 비우고 저장할 때 사용.
+router.delete("/fxrates/history", requireAdmin, async (req, res) => {
+  const parsed = DeleteFxRatesHistoryQueryParams.safeParse(req.query);
+  if (!parsed.success) {
+    res.status(400).json({ error: "잘못된 요청 파라미터입니다." });
+    return;
+  }
+  const { currency, year, month, purpose } = parsed.data;
+  try {
+    await db
+      .delete(fxRatesTable)
+      .where(
+        and(
+          eq(fxRatesTable.currency, currency),
+          eq(fxRatesTable.year, year),
+          eq(fxRatesTable.month, month),
+          eq(fxRatesTable.purpose, purpose),
+        ),
+      );
+    res.json(DeleteFxRatesHistoryResponse.parse({ success: true }));
+  } catch (err) {
+    req.log.error({ err }, "failed to delete fx rate history entry");
+    res.status(500).json({ error: "환율 이력 삭제에 실패했습니다." });
   }
 });
 

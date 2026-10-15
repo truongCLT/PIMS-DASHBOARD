@@ -5,6 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import {
   useGetFxRatesHistory,
   usePutFxRatesHistory,
+  useDeleteFxRatesHistory,
   usePutFxRates,
   getGetFxRatesHistoryQueryKey,
   getGetFxRatesQueryKey,
@@ -183,11 +184,26 @@ export function FxRateMonthlyEditor() {
       onError: () => setError(t("fxRateEditor:saveFailed")),
     },
   });
+  const deleteMonthlyMutation = useDeleteFxRatesHistory({
+    mutation: {
+      onError: () => setError(t("fxRateEditor:saveFailed")),
+    },
+  });
+
+  // 입력란을 비워두면(null) 그 통화의 해당 달 환율을 아예 지워서(DELETE) site 계약 환율/현재 환율로
+  // 다시 폴백되게 한다 — 값을 입력했을 때만 저장(PUT)한다. 실사용자 요청: "VND는 비워두고 싶을 때
+  // (0보다 커야 한다는 입력값 검증 때문에) 저장이 안 됐다".
+  const saveOrClearRate = (currency: "KRW" | "VND", year: number, month: number, purpose: "plan" | "actual_forecast", num: number | null) =>
+    num == null
+      ? deleteMonthlyMutation.mutateAsync({ params: { currency, year, month, purpose } })
+      : putMonthlyMutation.mutateAsync({ data: { currency, year, month, purpose, rate: num } });
 
   const saveMonthly = async () => {
-    const krwNum = parseRateInput(krw);
-    const vndNum = parseRateInput(vnd);
-    if (!Number.isFinite(krwNum) || krwNum <= 0 || !Number.isFinite(vndNum) || vndNum <= 0) {
+    const krwRaw = krw.trim();
+    const vndRaw = vnd.trim();
+    const krwNum = krwRaw === "" ? null : parseRateInput(krw);
+    const vndNum = vndRaw === "" ? null : parseRateInput(vnd);
+    if ((krwNum != null && (!Number.isFinite(krwNum) || krwNum <= 0)) || (vndNum != null && (!Number.isFinite(vndNum) || vndNum <= 0))) {
       setError(t("fxRateEditor:invalidNumber"));
       return;
     }
@@ -204,8 +220,8 @@ export function FxRateMonthlyEditor() {
       const failedMonths: number[] = [];
       for (let m = 1; m <= 12; m++) {
         try {
-          await putMonthlyMutation.mutateAsync({ data: { currency: "KRW", year, month: m, purpose: "plan", rate: krwNum } });
-          await putMonthlyMutation.mutateAsync({ data: { currency: "VND", year, month: m, purpose: "plan", rate: vndNum } });
+          await saveOrClearRate("KRW", year, m, "plan", krwNum);
+          await saveOrClearRate("VND", year, m, "plan", vndNum);
         } catch {
           failedMonths.push(m);
         }
@@ -219,8 +235,8 @@ export function FxRateMonthlyEditor() {
       setOpen(false);
     } else {
       try {
-        await putMonthlyMutation.mutateAsync({ data: { currency: "KRW", year, month, purpose: "actual_forecast", rate: krwNum } });
-        await putMonthlyMutation.mutateAsync({ data: { currency: "VND", year, month, purpose: "actual_forecast", rate: vndNum } });
+        await saveOrClearRate("KRW", year, month, "actual_forecast", krwNum);
+        await saveOrClearRate("VND", year, month, "actual_forecast", vndNum);
         await queryClient.invalidateQueries({ queryKey: getGetFxRatesHistoryQueryKey() });
         await queryClient.invalidateQueries({ queryKey: getGetFxRatesQueryKey() });
         setOpen(false);
@@ -402,7 +418,7 @@ export function FxRateMonthlyEditor() {
                 )}
                 <button
                   onClick={saveMonthly}
-                  disabled={putMonthlyMutation.isPending}
+                  disabled={putMonthlyMutation.isPending || deleteMonthlyMutation.isPending}
                   style={{
                     width: "100%",
                     padding: "8px 0",
@@ -412,10 +428,10 @@ export function FxRateMonthlyEditor() {
                     color: "#fff",
                     border: "none",
                     borderRadius: "6px",
-                    cursor: putMonthlyMutation.isPending ? "wait" : "pointer",
+                    cursor: putMonthlyMutation.isPending || deleteMonthlyMutation.isPending ? "wait" : "pointer",
                   }}
                 >
-                  {putMonthlyMutation.isPending ? t("fxRateEditor:saving") : t("common:save")}
+                  {putMonthlyMutation.isPending || deleteMonthlyMutation.isPending ? t("fxRateEditor:saving") : t("common:save")}
                 </button>
               </>
             )}

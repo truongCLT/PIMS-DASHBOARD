@@ -243,6 +243,55 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiErrorMessage"
+    delete:
+      operationId: deleteFxRatesHistory
+      tags: [fxrates]
+      summary: Clear (unset) one month's FX rate for one currency (admin only). Lets a previously-saved monthly rate be removed, falling back to site/current rate again.
+      security:
+        - adminBearer: []
+      parameters:
+        - name: currency
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [USD, KRW, VND]
+        - name: year
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: month
+          in: query
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 12
+        - name: purpose
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [actual_forecast, plan]
+            default: actual_forecast
+      responses:
+        "200":
+          description: Cleared (or already absent)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                required: [success]
+        "401":
+          description: Admin authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorMessage"
   /pimsvina/siterate:
     get:
       operationId: getPimsvinaSiterate

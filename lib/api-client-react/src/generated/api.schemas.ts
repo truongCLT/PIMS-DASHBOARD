@@ -949,6 +949,38 @@ export const GetFxRatesHistoryPurpose = {
   plan: 'plan',
 } as const;
 
+export type DeleteFxRatesHistoryParams = {
+currency: DeleteFxRatesHistoryCurrency;
+year: number;
+/**
+ * @minimum 1
+ * @maximum 12
+ */
+month: number;
+purpose?: DeleteFxRatesHistoryPurpose;
+};
+
+export type DeleteFxRatesHistoryCurrency = typeof DeleteFxRatesHistoryCurrency[keyof typeof DeleteFxRatesHistoryCurrency];
+
+
+export const DeleteFxRatesHistoryCurrency = {
+  USD: 'USD',
+  KRW: 'KRW',
+  VND: 'VND',
+} as const;
+
+export type DeleteFxRatesHistoryPurpose = typeof DeleteFxRatesHistoryPurpose[keyof typeof DeleteFxRatesHistoryPurpose];
+
+
+export const DeleteFxRatesHistoryPurpose = {
+  actual_forecast: 'actual_forecast',
+  plan: 'plan',
+} as const;
+
+export type DeleteFxRatesHistory200 = {
+  success: boolean;
+};
+
 export type GetPimsvinaSiterateParams = {
 siteCode: string;
 };
