@@ -15,31 +15,22 @@ import { useDashboardFilters } from "../lib/dashboardFilters";
 
 type Tab = "current" | "monthly";
 
-// 환율 입력란은 그냥 <input type="text">라서(VndInput처럼 자리에서 숫자만 걸러주지 않음), "1.600" 같은
-// 천단위 구분(VN/KR 표기 관례)이나 "25.985,50"처럼 쉼표를 소수점으로 쓴 입력이 그대로 들어오면
-// Number()가 NaN을 반환해 "저장 실패"가 떴다(실사용자 보고). 쉼표/마침표를 보고 어느 쪽이 소수점인지
-// 판단해서 숫자로 정규화한다: 마지막에 나오는 구분자를 소수점으로, 그 앞의 같은 종류 구분자는
-// 천단위로 간주해 제거한다. 구분자가 하나뿐이고 뒤에 정확히 2자리면 소수점으로, 아니면 천단위로 본다.
-// 입력 중인 원문을 "정수부(구분자 제거).소수부" 형태로 정규화한다. 사용자가 막 "."나 ","를 쳐서
-// 소수부가 아직 비어 있는 중간 상태("123.")도 그대로 보존해야 타이핑 중 포맷팅이 끊기지 않는다.
+// 환율 입력란은 그냥 <input type="text">라서(VndInput처럼 자리에서 숫자만 걸러주지 않음), 쉼표는
+// 항상 "천단위 구분 표시"로만 쓰고 제거하며, 사용자가 입력한 "."은 항상 소수점으로 그대로 쓴다
+// (자릿수를 보고 천단위/소수점을 추측하던 예전 방식은 "4343.66"을 "4.34366"으로 잘못 해석하는 등
+// 실사용자가 원치 않는 추측을 해서 혼란을 줬다 — 이제는 추측하지 않는다, 사용자가 직접 "."를 찍은
+// 자리가 곧 소수점이다). 입력 중인 원문을 "정수부(구분자 제거).소수부" 형태로 정규화한다. 사용자가
+// 막 "."를 쳐서 소수부가 아직 비어 있는 중간 상태("123.")도 그대로 보존해 타이핑 중 포맷팅이 끊기지
+// 않게 한다.
 function normalizeRateInput(raw: string): string {
   const s = raw.trim();
   if (s === "") return "";
-  const lastDot = s.lastIndexOf(".");
-  const lastComma = s.lastIndexOf(",");
-  let decimalPos = -1;
-  if (lastDot >= 0 && lastComma >= 0) {
-    decimalPos = Math.max(lastDot, lastComma);
-  } else if (lastDot >= 0 || lastComma >= 0) {
-    const pos = Math.max(lastDot, lastComma);
-    // 구분자가 하나뿐이면, 그 뒤 자릿수가 정확히 3개일 때만 천단위 구분으로 본다(예: "1.600").
-    // 그 외(1~2자리, 또는 VND 환율처럼 4자리 이상인 "0.05570")는 소수점으로 처리한다.
-    if (s.length - pos - 1 !== 3) decimalPos = pos;
-  }
-  let intPart = decimalPos >= 0 ? s.slice(0, decimalPos) : s;
-  const fracPart = decimalPos >= 0 ? s.slice(decimalPos + 1) : "";
+  const dotIdx = s.indexOf(".");
+  let intPart = dotIdx >= 0 ? s.slice(0, dotIdx) : s;
+  const fracPart = dotIdx >= 0 ? s.slice(dotIdx + 1) : "";
   intPart = intPart.replace(/[.,\s]/g, "");
-  return decimalPos >= 0 ? `${intPart}.${fracPart}` : intPart;
+  const cleanFrac = fracPart.replace(/[^0-9]/g, "");
+  return dotIdx >= 0 ? `${intPart}.${cleanFrac}` : intPart;
 }
 
 function parseRateInput(raw: string): number {
