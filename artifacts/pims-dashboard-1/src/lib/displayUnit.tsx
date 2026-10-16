@@ -31,6 +31,12 @@ export type DisplayUnit = {
   fmtVnd: (v: number | null | undefined) => string;
   /** VND 원본 값 → 천 USD 기준 값 (다른 천 USD 기준 값과 내부 계산/비교할 때 사용, 표시 통화와 무관) */
   convertVndToKUsd: (v: number) => number;
+  /** 지금 rates가 그 site의 진짜 계약 환율(또는 월별 FX Rate Settings)인지, 아니면 계약 환율이 아예
+   * 없어서 전역 "현재 환율"(fxRates, 매 호출마다 바뀔 수 있음)로 대체된 것인지 구분한다. 매출(Monthly
+   * Revenue) 입력란처럼 "확정된 환율이 없으면 0으로 보여줘야" 하는 곳에서, 대시보드 헤더 등 다른 곳과
+   * 달리 이 전역 현재 환율 폴백을 쓰지 않기 위해 필요하다 — true면 rates를 신뢰해도 되고, false면
+   * site 계약 환율이 없다는 뜻이라 호출하는 쪽에서 0 처리를 고려해야 한다. */
+  hasSiteRate: boolean;
 };
 
 const defaultUnit: DisplayUnit = {
@@ -38,6 +44,7 @@ const defaultUnit: DisplayUnit = {
   unitOn: true,
   convert: (v) => v,
   convertToKUsd: (v) => v,
+  hasSiteRate: true,
   fmtMoney: (v, digits = 0) =>
     v == null || Number.isNaN(v)
       ? "-"
@@ -170,12 +177,16 @@ export function DisplayUnitProvider({
   currency,
   unitOn,
   rates = DEFAULT_EXCHANGE_RATES,
+  hasSiteRate = true,
   lang = "ko",
   children,
 }: {
   currency: string;
   unitOn: boolean;
   rates?: Record<string, number>;
+  /** rates가 실제 site 계약 환율인지 여부 — 계약 환율이 없어 전역 "현재 환율"로 대체된 경우 false를
+   * 넘긴다(기본값 true는 기존 호출부 호환용: rates를 그대로 신뢰해도 되는 곳이 대부분이라). */
+  hasSiteRate?: boolean;
   lang?: "ko" | "en" | "vi";
   children: React.ReactNode;
 }) {
@@ -195,8 +206,9 @@ export function DisplayUnitProvider({
           ? "-"
           : convertFromVndAmount(v, currency, unitOn, rates).toLocaleString("en-US", { maximumFractionDigits: 0 }),
       convertVndToKUsd: (v) => convertVndToKUsdAmount(v, rates),
+      hasSiteRate,
     }),
-    [currency, unitOn, rates, lang],
+    [currency, unitOn, rates, hasSiteRate, lang],
   );
   return <DisplayUnitContext.Provider value={value}>{children}</DisplayUnitContext.Provider>;
 }

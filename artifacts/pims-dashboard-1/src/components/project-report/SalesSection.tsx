@@ -124,13 +124,20 @@ export function SalesSection({
   contractAmount,
 }: Props) {
   const { t } = useTranslation(["projectReportTab", "common"]);
-  const { convert, unitLabel, convertVndToKUsd, currency, unitOn } = useMoney();
+  const { convert, unitLabel, convertVndToKUsd, currency, unitOn, hasSiteRate } = useMoney();
   const { getRatesForMonth } = useMonthlyFxRates();
-  // "월별 매출 환율 설정"에 그 달 환율이 있으면 그걸로, 없으면 기존(현재/계약) 환율로 변환한다 — 이
+  // "월별 매출 환율 설정"에 그 달 환율이 있으면 그걸로, 없으면 기존(계약) 환율로 변환한다 — 이
   // 차트/누계에 표시되는 매출 수치는 전부 이 함수로 먼저 변환한 "이미 변환된 값"이고, 아래 fmtMoney는
   // (status 카드의 원본 천 USD 로직과 겹치지 않도록) 그 값을 그대로 포맷만 한다.
   const convertForMonth = (v: number, year: number, month: number, purpose: "actual_forecast" | "plan" = "actual_forecast") => {
-    const monthlyRates = getRatesForMonth(year, month, purpose);
+    const monthlyRatesRaw = getRatesForMonth(year, month, purpose);
+    // monthlyRatesRaw có thể có KRW nhưng thiếu VND (hoặc ngược lại) — nếu đồng tiền đang hiển thị
+    // không có tỷ giá riêng trong đó, rơi xuống fallback convert() (tỷ giá hợp đồng site) thay vì âm
+    // thầm dùng rate=0. Xem ProjectDataEntryTab.tsx (VndInput) cho cùng logic/lý do.
+    const monthlyRates = monthlyRatesRaw && monthlyRatesRaw[currency] ? monthlyRatesRaw : null;
+    // Không có tỷ giá tháng riêng VÀ site cũng không có tỷ giá hợp đồng → không "trôi" theo tỷ giá
+    // hiện tại toàn cục, hiện 0 (trừ USD vì không cần quy đổi).
+    if (!monthlyRates && !hasSiteRate && currency !== "USD") return 0;
     return monthlyRates ? convertMoney(v, currency, unitOn, monthlyRates) : convert(v);
   };
   const fmtMoney = (v: number | null | undefined) =>

@@ -126,10 +126,22 @@ function VndInput({
   "data-row"?: string | number;
   "data-col"?: string | number;
 }) {
-  const { convert, convertToKUsd, fmtMoney, fmtMoneyFull, currency, unitOn } = useMoney();
+  const { convert, convertToKUsd, fmtMoney, fmtMoneyFull, currency, unitOn, hasSiteRate } = useMoney();
   const { getRatesForMonth } = useMonthlyFxRates();
-  const monthlyRates = year != null && month != null ? getRatesForMonth(year, month, purpose) : null;
-  const convertDisplay = (v: number) => (monthlyRates ? convertMoney(v, currency, unitOn, monthlyRates) : convert(v));
+  const monthlyRatesRaw = year != null && month != null ? getRatesForMonth(year, month, purpose) : null;
+  // monthlyRatesRaw có thể có KRW nhưng thiếu VND (hoặc ngược lại) — nếu đồng tiền đang hiển thị
+  // không có tỷ giá riêng trong đó, coi như "chưa cấu hình tỷ giá tháng này" và rơi xuống fallback
+  // convert() (tỷ giá hợp đồng site), thay vì âm thầm dùng rate=0 trong object đó (thực tế gặp phải:
+  // tháng có KRW riêng nhưng thiếu VND, xem bằng VND vẫn ra 0 dù site đã khai báo tỷ giá hợp đồng).
+  const monthlyRates = monthlyRatesRaw && monthlyRatesRaw[currency] ? monthlyRatesRaw : null;
+  // Không có tỷ giá tháng riêng VÀ site cũng không có tỷ giá hợp đồng → convert() lúc này sẽ âm thầm
+  // dùng tỷ giá hiện tại toàn cục (fxRates, dashboard_common_exchangerate_1q.jsp — thay đổi theo thời
+  // điểm gọi). Với Monthly Revenue, số liệu KHÔNG được "trôi" theo tỷ giá sống như vậy — chỉ chấp nhận
+  // tỷ giá tháng đã chốt hoặc tỷ giá hợp đồng site, còn lại hiện 0 (USD là ngoại lệ vì bản thân nó
+  // không cần quy đổi, là đơn vị gốc đã lưu trong DB).
+  const noReliableRate = !monthlyRates && !hasSiteRate && currency !== "USD";
+  const convertDisplay = (v: number) =>
+    noReliableRate ? 0 : monthlyRates ? convertMoney(v, currency, unitOn, monthlyRates) : convert(v);
   const convertToStorage = (v: number) =>
     monthlyRates ? convertToKUsdAmount(v, currency, unitOn, monthlyRates) : convertToKUsd(v);
   const [editing, setEditing] = React.useState(false);
@@ -142,12 +154,11 @@ function VndInput({
   const originalRawStrRef = React.useRef("");
 
   const fmt = (v: number, full: boolean) => {
-    if (year != null && month != null && !monthlyRates) {
-      // Tháng này chưa cấu hình tỷ giá riêng ("월별 매출 환율 설정") — dù xem bằng USD/VND/KRW đều
-      // hiện 0, thay vì âm thầm fallback về tỷ giá hiện tại/hợp đồng (dễ gây hiểu nhầm là số đã
-      // được quy đổi đúng theo tỷ giá tháng đó, hoặc với USD là giá trị gốc chưa qua kiểm tra tỷ giá).
-      return full ? fmtMoneyFull(0) : fmtMoney(0);
-    }
+    // Không có tỷ giá tháng riêng VÀ site cũng không có tỷ giá hợp đồng → hiện 0, không "trôi" theo
+    // tỷ giá hiện tại toàn cục (xem giải thích noReliableRate ở trên).
+    if (noReliableRate) return full ? fmtMoneyFull(0) : fmtMoney(0);
+    // Chưa cấu hình tỷ giá riêng tháng này, nhưng site có tỷ giá hợp đồng — fmtMoney/fmtMoneyFull của
+    // useMoney context đã áp dụng tỷ giá hợp đồng đó (siteRates ở ProjectDashboard.tsx) rồi.
     if (!monthlyRates) return full ? fmtMoneyFull(v) : fmtMoney(v);
     const converted = convertDisplay(v);
     return Math.round(converted).toLocaleString("en-US");
