@@ -1321,10 +1321,12 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
     month: number,
     field: "plan" | "actual",
   ) => {
-    const saved = salesMonthly.find(
-      (row) => row.year === year && row.month === month,
-    )?.[field];
-    if (saved != null) return saved;
+    const row = salesMonthly.find((r) => r.year === year && r.month === month);
+    // Đã có dòng lưu tay cho (year, month) này rồi — dùng giá trị trong đó, KỂ CẢ khi field đó là
+    // null (người dùng cố ý xóa). Trước đây check `saved != null` không phân biệt được "chưa từng
+    // nhập gì" với "đã nhập rồi xóa về trống", nên xóa xong vẫn rơi về fallback mainSalesMonths
+    // (snapshot Excel cũ) và số liệu cũ lại hiện lên y như chưa xóa được (thực tế đã gặp phải).
+    if (row) return row[field] ?? null;
     if (year !== REPORT_YEAR) return null;
     return mainSalesMonths[month - 1]?.[field] ?? null;
   };
