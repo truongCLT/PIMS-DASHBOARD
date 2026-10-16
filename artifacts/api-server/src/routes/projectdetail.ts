@@ -40,7 +40,7 @@ import {
 import { requireAdmin } from "../middlewares/adminAuth";
 import { preservePimsvinaActualSource } from "../lib/pimsvinaTradeCost";
 import { buildPimsvinaFileUrl } from "../lib/pimsvinaClient";
-import { getCurrentRate, getSiteContractRates, type FxCurrency } from "../lib/currentFxRate";
+import { getSiteContractRates, type FxCurrency } from "../lib/currentFxRate";
 
 const router: IRouter = Router();
 const SECTION_KEYS = [
@@ -365,10 +365,11 @@ router.get("/projectdetail", async (req, res) => {
 // 예전엔 고정 환율(1 kUSD = 25,400,000 VND) 하나로 모든 달을 역변환했는데, 월별로 실제 환율이 달라서
 // 달마다 오차가 생겼다. fx_rates(연/월별 환율, 이미 환율 설정 화면에 존재)를 조회해 해당 연/월의 환율을
 // 쓰는데, "월별 매출 환율 설정" 화면(ProjectDataEntryTab/VndInput)과 똑같이 그 연/월에 정확히 저장된
-// 행이 있을 때만 쓴다. 없으면 - ProjectDashboard.tsx의 siteRates와 동일하게 - 전역 "현재 환율"이 아니라
-// 그 현장의 계약 환율(CBTB_CTRTSUMM, dashboard_common_siterate_1q.jsp)로 대체하고, 계약 환율도 없는
-// 현장일 때만 전역 "현재 환율"로 떨어진다. (실사용자 보고: Revenue tab의 Sales Actual 금액이 API 값과
-// 달랐던 원인 — 처음엔 전역 현재 환율로만 폴백했는데, 이 화면은 현장별 계약 환율을 우선한다.)
+// 행이 있을 때만 쓴다. 없으면 그 현장의 계약 환율(CBTB_CTRTSUMM, dashboard_common_siterate_1q.jsp)로
+// 대체한다. 전역 "현재 환율"(실시간 PIMSVINA 조회 - 매 호출마다 값이 달라짐)로는 더 이상 폴백하지
+// 않는다 — 실사용자 보고: 그 달에 확정된 환율이 없을 때 "현재 환율"로 떨어지면 호출 시점마다 숫자가
+// 계속 바뀌어("떠다녀") 신뢰할 수 없었다. 그 연/월(과 site 계약 환율)에 환율이 전혀 없으면 null을
+// 반환해 호출하는 쪽에서 빈 값으로 둔다.
 // rate는 "1 USD 기준" 환율(해당 통화 / 1 USD)이다. USD 요청은 환산이 필요 없어 rate=1 로 취급한다.
 type RevenueCurrency = FxCurrency;
 type FxRatePurpose = "plan" | "actual_forecast";
@@ -387,7 +388,6 @@ async function buildRateLookup(
     .select({ year: fxRatesTable.year, month: fxRatesTable.month, rate: fxRatesTable.rate })
     .from(fxRatesTable)
     .where(and(eq(fxRatesTable.currency, currency), eq(fxRatesTable.purpose, purpose)));
-  const currentRate = await getCurrentRate(currency);
   return (year, month, siteCode) => {
     if (year != null && month != null) {
       const exact = rows.find((r) => r.year === year && r.month === month);
@@ -395,12 +395,11 @@ async function buildRateLookup(
     }
     const contract = siteCode ? siteContractRates.get(siteCode) : null;
     if (contract?.rateUsd) {
-      // siteRates(ProjectDashboard.tsx)와 동일: VND는 계약환율(rateUsd) 그대로, KRW는
-      // rateUsd/rateKrw(계약환율 KRW가 0/미등록이면 전역 현재 환율로 대체).
+      // siteRates(ProjectDashboard.tsx)와 동일: VND는 계약환율(rateUsd) 그대로, KRW는 rateUsd/rateKrw.
       if (currency === "VND") return contract.rateUsd;
-      if (currency === "KRW") return contract.rateKrw ? contract.rateUsd / contract.rateKrw : currentRate;
+      if (currency === "KRW") return contract.rateKrw ? contract.rateUsd / contract.rateKrw : null;
     }
-    return currentRate;
+    return null;
   };
 }
 
@@ -424,9 +423,20 @@ function lastClosedYearMonth(): { year: number; month: number } {
  * and converts the stored kUSD plan/actual using fx_rates itself, so callers no longer need to
  * re-divide the figure by their own exchange rate. The converted amount is also pre-divided into a
  * readable unit per currency (same scale as the frontend's moneyUnitLabel): VND ÷ 1e9 ("Bil. VND"),
- * USD ÷ 1e3 ("K USD"), KRW ÷ 1e6 ("Mil. KRW"). For USD/KRW, each row also includes exchangeRate —
- * the per-(year, month, site) rate actually applied (same monthly rate as the "FX Rate Settings"
- * screen); omitted for VND since no conversion is needed.
+ * USD ÷ 1e3 ("K USD"), KRW ÷ 1e6 ("Mil. KRW"). For USD/KRW, each row also includes exchangeRate — the
+ * requested currency's own rate (1 USD 기준) from the actual_forecast track for that (year, month,
+ * site); never falls back to the plan track's rate (they're independent, intentionally-separate
+ * tracks), so it's null whenever actual_forecast has no rate pinned for that month, even if plan does;
+ * omitted for VND since no conversion is needed.
+ *
+ * Each currency is judged independently (mirrors the frontend's ProjectDataEntryTab/convertMoney):
+ * USD never needs a rate (rate is always 1), so ?currency=USD always returns the raw kUSD amount
+ * regardless of whether VND/KRW has a rate pinned for that month. VND/KRW each need THEIR OWN rate —
+ * pinned in "FX Rate Settings" for that (year, month), or else the site's PIMSVINA contract rate; if
+ * neither exists, revenueActual/exchangeRate are null for that row (not silently 0, and not borrowed
+ * from the other currency's track). Same independently for revenuePlan against the plan track's own
+ * rate. This endpoint also does NOT fall back to the global "current rate" (which is live/time-varying),
+ * since that silently produced different numbers on every call for an unpinned month.
  *
  * Mirrors ProjectDataEntryTab's getSalesEntryValue fallback: when pd_sales_monthly has no row for
  * a given (project, current-report-year, month), the Data Entry screen falls back to the mgmt-report
@@ -517,10 +527,11 @@ router.get("/outsourcing/all", async (req, res) => {
     const siteContractRates = await getSiteContractRates(allRows.map((r) => r.siteCode).filter((s): s is string => !!s));
     const rateForPlan = await buildRateLookup(currency, "plan", siteContractRates);
     const rateForActual = await buildRateLookup(currency, "actual_forecast", siteContractRates);
-    // exchangeRate로 내려줄 값은 항상 "FX Rate Settings" 화면에 보이는 VND 환율이어야 한다(통화가
-    // USD일 때 rateForPlan이 자기참조라 그냥 1을 내려주면 호출자 입장에서 의미가 없다 — 실사용자 보고).
-    const rateForPlanVnd = currency === "VND" ? rateForPlan : await buildRateLookup("VND", "plan", siteContractRates);
-    const rateForActualVnd = currency === "VND" ? rateForActual : await buildRateLookup("VND", "actual_forecast", siteContractRates);
+    // 환율 판단은 요청받은 통화 자체의 트랙만 본다 — VND를 공통 게이트로 쓰지 않는다. (예전엔 USD/KRW를
+    // 요청해도 항상 VND 트랙에 그 달 환율이 있는지로만 판단했는데, 그러면 KRW는 이미 설정돼 있어도 VND가
+    // 비어 있으면 같이 비워졌다. 프론트 ProjectDataEntryTab/convertMoney와 동일하게, 통화별로 독립적으로
+    // 판단한다: USD는 변환이 필요 없으니 rate=1로 항상 값이 나오고, VND/KRW는 각자 자기 트랙에 그 달
+    // 환율(또는 site 계약 환율)이 있을 때만 값이 나온다.)
     const toCurrency = (
       kUsd: string | null,
       year: number | null,
@@ -529,8 +540,10 @@ router.get("/outsourcing/all", async (req, res) => {
       rateFor: (year: number | null, month: number | null, siteCode: string | null) => number | null,
     ) => {
       if (kUsd == null) return { amount: null, rate: null };
+      // 적용할 환율을 찾지 못하면(그 달 확정 환율도, site 계약 환율도 없음) 금액을 0으로 지어내지
+      // 않고 비워 둔다 — "현재 환율"로 대충 채우지 말라는 실사용자 요청.
       const rate = rateFor(year, month, siteCode);
-      if (rate == null) return { amount: 0, rate: null };
+      if (rate == null) return { amount: null, rate: null };
       return { amount: Math.round(Number(kUsd) * 1000 * rate), rate };
     };
     // 호출자가 매번 자기 쪽에서 다시 나눌 필요 없게, 통화별로 보기 좋은 단위(천 USD / 백만 KRW /
@@ -541,18 +554,15 @@ router.get("/outsourcing/all", async (req, res) => {
       data: allRows.map((r) => {
         const plan = toCurrency(r.revenuePlan, r.year, r.month, r.siteCode, rateForPlan);
         const actual = toCurrency(r.revenueActual, r.year, r.month, r.siteCode, rateForActual);
-        const planVndRate = rateForPlanVnd(r.year, r.month, r.siteCode);
-        const actualVndRate = rateForActualVnd(r.year, r.month, r.siteCode);
         return {
           ...r,
           revenuePlan: plan.amount == null ? null : plan.amount / unitScale,
           revenueActual: actual.amount == null ? null : actual.amount / unitScale,
           // VND는 환율 변환이 필요 없는 기준 통화라 exchangeRate를 내려줄 이유가 없다 — USD/KRW일 때만
-          // "FX Rate Settings"의 VND 환율(그 달 실제로 적용된 값, Plan과 Actual이 다른 환율 트랙을
-          // 쓰지만 보통 같은 값이라 Plan 쪽을 대표값으로 사용)을 포함한다. 적용할 환율을 전혀 찾지
-          // 못하면(이론상 buildRateLookup은 항상 "현재 환율"로 폴백하지만, 방어적으로) 0으로 내려준다
-          // — 그러면 revenuePlan/revenueActual도 toCurrency()에서 이미 0으로 계산돼 있어 서로 일관된다.
-          ...(currency === "VND" ? {} : { exchangeRate: planVndRate ?? actualVndRate ?? 0 }),
+          // 실제로 적용된 환율(그 통화 자신의 트랙, 1 USD 기준)을 내려준다. 항상 actual_forecast
+          // 트랙의 환율만 쓴다(실사용자 요청: Plan으로 대체하지 말 것) — 그 달 actual_forecast 환율도
+          // site 계약 환율도 없으면 null(revenueActual도 toCurrency()에서 이미 null로 일관됨).
+          ...(currency === "VND" ? {} : { exchangeRate: actual.rate }),
         };
       }),
     });

@@ -1,5 +1,4 @@
 import { useGetFxRatesHistory, getGetFxRatesHistoryQueryKey } from "@workspace/api-client-react";
-import { DEFAULT_EXCHANGE_RATES } from "./displayUnit";
 
 /**
  * "월별 매출 환율 설정"(fx_rates/history)으로 입력된 연·월별 환율을 Map으로 만들어, 매출 관련
@@ -32,10 +31,14 @@ export function useMonthlyFxRates() {
       (r) => r.currency === "VND" && r.year === year && r.month === month && (r.purpose ?? "actual_forecast") === purpose,
     );
     if (!krwRow && !vndRow) return null;
+    // Mỗi đồng tiền thiếu row được coi là "chưa cấu hình tỷ giá tháng đó" (0), KHÔNG fallback về
+    // DEFAULT_EXCHANGE_RATES — nếu không, có KRW mà thiếu VND (hoặc ngược lại) sẽ khiến phía thiếu
+    // âm thầm dùng tỷ giá mặc định thay vì báo rõ là chưa có số liệu (bug thực tế: KRW tháng 9 có
+    // lưu nhưng VND thì không, Monthly Revenue vẫn hiện số VND dùng tỷ giá mặc định 25400).
     return {
       USD: 1,
-      KRW: krwRow?.rate ?? DEFAULT_EXCHANGE_RATES.KRW,
-      VND: vndRow?.rate ?? DEFAULT_EXCHANGE_RATES.VND,
+      KRW: krwRow?.rate ?? 0,
+      VND: vndRow?.rate ?? 0,
     };
   };
 

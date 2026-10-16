@@ -142,6 +142,12 @@ function VndInput({
   const originalRawStrRef = React.useRef("");
 
   const fmt = (v: number, full: boolean) => {
+    if (year != null && month != null && !monthlyRates) {
+      // Tháng này chưa cấu hình tỷ giá riêng ("월별 매출 환율 설정") — dù xem bằng USD/VND/KRW đều
+      // hiện 0, thay vì âm thầm fallback về tỷ giá hiện tại/hợp đồng (dễ gây hiểu nhầm là số đã
+      // được quy đổi đúng theo tỷ giá tháng đó, hoặc với USD là giá trị gốc chưa qua kiểm tra tỷ giá).
+      return full ? fmtMoneyFull(0) : fmtMoney(0);
+    }
     if (!monthlyRates) return full ? fmtMoneyFull(v) : fmtMoney(v);
     const converted = convertDisplay(v);
     return Math.round(converted).toLocaleString("en-US");

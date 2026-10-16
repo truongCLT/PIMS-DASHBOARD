@@ -111,8 +111,17 @@ export function convertMoney(
   unitOn: boolean,
   rates: Record<string, number> = DEFAULT_EXCHANGE_RATES,
 ): number {
-  const vndRate = rates.VND || DEFAULT_EXCHANGE_RATES.VND;
-  return convertFromVndAmount(v * 1000 * vndRate, currency, unitOn, rates);
+  // Quy đổi thẳng theo tỷ giá của CHÍNH đồng tiền hiển thị (rates[currency] = số đơn vị đồng đó / 1
+  // USD), không đi vòng qua VND làm trung gian. Trước đây luôn nhân/chia qua rates.VND trước, nên
+  // dù rates.KRW đã có sẵn, chỉ cần rates.VND thiếu/0 là kết quả KRW cũng bị kéo về 0 theo — lỗi thực
+  // tế gặp phải: tháng đã cấu hình tỷ giá KRW nhưng chưa nhập VND, xem bằng KRW vẫn ra 0.
+  const rate = rates[currency];
+  if (!rate) return 0;
+  const raw = v * 1000 * rate;
+  if (!unitOn) return raw;
+  if (currency === "VND") return raw / 1_000_000_000;
+  if (currency === "KRW") return raw / 1_000_000;
+  return raw / 1000;
 }
 
 /** 천 USD 기준 값 → 포맷 문자열 (순수 함수, null → "-") */
