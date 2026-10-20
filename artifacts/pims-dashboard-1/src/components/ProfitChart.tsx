@@ -256,12 +256,12 @@ export function ProfitChart() {
             { c: DW_OP, l: t("common:operatingProfit"), round: false },
             { c: DW_SGA, l: t("common:sga"), round: false },
           ].map((it) => (
-            <div key={it.l} style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-              <div style={{ width: it.round ? "10px" : "13px", height: it.round ? "10px" : "11px", backgroundColor: it.c, borderRadius: it.round ? "50%" : "3px" }} />
-              <span style={{ fontSize: `${chartTypography.legend}px`, color: INK_BODY, fontWeight: 600 }}>{it.l}</span>
+            <div key={it.l} style={{ display: "flex", alignItems: "center", gap: "4px", flexShrink: 0 }}>
+              <div style={{ width: it.round ? "10px" : "13px", height: it.round ? "10px" : "11px", backgroundColor: it.c, borderRadius: it.round ? "50%" : "3px", flexShrink: 0 }} />
+              <span style={{ fontSize: `${chartTypography.legend}px`, color: INK_BODY, fontWeight: 600, whiteSpace: "nowrap" }}>{it.l}</span>
             </div>
           ))}
-          <span style={{ fontSize: `${chartTypography.legend}px`, color: chartTheme.subLabel, fontWeight: 600 }}>{t("profitChart:barTotalGross")}</span>
+          <span style={{ fontSize: `${chartTypography.legend}px`, color: chartTheme.subLabel, fontWeight: 600, whiteSpace: "nowrap", flexShrink: 0 }}>{t("profitChart:barTotalGross")}</span>
         </div>
       )}
 

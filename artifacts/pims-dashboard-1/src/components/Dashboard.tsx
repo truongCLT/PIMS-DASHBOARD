@@ -52,38 +52,38 @@ export function Dashboard({
       {/* Capture area: everything below the filter box */}
       <div id="dashboard-capture" style={{ backgroundColor: T.dashboard.bg }}>
         {/* KPI Cards */}
-        <div style={{ padding: "8px 10px 4px" }}>
+        <div data-export-row="kpi" style={{ padding: "8px 10px 4px" }}>
           <KPICards />
         </div>
 
         {/* Row 2: 매출 차트 — 손익 차트 — 수주 실적 현황(맨 오른쪽 단독) */}
-        <div style={{
+        <div data-export-row="charts" style={{
           display: "grid",
-          gridTemplateColumns: "1fr 1fr 330px",
+          gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
           gap: "6px",
           padding: "4px 10px",
         }}>
-          <SalesChart />
-          <ProfitChart />
-          <OrderStatus />
+          <div data-export-block style={{ minWidth: 0 }}><SalesChart /></div>
+          <div data-export-block style={{ minWidth: 0 }}><ProfitChart /></div>
+          <div data-export-block style={{ minWidth: 0 }}><OrderStatus /></div>
         </div>
 
         {/* Row 3: 자금 수지 — 경영실적 현황 — 상세정보(드릴다운, 단독) */}
-        <div style={{
+        <div data-export-row="cashflow" style={{
           display: "grid",
-          gridTemplateColumns: "1fr 1fr 330px",
+          gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
           gap: "6px",
           padding: "4px 10px",
         }}>
-          <CashFlowChart scope={scope} />
-          <PerformanceTable />
-          <DrilldownCard />
+          <div data-export-block style={{ minWidth: 0 }}><CashFlowChart scope={scope} /></div>
+          <div data-export-block style={{ minWidth: 0 }}><PerformanceTable /></div>
+          <div data-export-block style={{ minWidth: 0 }}><DrilldownCard /></div>
         </div>
 
         {/* Row 4: comment cards */}
-        <div id="comment-cards-row" style={{
+        <div id="comment-cards-row" data-export-row="comments" style={{
           display: "grid",
-          gridTemplateColumns: "1fr 1fr",
+          gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
           gap: "6px",
           padding: "4px 10px 10px",
         }}>

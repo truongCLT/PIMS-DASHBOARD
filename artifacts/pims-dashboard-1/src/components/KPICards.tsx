@@ -127,7 +127,7 @@ function KPICard({
     if (isGaugeRing) {
       return (
         <div style={{
-          flex: 1, minWidth: 0,
+          flex: "1 1 180px", minWidth: "180px",
           backgroundColor: K.cardBg,
           border: K.cardBorder,
           borderRadius: "10px",
@@ -155,7 +155,7 @@ function KPICard({
               : <div style={{ width: 56, textAlign: "center", fontSize: 12, color: K.labelColor, flexShrink: 0 }}>{achievement}</div>}
             <div style={{ minWidth: 0 }}>
               <div style={{ display: "flex", alignItems: "baseline", gap: "5px", minWidth: 0 }}>
-                <span style={{ fontSize: compact ? "clamp(13px, 1.1vw, 18px)" : "clamp(16px, 1.5vw, 24px)", fontWeight: 800, color: K.valueColor, overflowWrap: "anywhere" }}>
+                <span style={{ fontSize: compact ? "clamp(13px, 1.1vw, 18px)" : "clamp(16px, 1.5vw, 24px)", fontWeight: 800, color: K.valueColor, whiteSpace: "nowrap" }}>
                   {actual.toLocaleString()}
                 </span>
                 {unitLabel && (
@@ -174,7 +174,7 @@ function KPICard({
             <div
               style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "4px" }}>
               <span style={{ fontSize: "clamp(8px, 0.65vw, 10px)", color: K.labelColor, whiteSpace: "nowrap" }}>{t("common:vsPlan")}</span>
-              <span style={{ fontSize: "clamp(10px, 0.8vw, 12px)", fontWeight: 700, color: diff != null ? diffColor : K.labelColor, overflowWrap: "anywhere" }}>
+              <span style={{ fontSize: "clamp(10px, 0.8vw, 12px)", fontWeight: 700, color: diff != null ? diffColor : K.labelColor, whiteSpace: "nowrap" }}>
                 {diff != null ? diffText : "-"}
               </span>
             </div>
@@ -185,7 +185,7 @@ function KPICard({
             {/* 우: 계획 */}
             <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "4px" }}>
               <span style={{ fontSize: "clamp(8px, 0.65vw, 10px)", color: K.labelColor, whiteSpace: "nowrap" }}>{t("common:plan")}</span>
-              <span style={{ fontSize: "clamp(10px, 0.8vw, 12px)", fontWeight: 700, color: K.valueColor, overflowWrap: "anywhere" }}>
+              <span style={{ fontSize: "clamp(10px, 0.8vw, 12px)", fontWeight: 700, color: K.valueColor, whiteSpace: "nowrap" }}>
                 {plan.toLocaleString()}
               </span>
             </div>
@@ -197,7 +197,7 @@ function KPICard({
     /* 예시2: semicircular gauge · big value · 계획/계획 대비 footer */
     return (
       <div style={{
-        flex: 1, minWidth: 0,
+        flex: "1 1 180px", minWidth: "180px",
         backgroundColor: K.cardBg,
         border: K.cardBorder,
         borderRadius: "12px",
@@ -221,7 +221,7 @@ function KPICard({
             ? <SemiGauge pct={pctNum} color={gaugeColor} width={compact ? 88 : 104} />
             : <div style={{ fontSize: 12, color: K.labelColor, padding: "10px 0" }}>{achievement}</div>}
           <div style={{ fontSize: "clamp(8px, 0.65vw, 10px)", color: K.labelColor, marginTop: "-2px" }}>{t("common:achievementRate")}</div>
-          <div style={{ fontSize: compact ? "clamp(13px, 1.1vw, 18px)" : "clamp(16px, 1.5vw, 24px)", fontWeight: 800, color: K.valueColor, overflowWrap: "anywhere", textAlign: "center" }}>
+          <div style={{ fontSize: compact ? "clamp(13px, 1.1vw, 18px)" : "clamp(16px, 1.5vw, 24px)", fontWeight: 800, color: K.valueColor, whiteSpace: "nowrap", textAlign: "center" }}>
             {actual.toLocaleString()}
           </div>
         </div>
@@ -232,11 +232,11 @@ function KPICard({
         }}>
           <div style={{ textAlign: "center", borderRight: "1px solid #e2e8f0" }}>
             <div style={{ fontSize: "clamp(8px, 0.65vw, 10px)", color: K.labelColor }}>{t("common:plan")}</div>
-            <div style={{ fontSize: "clamp(10px, 0.85vw, 13px)", fontWeight: 700, color: K.valueColor, overflowWrap: "anywhere" }}>{plan.toLocaleString()}</div>
+            <div style={{ fontSize: "clamp(10px, 0.85vw, 13px)", fontWeight: 700, color: K.valueColor, whiteSpace: "nowrap" }}>{plan.toLocaleString()}</div>
           </div>
           <div style={{ textAlign: "center" }}>
             <div style={{ fontSize: "clamp(8px, 0.65vw, 10px)", color: K.labelColor }}>{t("common:vsPlan")}</div>
-            <div style={{ fontSize: "clamp(10px, 0.85vw, 13px)", fontWeight: 700, color: diff != null ? diffColor : K.labelColor, overflowWrap: "anywhere" }}>
+            <div style={{ fontSize: "clamp(10px, 0.85vw, 13px)", fontWeight: 700, color: diff != null ? diffColor : K.labelColor, whiteSpace: "nowrap" }}>
               {diff != null ? diffText : "-"}
             </div>
           </div>
@@ -253,7 +253,7 @@ function KPICard({
 
     return (
       <div style={{
-        flex: 1, minWidth: 0,
+        flex: "1 1 180px", minWidth: "180px",
         backgroundColor: K.cardBg,
         border: K.cardBorder,
         borderRadius: "10px",
@@ -304,21 +304,21 @@ function KPICard({
             {/* Plan */}
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: "clamp(9px, 0.7vw, 11px)", color: K.labelColor, marginBottom: "2px" }}>{t("common:plan")}</div>
-              <div style={{ fontSize: numFont, fontWeight: "700", color: K.valueColor, overflowWrap: "anywhere" }}>
+              <div style={{ fontSize: numFont, fontWeight: "700", color: K.valueColor, whiteSpace: "nowrap" }}>
                 {plan.toLocaleString()}
               </div>
             </div>
             {/* Actual */}
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: "clamp(9px, 0.7vw, 11px)", color: K.labelColor, marginBottom: "2px" }}>{t("common:actual")}</div>
-              <div style={{ fontSize: numFont, fontWeight: "700", color: K.valueColor, overflowWrap: "anywhere" }}>
+              <div style={{ fontSize: numFont, fontWeight: "700", color: K.valueColor, whiteSpace: "nowrap" }}>
                 {actual.toLocaleString()}
               </div>
             </div>
             {/* Achievement */}
             <div style={{ flex: "0 0 auto", textAlign: "right" }}>
               <div style={{ fontSize: "clamp(9px, 0.7vw, 11px)", color: K.labelColor, marginBottom: "2px" }}>{t("common:achievementRate")}</div>
-              <div style={{ fontSize: numFont, fontWeight: "800", color: achievementColor, overflowWrap: "anywhere" }}>
+              <div style={{ fontSize: numFont, fontWeight: "800", color: achievementColor, whiteSpace: "nowrap" }}>
                 {achievement}
               </div>
             </div>
@@ -370,14 +370,14 @@ function KPICard({
         {/* Plan */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: "clamp(10px, 0.8vw, 13px)", color: K.labelColor, marginBottom: "4px" }}>{t("common:plan")}</div>
-          <div style={{ fontSize: numFont, fontWeight: "700", color: K.valueColor, overflowWrap: "anywhere" }}>
+          <div style={{ fontSize: numFont, fontWeight: "700", color: K.valueColor, whiteSpace: "nowrap" }}>
             {plan.toLocaleString()}
           </div>
         </div>
         {/* Actual */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: "clamp(10px, 0.8vw, 13px)", color: K.labelColor, marginBottom: "4px" }}>{t("common:actual")}</div>
-          <div style={{ fontSize: numFont, fontWeight: "700", color: K.valueColor, overflowWrap: "anywhere" }}>
+          <div style={{ fontSize: numFont, fontWeight: "700", color: K.valueColor, whiteSpace: "nowrap" }}>
             {actual.toLocaleString()}
           </div>
         </div>
@@ -388,7 +388,7 @@ function KPICard({
             fontSize: compact ? "clamp(11px, 0.95vw, 15px)" : "clamp(14px, 1.25vw, 20px)",
             fontWeight: "700",
             color: achievementColor,
-            overflowWrap: "anywhere",
+            whiteSpace: "nowrap",
           }}>
             {achievement}
           </div>
@@ -428,7 +428,7 @@ export function KPICards() {
   }));
 
   return (
-    <div style={{ display: "flex", gap: "8px", flex: 4, minWidth: 0 }}>
+    <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", flex: 4, minWidth: 0 }}>
       {cards.map((kpi, i) => (
         <KPICard
           key={kpi.title}

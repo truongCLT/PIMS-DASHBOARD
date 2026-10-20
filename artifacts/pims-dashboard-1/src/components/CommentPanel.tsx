@@ -97,7 +97,7 @@ export function CommentPanel({
       </div>
 
       {/* Month selector */}
-      <div>
+      <div className="export-hide">
         <div style={{ fontSize: "10px", color: "#888", marginBottom: "3px" }}>{t("commentPanel:monthLabel")}</div>
         <select
           value={month}
@@ -120,7 +120,7 @@ export function CommentPanel({
       </div>
 
       {/* Input */}
-      <div style={{ position: "relative" }}>
+      <div className="export-hide" style={{ position: "relative" }}>
         <textarea
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
@@ -233,7 +233,7 @@ export function CommentPanel({
                       {new Date(c.createdAt).toLocaleDateString("ko-KR")}
                     </span>
                     {isAdmin && (
-                      <span style={{ display: "flex", gap: "8px" }}>
+                      <span className="export-hide" style={{ display: "flex", gap: "8px" }}>
                         <button
                           onClick={() => { setEditingId(c.id); setEditText(c.body); setActionError(null); }}
                           aria-label={t("commentPanel:editCommentAriaLabel")}

@@ -4,17 +4,22 @@ import html2canvas from "html2canvas-pro";
 import { getCashflowAggregate, listMgmtreportComments } from "@workspace/api-client-react";
 import { getDashboardExportData } from "./mgmtreportData";
 
+interface SavedComment {
+  body: string;
+  createdAt: string;
+}
+
 async function fetchSavedComments(
   year: number,
   month: number,
-): Promise<{ analysis: string[]; outlook: string[] }> {
+): Promise<{ analysis: SavedComment[]; outlook: SavedComment[] }> {
   try {
     const res = await listMgmtreportComments({ year, month });
-    const analysis: string[] = [];
-    const outlook: string[] = [];
+    const analysis: SavedComment[] = [];
+    const outlook: SavedComment[] = [];
     // API returns newest first; report shows oldest first
     for (const c of [...res.comments].reverse()) {
-      (c.section === "analysis" ? analysis : outlook).push(c.body);
+      (c.section === "analysis" ? analysis : outlook).push({ body: c.body, createdAt: c.createdAt });
     }
     return { analysis, outlook };
   } catch {
@@ -287,6 +292,16 @@ export async function exportDashboardExcel(): Promise<void> {
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet("경영실적보고", {
     views: [{ showGridLines: false }],
+    pageSetup: {
+      paperSize: 9, // A4
+      orientation: "landscape",
+      fitToPage: true,
+      fitToWidth: 1,
+      fitToHeight: 1,
+      horizontalCentered: true,
+      verticalCentered: true,
+      margins: { left: 0.3, right: 0.3, top: 0.4, bottom: 0.4, header: 0.2, footer: 0.2 },
+    },
   });
 
   // Column layout: A~E charts / F spacer / G~M table
@@ -384,32 +399,34 @@ export async function exportDashboardExcel(): Promise<void> {
   const sga = perfOf("판관비");
   const orders = perfOf("수주");
 
-  const numberComments = (bodies: string[], startAt: number) =>
-    bodies.map((b, i) => `${startAt + i}. ${b.replace(/\s*\n\s*/g, " ")}`).join("\n");
-
+  // Fallback template used only when the user hasn't written any comments
+  // for this month yet, so the section isn't left completely blank.
   const analysisAuto =
     `1. 수주 : 계획 대비 ${orders?.achM ?? "-"} 달성 (${orders?.actualM ?? "-"})\n` +
     `2. 매출 : 금월 누적 실적 ${sales?.actualM ?? "-"}, 달성율 ${sales?.achM ?? "-"}\n` +
     `3. 영업이익 : 금월 누적 ${op?.actualM ?? "-"} (달성율 ${op?.achM ?? "-"})\n` +
     `4. 판관비 : 계획 대비 ${sga?.achM ?? "-"} 집행으로 원가 절감 지속`;
-  const analysisText =
-    savedComments.analysis.length > 0
-      ? `${analysisAuto}\n${numberComments(savedComments.analysis, 5)}`
-      : analysisAuto;
 
   const outlookAuto =
     `1. 매출 : 연간 전망 ${sales?.forecastY ?? "-"}, 사업계획 대비 ${sales?.achY ?? "-"} 달성 전망\n` +
     `2. 영업이익 : 연간 전망 ${op?.forecastY ?? "-"} (달성율 ${op?.achY ?? "-"})\n` +
     `3. 경상이익 : 연간 전망 ${ord2?.forecastY ?? "-"} (달성율 ${ord2?.achY ?? "-"})\n` +
     `4. 판관비 : 적정 원가배분 모니터링 지속`;
+
+  // Mirror the live CommentPanel: show each saved comment, numbered, with its date.
+  const commentsText = (comments: SavedComment[]) =>
+    comments
+      .map((c, i) => `${i + 1}. ${c.body.replace(/\s*\n\s*/g, " ")} (${new Date(c.createdAt).toLocaleDateString("ko-KR")})`)
+      .join("\n");
+
+  const analysisText =
+    savedComments.analysis.length > 0 ? commentsText(savedComments.analysis) : analysisAuto;
   const outlookText =
-    savedComments.outlook.length > 0
-      ? `${outlookAuto}\n${numberComments(savedComments.outlook, 5)}`
-      : outlookAuto;
+    savedComments.outlook.length > 0 ? commentsText(savedComments.outlook) : outlookAuto;
 
   const sections: { label: string; text: string; lines: number }[] = [
-    { label: "실적\n분석", text: analysisText, lines: 4 + savedComments.analysis.length },
-    { label: "전망", text: outlookText, lines: 4 + savedComments.outlook.length },
+    { label: "실적\n분석", text: analysisText, lines: savedComments.analysis.length },
+    { label: "전망", text: outlookText, lines: savedComments.outlook.length },
   ];
 
   row += 1;
@@ -476,6 +493,11 @@ export async function exportDashboardExcel(): Promise<void> {
   // boxes (chart 2), matching the reference report layout.
   ws.addImage(img1, `A4:E${tableEndRow}`);
   ws.addImage(img2, `A${sectionsStartRow}:E${sectionsEndRow}`);
+
+  // Constrain the print/fit-to-page area to just the real report content
+  // (title + charts + table + comment sections) so "fit to 1 page" scales
+  // it up to fill the A4 sheet instead of shrinking around empty columns.
+  ws.pageSetup.printArea = `A1:M${sectionsEndRow}`;
 
   /* ---- raw data sheets (reference) ---- */
   const addDataSheet = (name: string, headers: string[], rows: (string | number)[][]) => {
@@ -544,6 +566,78 @@ export async function exportDashboardExcel(): Promise<void> {
     perfRows,
   );
 
+  /* ---- "card view" sheet: a visual snapshot of the dashboard's responsive
+   * single/2-column card layout (same look as the on-screen ~750px-wide
+   * view), scaled to fill one A4 portrait page when printed ---- */
+  // Narrow enough that the responsive grid rows collapse the same way they
+  // do on a real narrow browser window (clean 2-column KPI grid, single-
+  // column charts/cashflow/comment rows) instead of an uneven 3+1 wrap.
+  const CARD_VIEW_WIDTH = 480;
+  const cardRowCanvases = await captureDashboardRows(CARD_VIEW_WIDTH);
+  const cardTitleHeight = 110;
+  const cardMaxWidth = Math.max(...cardRowCanvases.map((c) => c.width));
+  const cardTotalHeight = cardTitleHeight + cardRowCanvases.reduce((sum, c) => sum + c.height, 0);
+
+  const cardCanvas = document.createElement("canvas");
+  cardCanvas.width = cardMaxWidth;
+  cardCanvas.height = cardTotalHeight;
+  const cardCtx = cardCanvas.getContext("2d");
+  if (!cardCtx) {
+    throw new Error("Excel 생성 중 캔버스를 만들 수 없습니다.");
+  }
+  cardCtx.fillStyle = "#e8edf3";
+  cardCtx.fillRect(0, 0, cardMaxWidth, cardTitleHeight);
+  cardCtx.fillStyle = "#1a2d4d";
+  cardCtx.font = "700 40px 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif";
+  cardCtx.textAlign = "center";
+  cardCtx.textBaseline = "middle";
+  cardCtx.fillText(title, cardMaxWidth / 2, cardTitleHeight / 2 + 4);
+  let cardY = cardTitleHeight;
+  for (const rowCanvas of cardRowCanvases) {
+    cardCtx.drawImage(rowCanvas, 0, cardY);
+    cardY += rowCanvas.height;
+  }
+
+  // Fit the whole card-view snapshot onto one A4 portrait page.
+  const PT_PER_PX96 = 96 / 72; // ExcelJS image ext is in 96dpi pixels
+  const a4PortraitWidthPt = 595.28;
+  const a4PortraitHeightPt = 841.89;
+  const cardMarginPt = { x: 21.6, y: 28.8 }; // matches 0.3in / 0.4in page margins below
+  const usableWidthPt = a4PortraitWidthPt - cardMarginPt.x * 2;
+  const usableHeightPt = a4PortraitHeightPt - cardMarginPt.y * 2;
+  const cardRenderScale = Math.min(usableWidthPt / cardCanvas.width, usableHeightPt / cardCanvas.height);
+  const cardFinalWidthPt = cardCanvas.width * cardRenderScale;
+  const cardFinalHeightPt = cardCanvas.height * cardRenderScale;
+  const cardFinalWidthPx = cardFinalWidthPt * PT_PER_PX96;
+  const cardFinalHeightPx = cardFinalHeightPt * PT_PER_PX96;
+
+  const cardViewSheet = wb.addWorksheet("화면 보기", {
+    views: [{ showGridLines: false }],
+    pageSetup: {
+      paperSize: 9, // A4
+      orientation: "portrait",
+      fitToPage: true,
+      fitToWidth: 1,
+      fitToHeight: 1,
+      horizontalCentered: true,
+      verticalCentered: true,
+      margins: { left: 0.3, right: 0.3, top: 0.4, bottom: 0.4, header: 0.2, footer: 0.2 },
+    },
+  });
+  const defaultRowHeightPt = 15;
+  const cardRowCount = Math.max(2, Math.ceil(cardFinalHeightPt / defaultRowHeightPt) + 1);
+  cardViewSheet.getColumn(1).width = Math.max(10, Math.ceil(cardFinalWidthPx / 7));
+  for (let r = 1; r <= cardRowCount; r++) {
+    cardViewSheet.getRow(r).height = defaultRowHeightPt;
+  }
+  cardViewSheet.pageSetup.printArea = `A1:A${cardRowCount}`;
+
+  const cardImageId = wb.addImage({ base64: cardCanvas.toDataURL("image/png"), extension: "png" });
+  cardViewSheet.addImage(cardImageId, {
+    tl: { col: 0, row: 0 },
+    ext: { width: cardFinalWidthPx, height: cardFinalHeightPx },
+  });
+
   /* ---- download ---- */
   const buffer = await wb.xlsx.writeBuffer();
   const blob = new Blob([buffer], {
@@ -557,87 +651,210 @@ export async function exportDashboardExcel(): Promise<void> {
   URL.revokeObjectURL(url);
 }
 
-/* ------------------------------ PDF export ------------------------------- */
+/* ------------------------------ shared capture ----------------------------- */
 
-export async function exportDashboardPdf(): Promise<void> {
+/**
+ * Captures the dashboard's KPI/charts/cashflow/comments rows (one canvas per
+ * `[data-export-row]` block) at a fixed CSS width, so the layout is
+ * deterministic regardless of the user's actual browser width. A narrower
+ * `captureWidth` makes the responsive grid rows collapse to fewer columns
+ * (matching the stacked single/2-column card view used for the Excel export);
+ * the wide desktop width is used for the PDF export.
+ */
+/**
+ * Waits for an element's chart (if any) to have actually painted shapes
+ * before it's safe to screenshot. Recharts sizes/draws its <svg> after a
+ * ResizeObserver callback fires post-resize, which can lag behind a plain
+ * fixed delay — capturing too early yields a blank white card.
+ */
+async function waitForChartPaint(el: HTMLElement, timeoutMs = 1200): Promise<void> {
+  const svg = el.querySelector("svg");
+  if (!svg) return;
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    const rect = svg.getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0 && svg.childElementCount > 0) return;
+    await new Promise((resolve) => setTimeout(resolve, 60));
+  }
+}
+
+async function captureDashboardRows(captureWidth: number): Promise<HTMLCanvasElement[]> {
   const target = document.getElementById("dashboard-capture");
   if (!target) {
     throw new Error("대시보드 영역을 찾을 수 없습니다.");
   }
 
-  // Always capture at a fixed desktop width so the PDF layout matches the
-  // web layout regardless of the user's current window size.
-  const CAPTURE_WIDTH = 1720;
   const prevWidth = target.style.width;
   const prevMinWidth = target.style.minWidth;
-  target.style.width = `${CAPTURE_WIDTH}px`;
-  target.style.minWidth = `${CAPTURE_WIDTH}px`;
+  target.style.width = `${captureWidth}px`;
+  target.style.minWidth = `${captureWidth}px`;
 
-  // Exclude the comment cards (매출 실적 / 매출 전망) from the PDF
-  const commentRow = document.getElementById("comment-cards-row");
-  const prevCommentDisplay = commentRow?.style.display ?? "";
-  if (commentRow) commentRow.style.display = "none";
+  // Hide interactive-only bits (month pickers, comment input boxes, edit/delete
+  // buttons) that don't belong in a printed report, while keeping the saved
+  // comment text itself visible.
+  const hiddenEls = Array.from(target.querySelectorAll<HTMLElement>(".export-hide"));
+  const prevDisplays = hiddenEls.map((el) => el.style.display);
+  hiddenEls.forEach((el) => (el.style.display = "none"));
 
-  let canvas: HTMLCanvasElement;
+  const rowEls = Array.from(target.querySelectorAll<HTMLElement>("[data-export-row]"));
+  // Where a row has been split into individual card blocks (data-export-block),
+  // capture each block separately instead of the row as one tall unit — at
+  // narrow capture widths the rows stack into a single column, so treating
+  // the whole row as one indivisible piece either wastes a lot of page space
+  // (forced to a fresh page because the combined row is too tall to fit the
+  // remainder of the current one) or cuts a card in half mid-page.
+  const captureUnits: HTMLElement[] = [];
+  for (const row of rowEls) {
+    const blocks = Array.from(row.querySelectorAll<HTMLElement>(":scope > [data-export-block]"));
+    if (blocks.length > 0) captureUnits.push(...blocks);
+    else captureUnits.push(row);
+  }
+
+  let rowCanvases: HTMLCanvasElement[];
   try {
-    // Give responsive charts time to re-render at the new width
-    await new Promise((resolve) => setTimeout(resolve, 600));
-    const fullHeight = target.scrollHeight;
+    // Give responsive charts/grid time to re-render at the new width
+    await new Promise((resolve) => setTimeout(resolve, 900));
 
-    canvas = await html2canvas(target, {
-      scale: 2,
-      useCORS: true,
-      backgroundColor: "#e8edf3",
-      width: CAPTURE_WIDTH,
-      height: fullHeight,
-      windowWidth: CAPTURE_WIDTH + 200,
-      windowHeight: fullHeight,
-    });
+    rowCanvases = [];
+    for (const row of captureUnits) {
+      // Recharts draws its <svg> asynchronously (ResizeObserver) after the
+      // width change, so a chart block captured too early comes out as a
+      // blank white card. Poll briefly for the chart to actually have
+      // painted shapes before snapshotting this block.
+      await waitForChartPaint(row);
+      rowCanvases.push(
+        await html2canvas(row, {
+          scale: 3,
+          useCORS: true,
+          backgroundColor: "#e8edf3",
+          // Let html2canvas size the output canvas from the element's own
+          // actual rendered dimensions — forcing a fixed output `width` here
+          // stretched/distorted text when a block's real width (e.g. a
+          // single grid column) didn't exactly match captureWidth.
+          // `windowWidth` still pins the layout viewport to the narrow
+          // responsive width.
+          windowWidth: captureWidth + 200,
+          windowHeight: row.scrollHeight,
+        }),
+      );
+    }
   } finally {
     target.style.width = prevWidth;
     target.style.minWidth = prevMinWidth;
-    if (commentRow) commentRow.style.display = prevCommentDisplay;
+    hiddenEls.forEach((el, i) => (el.style.display = prevDisplays[i]));
   }
 
-  // Compose a titled canvas: report title on top, dashboard capture below.
+  return rowCanvases;
+}
+
+/* ------------------------------ PDF export ------------------------------- */
+
+export async function exportDashboardPdf(): Promise<void> {
+  // Always capture at a fixed narrow width so the PDF uses the stacked
+  // single/2-column "card view" layout regardless of the user's current
+  // browser window size (same width as the Excel card-view sheet) — narrow
+  // enough that the responsive grid rows collapse cleanly (2-col KPI grid,
+  // 1-col charts/cashflow/comment rows) instead of an uneven 3+1 wrap.
+  const CAPTURE_WIDTH = 480;
+  const rowCanvases = await captureDashboardRows(CAPTURE_WIDTH);
+
+  // Lay each dashboard row (KPI cards, charts, cashflow/performance, comments)
+  // out on A4 pages as whole blocks — flowing to a new page whenever a row
+  // wouldn't fit, rather than slicing one giant screenshot at arbitrary
+  // pixel boundaries (which used to cut cards/charts in half).
   const title = "DAEWOOVINA 경영현황 보고서";
+  const margin = 24;
+  const rowGap = 10;
+  const TITLE_BAR_HEIGHT = 44;
+  // jsPDF's built-in fonts can't render Korean text (it comes out as mojibake),
+  // so the title bar is rendered to a canvas with a Korean-capable font and
+  // embedded as an image instead of using pdf.text().
+  const pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+  const availableWidth = pageWidth - margin * 2;
+  const availableHeight = pageHeight - margin * 2;
+  // Rows are captured at CSS width CAPTURE_WIDTH with devicePixelRatio scale 3,
+  // so a plain width-fit (no extra zoom) already fills the full page width —
+  // zooming further would push content past the right edge of the page.
 
-  const TITLE_HEIGHT = 110;
-  const titled = document.createElement("canvas");
-  titled.width = canvas.width;
-  titled.height = canvas.height + TITLE_HEIGHT;
-  const ctx = titled.getContext("2d");
-  if (!ctx) {
-    throw new Error("PDF 생성 중 캔버스를 만들 수 없습니다.");
+  const titleImage = (() => {
+    const dpr = 2;
+    const c = document.createElement("canvas");
+    c.width = pageWidth * dpr;
+    c.height = TITLE_BAR_HEIGHT * dpr;
+    const tctx = c.getContext("2d")!;
+    tctx.scale(dpr, dpr);
+    tctx.fillStyle = "#e8edf3";
+    tctx.fillRect(0, 0, pageWidth, TITLE_BAR_HEIGHT);
+    tctx.fillStyle = "#1a2d4d";
+    tctx.font = "700 22px 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif";
+    tctx.textAlign = "center";
+    tctx.textBaseline = "middle";
+    tctx.fillText(title, pageWidth / 2, TITLE_BAR_HEIGHT / 2 + 2);
+    return c.toDataURL("image/png");
+  })();
+
+  const drawTitle = () => {
+    pdf.addImage(titleImage, "PNG", 0, 0, pageWidth, TITLE_BAR_HEIGHT);
+  };
+
+  // The title banner is only drawn on the first page — later pages use the
+  // full page height for content instead of repeating it.
+  drawTitle();
+  let isFirstPage = true;
+  let cursorY = margin + TITLE_BAR_HEIGHT;
+  const pageTopFor = () => (isFirstPage ? margin + TITLE_BAR_HEIGHT : margin);
+  const startNewPage = () => {
+    pdf.addPage();
+    isFirstPage = false;
+    cursorY = pageTopFor();
+  };
+
+  const addImageBlock = (canvas: HTMLCanvasElement, scale: number) => {
+    const w = canvas.width * scale;
+    const h = canvas.height * scale;
+    pdf.addImage(canvas.toDataURL("image/png"), "PNG", margin, cursorY, w, h);
+    cursorY += h + rowGap;
+  };
+
+  for (const canvas of rowCanvases) {
+    const fitScale = availableWidth / canvas.width;
+    const rowHeight = canvas.height * fitScale;
+    const availableOnFreshPage = availableHeight - (pageTopFor() - margin);
+
+    if (rowHeight <= availableOnFreshPage) {
+      // Row fits within a single page height — start a fresh page for it
+      // if it won't fit in the space remaining on the current one.
+      if (cursorY + rowHeight > margin + availableHeight && cursorY > pageTopFor()) {
+        startNewPage();
+      }
+      addImageBlock(canvas, fitScale);
+    } else {
+      // Row itself is taller than one page — slice just this row across
+      // consecutive pages instead of shrinking it to fit.
+      if (cursorY > pageTopFor()) {
+        startNewPage();
+      }
+      const sliceHeightPx = Math.floor(availableOnFreshPage / fitScale);
+      let sy = 0;
+      while (sy < canvas.height) {
+        const sh = Math.min(sliceHeightPx, canvas.height - sy);
+        const sliceCanvas = document.createElement("canvas");
+        sliceCanvas.width = canvas.width;
+        sliceCanvas.height = sh;
+        const sliceCtx = sliceCanvas.getContext("2d");
+        if (sliceCtx) {
+          sliceCtx.drawImage(canvas, 0, sy, canvas.width, sh, 0, 0, canvas.width, sh);
+          addImageBlock(sliceCanvas, fitScale);
+        }
+        sy += sh;
+        if (sy < canvas.height) {
+          startNewPage();
+        }
+      }
+    }
   }
-  ctx.fillStyle = "#e8edf3";
-  ctx.fillRect(0, 0, titled.width, TITLE_HEIGHT);
-  ctx.fillStyle = "#1a2d4d";
-  ctx.font = "700 44px 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText(title, titled.width / 2, TITLE_HEIGHT / 2 + 6);
-  ctx.drawImage(canvas, 0, TITLE_HEIGHT);
-
-  const imgWidth = titled.width;
-  const imgHeight = titled.height;
-
-  // Single page sized to the full dashboard so nothing gets cut off
-  const margin = 16;
-  const renderWidth = imgWidth / 2;
-  const renderHeight = imgHeight / 2;
-  const pageWidth = renderWidth + margin * 2;
-  const pageHeight = renderHeight + margin * 2;
-  const orientation = pageWidth >= pageHeight ? "landscape" : "portrait";
-
-  const pdf = new jsPDF({
-    orientation,
-    unit: "pt",
-    format: [pageWidth, pageHeight],
-  });
-
-  const imgData = titled.toDataURL("image/png");
-  pdf.addImage(imgData, "PNG", margin, margin, renderWidth, renderHeight);
 
   pdf.save(`PIMS_대시보드_${todayStamp()}.pdf`);
 }

@@ -1,10 +1,31 @@
 import html2canvas from "html2canvas-pro";
 import { jsPDF } from "jspdf";
 
-const CAPTURE_WIDTH = 1120;
+// Narrow enough that the responsive `reportGrid`/grid rows collapse to a
+// single column (same "card view" layout as a narrow browser window),
+// regardless of the user's actual window size when they click Export.
+const CAPTURE_WIDTH = 480;
 const PDF_MARGIN = 24;
 const PDF_HEADER_HEIGHT = 42;
 const PDF_SECTION_GAP = 12;
+const PDF_ROW_GAP = 10;
+
+/**
+ * Waits for an element's chart (if any) to have actually painted shapes
+ * before it's safe to screenshot. Recharts sizes/draws its <svg> after a
+ * ResizeObserver callback fires post-resize, which can lag behind a plain
+ * fixed delay — capturing too early yields a blank white card.
+ */
+async function waitForChartPaint(el: HTMLElement, timeoutMs = 1200): Promise<void> {
+  const svg = el.querySelector("svg");
+  if (!svg) return;
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    const rect = svg.getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0 && svg.childElementCount > 0) return;
+    await new Promise((resolve) => setTimeout(resolve, 60));
+  }
+}
 
 export const PROJECT_REPORT_EXPORT_ERROR =
   "보고서 PDF 저장 중 오류가 발생했습니다. 다시 시도해 주세요.";
@@ -96,12 +117,29 @@ export async function exportProjectReportPdf({
     throw new Error("출력할 보고서 내용이 없습니다.");
   }
 
+  // Where a page's rows have been split into individual card blocks
+  // (data-export-block), capture each block separately instead of the whole
+  // page as one tall unit — at narrow capture widths the rows stack into a
+  // single column, so treating the page as one indivisible piece either
+  // wastes a lot of page space or cuts a card in half mid-page.
+  const captureUnits = reportPages.flatMap((page) => {
+    const blocks = Array.from(page.querySelectorAll<HTMLElement>("[data-export-block]"));
+    return blocks.length > 0 ? blocks : [page];
+  });
+
   const previousWidth = target.style.width;
   const previousMinWidth = target.style.minWidth;
   const previousMaxWidth = target.style.maxWidth;
   target.style.width = `${CAPTURE_WIDTH}px`;
   target.style.minWidth = `${CAPTURE_WIDTH}px`;
   target.style.maxWidth = `${CAPTURE_WIDTH}px`;
+
+  // Hide interactive-only bits (month pickers, comment input boxes, edit/delete
+  // buttons) that don't belong in a printed report, while keeping the saved
+  // comment text itself visible.
+  const hiddenEls = Array.from(target.querySelectorAll<HTMLElement>(".export-hide"));
+  const previousDisplays = hiddenEls.map((el) => el.style.display);
+  hiddenEls.forEach((el) => (el.style.display = "none"));
 
   const canvases: HTMLCanvasElement[] = [];
   try {
@@ -111,19 +149,26 @@ export async function exportProjectReportPdf({
     await new Promise<void>((resolve) => {
       requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
     });
-    // Responsive charts need a moment to settle after the fixed export width is applied.
-    await new Promise((resolve) => setTimeout(resolve, 350));
+    // Responsive charts/grid need a moment to settle after the fixed export width is applied.
+    await new Promise((resolve) => setTimeout(resolve, 900));
 
-    for (const page of reportPages) {
+    for (const unit of captureUnits) {
+      // Recharts draws its <svg> asynchronously after the width change, so a
+      // chart block captured too early comes out as a blank white card.
+      await waitForChartPaint(unit);
       canvases.push(
-        await html2canvas(page, {
+        await html2canvas(unit, {
           scale: 2,
           useCORS: true,
           backgroundColor: "#ffffff",
-          width: CAPTURE_WIDTH,
-          height: page.scrollHeight,
+          // Let html2canvas size the output canvas from the element's own
+          // actual rendered dimensions — forcing a fixed output `width` here
+          // stretched/distorted text when a block's real width (e.g. a
+          // single grid column) didn't exactly match CAPTURE_WIDTH.
+          // `windowWidth` still pins the layout viewport to the narrow
+          // responsive width.
           windowWidth: CAPTURE_WIDTH + 120,
-          windowHeight: page.scrollHeight,
+          windowHeight: unit.scrollHeight,
           logging: false,
         }),
       );
@@ -132,44 +177,82 @@ export async function exportProjectReportPdf({
     target.style.width = previousWidth;
     target.style.minWidth = previousMinWidth;
     target.style.maxWidth = previousMaxWidth;
+    hiddenEls.forEach((el, i) => (el.style.display = previousDisplays[i]));
   }
 
+  // Flow each captured block onto A4 portrait pages as whole units,
+  // starting a new page whenever a block wouldn't fit the remaining space,
+  // instead of shrinking the entire report onto a single page (which made
+  // everything tiny) or cutting a card in half mid-page. The title banner
+  // only appears on the first page.
   const title = `DAEWOOVINA · ${projectName} · 당월 보고서`;
   const headerImage = makeHeaderImage(title);
-  const pdf = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
+  const pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
   const availableWidth = pageWidth - PDF_MARGIN * 2;
-  const availableHeight =
-    pageHeight - PDF_MARGIN * 2 - PDF_HEADER_HEIGHT - PDF_SECTION_GAP;
+  const availableHeight = pageHeight - PDF_MARGIN * 2;
+  const headerBlockHeight = PDF_HEADER_HEIGHT + PDF_SECTION_GAP;
 
-  canvases.forEach((canvas) => {
-    pdf.addImage(
-      headerImage,
-      "PNG",
-      PDF_MARGIN,
-      PDF_MARGIN,
-      availableWidth,
-      PDF_HEADER_HEIGHT,
-    );
-    const renderScale = Math.min(
-      availableWidth / canvas.width,
-      availableHeight / canvas.height,
-    );
-    const renderWidth = canvas.width * renderScale;
-    const renderHeight = canvas.height * renderScale;
-    const x = (pageWidth - renderWidth) / 2;
-    pdf.addImage(
-      canvas.toDataURL("image/jpeg", 0.96),
-      "JPEG",
-      x,
-      PDF_MARGIN + PDF_HEADER_HEIGHT + PDF_SECTION_GAP,
-      renderWidth,
-      renderHeight,
-      undefined,
-      "FAST",
-    );
-  });
+  let isFirstPage = true;
+  const pageTopOffset = () => (isFirstPage ? headerBlockHeight : 0);
+  const drawHeaderIfFirstPage = () => {
+    if (!isFirstPage) return;
+    pdf.addImage(headerImage, "PNG", PDF_MARGIN, PDF_MARGIN, availableWidth, PDF_HEADER_HEIGHT);
+  };
+  const startNewPage = () => {
+    pdf.addPage();
+    isFirstPage = false;
+    cursorY = PDF_MARGIN;
+  };
+
+  drawHeaderIfFirstPage();
+  let cursorY = PDF_MARGIN + pageTopOffset();
+
+  const addImageBlock = (canvas: HTMLCanvasElement, scale: number) => {
+    const w = canvas.width * scale;
+    const h = canvas.height * scale;
+    const x = PDF_MARGIN + (availableWidth - w) / 2;
+    pdf.addImage(canvas.toDataURL("image/jpeg", 0.96), "JPEG", x, cursorY, w, h, undefined, "FAST");
+    cursorY += h + PDF_ROW_GAP;
+  };
+
+  for (const canvas of canvases) {
+    const fitScale = availableWidth / canvas.width;
+    const rowHeight = canvas.height * fitScale;
+    const pageTop = PDF_MARGIN + pageTopOffset();
+    const availableOnFreshPage = availableHeight - pageTopOffset();
+
+    if (rowHeight <= availableOnFreshPage) {
+      if (cursorY + rowHeight > PDF_MARGIN + availableHeight && cursorY > pageTop) {
+        startNewPage();
+      }
+      addImageBlock(canvas, fitScale);
+    } else {
+      // Block itself is taller than one page — slice just this block across
+      // consecutive pages instead of shrinking it to fit.
+      if (cursorY > pageTop) {
+        startNewPage();
+      }
+      const sliceHeightPx = Math.floor(availableOnFreshPage / fitScale);
+      let sy = 0;
+      while (sy < canvas.height) {
+        const sh = Math.min(sliceHeightPx, canvas.height - sy);
+        const sliceCanvas = document.createElement("canvas");
+        sliceCanvas.width = canvas.width;
+        sliceCanvas.height = sh;
+        const sliceCtx = sliceCanvas.getContext("2d");
+        if (sliceCtx) {
+          sliceCtx.drawImage(canvas, 0, sy, canvas.width, sh, 0, 0, canvas.width, sh);
+          addImageBlock(sliceCanvas, fitScale);
+        }
+        sy += sh;
+        if (sy < canvas.height) {
+          startNewPage();
+        }
+      }
+    }
+  }
 
   const monthFilePart =
     reportMonth == null

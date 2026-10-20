@@ -117,7 +117,7 @@ export function ProjectCommentPanel({
       )}
 
       {/* 월 필터 */}
-      <div>
+      <div className="export-hide">
         <div style={{ fontSize: "11px", color: "#555", marginBottom: "4px" }}>{t("projectCommentPanel:monthLabel")}</div>
         <select
           value={filterMonth}
@@ -141,6 +141,7 @@ export function ProjectCommentPanel({
 
       {/* Input */}
       <div
+        className="export-hide"
         style={{
           display: "flex",
           alignItems: "flex-end",
@@ -260,7 +261,7 @@ export function ProjectCommentPanel({
                       {new Date(c.createdAt).toLocaleDateString("ko-KR")}
                     </span>
                     {isAdmin && (
-                      <span style={{ display: "flex", gap: "8px" }}>
+                      <span className="export-hide" style={{ display: "flex", gap: "8px" }}>
                         <button
                           onClick={() => {
                             setEditingId(c.id);

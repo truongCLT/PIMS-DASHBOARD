@@ -652,38 +652,48 @@ export function ProjectReportTab({
       >
         {/* ── Row 1: 공정 | 매출 | 현황 표 ── */}
         <div style={reportGrid("240px")}>
-          <ProgressSection
-            progRows={progRows}
-            resolvedMonth={resolvedMonth}
-            startDate={detail?.overview?.startDate}
-            endDate={detail?.overview?.endDate}
-            monthlyPlanAmount={progressCardPlanAmount}
-            monthlyActualAmount={progressCardActualAmount}
-            tradeMonthly={tradeMonthlyBreakdown}
-            tradeCumulative={tradeCumulativeBreakdown}
-          />
-          <SalesSection
-            planMonths={planMonths}
-            actualMonths={revMonths}
-            resolvedMonth={resolvedMonth}
-            allSalesMonths={detail?.canonicalSalesMonthly ?? []}
-            contractAmount={detail?.overview?.contractAmount ?? null}
-          />
-          <StatusTableSection
-            rows={statusRows}
-            costBreakdown={costExecution.cumulativeBreakdown}
-          />
+          <div data-export-block style={{ minWidth: 0 }}>
+            <ProgressSection
+              progRows={progRows}
+              resolvedMonth={resolvedMonth}
+              startDate={detail?.overview?.startDate}
+              endDate={detail?.overview?.endDate}
+              monthlyPlanAmount={progressCardPlanAmount}
+              monthlyActualAmount={progressCardActualAmount}
+              tradeMonthly={tradeMonthlyBreakdown}
+              tradeCumulative={tradeCumulativeBreakdown}
+            />
+          </div>
+          <div data-export-block style={{ minWidth: 0 }}>
+            <SalesSection
+              planMonths={planMonths}
+              actualMonths={revMonths}
+              resolvedMonth={resolvedMonth}
+              allSalesMonths={detail?.canonicalSalesMonthly ?? []}
+              contractAmount={detail?.overview?.contractAmount ?? null}
+            />
+          </div>
+          <div data-export-block style={{ minWidth: 0 }}>
+            <StatusTableSection
+              rows={statusRows}
+              costBreakdown={costExecution.cumulativeBreakdown}
+            />
+          </div>
         </div>
         {/* ── Row 2: 원가 | 자금 | 코멘트 ── */}
         <div style={reportGrid("240px")}>
-          <CostSection budgetRows={allBudgetRows} />
-          <FundsSection
-            cashIn={cashIn}
-            cashOut={cashOut}
-            contractAmount={contractAmount}
-            cumRev={overallCumRev}
-          />
-          <div style={cardStyle}>
+          <div data-export-block style={{ minWidth: 0 }}>
+            <CostSection budgetRows={allBudgetRows} />
+          </div>
+          <div data-export-block style={{ minWidth: 0 }}>
+            <FundsSection
+              cashIn={cashIn}
+              cashOut={cashOut}
+              contractAmount={contractAmount}
+              cumRev={overallCumRev}
+            />
+          </div>
+          <div data-export-block style={{ minWidth: 0, ...cardStyle }}>
             <div style={{ ...sectionTitle, marginBottom: "8px" }}>{t("projectReportTab:issuesTitle")}</div>
             <ProjectCommentPanel projectName={projectName} tab="budget" showHeader={false} />
           </div>

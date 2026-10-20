@@ -385,7 +385,7 @@ export function ServiceReportTab({
         style={{ display: "flex", flexDirection: "column", gap: "8px" }}
       >
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "8px" }}>
-        <div style={cardStyle}>
+        <div data-export-block style={{ minWidth: 0, ...cardStyle }}>
           <div style={sectionTitle}>{t("serviceReportTab:overviewTitle")}</div>
           <MetricRow label={t("serviceReportTab:pjLabel")} value={projectName} strong />
           <MetricRow label={t("projectDataEntryTab:performanceStartDate")} value={fmtDate(overview?.startDate)} />
@@ -397,28 +397,36 @@ export function ServiceReportTab({
           <MetricRow label={t("serviceReportTab:collectionConditionLabel")} value={contractConditions ?? DASH} />
         </div>
 
-        <SalesSection
-          planMonths={salesPlanMonths}
-          actualMonths={salesActualMonths}
-          resolvedMonth={resolvedMonth}
-          allSalesMonths={salesRows}
-          contractAmount={overview?.contractAmount ?? null}
-        />
+        <div data-export-block style={{ minWidth: 0 }}>
+          <SalesSection
+            planMonths={salesPlanMonths}
+            actualMonths={salesActualMonths}
+            resolvedMonth={resolvedMonth}
+            allSalesMonths={salesRows}
+            contractAmount={overview?.contractAmount ?? null}
+          />
+        </div>
 
-        <StatusTableSection rows={statusRows} costBreakdown={costBreakdownRows} />
+        <div data-export-block style={{ minWidth: 0 }}>
+          <StatusTableSection rows={statusRows} costBreakdown={costBreakdownRows} />
+        </div>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "8px" }}>
-        <CostSection budgetRows={reportBudgetRows} />
+        <div data-export-block style={{ minWidth: 0 }}>
+          <CostSection budgetRows={reportBudgetRows} />
+        </div>
 
-        <FundsSection
-          cashIn={cashCumIn ?? 0}
-          cashOut={cashCumOut ?? 0}
-          contractAmount={overview?.contractAmount ?? null}
-          cumRev={overallSalesCumActual ?? 0}
-        />
+        <div data-export-block style={{ minWidth: 0 }}>
+          <FundsSection
+            cashIn={cashCumIn ?? 0}
+            cashOut={cashCumOut ?? 0}
+            contractAmount={overview?.contractAmount ?? null}
+            cumRev={overallSalesCumActual ?? 0}
+          />
+        </div>
 
-        <div style={cardStyle}>
+        <div data-export-block style={{ minWidth: 0, ...cardStyle }}>
           <div style={sectionTitle}>{t("projectReportTab:issuesTitle")}</div>
           <ProjectCommentPanel projectName={projectName} tab="service" showHeader={false} />
         </div>

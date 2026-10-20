@@ -313,8 +313,8 @@ export function SalesChart() {
       </div>
 
       {/* Legend */}
-      <div style={{ display: "flex", alignItems: "center", gap: "14px", marginBottom: "6px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", rowGap: "4px", columnGap: "14px", marginBottom: "6px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "4px", flexShrink: 0 }}>
           {variant === "bars" ? (
             <svg width="14" height="10"><rect x="1" y="1" width="12" height="8" rx="2" fill={planColor} /></svg>
           ) : (
@@ -324,9 +324,9 @@ export function SalesChart() {
               <circle cx="20" cy="4" r="2.5" fill={planColor} />
             </svg>
           )}
-          <span style={{ fontSize: `${chartTypography.legend}px`, color: "#555", fontWeight: 600 }}>{t("salesChart:salesPlan")}</span>
+          <span style={{ fontSize: `${chartTypography.legend}px`, color: "#555", fontWeight: 600, whiteSpace: "nowrap" }}>{t("salesChart:salesPlan")}</span>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "4px", flexShrink: 0 }}>
           {variant === "bars" ? (
             <svg width="14" height="10"><rect x="1" y="1" width="12" height="8" rx="2" fill={actualColor} /></svg>
           ) : (
@@ -336,24 +336,24 @@ export function SalesChart() {
               <circle cx="20" cy="4" r="2.5" fill={actualColor} />
             </svg>
           )}
-          <span style={{ fontSize: `${chartTypography.legend}px`, color: "#555", fontWeight: 600 }}>
+          <span style={{ fontSize: `${chartTypography.legend}px`, color: "#555", fontWeight: 600, whiteSpace: "nowrap" }}>
             {variant === "bars" ? t("salesChart:salesActual") : t("salesChart:salesActualForecast")}
           </span>
         </div>
         {variant === "bars" && (
-          <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "4px", flexShrink: 0 }}>
             <svg width="14" height="10">
               <rect x="1" y="1" width="12" height="8" rx="2" fill="#fff" stroke={actualColor} strokeWidth="1.4" strokeDasharray="3 2" />
             </svg>
-            <span style={{ fontSize: `${chartTypography.legend}px`, color: "#555", fontWeight: 600 }}>{t("salesChart:salesForecast")}</span>
+            <span style={{ fontSize: `${chartTypography.legend}px`, color: "#555", fontWeight: 600, whiteSpace: "nowrap" }}>{t("salesChart:salesForecast")}</span>
           </div>
         )}
         {variant === "bars" ? (
-          <span style={{ fontSize: `${chartTypography.legend}px`, color: INK_MUTED, fontWeight: 600 }}>{t("salesChart:bottomChipRate")}</span>
+          <span style={{ fontSize: `${chartTypography.legend}px`, color: INK_MUTED, fontWeight: 600, whiteSpace: "nowrap", flexShrink: 0 }}>{t("salesChart:bottomChipRate")}</span>
         ) : (
-          <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "4px", flexShrink: 0 }}>
             <span style={{ fontSize: `${chartTypography.legend}px`, fontWeight: 700, color: rateColor }}>%</span>
-            <span style={{ fontSize: `${chartTypography.legend}px`, color: "#555", fontWeight: 600 }}>{t("common:achievementRate")}</span>
+            <span style={{ fontSize: `${chartTypography.legend}px`, color: "#555", fontWeight: 600, whiteSpace: "nowrap" }}>{t("common:achievementRate")}</span>
           </div>
         )}
       </div>
