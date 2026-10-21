@@ -336,7 +336,11 @@ export function SalesSection({
           -
         </div>
       ) : (
-        <div style={{ flex: 1, minHeight: "180px" }}>
+        // ResponsiveContainer cần height="100%" resolve ra pixel cụ thể. flex:1 đặt flex-basis:0%,
+        // nên dù có khai báo height cố định, flex-basis vẫn thắng khi flex container (card) auto-height
+        // không có không gian dư để "grow" vào - kết quả chart vẫn bị tính 0px dù không báo lỗi gì.
+        // Bỏ flex:1, chỉ giữ height cố định để layout không còn phụ thuộc vào chiều cao (vốn auto) của card.
+        <div style={{ height: "180px" }}>
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart
               data={chartData}
