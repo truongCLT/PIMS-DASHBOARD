@@ -385,7 +385,7 @@ export function ServiceReportTab({
         style={{ display: "flex", flexDirection: "column", gap: "8px" }}
       >
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "8px" }}>
-        <div data-export-block style={{ minWidth: 0, ...cardStyle }}>
+        <div data-export-block style={{ minWidth: 0, width: "100%", boxSizing: "border-box", ...cardStyle }}>
           <div style={sectionTitle}>{t("serviceReportTab:overviewTitle")}</div>
           <MetricRow label={t("serviceReportTab:pjLabel")} value={projectName} strong />
           <MetricRow label={t("projectDataEntryTab:performanceStartDate")} value={fmtDate(overview?.startDate)} />
@@ -397,7 +397,7 @@ export function ServiceReportTab({
           <MetricRow label={t("serviceReportTab:collectionConditionLabel")} value={contractConditions ?? DASH} />
         </div>
 
-        <div data-export-block style={{ minWidth: 0 }}>
+        <div data-export-block style={{ minWidth: 0, width: "100%", boxSizing: "border-box" }}>
           <SalesSection
             planMonths={salesPlanMonths}
             actualMonths={salesActualMonths}
@@ -407,17 +407,17 @@ export function ServiceReportTab({
           />
         </div>
 
-        <div data-export-block style={{ minWidth: 0 }}>
+        <div data-export-block style={{ minWidth: 0, width: "100%", boxSizing: "border-box" }}>
           <StatusTableSection rows={statusRows} costBreakdown={costBreakdownRows} />
         </div>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "8px" }}>
-        <div data-export-block style={{ minWidth: 0 }}>
+        <div data-export-block style={{ minWidth: 0, width: "100%", boxSizing: "border-box" }}>
           <CostSection budgetRows={reportBudgetRows} />
         </div>
 
-        <div data-export-block style={{ minWidth: 0 }}>
+        <div data-export-block style={{ minWidth: 0, width: "100%", boxSizing: "border-box" }}>
           <FundsSection
             cashIn={cashCumIn ?? 0}
             cashOut={cashCumOut ?? 0}
@@ -426,7 +426,7 @@ export function ServiceReportTab({
           />
         </div>
 
-        <div data-export-block style={{ minWidth: 0, ...cardStyle }}>
+        <div data-export-block style={{ minWidth: 0, width: "100%", boxSizing: "border-box", ...cardStyle }}>
           <div style={sectionTitle}>{t("projectReportTab:issuesTitle")}</div>
           <ProjectCommentPanel projectName={projectName} tab="service" showHeader={false} />
         </div>

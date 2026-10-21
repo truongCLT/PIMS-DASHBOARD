@@ -652,7 +652,7 @@ export function ProjectReportTab({
       >
         {/* ── Row 1: 공정 | 매출 | 현황 표 ── */}
         <div style={reportGrid("240px")}>
-          <div data-export-block style={{ minWidth: 0 }}>
+          <div data-export-block style={{ minWidth: 0, width: "100%", boxSizing: "border-box" }}>
             <ProgressSection
               progRows={progRows}
               resolvedMonth={resolvedMonth}
@@ -664,7 +664,7 @@ export function ProjectReportTab({
               tradeCumulative={tradeCumulativeBreakdown}
             />
           </div>
-          <div data-export-block style={{ minWidth: 0 }}>
+          <div data-export-block style={{ minWidth: 0, width: "100%", boxSizing: "border-box" }}>
             <SalesSection
               planMonths={planMonths}
               actualMonths={revMonths}
@@ -673,7 +673,7 @@ export function ProjectReportTab({
               contractAmount={detail?.overview?.contractAmount ?? null}
             />
           </div>
-          <div data-export-block style={{ minWidth: 0 }}>
+          <div data-export-block style={{ minWidth: 0, width: "100%", boxSizing: "border-box" }}>
             <StatusTableSection
               rows={statusRows}
               costBreakdown={costExecution.cumulativeBreakdown}
@@ -682,10 +682,10 @@ export function ProjectReportTab({
         </div>
         {/* ── Row 2: 원가 | 자금 | 코멘트 ── */}
         <div style={reportGrid("240px")}>
-          <div data-export-block style={{ minWidth: 0 }}>
+          <div data-export-block style={{ minWidth: 0, width: "100%", boxSizing: "border-box" }}>
             <CostSection budgetRows={allBudgetRows} />
           </div>
-          <div data-export-block style={{ minWidth: 0 }}>
+          <div data-export-block style={{ minWidth: 0, width: "100%", boxSizing: "border-box" }}>
             <FundsSection
               cashIn={cashIn}
               cashOut={cashOut}
@@ -693,7 +693,7 @@ export function ProjectReportTab({
               cumRev={overallCumRev}
             />
           </div>
-          <div data-export-block style={{ minWidth: 0, ...cardStyle }}>
+          <div data-export-block style={{ minWidth: 0, width: "100%", boxSizing: "border-box", ...cardStyle }}>
             <div style={{ ...sectionTitle, marginBottom: "8px" }}>{t("projectReportTab:issuesTitle")}</div>
             <ProjectCommentPanel projectName={projectName} tab="budget" showHeader={false} />
           </div>

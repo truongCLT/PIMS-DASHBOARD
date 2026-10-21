@@ -668,12 +668,15 @@ export async function exportDashboardExcel(): Promise<void> {
  * fixed delay — capturing too early yields a blank white card.
  */
 async function waitForChartPaint(el: HTMLElement, timeoutMs = 1200): Promise<void> {
-  const svg = el.querySelector("svg");
-  if (!svg) return;
+  const svgs = Array.from(el.querySelectorAll("svg"));
+  if (svgs.length === 0) return;
+  const isPainted = (svg: SVGElement) => {
+    const rect = svg.getBoundingClientRect();
+    return rect.width > 0 && rect.height > 0 && svg.childElementCount > 0;
+  };
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
-    const rect = svg.getBoundingClientRect();
-    if (rect.width > 0 && rect.height > 0 && svg.childElementCount > 0) return;
+    if (svgs.every(isPainted)) return;
     await new Promise((resolve) => setTimeout(resolve, 60));
   }
 }
@@ -697,18 +700,6 @@ async function captureDashboardRows(captureWidth: number): Promise<HTMLCanvasEle
   hiddenEls.forEach((el) => (el.style.display = "none"));
 
   const rowEls = Array.from(target.querySelectorAll<HTMLElement>("[data-export-row]"));
-  // Where a row has been split into individual card blocks (data-export-block),
-  // capture each block separately instead of the row as one tall unit — at
-  // narrow capture widths the rows stack into a single column, so treating
-  // the whole row as one indivisible piece either wastes a lot of page space
-  // (forced to a fresh page because the combined row is too tall to fit the
-  // remainder of the current one) or cuts a card in half mid-page.
-  const captureUnits: HTMLElement[] = [];
-  for (const row of rowEls) {
-    const blocks = Array.from(row.querySelectorAll<HTMLElement>(":scope > [data-export-block]"));
-    if (blocks.length > 0) captureUnits.push(...blocks);
-    else captureUnits.push(row);
-  }
 
   let rowCanvases: HTMLCanvasElement[];
   try {
@@ -716,27 +707,84 @@ async function captureDashboardRows(captureWidth: number): Promise<HTMLCanvasEle
     await new Promise((resolve) => setTimeout(resolve, 900));
 
     rowCanvases = [];
-    for (const row of captureUnits) {
+    for (const row of rowEls) {
       // Recharts draws its <svg> asynchronously (ResizeObserver) after the
       // width change, so a chart block captured too early comes out as a
       // blank white card. Poll briefly for the chart to actually have
       // painted shapes before snapshotting this block.
       await waitForChartPaint(row);
-      rowCanvases.push(
-        await html2canvas(row, {
-          scale: 3,
-          useCORS: true,
-          backgroundColor: "#e8edf3",
-          // Let html2canvas size the output canvas from the element's own
-          // actual rendered dimensions — forcing a fixed output `width` here
-          // stretched/distorted text when a block's real width (e.g. a
-          // single grid column) didn't exactly match captureWidth.
-          // `windowWidth` still pins the layout viewport to the narrow
-          // responsive width.
-          windowWidth: captureWidth + 200,
-          windowHeight: row.scrollHeight,
-        }),
-      );
+
+      // Record each card's position/size and the row's own height right
+      // before capturing — reading them again afterwards risks a layout
+      // shift (e.g. a chart's ResizeObserver doing one more correction
+      // pass) landing between the snapshot and the read, which would crop
+      // the captured pixels at the wrong boundaries.
+      const blocks = Array.from(row.querySelectorAll<HTMLElement>(":scope > [data-export-block]"));
+      // offsetTop is relative to the nearest positioned offsetParent, which
+      // may not be `row` itself if row has no explicit `position` — using
+      // getBoundingClientRect() instead gives coordinates reliably relative
+      // to `row`'s own box regardless of the offsetParent chain.
+      const rowRect = row.getBoundingClientRect();
+      const blockRects = blocks.map((b) => {
+        const r = b.getBoundingClientRect();
+        return { top: r.top - rowRect.top, bottom: r.bottom - rowRect.top };
+      });
+      const rowScrollHeight = row.scrollHeight;
+
+      const canvas = await html2canvas(row, {
+        scale: 3,
+        useCORS: true,
+        backgroundColor: "#e8edf3",
+        // Let html2canvas size the output canvas from the element's own
+        // actual rendered dimensions — forcing a fixed output `width` here
+        // stretched/distorted text when a block's real width (e.g. a
+        // single grid column) didn't exactly match captureWidth.
+        // `windowWidth` still pins the layout viewport to the narrow
+        // responsive width.
+        windowWidth: captureWidth + 200,
+        windowHeight: row.scrollHeight,
+      });
+
+      // If the row's cards (data-export-block) wrapped into several visual
+      // sub-rows (e.g. 2 cards side by side, with a 3rd wrapping to its own
+      // line), slice the captured row image at those sub-row boundaries
+      // instead of keeping it as one tall unit. Otherwise a short sub-row
+      // like the lone wrapped card gets dragged along with the taller
+      // combined row height, and the whole thing either gets pushed to a
+      // fresh page wholesale (wasting the rest of the previous page) or
+      // wastes space once placed — splitting lets each sub-row flow and
+      // fill leftover page space independently.
+      if (blockRects.length > 1) {
+        const pxScale = canvas.height / rowScrollHeight;
+        const subRowRanges: { top: number; bottom: number }[] = [];
+        for (const { top: topPx, bottom: bottomPx } of blockRects) {
+          const top = topPx * pxScale;
+          const bottom = bottomPx * pxScale;
+          const existing = subRowRanges.find((r) => top < r.bottom && bottom > r.top);
+          if (existing) {
+            existing.top = Math.min(existing.top, top);
+            existing.bottom = Math.max(existing.bottom, bottom);
+          } else {
+            subRowRanges.push({ top, bottom });
+          }
+        }
+        subRowRanges.sort((a, b) => a.top - b.top);
+        for (const range of subRowRanges) {
+          const sy = Math.max(0, Math.round(range.top));
+          const sh = Math.min(canvas.height, Math.round(range.bottom)) - sy;
+          if (sh <= 0) continue;
+          const subCanvas = document.createElement("canvas");
+          subCanvas.width = canvas.width;
+          subCanvas.height = sh;
+          const subCtx = subCanvas.getContext("2d");
+          if (subCtx) {
+            subCtx.drawImage(canvas, 0, sy, canvas.width, sh, 0, 0, canvas.width, sh);
+            rowCanvases.push(subCanvas);
+          }
+        }
+      } else {
+        rowCanvases.push(canvas);
+      }
     }
   } finally {
     target.style.width = prevWidth;
@@ -750,12 +798,11 @@ async function captureDashboardRows(captureWidth: number): Promise<HTMLCanvasEle
 /* ------------------------------ PDF export ------------------------------- */
 
 export async function exportDashboardPdf(): Promise<void> {
-  // Always capture at a fixed narrow width so the PDF uses the stacked
-  // single/2-column "card view" layout regardless of the user's current
-  // browser window size (same width as the Excel card-view sheet) — narrow
-  // enough that the responsive grid rows collapse cleanly (2-col KPI grid,
-  // 1-col charts/cashflow/comment rows) instead of an uneven 3+1 wrap.
-  const CAPTURE_WIDTH = 480;
+  // Capture at a fixed width so the PDF layout is deterministic regardless
+  // of the user's current browser window size — wide enough that the
+  // responsive grid rows lay their cards out side by side (matching the
+  // ~1140px desktop-ish view), not stacked into a single column.
+  const CAPTURE_WIDTH = 1140;
   const rowCanvases = await captureDashboardRows(CAPTURE_WIDTH);
 
   // Lay each dashboard row (KPI cards, charts, cashflow/performance, comments)
@@ -769,7 +816,7 @@ export async function exportDashboardPdf(): Promise<void> {
   // jsPDF's built-in fonts can't render Korean text (it comes out as mojibake),
   // so the title bar is rendered to a canvas with a Korean-capable font and
   // embedded as an image instead of using pdf.text().
-  const pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
+  const pdf = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
   const availableWidth = pageWidth - margin * 2;

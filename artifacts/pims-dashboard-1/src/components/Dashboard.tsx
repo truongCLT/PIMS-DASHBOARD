@@ -56,28 +56,20 @@ export function Dashboard({
           <KPICards />
         </div>
 
-        {/* Row 2: 매출 차트 — 손익 차트 — 수주 실적 현황(맨 오른쪽 단독) */}
-        <div data-export-row="charts" style={{
+        {/* Rows 2+3 combined: 매출/손익/수주 차트 + 자금 수지/경영실적/드릴다운, 하나의
+            그리드로 묶어 반응형 줄바꿈과 PDF 페이지 분할이 일관되게 동작하도록 함 */}
+        <div data-export-row="charts-cashflow" style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+          gridTemplateColumns: "repeat(auto-fit, minmax(440px, 1fr))",
           gap: "6px",
           padding: "4px 10px",
         }}>
-          <div data-export-block style={{ minWidth: 0 }}><SalesChart /></div>
-          <div data-export-block style={{ minWidth: 0 }}><ProfitChart /></div>
-          <div data-export-block style={{ minWidth: 0 }}><OrderStatus /></div>
-        </div>
-
-        {/* Row 3: 자금 수지 — 경영실적 현황 — 상세정보(드릴다운, 단독) */}
-        <div data-export-row="cashflow" style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-          gap: "6px",
-          padding: "4px 10px",
-        }}>
-          <div data-export-block style={{ minWidth: 0 }}><CashFlowChart scope={scope} /></div>
-          <div data-export-block style={{ minWidth: 0 }}><PerformanceTable /></div>
-          <div data-export-block style={{ minWidth: 0 }}><DrilldownCard /></div>
+          <div data-export-block style={{ minWidth: 0, width: "100%", boxSizing: "border-box" }}><SalesChart /></div>
+          <div data-export-block style={{ minWidth: 0, width: "100%", boxSizing: "border-box" }}><ProfitChart /></div>
+          <div data-export-block style={{ minWidth: 0, width: "100%", boxSizing: "border-box" }}><OrderStatus /></div>
+          <div data-export-block style={{ minWidth: 0, width: "100%", boxSizing: "border-box" }}><CashFlowChart scope={scope} /></div>
+          <div data-export-block style={{ minWidth: 0, width: "100%", boxSizing: "border-box" }}><PerformanceTable /></div>
+          <div data-export-block style={{ minWidth: 0, width: "100%", boxSizing: "border-box" }}><DrilldownCard /></div>
         </div>
 
         {/* Row 4: comment cards */}

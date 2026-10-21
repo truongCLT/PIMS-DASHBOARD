@@ -17,12 +17,15 @@ const PDF_ROW_GAP = 10;
  * fixed delay — capturing too early yields a blank white card.
  */
 async function waitForChartPaint(el: HTMLElement, timeoutMs = 1200): Promise<void> {
-  const svg = el.querySelector("svg");
-  if (!svg) return;
+  const svgs = Array.from(el.querySelectorAll("svg"));
+  if (svgs.length === 0) return;
+  const isPainted = (svg: SVGElement) => {
+    const rect = svg.getBoundingClientRect();
+    return rect.width > 0 && rect.height > 0 && svg.childElementCount > 0;
+  };
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
-    const rect = svg.getBoundingClientRect();
-    if (rect.width > 0 && rect.height > 0 && svg.childElementCount > 0) return;
+    if (svgs.every(isPainted)) return;
     await new Promise((resolve) => setTimeout(resolve, 60));
   }
 }
