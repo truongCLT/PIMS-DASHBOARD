@@ -507,7 +507,6 @@ export async function applyPimsvinaData(fetched: PimsvinaData) {
         ],
         set: {
           siteCode: sql`excluded.site_code`,
-          tradeGroup: sql`excluded.trade_group`,
           trade: sql`excluded.trade`,
           vendor: sql`excluded.vendor`,
           category: sql`excluded.category`,
