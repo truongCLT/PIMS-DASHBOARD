@@ -1,7 +1,7 @@
 import type ExcelJS from "exceljs";
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas-pro";
-import { getCashflowAggregate, listMgmtreportComments } from "@workspace/api-client-react";
+import { getCashflowReportSummary, listMgmtreportComments } from "@workspace/api-client-react";
 import { getDashboardExportData } from "./mgmtreportData";
 
 interface SavedComment {
@@ -35,20 +35,20 @@ interface CashflowExportRow {
   balance: number;
 }
 
+// 화면의 DECV 전체 자금수지(CashFlowChart)와 같은 소스 — PIMSVINA Cash Flow Report(Summary) Total.
 async function fetchCashflowExportRows(year: number, throughMonth: number): Promise<CashflowExportRow[]> {
   try {
-    const series = await getCashflowAggregate({
-      divisions: "도급 사업,용역 사업",
+    const summary = await getCashflowReportSummary({
       fromYear: year,
       fromMonth: 1,
       months: Math.max(1, Math.min(12, throughMonth)),
     });
-    return (series.points ?? []).map((p) => ({
+    return (summary.total ?? []).map((p) => ({
       month: p.month,
-      inflow: p.cashIn,
-      outflow: p.cashOut,
-      net: p.cashIn - p.cashOut,
-      balance: p.equivalent,
+      inflow: p.income,
+      outflow: p.outcome,
+      net: p.income - p.outcome,
+      balance: p.balance,
     }));
   } catch {
     return [];

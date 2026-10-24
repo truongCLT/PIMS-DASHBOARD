@@ -197,14 +197,15 @@ export function OverviewTab({ projectName }: { projectName: string }) {
   });
   // 데이터 입력 탭에서 저장한 월별 자금(pd_cashflow_monthly)이 있으면 우선 사용
   const pdCashPoints = (detail?.cashflow ?? [])
-    .filter((c) => c.year === REPORT_YEAR)
+    // month=0("전년 누계" 수기 입력 행)은 당해 연도 월별 값이 아니므로 제외
+    .filter((c) => c.year === REPORT_YEAR && c.month >= 1)
     .map((c) => ({
       month: `${c.year}-${String(c.month).padStart(2, "0")}`,
       cashIn: c.cashIn ?? 0,
       cashOut: c.cashOut ?? 0,
       equivalent: c.equivalent ?? 0,
     }));
-  const hasPdCashRows = (detail?.cashflow ?? []).length > 0;
+  const hasPdCashRows = (detail?.cashflow ?? []).some((c) => c.month >= 1);
   const cfPoints = hasPdCashRows ? pdCashPoints : (cfQ.data?.points ?? []);
   const hasCash = (hasPdCashRows || cfRef != null) && cfPoints.some((p) => p.cashIn !== 0 || p.cashOut !== 0 || p.equivalent !== 0);
   // cfFiltered·cashIn·cashOut·balance 는 resolvedMonth 확정 후 아래에서 계산

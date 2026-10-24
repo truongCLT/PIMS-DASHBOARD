@@ -216,7 +216,9 @@ export const pdCashflowMonthlyTable = pgTable(
     fldCode: text("fld_code"), // PIMSVINA site code (FLDCODE)
     siteCode: text("site_code"), // PIMSVINA financial site code (ACNT_FLDCODE)
     year: integer("year").notNull(),
-    month: integer("month").notNull(), // 1..12
+    // 1..12, 0 = "전년 누계"(해당 year 이전 연도들의 누계 수금/지출 — PIMSVINA 자금 거래가 2026-01부터만
+    // 있어 그 이전 수금은 수기 입력한다. pd_sales_monthly와 같은 관례)
+    month: integer("month").notNull(),
     cashIn: numeric("cash_in", { precision: 24, scale: 8 }), // 수입 (천 USD)
     cashOut: numeric("cash_out", { precision: 24, scale: 8 }), // 지출 (천 USD)
     equivalent: numeric("equivalent", { precision: 24, scale: 8 }), // 보유 현금 (천 USD)
@@ -227,7 +229,7 @@ export const pdCashflowMonthlyTable = pgTable(
   },
   (t) => [
     uniqueIndex("pd_cashflow_monthly_uq").on(t.projectName, t.year, t.month),
-    check("pd_cashflow_month_ck", sql`${t.month} BETWEEN 1 AND 12`),
+    check("pd_cashflow_month_ck", sql`${t.month} BETWEEN 0 AND 12`),
   ],
 );
 

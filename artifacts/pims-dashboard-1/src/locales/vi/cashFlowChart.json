@@ -22,5 +22,12 @@
   "colOutflow": "Dòng ra",
   "noProjectBreakdown": "Không hỗ trợ chi tiết công trình cho phạm vi này.",
   "loadingSiteData": "Đang tải dữ liệu công trình…",
-  "noSiteData": "Không có dữ liệu thu chi công trình cho tháng này."
+  "noSiteData": "Không có dữ liệu thu chi công trình cho tháng này.",
+  "annualTotal": "Tổng (lũy kế năm)",
+  "reportSourceNote": "※ Theo dòng Total của PIMSVINA Cash Flow Report (Summary) — Business Activities + Financing and Investment + HQ Admin + Development. Số dư tiền mặt lũy kế = Cash Balance (gồm số dư đầu kỳ). Bấm vào tháng để xem chi tiết.",
+  "groupDetailTitle": "Thu chi theo nhóm – {{month}}",
+  "groupItemDetailTitle": "Chi tiết {{group}} – {{month}}",
+  "colGroup": "Nhóm",
+  "colSiteOrItem": "Công trình / Hạng mục",
+  "colSurplus": "Thặng dư / Thâm hụt"
 }

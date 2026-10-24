@@ -500,6 +500,50 @@ export interface CashflowAggregateSeries {
   points: CashflowMonthlyPoint[];
 }
 
+export interface CashflowReportMonthAmount {
+  /** YYYY-MM */
+  month: string;
+  income: number;
+  outcome: number;
+}
+
+export interface CashflowReportDetail {
+  key: string;
+  /** 현장명(Business/Development) 또는 Cash Flow Type명(Financing/Admin) */
+  label: string;
+  months: CashflowReportMonthAmount[];
+}
+
+export interface CashflowReportGroup {
+  code: string;
+  /** Group Business Line (Business Activities / Financing and Investment Activities / HQ Admin Expenses / Development) */
+  name: string;
+  months: CashflowReportMonthAmount[];
+  details: CashflowReportDetail[];
+}
+
+export interface CashflowReportTotalPoint {
+  /** YYYY-MM */
+  month: string;
+  income: number;
+  outcome: number;
+  /** Cash Balance (월말 잔액) */
+  balance: number;
+  /** true = 실적(Actual Month 이하), false = 계획(Future Forecast Plan) */
+  isActual: boolean;
+}
+
+export interface CashflowReportSummary {
+  unit: string;
+  company: string;
+  /** YYYY-MM — 이 달까지 실적, 이후는 계획 */
+  actualMonth: string;
+  /** 조회 시작 연도 1월 1일 기준 기초 잔액 */
+  openingBalance: number;
+  total: CashflowReportTotalPoint[];
+  groups: CashflowReportGroup[];
+}
+
 export interface SalescostSummaryPoint {
   /** Month number 1..12 */
   month: number;
@@ -784,7 +828,8 @@ export interface ProjectDetailCostBudget {
 export interface ProjectDetailCashflowPoint {
   year: number;
   /**
-     * @minimum 1
+     * 1..12, 0 = 전년 누계(해당 연도 이전 누계, 수기 입력)
+     * @minimum 0
      * @maximum 12
      */
   month: number;
@@ -826,7 +871,8 @@ export interface ProjectDetailCostBudgetMonthly {
 export interface ProjectDetailSalesPoint {
   year: number;
   /**
-     * @minimum 1
+     * 1..12, 0 = 전년 누계(해당 연도 이전 누계, 수기 입력)
+     * @minimum 0
      * @maximum 12
      */
   month: number;
@@ -1057,6 +1103,20 @@ fromMonth: number;
 /**
  * @minimum 1
  * @maximum 24
+ */
+months?: number;
+};
+
+export type GetCashflowReportSummaryParams = {
+fromYear: number;
+/**
+ * @minimum 1
+ * @maximum 12
+ */
+fromMonth: number;
+/**
+ * @minimum 1
+ * @maximum 36
  */
 months?: number;
 };

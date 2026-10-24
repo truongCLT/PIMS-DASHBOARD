@@ -137,7 +137,8 @@ export function ServiceCashflowTab({
   // flow data for the selected period."가 표시되는 버그가 있었다(실제 발견됨: K2CT1 프리콘 —
   // 프로젝트 기간은 '23.05~'25.12인데 자금 데이터는 '26.01~'26.08에 입력됨). 실제 입력된 데이터의
   // 연/월 범위와 overview 기간을 합집합으로 잡아서, 입력된 행은 하나도 누락되지 않게 한다.
-  const cashflowRowsRaw = detail?.cashflow ?? [];
+  // month=0("전년 누계" 수기 입력 행)은 월별 차트/잔액에 넣지 않는다 — 보고서 자금 카드의 누계 수금 전용.
+  const cashflowRowsRaw = (detail?.cashflow ?? []).filter((c) => c.month >= 1);
   const rowIdx = (c: { year: number; month: number }) => c.year * 12 + (c.month - 1);
   const rowIdxs = cashflowRowsRaw.map(rowIdx);
   const siteStartIdx = siteStart ? siteStart.year * 12 + (siteStart.month - 1) : null;
@@ -164,7 +165,7 @@ export function ServiceCashflowTab({
     }));
   const hasPdData = pdPoints.some((p: any) => p.cashIn !== 0 || p.cashOut !== 0 || p.equivalent !== 0);
   // 저장된 pd 행이 존재하면(값이 모두 0이어도) pd 데이터를 우선 사용
-  const hasPdRows = (detail?.cashflow ?? []).length > 0;
+  const hasPdRows = cashflowRowsRaw.length > 0;
 
   // 자금수지 Excel(cf_*) DB 데이터 — 저장된 pd 데이터가 없을 때 사용
   const cfRef = getMrCashflowRef(projectName);

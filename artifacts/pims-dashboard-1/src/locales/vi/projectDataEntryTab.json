@@ -175,6 +175,7 @@
   "equivalentVnd": "Số dư còn lại",
   "confirmedProgressVnd": "Khối lượng xác nhận",
   "cashflowNote": "Nhập số chi bằng số dương (biểu đồ sẽ tự động hiển thị theo hướng xuống). Nếu nhập theo VND, khi lưu sẽ tự động chuyển đổi sang nghìn USD.",
+  "cashflowPriorYearNote": "※ Giao dịch tiền trên PIMSVINA chỉ có từ 01/2026. Số tiền đã thu trước đó nhập vào dòng \"Thêm lũy kế năm trước\" (tháng = 0, năm = lũy kế trước năm đó); giá trị này được cộng vào Đã thu / Phải thu / Tỷ lệ thu tiền trên thẻ Dòng tiền của báo cáo (không cộng vào số dư).",
   "cashflowPrefilledNote": "Đã tải dữ liệu được lưu trong Excel(DB) thu chi. Nếu bạn sửa bảng, dữ liệu sẽ được lưu thành dữ liệu thu chi của dự án này, và từ đó các giá trị đã lưu sẽ được ưu tiên hiển thị.",
   "photoSection": "Ảnh công trường",
   "photoUploadBtn": "Chọn ảnh",

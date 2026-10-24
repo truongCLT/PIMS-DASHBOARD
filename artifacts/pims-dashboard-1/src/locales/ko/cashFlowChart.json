@@ -22,5 +22,12 @@
   "colOutflow": "유출",
   "noProjectBreakdown": "이 범위에서는 현장별 상세를 제공하지 않습니다.",
   "loadingSiteData": "현장 데이터 로딩 중…",
-  "noSiteData": "해당 월의 현장별 자금수지 데이터가 없습니다."
+  "noSiteData": "해당 월의 현장별 자금수지 데이터가 없습니다.",
+  "annualTotal": "합계 (연 누계)",
+  "reportSourceNote": "※ PIMSVINA Cash Flow Report(Summary) Total 기준 — Business Activities + Financing and Investment + HQ Admin + Development. 누적 현금 잔액 = Cash Balance(기초 잔액 포함). 월을 누르면 구분별 상세를 볼 수 있습니다.",
+  "groupDetailTitle": "구분별 자금수지 상세 – {{month}}",
+  "groupItemDetailTitle": "{{group}} 상세 – {{month}}",
+  "colGroup": "구분",
+  "colSiteOrItem": "현장 / 항목",
+  "colSurplus": "수지 (Surplus / Deficit)"
 }

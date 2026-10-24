@@ -21,12 +21,14 @@ import { DASH, StatusBadge } from "./ReportPrimitives";
 
 interface Props {
   cashIn: number;
+  /** cashIn 중 데이터 입력 "전년 누계" 행(PIMSVINA 자금 거래 이전 수금)으로 들어온 금액 */
+  priorCashIn?: number;
   cashOut: number;
   contractAmount: number | null;
   cumRev: number;
 }
 
-export function FundsSection({ cashIn, cashOut, cumRev }: Props) {
+export function FundsSection({ cashIn, priorCashIn = 0, cashOut, cumRev }: Props) {
   const { t } = useTranslation(["projectReportTab"]);
   const { fmtMoney, unitLabel } = useMoney();
 
@@ -116,6 +118,11 @@ export function FundsSection({ cashIn, cashOut, cumRev }: Props) {
           )}
 
           <div style={{ fontSize: "11px", color: INK_MUTED, marginTop: "8px" }}>
+            {priorCashIn !== 0
+              ? t("projectReportTab:fundsPriorIncludedNote", { amount: fmtMoney(priorCashIn) })
+              : t("projectReportTab:fundsPriorMissingNote")}
+          </div>
+          <div style={{ fontSize: "11px", color: INK_MUTED }}>
             {t("projectReportTab:fundsForecastNote")}
           </div>
           <div style={{ fontSize: "11px", color: INK_MUTED }}>

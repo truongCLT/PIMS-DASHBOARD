@@ -841,7 +841,7 @@ router.put("/projectdetail", requireAdmin, async (req, res) => {
           return budgetRow.item;
         })
       : []),
-    ...(!lockedSections.has("cashflow") ? validateMonthlyRows("월별 자금", body.cashflow) : []),
+    ...(!lockedSections.has("cashflow") ? validateMonthlyRows("월별 자금", body.cashflow, () => "", 0) : []),
     ...(!lockedSections.has("cogsMonthly") ? validateMonthlyRows("월별 매출원가", body.cogsMonthly) : []),
     ...(!lockedSections.has("salesMonthly") ? validateMonthlyRows("월별 매출", body.salesMonthly, () => "", 0) : []),
   ];
@@ -1262,6 +1262,15 @@ router.put("/projectdetail", requireAdmin, async (req, res) => {
       return;
     }
     req.log.error({ err }, "failed to save project detail");
+    // Postgres CHECK 위반(23514) — 예: pd_cashflow_month_ck가 아직 1..12인 DB(스키마 push 전)에 "전년 누계"(월=0)
+    // 행을 저장한 경우. 일반 500 메시지로는 원인을 알 수 없어 제약 이름을 그대로 알려준다.
+    const pgErr = (err as { cause?: { code?: string; constraint?: string } })?.cause ?? (err as { code?: string; constraint?: string });
+    if (pgErr?.code === "23514") {
+      res.status(400).json({
+        error: `저장 값이 DB 제약(${pgErr.constraint ?? "CHECK"})을 위반했습니다. "전년 누계"(월 = 0) 행이라면 DB 스키마 반영(pnpm --filter @workspace/db run push)이 필요합니다.`,
+      });
+      return;
+    }
     res.status(500).json({ error: "프로젝트 상세 데이터 저장에 실패했습니다." });
   }
 });

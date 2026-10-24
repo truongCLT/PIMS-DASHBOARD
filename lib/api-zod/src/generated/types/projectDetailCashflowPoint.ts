@@ -9,7 +9,8 @@
 export interface ProjectDetailCashflowPoint {
   year: number;
   /**
-     * @minimum 1
+     * 1..12, 0 = 전년 누계(해당 연도 이전 누계, 수기 입력)
+     * @minimum 0
      * @maximum 12
      */
   month: number;

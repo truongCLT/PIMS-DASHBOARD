@@ -86,6 +86,35 @@ describe("resolveLatestProjectReportMonth", () => {
   });
 });
 
+describe("resolveLatestProjectReportMonth — 마감 상한", () => {
+  it("마감월 이후 달에 남은 잔여 실적(예: K8CT1 '26.12 actualPct=0.0156)은 최신월로 잡지 않는다", () => {
+    expect(
+      resolveLatestProjectReportMonth({
+        asOfMonth: "2026-09",
+        progress: [
+          { year: 2026, month: 9, actualPct: 1.4435, actualCumPct: 16.7 },
+          { year: 2026, month: 10, actualPct: 0, actualCumPct: 16.7 },
+          { year: 2026, month: 11, actualPct: 0, actualCumPct: 16.7 },
+          { year: 2026, month: 12, actualPct: 0.0156, actualCumPct: 16.7 },
+        ],
+        revenueActuals: [1, 1, 1, 1, 1, 1, 1, 1, 1, 2336, 1830, 2851],
+        maxMonth: 9,
+      }),
+    ).toBe(9);
+  });
+
+  it("asOfMonth가 마감월보다 뒤면 마감월로 자른다", () => {
+    expect(
+      resolveLatestProjectReportMonth({
+        asOfMonth: "2026-12",
+        progress: [],
+        revenueActuals: Array(12).fill(null),
+        maxMonth: 9,
+      }),
+    ).toBe(9);
+  });
+});
+
 describe("selectProgressReportRow", () => {
   it("never falls forward to a future plan row when the reference month has no exact row", () => {
     expect(

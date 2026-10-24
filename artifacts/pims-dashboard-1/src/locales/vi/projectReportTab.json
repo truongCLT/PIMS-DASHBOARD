@@ -53,6 +53,8 @@
   "collectionActualLabel": "Thu tiền (Thực hiện)",
   "receivableLabel": "Phải thu (Công nợ)",
   "collectionRateLabel": "Tỷ lệ thu tiền (Thu tiền / Doanh thu lũy kế)",
+  "fundsPriorIncludedNote": "※ Đã thu bao gồm số thu trước năm 2026 (Nhập liệu \"lũy kế năm trước\") là {{amount}}",
+  "fundsPriorMissingNote": "※ Giao dịch tiền trên PIMSVINA chỉ có từ 01/2026; cần nhập số đã thu trước đó vào dòng \"lũy kế năm trước\" ở Nhập liệu > Dòng tiền hàng tháng để tính vào Đã thu / Phải thu.",
   "fundsForecastNote": "* Hiển thị kế hoạch, dự báo giống như doanh thu",
   "fundsDetailNote": "* Bảng xem chi tiết bổ sung doanh thu, xác nhận, thu tiền và công nợ"
 }

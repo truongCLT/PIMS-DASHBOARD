@@ -855,9 +855,12 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
   // 누적 합계(실사용자 요청: 그 달만의 증감이 아니라 누계 잔액). cashflow는 연/월 오름차순으로
   // 쌓이므로(첫 로드 순서 + "Add Month"로 다음 달만 추가) 배열 순서 그대로 누적한다. Cash In/Out은
   // 소수점이 있는 원본 값이라, 화면에 보이는 정수 기준으로 반올림한 뒤 뺀다.
+  // month=0("전년 누계" 수기 입력 행)은 이전 연도 수금 누계를 보고서 자금 카드에 더하기 위한 값이라
+  // 잔액 누계에는 넣지 않는다(PIMSVINA 잔액은 2026-01 기초 잔액부터 시작).
   const cashflowEquivalents = useMemo(() => {
     let running = 0;
     return cashflow.map((c) => {
+      if (c.month === 0) return null;
       running += Math.round(c.cashIn ?? 0) - Math.round(c.cashOut ?? 0);
       return running;
     });
@@ -1115,9 +1118,10 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
         ? []
         : cashflow
             .map((c, i) => ({ ...c, equivalent: cashflowEquivalents[i] }))
-            .filter((c) => c.year > 0 && c.month >= 1 && c.month <= 12),
+            .filter((c) => c.year > 0 && c.month >= 0 && c.month <= 12),
       cogsMonthly: cogsMonthly.filter((c) => c.year > 0 && c.month >= 1 && c.month <= 12),
-      salesMonthly: salesMonthly.filter((s) => s.year > 0 && s.month >= 1 && s.month <= 12),
+      // month=0 = "전년 누계" 행 — 예전엔 여기서 걸러져 "전년 누계 추가"로 입력한 값이 저장되지 않았다.
+      salesMonthly: salesMonthly.filter((s) => s.year > 0 && s.month >= 0 && s.month <= 12),
       photos,
     };
     pendingRef.current = true;
@@ -3011,8 +3015,22 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
         >
           <Plus size={12} /> {t("projectDataEntryTab:addMonth")}
         </button>
+        <button
+          style={{ ...addBtn, marginLeft: "6px" }}
+          onClick={() =>
+            editCashflow((rows) => [
+              ...rows,
+              { year: nowYear, month: 0, cashIn: null, cashOut: null, equivalent: null, confirmedProgress: null },
+            ])
+          }
+        >
+          <Plus size={12} /> {t("projectDataEntryTab:addPriorYearCumulative")}
+        </button>
         <div style={{ fontSize: "12px", color: INK_MUTED, marginTop: "6px" }}>
           {t("projectDataEntryTab:cashflowNote")}
+        </div>
+        <div style={{ fontSize: "12px", color: INK_MUTED, marginTop: "4px" }}>
+          {t("projectDataEntryTab:cashflowPriorYearNote")}
         </div>
         {cfPrefilled && (
           <div style={{ fontSize: "12px", color: POINT_BLUE, marginTop: "4px", fontWeight: 600 }}>

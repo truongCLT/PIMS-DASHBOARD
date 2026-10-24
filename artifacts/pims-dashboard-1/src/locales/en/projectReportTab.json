@@ -53,6 +53,8 @@
   "collectionActualLabel": "Collection (Actual)",
   "receivableLabel": "Receivable (A/R)",
   "collectionRateLabel": "Collection Rate (Collection / Cumulative Revenue)",
+  "fundsPriorIncludedNote": "※ Collected includes pre-2026 collections (Data Entry \"prior-year cumulative\") of {{amount}}",
+  "fundsPriorMissingNote": "※ PIMSVINA cash transactions start in Jan 2026; enter earlier collections as a \"prior-year cumulative\" row in Data Entry > Monthly Cash Flow to include them in Collected / Receivable.",
   "fundsForecastNote": "* Displayed with plan/forecast, like revenue",
   "fundsDetailNote": "* The detail view table adds revenue, confirmed amount, and collection receivable"
 }

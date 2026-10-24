@@ -22,5 +22,12 @@
   "colOutflow": "Outflow",
   "noProjectBreakdown": "Project-level breakdown is not available for this scope.",
   "loadingSiteData": "Loading site data…",
-  "noSiteData": "No site-level cash flow data for this month."
+  "noSiteData": "No site-level cash flow data for this month.",
+  "annualTotal": "Total (YTD)",
+  "reportSourceNote": "※ Based on the PIMSVINA Cash Flow Report (Summary) Total — Business Activities + Financing and Investment + HQ Admin + Development. Cumulative cash balance = Cash Balance (incl. opening balance). Click a month to see the breakdown.",
+  "groupDetailTitle": "Cash flow by category – {{month}}",
+  "groupItemDetailTitle": "{{group}} detail – {{month}}",
+  "colGroup": "Category",
+  "colSiteOrItem": "Site / Item",
+  "colSurplus": "Surplus / Deficit"
 }

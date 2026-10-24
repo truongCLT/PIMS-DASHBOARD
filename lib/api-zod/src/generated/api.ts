@@ -381,14 +381,17 @@ export const getProjectdetailResponseOutsourcingItemYearMax = 2100;
 
 export const getProjectdetailResponseOutsourcingItemMonthMax = 12;
 
+export const getProjectdetailResponseCashflowItemMonthMin = 0;
 export const getProjectdetailResponseCashflowItemMonthMax = 12;
 
 export const getProjectdetailResponseCogsMonthlyItemMonthMax = 12;
 
+export const getProjectdetailResponseSalesMonthlyItemMonthMin = 0;
 export const getProjectdetailResponseSalesMonthlyItemMonthMax = 12;
 
 export const getProjectdetailResponseCanonicalCogsMonthlyItemMonthMax = 12;
 
+export const getProjectdetailResponseCanonicalSalesMonthlyItemMonthMin = 0;
 export const getProjectdetailResponseCanonicalSalesMonthlyItemMonthMax = 12;
 
 
@@ -485,7 +488,7 @@ export const GetProjectdetailResponse = zod.object({
 })),
   "cashflow": zod.array(zod.object({
   "year": zod.number(),
-  "month": zod.number().min(1).max(getProjectdetailResponseCashflowItemMonthMax),
+  "month": zod.number().min(getProjectdetailResponseCashflowItemMonthMin).max(getProjectdetailResponseCashflowItemMonthMax).describe('1..12, 0 = 전년 누계(해당 연도 이전 누계, 수기 입력)'),
   "cashIn": zod.number().nullish().describe('수입 (천 USD)'),
   "cashOut": zod.number().nullish().describe('지출 (천 USD)'),
   "equivalent": zod.number().nullish().describe('보유 현금 (천 USD)'),
@@ -499,7 +502,7 @@ export const GetProjectdetailResponse = zod.object({
 })).optional(),
   "salesMonthly": zod.array(zod.object({
   "year": zod.number(),
-  "month": zod.number().min(1).max(getProjectdetailResponseSalesMonthlyItemMonthMax),
+  "month": zod.number().min(getProjectdetailResponseSalesMonthlyItemMonthMin).max(getProjectdetailResponseSalesMonthlyItemMonthMax).describe('1..12, 0 = 전년 누계(해당 연도 이전 누계, 수기 입력)'),
   "plan": zod.number().nullish().describe('매출 계획 (천 USD)'),
   "actual": zod.number().nullish().describe('매출 실적 (천 USD)')
 })).optional(),
@@ -511,7 +514,7 @@ export const GetProjectdetailResponse = zod.object({
 })).optional().describe('표시용 월별 원가. 경영보고 값 우선, 없는 월은 ERP\/데이터입력 값으로 보완.'),
   "canonicalSalesMonthly": zod.array(zod.object({
   "year": zod.number(),
-  "month": zod.number().min(1).max(getProjectdetailResponseCanonicalSalesMonthlyItemMonthMax),
+  "month": zod.number().min(getProjectdetailResponseCanonicalSalesMonthlyItemMonthMin).max(getProjectdetailResponseCanonicalSalesMonthlyItemMonthMax).describe('1..12, 0 = 전년 누계(해당 연도 이전 누계, 수기 입력)'),
   "plan": zod.number().nullish().describe('매출 계획 (천 USD)'),
   "actual": zod.number().nullish().describe('매출 실적 (천 USD)')
 })).optional().describe('표시용 월별 매출. 경영보고 값 우선, 없는 월은 ERP\/데이터입력 값으로 보완.'),
@@ -564,14 +567,17 @@ export const putProjectdetailBodyOutsourcingItemYearMax = 2100;
 
 export const putProjectdetailBodyOutsourcingItemMonthMax = 12;
 
+export const putProjectdetailBodyCashflowItemMonthMin = 0;
 export const putProjectdetailBodyCashflowItemMonthMax = 12;
 
 export const putProjectdetailBodyCogsMonthlyItemMonthMax = 12;
 
+export const putProjectdetailBodySalesMonthlyItemMonthMin = 0;
 export const putProjectdetailBodySalesMonthlyItemMonthMax = 12;
 
 export const putProjectdetailBodyCanonicalCogsMonthlyItemMonthMax = 12;
 
+export const putProjectdetailBodyCanonicalSalesMonthlyItemMonthMin = 0;
 export const putProjectdetailBodyCanonicalSalesMonthlyItemMonthMax = 12;
 
 
@@ -668,7 +674,7 @@ export const PutProjectdetailBody = zod.object({
 })),
   "cashflow": zod.array(zod.object({
   "year": zod.number(),
-  "month": zod.number().min(1).max(putProjectdetailBodyCashflowItemMonthMax),
+  "month": zod.number().min(putProjectdetailBodyCashflowItemMonthMin).max(putProjectdetailBodyCashflowItemMonthMax).describe('1..12, 0 = 전년 누계(해당 연도 이전 누계, 수기 입력)'),
   "cashIn": zod.number().nullish().describe('수입 (천 USD)'),
   "cashOut": zod.number().nullish().describe('지출 (천 USD)'),
   "equivalent": zod.number().nullish().describe('보유 현금 (천 USD)'),
@@ -682,7 +688,7 @@ export const PutProjectdetailBody = zod.object({
 })).optional(),
   "salesMonthly": zod.array(zod.object({
   "year": zod.number(),
-  "month": zod.number().min(1).max(putProjectdetailBodySalesMonthlyItemMonthMax),
+  "month": zod.number().min(putProjectdetailBodySalesMonthlyItemMonthMin).max(putProjectdetailBodySalesMonthlyItemMonthMax).describe('1..12, 0 = 전년 누계(해당 연도 이전 누계, 수기 입력)'),
   "plan": zod.number().nullish().describe('매출 계획 (천 USD)'),
   "actual": zod.number().nullish().describe('매출 실적 (천 USD)')
 })).optional(),
@@ -694,7 +700,7 @@ export const PutProjectdetailBody = zod.object({
 })).optional().describe('표시용 월별 원가. 경영보고 값 우선, 없는 월은 ERP\/데이터입력 값으로 보완.'),
   "canonicalSalesMonthly": zod.array(zod.object({
   "year": zod.number(),
-  "month": zod.number().min(1).max(putProjectdetailBodyCanonicalSalesMonthlyItemMonthMax),
+  "month": zod.number().min(putProjectdetailBodyCanonicalSalesMonthlyItemMonthMin).max(putProjectdetailBodyCanonicalSalesMonthlyItemMonthMax).describe('1..12, 0 = 전년 누계(해당 연도 이전 누계, 수기 입력)'),
   "plan": zod.number().nullish().describe('매출 계획 (천 USD)'),
   "actual": zod.number().nullish().describe('매출 실적 (천 USD)')
 })).optional().describe('표시용 월별 매출. 경영보고 값 우선, 없는 월은 ERP\/데이터입력 값으로 보완.'),
@@ -743,14 +749,17 @@ export const putProjectdetailResponseOutsourcingItemYearMax = 2100;
 
 export const putProjectdetailResponseOutsourcingItemMonthMax = 12;
 
+export const putProjectdetailResponseCashflowItemMonthMin = 0;
 export const putProjectdetailResponseCashflowItemMonthMax = 12;
 
 export const putProjectdetailResponseCogsMonthlyItemMonthMax = 12;
 
+export const putProjectdetailResponseSalesMonthlyItemMonthMin = 0;
 export const putProjectdetailResponseSalesMonthlyItemMonthMax = 12;
 
 export const putProjectdetailResponseCanonicalCogsMonthlyItemMonthMax = 12;
 
+export const putProjectdetailResponseCanonicalSalesMonthlyItemMonthMin = 0;
 export const putProjectdetailResponseCanonicalSalesMonthlyItemMonthMax = 12;
 
 
@@ -847,7 +856,7 @@ export const PutProjectdetailResponse = zod.object({
 })),
   "cashflow": zod.array(zod.object({
   "year": zod.number(),
-  "month": zod.number().min(1).max(putProjectdetailResponseCashflowItemMonthMax),
+  "month": zod.number().min(putProjectdetailResponseCashflowItemMonthMin).max(putProjectdetailResponseCashflowItemMonthMax).describe('1..12, 0 = 전년 누계(해당 연도 이전 누계, 수기 입력)'),
   "cashIn": zod.number().nullish().describe('수입 (천 USD)'),
   "cashOut": zod.number().nullish().describe('지출 (천 USD)'),
   "equivalent": zod.number().nullish().describe('보유 현금 (천 USD)'),
@@ -861,7 +870,7 @@ export const PutProjectdetailResponse = zod.object({
 })).optional(),
   "salesMonthly": zod.array(zod.object({
   "year": zod.number(),
-  "month": zod.number().min(1).max(putProjectdetailResponseSalesMonthlyItemMonthMax),
+  "month": zod.number().min(putProjectdetailResponseSalesMonthlyItemMonthMin).max(putProjectdetailResponseSalesMonthlyItemMonthMax).describe('1..12, 0 = 전년 누계(해당 연도 이전 누계, 수기 입력)'),
   "plan": zod.number().nullish().describe('매출 계획 (천 USD)'),
   "actual": zod.number().nullish().describe('매출 실적 (천 USD)')
 })).optional(),
@@ -873,7 +882,7 @@ export const PutProjectdetailResponse = zod.object({
 })).optional().describe('표시용 월별 원가. 경영보고 값 우선, 없는 월은 ERP\/데이터입력 값으로 보완.'),
   "canonicalSalesMonthly": zod.array(zod.object({
   "year": zod.number(),
-  "month": zod.number().min(1).max(putProjectdetailResponseCanonicalSalesMonthlyItemMonthMax),
+  "month": zod.number().min(putProjectdetailResponseCanonicalSalesMonthlyItemMonthMin).max(putProjectdetailResponseCanonicalSalesMonthlyItemMonthMax).describe('1..12, 0 = 전년 누계(해당 연도 이전 누계, 수기 입력)'),
   "plan": zod.number().nullish().describe('매출 계획 (천 USD)'),
   "actual": zod.number().nullish().describe('매출 실적 (천 USD)')
 })).optional().describe('표시용 월별 매출. 경영보고 값 우선, 없는 월은 ERP\/데이터입력 값으로 보완.'),
@@ -1053,6 +1062,56 @@ export const GetCashflowAggregateResponse = zod.object({
   "cashIn": zod.number(),
   "cashOut": zod.number().describe('Positive magnitude of outflow'),
   "equivalent": zod.number().describe('Cumulative balance (과부족 누계) up to and including this month')
+}))
+})
+
+
+/**
+ * PIMSVINA "Cash Flow > Report > Cash Flow Report"와 동일한 규칙으로 Oracle을 직접 조회한다. 기준(Actual) 월 이하 달은 실적(ACTUAL), 이후 달은 승인된 계획(PLAN)을 쓰고, Cash Balance = 기초 잔액(Opening balance) + 월별 Surplus/Deficit 누계.
+ * @summary PIMSVINA Cash Flow Report (Level=Summary) for DECV — Total / group / detail by month
+ */
+export const getCashflowReportSummaryQueryFromMonthMax = 12;
+
+export const getCashflowReportSummaryQueryMonthsDefault = 12;
+export const getCashflowReportSummaryQueryMonthsMax = 36;
+
+
+
+export const GetCashflowReportSummaryQueryParams = zod.object({
+  "fromYear": zod.coerce.number(),
+  "fromMonth": zod.coerce.number().min(1).max(getCashflowReportSummaryQueryFromMonthMax),
+  "months": zod.coerce.number().min(1).max(getCashflowReportSummaryQueryMonthsMax).default(getCashflowReportSummaryQueryMonthsDefault)
+})
+
+export const GetCashflowReportSummaryResponse = zod.object({
+  "unit": zod.string(),
+  "company": zod.string(),
+  "actualMonth": zod.string().describe('YYYY-MM — 이 달까지 실적, 이후는 계획'),
+  "openingBalance": zod.number().describe('조회 시작 연도 1월 1일 기준 기초 잔액'),
+  "total": zod.array(zod.object({
+  "month": zod.string().describe('YYYY-MM'),
+  "income": zod.number(),
+  "outcome": zod.number(),
+  "balance": zod.number().describe('Cash Balance (월말 잔액)'),
+  "isActual": zod.boolean().describe('true = 실적(Actual Month 이하), false = 계획(Future Forecast Plan)')
+})),
+  "groups": zod.array(zod.object({
+  "code": zod.string(),
+  "name": zod.string().describe('Group Business Line (Business Activities \/ Financing and Investment Activities \/ HQ Admin Expenses \/ Development)'),
+  "months": zod.array(zod.object({
+  "month": zod.string().describe('YYYY-MM'),
+  "income": zod.number(),
+  "outcome": zod.number()
+})),
+  "details": zod.array(zod.object({
+  "key": zod.string(),
+  "label": zod.string().describe('현장명(Business\/Development) 또는 Cash Flow Type명(Financing\/Admin)'),
+  "months": zod.array(zod.object({
+  "month": zod.string().describe('YYYY-MM'),
+  "income": zod.number(),
+  "outcome": zod.number()
+}))
+}))
 }))
 })
 

@@ -18,6 +18,8 @@ import {
   useGetCashflowAggregate,
   getGetCashflowAggregateQueryKey,
   getCashflowAggregate,
+  useGetCashflowReportSummary,
+  getGetCashflowReportSummaryQueryKey,
   useListMgmtreportProjects,
   getListMgmtreportProjectsQueryKey,
 } from "@workspace/api-client-react";
@@ -154,11 +156,34 @@ type ChartRow = {
   balance: number;
 };
 
+/** PIMSVINA Cash Flow Report 드릴다운 표 행 (그룹/현장·항목) */
+type ReportDrillRow = {
+  key: string;
+  name: string;
+  inflow: number;
+  outflow: number;
+  surplus: number;
+};
+
+const fmtInt = (v: unknown) =>
+  typeof v === "number"
+    ? v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+    : "-";
+
+function sumRows(rows: ReportDrillRow[]): Partial<ReportDrillRow> {
+  return {
+    inflow: rows.reduce((a, r) => a + r.inflow, 0),
+    outflow: rows.reduce((a, r) => a + r.outflow, 0),
+    surplus: rows.reduce((a, r) => a + r.surplus, 0),
+  };
+}
+
 export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) {
   const { t, i18n } = useTranslation(["cashFlowChart", "common"]);
   const lang = (i18n.language ?? "ko").slice(0, 2);
   const [detailOpen, setDetailOpen] = useState(false);
   const [drillRow, setDrillRow] = useState<ChartRow | null>(null);
+  const [drillGroup, setDrillGroup] = useState<ReportDrillRow | null>(null);
 
   const config = getScopeConfig(scope, t);
   const filters = useDashboardFilters();
@@ -179,6 +204,11 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
   const months = hasCustomRange && !emptyRange ? to - from + 1 : referenceMonth;
 
   const enabled = config.enabled && !projectSelected && !emptyRange;
+  // DECV 전체는 PIMSVINA "Cash Flow Report"(Level=Summary)의 Total 행을 그대로 쓴다 — 유입/유출은
+  // Business Activities + Financing and Investment + HQ Admin + Development 합계, 누적 잔액은 PIMSVINA
+  // Cash Balance(기초 잔액 포함). 예전엔 자금수지 Excel(cf_*)의 프로젝트 행(= Business Activities)만
+  // 합산해서 Total/Cash Balance와 달랐다(실사용자 보고). 시공/용역 등 부문 범위는 기존 집계를 유지한다.
+  const useReport = scope === "전체";
   const params = {
     division: config.division,
     divisions: config.divisions,
@@ -187,11 +217,27 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
     fromMonth,
     months,
   };
-  const query = useGetCashflowAggregate(params, {
-    query: { queryKey: getGetCashflowAggregateQueryKey(params), enabled },
+  const aggregateQuery = useGetCashflowAggregate(params, {
+    query: { queryKey: getGetCashflowAggregateQueryKey(params), enabled: enabled && !useReport },
   });
+  const reportParams = { fromYear: REPORT_YEAR, fromMonth, months };
+  const reportQuery = useGetCashflowReportSummary(reportParams, {
+    query: {
+      queryKey: getGetCashflowReportSummaryQueryKey(reportParams),
+      enabled: enabled && useReport,
+      staleTime: 5 * 60_000,
+    },
+  });
+  const query = useReport ? reportQuery : aggregateQuery;
 
-  const points = query.data?.points ?? [];
+  const points = useReport
+    ? (reportQuery.data?.total ?? []).map((p) => ({
+        month: p.month,
+        cashIn: p.income,
+        cashOut: p.outcome,
+        equivalent: p.balance,
+      }))
+    : (aggregateQuery.data?.points ?? []);
   const chartData: ChartRow[] = points.map((p) => {
     const [y, m] = parseYm(p.month);
     return {
@@ -213,6 +259,7 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
     { query: { queryKey: getListMgmtreportProjectsQueryKey({ year: REPORT_YEAR }) } },
   );
   const drillRefs = useMemo(() => {
+    if (useReport) return []; // 리포트 응답에 그룹/현장 상세가 함께 들어 있어 현장별 개별 조회가 필요 없다
     if (scope === "시공-진행중") return getOngoingRefs("시공");
     if (scope === "용역-진행중") return getOngoingRefs("용역");
     if (scope === "시공-종료" || scope === "용역-종료") return [];
@@ -226,8 +273,8 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
       )
       .map((p) => getCashflowProjectRef(p.name))
       .filter((r): r is NonNullable<typeof r> => r != null);
-  }, [scope, projectsQuery.data]);
-  const hasDrilldown = drillRefs.length > 0 && enabled;
+  }, [useReport, scope, projectsQuery.data]);
+  const hasDrilldown = enabled && (useReport ? reportQuery.data != null : drillRefs.length > 0);
 
   /** 드릴다운 쿼리: 현장별 개별 쿼리 (조건부 활성) */
   const drillEnabled = hasDrilldown; // 항상 프리패치 (클릭 즉시 표시)
@@ -269,6 +316,46 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
 
   const drillIsLoading = projectQueries.some((q) => q.isLoading);
   const drillIsError = projectQueries.some((q) => q.isError);
+
+  /** PIMSVINA 리포트 2차: 클릭된 월의 Group Business Line별 유입·유출·수지 */
+  const reportGroupRows = useMemo<ReportDrillRow[]>(() => {
+    if (!useReport || !drillRow) return [];
+    const ym = drillRow.rawMonth;
+    const [y, m] = parseYm(ym);
+    return (reportQuery.data?.groups ?? []).map((g) => {
+      const pt = g.months.find((p) => p.month === ym);
+      const inflow = convert(pt?.income ?? 0, y, m);
+      const outflow = convert(pt?.outcome ?? 0, y, m);
+      return { key: g.code, name: g.name, inflow, outflow, surplus: inflow - outflow };
+    });
+  }, [useReport, drillRow, reportQuery.data, convert]);
+
+  /** PIMSVINA 리포트 3차: 선택한 그룹의 현장(사업) / Cash Flow Type(재무·관리비)별 상세 */
+  const reportDetailRows = useMemo<ReportDrillRow[]>(() => {
+    if (!useReport || !drillRow || !drillGroup) return [];
+    const ym = drillRow.rawMonth;
+    const [y, m] = parseYm(ym);
+    const group = reportQuery.data?.groups.find((g) => g.code === drillGroup.key);
+    return (group?.details ?? [])
+      .map((d) => {
+        const pt = d.months.find((p) => p.month === ym);
+        const inflow = convert(pt?.income ?? 0, y, m);
+        const outflow = convert(pt?.outcome ?? 0, y, m);
+        return { key: d.key, name: d.label, inflow, outflow, surplus: inflow - outflow };
+      })
+      .filter((r) => r.inflow !== 0 || r.outflow !== 0)
+      .sort((a, b) => b.inflow - a.inflow || b.outflow - a.outflow);
+  }, [useReport, drillRow, drillGroup, reportQuery.data, convert]);
+
+  /** 1차 표 합계(연 누계): 유입·유출은 합계, 누적 잔액은 마지막 달의 월말 잔액 */
+  const summaryTotalRow: Partial<ChartRow> | undefined =
+    chartData.length > 0
+      ? {
+          inflow: chartData.reduce((a, r) => a + r.inflow, 0),
+          outflow: chartData.reduce((a, r) => a + r.outflow, 0),
+          balance: chartData[chartData.length - 1].balance,
+        }
+      : undefined;
 
   const inflowName = t("cashFlowChart:cashInflow");
   const outflowName = t("cashFlowChart:cashOutflow");
@@ -399,16 +486,23 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
           rowKey={(row) => String(row.month)}
           columns={[
             { key: "month", label: t("common:period"), align: "left" },
-            { key: "inflow", label: inflowName },
-            { key: "outflow", label: outflowName },
-            { key: "balance", label: balanceName },
+            { key: "inflow", label: inflowName, format: fmtInt },
+            { key: "outflow", label: outflowName, format: fmtInt },
+            { key: "balance", label: balanceName, format: fmtInt },
           ]}
           rows={chartData}
           onRowClick={(row) => {
             if (hasDrilldown && isValidYm(row.rawMonth)) setDrillRow(row);
           }}
           isRowClickable={(row) => hasDrilldown && isValidYm(row.rawMonth)}
+          totalRow={summaryTotalRow}
+          totalLabel={t("cashFlowChart:annualTotal")}
         />
+        {useReport && (
+          <div style={{ padding: "10px 4px 0", fontSize: "11px", color: INK_MUTED }}>
+            {t("cashFlowChart:reportSourceNote")}
+          </div>
+        )}
         {!hasDrilldown && (
           <div style={{ padding: "10px 4px 0", fontSize: "11px", color: INK_MUTED }}>
             {t("cashFlowChart:noProjectBreakdown")}
@@ -416,9 +510,60 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
         )}
       </DetailModal>
 
-      {/* ── 2차 드릴다운 모달: 현장별 유입·유출 상세 ── */}
+      {/* ── 2차/3차 드릴다운 (DECV 전체 = PIMSVINA Cash Flow Report): 그룹별 → 현장/항목별 ── */}
       <DetailModal
-        open={drillRow != null}
+        open={useReport && drillRow != null}
+        onClose={() => {
+          setDrillRow(null);
+          setDrillGroup(null);
+        }}
+        title={drillRow ? t("cashFlowChart:groupDetailTitle", { month: drillRow.month }) : ""}
+        subtitle={`${config.label} · ${t("common:unit")}: ${unitLabel}`}
+      >
+        <DetailDataTable
+          rowKey={(row) => row.key}
+          columns={[
+            { key: "name", label: t("cashFlowChart:colGroup"), align: "left" },
+            { key: "inflow", label: t("cashFlowChart:colInflow"), format: fmtInt },
+            { key: "outflow", label: t("cashFlowChart:colOutflow"), format: fmtInt },
+            { key: "surplus", label: t("cashFlowChart:colSurplus"), format: fmtInt },
+          ]}
+          rows={reportGroupRows}
+          onRowClick={(row) => setDrillGroup(row)}
+          isRowClickable={(row) => row.inflow !== 0 || row.outflow !== 0}
+          totalRow={sumRows(reportGroupRows)}
+        />
+      </DetailModal>
+      <DetailModal
+        open={useReport && drillRow != null && drillGroup != null}
+        onClose={() => setDrillGroup(null)}
+        title={
+          drillRow && drillGroup
+            ? t("cashFlowChart:groupItemDetailTitle", { group: drillGroup.name, month: drillRow.month })
+            : ""
+        }
+        subtitle={`${config.label} · ${t("common:unit")}: ${unitLabel}`}
+      >
+        {reportDetailRows.length === 0 ? (
+          <div style={{ ...emptyNote, padding: "28px 16px" }}>{t("cashFlowChart:noSiteData")}</div>
+        ) : (
+          <DetailDataTable
+            rowKey={(row) => row.key}
+            columns={[
+              { key: "name", label: t("cashFlowChart:colSiteOrItem"), align: "left" },
+              { key: "inflow", label: t("cashFlowChart:colInflow"), format: fmtInt },
+              { key: "outflow", label: t("cashFlowChart:colOutflow"), format: fmtInt },
+              { key: "surplus", label: t("cashFlowChart:colSurplus"), format: fmtInt },
+            ]}
+            rows={reportDetailRows}
+            totalRow={sumRows(reportDetailRows)}
+          />
+        )}
+      </DetailModal>
+
+      {/* ── 2차 드릴다운 모달(부문 범위): 현장별 유입·유출 상세 ── */}
+      <DetailModal
+        open={!useReport && drillRow != null}
         onClose={() => setDrillRow(null)}
         title={drillRow ? t("cashFlowChart:siteDetailTitle", { month: drillRow.month }) : ""}
         subtitle={`${config.label} · ${t("common:unit")}: ${unitLabel}`}
@@ -454,6 +599,10 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
               },
             ]}
             rows={drillRows}
+            totalRow={{
+              inflow: drillRows.reduce((a, r) => a + r.inflow, 0),
+              outflow: drillRows.reduce((a, r) => a + r.outflow, 0),
+            }}
           />
         )}
       </DetailModal>

@@ -816,6 +816,49 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiErrorMessage"
+  /cashflow/report-summary:
+    get:
+      operationId: getCashflowReportSummary
+      tags: [cashflow]
+      summary: PIMSVINA Cash Flow Report (Level=Summary) for DECV — Total / group / detail by month
+      description: >-
+        PIMSVINA "Cash Flow > Report > Cash Flow Report"와 동일한 규칙으로 Oracle을 직접 조회한다.
+        기준(Actual) 월 이하 달은 실적(ACTUAL), 이후 달은 승인된 계획(PLAN)을 쓰고,
+        Cash Balance = 기초 잔액(Opening balance) + 월별 Surplus/Deficit 누계.
+      parameters:
+        - name: fromYear
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: fromMonth
+          in: query
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 12
+        - name: months
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 36
+            default: 12
+      responses:
+        "200":
+          description: Cash flow report summary in 천 USD
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CashflowReportSummary"
+        "500":
+          description: PIMSVINA query failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorMessage"
   /cashflow/import/preview:
     post:
       operationId: previewCashflowImport
@@ -2042,6 +2085,86 @@ components:
           items:
             $ref: "#/components/schemas/CashflowMonthlyPoint"
       required: [scope, unit, points]
+    CashflowReportMonthAmount:
+      type: object
+      properties:
+        month:
+          type: string
+          description: YYYY-MM
+        income:
+          type: number
+        outcome:
+          type: number
+      required: [month, income, outcome]
+    CashflowReportDetail:
+      type: object
+      properties:
+        key:
+          type: string
+        label:
+          type: string
+          description: 현장명(Business/Development) 또는 Cash Flow Type명(Financing/Admin)
+        months:
+          type: array
+          items:
+            $ref: "#/components/schemas/CashflowReportMonthAmount"
+      required: [key, label, months]
+    CashflowReportGroup:
+      type: object
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+          description: Group Business Line (Business Activities / Financing and Investment Activities / HQ Admin Expenses / Development)
+        months:
+          type: array
+          items:
+            $ref: "#/components/schemas/CashflowReportMonthAmount"
+        details:
+          type: array
+          items:
+            $ref: "#/components/schemas/CashflowReportDetail"
+      required: [code, name, months, details]
+    CashflowReportTotalPoint:
+      type: object
+      properties:
+        month:
+          type: string
+          description: YYYY-MM
+        income:
+          type: number
+        outcome:
+          type: number
+        balance:
+          type: number
+          description: Cash Balance (월말 잔액)
+        isActual:
+          type: boolean
+          description: true = 실적(Actual Month 이하), false = 계획(Future Forecast Plan)
+      required: [month, income, outcome, balance, isActual]
+    CashflowReportSummary:
+      type: object
+      properties:
+        unit:
+          type: string
+        company:
+          type: string
+        actualMonth:
+          type: string
+          description: YYYY-MM — 이 달까지 실적, 이후는 계획
+        openingBalance:
+          type: number
+          description: 조회 시작 연도 1월 1일 기준 기초 잔액
+        total:
+          type: array
+          items:
+            $ref: "#/components/schemas/CashflowReportTotalPoint"
+        groups:
+          type: array
+          items:
+            $ref: "#/components/schemas/CashflowReportGroup"
+      required: [unit, company, actualMonth, openingBalance, total, groups]
     SalescostSummaryPoint:
       type: object
       properties:
@@ -2473,8 +2596,9 @@ components:
           type: integer
         month:
           type: integer
-          minimum: 1
+          minimum: 0
           maximum: 12
+          description: 1..12, 0 = 전년 누계(해당 연도 이전 누계, 수기 입력)
         cashIn:
           type: number
           nullable: true
@@ -2535,8 +2659,9 @@ components:
           type: integer
         month:
           type: integer
-          minimum: 1
+          minimum: 0
           maximum: 12
+          description: 1..12, 0 = 전년 누계(해당 연도 이전 누계, 수기 입력)
         plan:
           type: number
           nullable: true

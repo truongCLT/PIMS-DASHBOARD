@@ -32,6 +32,7 @@ import type {
   CashflowImportResult,
   CashflowMonthlySeries,
   CashflowProject,
+  CashflowReportSummary,
   CreateMgmtreportComment,
   CreateProjectdetailComment,
   DeleteFxRatesHistory200,
@@ -42,6 +43,7 @@ import type {
   FxRates,
   GetCashflowAggregateParams,
   GetCashflowMonthlyParams,
+  GetCashflowReportSummaryParams,
   GetFxRatesHistoryParams,
   GetOrderDetailsParams,
   GetPimsvinaSiterateParams,
@@ -2079,6 +2081,91 @@ export function useGetCashflowAggregate<TData = Awaited<ReturnType<typeof getCas
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetCashflowAggregateQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetCashflowReportSummaryUrl = (params: GetCashflowReportSummaryParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/cashflow/report-summary?${stringifiedParams}` : `/api/cashflow/report-summary`
+}
+
+/**
+ * PIMSVINA "Cash Flow > Report > Cash Flow Report"와 동일한 규칙으로 Oracle을 직접 조회한다. 기준(Actual) 월 이하 달은 실적(ACTUAL), 이후 달은 승인된 계획(PLAN)을 쓰고, Cash Balance = 기초 잔액(Opening balance) + 월별 Surplus/Deficit 누계.
+ * @summary PIMSVINA Cash Flow Report (Level=Summary) for DECV — Total / group / detail by month
+ */
+export const getCashflowReportSummary = async (params: GetCashflowReportSummaryParams, options?: RequestInit): Promise<CashflowReportSummary> => {
+
+  return customFetch<CashflowReportSummary>(getGetCashflowReportSummaryUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCashflowReportSummaryQueryKey = (params?: GetCashflowReportSummaryParams,) => {
+    return [
+    `/api/cashflow/report-summary`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetCashflowReportSummaryQueryOptions = <TData = Awaited<ReturnType<typeof getCashflowReportSummary>>, TError = ErrorType<ApiErrorMessage>>(params: GetCashflowReportSummaryParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCashflowReportSummary>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCashflowReportSummaryQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCashflowReportSummary>>> = ({ signal }) => getCashflowReportSummary(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCashflowReportSummary>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCashflowReportSummaryQueryResult = NonNullable<Awaited<ReturnType<typeof getCashflowReportSummary>>>
+export type GetCashflowReportSummaryQueryError = ErrorType<ApiErrorMessage>
+
+
+/**
+ * @summary PIMSVINA Cash Flow Report (Level=Summary) for DECV — Total / group / detail by month
+ */
+
+export function useGetCashflowReportSummary<TData = Awaited<ReturnType<typeof getCashflowReportSummary>>, TError = ErrorType<ApiErrorMessage>>(
+ params: GetCashflowReportSummaryParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCashflowReportSummary>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCashflowReportSummaryQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

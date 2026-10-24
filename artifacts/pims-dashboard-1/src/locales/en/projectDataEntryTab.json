@@ -175,6 +175,7 @@
   "equivalentVnd": "Cash Balance",
   "confirmedProgressVnd": "Confirmed Progress",
   "cashflowNote": "Enter cash out as a positive number (the chart automatically displays it downward). VND amounts are automatically converted to thousand USD on save.",
+  "cashflowPriorYearNote": "※ PIMSVINA cash transactions only exist from Jan 2026. Enter collections received before that in an \"Add Prior-Year Cumulative\" row (month = 0, year = cumulative before that year); it is added to Collected / Receivable / Collection rate on the report Funds card (not to the running balance).",
   "cashflowPrefilledNote": "Data saved in the Cash Flow Excel (DB) has been loaded. If you edit the table, it will be saved as this project's cash flow data, and the saved values will take priority afterward.",
   "photoSection": "Site Photos",
   "photoUploadBtn": "Select Photos",

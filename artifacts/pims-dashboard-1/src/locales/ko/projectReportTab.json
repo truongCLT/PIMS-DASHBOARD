@@ -53,6 +53,8 @@
   "collectionActualLabel": "수금 (실적)",
   "receivableLabel": "미수금 (채권)",
   "collectionRateLabel": "수금률 (수금 / 누계 매출)",
+  "fundsPriorIncludedNote": "※ 수금(실적)에 2026년 이전 수금 누계(데이터 입력 \"전년 누계\") {{amount}} 포함",
+  "fundsPriorMissingNote": "※ PIMSVINA 자금 거래는 2026년 1월부터만 있어, 그 이전 수금은 데이터 입력 > 월별 자금 \"전년 누계\"를 입력해야 누계 수금·미수금에 반영됩니다.",
   "fundsForecastNote": "※ 매출처럼 계획, 전망 표시",
   "fundsDetailNote": "※ 상세보기 표는 매출, 인정, 수금 채권 추가"
 }

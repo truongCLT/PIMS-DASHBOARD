@@ -7,7 +7,10 @@ import {
   GetCashflowMonthlyQueryParams,
   GetCashflowAggregateQueryParams,
   GetCashflowAggregateResponse,
+  GetCashflowReportSummaryQueryParams,
+  GetCashflowReportSummaryResponse,
 } from "@workspace/api-zod";
+import { fetchCashflowReportSummary } from "../lib/cashflowReport";
 import {
   parseCashflowWorkbook,
   buildCashflowPreview,
@@ -182,6 +185,27 @@ router.get("/cashflow/monthly", async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "failed to get cashflow monthly series");
     res.status(500).json({ error: "자금수지 데이터 조회에 실패했습니다." });
+  }
+});
+
+// 경영현황판 "DECV 전체" 자금수지 — PIMSVINA Cash Flow Report(Summary)의 Total/그룹/상세를 그대로 조회한다.
+router.get("/cashflow/report-summary", async (req, res) => {
+  const parsed = GetCashflowReportSummaryQueryParams.safeParse(req.query);
+  if (!parsed.success) {
+    res.status(400).json({ error: "잘못된 요청 파라미터입니다." });
+    return;
+  }
+  const { fromYear, fromMonth, months = 12 } = parsed.data;
+  if (![fromYear, fromMonth, months].every(Number.isInteger)) {
+    res.status(400).json({ error: "잘못된 요청 파라미터입니다." });
+    return;
+  }
+  try {
+    const summary = await fetchCashflowReportSummary({ fromYear, fromMonth, months });
+    res.json(GetCashflowReportSummaryResponse.parse(summary));
+  } catch (err) {
+    req.log.error({ err }, "failed to get PIMSVINA cash flow report summary");
+    res.status(500).json({ error: "PIMSVINA 자금수지(Cash Flow Report) 조회에 실패했습니다." });
   }
 });
 

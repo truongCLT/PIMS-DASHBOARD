@@ -103,6 +103,7 @@ export function resolveLatestProjectReportMonth({
   asOfMonth,
   progress,
   revenueActuals,
+  maxMonth = maxSelectableMonth(),
 }: {
   asOfMonth?: string | null;
   progress: Array<{
@@ -112,24 +113,29 @@ export function resolveLatestProjectReportMonth({
     actualCumPct?: number | null;
   }>;
   revenueActuals: Array<number | null>;
+  /** 실적 마감 상한 — 이 달 이후의 "실적"은 무시한다(기본: 마감 규칙 기준 maxSelectableMonth). */
+  maxMonth?: number;
 }): number | null {
   // 실제 실적(공정/매출) 데이터가 있으면 그 데이터 기준으로 "가장 최근 실적이 있는 달"을 우선 찾는다.
   // Data Entry의 "Base Month of Record"(asOfMonth)는 수기 입력이라 최신 실적 달과 어긋날 수 있으므로
   // (예: 실제 실적은 8월까지인데 asOfMonth를 습관적으로 당월 9월로 입력해둔 경우), 실적 데이터가 있는
-  // 한 asOfMonth보다 우선한다 — 그래야 "당월(마감 전) 실적을 기준월로 써서 계획 데이터가 실적 계산에
-  // 섞이는" 문제를 asOfMonth가 다시 일으키지 않는다.
+  // 한 asOfMonth보다 우선한다.
   //
   // actualPct(월간 델타)만 보고 판단한다 — actualCumPct는 보지 않는다. PIMSVINA sync는 아직 그 달
-  // 실적이 없으면 지난달과 같은 누계 스냅샷을 그대로 다시 내려주므로(예: 9~12월 actualCumPct가 8월과
-  // 동일하게 59.1로 "얼어붙어" 반복), actualCumPct만으로는 "진짜 최신 실적 달"과 "아직 반영 안 된
-  // 빈 달"을 구분할 수 없다. actualPct는 이번 달 누계 − 지난달 누계라서 반영 안 된 달은 항상 0이
-  // 되므로, actualPct가 0이 아닌 마지막 달을 찾아야 한다(매출 실적 판정과 동일한 규칙).
+  // 실적이 없으면 지난달과 같은 누계 스냅샷을 그대로 다시 내려주므로 actualCumPct만으로는 "진짜 최신
+  // 실적 달"과 "아직 반영 안 된 빈 달"을 구분할 수 없다.
+  //
+  // 마감되지 않은 미래 달의 실적 값은 기준월 판정에서 제외한다 — PIMSVINA sync가 아직 오지 않은 달에
+  // 0.0156% 같은 잔여 실적을 내려보내는 경우가 있어(실사용자 보고: K8CT1 '26.12 actualPct=0.0156),
+  // 상한이 없으면 "최신월"이 '26.12로 잡혀 법인장 보고 화면이 계획만 있는 달로 열렸다.
   const latestProgressActual = [...progress]
     .reverse()
-    .find((row) => row.year === REPORT_YEAR && (row.actualPct ?? 0) !== 0);
+    .find(
+      (row) => row.year === REPORT_YEAR && row.month <= maxMonth && (row.actualPct ?? 0) !== 0,
+    );
   if (latestProgressActual) return latestProgressActual.month;
 
-  for (let index = revenueActuals.length - 1; index >= 0; index -= 1) {
+  for (let index = Math.min(revenueActuals.length, maxMonth) - 1; index >= 0; index -= 1) {
     if ((revenueActuals[index] ?? 0) !== 0) return index + 1;
   }
 
@@ -140,11 +146,11 @@ export function resolveLatestProjectReportMonth({
     Number(asOfMatch[2]) >= 1 &&
     Number(asOfMatch[2]) <= 12
   ) {
-    return Number(asOfMatch[2]);
+    return Math.min(Number(asOfMatch[2]), maxMonth);
   }
 
   // 실적 데이터도, asOfMonth도 없으면 "달력 기준 직전월"(당월은 아직 마감 전이라 제외)로 기본값을 둔다.
-  return maxSelectableMonth();
+  return maxMonth;
 }
 
 // ─── Main component ────────────────────────────────────────────────────────
@@ -263,7 +269,11 @@ export function ProjectReportTab({
           const cutoff = `${REPORT_YEAR}-${String(resolvedMonth).padStart(2, "0")}`;
           return p.month <= cutoff;
         });
+  // "YYYY-00" = 데이터 입력 "전년 누계" 행(PIMSVINA 자금 거래가 없는 2026년 이전 수금 누계) — 누계 수금에 포함된다.
   const cashIn = cfFiltered.reduce<number>((a, p) => a + (p.cashIn ?? 0), 0);
+  const priorCashIn = hasPdCashRows
+    ? cfFiltered.filter((p) => p.month.endsWith("-00")).reduce<number>((a, p) => a + (p.cashIn ?? 0), 0)
+    : 0;
   const cashOut = cfFiltered.reduce<number>((a, p) => a + (p.cashOut ?? 0), 0);
   const cashMonthIn =
     resolvedMonth == null
@@ -381,17 +391,24 @@ export function ProjectReportTab({
       ? planMonths.slice(0, resolvedMonth).reduce<number>((a, b) => a + (b ?? 0), 0)
       : planMonths.reduce<number>((a, b) => a + (b ?? 0), 0);
 
-  // 공정별 원가 계획: 선택 기준월의 월별/누계 계획 대비 실적
+  // 공정별 원가 계획: 선택 기준월의 월별/누계 계획 대비 실적.
+  // 누계는 원가 카드(cumPlanFor/cumActualFor)와 같은 "프로젝트 시작 ~ 기준월" 기준이다 — 예전엔 당해
+  // 연도만 합산해서, 이전 연도 계획/실적 차이가 연초 몇 달의 작은 분모에 몰려 항목별 차이가 5%를 넘고
+  // 신호등이 빨간색으로 나왔다(실사용자 보고: THT2단계 인프라 — 전체 누계 차이 0.75%인데 2026년만
+  // 보면 Expense 2가 10.3% 초과).
   const costPlanRows = (detail?.costBudgetMonthly ?? []).filter(
     (row) =>
       PROCESS_COST_PLAN_ITEMS.has(row.item) &&
-      row.year === REPORT_YEAR &&
-      (resolvedMonth == null || row.month <= resolvedMonth),
+      (row.year < REPORT_YEAR ||
+        (row.year === REPORT_YEAR && (resolvedMonth == null || row.month <= resolvedMonth))),
   );
+  const reportYearCostRows = costPlanRows.filter((row) => row.year === REPORT_YEAR);
   const selectedCostRows =
     resolvedMonth == null
-      ? costPlanRows.filter((row) => row.month === Math.max(0, ...costPlanRows.map((item) => item.month)))
-      : costPlanRows.filter((row) => row.month === resolvedMonth);
+      ? reportYearCostRows.filter(
+          (row) => row.month === Math.max(0, ...reportYearCostRows.map((item) => item.month)),
+        )
+      : reportYearCostRows.filter((row) => row.month === resolvedMonth);
   const sumNullable = (
     rows: typeof costPlanRows,
     field: "plan" | "actual",
@@ -688,6 +705,7 @@ export function ProjectReportTab({
           <div data-export-block style={{ minWidth: 0, width: "100%", boxSizing: "border-box" }}>
             <FundsSection
               cashIn={cashIn}
+              priorCashIn={priorCashIn}
               cashOut={cashOut}
               contractAmount={contractAmount}
               cumRev={overallCumRev}

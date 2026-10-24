@@ -893,7 +893,7 @@ export async function parseProjectDetailWorkbook(
         const year = cellInt(r[0]);
         const month = cellInt(r[1]);
         if (year == null || month == null) throw new ExcelParseError(`[${SHEET_NAME_I18N.cashflow.ko}] ${i + 2}행: 연도/월이 비어 있습니다.`);
-        if (month < 1 || month > 12) throw new ExcelParseError(`[${SHEET_NAME_I18N.cashflow.ko}] ${i + 2}행: 월(${month})이 올바르지 않습니다.`);
+        if (month < 0 || month > 12) throw new ExcelParseError(`[${SHEET_NAME_I18N.cashflow.ko}] ${i + 2}행: 월(${month})이 올바르지 않습니다.`);
         out.push({
           year,
           month,
@@ -944,7 +944,7 @@ export async function parseProjectDetailWorkbook(
         }
         const year = yearRaw;
         const month = monthRaw;
-        if (month < 1 || month > 12) throw new ExcelParseError(`[${SHEET_NAME_I18N.salesMonthly.ko}] ${i + 2}행: 월(${month})이 올바르지 않습니다.`);
+        if (month < 0 || month > 12) throw new ExcelParseError(`[${SHEET_NAME_I18N.salesMonthly.ko}] ${i + 2}행: 월(${month})이 올바르지 않습니다.`);
         const key = `${year}-${month}`;
         if (seen.has(key)) {
           throw new ExcelParseError(`[${SHEET_NAME_I18N.salesMonthly.ko}] 같은 월(${year}.${String(month).padStart(2, "0")})이 중복 입력되었습니다.`);
