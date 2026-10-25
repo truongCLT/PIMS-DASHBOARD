@@ -851,20 +851,6 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
 
   const updateAt = <T,>(setter: React.Dispatch<React.SetStateAction<T[]>>, i: number, patch: Partial<T>) =>
     setter((rows) => rows.map((r, j) => (j === i ? { ...r, ...patch } : r)));
-  // "보유 현금(Cash Equivalent)" = 잔여자금 — 현장 시작월부터 현재월까지 (Cash In - Cash Out)의
-  // 누적 합계(실사용자 요청: 그 달만의 증감이 아니라 누계 잔액). cashflow는 연/월 오름차순으로
-  // 쌓이므로(첫 로드 순서 + "Add Month"로 다음 달만 추가) 배열 순서 그대로 누적한다. Cash In/Out은
-  // 소수점이 있는 원본 값이라, 화면에 보이는 정수 기준으로 반올림한 뒤 뺀다.
-  // month=0("전년 누계" 수기 입력 행)은 이전 연도 수금 누계를 보고서 자금 카드에 더하기 위한 값이라
-  // 잔액 누계에는 넣지 않는다(PIMSVINA 잔액은 2026-01 기초 잔액부터 시작).
-  const cashflowEquivalents = useMemo(() => {
-    let running = 0;
-    return cashflow.map((c) => {
-      if (c.month === 0) return null;
-      running += Math.round(c.cashIn ?? 0) - Math.round(c.cashOut ?? 0);
-      return running;
-    });
-  }, [cashflow]);
   const updateProgressAt = (i: number, patch: Partial<ProjectDetailProgressPoint>) =>
     setProgress((rows) =>
       calculateProgressPlanCumulative(rows.map((row, j) => (j === i ? { ...row, ...patch } : row))),
@@ -1111,14 +1097,9 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       costBudgetMonthly: costBudgetMonthly.filter((r) => r.plan != null || r.actual != null),
       outsourcing: outsourcing.filter((o) => o.trade.trim() !== ""),
       // 자금수지 Excel prefill을 아직 수정하지 않았다면 저장하지 않음(향후 Excel 갱신 반영 유지)
-      // equivalent는 화면에 보이는 자동 계산값(cashflowEquivalents)으로 덮어써서 저장한다 — DB에는
-      // 항상 "첫 행 기초 잔액 + 이후 누적"으로 일관된 값이 들어가야 다른 소비처(엑셀 export 등)도
-      // 맞는 값을 본다.
-      cashflow: cfPrefilled
-        ? []
-        : cashflow
-            .map((c, i) => ({ ...c, equivalent: cashflowEquivalents[i] }))
-            .filter((c) => c.year > 0 && c.month >= 0 && c.month <= 12),
+      // equivalent(Cash Balance)는 PIMSVINA Cash Flow Report의 Cash Balance를 동기화한 값 그대로 저장한다
+      // — 화면에서 Cash In/Out 누계로 다시 계산하면 기초 잔액이 빠져 PIMSVINA와 달라진다.
+      cashflow: cfPrefilled ? [] : cashflow.filter((c) => c.year > 0 && c.month >= 0 && c.month <= 12),
       cogsMonthly: cogsMonthly.filter((c) => c.year > 0 && c.month >= 1 && c.month <= 12),
       // month=0 = "전년 누계" 행 — 예전엔 여기서 걸러져 "전년 누계 추가"로 입력한 값이 저장되지 않았다.
       salesMonthly: salesMonthly.filter((s) => s.year > 0 && s.month >= 0 && s.month <= 12),
@@ -2985,15 +2966,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
                 <td style={tdCell}><NumInput value={c.month} onChange={(v) => updateAt(editCashflow, i, { month: v ?? 0 })} data-row={i} data-col={1} /></td>
                 <td style={tdCell}><VndInput valueKUsd={c.cashIn} onChange={(v) => updateAt(editCashflow, i, { cashIn: v })} data-row={i} data-col={2} /></td>
                 <td style={tdCell}><VndInput valueKUsd={c.cashOut} onChange={(v) => updateAt(editCashflow, i, { cashOut: v })} data-row={i} data-col={3} /></td>
-                <td style={tdCell}>
-                  <VndInput
-                    valueKUsd={cashflowEquivalents[i]}
-                    onChange={() => {}}
-                    disabled
-                    data-row={i}
-                    data-col={4}
-                  />
-                </td>
+                <td style={tdCell}><VndInput valueKUsd={c.equivalent} onChange={(v) => updateAt(editCashflow, i, { equivalent: v })} data-row={i} data-col={4} /></td>
                 {!service && <td style={tdCell}><VndInput valueKUsd={c.confirmedProgress} onChange={(v) => updateAt(editCashflow, i, { confirmedProgress: v })} data-row={i} data-col={5} /></td>}
                 <td style={{ ...tdCell, textAlign: "center" }}><DelBtn onClick={() => removeAt(editCashflow, i)} /></td>
               </tr>

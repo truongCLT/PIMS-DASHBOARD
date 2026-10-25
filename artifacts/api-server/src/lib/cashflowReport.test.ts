@@ -101,4 +101,38 @@ describe("buildCashflowReportSummary", () => {
     expect(fromApril.total[0].balance).toBe(80_920);
     expect(fromApril.total[0].income).toBe(0);
   });
+
+  it("Summary는 BOTH 유형 거래를 Financing 그룹에서 빼서 Total에 두 번 넣지 않는다", () => {
+    const s = buildCashflowReportSummary({
+      rows: [
+        row({ amount: 1_000_000, reportType: "BOTH" }),
+        row({ groupCode: "BL000007", cls: "FINANCE", site: "", reportType: "BOTH", amount: 1_000_000 }),
+      ],
+      openingBalanceUsd: 0,
+      fromYear: 2026,
+      fromMonth: 1,
+      months: 1,
+      actualMonth: "2026-10",
+    });
+    expect(s.total[0].income).toBe(1_000);
+  });
+
+  it("Site 필터: 그 현장 PLAN/Business 실적 + GEN_ 계획 + 회사 공통 Admin/Finance 실적만 쓴다", () => {
+    const s = buildCashflowReportSummary({
+      rows: [
+        ...rows,
+        row({ site: "OTHER1", amount: 7_000_000 }),
+        row({ source: "PLAN", month: 11, site: "OTHER1", amount: 3_000_000 }),
+        row({ source: "PLAN", month: 11, site: "GEN_DECV", cls: "ADMIN", category: "OUT", amount: 491_000 }),
+      ],
+      openingBalanceUsd: 0,
+      fromYear: 2026,
+      fromMonth: 1,
+      months: 12,
+      actualMonth: "2026-10",
+      site: "VH10TC1",
+    });
+    expect(s.total[0].income).toBeCloseTo(14_497.45, 2);
+    expect(s.total[10]).toMatchObject({ income: 11_306, outcome: 491 });
+  });
 });

@@ -34,6 +34,7 @@ import {
   tradeCostKey,
   tradeCostScope,
 } from "../lib/pimsvinaTradeCost";
+import { fetchCashflowReportSiteTotals } from "../lib/cashflowReport";
 
 /** SRS와 동일한 서비스 부문 키워드 — CATB_BUSILINE.CLASSIFICATION이 없거나 인식 불가할 때 부문명으로 추정 (프론트 classifyMrProject와 동일 기준) */
 const SERVICE_DIVISION_KEYWORDS = ["용역", "프리콘", "인허가", "산출", "유지관리", "운영관리", "분양대행"];
@@ -67,7 +68,11 @@ export async function fetchAllPimsvinaData() {
     fetchPimsvinaApi("dashboard_pd_progress_1q.jsp"),
     fetchPimsvinaApi("dashboard_pd_outsourcing_1q.jsp"),
     fetchPimsvinaOracleQueryResult("dashboard_pd_trade_cost_scopes_1q.jsp"),
-    fetchPimsvinaApi("dashboard_pd_cashflow_1q.jsp"),
+    // 프로젝트 자금수지 = PIMSVINA Cash Flow Report(Summary, Site=현장)의 Total/Cash Balance 행
+    fetchCashflowReportSiteTotals().catch((err: any): any[] => {
+      console.error("[PIMSVINA Oracle Error] cashflow report site totals:", err.message);
+      return [];
+    }),
     fetchPimsvinaApi("dashboard_pd_costbudget_1q.jsp"),
     fetchPimsvinaOracleQueryResult("dashboard_pd_costbudget_monthly_1q.jsp"),
     fetchPimsvinaApi("dashboard_pd_costrate_settle_1q.jsp"),
@@ -531,8 +536,7 @@ export async function applyPimsvinaData(fetched: PimsvinaData) {
       if (!projectName) trackSkipped(item);
       continue;
     }
-    // dashboard_pd_cashflow_1q.jsp의 cash_in/cash_out/equivalent는 원화(VND)를 CHTB_EXCHANGE_RATIO로
-    // 나눈 전액 USD다(JSP 주석 참조). 이 테이블 컬럼은 (다른 pd_* 금액 컬럼들과 동일하게) 천 USD 기준으로
+    // fetchCashflowReportSiteTotals()의 cash_in/cash_out/equivalent는 전액 USD다(Cash Flow Report Total). 이 테이블 컬럼은 (다른 pd_* 금액 컬럼들과 동일하게) 천 USD 기준으로
     // 문서화/사용되고 있어(Data Entry 수동 입력도 VndInput으로 천 USD 저장) 1000으로 나눠 맞춘다 -
     // 안 그러면 화면 표시 시(convertMoney가 천 USD 기준을 가정) 실제 금액의 1000배로 표시되는 버그가 생긴다.
     const toKUsd = (v: unknown): string | null => {

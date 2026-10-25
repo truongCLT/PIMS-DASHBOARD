@@ -29,11 +29,11 @@ const USD_AMOUNT = (alias: string) =>
 
 // AMOUNT는 모두 USD로 맞춘다(PLAN은 천 USD로 입력되므로 x1000).
 const REPORT_ROWS_SQL = `
-SELECT SOURCE, FISCALYEAR, MONTHNO, GROUPCODE, GROUPNAME, CLS, SITE, SITENAME, TYPENAME, CATEGORY, SUM(AMOUNT) AS AMOUNT FROM (
+SELECT SOURCE, FISCALYEAR, MONTHNO, GROUPCODE, GROUPNAME, CLS, SITE, SITENAME, TYPENAME, REPORTTYPE, CATEGORY, SUM(AMOUNT) AS AMOUNT FROM (
   SELECT 'PLAN' AS SOURCE, D.FISCALYEAR, D.MONTHNO, NVL(G.BUSILINECODE, B.BUSILINECODE) AS GROUPCODE, NVL(G.BUSILINENAME, B.BUSILINENAME) AS GROUPNAME,
          CASE UPPER(NVL(B.CLASSIFICATION, '')) WHEN 'ADMIN' THEN 'ADMIN' WHEN 'FINANCE' THEN 'FINANCE' ELSE 'BUSINESS' END AS CLS,
          D.FLDCODE AS SITE, CASE WHEN D.FLDCODE LIKE 'GEN_%' THEN 'General' ELSE FUN_GET_FLDNAME(D.FLDCODE) END AS SITENAME,
-         NVL(T.CASHFLOWTYPENAME, D.CASHFLOWTYPECODE) AS TYPENAME, D.CASHFLOWCATEGORY AS CATEGORY, D.AMOUNT * 1000 AS AMOUNT
+         NVL(T.CASHFLOWTYPENAME, D.CASHFLOWTYPECODE) AS TYPENAME, UPPER(NVL(T.DISPLAYCASHFLOWREPORT, '')) AS REPORTTYPE, D.CASHFLOWCATEGORY AS CATEGORY, D.AMOUNT * 1000 AS AMOUNT
     FROM (SELECT P.FISCALYEAR, P.FLDCODE, P.BUSILINECODE, P.CASHFLOWTYPECODE, P.CASHFLOWCATEGORY, M.MONTHNO,
                  CASE M.MONTHNO WHEN 1 THEN NVL(P.M01, 0) WHEN 2 THEN NVL(P.M02, 0) WHEN 3 THEN NVL(P.M03, 0) WHEN 4 THEN NVL(P.M04, 0) WHEN 5 THEN NVL(P.M05, 0) WHEN 6 THEN NVL(P.M06, 0)
                                 WHEN 7 THEN NVL(P.M07, 0) WHEN 8 THEN NVL(P.M08, 0) WHEN 9 THEN NVL(P.M09, 0) WHEN 10 THEN NVL(P.M10, 0) WHEN 11 THEN NVL(P.M11, 0) WHEN 12 THEN NVL(P.M12, 0) END AS AMOUNT
@@ -48,7 +48,7 @@ SELECT SOURCE, FISCALYEAR, MONTHNO, GROUPCODE, GROUPNAME, CLS, SITE, SITENAME, T
      AND (D.FLDCODE LIKE 'GEN_%' OR EXISTS (SELECT 1 FROM CATB_COMPANYSTRUCT_PROJECT P WHERE P.COMPCODE = CB.COMPCODE AND P.FLDCODE = D.FLDCODE AND NVL(P.USEYN, 'Y') = 'Y'))
   UNION ALL
   SELECT 'ACTUAL', SUBSTR(X.TRANSACTIONDATE, 1, 4), TO_NUMBER(SUBSTR(X.TRANSACTIONDATE, 5, 2)), NVL(G.BUSILINECODE, B.BUSILINECODE), NVL(G.BUSILINENAME, B.BUSILINENAME), 'BUSINESS',
-         X.SITE, FUN_GET_FLDNAME(X.SITE), NVL(X.CASHFLOWTYPENAME, T.CASHFLOWTYPENAME), DECODE(X.DEPOSITWITHDRAWAL, 'Income', 'INC', 'OUT'), ${USD_AMOUNT("X")}
+         X.SITE, FUN_GET_FLDNAME(X.SITE), NVL(X.CASHFLOWTYPENAME, T.CASHFLOWTYPENAME), UPPER(NVL(T.DISPLAYCASHFLOWREPORT, '')), DECODE(X.DEPOSITWITHDRAWAL, 'Income', 'INC', 'OUT'), ${USD_AMOUNT("X")}
     FROM CFTB_CFTRANSACTION X JOIN CFTB_CASHFLOWTYPE T ON T.CASHFLOWTYPECODE = X.CASHFLOWTYPE
          JOIN CATB_COMPANYSTRUCT_PROJECT P ON P.COMPCODE = X.COMPANY AND P.FLDCODE = X.SITE AND NVL(P.USEYN, 'Y') = 'Y'
          JOIN CATB_BUSILINE B ON B.BUSILINECODE = P.BUSILINECODE
@@ -57,7 +57,7 @@ SELECT SOURCE, FISCALYEAR, MONTHNO, GROUPCODE, GROUPNAME, CLS, SITE, SITENAME, T
      AND UPPER(NVL(T.DISPLAYCASHFLOWREPORT, 'BUSILINE')) IN ('BUSILINE', 'BOTH') AND UPPER(NVL(B.CLASSIFICATION, '')) IN ('SITE', 'BUSILINE')
   UNION ALL
   SELECT 'ACTUAL', SUBSTR(X.TRANSACTIONDATE, 1, 4), TO_NUMBER(SUBSTR(X.TRANSACTIONDATE, 5, 2)), NVL(G.BUSILINECODE, B.BUSILINECODE), NVL(G.BUSILINENAME, B.BUSILINENAME), 'ADMIN',
-         '', '', NVL(X.CASHFLOWTYPENAME, T.CASHFLOWTYPENAME), DECODE(X.DEPOSITWITHDRAWAL, 'Income', 'INC', 'OUT'), ${USD_AMOUNT("X")}
+         '', '', NVL(X.CASHFLOWTYPENAME, T.CASHFLOWTYPENAME), UPPER(NVL(T.DISPLAYCASHFLOWREPORT, '')), DECODE(X.DEPOSITWITHDRAWAL, 'Income', 'INC', 'OUT'), ${USD_AMOUNT("X")}
     FROM CFTB_CFTRANSACTION X JOIN CFTB_CASHFLOWTYPE T ON T.CASHFLOWTYPECODE = X.CASHFLOWTYPE
          JOIN CATB_COMPANYSTRUCT_BUSILINE CB ON CB.COMPCODE = X.COMPANY AND NVL(CB.USEYN, 'Y') = 'Y' JOIN CATB_BUSILINE B ON B.BUSILINECODE = CB.BUSILINECODE
          LEFT JOIN CATB_BUSILINE G ON G.BUSILINECODE = B.UPPERBUSILINECODE AND NVL(G.GRPYN, '0') IN ('Y', '1')
@@ -65,14 +65,14 @@ SELECT SOURCE, FISCALYEAR, MONTHNO, GROUPCODE, GROUPNAME, CLS, SITE, SITENAME, T
      AND UPPER(NVL(T.DISPLAYCASHFLOWREPORT, '')) = 'ADMIN' AND UPPER(NVL(B.CLASSIFICATION, '')) LIKE 'ADMIN%'
   UNION ALL
   SELECT 'ACTUAL', SUBSTR(X.TRANSACTIONDATE, 1, 4), TO_NUMBER(SUBSTR(X.TRANSACTIONDATE, 5, 2)), NVL(G.BUSILINECODE, B.BUSILINECODE), NVL(G.BUSILINENAME, B.BUSILINENAME), 'FINANCE',
-         '', '', NVL(X.CASHFLOWTYPENAME, T.CASHFLOWTYPENAME), DECODE(X.DEPOSITWITHDRAWAL, 'Income', 'INC', 'OUT'), ${USD_AMOUNT("X")}
+         '', '', NVL(X.CASHFLOWTYPENAME, T.CASHFLOWTYPENAME), UPPER(NVL(T.DISPLAYCASHFLOWREPORT, '')), DECODE(X.DEPOSITWITHDRAWAL, 'Income', 'INC', 'OUT'), ${USD_AMOUNT("X")}
     FROM CFTB_CFTRANSACTION X JOIN CFTB_CASHFLOWTYPE T ON T.CASHFLOWTYPECODE = X.CASHFLOWTYPE
          JOIN CATB_COMPANYSTRUCT_BUSILINE CB ON CB.COMPCODE = X.COMPANY AND NVL(CB.USEYN, 'Y') = 'Y' JOIN CATB_BUSILINE B ON B.BUSILINECODE = CB.BUSILINECODE
          LEFT JOIN CATB_BUSILINE G ON G.BUSILINECODE = B.UPPERBUSILINECODE AND NVL(G.GRPYN, '0') IN ('Y', '1')
    WHERE X.COMPANY = :company AND SUBSTR(X.TRANSACTIONDATE, 1, 4) BETWEEN :fromYear AND :toYear
      AND UPPER(NVL(T.DISPLAYCASHFLOWREPORT, '')) IN ('FININVEST', 'BOTH') AND (UPPER(NVL(B.CLASSIFICATION, '')) IN ('FINANCE', 'FININVEST') OR UPPER(B.BUSILINENAME) LIKE 'FINANC%')
 ) SRC
-GROUP BY SOURCE, FISCALYEAR, MONTHNO, GROUPCODE, GROUPNAME, CLS, SITE, SITENAME, TYPENAME, CATEGORY`;
+GROUP BY SOURCE, FISCALYEAR, MONTHNO, GROUPCODE, GROUPNAME, CLS, SITE, SITENAME, TYPENAME, REPORTTYPE, CATEGORY`;
 
 // cf_report_cashflowreport_q_2q.jsp output2(INITIALBALANCE)와 동일 — 회사 기준(Site 필터 없음).
 const OPENING_BALANCE_SQL = `
@@ -89,6 +89,28 @@ SELECT NVL((SELECT SUM(NVL(O.TOTALUSD, 0)) FROM CFTB_OPENINGBALANCE O
                AND T.TRANSACTIONDATE < :fromDate), 0) AS INITIALBALANCE
   FROM DUAL`;
 
+// 위 INITIALBALANCE의 Site 필터(ARG_SITE) 버전을 현장별로 한 번에 — REPORT_OPENBAL은 그 Site의 최신 기초 잔액
+// 한 건이고, 그 기초일부터 조회 연도 전날까지 회사 전체 프로젝트 거래를 더한다. 기초 잔액이 없는 Site는 0.
+const SITE_OPENING_BALANCE_SQL = `
+SELECT O.FLDCODE, O.TOTALUSD
+     + NVL((SELECT SUM(CASE WHEN T.DEPOSITWITHDRAWAL = 'Income' THEN ${USD_AMOUNT("T")} ELSE -(${USD_AMOUNT("T")}) END)
+              FROM CFTB_CFTRANSACTION T
+              JOIN CATB_COMPANYSTRUCT_PROJECT P ON P.COMPCODE = T.COMPANY AND P.FLDCODE = T.SITE AND NVL(P.USEYN, 'Y') = 'Y' AND P.COMPCODE = :company
+             WHERE T.TRANSACTIONDATE >= O.OPENINGDATE AND T.TRANSACTIONDATE < :fromDate), 0) AS INITIALBALANCE
+  FROM (SELECT O.FLDCODE, O.OPENINGDATE, SUM(NVL(O.TOTALUSD, 0)) AS TOTALUSD
+          FROM CFTB_OPENINGBALANCE O
+          JOIN CATB_COMPANYSTRUCT C ON (O.COMPANYNAME = C.COMPNAME OR O.COMPANYNAME = NVL(C.SHORTNAME, C.COMPNAME))
+         WHERE C.COMPCODE = :company AND NVL(C.USEYN, 'Y') = 'Y' AND UPPER(NVL(C.STATUS, 'ACTIVE')) = 'ACTIVE'
+           AND O.OPENINGDATE = (SELECT MAX(O2.OPENINGDATE) FROM CFTB_OPENINGBALANCE O2 WHERE O2.FLDCODE = O.FLDCODE AND O2.OPENINGDATE <= :fromDate)
+         GROUP BY O.FLDCODE, O.OPENINGDATE) O`;
+
+const COMPANY_SITES_SQL = `
+SELECT P.COMPCODE, P.FLDCODE, FUN_GET_FLDNAME(P.FLDCODE) AS PROJECT_NAME,
+       (SELECT MAX(FM.ACNT_FLDCODE) FROM CBTB_FLD_MAPPING FM WHERE FM.FLDCODE = P.FLDCODE) AS SITE_CODE
+  FROM CATB_COMPANYSTRUCT_PROJECT P
+ WHERE NVL(P.USEYN, 'Y') = 'Y'
+ ORDER BY P.COMPCODE, P.FLDCODE`;
+
 export interface CashflowReportRow {
   source: "PLAN" | "ACTUAL";
   year: number;
@@ -99,6 +121,8 @@ export interface CashflowReportRow {
   site: string;
   siteName: string;
   typeName: string;
+  /** CFTB_CASHFLOWTYPE.DISPLAYCASHFLOWREPORT (대문자) — BUSILINE / ADMIN / FININVEST / BOTH */
+  reportType?: string;
   category: "INC" | "OUT";
   /** USD */
   amount: number;
@@ -150,6 +174,15 @@ function monthKeys(fromYear: number, fromMonth: number, months: number) {
   return { requested, all, toYear: Number(last.slice(0, 4)) };
 }
 
+/**
+ * cf_report_cashflowreport_q_2q.jsp의 ARG_SITE 조건과 같다: PLAN은 그 Site 또는 GEN_ 계획, ACTUAL은 Business
+ * 거래만 Site로 거르고 Admin/Finance 거래(Site 없음)는 회사 전체를 그대로 둔다.
+ */
+function inSite(r: CashflowReportRow, site: string): boolean {
+  if (r.source === "PLAN") return r.site === site || r.site.startsWith("GEN_");
+  return r.cls !== "BUSINESS" || r.site === site;
+}
+
 /** 순수 집계 — Oracle 결과 행 + 기초 잔액(USD)으로 응답을 만든다(테스트 가능하도록 분리). */
 export function buildCashflowReportSummary(args: {
   rows: CashflowReportRow[];
@@ -159,14 +192,23 @@ export function buildCashflowReportSummary(args: {
   months: number;
   actualMonth: string;
   company?: string;
+  /** 화면의 Site 필터(ARG_SITE) — 지정하면 그 Site의 PLAN/Business 실적과 회사 공통(GEN_ 계획, Admin/Finance 실적)만 쓴다 */
+  site?: string;
 }): CashflowReportSummary {
-  const { rows, openingBalanceUsd, fromYear, fromMonth, months, actualMonth } = args;
+  const { openingBalanceUsd, fromYear, fromMonth, months, actualMonth, site } = args;
+  const rows = site ? args.rows.filter((r) => inSite(r, site)) : args.rows;
   const { requested, all } = monthKeys(fromYear, fromMonth, months);
   const requestedSet = new Set(requested);
   const isPast = (key: string) => key <= actualMonth;
 
   // 화면과 같은 규칙: 과거(<= Actual Month) 달은 ACTUAL만, 미래 달은 PLAN만 쓴다.
-  const used = rows.filter((r) => (r.source === "ACTUAL") === isPast(ym(r.year, r.month)));
+  // 또 Summary 화면(ff_buildSummaryReport)은 Cash Flow Type이 BOTH인 거래를 Business 그룹에만 남기고
+  // Financing 그룹에서는 뺀다 — 빼지 않으면 같은 금액이 Total에 두 번 들어간다.
+  const used = rows.filter(
+    (r) =>
+      (r.source === "ACTUAL") === isPast(ym(r.year, r.month)) &&
+      !(r.cls === "FINANCE" && (r.reportType ?? "").includes("BOTH")),
+  );
 
   const totalByMonth = new Map<string, { inc: number; out: number }>();
   type Acc = { name: string; months: Map<string, { inc: number; out: number }> };
@@ -265,18 +307,30 @@ export async function fetchCashflowReportSummary(params: {
   if (hit && Date.now() - hit.at < CACHE_TTL_MS) return hit.value;
 
   const { toYear } = monthKeys(params.fromYear, params.fromMonth, params.months);
-  const [rawRows, openingRows] = await Promise.all([
-    queryOracle(REPORT_ROWS_SQL, {
-      company: DECV_COMPANY_CODE,
-      fromYear: String(params.fromYear),
-      toYear: String(toYear),
-    }),
+  const [rows, openingRows] = await Promise.all([
+    fetchReportRows(DECV_COMPANY_CODE, params.fromYear, toYear),
     queryOracle(OPENING_BALANCE_SQL, {
       company: DECV_COMPANY_CODE,
       fromDate: `${params.fromYear}0101`,
     }),
   ]);
-  const rows: CashflowReportRow[] = rawRows.map((r) => ({
+  const value = buildCashflowReportSummary({
+    rows,
+    openingBalanceUsd: Number(openingRows[0]?.initialbalance) || 0,
+    ...params,
+    actualMonth,
+  });
+  cache.set(cacheKey, { at: Date.now(), value });
+  return value;
+}
+
+async function fetchReportRows(company: string, fromYear: number, toYear: number): Promise<CashflowReportRow[]> {
+  const rawRows = await queryOracle(REPORT_ROWS_SQL, {
+    company,
+    fromYear: String(fromYear),
+    toYear: String(toYear),
+  });
+  return rawRows.map((r) => ({
     source: r.source === "PLAN" ? "PLAN" : "ACTUAL",
     year: Number(r.fiscalyear),
     month: Number(r.monthno),
@@ -286,15 +340,82 @@ export async function fetchCashflowReportSummary(params: {
     site: String(r.site ?? "").trim(),
     siteName: String(r.sitename ?? "").trim(),
     typeName: String(r.typename ?? "").trim(),
+    reportType: String(r.reporttype ?? "").trim(),
     category: r.category === "INC" ? "INC" : "OUT",
     amount: Number(r.amount) || 0,
   }));
-  const value = buildCashflowReportSummary({
-    rows,
-    openingBalanceUsd: Number(openingRows[0]?.initialbalance) || 0,
-    ...params,
-    actualMonth,
-  });
-  cache.set(cacheKey, { at: Date.now(), value });
-  return value;
+}
+
+/** pd_cashflow_monthly 동기화 행 — 예전 dashboard_pd_cashflow_1q.jsp와 같은 모양(금액은 USD) */
+export interface CashflowSiteTotalRow {
+  fldcode: string;
+  site_code: string | null;
+  project_name: string;
+  year: number;
+  month: number;
+  cash_in: number;
+  cash_out: number;
+  equivalent: number;
+}
+
+/**
+ * 경영현황판 프로젝트 자금수지 동기화 — 현장마다 PIMSVINA Cash Flow Report(Level=Summary, Company=현장 소속
+ * 회사, Site=그 현장, Actual Month=이번 달)의 Total 행(Income/Outcome)과 Cash Balance를 그대로 옮긴다.
+ * 화면 규칙상 이 Total에는 그 현장 실적·계획 외에 회사 공통 계획(GEN_)과 Admin/Finance 실적도 들어간다.
+ * 조회 연도마다 화면처럼 그 해 1월 기준 기초 잔액부터 다시 누계한다.
+ */
+export async function fetchCashflowReportSiteTotals(): Promise<CashflowSiteTotalRow[]> {
+  const actualMonth = currentYm();
+  const lastYear = Number(actualMonth.slice(0, 4));
+  const [siteRows, firstRows] = await Promise.all([
+    queryOracle(COMPANY_SITES_SQL),
+    queryOracle(`SELECT MIN(SUBSTR(TRANSACTIONDATE, 1, 4)) AS FIRSTYEAR FROM CFTB_CFTRANSACTION`),
+  ]);
+  const firstYear = Math.min(Number(firstRows[0]?.firstyear) || lastYear, lastYear);
+  const sitesByCompany = new Map<string, Array<{ fldcode: string; siteCode: string | null; name: string }>>();
+  for (const r of siteRows) {
+    const company = String(r.compcode ?? "").trim();
+    const fldcode = String(r.fldcode ?? "").trim();
+    if (!company || !fldcode) continue;
+    const list = sitesByCompany.get(company) ?? [];
+    list.push({ fldcode, siteCode: r.site_code ? String(r.site_code).trim() : null, name: String(r.project_name ?? fldcode).trim() });
+    sitesByCompany.set(company, list);
+  }
+
+  const out: CashflowSiteTotalRow[] = [];
+  for (const [company, sites] of sitesByCompany) {
+    for (let year = firstYear; year <= lastYear; year++) {
+      const [rows, openingRows] = await Promise.all([
+        fetchReportRows(company, year, year),
+        queryOracle(SITE_OPENING_BALANCE_SQL, { company, fromDate: `${year}0101` }),
+      ]);
+      const openingBySite = new Map(openingRows.map((r) => [String(r.fldcode ?? "").trim(), Number(r.initialbalance) || 0]));
+      for (const site of sites) {
+        const summary = buildCashflowReportSummary({
+          rows,
+          openingBalanceUsd: openingBySite.get(site.fldcode) ?? 0,
+          fromYear: year,
+          fromMonth: 1,
+          months: 12,
+          actualMonth,
+          company,
+          site: site.fldcode,
+        });
+        if (!summary.total.some((p) => p.income !== 0 || p.outcome !== 0 || p.balance !== 0)) continue;
+        for (const p of summary.total) {
+          out.push({
+            fldcode: site.fldcode,
+            site_code: site.siteCode,
+            project_name: site.name,
+            year,
+            month: Number(p.month.slice(5)),
+            cash_in: p.income * 1000,
+            cash_out: p.outcome * 1000,
+            equivalent: p.balance * 1000,
+          });
+        }
+      }
+    }
+  }
+  return out;
 }
