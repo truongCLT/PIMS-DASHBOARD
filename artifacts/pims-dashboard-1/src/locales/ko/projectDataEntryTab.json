@@ -176,6 +176,7 @@
   "confirmedProgressVnd": "기성 (확정)",
   "cashflowNote": "지출은 양수로 입력하세요(차트에서 자동으로 아래 방향 표시). VND 기준으로 입력하면 저장 시 천 USD로 자동 변환됩니다.",
   "cashflowPriorYearNote": "※ PIMSVINA 자금 거래는 2026년 1월부터만 있습니다. 그 이전 수금(입금) 누계는 \"전년 누계 추가\" 행(월 = 0, 연도 = 해당 연도 이전 누계)에 입력하면 보고서 자금 카드의 수금(실적)·미수금·수금률에 반영됩니다(잔액 누계에는 미포함).",
+  "cashflowYearMonthRequired": "월별 자금 {{row}}번째 행: 연도(2000~2100)와 월(0~12, 0 = 전년 누계)은 필수입니다.",
   "cashflowPrefilledNote": "자금수지 Excel(DB)에 저장된 데이터를 불러왔습니다. 표를 수정하면 이 프로젝트의 자금 데이터로 저장되며, 이후에는 저장된 값이 우선 표시됩니다.",
   "photoSection": "현장 사진",
   "photoUploadBtn": "사진 선택",

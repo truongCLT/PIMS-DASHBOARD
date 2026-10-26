@@ -56,6 +56,13 @@ const tdCell: React.CSSProperties = {
   padding: "2px",
 };
 
+// 필수 입력이 비어 있는 칸 표시
+const requiredCell: React.CSSProperties = {
+  backgroundColor: "#fdecec",
+  outline: "1px solid #e5484d",
+  outlineOffset: "-1px",
+};
+
 const readOnlyCell: React.CSSProperties = {
   ...tdCell,
   padding: "5px 6px",
@@ -723,6 +730,8 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
   // 걸러준다("전체"를 고르면 기존처럼 전부 표시). 행 수정/삭제는 필터와 무관하게 원본 배열의 실제
   // index를 그대로 써야 하므로, 아래 렌더링에서 (row, 원본 index) 쌍을 유지한 뒤에 필터링한다.
   const [cashflowYearFilter, setCashflowYearFilter] = useState<number | "all">("all");
+  // 마지막으로 불러온 cashflow 행 수 — 그 뒤(index >= 이 값)에 추가한 행은 저장 전까지 연도 필터와 무관하게 보여준다
+  const [cashflowLoadedCount, setCashflowLoadedCount] = useState(0);
   const [cogsMonthly, setCogsMonthly] = useState<ProjectDetailCogsPoint[]>([]);
   const [salesMonthly, setSalesMonthly] = useState<ProjectDetailSalesPoint[]>([]);
   const [photos, setPhotos] = useState<{ objectPath: string }[]>([]);
@@ -732,7 +741,6 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
   const photoInputRef = useRef<HTMLInputElement>(null);
   const [loaded, setLoaded] = useState(false);
   const [cfPrefilled, setCfPrefilled] = useState(false);
-  const lastLockStateRef = useRef<string | null>(null);
 
   // 자금수지 Excel(cf_*) DB 데이터 — 데이터 입력 이력이 없으면 표에 미리 채워 수정할 수 있게 함
   const cfRef = getMrCashflowRef(projectName);
@@ -752,7 +760,6 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
     setLoaded(false);
     setCfPrefilled(false);
     setLocksLoaded(false);
-    lastLockStateRef.current = null;
   }, [projectName]);
 
   useEffect(() => {
@@ -806,7 +813,10 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       // 반영된다(연/월은 무시) — 아래 PUT 저장 로직 참고.
       setOutsourcing(selectOutsourcingForMonth(detail.outsourcing, REPORT_YEAR, null));
       if (detail.cashflow.length > 0) {
-        setCashflow(detail.cashflow);
+        // 입력 중에는 순서를 바꾸지 않고(새 행은 맨 아래), 저장 후 다시 불러올 때만 연/월 순으로 정렬한다.
+        // 같은 연도에서는 "전년 누계"(month=0)가 1월보다 앞에 온다.
+        setCashflow([...detail.cashflow].sort((a, b) => a.year - b.year || a.month - b.month));
+        setCashflowLoadedCount(detail.cashflow.length);
         setCfPrefilled(false);
       } else {
         const cfRows: ProjectDetailCashflowPoint[] = (cfQuery.data?.points ?? [])
@@ -820,6 +830,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
             confirmedProgress: null,
           }));
         setCashflow(cfRows);
+        setCashflowLoadedCount(cfRows.length);
         setCfPrefilled(cfRows.length > 0);
       }
       setCogsMonthly(detail.cogsMonthly ?? []);
@@ -1055,6 +1066,16 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       report(validationError);
       return;
     }
+    // 월별 자금: 연/월 필수 — 연도 2000~2100, 월 0(전년 누계)~12. 빈 칸은 연도 0 / 월 -1로 들고 있다.
+    if (!cfPrefilled) {
+      const badIdx = cashflow.findIndex(
+        (c) => !(c.year >= 2000 && c.year <= 2100) || !(c.month >= 0 && c.month <= 12),
+      );
+      if (badIdx >= 0) {
+        report(t("projectDataEntryTab:cashflowYearMonthRequired", { row: badIdx + 1 }));
+        return;
+      }
+    }
     // 준공 전망(completion) 검증: 기준월 중복 및 기준월 없는 행 다중 입력 방지
     const estRows = costEstimation.filter((e) => e.contractAmount != null || e.costAmount != null);
     {
@@ -1119,7 +1140,11 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
         onSuccess: (savedDetail) => {
           setPlanVersion(savedDetail.planVersion ?? planVersion);
           report(t("common:saveSucceeded"));
-          queryClient.invalidateQueries({ queryKey: getGetProjectdetailQueryKey({ projectName }) });
+          // 저장 후 서버의 최신 데이터로 폼을 다시 채운다 — refetch가 끝난 뒤 loaded를 풀어야 초기 로드
+          // effect가 예전 detail이 아니라 방금 저장된 detail로 실행된다.
+          void queryClient
+            .invalidateQueries({ queryKey: getGetProjectdetailQueryKey({ projectName }) })
+            .then(() => setLoaded(false));
         },
         onError: (err: unknown) => {
           const serverMsg =
@@ -1132,29 +1157,10 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
     );
   };
 
-  // 입력 후 자동 저장 — 저장되면 projectdetail 쿼리가 무효화되어 개요/다른 탭이 즉시 갱신됨
+  // 자동 저장 없음 — Save 버튼을 눌렀을 때만 저장한다(요청). saveRef는 저장 중 다시 눌린 Save를 큐잉해
+  // 이어서 실행할 때 최신 상태의 save를 쓰기 위해 남겨둔다.
   const saveRef = useRef(save);
   saveRef.current = save;
-  const skipAutoSaveRef = useRef(true);
-  useEffect(() => {
-    skipAutoSaveRef.current = true;
-  }, [projectName]);
-  useEffect(() => {
-    if (!loaded) return;
-    const lockState = `${locksLoaded}:${[...closedSections].sort().join(",")}`;
-    const lockStateChanged = lastLockStateRef.current !== lockState;
-    lastLockStateRef.current = lockState;
-    if (!locksLoaded || lockStateChanged) {
-      if (locksLoaded) skipAutoSaveRef.current = false;
-      return;
-    }
-    if (skipAutoSaveRef.current) {
-      skipAutoSaveRef.current = false;
-      return;
-    }
-    const t = setTimeout(() => saveRef.current(), 1000);
-    return () => clearTimeout(t);
-  }, [loaded, locksLoaded, closedSections, overview, progress, milestones, costEstimation, costBudget, costBudgetMonthly, outsourcing, cashflow, cogsMonthly, salesMonthly, photos, slideshowIntervalSeconds]);
 
 
   if ((isLoading || detailFetching) && !loaded) {
@@ -2957,27 +2963,45 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
             </tr>
           </thead>
           <tbody>
+            {/* 새로 추가한 행·"전년 누계"(month=0)·연/월 미입력 행은 연도 필터와 무관하게 항상 보여준다 —
+                연도 입력이 키 입력마다 반영되므로, 필터에 걸리면 연도를 치는 도중(2 → 20 → …) 행이 사라졌다.
+                순서는 입력 순서 그대로(새 행은 맨 아래), 저장 후 다시 불러올 때 연/월 순으로 정렬된다.
+                빈 칸은 연도 0 / 월 -1(저장 시 필수 검증). */}
             {cashflow
               .map((c, i) => ({ c, i }))
-              .filter(({ c }) => cashflowYearFilter === "all" || c.year === cashflowYearFilter)
-              .map(({ c, i }) => (
+              .filter(
+                ({ c, i }) =>
+                  i >= cashflowLoadedCount ||
+                  c.month <= 0 ||
+                  c.year === 0 ||
+                  cashflowYearFilter === "all" ||
+                  c.year === cashflowYearFilter,
+              )
+              .map(({ c, i }) => {
+                const yearMissing = !(c.year >= 2000 && c.year <= 2100);
+                const monthMissing = !(c.month >= 0 && c.month <= 12);
+                return (
               <tr key={i}>
-                <td style={tdCell}><NumInput value={c.year} onChange={(v) => updateAt(editCashflow, i, { year: v ?? 0 })} data-row={i} data-col={0} /></td>
-                <td style={tdCell}><NumInput value={c.month} onChange={(v) => updateAt(editCashflow, i, { month: v ?? 0 })} data-row={i} data-col={1} /></td>
+                <td style={{ ...tdCell, ...(yearMissing ? requiredCell : null) }}><NumInput value={c.year} onChange={(v) => updateAt(editCashflow, i, { year: v ?? 0 })} step={1} data-row={i} data-col={0} /></td>
+                <td style={{ ...tdCell, ...(monthMissing ? requiredCell : null) }}><NumInput value={c.month < 0 ? null : c.month} onChange={(v) => updateAt(editCashflow, i, { month: v ?? -1 })} step={1} hideZero={false} data-row={i} data-col={1} /></td>
                 <td style={tdCell}><VndInput valueKUsd={c.cashIn} onChange={(v) => updateAt(editCashflow, i, { cashIn: v })} data-row={i} data-col={2} /></td>
                 <td style={tdCell}><VndInput valueKUsd={c.cashOut} onChange={(v) => updateAt(editCashflow, i, { cashOut: v })} data-row={i} data-col={3} /></td>
                 <td style={tdCell}><VndInput valueKUsd={c.equivalent} onChange={(v) => updateAt(editCashflow, i, { equivalent: v })} data-row={i} data-col={4} /></td>
                 {!service && <td style={tdCell}><VndInput valueKUsd={c.confirmedProgress} onChange={(v) => updateAt(editCashflow, i, { confirmedProgress: v })} data-row={i} data-col={5} /></td>}
                 <td style={{ ...tdCell, textAlign: "center" }}><DelBtn onClick={() => removeAt(editCashflow, i)} /></td>
               </tr>
-            ))}
+                );
+              })}
           </tbody>
         </table>
         </div>
         <button
           style={addBtn}
           onClick={() => {
-            const last = cashflow[cashflow.length - 1];
+            // "전년 누계"(month=0)·미입력 행은 건너뛰고, 연/월이 정상인 마지막 월 행 다음 달을 추가한다
+            const last = [...cashflow]
+              .reverse()
+              .find((c) => c.year >= 2000 && c.year <= 2100 && c.month >= 1 && c.month <= 12);
             const next = last
               ? last.month >= 12
                 ? { year: last.year + 1, month: 1 }
@@ -2993,7 +3017,15 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
           onClick={() =>
             editCashflow((rows) => [
               ...rows,
-              { year: nowYear, month: 0, cashIn: null, cashOut: null, equivalent: null, confirmedProgress: null },
+              // 연도는 사용자가 직접 입력(필수) — 빈 칸(0)으로 시작한다.
+              {
+                year: 0,
+                month: 0,
+                cashIn: null,
+                cashOut: null,
+                equivalent: null,
+                confirmedProgress: null,
+              },
             ])
           }
         >

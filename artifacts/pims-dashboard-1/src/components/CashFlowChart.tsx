@@ -170,6 +170,9 @@ const fmtInt = (v: unknown) =>
     ? v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })
     : "-";
 
+// chartData.outflow는 막대를 0 아래로 그리려고 음수로 들고 있다 — 표에서는 드릴다운 표·툴팁과 같이 양수로 보여준다.
+const fmtAbsInt = (v: unknown) => (typeof v === "number" ? fmtInt(Math.abs(v)) : "-");
+
 function sumRows(rows: ReportDrillRow[]): Partial<ReportDrillRow> {
   return {
     inflow: rows.reduce((a, r) => a + r.inflow, 0),
@@ -487,7 +490,7 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
           columns={[
             { key: "month", label: t("common:period"), align: "left" },
             { key: "inflow", label: inflowName, format: fmtInt },
-            { key: "outflow", label: outflowName, format: fmtInt },
+            { key: "outflow", label: outflowName, format: fmtAbsInt },
             { key: "balance", label: balanceName, format: fmtInt },
           ]}
           rows={chartData}
