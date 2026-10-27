@@ -10,6 +10,13 @@ import type {
   ProjectDetailCogsPoint,
   ProjectDetailSalesPoint,
 } from "@workspace/api-client-react";
+import type { DataValidation, Worksheet } from "exceljs";
+
+/** exceljs 4.4는 런타임에 worksheet.dataValidations(범위 단위 유효성 검사)를 제공하지만 타입 정의
+ * (index.d.ts)에는 빠져 있다 — 타입만 보완한다. */
+function sheetValidations(ws: Worksheet): { add(range: string, validation: DataValidation): void } {
+  return (ws as unknown as { dataValidations: { add(range: string, validation: DataValidation): void } }).dataValidations;
+}
 
 export type ProjectBusinessType = "시공" | "용역";
 export type ExcelLang = "ko" | "en" | "vi";
@@ -122,6 +129,40 @@ const HEADERS_I18N: Record<Exclude<SheetKey, "guide" | "overview">, Record<Excel
   },
 };
 
+/** 시공 "4. 공정별 원가 계획/실적" 시트 컬럼 — 데이터 입력 탭 PROCESS_COST_ITEMS와 같은 순서/구성.
+ * item은 costBudgetMonthly에 저장되는 항목명, groupedItems는 화면에서 한 칸으로 합쳐 보여주는 항목들
+ * (경비 = 외주 경비 + Expense 1 + Expense 2), tradeGroup은 실적을 outsourcing 이번달 실적에서 가져오는
+ * 대공종(경비는 수동 입력 실적이라 없음). */
+const PROCESS_COST_COLUMNS: {
+  item: string;
+  groupedItems: string[];
+  tradeGroup: string | null;
+  label: Record<ExcelLang, string>;
+}[] = [
+  { item: "Common", groupedItems: ["Common"], tradeGroup: "대공종", label: { ko: "대공종", en: "Major work", vi: "Hạng mục chính" } },
+  { item: "외주 건축", groupedItems: ["외주 건축"], tradeGroup: "건축", label: { ko: "건축", en: "Architecture", vi: "Kiến trúc" } },
+  { item: "외주 기계", groupedItems: ["외주 기계"], tradeGroup: "기계", label: { ko: "기계", en: "Mechanical", vi: "Cơ khí" } },
+  { item: "외주 전기", groupedItems: ["외주 전기"], tradeGroup: "전기", label: { ko: "전기", en: "Electrical", vi: "Điện" } },
+  { item: "외주 토목", groupedItems: ["외주 토목"], tradeGroup: "토목", label: { ko: "토목", en: "Civil", vi: "Xây dựng" } },
+  { item: "외주 조경", groupedItems: ["외주 조경"], tradeGroup: "조경", label: { ko: "조경", en: "Landscaping", vi: "Cảnh quan" } },
+  { item: "외주 경비", groupedItems: ["외주 경비", "Expense 1", "Expense 2"], tradeGroup: null, label: { ko: "경비", en: "Expense", vi: "Chi phí" } },
+];
+
+const PROCESS_COST_HEADER_SUFFIX: Record<ExcelLang, { plan: string; actual: string }> = {
+  ko: { plan: "계획(Bil.VND)", actual: "실적(Bil.VND, 참고)" },
+  en: { plan: "Plan(Bil.VND)", actual: "Actual(Bil.VND, ref.)" },
+  vi: { plan: "KH(Bil.VND)", actual: "TH(Bil.VND, tham khảo)" },
+};
+
+function processCostHeader(lang: ExcelLang): string[] {
+  const base = HEADERS_I18N.progress[lang].slice(0, 2);
+  const suffix = PROCESS_COST_HEADER_SUFFIX[lang];
+  return [
+    ...base,
+    ...PROCESS_COST_COLUMNS.flatMap((c) => [`${c.label[lang]} ${suffix.plan}`, `${c.label[lang]} ${suffix.actual}`]),
+  ];
+}
+
 type Cell = string | number | null;
 
 /** (year,month)별 환율 조회 함수 — "월별 매출 환율 설정"(fx_rates/history)에서 그 달 환율을 찾고,
@@ -180,6 +221,9 @@ const GUIDE_TEXT: Record<ExcelLang, {
       ["권장 입력 순서", flow],
       ["작성 기준", "빈 셀은 미입력으로 처리됩니다. 월별 표는 연도·월 중복 없이 입력해 주세요."],
       ["예산 집행", "Level 1·Level 2 구조로 입력하며, 월별 계획·실적은 4-1 시트에서 항목·연도·월별로 관리합니다."],
+      ...(bt === "시공"
+        ? [["공정별 원가", "연도·월별로 대공종(대공종/건축/기계/전기/토목/조경/경비) 계획 열만 입력합니다. 실적(참고) 열은 업로드 시 반영되지 않습니다."] as [string, string]]
+        : []),
       ["선택 항목", "월별 예산 항목: Common, Expense 1, Expense 2, Contingency, Outsourcing / 외주 대공종: 대공종, 건축, 기계, 전기, 토목, 조경, 경비"],
       ["사진", "현장 사진은 웹 화면의 데이터 입력 탭에서 별도로 업로드합니다."],
     ],
@@ -194,6 +238,9 @@ const GUIDE_TEXT: Record<ExcelLang, {
       ["Recommended Order", flow],
       ["Rules", "Blank cells are treated as not entered. Monthly tables must not have duplicate year/month rows."],
       ["Budget Execution", "Enter as Level 1/Level 2; monthly plan/actual are managed by item/year/month in sheet 4-1."],
+      ...(bt === "시공"
+        ? [["Cost by Process", "Enter only the Plan columns per trade group (Major work/Architecture/Mechanical/Electrical/Civil/Landscaping/Expense) by year/month. Actual (ref.) columns are ignored on upload."] as [string, string]]
+        : []),
       ["Allowed Values", "Monthly budget items: Common, Expense 1, Expense 2, Contingency, Outsourcing / Outsourcing trade groups: 대공종, 건축, 기계, 전기, 토목, 조경, 경비"],
       ["Photos", "Site photos are uploaded separately in the web Data Entry tab."],
     ],
@@ -208,6 +255,9 @@ const GUIDE_TEXT: Record<ExcelLang, {
       ["Thứ tự nhập khuyến nghị", flow],
       ["Quy tắc nhập", "Ô trống coi như chưa nhập. Bảng theo tháng không được trùng năm/tháng."],
       ["Thực hiện ngân sách", "Nhập theo cấu trúc Level 1/Level 2; kế hoạch/thực hiện theo tháng quản lý theo hạng mục/năm/tháng ở sheet 4-1."],
+      ...(bt === "시공"
+        ? [["Chi phí theo công tác", "Chỉ nhập các cột KH theo đại công tác (Hạng mục chính/Kiến trúc/Cơ khí/Điện/Xây dựng/Cảnh quan/Chi phí) theo năm/tháng. Cột TH (tham khảo) không được cập nhật khi upload."] as [string, string]]
+        : []),
       ["Giá trị cho phép", "Hạng mục ngân sách theo tháng: Common, Expense 1, Expense 2, Contingency, Outsourcing / Đại công tác thầu phụ: 대공종, 건축, 기계, 전기, 토목, 조경, 경비"],
       ["Hình ảnh", "Ảnh hiện trường được tải lên riêng ở tab Data Entry trên web."],
     ],
@@ -243,9 +293,10 @@ export async function downloadProjectDetailTemplate(
     key: Exclude<SheetKey, "guide" | "overview">,
     rows: Cell[][],
     fmt?: { moneyCols?: number[]; intCols?: number[]; percentCols?: number[] },
+    headerOverride?: string[],
   ) => {
     const ws = wb.addWorksheet(sheetTabName(key, lang, businessType));
-    const header = HEADERS_I18N[key][lang];
+    const header = headerOverride ?? HEADERS_I18N[key][lang];
     const title = sectionTitles[key];
     if (title) {
       ws.mergeCells(1, 1, 1, header.length);
@@ -421,23 +472,102 @@ export async function downloadProjectDetailTemplate(
     detail.costBudget.map((b) => [b.category ?? null, b.item, null, toVndRaw(b.budget), tv(b.plan), toVndRaw(b.actual)]),
     { moneyCols: [4, 5, 6] },
   );
-  costBudgetSheet.dataValidations.add("A2:A1000", {
+  sheetValidations(costBudgetSheet).add("A2:A1000", {
     type: "list",
     allowBlank: true,
     formulae: ['"Direct Cost,Indirect Cost"'],
   });
-  // plan là nhập tay (천 USD, dùng tv()) nhưng actual từ PIMSVINA sync là VND gốc (dùng toVndRaw()) —
-  // hai đơn vị khác nhau trong cùng 1 dòng, xem comment ở costEstimation sheet phía trên.
-  const costBudgetMonthlySheet = addSheet(
-    "costBudgetMonthly",
-    (detail.costBudgetMonthly ?? []).map((b) => [b.item, b.year, b.month, tv(b.plan), toVndRaw(b.actual)]),
-    { intCols: [2, 3], moneyCols: [4, 5] },
-  );
-  costBudgetMonthlySheet.dataValidations.add("A2:A1000", {
-    type: "list",
-    allowBlank: false,
-    formulae: ['"Common,Expense 1,Expense 2,Contingency,Outsourcing"'],
-  });
+  // pd_cost_budget_monthly.plan/actual은 전부 VND 원본으로 통일됐다 — plan도 toVndRaw()를 써야 한다
+  // (예전에 tv()로 내보내 계획이 "천 USD × 환율"로 부풀려져 1억 단위 숫자로 찍히던 버그).
+  if (businessType === "시공") {
+    // 시공은 데이터 입력 탭 "4. 공정별 원가 계획/실적" 표와 같은 모양(행=연월, 열=대공종별 계획/실적)으로
+    // 내보낸다. 예전에는 costBudgetMonthly 전체(예산 집행 월별 항목 Common/Expense/Contingency/Outsourcing
+    // 포함)를 "항목/연도/월" 행으로 내보내서 공정별 계획을 입력할 수 없었다(실사용자 보고).
+    // 실적은 화면과 같은 값을 참고용으로만 보여주고 업로드 시 무시한다.
+    const cbm = detail.costBudgetMonthly ?? [];
+    const outsourcingDelta = new Map<string, number>();
+    for (const o of detail.outsourcing) {
+      const tradeGroup = o.tradeGroup === "공통" ? "대공종" : o.tradeGroup;
+      if (!tradeGroup || o.thisMonth == null) continue;
+      const key = `${tradeGroup}|${o.year}|${o.month}`;
+      outsourcingDelta.set(key, (outsourcingDelta.get(key) ?? 0) + o.thisMonth);
+    }
+    const sumItems = (items: string[], year: number, month: number, field: "plan" | "actual") => {
+      const values = items.map((item) => cbm.find((r) => r.item === item && r.year === year && r.month === month)?.[field] ?? null);
+      return values.some((v) => v != null) ? values.reduce<number>((s, v) => s + (v ?? 0), 0) : null;
+    };
+    // 행 범위도 화면과 같은 규칙: 착공월(없으면 데이터 최초월) ~ 준공월(없으면 데이터 최종월). 공정별 원가
+    // 데이터가 시작되기 전의 달은 생략한다(ProjectDataEntryTab processCostStartIndex 참고).
+    const monthIndex = (v: string | null | undefined) => {
+      const m = /^(\d{4})-(\d{1,2})/.exec(v ?? "");
+      return m ? Number(m[1]) * 12 + Number(m[2]) - 1 : null;
+    };
+    const processItems = PROCESS_COST_COLUMNS.flatMap((c) => c.groupedItems);
+    const dataIdx = [
+      ...detail.progress.map((r) => r.year * 12 + r.month - 1),
+      ...(detail.salesMonthly ?? []).map((r) => r.year * 12 + r.month - 1),
+      ...cbm.map((r) => r.year * 12 + r.month - 1),
+    ];
+    const costIdx = [
+      ...cbm
+        .filter((r) => processItems.includes(r.item) && (r.plan != null || (r.actual ?? 0) !== 0))
+        .map((r) => r.year * 12 + r.month - 1),
+      ...[...outsourcingDelta.keys()].map((k) => {
+        const [, y, m] = k.split("|");
+        return Number(y) * 12 + Number(m) - 1;
+      }),
+    ];
+    const nowIdx = new Date().getFullYear() * 12;
+    const startIdx = monthIndex(detail.overview.startDate) ?? (dataIdx.length > 0 ? Math.min(...dataIdx) : nowIdx);
+    const endIdx = monthIndex(detail.overview.endDate) ?? (dataIdx.length > 0 ? Math.max(...dataIdx) : startIdx + 11);
+    const firstIdx = costIdx.length > 0 ? Math.max(startIdx, Math.min(...costIdx)) : startIdx;
+    const rows: Cell[][] = [];
+    for (let idx = firstIdx; idx <= endIdx && rows.length < 120; idx++) {
+      const year = Math.floor(idx / 12);
+      const month = (idx % 12) + 1;
+      rows.push([
+        year,
+        month,
+        ...PROCESS_COST_COLUMNS.flatMap((c) => {
+          const plan = sumItems(c.groupedItems, year, month, "plan");
+          const deltaKey = `${c.tradeGroup}|${year}|${month}`;
+          const actual = c.tradeGroup
+            ? (outsourcingDelta.has(deltaKey) ? outsourcingDelta.get(deltaKey)! : null)
+            : sumItems(c.groupedItems, year, month, "actual");
+          return [toVndRaw(plan), toVndRaw(actual)];
+        }),
+      ]);
+    }
+    const header = processCostHeader(lang);
+    const ws = addSheet(
+      "costBudgetMonthly",
+      rows,
+      { intCols: [1, 2], moneyCols: header.map((_, i) => i + 1).slice(2) },
+      header,
+    );
+    // 실적(참고) 열은 회색으로 표시 — 업로드 시 반영되지 않는다.
+    const firstDataRow = sectionTitles.costBudgetMonthly ? 3 : 2;
+    PROCESS_COST_COLUMNS.forEach((_, i) => {
+      const col = ws.getColumn(3 + i * 2 + 1);
+      col.eachCell((cell, rowNumber) => {
+        if (rowNumber < firstDataRow) return;
+        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF1F3F6" } };
+        cell.font = { color: { argb: "FF6B7685" } };
+      });
+    });
+    ws.views = [{ state: "frozen", xSplit: 2, ySplit: firstDataRow - 1 }];
+  } else {
+    const costBudgetMonthlySheet = addSheet(
+      "costBudgetMonthly",
+      (detail.costBudgetMonthly ?? []).map((b) => [b.item, b.year, b.month, toVndRaw(b.plan), toVndRaw(b.actual)]),
+      { intCols: [2, 3], moneyCols: [4, 5] },
+    );
+    sheetValidations(costBudgetMonthlySheet).add("A2:A1000", {
+      type: "list",
+      allowBlank: false,
+      formulae: ['"Common,Expense 1,Expense 2,Contingency,Outsourcing"'],
+    });
+  }
   // budget/executedBudget/resolved/thisMonth/accum của pd_outsourcing lưu VND gốc (PIMSVINA sync,
   // không quy đổi kUSD) — dùng toVndRaw() thay vì tv().
   const outsourcingSheet = addSheet(
@@ -457,7 +587,7 @@ export async function downloadProjectDetailTemplate(
     ]),
     { moneyCols: [7, 8, 9, 10, 11] },
   );
-  outsourcingSheet.dataValidations.add("A2:A1000", {
+  sheetValidations(outsourcingSheet).add("A2:A1000", {
     type: "list",
     allowBlank: true,
     formulae: ['"대공종,건축,기계,전기,토목,조경,경비"'],
@@ -619,14 +749,22 @@ export async function parseProjectDetailWorkbook(
     // 밀어준다. 배너가 없는(예전) 양식은 1행이 그대로 헤더라 동작이 바뀌지 않는다.
     const row1 = ws.getRow(1);
     let row1FilledCols = 0;
-    for (let c = 1; c <= 11; c++) if (row1.getCell(c).value != null) row1FilledCols++;
+    for (let c = 1; c <= 11; c++) {
+      const cell = row1.getCell(c);
+      // exceljs는 병합 영역의 나머지 셀에도 master 셀 값을 돌려준다 — 그대로 세면 배너가 11칸 모두
+      // 채워진 일반 행처럼 보여 헤더를 데이터로 읽는다(업로드 시 "연도/월이 비어 있습니다" 오류).
+      if (cell.isMerged && cell.master.address !== cell.address) continue;
+      if (cell.value != null) row1FilledCols++;
+    }
     const hasBanner = row1FilledCols === 1 && skipHeader;
     const headerRowIdx = hasBanner ? 2 : 1;
     const rows: unknown[][] = [];
+    // 대부분 시트는 11열 이내지만 시공 "공정별 원가" 시트는 연도/월 + 대공종 7개 × 계획/실적 = 16열이다.
+    const colCount = Math.max(11, ws.columnCount);
     ws.eachRow({ includeEmpty: false }, (row, idx) => {
       if (idx <= (skipHeader ? headerRowIdx : headerRowIdx - 1)) return;
       const vals: unknown[] = [];
-      for (let c = 1; c <= 11; c++) vals.push(row.getCell(c).value);
+      for (let c = 1; c <= colCount; c++) vals.push(row.getCell(c).value);
       if (vals.some((v) => cellStr(v) != null || cellNum(v) != null)) rows.push(vals);
     });
     return rows;
@@ -815,7 +953,46 @@ export async function parseProjectDetailWorkbook(
   // 공정별 월간 원가 계획/실적
   {
     const rows = rowsOf("costBudgetMonthly", true);
-    if (rows) {
+    // 시공 새 양식: 행=연월, 열=대공종별 계획/실적(1열이 연도 숫자). 계획 열만 반영하고 실적(참고) 열과
+    // 이 시트에 없는 항목(Expense/Contingency/Outsourcing 등 예산 집행 월별 항목)은 기존 값을 유지한다.
+    const isProcessLayout = businessType === "시공" && rows != null && rows.length > 0 && cellNum(rows[0][0]) != null;
+    if (rows && isProcessLayout) {
+      const out: ProjectDetailCostBudgetMonthly[] = (existing.costBudgetMonthly ?? []).map((r) => ({ ...r }));
+      const seen = new Set<string>();
+      rows.forEach((r, i) => {
+        const year = cellNum(r[0]);
+        const month = cellNum(r[1]);
+        if (year == null || month == null) {
+          throw new ExcelParseError(`[${SHEET_NAME_I18N.costBudgetMonthly.ko}] ${i + 2}행: 연도/월이 비어 있습니다.`);
+        }
+        if (!Number.isInteger(year) || !Number.isInteger(month)) {
+          throw new ExcelParseError(`[${SHEET_NAME_I18N.costBudgetMonthly.ko}] ${i + 2}행: 연도/월은 정수여야 합니다. (${year}/${month})`);
+        }
+        if (month < 1 || month > 12) {
+          throw new ExcelParseError(`[${SHEET_NAME_I18N.costBudgetMonthly.ko}] ${i + 2}행: 월(${month})이 올바르지 않습니다.`);
+        }
+        const ym = `${year}-${month}`;
+        if (seen.has(ym)) {
+          throw new ExcelParseError(
+            `[${SHEET_NAME_I18N.costBudgetMonthly.ko}] 같은 월(${year}.${String(month).padStart(2, "0")})이 중복 입력되었습니다.`,
+          );
+        }
+        seen.add(ym);
+        PROCESS_COST_COLUMNS.forEach((c, ci) => {
+          const value = fromVndRaw(cellNum(r[2 + ci * 2]));
+          // 화면 setProcessCostValue와 동일: 묶음 셀(경비)은 다른 묶음 항목(Expense 1/2) 계획을 뺀
+          // 나머지만 대표 항목(외주 경비)에 저장한다.
+          const preserved = c.groupedItems
+            .filter((g) => g !== c.item)
+            .reduce<number>((s, g) => s + (out.find((x) => x.item === g && x.year === year && x.month === month)?.plan ?? 0), 0);
+          const plan = value == null ? null : value - preserved;
+          const idx = out.findIndex((x) => x.item === c.item && x.year === year && x.month === month);
+          if (idx >= 0) out[idx] = { ...out[idx], plan };
+          else if (plan != null) out.push({ item: c.item, year, month, plan, actual: null });
+        });
+      });
+      result.costBudgetMonthly = out;
+    } else if (rows) {
       const out: ProjectDetailCostBudgetMonthly[] = [];
       const seen = new Set<string>();
       rows.forEach((r, i) => {
@@ -845,7 +1022,8 @@ export async function parseProjectDetailWorkbook(
           item,
           year: yearRaw,
           month: monthRaw,
-          plan: fv(r[3]),
+          // plan/actual 모두 VND 원본 저장(export의 toVndRaw()와 짝)
+          plan: fromVndRaw(cellNum(r[3])),
           actual: fromVndRaw(cellNum(r[4])),
         });
       });
