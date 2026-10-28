@@ -681,7 +681,10 @@ async function waitForChartPaint(el: HTMLElement, timeoutMs = 1200): Promise<voi
   }
 }
 
-async function captureDashboardRows(captureWidth: number): Promise<HTMLCanvasElement[]> {
+async function captureDashboardRows(
+  captureWidth: number,
+  { responsive = true }: { responsive?: boolean } = {},
+): Promise<HTMLCanvasElement[]> {
   const target = document.getElementById("dashboard-capture");
   if (!target) {
     throw new Error("대시보드 영역을 찾을 수 없습니다.");
@@ -701,10 +704,12 @@ async function captureDashboardRows(captureWidth: number): Promise<HTMLCanvasEle
 
   const rowEls = Array.from(target.querySelectorAll<HTMLElement>("[data-export-row]"));
 
-  // On screen the grid rows use a fixed column count; for export, switch them
-  // to their responsive template (data-export-cols) so they wrap to fit
-  // captureWidth.
-  const responsiveEls = Array.from(target.querySelectorAll<HTMLElement>("[data-export-cols]"));
+  // On screen the grid rows use a fixed column layout; for the responsive
+  // (narrow card view) export, switch them to their responsive template
+  // (data-export-cols) so they wrap to fit captureWidth.
+  const responsiveEls = responsive
+    ? Array.from(target.querySelectorAll<HTMLElement>("[data-export-cols]"))
+    : [];
   const prevGridCols = responsiveEls.map((el) => el.style.gridTemplateColumns);
   responsiveEls.forEach((el) => (el.style.gridTemplateColumns = el.dataset.exportCols ?? ""));
 
@@ -806,33 +811,51 @@ async function captureDashboardRows(captureWidth: number): Promise<HTMLCanvasEle
 /* ------------------------------ PDF export ------------------------------- */
 
 export async function exportDashboardPdf(): Promise<void> {
-  // Capture at a fixed width so the PDF layout is deterministic regardless
-  // of the user's current browser window size — wide enough that the
-  // responsive grid rows lay their cards out side by side (matching the
-  // ~1140px desktop-ish view), not stacked into a single column.
-  const CAPTURE_WIDTH = 1140;
-  const rowCanvases = await captureDashboardRows(CAPTURE_WIDTH);
+  // Capture the dashboard with its fixed on-screen layout (KPI 4 cards,
+  // charts 1fr/1fr/330px, comments 2 columns) at a fixed desktop width so the
+  // PDF is deterministic regardless of the user's browser window size.
+  const CAPTURE_WIDTH = 1600;
+  const rowCanvases = await captureDashboardRows(CAPTURE_WIDTH, { responsive: false });
 
-  // Lay each dashboard row (KPI cards, charts, cashflow/performance, comments)
-  // out on A4 pages as whole blocks — flowing to a new page whenever a row
-  // wouldn't fit, rather than slicing one giant screenshot at arbitrary
-  // pixel boundaries (which used to cut cards/charts in half).
+  // Stitch every row into one image; sub-rows split at card boundaries lost
+  // their grid gap, so add it back between rows (canvas px, scale 3 × 6px).
+  const ROW_GAP_PX = 18;
+  const contentWidth = Math.max(...rowCanvases.map((c) => c.width));
+  const contentHeight =
+    rowCanvases.reduce((sum, c) => sum + c.height, 0) + ROW_GAP_PX * Math.max(0, rowCanvases.length - 1);
+  const content = document.createElement("canvas");
+  content.width = contentWidth;
+  content.height = contentHeight;
+  const contentCtx = content.getContext("2d");
+  if (!contentCtx) {
+    throw new Error("PDF 생성 중 캔버스를 만들 수 없습니다.");
+  }
+  contentCtx.fillStyle = "#e8edf3";
+  contentCtx.fillRect(0, 0, contentWidth, contentHeight);
+  let contentY = 0;
+  for (const canvas of rowCanvases) {
+    contentCtx.drawImage(canvas, 0, contentY);
+    contentY += canvas.height + ROW_GAP_PX;
+  }
+
+  // The whole report goes on a single A3 page, scaled down to fit; the
+  // orientation that lets the content be drawn larger is chosen.
   const title = "DAEWOOVINA 경영현황 보고서";
   const margin = 24;
-  const rowGap = 10;
   const TITLE_BAR_HEIGHT = 44;
+  const fitScaleFor = (orientation: "landscape" | "portrait") => {
+    const probe = new jsPDF({ orientation, unit: "pt", format: "a3" });
+    const w = probe.internal.pageSize.getWidth() - margin * 2;
+    const h = probe.internal.pageSize.getHeight() - margin * 2 - TITLE_BAR_HEIGHT;
+    return Math.min(w / contentWidth, h / contentHeight);
+  };
+  const orientation = fitScaleFor("landscape") >= fitScaleFor("portrait") ? "landscape" : "portrait";
+  const pdf = new jsPDF({ orientation, unit: "pt", format: "a3" });
+  const pageWidth = pdf.internal.pageSize.getWidth();
+
   // jsPDF's built-in fonts can't render Korean text (it comes out as mojibake),
   // so the title bar is rendered to a canvas with a Korean-capable font and
   // embedded as an image instead of using pdf.text().
-  const pdf = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
-  const pageWidth = pdf.internal.pageSize.getWidth();
-  const pageHeight = pdf.internal.pageSize.getHeight();
-  const availableWidth = pageWidth - margin * 2;
-  const availableHeight = pageHeight - margin * 2;
-  // Rows are captured at CSS width CAPTURE_WIDTH with devicePixelRatio scale 3,
-  // so a plain width-fit (no extra zoom) already fills the full page width —
-  // zooming further would push content past the right edge of the page.
-
   const titleImage = (() => {
     const dpr = 2;
     const c = document.createElement("canvas");
@@ -849,67 +872,19 @@ export async function exportDashboardPdf(): Promise<void> {
     tctx.fillText(title, pageWidth / 2, TITLE_BAR_HEIGHT / 2 + 2);
     return c.toDataURL("image/png");
   })();
+  pdf.addImage(titleImage, "PNG", 0, 0, pageWidth, TITLE_BAR_HEIGHT);
 
-  const drawTitle = () => {
-    pdf.addImage(titleImage, "PNG", 0, 0, pageWidth, TITLE_BAR_HEIGHT);
-  };
-
-  // The title banner is only drawn on the first page — later pages use the
-  // full page height for content instead of repeating it.
-  drawTitle();
-  let isFirstPage = true;
-  let cursorY = margin + TITLE_BAR_HEIGHT;
-  const pageTopFor = () => (isFirstPage ? margin + TITLE_BAR_HEIGHT : margin);
-  const startNewPage = () => {
-    pdf.addPage();
-    isFirstPage = false;
-    cursorY = pageTopFor();
-  };
-
-  const addImageBlock = (canvas: HTMLCanvasElement, scale: number) => {
-    const w = canvas.width * scale;
-    const h = canvas.height * scale;
-    pdf.addImage(canvas.toDataURL("image/png"), "PNG", margin, cursorY, w, h);
-    cursorY += h + rowGap;
-  };
-
-  for (const canvas of rowCanvases) {
-    const fitScale = availableWidth / canvas.width;
-    const rowHeight = canvas.height * fitScale;
-    const availableOnFreshPage = availableHeight - (pageTopFor() - margin);
-
-    if (rowHeight <= availableOnFreshPage) {
-      // Row fits within a single page height — start a fresh page for it
-      // if it won't fit in the space remaining on the current one.
-      if (cursorY + rowHeight > margin + availableHeight && cursorY > pageTopFor()) {
-        startNewPage();
-      }
-      addImageBlock(canvas, fitScale);
-    } else {
-      // Row itself is taller than one page — slice just this row across
-      // consecutive pages instead of shrinking it to fit.
-      if (cursorY > pageTopFor()) {
-        startNewPage();
-      }
-      const sliceHeightPx = Math.floor(availableOnFreshPage / fitScale);
-      let sy = 0;
-      while (sy < canvas.height) {
-        const sh = Math.min(sliceHeightPx, canvas.height - sy);
-        const sliceCanvas = document.createElement("canvas");
-        sliceCanvas.width = canvas.width;
-        sliceCanvas.height = sh;
-        const sliceCtx = sliceCanvas.getContext("2d");
-        if (sliceCtx) {
-          sliceCtx.drawImage(canvas, 0, sy, canvas.width, sh, 0, 0, canvas.width, sh);
-          addImageBlock(sliceCanvas, fitScale);
-        }
-        sy += sh;
-        if (sy < canvas.height) {
-          startNewPage();
-        }
-      }
-    }
-  }
+  const scale = fitScaleFor(orientation);
+  const drawWidth = contentWidth * scale;
+  const drawHeight = contentHeight * scale;
+  pdf.addImage(
+    content.toDataURL("image/png"),
+    "PNG",
+    (pageWidth - drawWidth) / 2,
+    margin + TITLE_BAR_HEIGHT,
+    drawWidth,
+    drawHeight,
+  );
 
   pdf.save(`PIMS_대시보드_${todayStamp()}.pdf`);
 }

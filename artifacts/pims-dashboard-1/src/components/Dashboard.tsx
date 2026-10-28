@@ -58,25 +58,36 @@ export function Dashboard({
 
         {/* Rows 2+3 combined: 매출/손익/수주 차트 + 자금 수지/경영실적/드릴다운, 하나의
             그리드로 묶어 반응형 줄바꿈과 PDF 페이지 분할이 일관되게 동작하도록 함 */}
-        {/* 화면에서는 3열 고정(2행 × 3카드), 파일 내보내기 시에만 data-export-cols 로 반응형 전환 */}
+        {/* 최초 디자인 비율: 왼쪽 두 열은 넓게, 맨 오른쪽(수주/드릴다운) 열은 330px 고정.
+            Excel 카드 뷰 내보내기 시에만 data-export-cols 로 반응형 전환 */}
         <div data-export-row="charts-cashflow" data-export-cols="repeat(auto-fit, minmax(440px, 1fr))" style={{
           display: "grid",
-          gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+          gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr) 330px",
+          // 차트 높이(cqw)의 기준 컨테이너
+          containerType: "inline-size",
           gap: "6px",
           padding: "4px 10px",
         }}>
           <div data-export-block style={{ minWidth: 0, width: "100%", boxSizing: "border-box" }}><SalesChart /></div>
           <div data-export-block style={{ minWidth: 0, width: "100%", boxSizing: "border-box" }}><ProfitChart /></div>
-          <div data-export-block style={{ minWidth: 0, width: "100%", boxSizing: "border-box" }}><OrderStatus /></div>
+          {/* 맨 오른쪽 열: 수주 현황(본래 크기) + 드릴다운을 2행에 걸쳐 붙여 쌓고,
+              드릴다운이 남은 높이를 채워 하단에 빈 공간이 생기지 않도록 함 */}
+          <div data-export-block style={{
+            minWidth: 0, width: "100%", boxSizing: "border-box",
+            gridRow: "span 2",
+            display: "grid", gridTemplateRows: "auto 1fr", gap: "6px",
+          }}>
+            <OrderStatus />
+            <DrilldownCard />
+          </div>
           <div data-export-block style={{ minWidth: 0, width: "100%", boxSizing: "border-box" }}><CashFlowChart scope={scope} /></div>
           <div data-export-block style={{ minWidth: 0, width: "100%", boxSizing: "border-box" }}><PerformanceTable /></div>
-          <div data-export-block style={{ minWidth: 0, width: "100%", boxSizing: "border-box" }}><DrilldownCard /></div>
         </div>
 
         {/* Row 4: comment cards */}
         <div id="comment-cards-row" data-export-row="comments" data-export-cols="repeat(auto-fit, minmax(280px, 1fr))" style={{
           display: "grid",
-          gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+          gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)",
           gap: "6px",
           padding: "4px 10px 10px",
         }}>

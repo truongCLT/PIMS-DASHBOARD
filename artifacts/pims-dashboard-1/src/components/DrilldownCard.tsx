@@ -83,6 +83,8 @@ export function DrilldownCard() {
         backgroundColor: "#fff",
         border: "1px solid #e2e9f3",
         borderRadius: "6px",
+        height: "100%",
+        boxSizing: "border-box",
         overflow: "hidden",
       }}
     >

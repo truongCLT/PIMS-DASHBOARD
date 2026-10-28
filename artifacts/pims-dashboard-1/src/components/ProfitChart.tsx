@@ -170,13 +170,11 @@ export function ProfitChart() {
   };
 
   /*
-   * 대우형 손익 차트는 SVG를 카드 높이에 맞춰 균일 확대한다.
-   * 확대 후 보이는 가로 범위 안에 12개월을 다시 배치해 좌우 잘림을 방지한다.
+   * 대우형 손익 차트는 SVG를 카드 높이에 맞춰 균일 확대한다(높이 기준).
+   * 보이는 가로 범위(viewBox 폭)를 영역 폭에 맞춰 넓히고 그 안에 12개월을
+   * 다시 배치하므로, 카드 폭이 넓어져도 차트 높이가 늘어나거나 잘리지 않는다.
    */
-  const daewooScale = Math.max(
-    chartAreaSize.width / 1000,
-    chartAreaSize.height / 530,
-  );
+  const daewooScale = chartAreaSize.height / 530;
   const renderScale = daewoo ? daewooScale : cardContentWidth / 1000;
   const _inv = 1 / Math.max(renderScale, 0.001);
   const axisFs  = chartTypography.axis * _inv;
@@ -274,11 +272,17 @@ export function ProfitChart() {
           </EmptyDescription>
         </Empty>
       ) : (
-      <div ref={chartAreaRef} style={{ position: "relative", width: "100%", flex: daewoo ? 1 : undefined, minHeight: daewoo ? 0 : undefined }}>
+      <div ref={chartAreaRef} style={{
+        position: "relative",
+        width: "100%",
+        // 대우형: 높이를 대시보드 그리드 폭(cqw)에 비례 — 큰 화면은 커지고 작은 화면은 줄어듦
+        ...(daewoo ? { flex: "1 0 auto", height: "clamp(260px, 18cqw, 600px)" } : {}),
+      }}>
       <svg
-        viewBox={daewoo ? "0 0 1000 530" : "0 0 1000 445"}
+        viewBox={daewoo ? `${visibleLeft} 0 ${visibleSvgWidth} 530` : "0 0 1000 445"}
         style={daewoo
-          ? { width: "100%", height: "100%", minHeight: 0, display: "block", fontFamily: chartTypography.fontFamily }
+          // absolute: SVG 종횡비가 카드 높이를 밀어 올리지 않도록 영역 크기에만 맞춤
+          ? { position: "absolute", inset: 0, width: "100%", height: "100%", display: "block", fontFamily: chartTypography.fontFamily }
           : { width: "100%", display: "block", fontFamily: chartTypography.fontFamily }}
         preserveAspectRatio={daewoo ? "xMidYMid slice" : undefined}
         onMouseLeave={() => setHoveredIdx(null)}

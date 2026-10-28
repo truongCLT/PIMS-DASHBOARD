@@ -37,6 +37,8 @@ export function PerformanceTable() {
       border: "1px solid #e2e9f3",
       borderRadius: "6px",
       padding: "10px 12px",
+      height: "100%",
+      boxSizing: "border-box",
       overflow: "hidden",
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
