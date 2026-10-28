@@ -58,9 +58,10 @@ export function Dashboard({
 
         {/* Rows 2+3 combined: 매출/손익/수주 차트 + 자금 수지/경영실적/드릴다운, 하나의
             그리드로 묶어 반응형 줄바꿈과 PDF 페이지 분할이 일관되게 동작하도록 함 */}
-        <div data-export-row="charts-cashflow" style={{
+        {/* 화면에서는 3열 고정(2행 × 3카드), 파일 내보내기 시에만 data-export-cols 로 반응형 전환 */}
+        <div data-export-row="charts-cashflow" data-export-cols="repeat(auto-fit, minmax(440px, 1fr))" style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(440px, 1fr))",
+          gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
           gap: "6px",
           padding: "4px 10px",
         }}>
@@ -73,9 +74,9 @@ export function Dashboard({
         </div>
 
         {/* Row 4: comment cards */}
-        <div id="comment-cards-row" data-export-row="comments" style={{
+        <div id="comment-cards-row" data-export-row="comments" data-export-cols="repeat(auto-fit, minmax(280px, 1fr))" style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+          gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
           gap: "6px",
           padding: "4px 10px 10px",
         }}>

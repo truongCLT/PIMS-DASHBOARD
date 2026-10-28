@@ -701,6 +701,13 @@ async function captureDashboardRows(captureWidth: number): Promise<HTMLCanvasEle
 
   const rowEls = Array.from(target.querySelectorAll<HTMLElement>("[data-export-row]"));
 
+  // On screen the grid rows use a fixed column count; for export, switch them
+  // to their responsive template (data-export-cols) so they wrap to fit
+  // captureWidth.
+  const responsiveEls = Array.from(target.querySelectorAll<HTMLElement>("[data-export-cols]"));
+  const prevGridCols = responsiveEls.map((el) => el.style.gridTemplateColumns);
+  responsiveEls.forEach((el) => (el.style.gridTemplateColumns = el.dataset.exportCols ?? ""));
+
   let rowCanvases: HTMLCanvasElement[];
   try {
     // Give responsive charts/grid time to re-render at the new width
@@ -790,6 +797,7 @@ async function captureDashboardRows(captureWidth: number): Promise<HTMLCanvasEle
     target.style.width = prevWidth;
     target.style.minWidth = prevMinWidth;
     hiddenEls.forEach((el, i) => (el.style.display = prevDisplays[i]));
+    responsiveEls.forEach((el, i) => (el.style.gridTemplateColumns = prevGridCols[i]));
   }
 
   return rowCanvases;
