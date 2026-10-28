@@ -83,8 +83,9 @@ export function DrilldownCard() {
         backgroundColor: "#fff",
         border: "1px solid #e2e9f3",
         borderRadius: "6px",
-        height: "100%",
-        boxSizing: "border-box",
+        flex: "1 1 auto",
+        display: "flex",
+        flexDirection: "column",
         overflow: "hidden",
       }}
     >
@@ -102,8 +103,10 @@ export function DrilldownCard() {
         {t("drilldownCard:header")}
       </div>
 
-      <div style={{ padding: "10px 12px" }}>
+      {/* 카드가 늘어나면 각 섹션의 내용 박스가 남는 높이를 나눠 채움(빈 틈 없이) */}
+      <div style={{ padding: "10px 12px", flex: 1, display: "flex", flexDirection: "column", gap: "12px" }}>
         {/* 1. 수주 실적 */}
+        <div style={{ flex: "1 1 auto", display: "flex", flexDirection: "column" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
           <NumBadge n={1} />
           <span style={{ fontSize: "13px", fontWeight: 700, color: NAVY }}>
@@ -115,9 +118,13 @@ export function DrilldownCard() {
             backgroundColor: "#f4f7fb",
             borderRadius: "4px",
             padding: "8px 10px",
-            fontSize: "13px",
+            fontSize: "15px",
             color: "#16294a",
-            fontWeight: 600,
+            fontWeight: 700,
+            flex: 1,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
           }}
         >
           {error ? (
@@ -130,10 +137,10 @@ export function DrilldownCard() {
             <div style={{ color: "#6b7c94", fontWeight: 500 }}>{t("drilldownCard:noCurrentMonthOrder")}</div>
           )}
         </div>
+        </div>
 
-        <div style={{ borderTop: "1px dotted #a9b8cc", margin: "10px 0" }} />
-
-        {/* 2. 금월 주요 매출 */}
+        {/* 2. 금월 주요 매출 — 항목이 더 많으므로 남는 높이를 더 많이 배분 */}
+        <div style={{ flex: "2 1 auto", display: "flex", flexDirection: "column" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
           <NumBadge n={2} />
           <span style={{ fontSize: "13px", fontWeight: 700, color: NAVY }}>{t("drilldownCard:topRevenueTitle")}</span>
@@ -143,8 +150,10 @@ export function DrilldownCard() {
             backgroundColor: "#f4f7fb",
             borderRadius: "4px",
             padding: "8px 10px",
+            flex: 1,
             display: "flex",
             flexDirection: "column",
+            justifyContent: "space-evenly",
             gap: "6px",
           }}
         >
@@ -183,6 +192,7 @@ export function DrilldownCard() {
               </div>
             ))
           )}
+        </div>
         </div>
       </div>
     </div>

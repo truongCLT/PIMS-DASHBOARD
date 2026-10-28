@@ -374,7 +374,7 @@ router.get("/orders/current", async (req, res) => {
           const planDate = plan != null ? `${year}-${mm}-01` : null;
           const actualDate = actual != null ? `${year}-${mm}-01` : null;
           return {
-            projectName: `전사 합계(월별 집계, 프로젝트 구분 없음) - ${month}월`,
+            projectName: `전사 합계 - ${month}월`,
             planAmount: plan,
             planDate,
             actualAmount: actual,

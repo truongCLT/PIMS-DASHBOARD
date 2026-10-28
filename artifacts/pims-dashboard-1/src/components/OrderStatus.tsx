@@ -172,6 +172,7 @@ export function OrderStatus() {
       border: "1px solid #e2e9f3",
       borderRadius: "6px",
       padding: "10px 12px",
+      flex: "1 1 auto",
       display: "flex",
       flexDirection: "column",
     }}>
@@ -196,8 +197,8 @@ export function OrderStatus() {
         </Button>
       </div>
 
-      {/* Donut chart with center label */}
-      <div style={{ height: "148px", position: "relative", marginBottom: "6px" }}>
+      {/* Donut chart with center label — 카드가 늘어나면 도넛도 함께 커짐 */}
+      <div style={{ flex: "1 1 148px", minHeight: "148px", position: "relative", marginBottom: "6px" }}>
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
@@ -206,8 +207,8 @@ export function OrderStatus() {
               nameKey="name"
               cx="50%"
               cy="50%"
-              innerRadius={52}
-              outerRadius={68}
+              innerRadius="70%"
+              outerRadius="92%"
               startAngle={90}
               endAngle={-270}
               cornerRadius={8}
