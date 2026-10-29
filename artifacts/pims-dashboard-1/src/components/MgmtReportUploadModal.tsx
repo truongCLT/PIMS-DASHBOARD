@@ -15,6 +15,7 @@ import {
   getListOrderImportHistoryQueryKey,
   revertOrderImport,
   downloadCurrentOrders,
+  downloadOrderTemplate,
   useListMgmtreportImportHistory,
   getListMgmtreportImportHistoryQueryKey,
   revertMgmtreportImport,
@@ -87,7 +88,9 @@ const statRow: React.CSSProperties = {
 };
 
 export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
-  const { t } = useTranslation(["mgmtReportUploadModal", "common"]);
+  const { t, i18n } = useTranslation(["mgmtReportUploadModal", "common"]);
+  // 다운로드 Excel 라벨 언어 (업로드 시에는 세 언어 양식을 모두 받아들임)
+  const workbookLang = (["ko", "en", "vi"] as const).find((l) => i18n.language?.startsWith(l)) ?? "ko";
   const queryClient = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
   const [dataset, setDataset] = useState<Dataset>("mgmtreport");
@@ -240,14 +243,27 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
 
   const busy = loading != null;
 
+  const saveBlob = (blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  };
+
   const handleDownload = async () => {
     setError(null);
     try {
-      const blob = await downloadCurrentOrders({ year });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url; a.download = `수주-계획-및-실적-${year}.xlsx`;
-      document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+      saveBlob(await downloadCurrentOrders({ year, lang: workbookLang }), `수주-계획-및-실적-${year}.xlsx`);
+    } catch (err) {
+      setError(errorMessage(err, t));
+    }
+  };
+
+  // 업로드 데이터가 아직 없어도 받을 수 있는 빈 양식 (기준월은 서버가 이번 달로 채움)
+  const handleDownloadTemplate = async () => {
+    setError(null);
+    try {
+      saveBlob(await downloadOrderTemplate({ lang: workbookLang }), `수주-계획-및-실적-양식-${year}.xlsx`);
     } catch (err) {
       setError(errorMessage(err, t));
     }
@@ -397,6 +413,15 @@ export function MgmtReportUploadModal({ onClose }: { onClose: () => void }) {
                 background: "#fff", color: "#1e3a6e", fontSize: "12px", cursor: "pointer",
               }}>
                 <Download size={12} />{t("mgmtReportUploadModal:downloadCurrentOrders")}
+              </button>
+            )}
+            {dataset === "orders" && (
+              <button onClick={handleDownloadTemplate} disabled={busy} style={{
+                display: "inline-flex", alignItems: "center", gap: "5px",
+                border: "1px solid #9db3cc", borderRadius: "6px", padding: "7px 10px",
+                background: "#fff", color: "#1e3a6e", fontSize: "12px", cursor: "pointer",
+              }}>
+                <Download size={12} />{t("mgmtReportUploadModal:downloadOrderTemplate")}
               </button>
             )}
             <button

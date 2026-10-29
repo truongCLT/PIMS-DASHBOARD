@@ -3,6 +3,7 @@ import ExcelJS from "exceljs";
 import { readFile } from "node:fs/promises";
 import {
   buildOrderPreview,
+  buildOrderTemplateWorkbook,
   buildOrderWorkbook,
   normalizeOrderSnapshot,
   OrderImportError,
@@ -115,5 +116,31 @@ describe("order rollback snapshots", () => {
   it("continues to reject reverting the first import to an empty state", () => {
     expect(() => requireRestorableOrderSnapshot({ referenceMonth: 8, entries: [] }, 8))
       .toThrow("이전 수주 데이터가 없어 되돌릴 수 없습니다.");
+  });
+});
+describe("order upload template", () => {
+  it.each(["ko", "en", "vi"] as const)("is accepted by the parser once a project row is filled in (%s)", async (lang) => {
+    const blank = await buildOrderTemplateWorkbook(9, lang);
+    await expect(parseOrderWorkbook(blank, 2026)).rejects.toThrow("반영할 프로젝트가 없습니다.");
+
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.load(blank as unknown as ExcelJS.Buffer);
+    const ws = wb.worksheets[0];
+    const totalRow = [...Array(ws.rowCount)].map((_, i) => i + 1).find((r) => ["합계", "Total", "Tổng cộng"].includes(ws.getCell(r, 1).text))!;
+    ws.getCell("A6").value = "K8CT1 모델하우스";
+    ws.getCell("B6").value = 1000;
+    ws.getCell("C6").value = new Date("2026-03-31T00:00:00Z");
+    ws.getCell("D6").value = 1193.8;
+    ws.getCell("E6").value = new Date("2026-04-30T00:00:00Z");
+    // Excel이 저장 시 다시 계산해 주는 합계 결과를 흉내 낸다
+    const formula = (f: ExcelJS.CellValue) => (f as ExcelJS.CellFormulaValue).formula;
+    ws.getCell(totalRow, 2).value = { formula: formula(ws.getCell(totalRow, 2).value), result: 1000 } as ExcelJS.CellFormulaValue;
+    ws.getCell(totalRow, 4).value = { formula: formula(ws.getCell(totalRow, 4).value), result: 1193.8 } as ExcelJS.CellFormulaValue;
+
+    const parsed = await parseOrderWorkbook(Buffer.from(await wb.xlsx.writeBuffer()), 2026);
+    expect(parsed.referenceMonth).toBe(9);
+    expect(parsed.entries).toEqual([
+      { projectName: "K8CT1 모델하우스", planAmount: 1000, planDate: "2026-03-31", actualAmount: 1193.8, actualDate: "2026-04-30" },
+    ]);
   });
 });

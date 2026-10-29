@@ -1462,10 +1462,26 @@ export const downloadCurrentOrdersQueryYearMax = 2100;
 
 
 export const DownloadCurrentOrdersQueryParams = zod.object({
-  "year": zod.coerce.number().min(downloadCurrentOrdersQueryYearMin).max(downloadCurrentOrdersQueryYearMax)
+  "year": zod.coerce.number().min(downloadCurrentOrdersQueryYearMin).max(downloadCurrentOrdersQueryYearMax),
+  "lang": zod.enum(['ko', 'en', 'vi']).optional().describe('Workbook label language (default ko)')
 })
 
 export const DownloadCurrentOrdersResponse = zod.unknown()
+
+
+/**
+ * @summary Blank order plan/performance workbook in the upload format
+ */
+export const downloadOrderTemplateQueryReferenceMonthMax = 12;
+
+
+
+export const DownloadOrderTemplateQueryParams = zod.object({
+  "referenceMonth": zod.coerce.number().min(1).max(downloadOrderTemplateQueryReferenceMonthMax).optional(),
+  "lang": zod.enum(['ko', 'en', 'vi']).optional().describe('Workbook label language (default ko)')
+})
+
+export const DownloadOrderTemplateResponse = zod.unknown()
 
 
 /**

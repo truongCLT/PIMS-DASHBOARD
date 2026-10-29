@@ -8,6 +8,7 @@
   "datasetLabelOrders": "수주 계획 및 실적",
   "datasetDescOrders": "수주 계획 및 실적 Excel(.xlsx)을 확인하고 반영합니다. 다른 경영보고 데이터와 독립적으로 저장됩니다.",
   "downloadCurrentOrders": "현재 데이터 다운로드",
+  "downloadOrderTemplate": "양식 다운로드",
   "previewHeaderOrders": "수주 계획 및 실적 — {{year}}년 {{month}}월 기준 (단위: {{unit}})",
   "statOrderPlanTotal": "계획 합계",
   "statOrderActualTotal": "실적/전망 합계",

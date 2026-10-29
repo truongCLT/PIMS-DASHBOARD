@@ -8,6 +8,7 @@
   "datasetLabelOrders": "Order Plan & Performance",
   "datasetDescOrders": "Review and apply the order plan/performance workbook. It is stored independently from other management reports.",
   "downloadCurrentOrders": "Download current data",
+  "downloadOrderTemplate": "Download template",
   "previewHeaderOrders": "Order plan & performance — {{year}}, reference month {{month}} (unit: {{unit}})",
   "statOrderPlanTotal": "Plan total",
   "statOrderActualTotal": "Actual/forecast total",

@@ -12,5 +12,5 @@
   "planHint": "Saving with \"Plan\" selected applies the entered value to all 12 months of the selected year.",
   "cashflowTabLabel": "Monthly Cash Flow Rate",
   "cashflowPopupTitle": "Monthly Cash Flow Rate (per USD)",
-  "cashflowHint": "Used to convert VND cash flow actuals to USD. Leave empty to use the PIMSVINA rate."
+  "cashflowHint": "Used only for Cash Flow: VND converts VND actuals to USD, KRW is used when viewing in KRW. Leave empty to use the default rate."
 }

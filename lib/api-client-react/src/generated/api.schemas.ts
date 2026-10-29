@@ -1193,7 +1193,41 @@ export type DownloadCurrentOrdersParams = {
  * @maximum 2100
  */
 year: number;
+/**
+ * Workbook label language (default ko)
+ */
+lang?: DownloadCurrentOrdersLang;
 };
+
+export type DownloadCurrentOrdersLang = typeof DownloadCurrentOrdersLang[keyof typeof DownloadCurrentOrdersLang];
+
+
+export const DownloadCurrentOrdersLang = {
+  ko: 'ko',
+  en: 'en',
+  vi: 'vi',
+} as const;
+
+export type DownloadOrderTemplateParams = {
+/**
+ * @minimum 1
+ * @maximum 12
+ */
+referenceMonth?: number;
+/**
+ * Workbook label language (default ko)
+ */
+lang?: DownloadOrderTemplateLang;
+};
+
+export type DownloadOrderTemplateLang = typeof DownloadOrderTemplateLang[keyof typeof DownloadOrderTemplateLang];
+
+
+export const DownloadOrderTemplateLang = {
+  ko: 'ko',
+  en: 'en',
+  vi: 'vi',
+} as const;
 
 export type GetOrderDetailsParams = {
 /**

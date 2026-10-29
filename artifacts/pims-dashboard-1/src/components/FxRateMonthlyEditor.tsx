@@ -94,6 +94,7 @@ export function FxRateMonthlyEditor() {
   const [error, setError] = useState<string | null>(null);
 
   // ── 탭 3: 월별 자금 환율 (연/월은 탭 2와 공유, "계획" 옵션 없음) ─────────────
+  const [cfKrw, setCfKrw] = useState("");
   const [cfVnd, setCfVnd] = useState("");
 
   const historyQuery = useGetFxRatesHistory(undefined, {
@@ -135,7 +136,9 @@ export function FxRateMonthlyEditor() {
       setMonth(now.getMonth() + 1);
       return;
     }
+    const krwRow = history.find((r) => r.currency === "KRW" && r.year === year && r.month === month && r.purpose === "cashflow");
     const vndRow = history.find((r) => r.currency === "VND" && r.year === year && r.month === month && r.purpose === "cashflow");
+    setCfKrw(krwRow ? formatRateDisplay(String(krwRow.rate)) : "");
     setCfVnd(vndRow ? formatRateDisplay(String(vndRow.rate)) : "");
     setError(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -257,13 +260,16 @@ export function FxRateMonthlyEditor() {
   };
 
   const saveCashflow = async () => {
+    const krwNum = cfKrw.trim() === "" ? null : parseRateInput(cfKrw);
     const vndNum = cfVnd.trim() === "" ? null : parseRateInput(cfVnd);
-    if (vndNum != null && (!Number.isFinite(vndNum) || vndNum <= 0)) {
+    if ((krwNum != null && (!Number.isFinite(krwNum) || krwNum <= 0)) || (vndNum != null && (!Number.isFinite(vndNum) || vndNum <= 0))) {
       setError(t("fxRateEditor:invalidNumber"));
       return;
     }
     setError(null);
     try {
+      // KRW는 USD → KRW 표시 환산에만 쓰인다(CashFlowChart). VND는 서버의 VND 실적 USD 환산에도 쓰인다.
+      await saveOrClearRate("KRW", year, month, "cashflow", krwNum);
       await saveOrClearRate("VND", year, month, "cashflow", vndNum);
       await queryClient.invalidateQueries({ queryKey: getGetFxRatesHistoryQueryKey() });
       // 자금수지 금액(USD)은 서버가 이 환율로 다시 환산하므로 리포트 조회도 새로 받는다.
@@ -426,6 +432,10 @@ export function FxRateMonthlyEditor() {
                 <div style={{ marginBottom: "8px" }}>
                   <div style={labelStyle}>USD</div>
                   <input value="1" disabled style={{ ...inputStyle, backgroundColor: "#f2f5f8", color: "#8a94a3" }} />
+                </div>
+                <div style={{ marginBottom: "8px" }}>
+                  <div style={labelStyle}>KRW</div>
+                  <input value={cfKrw} onChange={(e) => setCfKrw(formatRateDisplay(e.target.value))} inputMode="decimal" style={inputStyle} />
                 </div>
                 <div style={{ marginBottom: "10px" }}>
                   <div style={labelStyle}>VND</div>

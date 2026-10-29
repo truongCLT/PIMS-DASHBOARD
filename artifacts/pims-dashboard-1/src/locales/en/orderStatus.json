@@ -17,6 +17,7 @@
   "detailError": "Unable to load order details.",
   "detailEmpty": "No project-level order data for the selected year.",
   "projectName": "Project",
+  "site": "Site",
   "planAmount": "Plan amount",
   "planDate": "Plan date",
   "actualForecastAmount": "Actual / forecast",

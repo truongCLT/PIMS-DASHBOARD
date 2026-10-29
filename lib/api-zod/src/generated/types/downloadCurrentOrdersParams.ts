@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { DownloadCurrentOrdersLang } from './downloadCurrentOrdersLang';
 
 export type DownloadCurrentOrdersParams = {
 /**
@@ -12,4 +13,8 @@ export type DownloadCurrentOrdersParams = {
  * @maximum 2100
  */
 year: number;
+/**
+ * Workbook label language (default ko)
+ */
+lang?: DownloadCurrentOrdersLang;
 };

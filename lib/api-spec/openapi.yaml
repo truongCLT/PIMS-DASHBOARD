@@ -1249,9 +1249,35 @@ paths:
           in: query
           required: true
           schema: { type: integer, format: int32, minimum: 2000, maximum: 2100 }
+        - name: lang
+          in: query
+          required: false
+          description: Workbook label language (default ko)
+          schema: { type: string, enum: [ko, en, vi] }
       responses:
         "200":
           description: Current order data workbook
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: { type: string, format: binary }
+  /orders/template.xlsx:
+    get:
+      operationId: downloadOrderTemplate
+      tags: [mgmtreport]
+      summary: Blank order plan/performance workbook in the upload format
+      parameters:
+        - name: referenceMonth
+          in: query
+          required: false
+          schema: { type: integer, format: int32, minimum: 1, maximum: 12 }
+        - name: lang
+          in: query
+          required: false
+          description: Workbook label language (default ko)
+          schema: { type: string, enum: [ko, en, vi] }
+      responses:
+        "200":
+          description: Blank order upload template
           content:
             application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
               schema: { type: string, format: binary }

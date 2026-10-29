@@ -47,8 +47,9 @@ export async function parseOrderWorkbook(buffer: Buffer, year: number): Promise<
   await wb.xlsx.load(buffer as unknown as ExcelJS.Buffer);
   if (wb.worksheets.length !== 1) throw new OrderImportError("수주 계획 Excel은 시트가 1개여야 합니다.");
   const ws = wb.worksheets[0];
-  if (!String(ws.getCell("A2").text).includes("수주계획")) throw new OrderImportError("A2에서 '수주계획' 제목을 찾을 수 없습니다.");
-  if (String(ws.getCell("A5").text).trim() !== "PJ명") throw new OrderImportError("수주 계획 Excel의 헤더 형식이 올바르지 않습니다.");
+  const titleText = String(ws.getCell("A2").text);
+  if (!ALL_LABELS.some((l) => titleText.includes(l.title.replace("■ ", "")))) throw new OrderImportError("A2에서 '수주계획' 제목을 찾을 수 없습니다.");
+  if (!ALL_LABELS.some((l) => String(ws.getCell("A5").text).trim() === l.project)) throw new OrderImportError("수주 계획 Excel의 헤더 형식이 올바르지 않습니다.");
   if (!String(ws.getCell("D3").text).includes("K USD")) throw new OrderImportError("금액 단위는 K USD여야 합니다.");
   const referenceMonth = numberValue(ws.getCell("H3").value);
   if (!referenceMonth || !Number.isInteger(referenceMonth) || referenceMonth < 1 || referenceMonth > 12) {
@@ -58,7 +59,7 @@ export async function parseOrderWorkbook(buffer: Buffer, year: number): Promise<
   const names = new Set<string>();
   for (let row = 6; row <= ws.rowCount; row++) {
     const projectName = String(ws.getCell(row, 1).text ?? "").trim();
-    if (!projectName || projectName === "합계") continue;
+    if (!projectName || isTotalLabel(projectName)) continue;
     if (names.has(projectName)) throw new OrderImportError(`중복 프로젝트가 있습니다: ${projectName}`);
     names.add(projectName);
     const planCell = ws.getCell(row, 2);
@@ -89,7 +90,7 @@ export async function parseOrderWorkbook(buffer: Buffer, year: number): Promise<
     actual: entries.reduce((s, e) => s + (e.actualAmount ?? 0), 0),
   };
   const totalRow = [...Array(ws.rowCount)].map((_, i) => i + 1)
-    .find((row) => String(ws.getCell(row, 1).text).trim() === "합계");
+    .find((row) => isTotalLabel(String(ws.getCell(row, 1).text).trim()));
   if (totalRow) {
     const sheetPlan = numberValue(ws.getCell(totalRow, 2).value);
     const sheetActual = numberValue(ws.getCell(totalRow, 4).value);
@@ -197,19 +198,62 @@ interface OrderWorkbookRow extends OrderEntry {
   referenceMonth: number;
 }
 
+export type OrderWorkbookLang = "ko" | "en" | "vi";
+
+// 다운로드 양식의 라벨. parseOrderWorkbook은 세 언어 라벨을 모두 받아들인다
+// (제목은 A2, 단위 D3는 "K USD" 포함, A5 헤더, 합계 행 라벨).
+const ORDER_LABELS: Record<OrderWorkbookLang, {
+  title: string; unit: string; refMonth: string; category: string; plan: string; actual: string;
+  project: string; amount: string; date: string; total: string;
+}> = {
+  ko: {
+    title: "■ 수주계획", unit: "(단위 : K USD)", refMonth: "기준월", category: "구분", plan: "계획",
+    actual: "실적 및 전망", project: "PJ명", amount: "금액", date: "시기", total: "합계",
+  },
+  en: {
+    title: "■ Order Plan", unit: "(Unit: K USD)", refMonth: "Ref. month", category: "Category", plan: "Plan",
+    actual: "Actual & Forecast", project: "Project", amount: "Amount", date: "Date", total: "Total",
+  },
+  vi: {
+    title: "■ Kế hoạch đơn hàng", unit: "(Đơn vị: K USD)", refMonth: "Tháng cơ sở", category: "Hạng mục", plan: "Kế hoạch",
+    actual: "Thực tế & Dự báo", project: "Dự án", amount: "Số tiền", date: "Thời điểm", total: "Tổng cộng",
+  },
+};
+const ALL_LABELS = Object.values(ORDER_LABELS);
+const isTotalLabel = (text: string) => ALL_LABELS.some((l) => l.total === text);
+
+export const parseOrderWorkbookLang = (value: unknown): OrderWorkbookLang =>
+  value === "en" || value === "vi" ? value : "ko";
+
 export async function buildOrderWorkbook(
   rows: OrderWorkbookRow[],
   year: number,
+  lang: OrderWorkbookLang = "ko",
 ): Promise<Buffer> {
   if (rows.length === 0) throw new OrderImportError("다운로드할 수주 데이터가 없습니다.");
+  return writeOrderWorkbook(rows, rows[0].referenceMonth, 0, lang);
+}
+
+/** 업로드용 빈 양식: parseOrderWorkbook이 읽는 셀 위치(A2/D3/H3/A5)는 같고, 프로젝트 행은 비워 둔다. */
+export async function buildOrderTemplateWorkbook(referenceMonth: number, lang: OrderWorkbookLang = "ko"): Promise<Buffer> {
+  return writeOrderWorkbook([], referenceMonth, 20, lang);
+}
+
+async function writeOrderWorkbook(
+  rows: OrderEntry[],
+  referenceMonth: number,
+  blankRows: number,
+  lang: OrderWorkbookLang,
+): Promise<Buffer> {
+  const L = ORDER_LABELS[lang];
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet("Sheet1");
-  ws.getCell("A2").value = "■ 수주계획";
-  ws.getCell("D3").value = "(단위 : K USD)";
-  ws.getCell("G3").value = "기준월";
-  ws.getCell("H3").value = rows[0].referenceMonth;
-  ws.getCell("A4").value = "구분"; ws.getCell("B4").value = "계획"; ws.getCell("D4").value = "실적 및 전망";
-  ["PJ명", "금액", "시기", "금액", "시기"].forEach((v, i) => { ws.getCell(5, i + 1).value = v; });
+  ws.getCell("A2").value = L.title;
+  ws.getCell("D3").value = L.unit;
+  ws.getCell("G3").value = L.refMonth;
+  ws.getCell("H3").value = referenceMonth;
+  ws.getCell("A4").value = L.category; ws.getCell("B4").value = L.plan; ws.getCell("D4").value = L.actual;
+  [L.project, L.amount, L.date, L.amount, L.date].forEach((v, i) => { ws.getCell(5, i + 1).value = v; });
   rows.forEach((r, i) => {
     const n = i + 6;
     ws.getCell(n, 1).value = r.projectName;
@@ -220,8 +264,9 @@ export async function buildOrderWorkbook(
     ws.getCell(n, 4).value = r.actualAmount == null ? null : Number(r.actualAmount);
     ws.getCell(n, 5).value = r.actualDate ? new Date(`${r.actualDate}T00:00:00Z`) : null;
   });
-  const totalRow = rows.length + 6;
-  ws.getCell(totalRow, 1).value = "합계";
+  // 빈 행은 parseOrderWorkbook에서 건너뛰므로 양식에 입력 칸으로 남겨 둬도 된다
+  const totalRow = rows.length + blankRows + 6;
+  ws.getCell(totalRow, 1).value = L.total;
   ws.getCell(totalRow, 2).value = {
     formula: `SUM(B6:B${totalRow - 1})`,
     result: rows.reduce((sum, r) => sum + (r.planAmount == null ? 0 : Number(r.planAmount)), 0),
@@ -232,10 +277,43 @@ export async function buildOrderWorkbook(
   };
   ws.columns = [{ width: 28 }, { width: 14 }, { width: 14 }, { width: 14 }, { width: 14 }, { width: 3 }, { width: 10 }, { width: 8 }];
   ws.getColumn(3).numFmt = "yyyy-mm-dd"; ws.getColumn(5).numFmt = "yyyy-mm-dd";
+
+  // 서식: 표(A4~E합계) 전체 테두리, 헤더/합계 행 강조, 계획·실적 그룹 헤더 병합
+  const thin = { style: "thin" as const, color: { argb: "FF8EA2BF" } };
+  const border = { top: thin, left: thin, bottom: thin, right: thin };
+  const headerFill = { type: "pattern" as const, pattern: "solid" as const, fgColor: { argb: "FFDCE6F2" } };
+  const totalFill = { type: "pattern" as const, pattern: "solid" as const, fgColor: { argb: "FFF2F5F9" } };
+  ws.mergeCells("B4:C4");
+  ws.mergeCells("D4:E4");
+  for (let r = 4; r <= totalRow; r++) {
+    for (let c = 1; c <= 5; c++) {
+      const cell = ws.getCell(r, c);
+      cell.border = border;
+      if (r <= 5) {
+        cell.fill = headerFill;
+        cell.font = { bold: true };
+        cell.alignment = { horizontal: "center", vertical: "middle" };
+      } else if (r === totalRow) {
+        cell.fill = totalFill;
+        cell.font = { bold: true };
+      }
+      if (r > 5 && (c === 2 || c === 4)) cell.numFmt = "#,##0.###";
+    }
+  }
+  ws.getCell(totalRow, 1).alignment = { horizontal: "center" };
+  ws.getCell("A2").font = { bold: true, size: 13 };
+  for (const addr of ["G3", "H3"]) {
+    const cell = ws.getCell(addr);
+    cell.border = border;
+    cell.font = { bold: true };
+    cell.alignment = { horizontal: "center" };
+  }
+  ws.getCell("G3").fill = headerFill;
+  ws.getColumn(7).width = 14;
   return Buffer.from(await wb.xlsx.writeBuffer());
 }
 
-export async function buildCurrentOrderWorkbook(year: number): Promise<Buffer> {
+export async function buildCurrentOrderWorkbook(year: number, lang: OrderWorkbookLang = "ko"): Promise<Buffer> {
   const rows = await db.select().from(orderEntriesTable).where(eq(orderEntriesTable.year, year));
   return buildOrderWorkbook(
     rows.map((row) => ({
@@ -247,5 +325,6 @@ export async function buildCurrentOrderWorkbook(year: number): Promise<Buffer> {
       actualDate: row.actualDate,
     })),
     year,
+    lang,
   );
 }

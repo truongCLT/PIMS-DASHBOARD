@@ -8,6 +8,7 @@
   "datasetLabelOrders": "Kế hoạch & kết quả đơn hàng",
   "datasetDescOrders": "Xem trước và áp dụng file kế hoạch/kết quả đơn hàng. Dữ liệu được lưu độc lập với các báo cáo quản lý khác.",
   "downloadCurrentOrders": "Tải dữ liệu hiện tại",
+  "downloadOrderTemplate": "Tải file mẫu",
   "previewHeaderOrders": "Kế hoạch & kết quả đơn hàng — năm {{year}}, tháng chuẩn {{month}} (đơn vị: {{unit}})",
   "statOrderPlanTotal": "Tổng kế hoạch",
   "statOrderActualTotal": "Tổng thực tế/dự báo",

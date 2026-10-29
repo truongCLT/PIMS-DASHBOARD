@@ -50,6 +50,8 @@ import {
 import {
   applyOrderImport,
   buildCurrentOrderWorkbook,
+  buildOrderTemplateWorkbook,
+  parseOrderWorkbookLang,
   buildOrderPreview,
   listOrderImportHistory,
   OrderImportError,
@@ -293,7 +295,7 @@ router.get("/orders/current.xlsx", async (req, res) => {
   const year = parseYearField(req.query.year);
   if (year == null) return void res.status(400).json({ error: "연도가 올바르지 않습니다." });
   try {
-    const workbook = await buildCurrentOrderWorkbook(year);
+    const workbook = await buildCurrentOrderWorkbook(year, parseOrderWorkbookLang(req.query.lang));
     res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
     res.setHeader("Content-Disposition", `attachment; filename=\"orders-${year}.xlsx\"`);
     res.send(workbook);
@@ -301,6 +303,20 @@ router.get("/orders/current.xlsx", async (req, res) => {
     if (err instanceof OrderImportError) return void res.status(404).json({ error: err.message });
     req.log.error({ err }, "failed to download order workbook");
     res.status(500).json({ error: "수주 계획 Excel 다운로드에 실패했습니다." });
+  }
+});
+
+router.get("/orders/template.xlsx", async (req, res) => {
+  const month = Number(req.query.referenceMonth);
+  const referenceMonth = Number.isInteger(month) && month >= 1 && month <= 12 ? month : new Date().getMonth() + 1;
+  try {
+    const workbook = await buildOrderTemplateWorkbook(referenceMonth, parseOrderWorkbookLang(req.query.lang));
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.setHeader("Content-Disposition", `attachment; filename=\"orders-template.xlsx\"`);
+    res.send(workbook);
+  } catch (err) {
+    req.log.error({ err }, "failed to download order template");
+    res.status(500).json({ error: "수주 계획 양식 다운로드에 실패했습니다." });
   }
 });
 

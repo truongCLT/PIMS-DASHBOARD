@@ -12,5 +12,5 @@
   "planHint": "Khi lưu với lựa chọn \"Kế hoạch\", giá trị nhập vào sẽ được áp dụng cho cả 12 tháng của năm đã chọn.",
   "cashflowTabLabel": "Tỷ giá dòng tiền theo tháng",
   "cashflowPopupTitle": "Tỷ giá dòng tiền theo tháng (theo USD)",
-  "cashflowHint": "Dùng để quy đổi số thực tế dòng tiền (VND) sang USD. Để trống thì dùng tỷ giá PIMSVINA."
+  "cashflowHint": "Chỉ áp dụng cho Dòng tiền: VND dùng để quy đổi số thực tế VND sang USD, KRW dùng khi xem theo KRW. Để trống thì dùng tỷ giá mặc định."
 }

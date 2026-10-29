@@ -28,6 +28,11 @@ type MonthRow = Omit<OrderDetailEntry, "actualKind"> & {
   projects: OrderDetailEntry[];
 };
 
+/** PJ명에서 THT site 코드(K8CT1, B1CC4, K8HH1 …)를 뽑는다 */
+function siteCodeOf(projectName: string): string | null {
+  return /(?:^|[^A-Za-z0-9])([A-Z]\d[A-Z]{2}\d)(?![A-Za-z0-9])/.exec(projectName)?.[1] ?? null;
+}
+
 export function OrderStatus() {
   const { t, i18n } = useTranslation(["orderStatus", "common"]);
   const lang = (i18n.language ?? "ko").slice(0, 2);
@@ -124,6 +129,15 @@ export function OrderStatus() {
             : "-",
     },
   ];
+
+  // 수주 업로드에는 site 칸이 없고 PJ명 앞에 site 코드가 붙어 온다(예: "K8CT1 분양대행", "B1CC4 공사").
+  // 코드가 없는 PJ명(예: "흥옌 신도시 인프라공사")은 "-".
+  const siteColumn: DetailColumn<OrderDetailEntry> = {
+    key: "site",
+    label: t("orderStatus:site"),
+    align: "center",
+    format: (_value, row) => siteCodeOf(row.projectName) ?? "-",
+  };
 
   // 1차 표는 월별 합계 행, 행을 누르면 그 달의 프로젝트(2차 표)를 보여준다. 계획은 계획 시기, 실적·전망은
   // 실적·전망 시기 기준 달에 잡는다. 수주 업로드(order_entries)가 없으면(fallback) 서버가 경영보고
@@ -387,7 +401,7 @@ export function OrderStatus() {
           </div>
         ) : selectedMonth ? (
           <DetailDataTable
-            columns={detailColumns}
+            columns={[detailColumns[0], siteColumn, ...detailColumns.slice(1)]}
             rows={selectedMonth.projects}
             rowKey={(row) => row.projectName}
             totalLabel={t("orderStatus:total")}

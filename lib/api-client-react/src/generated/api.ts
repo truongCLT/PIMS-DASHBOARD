@@ -38,6 +38,7 @@ import type {
   DeleteFxRatesHistory200,
   DeleteFxRatesHistoryParams,
   DownloadCurrentOrdersParams,
+  DownloadOrderTemplateParams,
   ErrorEnvelope,
   FxRateHistoryEntry,
   FxRates,
@@ -3358,6 +3359,90 @@ export function useDownloadCurrentOrders<TData = Awaited<ReturnType<typeof downl
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getDownloadCurrentOrdersQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getDownloadOrderTemplateUrl = (params?: DownloadOrderTemplateParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/orders/template.xlsx?${stringifiedParams}` : `/api/orders/template.xlsx`
+}
+
+/**
+ * @summary Blank order plan/performance workbook in the upload format
+ */
+export const downloadOrderTemplate = async (params?: DownloadOrderTemplateParams, options?: RequestInit): Promise<Blob> => {
+
+  return customFetch<Blob>(getDownloadOrderTemplateUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getDownloadOrderTemplateQueryKey = (params?: DownloadOrderTemplateParams,) => {
+    return [
+    `/api/orders/template.xlsx`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getDownloadOrderTemplateQueryOptions = <TData = Awaited<ReturnType<typeof downloadOrderTemplate>>, TError = ErrorType<unknown>>(params?: DownloadOrderTemplateParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof downloadOrderTemplate>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getDownloadOrderTemplateQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof downloadOrderTemplate>>> = ({ signal }) => downloadOrderTemplate(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof downloadOrderTemplate>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type DownloadOrderTemplateQueryResult = NonNullable<Awaited<ReturnType<typeof downloadOrderTemplate>>>
+export type DownloadOrderTemplateQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Blank order plan/performance workbook in the upload format
+ */
+
+export function useDownloadOrderTemplate<TData = Awaited<ReturnType<typeof downloadOrderTemplate>>, TError = ErrorType<unknown>>(
+ params?: DownloadOrderTemplateParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof downloadOrderTemplate>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getDownloadOrderTemplateQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
