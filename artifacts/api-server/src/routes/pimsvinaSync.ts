@@ -26,7 +26,7 @@ import {
   companiesTable,
   divisionsTable,
 } from "@workspace/db";
-import { eq, and, isNull, sql } from "drizzle-orm";
+import { eq, and, ne, isNull, sql } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/adminAuth";
 import {
   parsePimsvinaKusd,
@@ -209,7 +209,8 @@ export async function applyPimsvinaData(fetched: PimsvinaData) {
   const fxRateRows = await db
     .select({ year: fxRatesTable.year, month: fxRatesTable.month, rate: fxRatesTable.rate })
     .from(fxRatesTable)
-    .where(eq(fxRatesTable.currency, "VND"));
+    // "월별 자금 환율"(purpose=cashflow)은 자금수지 전용이라 매출 등 kUSD 환산에는 쓰지 않는다
+    .where(and(eq(fxRatesTable.currency, "VND"), ne(fxRatesTable.purpose, "cashflow")));
   const getVndPerKUsd = (year: number | null, month: number | null): number => {
     if (year != null && month != null) {
       const exact = fxRateRows.find((r) => r.year === year && r.month === month);

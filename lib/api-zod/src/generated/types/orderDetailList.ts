@@ -11,4 +11,6 @@ export interface OrderDetailList {
   year: number;
   referenceMonth: number;
   entries: OrderDetailEntry[];
+  /** true = 수주 업로드(order_entries)가 없어 경영보고 new_orders 월 합계로 대체한 행(프로젝트 단위 아님) */
+  fallback: boolean;
 }

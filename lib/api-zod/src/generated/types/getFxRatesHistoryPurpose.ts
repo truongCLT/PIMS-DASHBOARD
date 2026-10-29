@@ -12,4 +12,5 @@ export type GetFxRatesHistoryPurpose = typeof GetFxRatesHistoryPurpose[keyof typ
 export const GetFxRatesHistoryPurpose = {
   actual_forecast: 'actual_forecast',
   plan: 'plan',
+  cashflow: 'cashflow',
 } as const;

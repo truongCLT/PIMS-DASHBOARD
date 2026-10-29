@@ -9,5 +9,8 @@
   "invalidNumber": "Please enter a number greater than 0.",
   "saving": "Saving…",
   "planOption": "Plan",
-  "planHint": "Saving with \"Plan\" selected applies the entered value to all 12 months of the selected year."
+  "planHint": "Saving with \"Plan\" selected applies the entered value to all 12 months of the selected year.",
+  "cashflowTabLabel": "Monthly Cash Flow Rate",
+  "cashflowPopupTitle": "Monthly Cash Flow Rate (per USD)",
+  "cashflowHint": "Used to convert VND cash flow actuals to USD. Leave empty to use the PIMSVINA rate."
 }

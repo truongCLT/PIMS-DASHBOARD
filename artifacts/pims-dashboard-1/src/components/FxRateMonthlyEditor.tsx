@@ -9,11 +9,12 @@ import {
   usePutFxRates,
   getGetFxRatesHistoryQueryKey,
   getGetFxRatesQueryKey,
+  getGetCashflowReportSummaryQueryKey,
 } from "@workspace/api-client-react";
 import { useTranslation } from "react-i18next";
 import { useDashboardFilters } from "../lib/dashboardFilters";
 
-type Tab = "current" | "monthly";
+type Tab = "current" | "monthly" | "cashflow";
 
 // 환율 입력란은 그냥 <input type="text">라서(VndInput처럼 자리에서 숫자만 걸러주지 않음), 쉼표는
 // 항상 "천단위 구분 표시"로만 쓰고 제거하며, 사용자가 입력한 "."은 항상 소수점으로 그대로 쓴다
@@ -59,6 +60,9 @@ function formatRateDisplay(raw: string): string {
 //   하나로는 과거/특정 달의 매출을 맞게 재환산할 수 없어서 연/월을 골라 그 달의 환율을 따로 저장한다
 //   (PUT /fxrates/history — fx_rates 테이블은 이미 연·월별 저장을 지원해서 스키마/API 변경 없이 화면만
 //   추가). 두 탭 다 "요청: 버튼 하나로 합쳐 달라"에 따라 한 팝업 안에 탭으로 합쳤다.
+// - "월별 자금 환율" 탭: 자금수지에 반영하는 환율은 매출 환율과 또 달라서(실사용자 요청) 연/월별 VND 환율을
+//   purpose="cashflow"로 따로 저장한다. 서버가 PIMSVINA Cash Flow의 VND 거래를 USD로 환산할 때 그 달 값이
+//   있으면 PIMSVINA 환율 대신 이 값을 쓴다(cashflowReport.ts). 비워두면 PIMSVINA 환율 그대로.
 export function FxRateMonthlyEditor() {
   const { t } = useTranslation(["fxRateEditor", "common", "projectDataEntryTab"]);
   const { fxRates } = useDashboardFilters();
@@ -89,8 +93,11 @@ export function FxRateMonthlyEditor() {
   const [vnd, setVnd] = useState("");
   const [error, setError] = useState<string | null>(null);
 
+  // ── 탭 3: 월별 자금 환율 (연/월은 탭 2와 공유, "계획" 옵션 없음) ─────────────
+  const [cfVnd, setCfVnd] = useState("");
+
   const historyQuery = useGetFxRatesHistory(undefined, {
-    query: { queryKey: getGetFxRatesHistoryQueryKey(), enabled: open && tab === "monthly" },
+    query: { queryKey: getGetFxRatesHistoryQueryKey(), enabled: open && tab !== "current" },
   });
   const history = historyQuery.data ?? [];
 
@@ -118,6 +125,18 @@ export function FxRateMonthlyEditor() {
     const vndRow = history.find((r) => r.currency === "VND" && r.year === year && r.month === month && (r.purpose ?? "actual_forecast") === "actual_forecast");
     setKrw(krwRow ? formatRateDisplay(String(krwRow.rate)) : "");
     setVnd(vndRow ? formatRateDisplay(String(vndRow.rate)) : "");
+    setError(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, tab, year, month, history.length]);
+
+  useEffect(() => {
+    if (!open || tab !== "cashflow") return;
+    if (month === PLAN_MONTH) {
+      setMonth(now.getMonth() + 1);
+      return;
+    }
+    const vndRow = history.find((r) => r.currency === "VND" && r.year === year && r.month === month && r.purpose === "cashflow");
+    setCfVnd(vndRow ? formatRateDisplay(String(vndRow.rate)) : "");
     setError(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, tab, year, month, history.length]);
@@ -184,7 +203,7 @@ export function FxRateMonthlyEditor() {
   // 입력란을 비워두면(null) 그 통화의 해당 달 환율을 아예 지워서(DELETE) site 계약 환율/현재 환율로
   // 다시 폴백되게 한다 — 값을 입력했을 때만 저장(PUT)한다. 실사용자 요청: "VND는 비워두고 싶을 때
   // (0보다 커야 한다는 입력값 검증 때문에) 저장이 안 됐다".
-  const saveOrClearRate = (currency: "KRW" | "VND", year: number, month: number, purpose: "plan" | "actual_forecast", num: number | null) =>
+  const saveOrClearRate = (currency: "KRW" | "VND", year: number, month: number, purpose: "plan" | "actual_forecast" | "cashflow", num: number | null) =>
     num == null
       ? deleteMonthlyMutation.mutateAsync({ params: { currency, year, month, purpose } })
       : putMonthlyMutation.mutateAsync({ data: { currency, year, month, purpose, rate: num } });
@@ -237,6 +256,24 @@ export function FxRateMonthlyEditor() {
     }
   };
 
+  const saveCashflow = async () => {
+    const vndNum = cfVnd.trim() === "" ? null : parseRateInput(cfVnd);
+    if (vndNum != null && (!Number.isFinite(vndNum) || vndNum <= 0)) {
+      setError(t("fxRateEditor:invalidNumber"));
+      return;
+    }
+    setError(null);
+    try {
+      await saveOrClearRate("VND", year, month, "cashflow", vndNum);
+      await queryClient.invalidateQueries({ queryKey: getGetFxRatesHistoryQueryKey() });
+      // 자금수지 금액(USD)은 서버가 이 환율로 다시 환산하므로 리포트 조회도 새로 받는다.
+      await queryClient.invalidateQueries({ queryKey: getGetCashflowReportSummaryQueryKey() });
+      setOpen(false);
+    } catch {
+      setError(t("fxRateEditor:saveFailed"));
+    }
+  };
+
   const inputStyle: React.CSSProperties = {
     width: "100%",
     boxSizing: "border-box",
@@ -268,7 +305,9 @@ export function FxRateMonthlyEditor() {
     fontSize: "11px",
     fontWeight: 600,
     textAlign: "center",
-    whiteSpace: "nowrap",
+    // 탭이 3개라 VI/EN 라벨은 300px 안에 한 줄로 안 들어간다 — 줄바꿈 허용
+    whiteSpace: "normal",
+    lineHeight: 1.3,
     cursor: "pointer",
     border: "none",
     borderBottom: active ? "2px solid #1e3a6e" : "2px solid transparent",
@@ -320,6 +359,9 @@ export function FxRateMonthlyEditor() {
             <button style={tabButtonStyle(tab === "monthly")} onClick={() => setTab("monthly")}>
               {t("fxRateEditor:monthlyTabLabel")}
             </button>
+            <button style={tabButtonStyle(tab === "cashflow")} onClick={() => setTab("cashflow")}>
+              {t("fxRateEditor:cashflowTabLabel")}
+            </button>
           </div>
 
           <div style={{ padding: "14px" }}>
@@ -359,6 +401,55 @@ export function FxRateMonthlyEditor() {
                   }}
                 >
                   {putCurrentMutation.isPending ? t("fxRateEditor:saving") : t("common:save")}
+                </button>
+              </>
+            ) : tab === "cashflow" ? (
+              <>
+                <div style={{ fontSize: "12px", fontWeight: 700, color: "#16294a", marginBottom: "10px" }}>
+                  {t("fxRateEditor:cashflowPopupTitle")}
+                </div>
+                <div style={{ display: "flex", gap: "6px", marginBottom: "8px" }}>
+                  <select value={year} onChange={(e) => setYear(Number(e.target.value))} style={selectStyle}>
+                    {Array.from({ length: 5 }, (_, i) => now.getFullYear() - 2 + i).map((y) => (
+                      <option key={y} value={y}>{y}</option>
+                    ))}
+                  </select>
+                  <select value={month} onChange={(e) => setMonth(Number(e.target.value))} style={selectStyle}>
+                    {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+                      <option key={m} value={m}>{t("projectDataEntryTab:monthSuffix", { month: m })}</option>
+                    ))}
+                  </select>
+                </div>
+                <div style={{ fontSize: "11px", color: "#8a6d1e", marginBottom: "8px" }}>
+                  {t("fxRateEditor:cashflowHint")}
+                </div>
+                <div style={{ marginBottom: "8px" }}>
+                  <div style={labelStyle}>USD</div>
+                  <input value="1" disabled style={{ ...inputStyle, backgroundColor: "#f2f5f8", color: "#8a94a3" }} />
+                </div>
+                <div style={{ marginBottom: "10px" }}>
+                  <div style={labelStyle}>VND</div>
+                  <input value={cfVnd} onChange={(e) => setCfVnd(formatRateDisplay(e.target.value))} inputMode="decimal" style={inputStyle} />
+                </div>
+                {error && (
+                  <div style={{ fontSize: "11px", color: "#e0655c", marginBottom: "8px" }}>{error}</div>
+                )}
+                <button
+                  onClick={saveCashflow}
+                  disabled={putMonthlyMutation.isPending || deleteMonthlyMutation.isPending}
+                  style={{
+                    width: "100%",
+                    padding: "8px 0",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    backgroundColor: "#1e3a6e",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: "6px",
+                    cursor: putMonthlyMutation.isPending || deleteMonthlyMutation.isPending ? "wait" : "pointer",
+                  }}
+                >
+                  {putMonthlyMutation.isPending || deleteMonthlyMutation.isPending ? t("fxRateEditor:saving") : t("common:save")}
                 </button>
               </>
             ) : (

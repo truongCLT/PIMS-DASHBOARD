@@ -19,7 +19,7 @@ export interface FxRateHistoryEntry {
      * @maximum 12
      */
   month: number;
-  /** actual_forecast: 실적/전망 환산용(기본값). plan: 계획 매출 환산용 — 같은 연/월이라도 실적/전망과 다른 환율을 따로 보관한다. */
+  /** actual_forecast: 실적/전망 환산용(기본값). plan: 계획 매출 환산용. cashflow: 자금수지(PIMSVINA Cash Flow) VND→USD 환산용 — 같은 연/월이라도 용도별로 다른 환율을 따로 보관한다. */
   purpose?: FxRateHistoryEntryPurpose;
   /** @exclusiveMinimum 0 */
   rate: number;

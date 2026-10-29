@@ -5,5 +5,6 @@
   "error": "Lỗi",
   "noCurrentMonthOrder": "Không có đơn hàng trong tháng",
   "topRevenueTitle": "Doanh thu chính trong tháng",
-  "noCurrentMonthRevenue": "Không có doanh thu trong tháng"
+  "noCurrentMonthRevenue": "Không có doanh thu trong tháng",
+  "moreProjects": "và {{count}} dự án khác"
 }

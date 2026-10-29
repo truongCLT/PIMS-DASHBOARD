@@ -9,7 +9,7 @@ import type { GetFxRatesHistoryPurpose } from './getFxRatesHistoryPurpose';
 
 export type GetFxRatesHistoryParams = {
 /**
- * 주어지면 해당 purpose(actual_forecast | plan)만 필터링. 생략 시 전체(모든 purpose) 반환.
+ * 주어지면 해당 purpose(actual_forecast | plan | cashflow)만 필터링. 생략 시 전체(모든 purpose) 반환.
  */
 purpose?: GetFxRatesHistoryPurpose;
 };

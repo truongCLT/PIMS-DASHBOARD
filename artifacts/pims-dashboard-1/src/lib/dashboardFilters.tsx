@@ -17,8 +17,9 @@ export const FX_RATES: Record<CurrencyCode, number> = {
 export type FxRateMap = Record<CurrencyCode, number>;
 
 /** 환율 이력의 용도 — "plan"(계획 수립 시 고정한 환율, 1~12월 전체에 동일값) vs
- * "actual_forecast"(월별로 실제 변동을 반영해 개별 수정하는 환율). FxRateMonthlyEditor가 저장한다. */
-export type FxRatePurpose = "plan" | "actual_forecast";
+ * "actual_forecast"(월별로 실제 변동을 반영해 개별 수정하는 환율) vs "cashflow"(자금수지 전용 VND 환율 —
+ * 서버가 PIMSVINA Cash Flow의 VND 거래를 USD로 환산할 때 씀). FxRateMonthlyEditor가 저장한다. */
+export type FxRatePurpose = "plan" | "actual_forecast" | "cashflow";
 
 /** 통화별 월별 환율 이력 한 건 */
 export interface FxRateHistoryEntry {

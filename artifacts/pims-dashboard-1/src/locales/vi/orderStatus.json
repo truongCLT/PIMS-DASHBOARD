@@ -24,5 +24,10 @@
   "status": "Phân loại",
   "actual": "Thực tế",
   "forecast": "Dự báo",
-  "total": "Tổng"
+  "total": "Tổng",
+  "period": "Kỳ",
+  "companyTotalMonth": "Tổng toàn công ty - Tháng {{month}}",
+  "monthProjects": "Tháng {{month}} ({{count}} dự án)",
+  "monthDetailTitle": "Đơn hàng theo dự án - Tháng {{month}}",
+  "noProjectBreakdown": "Chưa có dữ liệu đơn hàng theo dự án. Excel báo cáo quản trị chỉ có tổng toàn công ty — hãy tải file \"Kế hoạch & kết quả đơn hàng\" trong Excel Upload để xem theo dự án."
 }

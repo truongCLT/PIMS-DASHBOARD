@@ -7,7 +7,7 @@
  */
 
 /**
- * actual_forecast: 실적/전망 환산용(기본값). plan: 계획 매출 환산용 — 같은 연/월이라도 실적/전망과 다른 환율을 따로 보관한다.
+ * actual_forecast: 실적/전망 환산용(기본값). plan: 계획 매출 환산용. cashflow: 자금수지(PIMSVINA Cash Flow) VND→USD 환산용 — 같은 연/월이라도 용도별로 다른 환율을 따로 보관한다.
  */
 export type FxRateHistoryEntryPurpose = typeof FxRateHistoryEntryPurpose[keyof typeof FxRateHistoryEntryPurpose];
 
@@ -15,4 +15,5 @@ export type FxRateHistoryEntryPurpose = typeof FxRateHistoryEntryPurpose[keyof t
 export const FxRateHistoryEntryPurpose = {
   actual_forecast: 'actual_forecast',
   plan: 'plan',
+  cashflow: 'cashflow',
 } as const;

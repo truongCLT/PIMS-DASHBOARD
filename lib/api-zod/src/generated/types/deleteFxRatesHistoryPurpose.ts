@@ -12,4 +12,5 @@ export type DeleteFxRatesHistoryPurpose = typeof DeleteFxRatesHistoryPurpose[key
 export const DeleteFxRatesHistoryPurpose = {
   actual_forecast: 'actual_forecast',
   plan: 'plan',
+  cashflow: 'cashflow',
 } as const;

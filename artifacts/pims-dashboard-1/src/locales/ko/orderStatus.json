@@ -24,5 +24,10 @@
   "status": "구분",
   "actual": "실적",
   "forecast": "전망",
-  "total": "합계"
+  "total": "합계",
+  "period": "구분",
+  "companyTotalMonth": "전사 합계 - {{month}}월",
+  "monthProjects": "{{month}}월 (프로젝트 {{count}}건)",
+  "monthDetailTitle": "{{month}}월 프로젝트별 수주",
+  "noProjectBreakdown": "프로젝트별 수주 데이터가 없습니다. 경영현황판 Excel에는 전사 합계만 있어서, Excel 업로드에서 \"수주 계획 및 실적\" 파일을 올리면 프로젝트별로 표시됩니다."
 }

@@ -199,10 +199,10 @@ paths:
         - name: purpose
           in: query
           required: false
-          description: "주어지면 해당 purpose(actual_forecast | plan)만 필터링. 생략 시 전체(모든 purpose) 반환."
+          description: "주어지면 해당 purpose(actual_forecast | plan | cashflow)만 필터링. 생략 시 전체(모든 purpose) 반환."
           schema:
             type: string
-            enum: [actual_forecast, plan]
+            enum: [actual_forecast, plan, cashflow]
       responses:
         "200":
           description: FX rate history
@@ -273,7 +273,7 @@ paths:
           required: false
           schema:
             type: string
-            enum: [actual_forecast, plan]
+            enum: [actual_forecast, plan, cashflow]
             default: actual_forecast
       responses:
         "200":
@@ -1537,8 +1537,8 @@ components:
           maximum: 12
         purpose:
           type: string
-          description: "actual_forecast: 실적/전망 환산용(기본값). plan: 계획 매출 환산용 — 같은 연/월이라도 실적/전망과 다른 환율을 따로 보관한다."
-          enum: [actual_forecast, plan]
+          description: "actual_forecast: 실적/전망 환산용(기본값). plan: 계획 매출 환산용. cashflow: 자금수지(PIMSVINA Cash Flow) VND→USD 환산용 — 같은 연/월이라도 용도별로 다른 환율을 따로 보관한다."
+          enum: [actual_forecast, plan, cashflow]
           default: actual_forecast
         rate:
           type: number
@@ -1852,7 +1852,10 @@ components:
         entries:
           type: array
           items: { $ref: "#/components/schemas/OrderDetailEntry" }
-      required: [year, referenceMonth, entries]
+        fallback:
+          type: boolean
+          description: "true = 수주 업로드(order_entries)가 없어 경영보고 new_orders 월 합계로 대체한 행(프로젝트 단위 아님)"
+      required: [year, referenceMonth, entries, fallback]
     OrderImportHistoryEntry:
       type: object
       properties:

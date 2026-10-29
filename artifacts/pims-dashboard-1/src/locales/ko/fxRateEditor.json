@@ -9,5 +9,8 @@
   "invalidNumber": "0보다 큰 숫자를 입력해 주세요.",
   "saving": "저장 중…",
   "planOption": "계획",
-  "planHint": "\"계획\"으로 저장하면 입력한 값이 선택한 연도의 1~12월 전체에 반영됩니다."
+  "planHint": "\"계획\"으로 저장하면 입력한 값이 선택한 연도의 1~12월 전체에 반영됩니다.",
+  "cashflowTabLabel": "월별 자금 환율",
+  "cashflowPopupTitle": "월별 자금 환율 설정 (USD 기준)",
+  "cashflowHint": "자금수지(Cash Flow) 실적의 VND 금액을 USD로 환산할 때 이 환율을 씁니다. 비워두면 PIMSVINA 환율을 그대로 씁니다."
 }

@@ -1,7 +1,9 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import {
+  getGetOrderDetailsQueryKey,
   getListMgmtreportProjectsQueryKey,
+  useGetOrderDetails,
   useListMgmtreportProjects,
 } from "@workspace/api-client-react";
 import { useDashboardData, REPORT_YEAR } from "../lib/mgmtreportData";
@@ -60,6 +62,22 @@ export function DrilldownCard() {
   // "Orders received"(연초~기준월 누계)와는 다른 값이니 섞지 않는다.
   // (derived 값은 이미 선택된 통화·단위로 변환되어 있음)
   const orderMonthActualValue = derived?.orderMonthActual ?? null;
+
+  // 그 달 수주 프로젝트명: 경영현황판 Excel에는 프로젝트명이 없어서, "수주 계획 및 실적" 업로드
+  // (order_entries)에 그 달 실적일자로 들어온 프로젝트를 보여준다. 업로드가 없으면(fallback = 경영보고
+  // 월 합계) 프로젝트 단위가 아니므로 금액만 보여준다.
+  const orderParams = { year: reportYear, referenceMonth: month || 1 };
+  const orderQuery = useGetOrderDetails(orderParams, {
+    query: { queryKey: getGetOrderDetailsQueryKey(orderParams), enabled: derived != null && month > 0 },
+  });
+  const monthPrefix = `${reportYear}-${String(month).padStart(2, "0")}`;
+  const orderProjects = orderQuery.data?.fallback
+    ? []
+    : (orderQuery.data?.entries ?? [])
+        .filter((e) => e.actualKind === "actual" && e.actualAmount && e.actualDate?.startsWith(monthPrefix))
+        .map((e) => ({ name: e.projectName, value: convert(e.actualAmount ?? 0, reportYear, month) }))
+        .sort((a, b) => b.value - a.value);
+  const shownOrderProjects = orderProjects.slice(0, 3);
 
   // 2. 금월 주요 매출: top-3 projects by current-month actual revenue (groups excluded server-side)
   const topRevenue = (projectsQuery.data?.projects ?? [])
@@ -132,7 +150,26 @@ export function DrilldownCard() {
           ) : loading ? (
             "-"
           ) : orderMonthActualValue != null && orderMonthActualValue !== 0 ? (
-            <div>{fmtK(orderMonthActualValue)}</div>
+            <div style={{ width: "100%", textAlign: "center" }}>
+              <div>{fmtK(orderMonthActualValue)}</div>
+              {shownOrderProjects.length > 0 && (
+                <div style={{ marginTop: "6px", display: "flex", flexDirection: "column", gap: "3px", textAlign: "left" }}>
+                  {shownOrderProjects.map((p) => (
+                    <div key={p.name} style={{ display: "flex", gap: "6px", fontSize: "12px", fontWeight: 600 }}>
+                      <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        · {p.name}
+                      </span>
+                      <span style={{ flexShrink: 0 }}>{fmtK(p.value)}</span>
+                    </div>
+                  ))}
+                  {orderProjects.length > shownOrderProjects.length && (
+                    <div style={{ fontSize: "11px", color: "#6b7c94", fontWeight: 500 }}>
+                      {t("drilldownCard:moreProjects", { count: orderProjects.length - shownOrderProjects.length })}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           ) : (
             <div style={{ color: "#6b7c94", fontWeight: 500 }}>{t("drilldownCard:noCurrentMonthOrder")}</div>
           )}

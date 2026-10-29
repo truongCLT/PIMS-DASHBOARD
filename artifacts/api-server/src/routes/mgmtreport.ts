@@ -387,7 +387,7 @@ router.get("/orders/current", async (req, res) => {
         });
     }
 
-    res.json(GetOrderDetailsResponse.parse({ year, referenceMonth, entries }));
+    res.json(GetOrderDetailsResponse.parse({ year, referenceMonth, entries, fallback: rows.length === 0 }));
   } catch (err) {
     req.log.error({ err }, "failed to get order details");
     res.status(500).json({ error: "수주 상세 조회에 실패했습니다." });

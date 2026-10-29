@@ -1,3 +1,4 @@
+import { and, eq, inArray } from "drizzle-orm";
 import { queryOracle } from "./oraclePool";
 
 /**
@@ -27,13 +28,27 @@ const USD_AMOUNT = (alias: string) =>
      ELSE ${alias}.AMOUNT * (SELECT MAX(R.CHGRATIO) FROM CHTB_EXCHANGE_RATIO R WHERE R.EXCHANGE_TYPE='.' AND R.YYMM=${LOCKED_YYMM(alias)} AND R.BASEMONEY='VND' AND R.CHGMONEY=UPPER(${alias}.CURRENCY))
           / NULLIF((SELECT MAX(U.CHGRATIO) FROM CHTB_EXCHANGE_RATIO U WHERE U.EXCHANGE_TYPE='.' AND U.YYMM=${LOCKED_YYMM(alias)} AND U.BASEMONEY='VND' AND U.CHGMONEY='USD'), 0) END, 2)`;
 
-// AMOUNT는 모두 USD로 맞춘다(PLAN은 천 USD로 입력되므로 x1000).
+// "월별 자금 환율"(fx_rates purpose='cashflow')로 다시 환산할 수 있도록 USD_AMOUNT를 두 부분으로도 같이 뽑는다:
+// USD 통화 거래 금액(환산 불필요)과, 그 외 통화 거래를 VND로 맞춘 금액(VND는 그대로, 기타 통화는 PIMSVINA의
+// VND 교차환율로 VND 환산). 자금 환율이 있는 달은 USD = USDCCY + VND / 자금 환율로 바꿔 쓴다.
+const USDCCY_AMOUNT = (alias: string) =>
+  `CASE UPPER(NVL(${alias}.CURRENCY, 'VND')) WHEN 'USD' THEN NVL(${alias}.AMOUNT, 0) ELSE 0 END`;
+const VND_AMOUNT = (alias: string) =>
+  `ROUND(CASE UPPER(NVL(${alias}.CURRENCY, 'VND'))
+     WHEN 'USD' THEN 0
+     WHEN 'VND' THEN NVL(${alias}.AMOUNT, 0)
+     ELSE ${alias}.AMOUNT * (SELECT MAX(R.CHGRATIO) FROM CHTB_EXCHANGE_RATIO R WHERE R.EXCHANGE_TYPE='.' AND R.YYMM=${LOCKED_YYMM(alias)} AND R.BASEMONEY='VND' AND R.CHGMONEY=UPPER(${alias}.CURRENCY)) END, 0)`;
+const ACTUAL_AMOUNTS = (alias: string) => `${USD_AMOUNT(alias)}, ${USDCCY_AMOUNT(alias)}, ${VND_AMOUNT(alias)}`;
+
+// AMOUNT는 모두 USD로 맞춘다(PLAN은 천 USD로 입력되므로 x1000). AMOUNT_USDCCY/AMOUNT_VND는 ACTUAL만 채운다(위 설명).
 const REPORT_ROWS_SQL = `
-SELECT SOURCE, FISCALYEAR, MONTHNO, GROUPCODE, GROUPNAME, CLS, SITE, SITENAME, TYPENAME, REPORTTYPE, CATEGORY, SUM(AMOUNT) AS AMOUNT FROM (
+SELECT SOURCE, FISCALYEAR, MONTHNO, GROUPCODE, GROUPNAME, CLS, SITE, SITENAME, TYPENAME, REPORTTYPE, CATEGORY,
+       SUM(AMOUNT) AS AMOUNT, SUM(AMOUNT_USDCCY) AS AMOUNT_USDCCY, SUM(AMOUNT_VND) AS AMOUNT_VND FROM (
   SELECT 'PLAN' AS SOURCE, D.FISCALYEAR, D.MONTHNO, NVL(G.BUSILINECODE, B.BUSILINECODE) AS GROUPCODE, NVL(G.BUSILINENAME, B.BUSILINENAME) AS GROUPNAME,
          CASE UPPER(NVL(B.CLASSIFICATION, '')) WHEN 'ADMIN' THEN 'ADMIN' WHEN 'FINANCE' THEN 'FINANCE' ELSE 'BUSINESS' END AS CLS,
          D.FLDCODE AS SITE, CASE WHEN D.FLDCODE LIKE 'GEN_%' THEN 'General' ELSE FUN_GET_FLDNAME(D.FLDCODE) END AS SITENAME,
-         NVL(T.CASHFLOWTYPENAME, D.CASHFLOWTYPECODE) AS TYPENAME, UPPER(NVL(T.DISPLAYCASHFLOWREPORT, '')) AS REPORTTYPE, D.CASHFLOWCATEGORY AS CATEGORY, D.AMOUNT * 1000 AS AMOUNT
+         NVL(T.CASHFLOWTYPENAME, D.CASHFLOWTYPECODE) AS TYPENAME, UPPER(NVL(T.DISPLAYCASHFLOWREPORT, '')) AS REPORTTYPE, D.CASHFLOWCATEGORY AS CATEGORY, D.AMOUNT * 1000 AS AMOUNT,
+         0 AS AMOUNT_USDCCY, 0 AS AMOUNT_VND
     FROM (SELECT P.FISCALYEAR, P.FLDCODE, P.BUSILINECODE, P.CASHFLOWTYPECODE, P.CASHFLOWCATEGORY, M.MONTHNO,
                  CASE M.MONTHNO WHEN 1 THEN NVL(P.M01, 0) WHEN 2 THEN NVL(P.M02, 0) WHEN 3 THEN NVL(P.M03, 0) WHEN 4 THEN NVL(P.M04, 0) WHEN 5 THEN NVL(P.M05, 0) WHEN 6 THEN NVL(P.M06, 0)
                                 WHEN 7 THEN NVL(P.M07, 0) WHEN 8 THEN NVL(P.M08, 0) WHEN 9 THEN NVL(P.M09, 0) WHEN 10 THEN NVL(P.M10, 0) WHEN 11 THEN NVL(P.M11, 0) WHEN 12 THEN NVL(P.M12, 0) END AS AMOUNT
@@ -48,7 +63,7 @@ SELECT SOURCE, FISCALYEAR, MONTHNO, GROUPCODE, GROUPNAME, CLS, SITE, SITENAME, T
      AND (D.FLDCODE LIKE 'GEN_%' OR EXISTS (SELECT 1 FROM CATB_COMPANYSTRUCT_PROJECT P WHERE P.COMPCODE = CB.COMPCODE AND P.FLDCODE = D.FLDCODE AND NVL(P.USEYN, 'Y') = 'Y'))
   UNION ALL
   SELECT 'ACTUAL', SUBSTR(X.TRANSACTIONDATE, 1, 4), TO_NUMBER(SUBSTR(X.TRANSACTIONDATE, 5, 2)), NVL(G.BUSILINECODE, B.BUSILINECODE), NVL(G.BUSILINENAME, B.BUSILINENAME), 'BUSINESS',
-         X.SITE, FUN_GET_FLDNAME(X.SITE), NVL(X.CASHFLOWTYPENAME, T.CASHFLOWTYPENAME), UPPER(NVL(T.DISPLAYCASHFLOWREPORT, '')), DECODE(X.DEPOSITWITHDRAWAL, 'Income', 'INC', 'OUT'), ${USD_AMOUNT("X")}
+         X.SITE, FUN_GET_FLDNAME(X.SITE), NVL(X.CASHFLOWTYPENAME, T.CASHFLOWTYPENAME), UPPER(NVL(T.DISPLAYCASHFLOWREPORT, '')), DECODE(X.DEPOSITWITHDRAWAL, 'Income', 'INC', 'OUT'), ${ACTUAL_AMOUNTS("X")}
     FROM CFTB_CFTRANSACTION X JOIN CFTB_CASHFLOWTYPE T ON T.CASHFLOWTYPECODE = X.CASHFLOWTYPE
          JOIN CATB_COMPANYSTRUCT_PROJECT P ON P.COMPCODE = X.COMPANY AND P.FLDCODE = X.SITE AND NVL(P.USEYN, 'Y') = 'Y'
          JOIN CATB_BUSILINE B ON B.BUSILINECODE = P.BUSILINECODE
@@ -57,7 +72,7 @@ SELECT SOURCE, FISCALYEAR, MONTHNO, GROUPCODE, GROUPNAME, CLS, SITE, SITENAME, T
      AND UPPER(NVL(T.DISPLAYCASHFLOWREPORT, 'BUSILINE')) IN ('BUSILINE', 'BOTH') AND UPPER(NVL(B.CLASSIFICATION, '')) IN ('SITE', 'BUSILINE')
   UNION ALL
   SELECT 'ACTUAL', SUBSTR(X.TRANSACTIONDATE, 1, 4), TO_NUMBER(SUBSTR(X.TRANSACTIONDATE, 5, 2)), NVL(G.BUSILINECODE, B.BUSILINECODE), NVL(G.BUSILINENAME, B.BUSILINENAME), 'ADMIN',
-         '', '', NVL(X.CASHFLOWTYPENAME, T.CASHFLOWTYPENAME), UPPER(NVL(T.DISPLAYCASHFLOWREPORT, '')), DECODE(X.DEPOSITWITHDRAWAL, 'Income', 'INC', 'OUT'), ${USD_AMOUNT("X")}
+         '', '', NVL(X.CASHFLOWTYPENAME, T.CASHFLOWTYPENAME), UPPER(NVL(T.DISPLAYCASHFLOWREPORT, '')), DECODE(X.DEPOSITWITHDRAWAL, 'Income', 'INC', 'OUT'), ${ACTUAL_AMOUNTS("X")}
     FROM CFTB_CFTRANSACTION X JOIN CFTB_CASHFLOWTYPE T ON T.CASHFLOWTYPECODE = X.CASHFLOWTYPE
          JOIN CATB_COMPANYSTRUCT_BUSILINE CB ON CB.COMPCODE = X.COMPANY AND NVL(CB.USEYN, 'Y') = 'Y' JOIN CATB_BUSILINE B ON B.BUSILINECODE = CB.BUSILINECODE
          LEFT JOIN CATB_BUSILINE G ON G.BUSILINECODE = B.UPPERBUSILINECODE AND NVL(G.GRPYN, '0') IN ('Y', '1')
@@ -65,7 +80,7 @@ SELECT SOURCE, FISCALYEAR, MONTHNO, GROUPCODE, GROUPNAME, CLS, SITE, SITENAME, T
      AND UPPER(NVL(T.DISPLAYCASHFLOWREPORT, '')) = 'ADMIN' AND UPPER(NVL(B.CLASSIFICATION, '')) LIKE 'ADMIN%'
   UNION ALL
   SELECT 'ACTUAL', SUBSTR(X.TRANSACTIONDATE, 1, 4), TO_NUMBER(SUBSTR(X.TRANSACTIONDATE, 5, 2)), NVL(G.BUSILINECODE, B.BUSILINECODE), NVL(G.BUSILINENAME, B.BUSILINENAME), 'FINANCE',
-         '', '', NVL(X.CASHFLOWTYPENAME, T.CASHFLOWTYPENAME), UPPER(NVL(T.DISPLAYCASHFLOWREPORT, '')), DECODE(X.DEPOSITWITHDRAWAL, 'Income', 'INC', 'OUT'), ${USD_AMOUNT("X")}
+         '', '', NVL(X.CASHFLOWTYPENAME, T.CASHFLOWTYPENAME), UPPER(NVL(T.DISPLAYCASHFLOWREPORT, '')), DECODE(X.DEPOSITWITHDRAWAL, 'Income', 'INC', 'OUT'), ${ACTUAL_AMOUNTS("X")}
     FROM CFTB_CFTRANSACTION X JOIN CFTB_CASHFLOWTYPE T ON T.CASHFLOWTYPECODE = X.CASHFLOWTYPE
          JOIN CATB_COMPANYSTRUCT_BUSILINE CB ON CB.COMPCODE = X.COMPANY AND NVL(CB.USEYN, 'Y') = 'Y' JOIN CATB_BUSILINE B ON B.BUSILINECODE = CB.BUSILINECODE
          LEFT JOIN CATB_BUSILINE G ON G.BUSILINECODE = B.UPPERBUSILINECODE AND NVL(G.GRPYN, '0') IN ('Y', '1')
@@ -126,6 +141,38 @@ export interface CashflowReportRow {
   category: "INC" | "OUT";
   /** USD */
   amount: number;
+  /** ACTUAL만: USD 통화 거래 금액(USD) — 자금 환율 재환산용 */
+  amountUsdCcy?: number;
+  /** ACTUAL만: USD 외 통화 거래를 VND로 맞춘 금액 — 자금 환율 재환산용 */
+  amountVnd?: number;
+}
+
+/** "YYYY-MM" → 그 달 "월별 자금 환율"(1 USD = ? VND) */
+export type CashflowVndRates = Map<string, number>;
+
+/**
+ * "월별 자금 환율"이 입력된 달의 ACTUAL 금액을 그 환율로 다시 환산한다(USD 거래는 그대로, VND 등은
+ * VND 금액 / 자금 환율). 환율이 없는 달과 PLAN(천 USD 입력값)은 PIMSVINA 금액을 그대로 둔다.
+ */
+export function applyCashflowVndRates(rows: CashflowReportRow[], rates: CashflowVndRates): CashflowReportRow[] {
+  if (rates.size === 0) return rows;
+  return rows.map((r) => {
+    const rate = r.source === "ACTUAL" ? rates.get(ym(r.year, r.month)) : undefined;
+    if (!rate || r.amountUsdCcy == null || r.amountVnd == null) return r;
+    return { ...r, amount: r.amountUsdCcy + r.amountVnd / rate };
+  });
+}
+
+/** fx_rates의 purpose='cashflow' VND 환율(조회 연도 범위)을 읽는다 */
+export async function loadCashflowVndRates(fromYear: number, toYear: number): Promise<CashflowVndRates> {
+  // 지연 import — @workspace/db는 로드 시 DATABASE_URL을 요구해서, 순수 집계 테스트가 DB 없이 돌 수 있게 한다.
+  const { db, fxRatesTable } = await import("@workspace/db");
+  const years = Array.from({ length: toYear - fromYear + 1 }, (_, i) => fromYear + i);
+  const rows = await db
+    .select()
+    .from(fxRatesTable)
+    .where(and(eq(fxRatesTable.purpose, "cashflow"), eq(fxRatesTable.currency, "VND"), inArray(fxRatesTable.year, years)));
+  return new Map(rows.filter((r) => r.rate > 0).map((r) => [ym(r.year, r.month), r.rate]));
 }
 
 export interface CashflowReportMonthAmount {
@@ -302,13 +349,15 @@ export async function fetchCashflowReportSummary(params: {
   months: number;
 }): Promise<CashflowReportSummary> {
   const actualMonth = currentYm();
-  const cacheKey = `${params.fromYear}-${params.fromMonth}-${params.months}-${actualMonth}`;
+  const { toYear } = monthKeys(params.fromYear, params.fromMonth, params.months);
+  // 자금 환율을 바꾸면 바로 반영되도록 환율 값 자체를 캐시 키에 넣는다(PG 조회라 매번 읽어도 가볍다).
+  const rates = await loadCashflowVndRates(params.fromYear, toYear);
+  const cacheKey = `${params.fromYear}-${params.fromMonth}-${params.months}-${actualMonth}-${JSON.stringify([...rates])}`;
   const hit = cache.get(cacheKey);
   if (hit && Date.now() - hit.at < CACHE_TTL_MS) return hit.value;
 
-  const { toYear } = monthKeys(params.fromYear, params.fromMonth, params.months);
   const [rows, openingRows] = await Promise.all([
-    fetchReportRows(DECV_COMPANY_CODE, params.fromYear, toYear),
+    fetchReportRows(DECV_COMPANY_CODE, params.fromYear, toYear, rates),
     queryOracle(OPENING_BALANCE_SQL, {
       company: DECV_COMPANY_CODE,
       fromDate: `${params.fromYear}0101`,
@@ -324,13 +373,18 @@ export async function fetchCashflowReportSummary(params: {
   return value;
 }
 
-async function fetchReportRows(company: string, fromYear: number, toYear: number): Promise<CashflowReportRow[]> {
+async function fetchReportRows(
+  company: string,
+  fromYear: number,
+  toYear: number,
+  rates: CashflowVndRates,
+): Promise<CashflowReportRow[]> {
   const rawRows = await queryOracle(REPORT_ROWS_SQL, {
     company,
     fromYear: String(fromYear),
     toYear: String(toYear),
   });
-  return rawRows.map((r) => ({
+  const rows: CashflowReportRow[] = rawRows.map((r) => ({
     source: r.source === "PLAN" ? "PLAN" : "ACTUAL",
     year: Number(r.fiscalyear),
     month: Number(r.monthno),
@@ -343,7 +397,10 @@ async function fetchReportRows(company: string, fromYear: number, toYear: number
     reportType: String(r.reporttype ?? "").trim(),
     category: r.category === "INC" ? "INC" : "OUT",
     amount: Number(r.amount) || 0,
+    amountUsdCcy: Number(r.amount_usdccy) || 0,
+    amountVnd: Number(r.amount_vnd) || 0,
   }));
+  return applyCashflowVndRates(rows, rates);
 }
 
 /** pd_cashflow_monthly 동기화 행 — 예전 dashboard_pd_cashflow_1q.jsp와 같은 모양(금액은 USD) */
@@ -372,6 +429,7 @@ export async function fetchCashflowReportSiteTotals(): Promise<CashflowSiteTotal
     queryOracle(`SELECT MIN(SUBSTR(TRANSACTIONDATE, 1, 4)) AS FIRSTYEAR FROM CFTB_CFTRANSACTION`),
   ]);
   const firstYear = Math.min(Number(firstRows[0]?.firstyear) || lastYear, lastYear);
+  const rates = await loadCashflowVndRates(firstYear, lastYear);
   const sitesByCompany = new Map<string, Array<{ fldcode: string; siteCode: string | null; name: string }>>();
   for (const r of siteRows) {
     const company = String(r.compcode ?? "").trim();
@@ -386,7 +444,7 @@ export async function fetchCashflowReportSiteTotals(): Promise<CashflowSiteTotal
   for (const [company, sites] of sitesByCompany) {
     for (let year = firstYear; year <= lastYear; year++) {
       const [rows, openingRows] = await Promise.all([
-        fetchReportRows(company, year, year),
+        fetchReportRows(company, year, year, rates),
         queryOracle(SITE_OPENING_BALANCE_SQL, { company, fromDate: `${year}0101` }),
       ]);
       const openingBySite = new Map(openingRows.map((r) => [String(r.fldcode ?? "").trim(), Number(r.initialbalance) || 0]));

@@ -6,7 +6,7 @@ import { useGetFxRatesHistory, getGetFxRatesHistoryQueryKey } from "@workspace/a
  * 적용하는 대신 그 달에 실제로 입력된 환율을 쓸 수 있게 한다. 해당 달에 입력된 환율이 없으면 null을
  * 반환하므로, 호출하는 쪽에서 기존 환율(현재 환율/계약 환율)로 폴백한다.
  */
-export type FxRatePurpose = "actual_forecast" | "plan";
+export type FxRatePurpose = "actual_forecast" | "plan" | "cashflow";
 
 export function useMonthlyFxRates() {
   // FxRateMonthlyEditor가 저장 후 getGetFxRatesHistoryQueryKey()로 무효화하므로, 여기서도

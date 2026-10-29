@@ -38,7 +38,7 @@ export const FxRateHistoryEntryCurrency = {
 } as const;
 
 /**
- * actual_forecast: 실적/전망 환산용(기본값). plan: 계획 매출 환산용 — 같은 연/월이라도 실적/전망과 다른 환율을 따로 보관한다.
+ * actual_forecast: 실적/전망 환산용(기본값). plan: 계획 매출 환산용. cashflow: 자금수지(PIMSVINA Cash Flow) VND→USD 환산용 — 같은 연/월이라도 용도별로 다른 환율을 따로 보관한다.
  */
 export type FxRateHistoryEntryPurpose = typeof FxRateHistoryEntryPurpose[keyof typeof FxRateHistoryEntryPurpose];
 
@@ -46,6 +46,7 @@ export type FxRateHistoryEntryPurpose = typeof FxRateHistoryEntryPurpose[keyof t
 export const FxRateHistoryEntryPurpose = {
   actual_forecast: 'actual_forecast',
   plan: 'plan',
+  cashflow: 'cashflow',
 } as const;
 
 /**
@@ -59,7 +60,7 @@ export interface FxRateHistoryEntry {
      * @maximum 12
      */
   month: number;
-  /** actual_forecast: 실적/전망 환산용(기본값). plan: 계획 매출 환산용 — 같은 연/월이라도 실적/전망과 다른 환율을 따로 보관한다. */
+  /** actual_forecast: 실적/전망 환산용(기본값). plan: 계획 매출 환산용. cashflow: 자금수지(PIMSVINA Cash Flow) VND→USD 환산용 — 같은 연/월이라도 용도별로 다른 환율을 따로 보관한다. */
   purpose?: FxRateHistoryEntryPurpose;
   /** @exclusiveMinimum 0 */
   rate: number;
@@ -359,6 +360,8 @@ export interface OrderDetailList {
   year: number;
   referenceMonth: number;
   entries: OrderDetailEntry[];
+  /** true = 수주 업로드(order_entries)가 없어 경영보고 new_orders 월 합계로 대체한 행(프로젝트 단위 아님) */
+  fallback: boolean;
 }
 
 export interface OrderImportHistoryEntry {
@@ -982,7 +985,7 @@ export interface HealthStatus {
 
 export type GetFxRatesHistoryParams = {
 /**
- * 주어지면 해당 purpose(actual_forecast | plan)만 필터링. 생략 시 전체(모든 purpose) 반환.
+ * 주어지면 해당 purpose(actual_forecast | plan | cashflow)만 필터링. 생략 시 전체(모든 purpose) 반환.
  */
 purpose?: GetFxRatesHistoryPurpose;
 };
@@ -993,6 +996,7 @@ export type GetFxRatesHistoryPurpose = typeof GetFxRatesHistoryPurpose[keyof typ
 export const GetFxRatesHistoryPurpose = {
   actual_forecast: 'actual_forecast',
   plan: 'plan',
+  cashflow: 'cashflow',
 } as const;
 
 export type DeleteFxRatesHistoryParams = {
@@ -1021,6 +1025,7 @@ export type DeleteFxRatesHistoryPurpose = typeof DeleteFxRatesHistoryPurpose[key
 export const DeleteFxRatesHistoryPurpose = {
   actual_forecast: 'actual_forecast',
   plan: 'plan',
+  cashflow: 'cashflow',
 } as const;
 
 export type DeleteFxRatesHistory200 = {

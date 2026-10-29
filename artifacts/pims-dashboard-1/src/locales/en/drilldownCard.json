@@ -5,5 +5,6 @@
   "error": "Error",
   "noCurrentMonthOrder": "No orders this month",
   "topRevenueTitle": "Top Revenue This Month",
-  "noCurrentMonthRevenue": "No revenue this month"
+  "noCurrentMonthRevenue": "No revenue this month",
+  "moreProjects": "+{{count}} more"
 }

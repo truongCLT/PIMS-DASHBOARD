@@ -24,5 +24,10 @@
   "status": "Status",
   "actual": "Actual",
   "forecast": "Forecast",
-  "total": "Total"
+  "total": "Total",
+  "period": "Period",
+  "companyTotalMonth": "Company total - Month {{month}}",
+  "monthProjects": "Month {{month}} ({{count}} projects)",
+  "monthDetailTitle": "Orders by Project - Month {{month}}",
+  "noProjectBreakdown": "No project-level order data. The management report Excel only has the company total — upload the \"Order Plan & Performance\" file in Excel Upload to see orders by project."
 }

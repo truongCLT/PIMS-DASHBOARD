@@ -58,11 +58,12 @@ export function Dashboard({
 
         {/* Rows 2+3 combined: 매출/손익/수주 차트 + 자금 수지/경영실적/드릴다운, 하나의
             그리드로 묶어 반응형 줄바꿈과 PDF 페이지 분할이 일관되게 동작하도록 함 */}
-        {/* 최초 디자인 비율: 왼쪽 두 열은 넓게, 맨 오른쪽(수주/드릴다운) 열은 400px 고정.
+        {/* 왼쪽 두 열(차트)은 넓게, 맨 오른쪽(수주/드릴다운) 열은 화면 폭의 약 20%(260~340px).
+            예전 400px 고정은 상무님 모니터 폭에서 1:1:1처럼 보여 차트가 작다는 요청으로 줄였다.
             Excel 카드 뷰 내보내기 시에만 data-export-cols 로 반응형 전환 */}
         <div data-export-row="charts-cashflow" data-export-cols="repeat(auto-fit, minmax(440px, 1fr))" style={{
           display: "grid",
-          gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr) 400px",
+          gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr) clamp(260px, 20%, 340px)",
           // 차트 높이(cqw)의 기준 컨테이너
           containerType: "inline-size",
           gap: "6px",
@@ -70,8 +71,8 @@ export function Dashboard({
         }}>
           <div data-export-block style={{ minWidth: 0, width: "100%", boxSizing: "border-box" }}><SalesChart /></div>
           <div data-export-block style={{ minWidth: 0, width: "100%", boxSizing: "border-box" }}><ProfitChart /></div>
-          {/* 맨 오른쪽 열: 수주 현황 + 드릴다운을 2행에 걸쳐 붙여 쌓고,
-              남는 높이를 두 카드가 균등하게 나눠 가져 빈 공간이 한쪽에 몰리지 않도록 함 */}
+          {/* 맨 오른쪽 열: 수주 현황 + 드릴다운을 2행에 걸쳐 붙여 쌓는다. 수주 현황은 내용 높이만큼만
+              쓰고(도넛 최대 180px), 남는 높이는 드릴다운 카드가 채운다 */}
           <div data-export-block style={{
             minWidth: 0, width: "100%", boxSizing: "border-box",
             gridRow: "span 2",

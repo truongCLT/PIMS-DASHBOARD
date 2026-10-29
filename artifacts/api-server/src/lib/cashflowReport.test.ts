@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildCashflowReportSummary, type CashflowReportRow } from "./cashflowReport";
+import { applyCashflowVndRates, buildCashflowReportSummary, type CashflowReportRow } from "./cashflowReport";
 
 const row = (r: Partial<CashflowReportRow>): CashflowReportRow => ({
   source: "ACTUAL",
@@ -134,5 +134,19 @@ describe("buildCashflowReportSummary", () => {
     });
     expect(s.total[0].income).toBeCloseTo(14_497.45, 2);
     expect(s.total[10]).toMatchObject({ income: 11_306, outcome: 491 });
+  });
+});
+
+describe("applyCashflowVndRates", () => {
+  it("re-converts only ACTUAL rows of months that have a cash flow rate", () => {
+    const rows = [
+      row({ month: 9, amount: 1_000, amountUsdCcy: 200, amountVnd: 20_800_000 }),
+      row({ month: 8, amount: 1_000, amountUsdCcy: 200, amountVnd: 20_800_000 }),
+      row({ source: "PLAN", month: 9, amount: 5_000, amountUsdCcy: 0, amountVnd: 0 }),
+    ];
+    const out = applyCashflowVndRates(rows, new Map([["2026-09", 26_000]]));
+    expect(out[0].amount).toBeCloseTo(200 + 800, 6);
+    expect(out[1].amount).toBe(1_000);
+    expect(out[2].amount).toBe(5_000);
   });
 });

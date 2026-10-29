@@ -21,6 +21,13 @@ import {
 } from "../lib/dashboardFilters";
 import { maxSelectableMonth } from "../lib/monthRange";
 
+/** 수주 상세 1차 표의 월별 합계 행 — 열은 OrderDetailEntry와 같은 키를 써서 열 정의를 공유한다 */
+type MonthRow = Omit<OrderDetailEntry, "actualKind"> & {
+  month: number;
+  actualKind: OrderDetailEntry["actualKind"];
+  projects: OrderDetailEntry[];
+};
+
 export function OrderStatus() {
   const { t, i18n } = useTranslation(["orderStatus", "common"]);
   const lang = (i18n.language ?? "ko").slice(0, 2);
@@ -118,6 +125,59 @@ export function OrderStatus() {
     },
   ];
 
+  // 1차 표는 월별 합계 행, 행을 누르면 그 달의 프로젝트(2차 표)를 보여준다. 계획은 계획 시기, 실적·전망은
+  // 실적·전망 시기 기준 달에 잡는다. 수주 업로드(order_entries)가 없으면(fallback) 서버가 경영보고
+  // new_orders 월 합계만 주므로 2차 표 대신 "프로젝트별 데이터 없음" 안내를 보여준다.
+  const detailYear = detailQuery.data?.year ?? detailParams.year;
+  const isFallback = detailQuery.data?.fallback ?? false;
+  const monthRows = useMemo<MonthRow[]>(() => {
+    const monthOf = (d: string | null) =>
+      d && d.startsWith(`${detailYear}-`) ? Number(d.slice(5, 7)) : null;
+    const byMonth = new Map<number, { plan: number | null; actual: number | null; hasActual: boolean; projects: OrderDetailEntry[] }>();
+    const bucket = (m: number) => {
+      const cur = byMonth.get(m) ?? { plan: null, actual: null, hasActual: false, projects: [] };
+      byMonth.set(m, cur);
+      return cur;
+    };
+    for (const e of detailEntries) {
+      const pm = e.planAmount != null ? monthOf(e.planDate) : null;
+      const am = e.actualAmount != null ? monthOf(e.actualDate) : null;
+      if (pm != null) {
+        const b = bucket(pm);
+        b.plan = (b.plan ?? 0) + (e.planAmount ?? 0);
+        b.projects.push(e);
+      }
+      if (am != null) {
+        const b = bucket(am);
+        b.actual = (b.actual ?? 0) + (e.actualAmount ?? 0);
+        if (e.actualKind === "actual") b.hasActual = true;
+        if (am !== pm) b.projects.push(e);
+      }
+    }
+    return [...byMonth.entries()]
+      .sort(([a], [b]) => a - b)
+      .map(([month, b]) => {
+        const ym = `${detailYear}-${String(month).padStart(2, "0")}`;
+        return {
+          month,
+          projectName: isFallback
+            ? t("orderStatus:companyTotalMonth", { month })
+            : t("orderStatus:monthProjects", { month, count: b.projects.length }),
+          planAmount: b.plan,
+          planDate: b.plan != null ? ym : null,
+          actualAmount: b.actual,
+          actualDate: b.actual != null ? ym : null,
+          actualKind: b.hasActual ? "actual" : b.actual != null ? "forecast" : "none",
+          projects: b.projects,
+        };
+      });
+  }, [detailEntries, detailYear, isFallback, t]);
+  const [selectedMonth, setSelectedMonth] = useState<MonthRow | null>(null);
+  const monthColumns: DetailColumn<MonthRow>[] = [
+    { key: "projectName", label: t("orderStatus:period"), align: "left" },
+    ...(detailColumns.slice(1) as unknown as DetailColumn<MonthRow>[]),
+  ];
+
   if (unavailable) {
     return (
       <div style={{
@@ -172,7 +232,7 @@ export function OrderStatus() {
       border: "1px solid #e2e9f3",
       borderRadius: "6px",
       padding: "10px 12px",
-      flex: "1 1 auto",
+      flex: "0 0 auto",
       display: "flex",
       flexDirection: "column",
     }}>
@@ -197,8 +257,9 @@ export function OrderStatus() {
         </Button>
       </div>
 
-      {/* Donut chart with center label — 카드가 늘어나면 도넛도 함께 커짐 */}
-      <div style={{ flex: "1 1 148px", minHeight: "148px", position: "relative", marginBottom: "6px" }}>
+      {/* Donut chart with center label — 최대 180px로 제한. 오른쪽 열은 2행 높이를 차지해서, 도넛이 카드
+          높이만큼 커지면 작은 화면에서 확대된 것처럼 보였다(실사용자 보고). 남는 높이는 아래 주요 실적 카드가 가져간다. */}
+      <div style={{ flex: "1 1 148px", minHeight: "140px", maxHeight: "180px", position: "relative", marginBottom: "6px" }}>
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
@@ -271,7 +332,10 @@ export function OrderStatus() {
 
       <DetailModal
         open={detailOpen}
-        onClose={() => setDetailOpen(false)}
+        onClose={() => {
+          setDetailOpen(false);
+          setSelectedMonth(null);
+        }}
         title={t("orderStatus:detailTitle")}
         subtitle={t("orderStatus:detailSubtitle", {
           year: derived?.year,
@@ -293,9 +357,10 @@ export function OrderStatus() {
           </div>
         ) : (
           <DetailDataTable
-            columns={detailColumns}
-            rows={detailEntries}
-            rowKey={(row) => row.projectName}
+            columns={monthColumns}
+            rows={monthRows}
+            rowKey={(row) => String(row.month)}
+            onRowClick={(row) => setSelectedMonth(row)}
             totalLabel={t("orderStatus:total")}
             totalRow={{
               planAmount: detailTotals.plan,
@@ -303,6 +368,35 @@ export function OrderStatus() {
             }}
           />
         )}
+      </DetailModal>
+
+      {/* 2차: 선택한 달의 프로젝트별 수주 */}
+      <DetailModal
+        open={detailOpen && selectedMonth != null}
+        onClose={() => setSelectedMonth(null)}
+        title={selectedMonth ? t("orderStatus:monthDetailTitle", { month: selectedMonth.month }) : ""}
+        subtitle={t("orderStatus:detailSubtitle", {
+          year: derived?.year,
+          month: derived?.month,
+          unit: unitLabelOf(currency, unitIndex, unitLang),
+        })}
+      >
+        {isFallback ? (
+          <div style={{ padding: "32px", textAlign: "center", color: "#7c8ba3", fontSize: "12px", lineHeight: 1.6 }}>
+            {t("orderStatus:noProjectBreakdown")}
+          </div>
+        ) : selectedMonth ? (
+          <DetailDataTable
+            columns={detailColumns}
+            rows={selectedMonth.projects}
+            rowKey={(row) => row.projectName}
+            totalLabel={t("orderStatus:total")}
+            totalRow={{
+              planAmount: selectedMonth.planAmount ?? 0,
+              actualAmount: selectedMonth.actualAmount ?? 0,
+            }}
+          />
+        ) : null}
       </DetailModal>
     </div>
   );

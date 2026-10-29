@@ -196,7 +196,18 @@ export function CashFlowChart({ scope = "전체" }: { scope?: DashboardScope }) 
   const emptyRange = from > to;
   const projectSelected = filters.project !== "All";
   const compact = filters.unitIndex === 1;
-  const convert = makeConverter(filters.currency, filters.unitIndex, filters.fxRateHistory);
+  // 자금수지는 "월별 자금 환율"(purpose="cashflow")이 입력된 달이면 그 환율로 표시 통화 환산을 한다 — 서버도
+  // 그 달 VND 실적을 같은 환율로 USD 환산하므로 VND로 보면 원래 VND 금액이 그대로 나온다. 없으면 기존 환율.
+  const baseConvert = makeConverter(filters.currency, filters.unitIndex, filters.fxRateHistory);
+  const cashflowConvert = makeConverter(filters.currency, filters.unitIndex, filters.fxRateHistory, "cashflow");
+  const convert = (v: number, y?: number, m?: number) =>
+    y != null &&
+    m != null &&
+    filters.fxRateHistory.some(
+      (e) => e.purpose === "cashflow" && e.currency === filters.currency && e.year === y && e.month === m,
+    )
+      ? cashflowConvert(v, y, m)
+      : baseConvert(v, y, m);
   const unitLabel =
     filters.currency === "USD" && filters.unitIndex === 0
       ? t("cashFlowChart:thousandUsd")
