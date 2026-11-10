@@ -169,7 +169,7 @@ describe("project detail Excel current template", () => {
     const sheet = workbook.addWorksheet("4.공정별월간원가");
     sheet.addRow([
       "연도", "월",
-      "대공종 계획", "대공종 실적", "건축 계획", "건축 실적", "기계 계획", "기계 실적", "전기 계획", "전기 실적",
+      "대공종 계획(Bil.VND)", "대공종 실적", "건축 계획", "건축 실적", "기계 계획", "기계 실적", "전기 계획", "전기 실적",
       "토목 계획", "토목 실적", "조경 계획", "조경 실적", "경비 계획", "경비 실적",
     ]);
     sheet.addRow([2026, 1, 2, 99, 1.5, 99, null, null, null, null, null, null, null, null, 3, 99]);
@@ -261,11 +261,11 @@ describe("project detail Excel download → upload round trip", () => {
     const wb = new ExcelJS.Workbook();
     await wb.xlsx.load(await file.arrayBuffer());
     const ws = wb.worksheets.find((s) => s.name.startsWith("4."))!;
-    // 2행 = 2026년 1월. 기계 계획(7열) = 1.25 Bil.VND 입력, 경비 계획(15열) = 2 Bil.VND로 수정
+    // 2행 = 2026년 1월. 기계 계획(7열) = 1,250,000,000 VND 입력, 경비 계획(15열) = 2,000,000,000 VND로 수정
     expect(ws.getRow(2).getCell(1).value).toBe(2026);
-    expect(ws.getRow(2).getCell(15).value).toBe(1.5); // 외주 경비 0.5 + Expense 1 1.0
-    ws.getRow(2).getCell(7).value = 1.25;
-    ws.getRow(2).getCell(15).value = 2;
+    expect(ws.getRow(2).getCell(15).value).toBe(1_500_000_000); // 외주 경비 0.5 + Expense 1 1.0
+    ws.getRow(2).getCell(7).value = 1_250_000_000;
+    ws.getRow(2).getCell(15).value = 2_000_000_000;
     const edited = await workbookFile(wb);
 
     const parsed = await parseProjectDetailWorkbook(edited, detail, FX_RATE_VND, undefined, "시공");
@@ -274,5 +274,60 @@ describe("project detail Excel download → upload round trip", () => {
     expect(find("외주 경비")?.plan).toBe(1_000_000_000);
     expect(find("Expense 1")?.plan).toBe(1_000_000_000);
     expect(find("Contingency")).toMatchObject({ plan: 4_000_000_000, actual: 1_000_000_000 });
+  });
+
+  async function loadDownload(detail: ProjectDetail) {
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.load(await (await downloadAsFile(detail, {})).arrayBuffer());
+    return wb;
+  }
+
+  it("exports Budget Execution amounts in full VND (not multiplied by the FX rate)", async () => {
+    const detail = sampleDetail();
+    detail.costBudget = [{ category: "Direct Cost", item: "Common", budget: 10_000_000_000, plan: 2_000_000_000, actual: 1_500_000_000 }];
+    const wb = await loadDownload(detail);
+    const ws = wb.worksheets.find((s) => s.name.startsWith("6."))!;
+    expect(ws.getRow(2).getCell(4).value).toBe(10_000_000_000);
+    expect(ws.getRow(2).getCell(5).value).toBe(2_000_000_000);
+    expect(ws.getRow(2).getCell(6).value).toBe(1_500_000_000);
+  });
+
+  it("uploads monthly Budget Execution plans from sheet 6-1 and updates the cumulative plan", async () => {
+    const detail = sampleDetail();
+    detail.costBudget = [{ category: "Indirect Cost", item: "Contingency", budget: 10e9, plan: 4e9, actual: 1e9 }];
+    const wb = await loadDownload(detail);
+    const ws = wb.worksheets.find((s) => s.name.startsWith("6-1."))!;
+    expect(ws).toBeDefined();
+    // 5 items × 6 months (2026-01 ~ 2026-06)
+    expect(ws.rowCount).toBe(1 + 5 * 6);
+    let contingencyFeb = 0;
+    let expense2Mar = 0;
+    ws.eachRow((row, idx) => {
+      if (row.getCell(1).value === "Contingency" && row.getCell(3).value === 2) contingencyFeb = idx;
+      if (row.getCell(1).value === "Expense 2" && row.getCell(3).value === 3) expense2Mar = idx;
+    });
+    ws.getRow(contingencyFeb).getCell(4).value = 750_000_000;
+    ws.getRow(expense2Mar).getCell(4).value = 500_000_000;
+    ws.getRow(expense2Mar).getCell(5).value = 99; // 실적(참고)은 무시
+    const parsed = await parseProjectDetailWorkbook(await workbookFile(wb), detail, FX_RATE_VND, undefined, "시공");
+    const find = (item: string, month: number) => parsed.costBudgetMonthly?.find((r) => r.item === item && r.year === 2026 && r.month === month);
+    expect(find("Contingency", 1)).toMatchObject({ plan: 4e9, actual: 1e9 });
+    expect(find("Contingency", 2)).toMatchObject({ plan: 0.75e9, actual: null });
+    expect(find("Expense 2", 3)).toMatchObject({ plan: 0.5e9, actual: null });
+    // 기존 공정별 원가 값은 그대로
+    expect(find("외주 건축", 2)?.plan).toBe(3e9);
+    expect(find("Common", 1)?.plan).toBe(2e9);
+    expect(parsed.costBudget[0].plan).toBe(4.75e9);
+  });
+
+  it("keeps a Common plan edited in sheet 6-1 when sheet 4 is unchanged", async () => {
+    const detail = sampleDetail();
+    const wb = await loadDownload(detail);
+    const ws = wb.worksheets.find((s) => s.name.startsWith("6-1."))!;
+    ws.eachRow((row) => {
+      if (row.getCell(1).value === "Common" && row.getCell(3).value === 1) row.getCell(4).value = 2_500_000_000;
+    });
+    const parsed = await parseProjectDetailWorkbook(await workbookFile(wb), detail, FX_RATE_VND, undefined, "시공");
+    expect(parsed.costBudgetMonthly?.find((r) => r.item === "Common" && r.month === 1)?.plan).toBe(2.5e9);
   });
 });

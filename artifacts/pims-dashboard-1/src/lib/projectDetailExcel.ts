@@ -11,6 +11,7 @@ import type {
   ProjectDetailSalesPoint,
 } from "@workspace/api-client-react";
 import type { DataValidation, Worksheet } from "exceljs";
+import { lastClosedYearMonth } from "./monthRange";
 
 /** exceljs 4.4는 런타임에 worksheet.dataValidations(범위 단위 유효성 검사)를 제공하지만 타입 정의
  * (index.d.ts)에는 빠져 있다 — 타입만 보완한다. */
@@ -28,6 +29,7 @@ type NumberedSheetKey =
   | "costEstimation"
   | "costBudget"
   | "costBudgetMonthly"
+  | "costBudgetItemMonthly"
   | "outsourcing"
   | "cashflow"
   | "cogsMonthly"
@@ -46,6 +48,7 @@ const SHEET_PREFIX_BY_TYPE: Record<ProjectBusinessType, Partial<Record<NumberedS
     costBudgetMonthly: "4",
     costEstimation: "5",
     costBudget: "6",
+    costBudgetItemMonthly: "6-1",
     outsourcing: "7",
     cashflow: "8",
   },
@@ -69,6 +72,7 @@ const SHEET_NAME_I18N: Record<SheetKey, Record<ExcelLang, string>> = {
   costEstimation: { ko: "원가율", en: "Cost Rate", vi: "Tỷ lệ chi phí" },
   costBudget: { ko: "예산집행", en: "Budget Execution", vi: "Thực hiện ngân sách" },
   costBudgetMonthly: { ko: "공정별월간원가", en: "Monthly Cost by Process", vi: "Chi phí hàng tháng theo công tác" },
+  costBudgetItemMonthly: { ko: "예산집행월별", en: "Budget Execution Monthly", vi: "Ngân sách theo tháng" },
   outsourcing: { ko: "외주자재", en: "Outsourcing & Material", vi: "Thầu phụ & Vật tư" },
   cashflow: { ko: "월별자금", en: "Monthly Cashflow", vi: "Dòng tiền hàng tháng" },
   cogsMonthly: { ko: "월별매출원가", en: "Monthly COGS", vi: "Giá vốn hàng tháng" },
@@ -93,39 +97,46 @@ const HEADERS_I18N: Record<Exclude<SheetKey, "guide" | "overview">, Record<Excel
     vi: ["Tên mốc", "KH bắt đầu(YYYY-MM-DD)", "KH kết thúc(YYYY-MM-DD)", "TH bắt đầu(YYYY-MM-DD)", "TH kết thúc(YYYY-MM-DD)"],
   },
   costEstimation: {
-    ko: ["구분(bidding/execution/completion)", "기준연도", "기준월", "도급액(Bil.VND)", "원가(Bil.VND)"],
-    en: ["Kind(bidding/execution/completion)", "Base Year", "Base Month", "Contract Amount(Bil.VND)", "Cost(Bil.VND)"],
-    vi: ["Loại(bidding/execution/completion)", "Năm cơ sở", "Tháng cơ sở", "Giá trị HĐ(Bil.VND)", "Chi phí(Bil.VND)"],
+    ko: ["구분(bidding/execution/completion)", "기준연도", "기준월", "도급액(VND)", "원가(VND)"],
+    en: ["Kind(bidding/execution/completion)", "Base Year", "Base Month", "Contract Amount(VND)", "Cost(VND)"],
+    vi: ["Loại(bidding/execution/completion)", "Năm cơ sở", "Tháng cơ sở", "Giá trị HĐ(VND)", "Chi phí(VND)"],
   },
   costBudget: {
-    ko: ["Level 1", "Level 2", "비고", "예산(Bil.VND)", "누계 계획(Bil.VND)", "누계 실적(Bil.VND)"],
-    en: ["Level 1", "Level 2", "Note", "Budget(Bil.VND)", "Cumulative Plan(Bil.VND)", "Cumulative Actual(Bil.VND)"],
-    vi: ["Level 1", "Level 2", "Ghi chú", "Ngân sách(Bil.VND)", "KH lũy kế(Bil.VND)", "TH lũy kế(Bil.VND)"],
+    ko: ["Level 1", "Level 2", "비고", "예산(VND)", "누계 계획(VND)", "누계 실적(VND)"],
+    en: ["Level 1", "Level 2", "Note", "Budget(VND)", "Cumulative Plan(VND)", "Cumulative Actual(VND)"],
+    vi: ["Level 1", "Level 2", "Ghi chú", "Ngân sách(VND)", "KH lũy kế(VND)", "TH lũy kế(VND)"],
   },
   costBudgetMonthly: {
-    ko: ["항목", "연도", "월", "계획(Bil.VND)", "실적(Bil.VND)"],
-    en: ["Item", "Year", "Month", "Plan(Bil.VND)", "Actual(Bil.VND)"],
-    vi: ["Hạng mục", "Năm", "Tháng", "KH(Bil.VND)", "TH(Bil.VND)"],
+    ko: ["항목", "연도", "월", "계획(VND)", "실적(VND)"],
+    en: ["Item", "Year", "Month", "Plan(VND)", "Actual(VND)"],
+    vi: ["Hạng mục", "Năm", "Tháng", "KH(VND)", "TH(VND)"],
+  },
+  // 시공 "6-1" 시트: 예산 집행 카드 안 "월별 계획/실적" 표(항목×연도×월)와 동일. 실적은 PIMSVINA 동기화
+  // 값이라 참고용으로만 내보내고 업로드 시 무시한다.
+  costBudgetItemMonthly: {
+    ko: ["항목", "연도", "월", "계획(VND)", "실적(VND, 참고)"],
+    en: ["Item", "Year", "Month", "Plan(VND)", "Actual(VND, ref.)"],
+    vi: ["Hạng mục", "Năm", "Tháng", "KH(VND)", "TH(VND, tham khảo)"],
   },
   outsourcing: {
-    ko: ["대공종", "세부공종", "업체", "구분", "계약일", "차수", "예산(Bil.VND)", "실행예산(Bil.VND)", "기성확정(Bil.VND)", "당월(Bil.VND)", "누계(Bil.VND)"],
-    en: ["Trade Group", "Trade", "Vendor", "Category", "Contract Date", "Change No.", "Budget(Bil.VND)", "Executed Budget(Bil.VND)", "Resolved(Bil.VND)", "This Month(Bil.VND)", "Cumulative(Bil.VND)"],
-    vi: ["Đại công tác", "Công tác chi tiết", "Nhà thầu", "Phân loại", "Ngày HĐ", "Lần thay đổi", "Ngân sách(Bil.VND)", "NS thực hiện(Bil.VND)", "Xác nhận(Bil.VND)", "Tháng này(Bil.VND)", "Lũy kế(Bil.VND)"],
+    ko: ["대공종", "세부공종", "업체", "구분", "계약일", "차수", "예산(VND)", "실행예산(VND)", "기성확정(VND)", "당월(VND)", "누계(VND)"],
+    en: ["Trade Group", "Trade", "Vendor", "Category", "Contract Date", "Change No.", "Budget(VND)", "Executed Budget(VND)", "Resolved(VND)", "This Month(VND)", "Cumulative(VND)"],
+    vi: ["Đại công tác", "Công tác chi tiết", "Nhà thầu", "Phân loại", "Ngày HĐ", "Lần thay đổi", "Ngân sách(VND)", "NS thực hiện(VND)", "Xác nhận(VND)", "Tháng này(VND)", "Lũy kế(VND)"],
   },
   cashflow: {
-    ko: ["연도", "월", "수입(Bil.VND)", "지출(Bil.VND)", "보유현금(Bil.VND)", "기성 확정(Bil.VND)"],
-    en: ["Year", "Month", "Cash In(Bil.VND)", "Cash Out(Bil.VND)", "Cash Equivalent(Bil.VND)", "Confirmed Progress(Bil.VND)"],
-    vi: ["Năm", "Tháng", "Thu(Bil.VND)", "Chi(Bil.VND)", "Tiền mặt tồn(Bil.VND)", "Xác nhận(Bil.VND)"],
+    ko: ["연도", "월", "수입(VND)", "지출(VND)", "보유현금(VND)", "기성 확정(VND)"],
+    en: ["Year", "Month", "Cash In(VND)", "Cash Out(VND)", "Cash Equivalent(VND)", "Confirmed Progress(VND)"],
+    vi: ["Năm", "Tháng", "Thu(VND)", "Chi(VND)", "Tiền mặt tồn(VND)", "Xác nhận(VND)"],
   },
   cogsMonthly: {
-    ko: ["연도", "월", "회계 매출원가(Bil.VND)", "집행 매출원가 WIP(Bil.VND)"],
-    en: ["Year", "Month", "Accounting COGS(Bil.VND)", "Executed COGS WIP(Bil.VND)"],
-    vi: ["Năm", "Tháng", "Giá vốn kế toán(Bil.VND)", "Giá vốn thực hiện WIP(Bil.VND)"],
+    ko: ["연도", "월", "회계 매출원가(VND)", "집행 매출원가 WIP(VND)"],
+    en: ["Year", "Month", "Accounting COGS(VND)", "Executed COGS WIP(VND)"],
+    vi: ["Năm", "Tháng", "Giá vốn kế toán(VND)", "Giá vốn thực hiện WIP(VND)"],
   },
   salesMonthly: {
-    ko: ["연도", "월", "매출 계획(Bil.VND)", "매출 실적(Bil.VND)"],
-    en: ["Year", "Month", "Sales Plan(Bil.VND)", "Sales Actual(Bil.VND)"],
-    vi: ["Năm", "Tháng", "DT kế hoạch(Bil.VND)", "DT thực hiện(Bil.VND)"],
+    ko: ["연도", "월", "매출 계획(VND)", "매출 실적(VND)"],
+    en: ["Year", "Month", "Sales Plan(VND)", "Sales Actual(VND)"],
+    vi: ["Năm", "Tháng", "DT kế hoạch(VND)", "DT thực hiện(VND)"],
   },
 };
 
@@ -149,9 +160,9 @@ const PROCESS_COST_COLUMNS: {
 ];
 
 const PROCESS_COST_HEADER_SUFFIX: Record<ExcelLang, { plan: string; actual: string }> = {
-  ko: { plan: "계획(Bil.VND)", actual: "실적(Bil.VND, 참고)" },
-  en: { plan: "Plan(Bil.VND)", actual: "Actual(Bil.VND, ref.)" },
-  vi: { plan: "KH(Bil.VND)", actual: "TH(Bil.VND, tham khảo)" },
+  ko: { plan: "계획(VND)", actual: "실적(VND, 참고)" },
+  en: { plan: "Plan(VND)", actual: "Actual(VND, ref.)" },
+  vi: { plan: "KH(VND)", actual: "TH(VND, tham khảo)" },
 };
 
 function processCostHeader(lang: ExcelLang): string[] {
@@ -169,7 +180,13 @@ type Cell = string | number | null;
  * 없으면 null을 반환해 호출하는 쪽이 fxRateVnd(현재/계약 환율)로 폴백하게 한다. */
 export type MonthlyVndRateLookup = (year: number, month: number) => number | null;
 
-/** 천USD → Bil.VND 변환 (Excel 출력용). year/month와 monthlyRate가 있으면 그 달 환율을 우선 쓴다
+/** 소수 2자리 반올림 — VND 금액의 부동소수 오차(예: 36281120911.170004) 제거용. */
+function round2(v: number): number {
+  return Math.round(v * 100) / 100;
+}
+
+/** 천USD → VND 변환 (Excel 출력용). Excel 금액 단위는 VND 전체 금액이다(요청: Bil.VND 대신 전체 VND로
+ * 내보내고 입력). year/month와 monthlyRate가 있으면 그 달 환율을 우선 쓴다
  * (월별 매출/매출원가 시트 전용 — 다른 시트는 기존처럼 year/month 없이 현재/계약 환율만 쓴다). */
 function toVnd(
   v: number | null | undefined,
@@ -180,27 +197,48 @@ function toVnd(
 ): number | null {
   if (v == null) return null;
   const rate = (year != null && month != null ? monthlyRate?.(year, month) : null) ?? fxRateVnd;
-  return v * rate / 1_000_000;
+  return round2(v * rate * 1_000);
 }
 
-/** VND 원본 값 → Bil.VND 변환 (환율 곱하지 않음 — 이미 VND이므로 1e9로만 나눔).
- * pd_overview.contractAmount, pd_cost_estimation의 execution/completion.contractAmount처럼
- * "천 USD"가 아니라 VND 원본 그대로 저장되는 필드용. */
+/** VND 원본으로 저장되는 필드(pd_overview.contractAmount, pd_cost_budget, pd_cost_budget_monthly,
+ * pd_outsourcing 등) — Excel도 VND라 그대로 내보낸다. */
 function toVndRaw(v: number | null | undefined): number | null {
   if (v == null) return null;
-  return v / 1_000_000_000;
+  return round2(v);
 }
 
-/** Bil.VND → VND 원본 값 역변환 (toVndRaw()의 반대) */
+/** Excel VND → VND 원본 저장값 (toVndRaw()의 반대). */
 function fromVndRaw(v: number | null): number | null {
   if (v == null) return null;
-  return v * 1_000_000_000;
+  return round2(v);
+}
+
+/** 예전 양식(헤더/라벨에 "Bil.VND" 표기)은 금액이 10억 VND 단위라 업로드 시 1e9를 곱해 VND로 맞춘다. */
+const BIL = 1_000_000_000;
+const isBilLabel = (s: string | null) => s != null && /bil\.?\s*vnd/i.test(s);
+
+/** 예산 집행 "월별 계획/실적" 항목 — 데이터 입력 탭 MONTHLY_BUDGET_ITEMS와 동일. */
+const MONTHLY_BUDGET_ITEMS = ["Outsourcing", "Common", "Expense 1", "Expense 2", "Contingency"] as const;
+
+/** 데이터 입력 탭 "Budget Execution Status"와 같은 규칙의 누계: 프로젝트 시작 ~ 기준월(마감월) 월별 값 합계.
+ * 그 항목의 월별 값이 하나도 없으면 undefined(호출 측이 스냅샷 값으로 폴백). */
+function cumulativeFromMonthly(
+  rows: ProjectDetailCostBudgetMonthly[],
+  item: string,
+  field: "plan" | "actual",
+  base: { year: number; month: number },
+): number | undefined {
+  const itemRows = rows.filter((r) => r.item === item);
+  if (!itemRows.some((r) => r[field] != null && r[field] !== 0)) return undefined;
+  return itemRows
+    .filter((r) => r.year < base.year || (r.year === base.year && r.month <= base.month))
+    .reduce<number>((sum, r) => sum + (r[field] ?? 0), 0);
 }
 
 const THIN_BORDER = { style: "thin" as const, color: { argb: "FFC9D3E0" } };
 const ALL_BORDERS = { top: THIN_BORDER, left: THIN_BORDER, bottom: THIN_BORDER, right: THIN_BORDER };
-/** 천 단위 구분 + 소수점 2자리(금액용) */
-const NUMFMT_MONEY = "#,##0.00";
+/** 천 단위 구분(VND 금액용 — 소수점 없이 표시, 셀 값은 그대로 보존) */
+const NUMFMT_MONEY = "#,##0";
 /** 천 단위 구분, 소수점 없음(연도/월 등 순수 정수용 — 연도에 "2,026"처럼 쉼표 안 붙게 별도 처리) */
 const NUMFMT_INT = "0";
 /** 소수점 1자리(공정률 % 등) */
@@ -217,10 +255,12 @@ const GUIDE_TEXT: Record<ExcelLang, {
       ["양식 버전", new Date().toISOString().slice(0, 7)],
       ["프로젝트", projectName],
       ["사업 유형", bt],
-      ["금액 단위", "Bil. VND (입력값은 저장 시 천 USD로 환산됩니다)"],
+      ["금액 단위", "VND 전체 금액 (예: 1,250,000,000). 10억 단위(Bil.VND)로 입력하지 마세요."],
       ["권장 입력 순서", flow],
       ["작성 기준", "빈 셀은 미입력으로 처리됩니다. 월별 표는 연도·월 중복 없이 입력해 주세요."],
-      ["예산 집행", "Level 1·Level 2 구조로 입력하며, 월별 계획·실적은 4-1 시트에서 항목·연도·월별로 관리합니다."],
+      ["예산 집행", bt === "시공"
+        ? "Level 1·Level 2 구조로 예산만 입력합니다. 월별 계획은 6-1 시트(항목·연도·월)에 입력하며, 누계 계획/실적은 마감월까지 자동 합산됩니다."
+        : "Level 1·Level 2 구조로 입력하며, 월별 계획·실적은 월별 항목 시트에서 항목·연도·월별로 관리합니다."],
       ...(bt === "시공"
         ? [["공정별 원가", "연도·월별로 대공종(대공종/건축/기계/전기/토목/조경/경비) 계획 열만 입력합니다. 실적(참고) 열은 업로드 시 반영되지 않습니다."] as [string, string]]
         : []),
@@ -234,10 +274,12 @@ const GUIDE_TEXT: Record<ExcelLang, {
       ["Template Version", new Date().toISOString().slice(0, 7)],
       ["Project", projectName],
       ["Business Type", bt === "시공" ? "Construction" : "Service"],
-      ["Amount Unit", "Bil. VND (converted to thousand USD on save)"],
+      ["Amount Unit", "Full VND amount (e.g. 1,250,000,000). Do not enter in billions (Bil.VND)."],
       ["Recommended Order", flow],
       ["Rules", "Blank cells are treated as not entered. Monthly tables must not have duplicate year/month rows."],
-      ["Budget Execution", "Enter as Level 1/Level 2; monthly plan/actual are managed by item/year/month in sheet 4-1."],
+      ["Budget Execution", bt === "시공"
+        ? "Enter only the budget by Level 1/Level 2. Enter monthly plans in sheet 6-1 (item/year/month); cumulative plan/actual are summed automatically up to the closed month."
+        : "Enter as Level 1/Level 2; monthly plan/actual are managed by item/year/month in the monthly item sheet."],
       ...(bt === "시공"
         ? [["Cost by Process", "Enter only the Plan columns per trade group (Major work/Architecture/Mechanical/Electrical/Civil/Landscaping/Expense) by year/month. Actual (ref.) columns are ignored on upload."] as [string, string]]
         : []),
@@ -251,10 +293,12 @@ const GUIDE_TEXT: Record<ExcelLang, {
       ["Phiên bản mẫu", new Date().toISOString().slice(0, 7)],
       ["Dự án", projectName],
       ["Loại hình", bt === "시공" ? "Thi công" : "Dịch vụ"],
-      ["Đơn vị tiền tệ", "Bil. VND (tự động quy đổi sang nghìn USD khi lưu)"],
+      ["Đơn vị tiền tệ", "VND đầy đủ (vd: 1,250,000,000). Không nhập theo đơn vị tỷ (Bil.VND)."],
       ["Thứ tự nhập khuyến nghị", flow],
       ["Quy tắc nhập", "Ô trống coi như chưa nhập. Bảng theo tháng không được trùng năm/tháng."],
-      ["Thực hiện ngân sách", "Nhập theo cấu trúc Level 1/Level 2; kế hoạch/thực hiện theo tháng quản lý theo hạng mục/năm/tháng ở sheet 4-1."],
+      ["Thực hiện ngân sách", bt === "시공"
+        ? "Chỉ nhập ngân sách theo Level 1/Level 2. Kế hoạch theo tháng nhập ở sheet 6-1 (hạng mục/năm/tháng); KH/TH lũy kế tự cộng đến tháng đã chốt."
+        : "Nhập theo cấu trúc Level 1/Level 2; kế hoạch/thực hiện theo tháng quản lý theo hạng mục/năm/tháng ở sheet theo tháng."],
       ...(bt === "시공"
         ? [["Chi phí theo công tác", "Chỉ nhập các cột KH theo đại công tác (Hạng mục chính/Kiến trúc/Cơ khí/Điện/Xây dựng/Cảnh quan/Chi phí) theo năm/tháng. Cột TH (tham khảo) không được cập nhật khi upload."] as [string, string]]
         : []),
@@ -335,7 +379,7 @@ export async function downloadProjectDetailTemplate(
       });
     }
     ws.columns.forEach((col) => {
-      col.width = 16;
+      col.width = 20;
     });
     return ws;
   };
@@ -358,7 +402,7 @@ export async function downloadProjectDetailTemplate(
     const ws = wb.addWorksheet(sheetTabName("guide", lang, businessType));
     const flowKeys: SheetKey[] =
       businessType === "시공"
-        ? ["overview", "progress", "salesMonthly", "milestones", "costBudgetMonthly", "costEstimation", "costBudget", "outsourcing", "cashflow"]
+        ? ["overview", "progress", "salesMonthly", "milestones", "costBudgetMonthly", "costEstimation", "costBudget", "costBudgetItemMonthly", "outsourcing", "cashflow"]
         : ["overview", "costEstimation", "salesMonthly", "cogsMonthly", "costBudget", "outsourcing", "cashflow"];
     const flow = flowKeys.map((k) => sheetTabName(k, lang, businessType)).join("  →  ");
     ws.mergeCells("A1:D1");
@@ -404,7 +448,7 @@ export async function downloadProjectDetailTemplate(
       // 도급액은 VND 원본 그대로 저장되는 필드라서 tv()(천USD→BilVND, 환율 곱함)가 아니라
       // toVndRaw()(이미 VND이므로 1e9로만 나눔)를 써야 한다 — tv()를 쓰면 환율을 한 번 더 곱해
       // 값이 수만 배 부풀려진다.
-      ["도급액(Bil.VND)", toVndRaw(ov.contractAmount)],
+      ["도급액(VND)", toVndRaw(ov.contractAmount)],
       ["공사규모", ov.scale ?? null],
       ["위치", ov.location ?? null],
       ["대지면적", ov.siteArea ?? null],
@@ -421,10 +465,10 @@ export async function downloadProjectDetailTemplate(
       ["VE 조건", ov.veTerms ?? null],
       ["작성 기준월(YYYY-MM)", ov.asOfMonth ?? null],
       ["수행내용", ov.scope ?? null],
-      ["연간 매출 목표(Bil.VND)", tv(ov.revenueAnnualTarget)],
-      ["누계 매출 실적(Bil.VND)", tv(ov.revenueTotal)],
-      ["Cash Confirmed(Bil.VND)", tv(ov.cashConfirmed)],
-      ["Cash Collection(Bil.VND)", tv(ov.cashCollection)],
+      ["연간 매출 목표(VND)", tv(ov.revenueAnnualTarget)],
+      ["누계 매출 실적(VND)", tv(ov.revenueTotal)],
+      ["Cash Confirmed(VND)", tv(ov.cashConfirmed)],
+      ["Cash Collection(VND)", tv(ov.cashCollection)],
     ];
     for (const [k, v] of rows) {
       const r = ws.addRow([k, v]);
@@ -465,18 +509,76 @@ export async function downloadProjectDetailTemplate(
     }),
     { intCols: [2, 3], moneyCols: [4, 5] },
   );
-  // budget/actual은 PIMSVINA 동기화 값(VND 원본, toVndRaw())이고 plan은 수기 입력(천 USD, tv()) —
-  // 서로 다른 단위가 한 행에 섞여 있는 costBudgetMonthly와 동일한 이유(위 주석 참고).
+  // budget/plan/actual 모두 VND 원본(toVndRaw()). plan은 예전에 tv()(천USD×환율)로 내보내서
+  // "36,281,120,911"처럼 Bil.VND가 아닌 원본 VND × 환율/1e6 값이 찍히던 버그가 있었다(실사용자 보고).
+  // 누계 계획/실적은 화면 "Budget Execution Status"와 같은 규칙 — 프로젝트 시작~마감월(lastClosedYearMonth)
+  // 월별 값(costBudgetMonthly) 합계, 월별 값이 없는 항목만 스냅샷(pd_cost_budget.plan/actual)으로 폴백.
+  const budgetBase = lastClosedYearMonth();
+  const budgetBaseLabel = `~${budgetBase.year}.${String(budgetBase.month).padStart(2, "0")}`;
+  const cbmAll = detail.costBudgetMonthly ?? [];
+  const budgetHeader = HEADERS_I18N.costBudget[lang].map((h, i) =>
+    i === 4 || i === 5 ? h.replace(/\(VND\)$/, `(VND, ${budgetBaseLabel})`) : h,
+  );
   const costBudgetSheet = addSheet(
     "costBudget",
-    detail.costBudget.map((b) => [b.category ?? null, b.item, null, toVndRaw(b.budget), tv(b.plan), toVndRaw(b.actual)]),
+    detail.costBudget.map((b) => {
+      const cumPlan = cumulativeFromMonthly(cbmAll, b.item, "plan", budgetBase);
+      const cumActual = cumulativeFromMonthly(cbmAll, b.item, "actual", budgetBase);
+      return [
+        b.category ?? null,
+        b.item,
+        null,
+        toVndRaw(b.budget),
+        toVndRaw(cumPlan === undefined ? b.plan : cumPlan),
+        toVndRaw(cumActual === undefined ? b.actual : cumActual),
+      ];
+    }),
     { moneyCols: [4, 5, 6] },
+    budgetHeader,
   );
   sheetValidations(costBudgetSheet).add("A2:A1000", {
     type: "list",
     allowBlank: true,
     formulae: ['"Direct Cost,Indirect Cost"'],
   });
+  if (businessType === "시공") {
+    // 6-1: 예산 집행 월별 계획(항목×연도×월). 착공월~준공월(없으면 데이터 범위) 전체 행을 미리 만들어
+    // 두어 빈 달에도 바로 입력해 업로드할 수 있게 한다(요청: 월별 업로드). 범위 밖에 저장된 값도 포함.
+    const ymIdx = (v: string | null | undefined) => {
+      const m = /^(\d{4})-(\d{1,2})/.exec(v ?? "");
+      return m ? Number(m[1]) * 12 + Number(m[2]) - 1 : null;
+    };
+    const itemRows = cbmAll.filter((r) => (MONTHLY_BUDGET_ITEMS as readonly string[]).includes(r.item));
+    const dataIdx = itemRows.map((r) => r.year * 12 + r.month - 1);
+    const fallbackStart = budgetBase.year * 12;
+    const startIdx = ymIdx(detail.overview.startDate) ?? (dataIdx.length > 0 ? Math.min(...dataIdx) : fallbackStart);
+    const endIdx = ymIdx(detail.overview.endDate) ?? (dataIdx.length > 0 ? Math.max(...dataIdx) : startIdx + 11);
+    const idxSet = new Set<number>(dataIdx);
+    for (let idx = startIdx; idx <= endIdx && idx - startIdx < 120; idx++) idxSet.add(idx);
+    const months = [...idxSet].sort((a, b) => a - b);
+    const rows: Cell[][] = [];
+    for (const item of MONTHLY_BUDGET_ITEMS) {
+      for (const idx of months) {
+        const year = Math.floor(idx / 12);
+        const month = (idx % 12) + 1;
+        const r = itemRows.find((x) => x.item === item && x.year === year && x.month === month);
+        rows.push([item, year, month, toVndRaw(r?.plan), toVndRaw(r?.actual)]);
+      }
+    }
+    const ws = addSheet("costBudgetItemMonthly", rows, { intCols: [2, 3], moneyCols: [4, 5] });
+    sheetValidations(ws).add("A2:A5000", {
+      type: "list",
+      allowBlank: false,
+      formulae: [`"${MONTHLY_BUDGET_ITEMS.join(",")}"`],
+    });
+    const firstDataRow = sectionTitles.costBudgetItemMonthly ? 3 : 2;
+    ws.getColumn(5).eachCell((cell, rowNumber) => {
+      if (rowNumber < firstDataRow) return;
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF1F3F6" } };
+      cell.font = { color: { argb: "FF6B7685" } };
+    });
+    ws.views = [{ state: "frozen", xSplit: 0, ySplit: firstDataRow - 1 }];
+  }
   // pd_cost_budget_monthly.plan/actual은 전부 VND 원본으로 통일됐다 — plan도 toVndRaw()를 써야 한다
   // (예전에 tv()로 내보내 계획이 "천 USD × 환율"로 부풀려져 1억 단위 숫자로 찍히던 버그).
   if (businessType === "시공") {
@@ -697,7 +799,7 @@ function cellYmd(v: unknown): string | null {
 
 export class ExcelParseError extends Error {}
 
-/** Bil.VND → 천USD 역변환 (Excel 업로드용). year/month와 monthlyRate가 있으면 그 달 환율을 우선 쓴다
+/** VND → 천USD 역변환 (Excel 업로드용). year/month와 monthlyRate가 있으면 그 달 환율을 우선 쓴다
  * (toVnd()의 정확한 역변환 — 내보낼 때 쓴 환율 그대로 되돌려야 왕복(다운로드→업로드)이 어긋나지 않는다). */
 function fromVnd(
   v: number | null,
@@ -708,7 +810,7 @@ function fromVnd(
 ): number | null {
   if (v == null) return null;
   const rate = (year != null && month != null ? monthlyRate?.(year, month) : null) ?? fxRateVnd;
-  return v * 1_000_000 / rate;
+  return v / 1_000 / rate;
 }
 
 /**
@@ -741,9 +843,26 @@ export async function parseProjectDetailWorkbook(
     return wb.worksheets.find((ws) => variants.has(ws.name.trim()));
   };
 
+  // 현재 읽고 있는 시트의 금액 배율 — 새 양식은 VND 전체 금액(1), 예전 양식(헤더/라벨에 "Bil.VND")은
+  // 10억 단위라 1e9. rowsOf()가 시트를 읽을 때마다 갱신하고, 금액 셀은 반드시 num()으로 읽는다.
+  let scale = 1;
+  const num = (v: unknown): number | null => {
+    const n = cellNum(v);
+    return n == null ? null : n * scale;
+  };
+
   const rowsOf = (key: SheetKey, skipHeader: boolean): unknown[][] | null => {
     const ws = findSheet(key);
+    scale = 1;
     if (!ws) return null;
+    // 헤더(1~2행 — 배너가 있으면 2행) 또는 개요 시트의 A열 라벨에 "Bil.VND"가 있으면 예전 양식.
+    let legacyBil = false;
+    ws.eachRow({ includeEmpty: false }, (row, idx) => {
+      if (legacyBil) return;
+      const cells = idx <= 2 ? (row.values as unknown[]) : [row.getCell(1).value];
+      if (cells.some((v) => isBilLabel(cellStr(v)))) legacyBil = true;
+    });
+    scale = legacyBil ? BIL : 1;
     // 다운로드 시 "데이터 입력" 탭과 같은 제목 배너를 1행에 넣었으면(sectionTitles), 그 배너 행은
     // 병합 셀이라 값이 1칸에만 들어있다 — 실제 헤더는 1칸 그대로인 일반 행과 구분해서 2행부터로
     // 밀어준다. 배너가 없는(예전) 양식은 1행이 그대로 헤더라 동작이 바뀌지 않는다.
@@ -770,13 +889,13 @@ export async function parseProjectDetailWorkbook(
     return rows;
   };
 
-  const fv = (v: unknown) => fromVnd(cellNum(v), fxRateVnd);
+  const fv = (v: unknown) => fromVnd(num(v), fxRateVnd);
   // 월별 매출/매출원가 시트 전용 — 그 달 "월별 매출 환율 설정"이 있으면 우선 적용한다. Plan 열은
   // purpose="plan" 트랙(fvmPlan), Actual 열은 purpose="actual_forecast" 트랙(fvm)을 쓴다.
   const fvm = (v: unknown, year: number, month: number) =>
-    fromVnd(cellNum(v), fxRateVnd, year, month, monthlyVndRate);
+    fromVnd(num(v), fxRateVnd, year, month, monthlyVndRate);
   const fvmPlan = (v: unknown, year: number, month: number) =>
-    fromVnd(cellNum(v), fxRateVnd, year, month, monthlyVndRatePlan ?? monthlyVndRate);
+    fromVnd(num(v), fxRateVnd, year, month, monthlyVndRatePlan ?? monthlyVndRate);
 
   const result: ProjectDetail = { ...existing, photos: existing.photos };
 
@@ -796,8 +915,8 @@ export async function parseProjectDetailWorkbook(
         startDate: cellYmd(map.get("착공일")) ?? null,
         endDate: cellYmd(map.get("준공일")) ?? null,
         // 도급액은 VND 원본 그대로 저장되므로 fv()(BilVND→천USD, 환율로 나눔)가 아니라
-        // fromVndRaw()(BilVND→VND, 1e9만 곱함)를 써야 한다.
-        contractAmount: fromVndRaw(cellNum(map.get("도급액"))) ?? null,
+        // fromVndRaw()(Excel VND 그대로 저장)를 써야 한다.
+        contractAmount: fromVndRaw(num(map.get("도급액"))) ?? null,
         scale: cellStr(map.get("공사규모")) ?? null,
       };
       const overviewTextFields = [
@@ -941,12 +1060,48 @@ export async function parseProjectDetailWorkbook(
           // budget은 VND 원본(toVndRaw() 반대인 fromVndRaw()) — export와 동일 단위(위 costBudgetSheet
           // 주석 참고). "누계 계획/실적" 두 컬럼은 확인용으로만 내보내며(다른 화면에서 자동 계산되거나
           // 동기화로 갱신되는 값이라), 기존과 동일하게 업로드 시에는 무시하고 기존 값을 보존한다.
-          budget: hierarchyLayout ? fromVndRaw(cellNum(r[3])) : fv(r[2]),
+          budget: hierarchyLayout ? fromVndRaw(num(r[3])) : fv(r[2]),
           plan: hierarchyLayout ? previous?.plan ?? null : fv(r[3]),
           actual: hierarchyLayout ? previous?.actual ?? null : fv(r[4]),
         });
       });
       result.costBudget = out;
+    }
+  }
+
+  // 시공 6-1: 예산 집행 월별 계획(항목×연도×월). 계획만 반영하고 실적(참고) 열은 무시한다(PIMSVINA 동기화 값).
+  // 공정별 원가 시트(4)보다 먼저 반영한다 — 4번 시트의 "경비"는 Expense 1/2를 뺀 나머지를 외주 경비에
+  // 저장하므로 여기서 바뀐 Expense 1/2 값을 기준으로 계산돼야 한다.
+  if (businessType === "시공") {
+    const rows = rowsOf("costBudgetItemMonthly", true);
+    if (rows) {
+      const sheetKo = SHEET_NAME_I18N.costBudgetItemMonthly.ko;
+      const out: ProjectDetailCostBudgetMonthly[] = (result.costBudgetMonthly ?? []).map((r) => ({ ...r }));
+      const seen = new Set<string>();
+      rows.forEach((r, i) => {
+        const itemRaw = cellStr(r[0]);
+        const item = MONTHLY_BUDGET_ITEMS.find((x) => x.toLowerCase() === (itemRaw ?? "").trim().toLowerCase());
+        if (!item) {
+          throw new ExcelParseError(`[${sheetKo}] ${i + 2}행: 항목은 ${MONTHLY_BUDGET_ITEMS.join(", ")} 중 하나여야 합니다. (${itemRaw ?? ""})`);
+        }
+        const year = cellNum(r[1]);
+        const month = cellNum(r[2]);
+        if (year == null || month == null) throw new ExcelParseError(`[${sheetKo}] ${i + 2}행: 연도/월이 비어 있습니다.`);
+        if (!Number.isInteger(year) || !Number.isInteger(month)) {
+          throw new ExcelParseError(`[${sheetKo}] ${i + 2}행: 연도/월은 정수여야 합니다. (${year}/${month})`);
+        }
+        if (month < 1 || month > 12) throw new ExcelParseError(`[${sheetKo}] ${i + 2}행: 월(${month})이 올바르지 않습니다.`);
+        const key = `${item}:${year}-${month}`;
+        if (seen.has(key)) {
+          throw new ExcelParseError(`[${sheetKo}] 같은 항목과 월(${item}, ${year}.${String(month).padStart(2, "0")})이 중복 입력되었습니다.`);
+        }
+        seen.add(key);
+        const plan = fromVndRaw(num(r[3]));
+        const idx = out.findIndex((x) => x.item === item && x.year === year && x.month === month);
+        if (idx >= 0) out[idx] = { ...out[idx], plan };
+        else if (plan != null) out.push({ item, year, month, plan, actual: null });
+      });
+      result.costBudgetMonthly = out;
     }
   }
 
@@ -957,7 +1112,11 @@ export async function parseProjectDetailWorkbook(
     // 이 시트에 없는 항목(Expense/Contingency/Outsourcing 등 예산 집행 월별 항목)은 기존 값을 유지한다.
     const isProcessLayout = businessType === "시공" && rows != null && rows.length > 0 && cellNum(rows[0][0]) != null;
     if (rows && isProcessLayout) {
-      const out: ProjectDetailCostBudgetMonthly[] = (existing.costBudgetMonthly ?? []).map((r) => ({ ...r }));
+      // 6-1 시트에서 이미 반영된 값(result) 위에 덧씌운다. "Common"과 "경비(Expense 1/2 포함)"는 6-1과
+      // 이 시트 양쪽에 나오므로, 이 시트 값이 다운로드 당시(existing)와 같으면(=수정 안 함) 건너뛰어
+      // 6-1에서 수정한 값이 덮이지 않게 한다.
+      const before = existing.costBudgetMonthly ?? [];
+      const out: ProjectDetailCostBudgetMonthly[] = (result.costBudgetMonthly ?? []).map((r) => ({ ...r }));
       const seen = new Set<string>();
       rows.forEach((r, i) => {
         const year = cellNum(r[0]);
@@ -979,7 +1138,13 @@ export async function parseProjectDetailWorkbook(
         }
         seen.add(ym);
         PROCESS_COST_COLUMNS.forEach((c, ci) => {
-          const value = fromVndRaw(cellNum(r[2 + ci * 2]));
+          const value = fromVndRaw(num(r[2 + ci * 2]));
+          const beforeVals = c.groupedItems.map(
+            (g) => before.find((x) => x.item === g && x.year === year && x.month === month)?.plan ?? null,
+          );
+          const beforeSum = beforeVals.some((v) => v != null) ? beforeVals.reduce<number>((s, v) => s + (v ?? 0), 0) : null;
+          const unchanged = value == null ? beforeSum == null : beforeSum != null && Math.abs(value - beforeSum) < 1;
+          if (unchanged) return;
           // 화면 setProcessCostValue와 동일: 묶음 셀(경비)은 다른 묶음 항목(Expense 1/2) 계획을 뺀
           // 나머지만 대표 항목(외주 경비)에 저장한다.
           const preserved = c.groupedItems
@@ -1023,12 +1188,28 @@ export async function parseProjectDetailWorkbook(
           year: yearRaw,
           month: monthRaw,
           // plan/actual 모두 VND 원본 저장(export의 toVndRaw()와 짝)
-          plan: fromVndRaw(cellNum(r[3])),
-          actual: fromVndRaw(cellNum(r[4])),
+          plan: fromVndRaw(num(r[3])),
+          actual: fromVndRaw(num(r[4])),
         });
       });
       result.costBudgetMonthly = out;
     }
+  }
+
+  // 예산 집행 누계 계획(pd_cost_budget.plan) 재계산 — 데이터 입력 탭은 화면을 열 때 월별 계획 합계로
+  // 이 값을 맞춰 저장하고 대시보드 "예산 집행 현황" 위젯이 그대로 읽는다. 업로드로 월별 계획만 바뀌면
+  // 데이터 입력 탭을 다시 저장하기 전까지 대시보드가 옛 누계를 보여주므로 여기서 같은 규칙으로 갱신한다.
+  {
+    const base = lastClosedYearMonth();
+    const cbm = result.costBudgetMonthly ?? [];
+    result.costBudget = result.costBudget.map((b) => {
+      if (!(MONTHLY_BUDGET_ITEMS as readonly string[]).includes(b.item)) return b;
+      if (!cbm.some((r) => r.item === b.item && r.plan != null)) return b;
+      const plan = cbm
+        .filter((r) => r.item === b.item && (r.year < base.year || (r.year === base.year && r.month <= base.month)))
+        .reduce<number>((sum, r) => sum + (r.plan ?? 0), 0);
+      return plan === b.plan ? b : { ...b, plan };
+    });
   }
 
   // 외주/자재
@@ -1046,11 +1227,11 @@ export async function parseProjectDetailWorkbook(
           category: cellStr(r[3]),
           contractDate: cellStr(r[4]),
           changeNo: cellStr(r[5]),
-          budget: fromVndRaw(cellNum(r[6])),
-          executedBudget: fromVndRaw(cellNum(r[7])),
-          resolved: fromVndRaw(cellNum(r[8])),
-          thisMonth: fromVndRaw(cellNum(r[9])),
-          accum: fromVndRaw(cellNum(r[10])),
+          budget: fromVndRaw(num(r[6])),
+          executedBudget: fromVndRaw(num(r[7])),
+          resolved: fromVndRaw(num(r[8])),
+          thisMonth: fromVndRaw(num(r[9])),
+          accum: fromVndRaw(num(r[10])),
           // Excel 시트에는 fldCode/ordContTypeCode(계약 식별자)가 없다 — pd_outsourcing이 월별 이력
           // 테이블로 바뀐 뒤로는 서버 PUT 핸들러가 이 두 필드로만 계약을 찾아 tradeGroup을 갱신하므로,
           // 이 시트로 업로드한 행은 실제로 반영되지 않는다(타입 요구사항만 맞추는 값 — 의미 없음).
