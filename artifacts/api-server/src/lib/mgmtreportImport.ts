@@ -46,14 +46,54 @@ type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 // 이번 파일이 실제로 건드리는 키에 대해서만 "반영 직전 값"을 읽어 스냅샷으로 남긴다.
 // mr_projects.fld_code/division_id/code 는 이 import가 손대지 않는 컬럼이므로 스냅샷에도 담지 않는다
 // (PIMSVINA 동기화가 붙여둔 값을 되돌리기가 실수로 건드리지 않도록).
-async function captureBeforeState(tx: Tx, parsed: ParsedMgmtreport): Promise<MrSnapshot> {
-  const existingProjects = await tx.select().from(mrProjectsTable);
-  const projectByName = new Map(existingProjects.map((p) => [p.name, p]));
+type ExistingProject = typeof mrProjectsTable.$inferSelect;
+
+// 'SITE 36', 'site36' 처럼 DB에 표기가 섞여 있어도 파서가 만드는 'SITE36'과 같게 비교한다
+const normSite = (s: string | null) => (s ? s.replace(/\s+/g, "").toUpperCase() : null);
+
+// 파일의 프로젝트 → DB의 기존 row 매핑.
+// 규칙: 같은 SITE번호를 가진 row가 이미 있으면 그 row를 그대로 쓴다 (이름·SITE번호는 건드리지 않음).
+// SITE번호로 못 찾으면 이름으로 찾고, 그래도 없으면 새 프로젝트(undefined).
+function resolveExistingProjects(parsed: ParsedMgmtreport, existingProjects: ExistingProject[]) {
+  const byName = new Map(existingProjects.map((p) => [p.name, p]));
+  const resolved = new Map<string, ExistingProject | undefined>();
+  const usedBy = new Map<number, string>();
+  for (const p of parsed.projects) {
+    let ex: ExistingProject | undefined;
+    if (p.siteCode) {
+      const sameSite = existingProjects
+        .filter((e) => normSite(e.siteCode) === p.siteCode)
+        .sort((a, b) => Number(b.name === p.name) - Number(a.name === p.name) || a.id - b.id);
+      ex = sameSite[0];
+    }
+    ex ??= byName.get(p.name);
+    if (ex) {
+      // 파일의 서로 다른 두 프로젝트가 DB의 같은 row로 모이면 숫자가 섞이므로 반영 전에 막는다
+      const other = usedBy.get(ex.id);
+      if (other != null) {
+        throw new MgmtreportParseError(
+          `'${other}'와(과) '${p.name}${p.siteCode ? ` (${p.siteCode})` : ""}'이(가) 기존 프로젝트 '${ex.name}'${ex.siteCode ? ` (${ex.siteCode})` : ""} 하나로 연결됩니다. SITE번호 또는 프로젝트명을 확인해 주세요.`,
+        );
+      }
+      usedBy.set(ex.id, p.name);
+    }
+    resolved.set(p.name, ex);
+  }
+  return resolved;
+}
+
+async function captureBeforeState(
+  tx: Tx,
+  parsed: ParsedMgmtreport,
+  resolved: Map<string, ExistingProject | undefined>,
+): Promise<MrSnapshot> {
+  // 되돌리기는 이름으로 row를 찾으므로, 스냅샷에는 파일 이름이 아니라 실제 DB row 이름을 남긴다
+  const dbName = (fileName: string) => resolved.get(fileName)?.name ?? fileName;
 
   const projects = parsed.projects.map((p) => {
-    const ex = projectByName.get(p.name);
+    const ex = resolved.get(p.name);
     return {
-      name: p.name,
+      name: dbName(p.name),
       before: ex ? { siteCode: ex.siteCode, groupLabel: ex.groupLabel, sortOrder: ex.sortOrder, status: ex.status } : null,
     };
   });
@@ -61,9 +101,9 @@ async function captureBeforeState(tx: Tx, parsed: ParsedMgmtreport): Promise<MrS
   const existingMonthly = await tx.select().from(mrMonthlyTable).where(eq(mrMonthlyTable.year, parsed.year));
   const monthlyBefore = new Map(existingMonthly.map((m) => [`${m.projectId}|${m.month}|${m.scenario}|${m.metric}`, m.amountUsd]));
   const monthly = parsed.monthly.map((m) => {
-    const pid = projectByName.get(m.project)?.id;
+    const pid = resolved.get(m.project)?.id;
     const before = pid != null ? (monthlyBefore.get(`${pid}|${m.month}|${m.scenario}|${m.metric}`) ?? null) : null;
-    return { project: m.project, year: parsed.year, month: m.month, scenario: m.scenario, metric: m.metric, before };
+    return { project: dbName(m.project), year: parsed.year, month: m.month, scenario: m.scenario, metric: m.metric, before };
   });
 
   const annualYears = [...new Set(parsed.annual.map((a) => a.year))];
@@ -72,9 +112,9 @@ async function captureBeforeState(tx: Tx, parsed: ParsedMgmtreport): Promise<MrS
     : [];
   const annualBefore = new Map(existingAnnual.map((a) => [`${a.projectId}|${a.year}|${a.scenario}|${a.metric}`, a.amountUsd]));
   const annual = parsed.annual.map((a) => {
-    const pid = projectByName.get(a.project)?.id;
+    const pid = resolved.get(a.project)?.id;
     const before = pid != null ? (annualBefore.get(`${pid}|${a.year}|${a.scenario}|${a.metric}`) ?? null) : null;
-    return { project: a.project, year: a.year, scenario: a.scenario, metric: a.metric, before };
+    return { project: dbName(a.project), year: a.year, scenario: a.scenario, metric: a.metric, before };
   });
 
   const existingPnl = await tx.select().from(mrPnlTable).where(eq(mrPnlTable.year, parsed.year));
@@ -95,7 +135,9 @@ async function captureBeforeState(tx: Tx, parsed: ParsedMgmtreport): Promise<MrS
 export async function applyMgmtreportImport(parsed: ParsedMgmtreport, filename: string) {
   await db.transaction(async (tx) => {
     // 반영 직전, 이번 파일이 건드릴 키들의 값을 이력으로 보관 (되돌리기용)
-    const snapshot = await captureBeforeState(tx, parsed);
+    const existingProjects = await tx.select().from(mrProjectsTable);
+    const resolved = resolveExistingProjects(parsed, existingProjects);
+    const snapshot = await captureBeforeState(tx, parsed, resolved);
     await tx.insert(mrImportHistoryTable).values({
       filename,
       year: parsed.year,
@@ -120,34 +162,23 @@ export async function applyMgmtreportImport(parsed: ParsedMgmtreport, filename: 
     // 붙여둔 값이 그대로 유지된다.
     const idByName = new Map<string, number>();
     for (const p of parsed.projects) {
-      // name 이 바뀌었더라도 같은 siteCode를 가진 기존 row 가 있으면 그 row 를 재사용한다
-      // (파서가 siteCode 기준으로 레이블을 canonical name 으로 합치지만, 과거 업로드에서
-      // 이미 다른 name 으로 들어간 row 가 DB 에 남아있을 수 있으므로 여기서도 한 번 더 막는다)
-      const existingBySite = p.siteCode
-        ? await tx
-            .select({ id: mrProjectsTable.id, name: mrProjectsTable.name })
-            .from(mrProjectsTable)
-            .where(eq(mrProjectsTable.siteCode, p.siteCode))
-            .limit(1)
-        : [];
-
-      let row: { id: number };
-      if (existingBySite.length > 0 && existingBySite[0].name !== p.name) {
+      const ex = resolved.get(p.name);
+      let row: { id: number } | undefined;
+      if (ex) {
+        // 기존 프로젝트: 이름과 이미 등록된 SITE번호는 덮어쓰지 않고, 정렬/그룹 정보만 갱신한다.
+        // SITE번호가 비어 있던 프로젝트에만 파일의 SITE번호를 채워 넣는다.
         [row] = await tx
           .update(mrProjectsTable)
-          .set({ name: p.name, groupLabel: p.groupLabel, sortOrder: p.sortOrder })
-          .where(eq(mrProjectsTable.id, existingBySite[0].id))
+          .set({ siteCode: ex.siteCode ?? p.siteCode, groupLabel: p.groupLabel, sortOrder: p.sortOrder })
+          .where(eq(mrProjectsTable.id, ex.id))
           .returning({ id: mrProjectsTable.id });
       } else {
         [row] = await tx
           .insert(mrProjectsTable)
           .values({ name: p.name, siteCode: p.siteCode, groupLabel: p.groupLabel, sortOrder: p.sortOrder })
-          .onConflictDoUpdate({
-            target: mrProjectsTable.name,
-            set: { siteCode: p.siteCode, groupLabel: p.groupLabel, sortOrder: p.sortOrder },
-          })
           .returning({ id: mrProjectsTable.id });
       }
+      if (!row) throw new Error(`프로젝트 '${p.name}' 저장 실패 (대상 행을 찾지 못함)`);
       idByName.set(p.name, row.id);
     }
 

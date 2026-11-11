@@ -124,6 +124,17 @@ router.put("/mgmtreport/settings", requireAdmin, async (req, res) => {
   }
 });
 
+// drizzle은 pg 오류를 cause로 감싸서 던지므로 안쪽까지 내려가 constraint/detail을 꺼낸다
+function describeDbError(err: unknown): string {
+  let e = err as { message?: string; cause?: unknown; constraint?: string; detail?: string } | undefined;
+  for (let i = 0; i < 5 && e?.cause && !e.constraint; i++) e = e.cause as typeof e;
+  if (!e) return "알 수 없는 오류";
+  if (e.constraint === "mr_projects_name_uq") {
+    return `프로젝트명 중복 — ${e.detail ?? e.message}`;
+  }
+  return [e.message, e.detail].filter(Boolean).join(" / ") || "알 수 없는 오류";
+}
+
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 25 * 1024 * 1024 },
@@ -208,7 +219,10 @@ router.post("/mgmtreport/import/apply", requireAdmin, async (req, res) => {
       return;
     }
     req.log.error({ err }, "failed to apply mgmtreport import");
-    res.status(500).json({ error: "데이터 반영 중 오류가 발생했습니다. 기존 데이터는 변경되지 않았습니다." });
+    // 관리자 전용 API이므로 원인(DB 오류 메시지)을 함께 내려 사용자가 서버 로그 없이도 파악할 수 있게 한다
+    res.status(500).json({
+      error: `데이터 반영 중 오류가 발생했습니다. 기존 데이터는 변경되지 않았습니다.\n원인: ${describeDbError(err)}`,
+    });
   }
 });
 

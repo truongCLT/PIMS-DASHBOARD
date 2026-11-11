@@ -107,39 +107,61 @@ function parseWorksheet(ws: ExcelJS.Worksheet, year: number): ParsedMgmtreport {
   let currentProject: string | null = null;
   let inPnl = false; // after 소계 block, corporate P&L lines
   let pnlOrder = 0;
+  // 손익 라인이 파일 안에 두 번 나오면 같은 키(year,lineCode,scenario,month)가 중복되어 DB 반영이 실패한다
+  // → 처음 나온 행 번호를 기억해 두었다가 중복 시 어느 행끼리 겹치는지 알려준다.
+  const pnlRowByCode = new Map<string, number>();
+
+  // DB 컬럼 amount_usd = numeric(18,4) → 절대값 1e14 이상은 저장 불가 (numeric field overflow).
+  // 반영 단계에서 막연한 500 오류가 나지 않도록 파싱 단계에서 셀 위치와 함께 알려준다.
+  const num = (row: ExcelJS.Row, col: number): number | null => {
+    const v = cellNumber(row.getCell(col).value);
+    if (v != null && Math.abs(v) >= 1e14) {
+      throw new MgmtreportParseError(
+        `${row.number}행 ${col}열의 값(${v})이 너무 큽니다. 단위(천 USD)가 맞는지 확인해 주세요.`,
+      );
+    }
+    return v;
+  };
 
   const readSeries = (row: ExcelJS.Row, project: string, metric: "revenue" | "cogs") => {
     for (let m = 1; m <= 12; m++) {
-      const plan = cellNumber(row.getCell(4 + m).value); // cols 5..16
+      const plan = num(row, 4 + m); // cols 5..16
       if (plan != null && plan !== 0)
         monthly.push({ project, month: m, scenario: "plan", metric, amount: plan });
-      const act = cellNumber(row.getCell(17 + m).value); // cols 18..29
+      const act = num(row, 17 + m); // cols 18..29
       if (act != null && act !== 0)
         monthly.push({ project, month: m, scenario: "actual", metric, amount: act });
     }
-    const prev = cellNumber(row.getCell(4).value); // 전년 계
+    const prev = num(row, 4); // 전년 계
     if (prev != null && prev !== 0)
       annual.push({ project, year: year - 1, scenario: "actual", metric, amount: prev });
     for (let i = 0; i <= 4; i++) {
-      const v = cellNumber(row.getCell(31 + i).value); // 당년..+4년 전망
+      const v = num(row, 31 + i); // 당년..+4년 전망
       if (v != null && v !== 0)
         annual.push({ project, year: year + i, scenario: "forecast", metric, amount: v });
     }
   };
 
   const addPnl = (row: ExcelJS.Row, label: string, code: string) => {
+    const firstRow = pnlRowByCode.get(code);
+    if (firstRow != null) {
+      throw new MgmtreportParseError(
+        `손익 라인 '${label}'이(가) ${firstRow}행과 ${row.number}행에 중복되어 있습니다. 한 행만 남겨 주세요.`,
+      );
+    }
+    pnlRowByCode.set(code, row.number);
     const order = pnlOrder++;
     for (let m = 1; m <= 12; m++) {
-      const plan = cellNumber(row.getCell(4 + m).value);
+      const plan = num(row, 4 + m);
       if (plan != null && plan !== 0)
         pnl.push({ lineCode: code, lineLabel: label, scenario: "plan", month: m, amount: plan, sortOrder: order });
-      const act = cellNumber(row.getCell(17 + m).value);
+      const act = num(row, 17 + m);
       if (act != null && act !== 0)
         pnl.push({ lineCode: code, lineLabel: label, scenario: "actual", month: m, amount: act, sortOrder: order });
     }
     // yearly totals (month=null) — keep only when no monthly values present
-    const planTotal = cellNumber(row.getCell(17).value);
-    const actTotal = cellNumber(row.getCell(30).value);
+    const planTotal = num(row, 17);
+    const actTotal = num(row, 30);
     const hasPlanMonths = pnl.some((p) => p.lineCode === code && p.scenario === "plan" && p.month != null);
     const hasActMonths = pnl.some((p) => p.lineCode === code && p.scenario === "actual" && p.month != null);
     if (!hasPlanMonths && planTotal != null && planTotal !== 0)
@@ -172,7 +194,17 @@ function parseWorksheet(ws: ExcelJS.Worksheet, year: number): ParsedMgmtreport {
           nameBySiteCode.set(siteCode, name);
         }
         currentProject = name;
-        if (!projects.has(name)) {
+        const existing = projects.get(name);
+        if (existing && siteCode) {
+          if (existing.siteCode && existing.siteCode !== siteCode) {
+            // 서로 다른 사이트가 SITE번호만 빼면 같은 이름 → 두 사이트 숫자가 하나로 섞이므로 막는다
+            throw new MgmtreportParseError(
+              `${r}행 '${labelNorm}': 프로젝트명 '${name}'이(가) 이미 ${existing.siteCode}로 등록되어 있는데 ${siteCode}로 다시 나옵니다. SITE번호 또는 프로젝트명을 확인해 주세요.`,
+            );
+          }
+          if (!existing.siteCode) existing.siteCode = siteCode;
+        }
+        if (!existing) {
           projects.set(name, {
             name,
             siteCode,
@@ -217,7 +249,27 @@ function parseWorksheet(ws: ExcelJS.Worksheet, year: number): ParsedMgmtreport {
     );
   }
 
-  return { year, projects: [...projects.values()], monthly, annual, pnl };
+  // 같은 프로젝트로 합쳐진 블록들(같은 SITE번호의 다른 레이블, 같은 레이블 반복)이 같은 월/시나리오/지표에
+  // 값을 갖고 있으면 키가 중복되어 DB upsert가 실패하거나("cannot affect row a second time") 뒤 값이
+  // 앞 값을 덮어쓴다. 미리보기 합계는 이미 두 값을 더해서 보여주므로, 저장도 합산으로 맞춘다.
+  return {
+    year,
+    projects: [...projects.values()],
+    monthly: sumByKey(monthly, (m) => `${m.project}|${m.month}|${m.scenario}|${m.metric}`),
+    annual: sumByKey(annual, (a) => `${a.project}|${a.year}|${a.scenario}|${a.metric}`),
+    pnl,
+  };
+}
+
+function sumByKey<T extends { amount: number }>(rows: T[], key: (r: T) => string): T[] {
+  const byKey = new Map<string, T>();
+  for (const r of rows) {
+    const k = key(r);
+    const prev = byKey.get(k);
+    if (prev) prev.amount += r.amount;
+    else byKey.set(k, { ...r });
+  }
+  return [...byKey.values()];
 }
 
 export async function parseMgmtreportWorkbook(
