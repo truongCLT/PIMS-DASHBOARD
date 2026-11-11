@@ -38,6 +38,7 @@ import {
   UpdateProjectdetailCommentResponse,
 } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/adminAuth";
+import { effectiveLastClosedYearMonth } from "../lib/mgmtreportImport";
 import { preservePimsvinaActualSource } from "../lib/pimsvinaTradeCost";
 import { buildPimsvinaFileUrl } from "../lib/pimsvinaClient";
 import { getSiteContractRates, type FxCurrency } from "../lib/currentFxRate";
@@ -403,16 +404,9 @@ async function buildRateLookup(
   };
 }
 
-// Data Entry 화면(ProjectDataEntryTab)이 월별 Plan/Actual 셀을 그리는 것과 동일한 마감 규칙.
-// M월 실적은 M+2월 13일부터 "마감 완료"로 간주한다 — frontend의 lib/monthRange.ts#lastClosedYearMonth
-// 와 반드시 같은 값을 내야 하므로 그 로직을 그대로 복제한다(공유 패키지가 아니라 프론트 전용 lib라 import 불가).
-const MR_CLOSE_CUTOFF_DAY = 13;
-function lastClosedYearMonth(): { year: number; month: number } {
-  const now = new Date();
-  const monthsBack = now.getDate() >= MR_CLOSE_CUTOFF_DAY ? 1 : 2;
-  const d = new Date(now.getFullYear(), now.getMonth() - monthsBack, 1);
-  return { year: d.getFullYear(), month: d.getMonth() + 1 };
-}
+// Data Entry 화면(ProjectDataEntryTab)이 월별 Plan/Actual 셀을 그리는 것과 동일한 마감 규칙 —
+// 날짜 규칙(M+1월 13일)과 최근 업로드된 경영관리보고회 파일의 실적 확정 월 중 더 늦은 쪽.
+// (lib/mgmtreportImport.ts#effectiveLastClosedYearMonth — 프론트는 /mgmtreport/settings의 closedMonth로 같은 값을 받는다)
 
 /**
  * GET all Monthly Revenue (Data Entry tab, "Monthly Revenue" section — pd_sales_monthly) rows
@@ -468,8 +462,8 @@ router.get("/outsourcing/all", async (req, res) => {
     // mgmt-report (경영현황판 Excel) fallback - only applies to the current report year, same as
     // the frontend's `year !== REPORT_YEAR ? null : mainSalesMonths[...]` guard.
     const reportYear = new Date().getFullYear();
-    const actualCutoffMonth = (() => {
-      const closed = lastClosedYearMonth();
+    const actualCutoffMonth = await (async () => {
+      const closed = await effectiveLastClosedYearMonth();
       if (reportYear < closed.year) return 12;
       if (reportYear > closed.year) return 0;
       return closed.month;

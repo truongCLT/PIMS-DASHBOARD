@@ -32,6 +32,20 @@ function cellNumber(v: ExcelJS.CellValue): number | null {
 }
 const norm = (s: string) => s.replace(/\s+/g, " ").trim();
 
+// 취합 양식의 실적 월 표시색(노랑, ARGB FFFFFF00)
+function isYellowFill(cell: ExcelJS.Cell): boolean {
+  const fill = cell.fill as { type?: string; fgColor?: { argb?: string } } | undefined;
+  return fill?.type === "pattern" && /^(FF)?FFFF00$/i.test(fill.fgColor?.argb ?? "");
+}
+
+/** 파일명 앞의 'YYYY.MM' (예: '2026.10 경영관리보고회…') → 해당 연도와 일치할 때만 월을 돌려준다 */
+export function monthFromMgmtreportFilename(filename: string, year: number): number | null {
+  const m = /^\s*(\d{4})\s*[.\-_년]\s*(\d{1,2})(?!\d)/.exec(filename);
+  if (!m || Number(m[1]) !== year) return null;
+  const month = Number(m[2]);
+  return month >= 1 && month <= 12 ? month : null;
+}
+
 export type MgmtreportProjectRec = {
   name: string;
   siteCode: string | null;
@@ -63,6 +77,12 @@ export type MgmtreportPnlRec = {
 
 export interface ParsedMgmtreport {
   year: number;
+  /**
+   * 이 파일 기준으로 "실적"이 확정된 마지막 월(1~12). 취합 양식은 실적/전망 칸(18~29열) 중
+   * 실적 월만 노란색으로 칠해 두므로(2026.06 → 1~6월, 2026.10 → 1~10월) 그 색으로 판단한다.
+   * 색이 없는 파일(시스템이 내려준 복원본 등)은 null.
+   */
+  actualThroughMonth: number | null;
   projects: MgmtreportProjectRec[];
   monthly: MgmtreportMonthlyRec[];
   annual: MgmtreportAnnualRec[];
@@ -170,10 +190,19 @@ function parseWorksheet(ws: ExcelJS.Worksheet, year: number): ParsedMgmtreport {
       pnl.push({ lineCode: code, lineLabel: label, scenario: "actual", month: null, amount: actTotal, sortOrder: order });
   };
 
+  let actualThroughMonth: number | null | undefined; // undefined = 아직 첫 매출액 행을 못 만남
+
   for (let r = 1; r <= ws.rowCount; r++) {
     const row = ws.getRow(r);
     const rawLabel = cellText(row.getCell(1).value);
     const metricLabel = norm(cellText(row.getCell(2).value));
+
+    // 첫 번째 프로젝트 매출액 행(보통 'DECV법인 취합본 [법인전체]')의 실적/전망 칸 색으로 실적 확정 월을 읽는다
+    if (actualThroughMonth === undefined && metricLabel === "매출액" && rawLabel) {
+      let m = 0;
+      while (m < 12 && isYellowFill(row.getCell(18 + m))) m++;
+      actualThroughMonth = m > 0 ? m : null;
+    }
 
     if (rawLabel) {
       const labelNorm = norm(rawLabel);
@@ -254,6 +283,7 @@ function parseWorksheet(ws: ExcelJS.Worksheet, year: number): ParsedMgmtreport {
   // 앞 값을 덮어쓴다. 미리보기 합계는 이미 두 값을 더해서 보여주므로, 저장도 합산으로 맞춘다.
   return {
     year,
+    actualThroughMonth: actualThroughMonth ?? null,
     projects: [...projects.values()],
     monthly: sumByKey(monthly, (m) => `${m.project}|${m.month}|${m.scenario}|${m.metric}`),
     annual: sumByKey(annual, (a) => `${a.project}|${a.year}|${a.scenario}|${a.metric}`),
@@ -351,6 +381,7 @@ export function buildMgmtreportPreview(parsed: ParsedMgmtreport) {
 
   return {
     year: parsed.year,
+    actualThroughMonth: parsed.actualThroughMonth,
     unit: "천 USD",
     projectCount: parsed.projects.filter((p) => p.groupLabel == null).length,
     monthlyCount: parsed.monthly.length,

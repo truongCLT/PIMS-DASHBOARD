@@ -20,7 +20,7 @@ import {
   roundSmart,
   type PeriodMode,
 } from "./dashboardFilters";
-import { maxSelectableMonth } from "./monthRange";
+import { maxSelectableMonth, serverClosedMonthFor } from "./monthRange";
 
 export const REPORT_YEAR = new Date().getFullYear();
 
@@ -228,7 +228,10 @@ export function getActualThroughMonth(reportYear: number, asOfDate = new Date())
   // 날짜를 주입할 수 있도록 항상 실제 new Date()를 쓴다 — 여기서는 전달받은 asOfDate 기준으로 똑같이
   // 계산해 테스트 가능하게 하면서도 규칙 자체는 반드시 일치시킨다.
   const monthsBack = asOfDate.getDate() >= 13 ? 1 : 2;
-  return asOfDate.getMonth() + 1 - monthsBack;
+  const byDate = asOfDate.getMonth() + 1 - monthsBack;
+  // 업로드된 파일이 더 늦은 달까지 실적을 확정했다면(서버 closedMonth) 그 달까지 실적으로 본다
+  const byServer = serverClosedMonthFor(reportYear);
+  return byServer != null && byServer > byDate ? byServer : byDate;
 }
 
 export function defaultDeriveOptions(month: number): DeriveOptions {

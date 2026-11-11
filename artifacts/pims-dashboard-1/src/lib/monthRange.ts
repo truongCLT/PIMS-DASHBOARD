@@ -6,9 +6,25 @@ function monthsBackFromToday(): number {
   return new Date().getDate() >= CLOSE_CUTOFF_DAY ? 1 : 2;
 }
 
+// 서버(/mgmtreport/settings의 closedYear/closedMonth)가 알려준 실적 마감월.
+// 최근 업로드된 경영관리보고회 파일에 10월까지 실적(노란색 칸)이 있으면 날짜 규칙상 아직 9월이어도 10월이 된다.
+// App이 settings를 받은 뒤 자식 컴포넌트를 그리기 전에 설정한다 (App.tsx 참고).
+let serverClosed: { year: number; month: number } | null = null;
+
+export function setServerClosedYearMonth(value: { year: number; month: number } | null) {
+  serverClosed = value;
+}
+
+/** 해당 연도에 대한 서버 마감월 (없거나 다른 연도면 null) — 호출부에서 날짜 규칙과 max를 취한다 */
+export function serverClosedMonthFor(year: number): number | null {
+  return serverClosed && serverClosed.year === year ? serverClosed.month : null;
+}
+
 export function lastClosedMonth(): number {
   const now = new Date();
-  return now.getMonth() + 1 - monthsBackFromToday();
+  const byDate = now.getMonth() + 1 - monthsBackFromToday();
+  const byServer = serverClosedMonthFor(now.getFullYear());
+  return byServer != null && byServer > byDate ? byServer : byDate;
 }
 
 /**
@@ -19,7 +35,11 @@ export function lastClosedMonth(): number {
 export function lastClosedYearMonth(): { year: number; month: number } {
   const now = new Date();
   const d = new Date(now.getFullYear(), now.getMonth() - monthsBackFromToday(), 1);
-  return { year: d.getFullYear(), month: d.getMonth() + 1 };
+  const byDate = { year: d.getFullYear(), month: d.getMonth() + 1 };
+  if (serverClosed && (serverClosed.year > byDate.year || (serverClosed.year === byDate.year && serverClosed.month > byDate.month))) {
+    return { ...serverClosed };
+  }
+  return byDate;
 }
 
 /**

@@ -44,7 +44,7 @@ const selectStyle: React.CSSProperties = {
   paddingRight: "14px",
 };
 
-export function ProjectDashboard({ projectName }: { projectName: string }) {
+export function ProjectDashboard({ projectName, onRenamed }: { projectName: string; onRenamed?: (newName: string) => void }) {
   const { t, i18n } = useTranslation(["projectDashboard", "common", "projectDataEntryTab"]);
   const excelLang = (i18n.language?.slice(0, 2) === "en" || i18n.language?.slice(0, 2) === "vi" ? i18n.language.slice(0, 2) : "ko") as "ko" | "en" | "vi";
   const SIDE_TAB_LABELS: Record<string, string> = {
@@ -535,7 +535,7 @@ export function ProjectDashboard({ projectName }: { projectName: string }) {
           </div>
         ) : activeTab === "Data entry" ? (
           <div style={{ flex: 1, minWidth: 0 }}>
-            <ProjectDataEntryTab projectName={projectName} />
+            <ProjectDataEntryTab projectName={projectName} onRenamed={onRenamed} />
           </div>
         ) : activeTab === "Cashflow" ? (
           <div style={{ flex: 1, minWidth: 0 }}>

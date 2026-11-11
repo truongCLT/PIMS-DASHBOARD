@@ -11,6 +11,7 @@ import {
   MgmtreportParseError,
   parseMgmtreportWorkbook,
   buildMgmtreportPreview,
+  monthFromMgmtreportFilename,
   type ParsedMgmtreport,
 } from "@workspace/mgmtreport-parse";
 
@@ -18,7 +19,7 @@ import {
 // used by both this server upload path and the CLI importer
 // (scripts/src/import-mgmtreport.ts) so the two can never diverge.
 
-export { MgmtreportParseError, parseMgmtreportWorkbook, type ParsedMgmtreport };
+export { MgmtreportParseError, parseMgmtreportWorkbook, monthFromMgmtreportFilename, type ParsedMgmtreport };
 export const buildPreview = buildMgmtreportPreview;
 
 // 되돌리기용 스냅샷: 이번 반영이 실제로 건드리는 키만, 그 반영 직전 값을 기록한다
@@ -37,6 +38,81 @@ export interface MrSnapshot {
     month: number | null;
     before: { lineLabel: string; amountUsd: string; sortOrder: number } | null;
   }[];
+  /** 이번 반영에서 최신 파일 이름으로 바꾼 프로젝트 (되돌릴 때 역순으로 원래 이름 복원) */
+  renames?: { from: string; to: string }[];
+  /** 이름을 비워주기 위해 삭제한 빈 프로젝트 row (되돌릴 때 다시 생성) */
+  removedProjects?: { name: string; siteCode: string | null; groupLabel: string | null; sortOrder: number; status: string }[];
+  /** 이 파일 기준 실적 확정 월 (노란색 칸 또는 파일명 'YYYY.MM'). 가장 최근 반영 이력의 값이 실적 마감월로 쓰인다. */
+  actualThroughMonth?: number | null;
+}
+
+// 원가 정산 관행: M월 실적은 M+1월 13일부터 마감으로 본다 (frontend lib/monthRange.ts와 같은 규칙)
+const MR_CLOSE_CUTOFF_DAY = 13;
+function dateRuleLastClosed(now: Date): { year: number; month: number } {
+  const monthsBack = now.getDate() >= MR_CLOSE_CUTOFF_DAY ? 1 : 2;
+  const d = new Date(now.getFullYear(), now.getMonth() - monthsBack, 1);
+  return { year: d.getFullYear(), month: d.getMonth() + 1 };
+}
+
+/** 해당 연도에 가장 최근 반영된 경영관리보고회 파일이 말하는 실적 확정 월 (없으면 null) */
+export async function getUploadedActualThroughMonth(year: number): Promise<number | null> {
+  const [latest] = await db
+    .select({ snapshot: mrImportHistoryTable.snapshot, filename: mrImportHistoryTable.filename })
+    .from(mrImportHistoryTable)
+    .where(eq(mrImportHistoryTable.year, year))
+    .orderBy(desc(mrImportHistoryTable.createdAt), desc(mrImportHistoryTable.id))
+    .limit(1);
+  if (!latest) return null;
+  // 이 기능 이전에 반영된 이력엔 값이 없으므로 파일명('2026.09 …')으로 보완한다
+  const m = (latest.snapshot as MrSnapshot).actualThroughMonth ?? monthFromMgmtreportFilename(latest.filename, year);
+  return typeof m === "number" && m >= 1 && m <= 12 ? m : null;
+}
+
+/**
+ * 실적 마감월 = max(날짜 규칙, 최근 업로드 파일의 실적 확정 월).
+ * 업로드 파일에 10월까지 실적이 칠해져 있으면 날짜 규칙상 아직 9월이어도 10월을 마감으로 본다.
+ */
+export async function effectiveLastClosedYearMonth(now = new Date()): Promise<{
+  year: number;
+  month: number;
+  source: "date" | "upload";
+}> {
+  const byDate = dateRuleLastClosed(now);
+  const uploaded = await getUploadedActualThroughMonth(now.getFullYear());
+  if (uploaded != null && (now.getFullYear() > byDate.year || uploaded > byDate.month)) {
+    return { year: now.getFullYear(), month: uploaded, source: "upload" };
+  }
+  return { ...byDate, source: "date" };
+}
+
+export interface MgmtreportApplyResult {
+  renamed: { from: string; to: string }[];
+  /** 같은 이름의 다른 프로젝트에 데이터가 남아 있어 이름을 바꾸지 못한 경우 */
+  renameSkipped: { from: string; to: string; reason: string }[];
+}
+
+// 프로젝트 상세(pd_*) 테이블은 mr_projects.id가 아니라 project_name(문자열)로 프로젝트에 연결된다.
+// 이름을 바꿀 때 함께 바꿔야 PIMSVINA 동기화 데이터·사진 등이 끊기지 않는다.
+async function listProjectNameTables(tx: Tx): Promise<string[]> {
+  const r = await tx.execute(sql`
+    select table_name from information_schema.columns
+    where table_schema = 'public' and column_name = 'project_name' and table_name like 'pd\\_%'`);
+  return (r.rows as { table_name: string }[]).map((x) => x.table_name);
+}
+
+async function countProjectNameRefs(tx: Tx, tables: string[], name: string): Promise<number> {
+  let n = 0;
+  for (const t of tables) {
+    const r = await tx.execute(sql`select count(*)::int as n from ${sql.identifier(t)} where project_name = ${name}`);
+    n += (r.rows[0] as { n: number }).n;
+  }
+  return n;
+}
+
+async function renameProjectNameRefs(tx: Tx, tables: string[], from: string, to: string) {
+  for (const t of tables) {
+    await tx.execute(sql`update ${sql.identifier(t)} set project_name = ${to} where project_name = ${from}`);
+  }
 }
 
 const HISTORY_KEEP = 5;
@@ -132,17 +208,23 @@ async function captureBeforeState(
   return { projects, monthly, annual, pnl };
 }
 
-export async function applyMgmtreportImport(parsed: ParsedMgmtreport, filename: string) {
-  await db.transaction(async (tx) => {
+export async function applyMgmtreportImport(parsed: ParsedMgmtreport, filename: string): Promise<MgmtreportApplyResult> {
+  return await db.transaction(async (tx) => {
     // 반영 직전, 이번 파일이 건드릴 키들의 값을 이력으로 보관 (되돌리기용)
     const existingProjects = await tx.select().from(mrProjectsTable);
     const resolved = resolveExistingProjects(parsed, existingProjects);
-    const snapshot = await captureBeforeState(tx, parsed, resolved);
-    await tx.insert(mrImportHistoryTable).values({
-      filename,
-      year: parsed.year,
-      snapshot,
-    });
+    const snapshot: MrSnapshot = {
+      ...(await captureBeforeState(tx, parsed, resolved)),
+      actualThroughMonth: parsed.actualThroughMonth ?? monthFromMgmtreportFilename(filename, parsed.year),
+    };
+    const [history] = await tx
+      .insert(mrImportHistoryTable)
+      .values({
+        filename,
+        year: parsed.year,
+        snapshot,
+      })
+      .returning({ id: mrImportHistoryTable.id });
     // 최근 HISTORY_KEEP건만 유지
     const keep = await tx
       .select({ id: mrImportHistoryTable.id })
@@ -271,6 +353,130 @@ export async function applyMgmtreportImport(parsed: ParsedMgmtreport, filename: 
           set: { lineLabel: sql`excluded.line_label`, amountUsd: sql`excluded.amount_usd`, sortOrder: sql`excluded.sort_order` },
         });
     }
+
+    // 프로젝트명을 최신 업로드 파일 기준으로 맞춘다.
+    // 데이터 반영(연도 단위 교체)이 끝난 뒤에 해야, 같은 이름을 쥐고 있는 다른 row가 이제 비었는지 정확히 판단할 수 있다.
+    // - 새 이름을 아무도 안 쓰면: 이름 변경 + pd_* 의 project_name 도 같이 변경
+    // - 새 이름을 다른 row가 쓰고 있지만 그 row가 완전히 비었으면(이번 파일과 무관, 숫자·PIMSVINA 연결·부문 매핑 없음):
+    //   그 빈 row를 지우고 이름 변경 (예: SITE42 → 'THT K2CT1 HIGH-RISE…' 를 'K2CT1 도급공사'로, 빈 456번 삭제)
+    // - 그 외(다른 row에 데이터가 남아 있음): 오류 없이 기존 이름 유지, 결과에 사유를 남김
+    const result: MgmtreportApplyResult = { renamed: [], renameSkipped: [] };
+    const removedProjects: NonNullable<MrSnapshot["removedProjects"]> = [];
+    const usedIds = new Set(idByName.values());
+    const pdTables = await listProjectNameTables(tx);
+    let pending = parsed.projects
+      .map((p) => ({ to: p.name, row: resolved.get(p.name) }))
+      .filter((x): x is { to: string; row: ExistingProject } => x.row != null && x.row.name !== x.to)
+      .map((x) => ({ id: x.row.id, from: x.row.name, to: x.to }));
+    // A→B, B→C 처럼 이어진 변경을 위해, 더 이상 진행이 없을 때까지 반복한다
+    for (let progress = true; progress && pending.length > 0; ) {
+      progress = false;
+      const next: typeof pending = [];
+      for (const r of pending) {
+        const [holder] = await tx.select().from(mrProjectsTable).where(eq(mrProjectsTable.name, r.to)).limit(1);
+        if (holder) {
+          if (usedIds.has(holder.id)) {
+            next.push(r); // 이번 파일의 다른 프로젝트가 쓰는 row → 그쪽 이름이 먼저 바뀌면 다음 바퀴에 가능
+            continue;
+          }
+          const [{ n: dataRows }] = (
+            await tx.execute(sql`
+              select (select count(*) from ${mrMonthlyTable} where project_id = ${holder.id})
+                   + (select count(*) from ${mrAnnualTable} where project_id = ${holder.id}) as n`)
+          ).rows as { n: string }[];
+          const refs = await countProjectNameRefs(tx, pdTables, holder.name);
+          const reason =
+            Number(dataRows) > 0
+              ? `기존 '${r.to}' 프로젝트에 다른 연도 경영관리 데이터 ${dataRows}건이 남아 있음`
+              : refs > 0
+                ? `기존 '${r.to}' 프로젝트에 프로젝트 상세(PIMSVINA) 데이터 ${refs}건이 연결되어 있음`
+                : holder.code || holder.fldCode || holder.divisionId != null
+                  ? `기존 '${r.to}' 프로젝트에 PIMSVINA 코드 또는 부문 매핑이 있음`
+                  : null;
+          if (reason) {
+            result.renameSkipped.push({ from: r.from, to: r.to, reason });
+            continue;
+          }
+          await tx.delete(mrProjectsTable).where(eq(mrProjectsTable.id, holder.id));
+          removedProjects.push({
+            name: holder.name,
+            siteCode: holder.siteCode,
+            groupLabel: holder.groupLabel,
+            sortOrder: holder.sortOrder,
+            status: holder.status,
+          });
+        } else {
+          // mr_projects엔 없지만 pd_*에 같은 이름의 고아 데이터가 있으면, 합쳐지면서 섞이거나 unique 충돌이 날 수 있다
+          const orphanRefs = await countProjectNameRefs(tx, pdTables, r.to);
+          if (orphanRefs > 0) {
+            result.renameSkipped.push({
+              from: r.from,
+              to: r.to,
+              reason: `'${r.to}' 이름으로 연결된 프로젝트 상세 데이터 ${orphanRefs}건이 이미 있음`,
+            });
+            continue;
+          }
+        }
+        await tx.update(mrProjectsTable).set({ name: r.to }).where(eq(mrProjectsTable.id, r.id));
+        await renameProjectNameRefs(tx, pdTables, r.from, r.to);
+        result.renamed.push({ from: r.from, to: r.to });
+        progress = true;
+      }
+      pending = next;
+    }
+    for (const r of pending) {
+      result.renameSkipped.push({ from: r.from, to: r.to, reason: `'${r.to}' 이름을 이번 파일의 다른 프로젝트가 사용 중` });
+    }
+
+    if (result.renamed.length > 0 || removedProjects.length > 0) {
+      await tx
+        .update(mrImportHistoryTable)
+        .set({ snapshot: { ...snapshot, renames: result.renamed, removedProjects } })
+        .where(eq(mrImportHistoryTable.id, history.id));
+    }
+    return result;
+  });
+}
+
+export class ProjectRenameError extends Error {
+  constructor(
+    message: string,
+    public status: 400 | 404 | 409 = 400,
+  ) {
+    super(message);
+  }
+}
+
+// 화면(Data Entry)에서 사이트명을 직접 바꿀 때 사용.
+// mr_projects.name 과, 이름으로 연결된 프로젝트 상세(pd_*)의 project_name 을 한 트랜잭션에서 함께 바꾼다.
+export async function renameMgmtreportProject(from: string, toRaw: string) {
+  const to = toRaw.replace(/\s+/g, " ").trim();
+  if (!to) throw new ProjectRenameError("새 사이트명을 입력해 주세요.");
+  if (to.length > 200) throw new ProjectRenameError("사이트명은 200자 이하로 입력해 주세요.");
+  return await db.transaction(async (tx) => {
+    const [row] = await tx.select().from(mrProjectsTable).where(eq(mrProjectsTable.name, from)).limit(1);
+    if (!row) throw new ProjectRenameError(`'${from}' 프로젝트를 찾을 수 없습니다.`, 404);
+    if (to === from) return { name: to, renamedRefs: 0 };
+
+    const [holder] = await tx.select().from(mrProjectsTable).where(eq(mrProjectsTable.name, to)).limit(1);
+    if (holder) {
+      throw new ProjectRenameError(
+        `'${to}' 이름은 이미 다른 프로젝트${holder.siteCode ? `(${holder.siteCode})` : ""}가 사용 중입니다. 다른 이름을 입력해 주세요.`,
+        409,
+      );
+    }
+    const pdTables = await listProjectNameTables(tx);
+    const orphan = await countProjectNameRefs(tx, pdTables, to);
+    if (orphan > 0) {
+      throw new ProjectRenameError(
+        `'${to}' 이름으로 연결된 프로젝트 상세 데이터 ${orphan}건이 이미 있어 데이터가 섞일 수 있습니다. 다른 이름을 입력해 주세요.`,
+        409,
+      );
+    }
+    const renamedRefs = await countProjectNameRefs(tx, pdTables, from);
+    await tx.update(mrProjectsTable).set({ name: to }).where(eq(mrProjectsTable.id, row.id));
+    await renameProjectNameRefs(tx, pdTables, from, to);
+    return { name: to, renamedRefs };
   });
 }
 
@@ -312,6 +518,19 @@ export async function revertMgmtreportImport(historyId: number) {
       throw new MgmtreportRevertError(
         "이 이력은 최초 반영 건이라 되돌릴 이전 상태가 없습니다.",
       );
+    }
+
+    // 0) 이 반영이 바꾼 프로젝트명을 역순으로 원래대로 돌리고(pd_* 포함), 이름을 비우려고 지웠던 빈 row를 다시 만든다.
+    //    스냅샷의 나머지 항목은 모두 "변경 전 이름" 기준이므로 이 단계가 먼저여야 한다.
+    if (snap.renames?.length) {
+      const pdTables = await listProjectNameTables(tx);
+      for (const r of [...snap.renames].reverse()) {
+        await tx.update(mrProjectsTable).set({ name: r.from }).where(eq(mrProjectsTable.name, r.to));
+        await renameProjectNameRefs(tx, pdTables, r.to, r.from);
+      }
+    }
+    for (const p of snap.removedProjects ?? []) {
+      await tx.insert(mrProjectsTable).values(p).onConflictDoNothing({ target: mrProjectsTable.name });
     }
 
     // 1) 프로젝트: 이 반영이 새로 만든 프로젝트는 삭제(하위 mr_monthly/mr_annual도 cascade로 함께 삭제),

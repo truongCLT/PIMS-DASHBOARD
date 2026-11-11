@@ -85,6 +85,7 @@ export * from './mgmtreportProjectStatusUpdate';
 export * from './mgmtreportProjectStatusUpdateStatus';
 export * from './mgmtreportRevertResult';
 export * from './mgmtreportSettings';
+export * from './mgmtreportSettingsClosedSource';
 export * from './mgmtreportSummary';
 export * from './orderDetailEntry';
 export * from './orderDetailEntryActualKind';

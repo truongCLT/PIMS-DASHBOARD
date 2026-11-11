@@ -189,5 +189,11 @@
   "closeLock": "마감 설정",
   "closeUnlock": "마감 해지",
   "closedBanner": "⚠️ 마감 처리된 프로젝트입니다. 데이터를 수정하려면 마감 해지 후 저장하세요.",
-  "closeToggleFailed": "마감 상태 변경에 실패했습니다. 다시 시도해 주세요."
+  "closeToggleFailed": "마감 상태 변경에 실패했습니다. 다시 시도해 주세요.",
+  "siteName": "사이트명",
+  "renameSite": "사이트명 변경",
+  "renaming": "변경 중...",
+  "renameSuccess": "사이트명이 변경되었습니다.",
+  "renameFailed": "사이트명 변경에 실패했습니다.",
+  "renameConfirm": "사이트명을 변경하시겠습니까?\n\n'{{from}}'\n→ '{{to}}'\n\n프로젝트 상세 데이터(공정·원가·외주·사진 등)도 새 이름으로 함께 연결됩니다."
 }

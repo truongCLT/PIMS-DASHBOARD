@@ -597,6 +597,17 @@ export interface MgmtreportLine {
   actualTotal: number;
 }
 
+/**
+ * (응답 전용) 마감월 판단 근거 — date(M+1월 13일 규칙) / upload(업로드 파일의 노란색 실적 칸 또는 파일명)
+ */
+export type MgmtreportSettingsClosedSource = typeof MgmtreportSettingsClosedSource[keyof typeof MgmtreportSettingsClosedSource];
+
+
+export const MgmtreportSettingsClosedSource = {
+  date: 'date',
+  upload: 'upload',
+} as const;
+
 export interface MgmtreportSettings {
   /**
      * @minimum 2000
@@ -608,6 +619,16 @@ export interface MgmtreportSettings {
      * @maximum 12
      */
   month: number;
+  /** (응답 전용) 실적 마감 연도 — 날짜 규칙과 최근 업로드 파일의 실적 확정 월 중 더 늦은 쪽 */
+  closedYear?: number;
+  /**
+     * (응답 전용) 실적 마감 월 — 기준월 드롭다운 상한 및 Actual/Forecast 경계
+     * @minimum 1
+     * @maximum 12
+     */
+  closedMonth?: number;
+  /** (응답 전용) 마감월 판단 근거 — date(M+1월 13일 규칙) / upload(업로드 파일의 노란색 실적 칸 또는 파일명) */
+  closedSource?: MgmtreportSettingsClosedSource;
 }
 
 export interface MgmtreportSummary {

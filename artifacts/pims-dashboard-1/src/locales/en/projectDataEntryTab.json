@@ -189,5 +189,11 @@
   "closeLock": "Lock",
   "closeUnlock": "Unlock",
   "closedBanner": "⚠️ This project is locked. Unlock it to edit data.",
-  "closeToggleFailed": "Failed to change lock status. Please try again."
+  "closeToggleFailed": "Failed to change lock status. Please try again.",
+  "siteName": "Site name",
+  "renameSite": "Rename site",
+  "renaming": "Renaming...",
+  "renameSuccess": "Site name has been changed.",
+  "renameFailed": "Failed to rename the site.",
+  "renameConfirm": "Rename this site?\n\n'{{from}}'\n→ '{{to}}'\n\nProject detail data (progress, cost, outsourcing, photos, etc.) will move to the new name as well."
 }

@@ -3,6 +3,7 @@ import { ChevronsDown, ChevronsUp, Download, FileSpreadsheet, FileText, RefreshC
 import { useTranslation } from "react-i18next";
 import {
   useListMgmtreportProjects,
+  type MgmtreportSettings,
 } from "@workspace/api-client-react";
 import {
   getGetMgmtreportSettingsQueryKey,
@@ -391,7 +392,8 @@ export function DashboardHeader({
             onChange={(e) => {
               const month = Number(e.target.value);
               const selected = { year: REPORT_YEAR, month };
-              queryClient.setQueryData(getGetMgmtreportSettingsQueryKey(), selected);
+              // closedYear/closedMonth(실적 마감월)는 그대로 두고 기준월만 바꾼다
+              queryClient.setQueryData(getGetMgmtreportSettingsQueryKey(), (prev: MgmtreportSettings | undefined) => ({ ...prev, ...selected }));
               if (isAdmin) settingsMutation.mutate({ data: selected });
             }}
             style={{

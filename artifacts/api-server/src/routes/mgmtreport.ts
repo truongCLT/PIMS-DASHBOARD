@@ -46,6 +46,9 @@ import {
   revertMgmtreportImport,
   MgmtreportParseError,
   MgmtreportRevertError,
+  renameMgmtreportProject,
+  ProjectRenameError,
+  effectiveLastClosedYearMonth,
 } from "../lib/mgmtreportImport";
 import {
   applyOrderImport,
@@ -59,6 +62,7 @@ import {
   revertOrderImport,
 } from "../lib/orderImport";
 import { requireAdmin } from "../middlewares/adminAuth";
+import { errorWithCause } from "../lib/describeError";
 import {
   aggregatePnlRows,
   applyProjectMonthlyRows,
@@ -83,9 +87,17 @@ router.get("/mgmtreport/settings", async (req, res) => {
   try {
     const [saved] = await db.select().from(mrSettingsTable).where(eq(mrSettingsTable.id, 1)).limit(1);
     const now = new Date();
-    const response = saved
-      ? { year: saved.referenceYear, month: saved.referenceMonth }
-      : { year: now.getFullYear(), month: maxSelectableReferenceMonth(now) };
+    // 실적 마감월(날짜 규칙 vs 최근 업로드 파일 중 더 늦은 쪽) — 프론트의 기준월 드롭다운 상한과
+    // Actual/Forecast 경계가 이 값을 쓴다.
+    const closed = await effectiveLastClosedYearMonth(now);
+    const response = {
+      ...(saved
+        ? { year: saved.referenceYear, month: saved.referenceMonth }
+        : { year: now.getFullYear(), month: maxSelectableReferenceMonth(now) }),
+      closedYear: closed.year,
+      closedMonth: closed.month,
+      closedSource: closed.source,
+    };
     res.json(response);
   } catch (err) {
     req.log.error({ err }, "failed to load mgmtreport settings");
@@ -102,9 +114,9 @@ router.put("/mgmtreport/settings", requireAdmin, async (req, res) => {
   try {
     const { year, month } = parsed.data;
     const now = new Date();
-    const isUnclosed =
-      year > now.getFullYear() ||
-      (year === now.getFullYear() && month > maxSelectableReferenceMonth(now));
+    const closed = await effectiveLastClosedYearMonth(now);
+    const maxMonth = Math.max(maxSelectableReferenceMonth(now), closed.year === now.getFullYear() ? closed.month : 0);
+    const isUnclosed = year > now.getFullYear() || (year === now.getFullYear() && month > maxMonth);
     if (isUnclosed) {
       res.status(400).json({ error: "아직 실적이 마감되지 않은 월입니다. 직전월까지만 기준월로 선택할 수 있습니다." });
       return;
@@ -116,7 +128,8 @@ router.put("/mgmtreport/settings", requireAdmin, async (req, res) => {
         target: mrSettingsTable.id,
         set: { referenceYear: year, referenceMonth: month, updatedAt: new Date() },
       });
-    const response = { year, month };
+    // GET과 같은 모양으로 돌려줘야, 프론트가 이 응답으로 캐시를 덮어써도 마감월(closedMonth)이 사라지지 않는다
+    const response = { year, month, closedYear: closed.year, closedMonth: closed.month, closedSource: closed.source };
     res.json(response);
   } catch (err) {
     req.log.error({ err }, "failed to save mgmtreport settings");
@@ -124,16 +137,6 @@ router.put("/mgmtreport/settings", requireAdmin, async (req, res) => {
   }
 });
 
-// drizzle은 pg 오류를 cause로 감싸서 던지므로 안쪽까지 내려가 constraint/detail을 꺼낸다
-function describeDbError(err: unknown): string {
-  let e = err as { message?: string; cause?: unknown; constraint?: string; detail?: string } | undefined;
-  for (let i = 0; i < 5 && e?.cause && !e.constraint; i++) e = e.cause as typeof e;
-  if (!e) return "알 수 없는 오류";
-  if (e.constraint === "mr_projects_name_uq") {
-    return `프로젝트명 중복 — ${e.detail ?? e.message}`;
-  }
-  return [e.message, e.detail].filter(Boolean).join(" / ") || "알 수 없는 오류";
-}
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -187,7 +190,7 @@ router.post("/mgmtreport/import/preview", requireAdmin, async (req, res) => {
       return;
     }
     req.log.error({ err }, "failed to preview mgmtreport import");
-    res.status(500).json({ error: "Excel 파싱 중 오류가 발생했습니다." });
+    res.status(500).json({ error: errorWithCause("Excel 파싱 중 오류가 발생했습니다.", err) });
   }
 });
 
@@ -201,7 +204,25 @@ router.post("/mgmtreport/import/apply", requireAdmin, async (req, res) => {
     const parsed = await parseMgmtreportWorkbook(r.file.buffer, r.year);
     // multer는 파일명을 latin1로 해석하므로 한글 파일명을 UTF-8로 복원
     const filename = Buffer.from(r.file.originalname, "latin1").toString("utf8");
-    await applyMgmtreportImport(parsed, filename);
+    const result = await applyMgmtreportImport(parsed, filename);
+    // 새 파일로 실적 확정 월이 늘어났으면 전사 기준월도 그 달로 올려 준다 (예: 9월 → 10월 파일 업로드 시 10월)
+    try {
+      const closed = await effectiveLastClosedYearMonth();
+      if (closed.source === "upload" && closed.year === r.year) {
+        const [saved] = await db.select().from(mrSettingsTable).where(eq(mrSettingsTable.id, 1)).limit(1);
+        if (!saved || saved.referenceYear < closed.year || (saved.referenceYear === closed.year && saved.referenceMonth < closed.month)) {
+          await db
+            .insert(mrSettingsTable)
+            .values({ id: 1, referenceYear: closed.year, referenceMonth: closed.month, updatedAt: new Date() })
+            .onConflictDoUpdate({
+              target: mrSettingsTable.id,
+              set: { referenceYear: closed.year, referenceMonth: closed.month, updatedAt: new Date() },
+            });
+        }
+      }
+    } catch (err) {
+      req.log.warn({ err }, "failed to bump reference month after mgmtreport import");
+    }
     req.log.info(
       {
         year: r.year,
@@ -209,10 +230,12 @@ router.post("/mgmtreport/import/apply", requireAdmin, async (req, res) => {
         monthly: parsed.monthly.length,
         annual: parsed.annual.length,
         pnl: parsed.pnl.length,
+        renamed: result.renamed,
+        renameSkipped: result.renameSkipped,
       },
       "mgmtreport import applied",
     );
-    res.json({ ...buildPreview(parsed), applied: true });
+    res.json({ ...buildPreview(parsed), applied: true, ...result });
   } catch (err) {
     if (err instanceof MgmtreportParseError) {
       res.status(422).json({ error: err.message });
@@ -221,7 +244,7 @@ router.post("/mgmtreport/import/apply", requireAdmin, async (req, res) => {
     req.log.error({ err }, "failed to apply mgmtreport import");
     // 관리자 전용 API이므로 원인(DB 오류 메시지)을 함께 내려 사용자가 서버 로그 없이도 파악할 수 있게 한다
     res.status(500).json({
-      error: `데이터 반영 중 오류가 발생했습니다. 기존 데이터는 변경되지 않았습니다.\n원인: ${describeDbError(err)}`,
+      error: errorWithCause("데이터 반영 중 오류가 발생했습니다. 기존 데이터는 변경되지 않았습니다.", err),
     });
   }
 });
@@ -253,7 +276,7 @@ router.post("/mgmtreport/import/revert", requireAdmin, async (req, res) => {
       return;
     }
     req.log.error({ err }, "failed to revert mgmtreport import");
-    res.status(500).json({ error: "되돌리기 중 오류가 발생했습니다. 데이터는 변경되지 않았습니다." });
+    res.status(500).json({ error: errorWithCause("되돌리기 중 오류가 발생했습니다. 데이터는 변경되지 않았습니다.", err) });
   }
 });
 
@@ -265,7 +288,7 @@ router.post("/orders/import/preview", requireAdmin, async (req, res) => {
   } catch (err) {
     if (err instanceof OrderImportError) return void res.status(422).json({ error: err.message });
     req.log.error({ err }, "failed to preview order import");
-    res.status(500).json({ error: "수주 계획 Excel 분석에 실패했습니다." });
+    res.status(500).json({ error: errorWithCause("수주 계획 Excel 분석에 실패했습니다.", err) });
   }
 });
 
@@ -280,7 +303,7 @@ router.post("/orders/import/apply", requireAdmin, async (req, res) => {
   } catch (err) {
     if (err instanceof OrderImportError) return void res.status(422).json({ error: err.message });
     req.log.error({ err }, "failed to apply order import");
-    res.status(500).json({ error: "수주 계획 반영에 실패했습니다. 기존 데이터는 변경되지 않았습니다." });
+    res.status(500).json({ error: errorWithCause("수주 계획 반영에 실패했습니다. 기존 데이터는 변경되지 않았습니다.", err) });
   }
 });
 
@@ -301,7 +324,7 @@ router.post("/orders/import/revert", requireAdmin, async (req, res) => {
   } catch (err) {
     if (err instanceof OrderImportError) return void res.status(422).json({ error: err.message });
     req.log.error({ err }, "failed to revert order import");
-    res.status(500).json({ error: "수주 계획 되돌리기에 실패했습니다." });
+    res.status(500).json({ error: errorWithCause("수주 계획 되돌리기에 실패했습니다.", err) });
   }
 });
 
@@ -568,6 +591,27 @@ router.put("/mgmtreport/projects/status", requireAdmin, async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "failed to update mgmtreport project status");
     res.status(500).json({ error: "프로젝트 상태 변경에 실패했습니다." });
+  }
+});
+
+// 사이트명 변경 (Data Entry 화면) — mr_projects.name + pd_* project_name 동시 변경
+router.put("/mgmtreport/projects/rename", requireAdmin, async (req, res) => {
+  const body = req.body as { name?: unknown; newName?: unknown } | undefined;
+  if (typeof body?.name !== "string" || typeof body?.newName !== "string" || !body.name) {
+    res.status(400).json({ error: "잘못된 요청 본문입니다. (name, newName 필요)" });
+    return;
+  }
+  try {
+    const result = await renameMgmtreportProject(body.name, body.newName);
+    req.log.info({ from: body.name, to: result.name, renamedRefs: result.renamedRefs }, "mgmtreport project renamed");
+    res.json(result);
+  } catch (err) {
+    if (err instanceof ProjectRenameError) {
+      res.status(err.status).json({ error: err.message });
+      return;
+    }
+    req.log.error({ err }, "failed to rename mgmtreport project");
+    res.status(500).json({ error: errorWithCause("사이트명 변경에 실패했습니다.", err) });
   }
 });
 

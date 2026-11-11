@@ -15,6 +15,7 @@ import {
 } from "../lib/salescostImport";
 import { readExcelUpload } from "../lib/excelUpload";
 import { requireAdmin } from "../middlewares/adminAuth";
+import { errorWithCause } from "../lib/describeError";
 
 const router: IRouter = Router();
 
@@ -33,7 +34,7 @@ router.post("/salescost/import/preview", requireAdmin, async (req, res) => {
       return;
     }
     req.log.error({ err }, "failed to preview salescost import");
-    res.status(500).json({ error: "Excel 파싱 중 오류가 발생했습니다." });
+    res.status(500).json({ error: errorWithCause("Excel 파싱 중 오류가 발생했습니다.", err) });
   }
 });
 
@@ -57,7 +58,7 @@ router.post("/salescost/import/apply", requireAdmin, async (req, res) => {
       return;
     }
     req.log.error({ err }, "failed to apply salescost import");
-    res.status(500).json({ error: "데이터 반영 중 오류가 발생했습니다. 기존 데이터는 변경되지 않았습니다." });
+    res.status(500).json({ error: errorWithCause("데이터 반영 중 오류가 발생했습니다. 기존 데이터는 변경되지 않았습니다.", err) });
   }
 });
 

@@ -98,7 +98,7 @@ function EmptyHint({ label }: { label: string }) {
   );
 }
 
-export function ServiceProjectDashboard({ projectName }: { projectName: string }) {
+export function ServiceProjectDashboard({ projectName, onRenamed }: { projectName: string; onRenamed?: (newName: string) => void }) {
   const { t, i18n } = useTranslation(["serviceProjectDashboard", "overviewTab", "common", "projectDataEntryTab"]);
   const excelLang = (i18n.language?.slice(0, 2) === "en" || i18n.language?.slice(0, 2) === "vi" ? i18n.language.slice(0, 2) : "ko") as "ko" | "en" | "vi";
   const { fxRates } = useDashboardFilters();
@@ -617,7 +617,7 @@ export function ServiceProjectDashboard({ projectName }: { projectName: string }
                 }}
               />
             </div>
-            <ProjectDataEntryTab projectName={projectName} service />
+            <ProjectDataEntryTab projectName={projectName} service onRenamed={onRenamed} />
           </>
         ) : (
           <div

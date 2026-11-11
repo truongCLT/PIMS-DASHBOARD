@@ -2297,6 +2297,18 @@ components:
           type: integer
           minimum: 1
           maximum: 12
+        closedYear:
+          type: integer
+          description: (응답 전용) 실적 마감 연도 — 날짜 규칙과 최근 업로드 파일의 실적 확정 월 중 더 늦은 쪽
+        closedMonth:
+          type: integer
+          minimum: 1
+          maximum: 12
+          description: (응답 전용) 실적 마감 월 — 기준월 드롭다운 상한 및 Actual/Forecast 경계
+        closedSource:
+          type: string
+          enum: [date, upload]
+          description: (응답 전용) 마감월 판단 근거 — date(M+1월 13일 규칙) / upload(업로드 파일의 노란색 실적 칸 또는 파일명)
       required: [year, month]
     MgmtreportSummary:
       type: object

@@ -189,5 +189,11 @@
   "closeLock": "Đóng sổ",
   "closeUnlock": "Mở sổ",
   "closedBanner": "⚠️ Dự án đã được đóng sổ. Hãy mở sổ để chỉnh sửa dữ liệu.",
-  "closeToggleFailed": "Không thể thay đổi trạng thái đóng sổ. Vui lòng thử lại."
+  "closeToggleFailed": "Không thể thay đổi trạng thái đóng sổ. Vui lòng thử lại.",
+  "siteName": "Tên site",
+  "renameSite": "Đổi tên site",
+  "renaming": "Đang đổi...",
+  "renameSuccess": "Đã đổi tên site.",
+  "renameFailed": "Đổi tên site thất bại.",
+  "renameConfirm": "Đổi tên site?\n\n'{{from}}'\n→ '{{to}}'\n\nDữ liệu chi tiết dự án (tiến độ, chi phí, thầu phụ, ảnh...) cũng sẽ chuyển sang tên mới."
 }

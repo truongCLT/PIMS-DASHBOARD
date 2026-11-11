@@ -1296,11 +1296,16 @@ export const getMgmtreportSettingsResponseYearMax = 2100;
 
 export const getMgmtreportSettingsResponseMonthMax = 12;
 
+export const getMgmtreportSettingsResponseClosedMonthMax = 12;
+
 
 
 export const GetMgmtreportSettingsResponse = zod.object({
   "year": zod.number().min(getMgmtreportSettingsResponseYearMin).max(getMgmtreportSettingsResponseYearMax),
-  "month": zod.number().min(1).max(getMgmtreportSettingsResponseMonthMax)
+  "month": zod.number().min(1).max(getMgmtreportSettingsResponseMonthMax),
+  "closedYear": zod.number().optional().describe('(응답 전용) 실적 마감 연도 — 날짜 규칙과 최근 업로드 파일의 실적 확정 월 중 더 늦은 쪽'),
+  "closedMonth": zod.number().min(1).max(getMgmtreportSettingsResponseClosedMonthMax).optional().describe('(응답 전용) 실적 마감 월 — 기준월 드롭다운 상한 및 Actual\/Forecast 경계'),
+  "closedSource": zod.enum(['date', 'upload']).optional().describe('(응답 전용) 마감월 판단 근거 — date(M+1월 13일 규칙) \/ upload(업로드 파일의 노란색 실적 칸 또는 파일명)')
 })
 
 
@@ -1312,11 +1317,16 @@ export const putMgmtreportSettingsBodyYearMax = 2100;
 
 export const putMgmtreportSettingsBodyMonthMax = 12;
 
+export const putMgmtreportSettingsBodyClosedMonthMax = 12;
+
 
 
 export const PutMgmtreportSettingsBody = zod.object({
   "year": zod.number().min(putMgmtreportSettingsBodyYearMin).max(putMgmtreportSettingsBodyYearMax),
-  "month": zod.number().min(1).max(putMgmtreportSettingsBodyMonthMax)
+  "month": zod.number().min(1).max(putMgmtreportSettingsBodyMonthMax),
+  "closedYear": zod.number().optional().describe('(응답 전용) 실적 마감 연도 — 날짜 규칙과 최근 업로드 파일의 실적 확정 월 중 더 늦은 쪽'),
+  "closedMonth": zod.number().min(1).max(putMgmtreportSettingsBodyClosedMonthMax).optional().describe('(응답 전용) 실적 마감 월 — 기준월 드롭다운 상한 및 Actual\/Forecast 경계'),
+  "closedSource": zod.enum(['date', 'upload']).optional().describe('(응답 전용) 마감월 판단 근거 — date(M+1월 13일 규칙) \/ upload(업로드 파일의 노란색 실적 칸 또는 파일명)')
 })
 
 export const putMgmtreportSettingsResponseYearMin = 2000;
@@ -1324,11 +1334,16 @@ export const putMgmtreportSettingsResponseYearMax = 2100;
 
 export const putMgmtreportSettingsResponseMonthMax = 12;
 
+export const putMgmtreportSettingsResponseClosedMonthMax = 12;
+
 
 
 export const PutMgmtreportSettingsResponse = zod.object({
   "year": zod.number().min(putMgmtreportSettingsResponseYearMin).max(putMgmtreportSettingsResponseYearMax),
-  "month": zod.number().min(1).max(putMgmtreportSettingsResponseMonthMax)
+  "month": zod.number().min(1).max(putMgmtreportSettingsResponseMonthMax),
+  "closedYear": zod.number().optional().describe('(응답 전용) 실적 마감 연도 — 날짜 규칙과 최근 업로드 파일의 실적 확정 월 중 더 늦은 쪽'),
+  "closedMonth": zod.number().min(1).max(putMgmtreportSettingsResponseClosedMonthMax).optional().describe('(응답 전용) 실적 마감 월 — 기준월 드롭다운 상한 및 Actual\/Forecast 경계'),
+  "closedSource": zod.enum(['date', 'upload']).optional().describe('(응답 전용) 마감월 판단 근거 — date(M+1월 13일 규칙) \/ upload(업로드 파일의 노란색 실적 칸 또는 파일명)')
 })
 
 

@@ -554,7 +554,106 @@ const EST_KINDS: { kind: "bidding" | "execution" | "completion"; label: string }
   { kind: "completion", label: "estKindCompletion" },
 ];
 
-export function ProjectDataEntryTab({ projectName, service = false }: { projectName: string; service?: boolean }) {
+// 사이트명 직접 수정 — 서버에서 mr_projects.name과 프로젝트 상세(pd_*) project_name을 함께 바꾼다.
+function SiteNameEditor({ projectName, onRenamed }: { projectName: string; onRenamed?: (newName: string) => void }) {
+  const { t } = useTranslation(["projectDataEntryTab"]);
+  const queryClient = useQueryClient();
+  const [value, setValue] = useState(projectName);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  useEffect(() => {
+    setValue(projectName);
+  }, [projectName]);
+  const trimmed = value.replace(/\s+/g, " ").trim();
+  const changed = trimmed !== "" && trimmed !== projectName;
+
+  const submit = async () => {
+    if (!changed || busy) return;
+    if (!window.confirm(t("projectDataEntryTab:renameConfirm", { from: projectName, to: trimmed }))) return;
+    setBusy(true);
+    setMsg(null);
+    try {
+      const token = readAdminToken();
+      const response = await fetch(apiUrl("/api/mgmtreport/projects/rename"), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ name: projectName, newName: trimmed }),
+      });
+      const body = (await response.json().catch(() => ({}))) as { name?: string; error?: string };
+      if (!response.ok) throw new Error(body.error || t("projectDataEntryTab:renameFailed"));
+      await queryClient.invalidateQueries({ queryKey: getListMgmtreportProjectsQueryKey() });
+      setMsg({ ok: true, text: t("projectDataEntryTab:renameSuccess") });
+      onRenamed?.(body.name ?? trimmed);
+    } catch (err) {
+      setMsg({ ok: false, text: err instanceof Error && err.message ? err.message : t("projectDataEntryTab:renameFailed") });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // Overview 카드 안의 첫 번째 표 행으로 표시 (다른 개요 항목과 같은 표 스타일)
+  return (
+    <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px" }}>
+      <tbody>
+        <tr>
+          <th style={{ ...th, width: "180px" }}>
+            <label htmlFor="site-name-input">{t("projectDataEntryTab:siteName")}</label>
+          </th>
+          <td style={tdCell}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+      <input
+        id="site-name-input"
+        type="text"
+        value={value}
+        maxLength={200}
+        onChange={(e) => setValue(e.target.value)}
+        onKeyDown={(e) => {
+          // 표 화살표 이동(makeArrowNav)이 이 입력칸을 가로채지 않도록 여기서 멈춘다
+          e.stopPropagation();
+          if (e.key === "Enter") void submit();
+          if (e.key === "Escape") setValue(projectName);
+        }}
+        style={{ ...inputStyle, flex: "1 1 320px", minWidth: 0 }}
+      />
+      <button
+        type="button"
+        onClick={() => void submit()}
+        disabled={!changed || busy}
+        style={{
+          minHeight: "32px",
+          padding: "0 12px",
+          borderRadius: "6px",
+          border: `1px solid ${ADMIN_NAVY}`,
+          backgroundColor: ADMIN_NAVY,
+          color: "#fff",
+          fontSize: "13px",
+          fontWeight: 600,
+          cursor: !changed || busy ? "not-allowed" : "pointer",
+          opacity: !changed || busy ? 0.4 : 1,
+        }}
+      >
+        {busy ? t("projectDataEntryTab:renaming") : t("projectDataEntryTab:renameSite")}
+      </button>
+      {msg && (
+        <span style={{ fontSize: "12px", color: msg.ok ? SUCCESS_GREEN : ACHIEVE_RED, whiteSpace: "pre-wrap" }}>{msg.text}</span>
+      )}
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  );
+}
+
+export function ProjectDataEntryTab({
+  projectName,
+  service = false,
+  onRenamed,
+}: {
+  projectName: string;
+  service?: boolean;
+  onRenamed?: (newName: string) => void;
+}) {
   const { t } = useTranslation(["projectDataEntryTab", "common"]);
   const { fmtMoney, fmtVnd, unitLabel } = useMoney();
   // 읽기전용 요약 셀: 값이 0이면 "0" 대신 빈칸으로 표시 (저장값 자체는 그대로 0 유지)
@@ -2039,6 +2138,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       <>
       <div style={cardStyle}>
         {cardHead(t("projectDataEntryTab:overviewTitle"), "overview")}
+        <SiteNameEditor projectName={projectName} onRenamed={onRenamed} />
         <div data-tbl="overview" onKeyDown={makeArrowNav("overview")}>
         <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px" }}>
           <thead>
@@ -2459,6 +2559,7 @@ export function ProjectDataEntryTab({ projectName, service = false }: { projectN
       {service && (
       <div style={cardStyle}>
         {cardHead(t("projectDataEntryTab:overviewTitle"), "overview")}
+        <SiteNameEditor projectName={projectName} onRenamed={onRenamed} />
         <div data-tbl="svcOverview" onKeyDown={makeArrowNav("svcOverview")}>
         <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px" }}>
           <thead>
